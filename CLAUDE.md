@@ -23,7 +23,7 @@ Buenas prácticas oficiales de Angular (se crean en la fase 0): @docs/angular-bu
 ## Reglas permanentes
 - **Idioma:** interfaz, textos, comentarios, commits y docs en español de España. Identificadores y nombres de archivo en inglés. URLs en español y sin barra final (`/planetas/marte`).
 - **Stack fijo:**
-  - Angular 22: standalone, zoneless, signals, `OnPush`.
+  - Angular 22: standalone, zoneless, signals, `OnPush` (por defecto en Angular 22: no se declara).
   - TypeScript estricto, sin `any`.
   - Three.js directo, sin `angular-three`.
   - astronomy-engine.
