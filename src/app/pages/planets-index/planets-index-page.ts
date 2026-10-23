@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { PLANETS } from '../../data/bodies';
+import { PLANETS } from '../../data/body-index';
 
 @Component({
   selector: 'tls-planets-index-page',

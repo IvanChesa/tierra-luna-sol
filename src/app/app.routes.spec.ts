@@ -25,6 +25,8 @@ describe('rutas', () => {
     ['/', 'Tierra Luna Sol', 'Tierra Luna Sol'],
     ['/planetas', 'Planetas', 'Planetas · Tierra Luna Sol'],
     ['/planetas/marte', 'Marte', 'Marte · Tierra Luna Sol'],
+    ['/planetas/jupiter', 'Júpiter', 'Júpiter · Tierra Luna Sol'],
+    ['/planetas/neptuno', 'Neptuno', 'Neptuno · Tierra Luna Sol'],
     ['/sol', 'Sol', 'Sol · Tierra Luna Sol'],
     ['/luna', 'Luna', 'Luna · Tierra Luna Sol'],
     ['/creditos', 'Créditos', 'Créditos · Tierra Luna Sol'],
@@ -36,7 +38,7 @@ describe('rutas', () => {
     expect(title()).toBe(pageTitle);
   });
 
-  it.each(['/no-existe', '/planetas/pluton', '/planetas/marte/extra'])(
+  it.each(['/no-existe', '/planetas/pluton', '/planetas/luna', '/planetas/marte/extra'])(
     '%s muestra la página 404 en el cliente',
     async (url) => {
       await harness.navigateByUrl(url);

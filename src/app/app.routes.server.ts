@@ -1,5 +1,5 @@
 import { RenderMode, ServerRoute } from '@angular/ssr';
-import { PLANETS } from './data/bodies';
+import { PLANETS } from './data/body-index';
 
 // Salida estática (outputMode: "static"): todas las rutas se prerenderizan.
 export const serverRoutes: ServerRoute[] = [
