@@ -164,6 +164,7 @@ pages / features (Angular)  ──►  state (signals)  ──►  SceneEngine (
 |---|---|
 | JS inicial (sin el chunk 3D) | Aviso > 300 kB · error > 400 kB (en bruto, `budgets` de angular.json) |
 | `three` | **Nunca** en el bundle inicial; solo en el chunk diferido del visor |
+| `astronomy-engine`, el store del simulador y los controles del visor (`time-controls`, `body-picker`, `body-panel`) | **Nunca** en el bundle inicial: viven dentro del `@defer` del visor. En las fichas (fase 5), la posición actual se calcula con un `import()` dinámico en `afterNextRender` |
 | Texturas de la primera vista | ≤ 2,5 MB (nivel alto) · ≤ 1,2 MB (nivel bajo/móvil) |
 | Texturas totales del MVP | ≤ 10 MB |
 | Lighthouse móvil, páginas de contenido | ≥ 95 en las 4 categorías |
@@ -175,6 +176,8 @@ pages / features (Angular)  ──►  state (signals)  ──►  SceneEngine (
 | Accesibilidad | axe: 0 violaciones graves o críticas · todo usable con teclado y sin canvas |
 | Precisión | Planetas: dirección ≤ 0,05° y distancia ≤ 0,1 % frente a JPL Horizons · Luna: ≤ 0,1° y ≤ 0,5 % |
 | Datos | 0 cifras sin fuente |
+
+> **Margen del JS inicial (medido en la fase 0):** la base de Angular (router, hidratación y repetición de eventos) ya ocupa ~272 kB de los 300 kB del aviso. Por eso se mantiene el presupuesto y todo lo nuevo va diferido (ver la fila de `astronomy-engine`).
 
 ---
 

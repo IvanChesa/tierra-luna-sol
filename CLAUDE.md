@@ -45,7 +45,7 @@ Buenas prácticas oficiales de Angular (se crean en la fase 0): @docs/angular-bu
 - **Rendimiento:**
   - El bucle de render va fuera de Angular. No actualices signals en cada frame (máx. ~5 veces/s).
   - En pausa y sin interacción no se renderiza.
-  - `three` nunca va en el bundle inicial.
+  - `three`, `astronomy-engine`, el store del simulador y los controles del visor nunca van en el bundle inicial: viven dentro del `@defer` del visor. En las fichas, la posición actual se calcula con un `import()` dinámico en `afterNextRender`.
   - Presupuestos en `docs/PLAN.md` §5.
 - **Memoria:** todo lo que crea la escena se libera con `dispose()` al destruirla.
 - **Accesibilidad WCAG 2.1 AA:**
