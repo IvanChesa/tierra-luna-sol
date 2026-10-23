@@ -132,7 +132,7 @@ export const BODY_TEXTS: Record<BodyId, BodyTexts> = {
     },
     facts: [
       {
-        text: 'La Gran Mancha Roja, una tormenta el doble de ancha que la Tierra, se observa desde hace más de 300 años. Según los datos de gravedad de la sonda Juno, se adentra unos 500 km por debajo de las cimas de las nubes.',
+        text: 'La Gran Mancha Roja, una tormenta gigante más grande que la Tierra, se observa desde hace más de 300 años. Según los datos de gravedad de la sonda Juno, se adentra unos 500 km por debajo de las cimas de las nubes.',
         source: 'https://science.nasa.gov/jupiter/jupiter-facts/',
         reviewed: false,
       },
@@ -180,7 +180,7 @@ export const BODY_TEXTS: Record<BodyId, BodyTexts> = {
     },
     facts: [
       {
-        text: 'Inclinado 97,77 grados, Urano tiene las estaciones más extremas del sistema solar: durante casi un cuarto de cada año uraniano, el Sol brilla sobre un polo y la otra mitad vive un oscuro invierno de 21 años.',
+        text: 'Inclinado 97,77 grados, Urano tiene las estaciones más extremas del sistema solar: durante casi un cuarto de cada año uraniano, el Sol brilla sobre un polo y la otra mitad del planeta vive un oscuro invierno de 21 años.',
         source: 'https://science.nasa.gov/uranus/facts/',
         reviewed: false,
       },
@@ -406,7 +406,7 @@ export const BODY_TEXTS: Record<BodyId, BodyTexts> = {
         reviewed: false,
       },
       {
-        text: 'En la mitología, Mimas era un gigante al que mató Marte en la guerra entre los titanes y los dioses del Olimpo. Aun muerto, sus piernas, que eran serpientes, siseaban clamando venganza y trataban de atacar a su asesino.',
+        text: 'El astrónomo inglés William Herschel descubrió Mimas el 17 de septiembre de 1789 con su telescopio reflector. A unos 186 000 km de Saturno, tarda solo 22 horas y 36 minutos en completar una órbita.',
         source: 'https://science.nasa.gov/saturn/moons/mimas/',
         reviewed: false,
       },

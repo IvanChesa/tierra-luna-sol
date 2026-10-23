@@ -131,7 +131,7 @@ _Nota de redacción:_ No se usa la altura de Olympus Mons que da la página («m
   - > But it has the shortest day in the solar system, taking about 9.9 hours to spin around once on its axis.
   - > The composition of Jupiter is similar to that of the Sun – mostly hydrogen and helium.
   - > In fact, Jupiter has the same ingredients as a star, but it did not grow massive enough to ignite.
-- [ ] **Curiosidad 1.** La Gran Mancha Roja, una tormenta el doble de ancha que la Tierra, se observa desde hace más de 300 años. Según los datos de gravedad de la sonda Juno, se adentra unos 500 km por debajo de las cimas de las nubes.
+- [ ] **Curiosidad 1.** La Gran Mancha Roja, una tormenta gigante más grande que la Tierra, se observa desde hace más de 300 años. Según los datos de gravedad de la sonda Juno, se adentra unos 500 km por debajo de las cimas de las nubes.
   - Fuente: <https://science.nasa.gov/jupiter/jupiter-facts/>
   - > Jupiter’s iconic Great Red Spot is a giant storm bigger than Earth that has raged for hundreds of years.
   - > The Great Red Spot, a swirling oval of clouds twice as wide as Earth, has been observed on the giant planet for more than 300 years.
@@ -145,7 +145,7 @@ _Nota de redacción:_ No se usa la altura de Olympus Mons que da la página («m
   - > Juno previously discovered polygonal arrangements of giant cyclonic storms at both of Jupiter’s poles – eight arranged in an octagonal pattern in the north and five arranged in a pentagonal pattern in the south.
   - > Over time, mission scientists determined these atmospheric phenomena are extremely resilient, remaining in the same location.
 
-_Nota de redacción:_ «El planeta más antiguo» lo afirma la propia página en su introducción. Las 9,9 horas salen de esa misma introducción; en la sección «Atmosphere» la página redondea a «spinning once every 10 hours».
+_Nota de redacción:_ «El planeta más antiguo» lo afirma la propia página en su introducción. Las 9,9 horas salen de esa misma introducción; en la sección «Atmosphere» la página redondea a «spinning once every 10 hours». Revisión de la fase 1: «el doble de ancha que la Tierra» se cambió por «más grande que la Tierra», porque la Mancha Roja ha encogido; la misma página de la NASA da las dos frases.
 
 ## Saturno (`saturno`)
 
@@ -179,7 +179,7 @@ _Nota de redacción:_ Se omiten, por caducables, el número de lunas (la página
   - > Uranus rotates at a nearly 90-degree angle from the plane of its orbit.
   - > This unique tilt makes Uranus appear to spin sideways, orbiting the Sun like a rolling ball.
   - > Uranus was the first planet found with the aid of a telescope.
-- [ ] **Curiosidad 1.** Inclinado 97,77 grados, Urano tiene las estaciones más extremas del sistema solar: durante casi un cuarto de cada año uraniano, el Sol brilla sobre un polo y la otra mitad vive un oscuro invierno de 21 años.
+- [ ] **Curiosidad 1.** Inclinado 97,77 grados, Urano tiene las estaciones más extremas del sistema solar: durante casi un cuarto de cada año uraniano, el Sol brilla sobre un polo y la otra mitad del planeta vive un oscuro invierno de 21 años.
   - Fuente: <https://science.nasa.gov/uranus/facts/>
   - > Uranus is the only planet whose equator is nearly at a right angle to its orbit, with a tilt of 97.77 degrees.
   - > This unique tilt causes Uranus to have the most extreme seasons in the solar system.
@@ -400,12 +400,12 @@ _Nota de redacción:_ La ficha «Facts» matiza que el océano podría estar má
   - Fuente: <https://science.nasa.gov/saturn/moons/mimas/>
   - > It is not quite big enough to hold a round shape, so it is somewhat ovoid with dimensions of 129 x 122 x 119 miles (207 x 197 x 191 kilometers, respectively).
   - > Its low density suggests that it consists almost entirely of water ice, which is the only substance ever detected on Mimas.
-- [ ] **Curiosidad 3.** En la mitología, Mimas era un gigante al que mató Marte en la guerra entre los titanes y los dioses del Olimpo. Aun muerto, sus piernas, que eran serpientes, siseaban clamando venganza y trataban de atacar a su asesino.
+- [ ] **Curiosidad 3.** El astrónomo inglés William Herschel descubrió Mimas el 17 de septiembre de 1789 con su telescopio reflector. A unos 186 000 km de Saturno, tarda solo 22 horas y 36 minutos en completar una órbita.
   - Fuente: <https://science.nasa.gov/saturn/moons/mimas/>
-  - > The mythological Mimas was a giant who was killed by Mars in the war between the Titans and the gods of Olympus.
-  - > Even after his death, Mimas' legs – which were serpents – hissed vengeance and sought to attack his killer.
+  - > Mimas was discovered on Sept. 17, 1789, by English astronomer William Herschel, using his 40-foot reflector telescope.
+  - > At a mean distance just over 115,000 miles (186,000 kilometers) from the massive planet, Mimas takes only 22 hours and 36 minutes to complete an orbit.
 
-_Nota de redacción:_ En el resumen, las dos primeras citas son fragmentos: en el HTML la frase original empieza con «C<span>rater-covered», y la palabra partida podría fallar en una comprobación que sustituya etiquetas por espacios. Se ha evitado la «prueba de Mimas» de la página (dice que Mimas parece congelada por completo), porque un estudio de 2024 (Lainey et al., Nature) propone un océano interno joven; esto no se ha verificado en esta tarea.
+_Nota de redacción:_ En el resumen, las dos primeras citas son fragmentos: en el HTML la frase original empieza con «C<span>rater-covered», y la palabra partida podría fallar en una comprobación que sustituya etiquetas por espacios. Se ha evitado la «prueba de Mimas» de la página (dice que Mimas parece congelada por completo), porque un estudio de 2024 (Lainey et al., Nature) propone un océano interno joven; esto no se ha verificado en esta tarea. Revisión de la fase 1: se sustituyó la curiosidad mitológica, porque la página de la NASA sitúa a Mimas en «la guerra entre los titanes y los dioses del Olimpo» y, según la revisión, Mimas era uno de los gigantes de la Gigantomaquia.
 
 ## Encélado (`encelado`)
 
@@ -624,7 +624,7 @@ _Nota de redacción:_ Títulos en español: «La tempestad» (The Tempest) y «E
   - > Umbriel was discovered on Oct. 24, 1851 by English astronomer William Lassell.
   - > Umbriel is named for a malevolent spirit in English poet Alexander Pope's 18th century poem "Rape of the Lock."
 
-_Nota de redacción:_ La página principal es breve; la curiosidad 2 sale del pie de foto de Photojournal de la imagen de la Voyager 2 (1986).
+_Nota de redacción:_ La página principal es breve; la curiosidad 2 sale del pie de foto de Photojournal de la imagen de la Voyager 2 (1986). Revisión de la fase 1: el «16 %» de la NASA no es el mismo dato que el albedo geométrico de la tabla de datos (0,21, NSSDC); son medidas distintas de la reflectividad. Decidir si se quita la cifra del texto.
 
 ## Titania (`titania`)
 
@@ -721,4 +721,4 @@ _Nota de redacción:_ La página de Tritón dice «Neptune's 13 moons», cifra d
   - > Proteus was originally designated S/1989 N 1.
   - > Proteus is named after the shape-changing sea god of Greek mythology.
 
-_Nota de redacción:_ La página de Proteo dice que Nereida se descubrió «33 years earlier» que Proteo (1989), pero Nereida es de 1949 (40 años antes); se ha evitado esa cifra y la curiosidad 2 usa la página de lunas de Neptuno.
+_Nota de redacción:_ La página de Proteo dice que Nereida se descubrió «33 years earlier» que Proteo (1989), pero Nereida es de 1949 (40 años antes); se ha evitado esa cifra y la curiosidad 2 usa la página de lunas de Neptuno. Revisión de la fase 1: el «seis por ciento» de la NASA no es el mismo dato que el albedo geométrico de la tabla de datos (0,10, NSSDC); son medidas distintas de la reflectividad. Decidir si se quita la cifra del texto.
