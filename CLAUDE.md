@@ -63,7 +63,7 @@ Buenas prácticas oficiales de Angular: @docs/angular-buenas-practicas.md
   - Nunca subas credenciales ni las pidas por chat; los secrets los introduce Iván.
   - La geolocalización es opcional, se pide tras una acción del usuario y nunca sale del navegador.
 - **Commits** pequeños en español: `feat:`, `fix:`, `test:`, `perf:`, `content:`, `docs:`, `chore:`.
-- **No toques** el repo de ivanchesa.es (`../ivan-chesa.es`), ni DNS, ni cPanel.
+- **No toques** el repo de ivanchesa.es (`../ivan-chesa.es`), ni DNS, ni cPanel, ni el WordPress de producción.
 
 ## Skills disponibles (`.claude/skills/`)
 Úsalas como referencia cuando toque, sin encadenarlas todas. Las reglas de este archivo mandan sobre cualquier skill.
