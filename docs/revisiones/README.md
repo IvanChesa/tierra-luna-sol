@@ -10,7 +10,7 @@ La sesión de revisión escribe aquí `fase-N.md` al terminar cada fase. Esta li
 5. **Three.js**: `dispose()` completo, espacio de color, DPR limitado, tamaño de texturas, draw calls y render bajo demanda.
 6. **Rendimiento**: presupuestos de §5, bundle inicial sin `three` y peso de red.
 7. **Accesibilidad**: teclado, foco, etiquetas, `aria-live` sin ruido, contraste y `prefers-reduced-motion`.
-8. **SEO** (desde la fase 5): metadatos en el HTML estático, canonical, JSON-LD y sitemap.
+8. **SEO** (desde la fase 8): metadatos en el HTML estático, canonical, JSON-LD y sitemap.
 9. **Datos y licencias**: fuentes reales y comprobables, nada inventado, `FUENTES.md` y `/creditos` al día.
 10. **Tests**: que prueben comportamiento real (no tests triviales) y fixtures con su origen.
 11. **Higiene**: commits pequeños, sin secrets, sin dependencias fuera de la lista, sin código muerto ni `console.log` olvidados.

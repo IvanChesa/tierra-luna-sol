@@ -5,7 +5,7 @@ import { Component, input } from '@angular/core';
   selector: 'tls-body-detail-page',
   template: `
     <h1>{{ name() }}</h1>
-    <p>Ficha en preparación (fase 5).</p>
+    <p>Ficha en preparación (fase 8).</p>
   `,
 })
 export class BodyDetailPage {

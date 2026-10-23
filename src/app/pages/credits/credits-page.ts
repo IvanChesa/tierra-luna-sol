@@ -4,7 +4,7 @@ import { Component } from '@angular/core';
   selector: 'tls-credits-page',
   template: `
     <h1>Créditos</h1>
-    <p>Fuentes y licencias de los recursos usados (fase 5).</p>
+    <p>Fuentes y licencias de los recursos usados (fase 8).</p>
   `,
 })
 export class CreditsPage {}

@@ -12,7 +12,7 @@ export interface SiteConfig {
     readonly name: string;
     readonly url: string;
   };
-  /** Mientras sea `false`, todas las páginas llevan `noindex` (fase 5). */
+  /** Mientras sea `false`, todas las páginas llevan `noindex` (fase 8). */
   readonly indexable: boolean;
 }
 

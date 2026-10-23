@@ -2,27 +2,34 @@
 
 Decisiones y tareas que dependen de Iván. Claude Code añade aquí cada `TODO(ivan):`.
 
-## Antes de la fase 0
-- [x] **Actualizar Node.** Hecho: v24.22.1 (Angular 22 pide ≥ 22.22.3 o ≥ 24.15).
-- [x] **Recolocar el `.git` de ivanchesa.es** (hecho el 23-10). Al mover las carpetas, `C:\Users\ivan\Ivan Chesa AI\.git` se quedó fuera de `ivan-chesa.es\`. Mientras siga ahí, el proyecto ivanchesa.es aparece como «todo borrado» y este proyecto queda dentro de ese repo.
-- [ ] Instalar GitHub CLI: `winget install --id GitHub.cli` y luego `gh auth login`.
+## Ya hecho
+- [x] Actualizar Node (v24.22.1).
+- [x] Recolocar el `.git` de ivanchesa.es (23-10).
+- [x] Dirección visual: **A, «Carta celeste»** (23-10).
+- [x] Aceptar `@eslint/js` y `typescript-eslint` en la lista de dependencias (23-10).
+- [x] Alcance: **versión 1 con paridad completa con el original + mejoras** (23-10).
+- [x] Cambios al plan propuestos en el informe de la fase 0 (`ng new` desde la carpeta padre, `OnPush` sin declarar, dependencias de lint) (23-10).
+- [x] `/404` siempre con `noindex` y fuera del sitemap (hallazgo 5 de la revisión de la fase 0): incluido en la fase 8 del plan v1; recordatorio `TODO(fase-8)` en `src/app/app.routes.ts`.
+
+## Cuanto antes (ideal antes de la fase 1)
+- [ ] Instalar GitHub CLI: `winget install --id GitHub.cli`, luego `gh auth login`.
+- [ ] Crear el repo privado en GitHub y hacer el primer push, para que corra el CI.
 
 ## Decisiones
 - [ ] **Subdominio definitivo.** Propuesto: `tierra-luna-sol.ivanchesa.es`. Si cambia, se edita solo `src/app/core/site.config.ts`.
-- [x] **Dirección visual:** A («Carta celeste»), elegida el 23-10 (`docs/DISENO.md`).
-- [x] **Dependencias de lint:** `@eslint/js` y `typescript-eslint`, aprobadas el 23-10 y añadidas a `docs/PLAN.md` §1.
-- [x] **Propuestas de cambio al plan de la fase 0** (comando de `ng new`, `OnPush` por defecto y lista de dependencias): aprobadas el 23-10 y aplicadas en `docs/PLAN.md` y `CLAUDE.md`.
-- [ ] **Propuesta:** añadir a la fase 5 del plan que `/404` lleve siempre `noindex` y quede fuera del sitemap (hallazgo 5 de la revisión de la fase 0). Mientras tanto hay un `TODO(fase-5)` en `src/app/app.routes.ts`.
 - [ ] **Licencia del código propio** cuando el repo pase a público (MIT u otra).
-- [ ] **¿Repo público desde el principio o solo al lanzar?** Recomendado: privado hasta el lanzamiento.
+- [ ] **Vistas guiadas de la Tierra** (fase 4). Propuesta: Tierra completa, Pacífico, Himalaya, luces nocturnas y España / Bajo Cinca.
+- [ ] **Líneas de constelaciones** en el cielo del Bajo Cinca (fase 7): solo si hay una fuente con licencia compatible.
 
-## Revisiones de contenido
-- [ ] Textos de las fichas de los 10 cuerpos (`reviewed: false`), al final de las fases 1 y 5.
+## Revisiones y pruebas de Iván
+- [ ] Textos de los 29 cuerpos (`reviewed: false`), al final de las fases 1 y 8.
+- [ ] Textos de las vistas guiadas y de los recorridos (fases 4 y 5).
+- [ ] Pruebas en el móvil real por la red local (fases 4–9).
+- [ ] Visto bueno final en el móvil (fase 9).
 
-## Fase 7 (manual)
-- [ ] Crear el repo en GitHub.
+## Fase 10 (manual)
 - [ ] Crear el subdominio en cPanel y activar AutoSSL.
 - [ ] Crear una cuenta FTP limitada a la carpeta del subdominio.
 - [ ] `gh secret set FTP_SERVER` / `FTP_USERNAME` / `FTP_PASSWORD` (la contraseña la escribe Iván).
-- [ ] Dar de alta el sitemap en Search Console después del lanzamiento.
+- [ ] Dar el OK a `indexable: true` y dar de alta el sitemap en Search Console.
 - [ ] Añadir la ficha del proyecto en ivanchesa.es.
