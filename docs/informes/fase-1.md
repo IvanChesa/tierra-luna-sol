@@ -2,7 +2,7 @@
 
 - **Rama:** `fase-1-efemerides`
 - **Fecha:** 2026-10-23
-- **Estado:** listo para revisión (modo autónomo por bloques, autorizado por Iván)
+- **Estado:** revisada (APROBADA CON CAMBIOS MENORES), correcciones aplicadas y fusionada en `main` (modo autónomo por bloques, autorizado por Iván)
 
 ## 0. Plan de la fase
 
