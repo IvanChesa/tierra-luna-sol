@@ -9,9 +9,10 @@ Decisiones y tareas que dependen de Iván. Claude Code añade aquí cada `TODO(i
 
 ## Decisiones
 - [ ] **Subdominio definitivo.** Propuesto: `tierra-luna-sol.ivanchesa.es`. Si cambia, se edita solo `src/app/core/site.config.ts`.
-- [ ] **Dirección visual:** elegir entre las 2 propuestas de `docs/DISENO.md` (fin de la fase 0). Aplicada provisionalmente la A.
-- [ ] **Dependencias de lint:** ¿se aceptan `@eslint/js` y `typescript-eslint` (las instala `ng add angular-eslint`) dentro de la lista cerrada? Ver `docs/informes/fase-0.md` §9.
-- [ ] **Propuestas de cambio al plan de la fase 0** (comando de `ng new`, `OnPush` por defecto y lista de dependencias): `docs/informes/fase-0.md` §10.
+- [x] **Dirección visual:** A («Carta celeste»), elegida el 23-10 (`docs/DISENO.md`).
+- [x] **Dependencias de lint:** `@eslint/js` y `typescript-eslint`, aprobadas el 23-10 y añadidas a `docs/PLAN.md` §1.
+- [x] **Propuestas de cambio al plan de la fase 0** (comando de `ng new`, `OnPush` por defecto y lista de dependencias): aprobadas el 23-10 y aplicadas en `docs/PLAN.md` y `CLAUDE.md`.
+- [ ] **Propuesta:** añadir a la fase 5 del plan que `/404` lleve siempre `noindex` y quede fuera del sitemap (hallazgo 5 de la revisión de la fase 0). Mientras tanto hay un `TODO(fase-5)` en `src/app/app.routes.ts`.
 - [ ] **Licencia del código propio** cuando el repo pase a público (MIT u otra).
 - [ ] **¿Repo público desde el principio o solo al lanzar?** Recomendado: privado hasta el lanzamiento.
 

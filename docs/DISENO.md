@@ -1,6 +1,6 @@
 # Dirección visual
 
-> Fase 0, tarea 0.9. Hay **2 propuestas**; en `src/styles.css` se aplican los tokens de la **recomendada (A)**. **Iván elige en la revisión.** Si elige B, cambiar es un commit: tokens, `@import` de las fuentes y dependencias `@fontsource/*`.
+> Fase 0, tarea 0.9. **Decisión de Iván (23-10-2026): propuesta A, «Carta celeste»**, aplicada en `src/styles.css`. La B se conserva como alternativa descartada, por referencia.
 
 ## Línea común
 
@@ -14,7 +14,7 @@
 
 ---
 
-## Propuesta A · «Carta celeste» (recomendada)
+## Propuesta A · «Carta celeste» (elegida)
 
 Un atlas impreso de noche: tinta azul casi negra, texto color papel y un acento latón como el de los instrumentos antiguos. Los titulares van en serifa editorial y los datos en una sans institucional con cifras tabulares.
 
@@ -59,7 +59,7 @@ Son 3 archivos `woff2`. Newsreader da el tono editorial de atlas sin caer en lo 
 
 ---
 
-## Propuesta B · «Instrumento»
+## Propuesta B · «Instrumento» (descartada)
 
 La consola de un observatorio: grafito neutro, texto blanco roto y un único acento ámbar de «lámpara de sodio» para lo activo. Todo en grotesca, con las lecturas numéricas en monoespaciada como en una pantalla de instrumento.
 
@@ -102,7 +102,7 @@ La consola de un observatorio: grafito neutro, texto blanco roto y un único ace
 
 ---
 
-## Por qué recomiendo A
+## Por qué A
 
 - **Es más reconocible.** El latón sobre azul tinta y la serifa editorial no se parecen a la estética «espacial» de plantilla ni a un panel de control genérico. B es correcta, pero la consola grafito con acento naranja es un recurso muy visto.
 - **Encaja con el contenido.** Las fichas son texto divulgativo: una serifa para los titulares les da carácter de atlas, y Public Sans mantiene los datos limpios.
