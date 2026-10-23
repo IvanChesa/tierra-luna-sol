@@ -8,12 +8,15 @@ import {
   planetHeliocentric,
 } from './ephemeris';
 import {
+  HORIZONS_CONTROL_TT,
+  HORIZONS_CONTROL_UT,
   HORIZONS_DECADES,
   HORIZONS_MOON_ILLUMINATION,
   HORIZONS_PLAN_DATES,
   USNO_MOON_PHASES,
   VectorFixture,
   VectorRow,
+  hasSeries,
   rowDate,
   seriesOf,
   vectorError,
@@ -21,11 +24,19 @@ import {
 import { PLANET_IDS, isPlanetId } from './ids';
 import { length, sub, vec3 } from './vec3';
 
-/** Peor error de una función de posición sobre las filas de los fixtures (plan + décadas). */
+/**
+ * Peor error de una función de posición sobre las filas de los fixtures: fechas del plan, décadas
+ * y, si el cuerpo está en ellos, los instantes de control independientes (revisión del bloque A).
+ */
 function worstError(id: string, position: (date: Date) => ReturnType<typeof planetHeliocentric>) {
-  const rows: [VectorFixture, VectorRow][] = [HORIZONS_PLAN_DATES, HORIZONS_DECADES].flatMap(
-    (fixture) =>
-      seriesOf(fixture, id).rows.map((row): [VectorFixture, VectorRow] => [fixture, row]),
+  const fixtures = [
+    HORIZONS_PLAN_DATES,
+    HORIZONS_DECADES,
+    HORIZONS_CONTROL_UT,
+    HORIZONS_CONTROL_TT,
+  ].filter((fixture) => hasSeries(fixture, id));
+  const rows: [VectorFixture, VectorRow][] = fixtures.flatMap((fixture) =>
+    seriesOf(fixture, id).rows.map((row): [VectorFixture, VectorRow] => [fixture, row]),
   );
   let angleDeg = 0;
   let distanceRatio = 0;
@@ -39,7 +50,7 @@ function worstError(id: string, position: (date: Date) => ReturnType<typeof plan
 
 const fmt = (value: number, digits: number) => value.toFixed(digits).replace('.', ',');
 
-describe('ephemeris: planetas frente a Horizons (3 fechas del plan + décadas 1900–2100)', () => {
+describe('ephemeris: planetas frente a Horizons (fechas del plan, décadas 1900–2100 y control)', () => {
   // El error se calcula al recoger los tests para que la cifra salga en su nombre.
   for (const id of PLANET_IDS) {
     const error = worstError(id, (date) => planetHeliocentric(id, date));

@@ -3,6 +3,8 @@
  * `scripts/fetch-horizons-fixtures.mjs` y cada serie lleva la URL exacta de su consulta.
  */
 import { AstroTime } from 'astronomy-engine';
+import controlTt from './horizons-control-tt.json';
+import controlUt from './horizons-control-ut.json';
 import decades from './horizons-decades.json';
 import moonIllumination from './horizons-moon-illumination.json';
 import moons2020To2035 from './horizons-moons-2020-2035.json';
@@ -37,6 +39,12 @@ export interface VectorFixture {
 export const HORIZONS_PLAN_DATES = planDates as unknown as VectorFixture;
 export const HORIZONS_DECADES = decades as unknown as VectorFixture;
 export const HORIZONS_MOONS_2020_2035 = moons2020To2035 as unknown as VectorFixture;
+/**
+ * Control independiente (revisión del bloque A, hallazgo A3): 6 instantes fuera de los demás
+ * fixtures y de la rejilla del ajuste de las lunas, para 16 cuerpos. Tres en UT y tres en TT.
+ */
+export const HORIZONS_CONTROL_UT = controlUt as unknown as VectorFixture;
+export const HORIZONS_CONTROL_TT = controlTt as unknown as VectorFixture;
 
 export const HORIZONS_MOON_ILLUMINATION = moonIllumination as unknown as {
   readonly query: string;
@@ -88,6 +96,10 @@ export function rowDate(fixture: VectorFixture, row: VectorRow): Date {
   if (fixture.timeScale === 'UT') return new Date(row[0]);
   return AstroTime.FromTerrestrialTime((Date.parse(row[0]) - J2000_MS) / 86_400_000).date;
 }
+
+/** ¿Tiene el fixture una serie de este cuerpo? (los de control solo llevan 16). */
+export const hasSeries = (fixture: VectorFixture, id: string): boolean =>
+  fixture.series.some((s) => s.id === id);
 
 /** Serie de un cuerpo; falla si no existe (un fixture incompleto debe romper el test). */
 export function seriesOf(fixture: VectorFixture, id: string): VectorSeries {

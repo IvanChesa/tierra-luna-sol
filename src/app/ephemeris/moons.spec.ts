@@ -1,9 +1,12 @@
 import { KM_PER_AU } from './constants';
 import { eqjToEcl } from './coordinates';
 import {
+  HORIZONS_CONTROL_TT,
+  HORIZONS_CONTROL_UT,
   HORIZONS_DECADES,
   HORIZONS_MOONS_2020_2035,
   HORIZONS_PLAN_DATES,
+  hasSeries,
   rowDate,
   seriesOf,
   vectorError,
@@ -98,11 +101,17 @@ describe('moons: elipse con precesión', () => {
 });
 
 describe('moons: galileanas (JupiterMoons) frente a Horizons', () => {
-  const fixtures = [HORIZONS_PLAN_DATES, HORIZONS_DECADES, HORIZONS_MOONS_2020_2035];
+  const fixtures = [
+    HORIZONS_PLAN_DATES,
+    HORIZONS_DECADES,
+    HORIZONS_MOONS_2020_2035,
+    HORIZONS_CONTROL_UT,
+    HORIZONS_CONTROL_TT,
+  ];
   for (const id of GALILEAN_IDS) {
     let worst = 0;
     let samples = 0;
-    for (const fixture of fixtures) {
+    for (const fixture of fixtures.filter((f) => hasSeries(f, id))) {
       for (const row of seriesOf(fixture, id).rows) {
         const date = rowDate(fixture, row);
         worst = Math.max(worst, vectorError(galileanMoons(date)[id], row).angleDeg);

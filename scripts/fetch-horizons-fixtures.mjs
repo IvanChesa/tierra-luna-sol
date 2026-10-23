@@ -1,5 +1,5 @@
 // Descarga los fixtures de referencia de NASA/JPL Horizons y del USNO para los tests de precisión.
-// Uso: node scripts/fetch-horizons-fixtures.mjs
+// Uso: node scripts/fetch-horizons-fixtures.mjs [fichero.json …]   (sin argumentos, todos)
 // Salida: src/app/ephemeris/fixtures/*.json, cada serie con la URL exacta de su consulta.
 //
 // - Vectores geométricos (VEC_CORR=NONE), en km, eclíptica J2000 (REF_PLANE=ECLIPTIC, ICRF).
@@ -50,7 +50,7 @@ const MOONS = [
   ['proteo', '808', '899'],
 ];
 
-/** Las 3 fechas del plan (PLAN, fase 1, tarea 6), a las 00:00 UT. */
+/** Las 3 fechas de la fase 1 del plan (ver docs/informes/fase-1.md), a las 00:00 UT. */
 const PLAN_DATES = ['2026-01-01', '2026-10-23', '2030-06-15'].map((d) => `${d}T00:00:00Z`);
 /** Barrido largo: 1 de enero de cada década, 1900–2100, a las 00:00 TT. */
 const DECADES = Array.from({ length: 21 }, (_, k) => `${1900 + 10 * k}-01-01T00:00:00Z`);
@@ -251,47 +251,104 @@ async function save(name, data) {
   console.log(`→ ${name}`);
 }
 
-await mkdir(OUT_DIR, { recursive: true });
+/**
+ * Instantes de control de la revisión del bloque A (docs/revisiones/bloque-A.md, hallazgo A3):
+ * fuera de cualquier otro fixture y de la rejilla del ajuste de las lunas, para validarlo de forma
+ * independiente. Tres en UT (uso real) y tres en TT (solo dinámica).
+ */
+const CONTROL_UT = ['1957-10-04T19:28:00Z', '2026-10-24T00:00:00Z', '2042-03-17T06:30:00Z'];
+const CONTROL_TT = ['1905-07-14T00:00:00Z', '2063-04-05T12:00:00Z', '2099-12-31T00:00:00Z'];
+/** Los 16 cuerpos que comprobó aquella revisión. */
+const CONTROL_PLANETS = PLANETS.filter(([id]) => ['mercurio', 'marte', 'neptuno'].includes(id));
+const CONTROL_MOONS = MOONS.filter(([id]) =>
+  [
+    'luna',
+    'io',
+    'fobos',
+    'deimos',
+    'mimas',
+    'tetis',
+    'titan',
+    'japeto',
+    'miranda',
+    'ariel',
+    'titania',
+    'triton',
+    'proteo',
+  ].includes(id),
+);
 
-console.log('Fechas del plan (planetas, Luna y 20 lunas)…');
-await save(
-  'horizons-plan-dates.json',
-  await vectorSet('Las 3 fechas del plan, a las 00:00 UT.', PLAN_DATES, PLANETS, MOONS),
-);
-console.log('Barrido por décadas 1900–2100 (planetas, Luna y 20 lunas)…');
-await save(
-  'horizons-decades.json',
-  await vectorSet(
-    '1 de enero de cada década, 1900–2100, a las 00:00 TT.',
-    DECADES,
-    PLANETS,
-    MOONS,
-    'TT',
-  ),
-);
-console.log('Barrido trimestral 2020–2035 (20 lunas)…');
-await save(
-  'horizons-moons-2020-2035.json',
-  await vectorSet(
-    'Día 1 de enero, abril, julio y octubre de 2020 a 2035, a las 00:00 UT.',
-    QUARTERS,
-    [],
-    MOONS.filter(([id]) => id !== 'luna'),
-  ),
-);
-console.log('Iluminación de la Luna…');
-await save('horizons-moon-illumination.json', await moonIllumination(PLAN_DATES));
-console.log('Fases del USNO…');
-await save('usno-moon-phases.json', await usnoPhases([1900, 2026, 2100]));
-console.log('Tiempo sidéreo y estaciones del USNO…');
-await save(
-  'usno-sidereal-time.json',
-  await usnoSiderealTimes([
-    '1900-01-01T00:00:00Z',
-    '2000-01-01T12:00:00Z',
-    '2026-10-23T00:00:00Z',
-    // La API del USNO solo admite 1800–2050.
-    '2050-12-31T00:00:00Z',
-  ]),
-);
-await save('usno-seasons-2026.json', await usnoSeasons(2026));
+/** Ficheros que genera el script. Sin argumentos, todos; con argumentos, solo los indicados. */
+const JOBS = [
+  [
+    'horizons-plan-dates.json',
+    () => vectorSet('Las 3 fechas del plan, a las 00:00 UT.', PLAN_DATES, PLANETS, MOONS),
+  ],
+  [
+    'horizons-decades.json',
+    () =>
+      vectorSet(
+        '1 de enero de cada década, 1900–2100, a las 00:00 TT.',
+        DECADES,
+        PLANETS,
+        MOONS,
+        'TT',
+      ),
+  ],
+  [
+    'horizons-moons-2020-2035.json',
+    () =>
+      vectorSet(
+        'Día 1 de enero, abril, julio y octubre de 2020 a 2035, a las 00:00 UT.',
+        QUARTERS,
+        [],
+        MOONS.filter(([id]) => id !== 'luna'),
+      ),
+  ],
+  [
+    'horizons-control-ut.json',
+    () =>
+      vectorSet(
+        'Control independiente (revisión del bloque A): 3 instantes en UT para 16 cuerpos.',
+        CONTROL_UT,
+        CONTROL_PLANETS,
+        CONTROL_MOONS,
+      ),
+  ],
+  [
+    'horizons-control-tt.json',
+    () =>
+      vectorSet(
+        'Control independiente (revisión del bloque A): 3 instantes en TT para 16 cuerpos.',
+        CONTROL_TT,
+        CONTROL_PLANETS,
+        CONTROL_MOONS,
+        'TT',
+      ),
+  ],
+  ['horizons-moon-illumination.json', () => moonIllumination(PLAN_DATES)],
+  ['usno-moon-phases.json', () => usnoPhases([1900, 2026, 2100])],
+  [
+    'usno-sidereal-time.json',
+    () =>
+      usnoSiderealTimes([
+        '1900-01-01T00:00:00Z',
+        '2000-01-01T12:00:00Z',
+        '2026-10-23T00:00:00Z',
+        // La API del USNO solo admite 1800–2050.
+        '2050-12-31T00:00:00Z',
+      ]),
+  ],
+  ['usno-seasons-2026.json', () => usnoSeasons(2026)],
+];
+
+const wanted = process.argv.slice(2);
+const unknown = wanted.filter((name) => !JOBS.some(([file]) => file === name));
+if (unknown.length) throw new Error(`Ficheros desconocidos: ${unknown.join(', ')}`);
+
+await mkdir(OUT_DIR, { recursive: true });
+for (const [file, build] of JOBS) {
+  if (wanted.length && !wanted.includes(file)) continue;
+  console.log(`${file}…`);
+  await save(file, await build());
+}
