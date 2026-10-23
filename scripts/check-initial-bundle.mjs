@@ -43,4 +43,8 @@ for (const file of all.filter((f) => !initial.includes(f))) {
 }
 if (failed) process.exit(1);
 console.log(`✔ Bundle inicial (${initial.join(', ')}) sin ${Object.keys(MARKERS).join(' ni ')}.`);
-console.log(lazy.length ? `  En chunks diferidos: ${lazy.join('; ')}.` : '  (Ninguna de las dos está todavía en ningún chunk.)');
+console.log(
+  lazy.length
+    ? `  En chunks diferidos: ${lazy.join('; ')}.`
+    : '  (Ninguna de las dos está todavía en ningún chunk.)',
+);

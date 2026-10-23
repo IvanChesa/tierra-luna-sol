@@ -49,7 +49,12 @@ const rows = (html) =>
   );
 /** «12,104» → 12104; «0.384*» → 0.384; «5.876854R» → 5.876854. */
 function num(text) {
-  const value = Number(text.replace(/,/g, '').replace(/[*R]+$/, '').trim());
+  const value = Number(
+    text
+      .replace(/,/g, '')
+      .replace(/[*R]+$/, '')
+      .trim(),
+  );
   if (!Number.isFinite(value)) throw new Error(`No es un número: «${text}»`);
   return value;
 }
@@ -89,7 +94,11 @@ const data = {};
     const pressure = cell('Surface Pressure', name);
     data[id] = {
       physical: {
-        radiusKm: q(exact(num(cell('Diameter', name)) / 2), S, 'Radio ecuatorial: la mitad del diámetro de la ficha.'),
+        radiusKm: q(
+          exact(num(cell('Diameter', name)) / 2),
+          S,
+          'Radio ecuatorial: la mitad del diámetro de la ficha.',
+        ),
         massKg: q(exact(num(cell('Mass', name)) * 1e24), S),
         densityKgM3: q(num(cell('Density', name)), S),
         surfaceGravityMS2: q(num(cell('Gravity', name)), S),
@@ -161,7 +170,11 @@ const data = {};
       densityKgM3: q(sun('Mean density'), S),
       surfaceGravityMS2: q(sun('Surface gravity'), S, 'En el ecuador.'),
       escapeVelocityKmS: q(sun('Escape velocity'), S),
-      rotationPeriodH: q(sun('Sidereal rotation period'), S, 'A 16° de latitud: el Sol no gira como un sólido.'),
+      rotationPeriodH: q(
+        sun('Sidereal rotation period'),
+        S,
+        'A 16° de latitud: el Sol no gira como un sólido.',
+      ),
       axialTiltDeg: q(sun('Obliquity to ecliptic'), S, 'Respecto a la eclíptica.'),
       effectiveTemperatureK: q(num(effective[1]), S),
       luminosityW: q(exact(sun('Luminosity') * 1e24), S),
@@ -230,7 +243,11 @@ const MOON_NAMES = {
       const albedo = bulk[4];
       if (albedo.includes('/')) {
         const [dark, bright] = albedo.split('/').map((v) => num(v));
-        physical.geometricAlbedo = q(dark, S, `Cara oscura; la clara llega a ${String(bright).replace('.', ',')} (la ficha da «${albedo}»).`);
+        physical.geometricAlbedo = q(
+          dark,
+          S,
+          `Cara oscura; la clara llega a ${String(bright).replace('.', ',')} (la ficha da «${albedo}»).`,
+        );
       } else if (albedo) {
         physical.geometricAlbedo = q(num(albedo), S);
       }
@@ -247,9 +264,11 @@ const MOON_NAMES = {
         inclinationDeg: q(num(inclinationCell), S, 'Respecto al ecuador del planeta.'),
         eccentricity: q(num(eccentricityCell), S),
       };
-      if (periodCell.endsWith('R')) orbit.retrograde = q(true, S, 'La ficha marca el periodo con «R».');
+      if (periodCell.endsWith('R'))
+        orbit.retrograde = q(true, S, 'La ficha marca el periodo con «R».');
       data[id].orbit = orbit;
-      if (rotationCell === 'S') physical.synchronousRotation = q(true, S, 'La ficha marca la rotación con «S».');
+      if (rotationCell === 'S')
+        physical.synchronousRotation = q(true, S, 'La ficha marca la rotación con «S».');
     }
   }
 }
@@ -276,7 +295,11 @@ const MOON_NAMES = {
     data[id].orbit = {
       semiMajorAxisKm: q(num(row('Semimajor axis*')[k]), S),
       periodDays: q(period, S),
-      inclinationDeg: q(num(row('Orbital inclination (deg)')[k]), S, 'Respecto al ecuador de Marte.'),
+      inclinationDeg: q(
+        num(row('Orbital inclination (deg)')[k]),
+        S,
+        'Respecto al ecuador de Marte.',
+      ),
       eccentricity: q(num(row('Orbital eccentricity')[k]), S),
     };
   }
@@ -284,14 +307,25 @@ const MOON_NAMES = {
 
 // --- Salida -----------------------------------------------------------------------------------
 const ORDER = [
-  'sol', 'mercurio', 'venus', 'tierra', 'marte', 'jupiter', 'saturno', 'urano', 'neptuno',
+  'sol',
+  'mercurio',
+  'venus',
+  'tierra',
+  'marte',
+  'jupiter',
+  'saturno',
+  'urano',
+  'neptuno',
   ...Object.keys(MOON_NAMES),
 ];
 function literal(value, indent = '') {
   if (Array.isArray(value)) return `[${value.map((v) => literal(v, indent)).join(', ')}]`;
   if (value && typeof value === 'object') {
     const inner = Object.entries(value)
-      .map(([k, v]) => `${indent}  ${/^[a-zA-Z_]\w*$/.test(k) ? k : `'${k}'`}: ${literal(v, `${indent}  `)},`)
+      .map(
+        ([k, v]) =>
+          `${indent}  ${/^[a-zA-Z_]\w*$/.test(k) ? k : `'${k}'`}: ${literal(v, `${indent}  `)},`,
+      )
       .join('\n');
     return `{\n${inner}\n${indent}}`;
   }
@@ -311,8 +345,12 @@ ${body}
 };
 `;
 await writeFile(new URL('src/app/data/body-data.ts', ROOT), ts);
-execFileSync(process.execPath, ['node_modules/prettier/bin/prettier.cjs', '--write', 'src/app/data/body-data.ts'], {
-  cwd: ROOT,
-  stdio: 'inherit',
-});
+execFileSync(
+  process.execPath,
+  ['node_modules/prettier/bin/prettier.cjs', '--write', 'src/app/data/body-data.ts'],
+  {
+    cwd: ROOT,
+    stdio: 'inherit',
+  },
+);
 console.log(`${ORDER.length} cuerpos → src/app/data/body-data.ts`);
