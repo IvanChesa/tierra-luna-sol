@@ -3,8 +3,14 @@ dist/
 coverage/
 node_modules/
 package-lock.json
+# Datos generados por scripts (fixtures de referencia y catálogos derivados).
+src/app/ephemeris/fixtures/*.json
+public/data/
+assets-src/
 # La documentación (tablas largas) se mantiene a mano.
 *.md
 
 # Skills de terceros copiadas en local (no son código del proyecto)
 .claude/skills/
+# Configuración local de Claude Code (no se versiona)
+.claude/settings.local.json
