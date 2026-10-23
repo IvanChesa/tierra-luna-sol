@@ -1,3 +1,4 @@
+import indexHtml from '../../index.html' with { loader: 'text' };
 import { SITE_CONFIG } from './site.config';
 
 describe('SITE_CONFIG', () => {
@@ -14,5 +15,12 @@ describe('SITE_CONFIG', () => {
   it('está en español y enlaza con la web del autor', () => {
     expect(SITE_CONFIG.lang).toBe('es');
     expect(SITE_CONFIG.author.url).toBe('https://ivanchesa.es');
+  });
+
+  // El idioma está en dos sitios (aquí y en el <html> estático de index.html): este test los
+  // mantiene sincronizados.
+  it('index.html declara el mismo idioma que la configuración', () => {
+    const page = new DOMParser().parseFromString(indexHtml, 'text/html');
+    expect(page.documentElement.lang).toBe(SITE_CONFIG.lang);
   });
 });
