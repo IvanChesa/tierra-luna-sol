@@ -10,7 +10,7 @@
     "lint": "ng lint && prettier --check .",
     "format": "prettier --write .",
     "e2e": "node -e \"console.log('E2E: Playwright se configura en la fase 3.')\"",
-    "check": "npm run lint && npm test && npm run build"
+    "check": "npm run lint && npm test && npm run build && node scripts/check-initial-bundle.mjs"
   },
   "private": true,
   "packageManager": "npm@11.19.1",
