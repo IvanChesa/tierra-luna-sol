@@ -1,9 +1,7 @@
 import { KM_PER_AU } from './coordinates';
 import {
   MOON_PHASE_NAMES,
-  PLANET_IDS,
   distancesAu,
-  isPlanetId,
   moonGeocentric,
   moonPhase,
   moonPhaseName,
@@ -14,21 +12,25 @@ import {
   HORIZONS_MOON_ILLUMINATION,
   HORIZONS_PLAN_DATES,
   USNO_MOON_PHASES,
+  VectorFixture,
   VectorRow,
+  rowDate,
   seriesOf,
   vectorError,
 } from './fixtures/fixtures';
+import { PLANET_IDS, isPlanetId } from './ids';
 import { length, sub, vec3 } from './vec3';
 
 /** Peor error de una función de posición sobre las filas de los fixtures (plan + décadas). */
 function worstError(id: string, position: (date: Date) => ReturnType<typeof planetHeliocentric>) {
-  const rows: VectorRow[] = [HORIZONS_PLAN_DATES, HORIZONS_DECADES].flatMap((fixture) => [
-    ...seriesOf(fixture, id).rows,
-  ]);
+  const rows: [VectorFixture, VectorRow][] = [HORIZONS_PLAN_DATES, HORIZONS_DECADES].flatMap(
+    (fixture) =>
+      seriesOf(fixture, id).rows.map((row): [VectorFixture, VectorRow] => [fixture, row]),
+  );
   let angleDeg = 0;
   let distanceRatio = 0;
-  for (const row of rows) {
-    const error = vectorError(position(new Date(row[0])), row);
+  for (const [fixture, row] of rows) {
+    const error = vectorError(position(rowDate(fixture, row)), row);
     angleDeg = Math.max(angleDeg, error.angleDeg);
     distanceRatio = Math.max(distanceRatio, error.distanceRatio);
   }

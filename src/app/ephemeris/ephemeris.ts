@@ -4,21 +4,9 @@
  */
 import { Body, GeoMoon, HelioVector, Illumination, MoonPhase } from 'astronomy-engine';
 import { eqjToEcl } from './coordinates';
+import { PlanetId } from './ids';
 import { toAstroTime } from './time';
 import { Vec3, length, sub } from './vec3';
-
-/** Ids de los planetas: son también el segmento de su URL (`/planetas/marte`). */
-export const PLANET_IDS = [
-  'mercurio',
-  'venus',
-  'tierra',
-  'marte',
-  'jupiter',
-  'saturno',
-  'urano',
-  'neptuno',
-] as const;
-export type PlanetId = (typeof PLANET_IDS)[number];
 
 const PLANET_BODIES: Record<PlanetId, Body> = {
   mercurio: Body.Mercury,
@@ -30,9 +18,6 @@ const PLANET_BODIES: Record<PlanetId, Body> = {
   urano: Body.Uranus,
   neptuno: Body.Neptune,
 };
-
-export const isPlanetId = (id: string): id is PlanetId =>
-  (PLANET_IDS as readonly string[]).includes(id);
 
 /** Posición heliocéntrica (centro del Sol → centro del planeta), ECL, UA. */
 export function planetHeliocentric(planet: PlanetId, date: Date): Vec3 {
