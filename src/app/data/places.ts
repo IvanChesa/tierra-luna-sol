@@ -1,5 +1,5 @@
 /**
- * Observadores del cielo del Bajo Cinca (fase 7) y marcador de la vista de la Tierra (fase 4).
+ * Observadores del cielo del Bajo Cinca (fase 8) y marcador de la vista de la Tierra (fase 5).
  *
  * Coordenadas y altitud del núcleo de población, del Instituto Geográfico Nacional (API OGC
  * «Núcleos de población», consultada el 2026-10-23). Latitud y longitud geográficas ETRS89
@@ -40,7 +40,7 @@ export const PLACES = [
 
 export type PlaceId = (typeof PLACES)[number]['id'];
 
-/** Observador por defecto del cielo del Bajo Cinca (PLAN, fase 7). */
+/** Observador por defecto del cielo del Bajo Cinca (PLAN, fase 8). */
 export const DEFAULT_PLACE_ID: PlaceId = 'fraga';
 
 export const PLACES_ATTRIBUTION = '© Instituto Geográfico Nacional';

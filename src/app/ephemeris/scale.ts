@@ -30,7 +30,7 @@ export interface IllustrativeScale {
 
 /**
  * Valores iniciales (presentación, sin significado físico): Neptuno queda a ~248 unidades, la
- * Tierra a ~104 y Mercurio a ~69. Se ajustarán con la escena (fases 2 y 6).
+ * Tierra a ~104 y Mercurio a ~69. Se ajustarán con la escena (fases 2 y 7).
  */
 export const DEFAULT_ILLUSTRATIVE_SCALE: IllustrativeScale = {
   unitsPerDecade: 100,

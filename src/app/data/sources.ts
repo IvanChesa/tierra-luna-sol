@@ -1,7 +1,7 @@
 /**
  * Registro de las fuentes de los datos numéricos del catálogo. Cada dato lleva el id de su fuente
  * (`Sourced.source`); los textos llevan directamente la URL de la página que los respalda.
- * También alimenta la página /creditos (fase 8).
+ * También alimenta la página /creditos (fase 9).
  */
 export interface Source {
   readonly title: string;
