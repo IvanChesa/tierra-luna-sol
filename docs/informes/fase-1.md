@@ -45,3 +45,10 @@ Escrito antes de empezar, como pide el modo autónomo. Lo que cambie durante la 
 3. **Bundle inicial** (272 de 300 kB): las rutas solo importarán un índice ligero de cuerpos (ids y nombres); los datos y textos completos quedan fuera del bundle inicial. `astronomy-engine` no lo importa ningún código de la app en esta fase.
 4. **Catálogo de 30 cuerpos, no 29:** Sol + 8 planetas + Luna + 20 lunas suman 30 (el «29» del plan cuenta 8 planetas + 21 lunas). Se propone corregir el texto del plan.
 5. **Textos:** cada resumen y curiosidad se redacta a partir de una página de la NASA que lo respalda, con la cita en inglés guardada para la revisión de Iván.
+
+### Estado de las entregas (se actualiza al cerrar cada una)
+- 1.a ✅ coordenadas, tiempo, efemérides, fixtures y cobertura.
+- 1.b ✅ lunas (galileanas + 16 con elementos medios ajustados), escala y órbitas.
+- 1.c ✅ estrellas HYG y lugares del IGN.
+- 1.d en curso: modelo, índice, datos físicos y rutas hechos; faltan los textos (redacción con citas verificables).
+- 1.e pendiente.
