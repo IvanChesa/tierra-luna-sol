@@ -13,19 +13,19 @@ const NO_THREE = {
 };
 const NO_ANGULAR = {
   regex: '^@angular/',
-  message: 'Esta capa es TS puro: no puede depender de Angular (PLAN §4.2).',
+  message: 'Esta capa no puede depender de Angular (PLAN §4.2).',
 };
 const NO_RXJS = {
   regex: '^rxjs(/|$)',
-  message: 'Esta capa es TS puro: no puede depender de RxJS (PLAN §4.2).',
+  message: 'Esta capa no puede depender de RxJS (PLAN §4.2).',
 };
-/** Prohíbe importar de otras carpetas de src/app/ (por nombre de carpeta en la ruta relativa). */
+/** Prohíbe importar (con ruta relativa) de otras carpetas de src/app/. */
 const noLayers = (layers, from) => ({
-  regex: `(^|/)(${layers.join('|')})(/|$)`,
+  regex: `^\\.{1,2}/(.*/)?(${layers.join('|')})(/|$)`,
   message: `${from} no puede importar de: ${layers.join(', ')} (PLAN §4.2).`,
 });
 const ONLY_SCENE_PUBLIC_API = {
-  regex: '(^|/)scene/(?!index$).+',
+  regex: '^\\.{1,2}/(.*/)?scene/(?!index$).+',
   message: 'Usa solo la API pública de SceneEngine: importa desde `scene` (scene/index.ts).',
 };
 
