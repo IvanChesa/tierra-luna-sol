@@ -346,3 +346,39 @@ Lines        : 100% ( 236/236 )
 Prerendered 15 static routes.
 ✔ El JS inicial de las 16 páginas (5 ficheros) no lleva astronomy-engine ni three.
 ```
+
+---
+
+## Cierre tras la revisión del bloque A (24-10)
+
+Revisión de la sesión de revisión: `docs/revisiones/bloque-A.md` (**APROBADO**). Iván aprobó las 4 propuestas de §10, que quedan integradas en el plan v2: D11, 30 cuerpos, §5 con TT/UT y el ΔT del IERS al backlog. También confirmó las decisiones adelantadas del modo autónomo.
+
+**Hallazgo A3: control independiente y cota absoluta.**
+- Los 6 instantes de la revisión del subagente se guardaron como fixture de control, con su consulta de Horizons: `src/app/ephemeris/fixtures/horizons-control-ut.json` (1957-10-04 19:28, 2026-10-24 00:00 y 2042-03-17 06:30 UT) y `horizons-control-tt.json` (1905-07-14, 2063-04-05 12:00 y 2099-12-31 TT). Cubren los 16 cuerpos que comprobó: Mercurio, Marte, Neptuno, la Luna, Ío y 11 lunas ajustadas. Se generan con `node scripts/fetch-horizons-fixtures.mjs horizons-control-ut.json horizons-control-tt.json` (el script acepta ahora la lista de ficheros que hay que descargar).
+- `moon-elements.spec.ts` exige ahora la **cota absoluta de §5**: ≤ 0,5° en TT en 1900–2100 (décadas + control TT) y ≤ 0,5° en UT en 2020–2035 (fechas del plan, trimestres y el control de 2026). También la exige a los instantes de control en UT de 1957 y 2042, anteriores a ~2055. La cota relativa (1,5 veces el máximo del ajuste) se mantiene como regresión.
+- Los planetas, la Luna y Ío también se comprueban con los instantes de control.
+
+**Resultados en los instantes de control** (peor error, visto desde el planeta):
+
+| Cuerpo | Control |
+|---|---|
+| Mercurio, Marte y Neptuno | Sin cambios en su peor error (≤ 0,008° y ≤ 0,006 %) |
+| Luna | 0,0021° |
+| Ío | ≤ 0,062° |
+| Fobos | 0,241° (en 2042 UT, ~0,22° vienen del ΔT) |
+| Deimos | 0,126° |
+| Mimas | 0,155° |
+| Tetis | 0,071° |
+| Titán | 0,046° |
+| Jápeto | 0,150° |
+| Miranda | 0,243° |
+| Ariel | 0,160° |
+| Titania | 0,252° |
+| Tritón | 0,080° |
+| Proteo | 0,205° |
+
+Las cifras coinciden con las de la revisión del subagente (≤ 0,25°): el ajuste generaliza fuera de su rejilla.
+
+**Corrección de una cifra.** §1 y `DIARIO.md` decían «otras 16 lunas a ≤ 0,36°». Ese es el máximo en los instantes de test (décadas en TT, Titania 0,357°). El máximo sobre todas las muestras del propio ajuste es **0,38°** (Titania, `docs/datos/elementos-lunas.md`), que es la cifra correcta para «1900–2100». El plan v2 (§0.2, D11 y fase 1) y el diario ya la usan.
+
+**Check:** `npm run check` con código 0 y 142 tests, al adoptar el plan v2.

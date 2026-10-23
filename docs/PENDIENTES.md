@@ -9,27 +9,45 @@ Decisiones y tareas que dependen de Iván. Claude Code añade aquí cada `TODO(i
 - [x] Aceptar `@eslint/js` y `typescript-eslint` en la lista de dependencias (23-10).
 - [x] Alcance: **versión 1 con paridad completa con el original + mejoras** (23-10).
 - [x] Cambios al plan propuestos en el informe de la fase 0 (`ng new` desde la carpeta padre, `OnPush` sin declarar, dependencias de lint) (23-10).
-- [x] `/404` siempre con `noindex` y fuera del sitemap (hallazgo 5 de la revisión de la fase 0): incluido en la fase 8 del plan v1; recordatorio `TODO(fase-8)` en `src/app/app.routes.ts`.
-- [x] Decisiones que Iván adelantó en sus instrucciones del modo autónomo por bloques (bloque de la fase 1, 23-10): vistas guiadas de la Tierra (Tierra completa, Pacífico, Himalaya, luces nocturnas y España / Bajo Cinca); constelaciones solo con fuente CC0, CC BY, MIT o de dominio público (si no, se omiten y se apuntan aquí); subdominio provisional de `site.config.ts`; textos con fuente y `reviewed: false`, que Iván revisará al final; móvil y fase 10 para Iván, sin bloquear.
+- [x] `/404` siempre con `noindex` (hallazgo 5 de la revisión de la fase 0). Estaba en la fase 8 del plan v1; con el plan v2 pasa a la **fase 9** (D25, ya sin sitemap). Recordatorio `TODO(fase-9)` en `src/app/app.routes.ts`.
+- [x] Decisiones que Iván adelantó en sus instrucciones del modo autónomo por bloques (bloque de la fase 1, 23-10): vistas guiadas de la Tierra (Tierra completa, Pacífico, Himalaya, luces nocturnas y España / Bajo Cinca); constelaciones solo con fuente CC0, CC BY, MIT o de dominio público (si no, se omiten y se apuntan aquí); subdominio provisional de `site.config.ts`; textos con fuente y `reviewed: false`, que Iván revisará al final; móvil y fase 10 (la de despliegue en el plan v1; ahora la 11) para Iván, sin bloquear. **Confirmadas por Iván** (24-10, `docs/revisiones/bloque-A.md`); en el plan v2 están en `CLAUDE.md`, con BSD añadida a las licencias de las constelaciones.
+- [x] **Propuestas de cambio al plan de la fase 1** (`docs/informes/fase-1.md`, §10): elementos medios de las lunas ajustados a Horizons en vez de copiados de la tabla del JPL, catálogo de 30 cuerpos (no 29), objetivo de precisión de las lunas con la escala de tiempo explícita (TT/UT) y ΔT del IERS al backlog. **Aprobadas las 4 por Iván** (24-10, `docs/revisiones/bloque-A.md`) e integradas en el plan v2 (D11, §5 y §9).
+- [x] Plan v2 adoptado (24-10): `docs/PLAN.md`, `CLAUDE.md`, `docs/prompts/PROMPTS.md` y `docs/revisiones/README.md`; auditoría en `docs/decisiones/auditoria-plan-v2.md`.
+
+### Decisiones ya tomadas (24-10)
+- [x] El SEO es secundario: sin JSON-LD ni sitemap trabajado; una imagen Open Graph global (D25).
+- [x] Privacidad total: sin cookies, sin analítica y sin peticiones a terceros (D24).
+- [x] La revisión de los 120 textos de los cuerpos queda para la fase 9, sin bloquear (`docs/revisiones/bloque-A.md`).
+- [x] Repo en GitHub: antes del bloque C (fase 4) (`docs/revisiones/bloque-A.md`).
 
 ## Cuanto antes (ideal antes de la fase 1)
+Iván lo aplazó: ahora basta con tenerlo antes del bloque C (ver la sección siguiente).
 - [ ] Instalar GitHub CLI: `winget install --id GitHub.cli`, luego `gh auth login`.
 - [ ] Crear el repo privado en GitHub y hacer el primer push, para que corra el CI.
 
+## Antes del bloque C (fase 4: staging)
+- [ ] Instalar GitHub CLI (`winget install --id GitHub.cli`), `gh auth login` y crear el repo privado en GitHub.
+- [ ] En cPanel: subdominio `staging-tierra-luna-sol.ivanchesa.es` con AutoSSL y protegido con contraseña («Privacidad de directorios»).
+- [ ] En cPanel: cuenta FTP limitada a la carpeta del staging.
+- [ ] `gh secret set FTP_SERVER`, `FTP_USERNAME_STAGING` y `FTP_PASSWORD_STAGING` (la contraseña la escribe Iván).
+
 ## Decisiones
 - [ ] **Subdominio definitivo.** Propuesto: `tierra-luna-sol.ivanchesa.es`. Si cambia, se edita solo `src/app/core/site.config.ts`.
-- [ ] **Licencia del código propio** cuando el repo pase a público (MIT u otra).
-- [ ] **Propuestas de cambio al plan de la fase 1** (`docs/informes/fase-1.md`, §10): elementos medios de las lunas ajustados a Horizons en vez de copiados de la tabla del JPL, catálogo de 30 cuerpos (no 29) y objetivo de precisión de las lunas.
+- [ ] **Licencia del código propio** cuando el repo pase a público (MIT u otra; fase 11).
 
 ## Revisiones y pruebas de Iván
-- [ ] Textos de los 30 cuerpos (120 textos con `reviewed: false`): lista de revisión con las citas que los respaldan en `docs/datos/textos-cuerpos.md`. Al final de las fases 1 y 8.
-- [ ] Textos de las vistas guiadas y de los recorridos (fases 4 y 5).
-- [ ] Pruebas en el móvil real por la red local (fases 4–9).
-- [ ] Visto bueno final en el móvil (fase 9).
+- [ ] Textos de los 30 cuerpos (120 textos con `reviewed: false`): lista de revisión con las citas que los respaldan en `docs/datos/textos-cuerpos.md`. En la **fase 9** (decisión del 24-10; antes «al final de las fases 1 y 8»).
+- [ ] Textos de las vistas guiadas y de los recorridos (fases 5 y 6; en el plan v1, 4 y 5).
+- [ ] Pruebas en el móvil real: por la URL de staging desde la fase 4 o, si no hay staging, por la red local (fases 4–10; en el plan v1, 4–9).
+- [ ] Visto bueno final en el móvil (fase 10; en el plan v1, la 9).
 
-## Fase 10 (manual)
-- [ ] Crear el subdominio en cPanel y activar AutoSSL.
+## Fase 10
+- [ ] Conseguir un iPhone para probar (aunque sea prestado).
+- [ ] Decidir si se aprueba `@lhci/cli` (Lighthouse en el CI).
+
+## Fase 11 (manual; era la fase 10 del plan v1)
+- [ ] Crear el subdominio de producción en cPanel y activar AutoSSL.
 - [ ] Crear una cuenta FTP limitada a la carpeta del subdominio.
 - [ ] `gh secret set FTP_SERVER` / `FTP_USERNAME` / `FTP_PASSWORD` (la contraseña la escribe Iván).
-- [ ] Dar el OK a `indexable: true` y dar de alta el sitemap en Search Console.
+- [ ] Dar el OK a `indexable: true` y dar de alta el sitemap en Search Console. Con el plan v2 (D25) ya no se trabaja el sitemap: basta con el OK a `indexable: true`.
 - [ ] Añadir la ficha del proyecto en ivanchesa.es.
