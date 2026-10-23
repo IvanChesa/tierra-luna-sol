@@ -23,7 +23,7 @@ Buenas prácticas oficiales de Angular (se crean en la fase 0): @docs/angular-bu
 ## Reglas permanentes
 - **Idioma:** interfaz, textos, comentarios, commits y docs en español de España. Identificadores y nombres de archivo en inglés. URLs en español y sin barra final (`/planetas/marte`).
 - **Stack fijo:**
-  - Angular 22: standalone, zoneless, signals, `OnPush`.
+  - Angular 22: standalone, zoneless, signals, `OnPush` (por defecto en Angular 22: no se declara).
   - TypeScript estricto, sin `any`.
   - Three.js directo, sin `angular-three`.
   - astronomy-engine.
@@ -45,7 +45,7 @@ Buenas prácticas oficiales de Angular (se crean en la fase 0): @docs/angular-bu
 - **Rendimiento:**
   - El bucle de render va fuera de Angular. No actualices signals en cada frame (máx. ~5 veces/s).
   - En pausa y sin interacción no se renderiza.
-  - `three` nunca va en el bundle inicial.
+  - `three`, `astronomy-engine`, el store del simulador y los controles del visor nunca van en el bundle inicial: viven dentro del `@defer` del visor. En las fichas, la posición actual se calcula con un `import()` dinámico en `afterNextRender`.
   - Presupuestos en `docs/PLAN.md` §5.
 - **Memoria:** todo lo que crea la escena se libera con `dispose()` al destruirla.
 - **Accesibilidad WCAG 2.1 AA:**

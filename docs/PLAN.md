@@ -2,7 +2,7 @@
 
 > Documento maestro del proyecto. Lo ejecuta Claude Code en el PC de Iván, fase a fase.
 > Otra sesión de Claude revisa cada fase (`docs/revisiones/`). Si este plan y el código no coinciden, manda el plan. Los cambios al plan se proponen en el informe de fase y los aprueba Iván.
-> Creado el 23-10-2026.
+> Creado el 23-10-2026. Actualizado el 23-10-2026 con los cambios aprobados en la revisión de la fase 0 (`docs/informes/fase-0.md`, «Respuesta a la revisión»).
 
 ---
 
@@ -26,7 +26,7 @@ Un **explorador 3D interactivo** del Sol, los 8 planetas, la Tierra y la Luna, e
 | # | Decisión | Motivo |
 |---|---|---|
 | D1 | **Angular 22 + TypeScript estricto** | Elección de Iván: Angular tiene valor en el portfolio. |
-| D2 | **Standalone + zoneless + signals + `ChangeDetectionStrategy.OnPush`** | Angular actual, menos JS, rendimiento predecible. |
+| D2 | **Standalone + zoneless + signals + `OnPush`** (por defecto en Angular 22: no se declara) | Angular actual, menos JS, rendimiento predecible. |
 | D3 | **Three.js usado directamente**, sin `angular-three` | `angular-three` 4.2.4 solo soporta Angular < 22 y three < 0.183. Ir directos evita depender de su calendario. |
 | D4 | **astronomy-engine (MIT)** calcula las posiciones en el navegador | Sin ficheros de efemérides que caduquen y con cualquier fecha. Precisión de sobra para divulgación. |
 | D5 | **Prerenderizado estático** (`outputMode: "static"`) | Banahosting es hosting compartido sin Node: solo archivos estáticos. Google recibe HTML real. |
@@ -43,7 +43,7 @@ Un **explorador 3D interactivo** del Sol, los 8 planetas, la Tierra y la Luna, e
 Cualquier paquete que no esté aquí → **preguntar a Iván antes de instalarlo**.
 
 - **Producción:** `@angular/*` 22.x · `three` `^0.186.0` · `astronomy-engine` `^2.1.19` · `@fontsource/*` (máx. 2 familias, se eligen en la fase 0)
-- **Desarrollo:** lo que genera `ng new` (incluido Vitest) · `@types/three` (a juego con three) · `angular-eslint` + `eslint` · `prettier` · `@playwright/test` · `@axe-core/playwright` · `sharp` (script de texturas) · `@vitest/coverage-v8`
+- **Desarrollo:** lo que genera `ng new` (incluido Vitest) · `@types/three` (a juego con three) · `angular-eslint` + `eslint` (+ `@eslint/js` y `typescript-eslint`, que instala `ng add angular-eslint`) · `prettier` · `@playwright/test` · `@axe-core/playwright` · `sharp` (script de texturas) · `@vitest/coverage-v8`
 
 ---
 
@@ -164,6 +164,7 @@ pages / features (Angular)  ──►  state (signals)  ──►  SceneEngine (
 |---|---|
 | JS inicial (sin el chunk 3D) | Aviso > 300 kB · error > 400 kB (en bruto, `budgets` de angular.json) |
 | `three` | **Nunca** en el bundle inicial; solo en el chunk diferido del visor |
+| `astronomy-engine`, el store del simulador y los controles del visor (`time-controls`, `body-picker`, `body-panel`) | **Nunca** en el bundle inicial: viven dentro del `@defer` del visor. En las fichas (fase 5), la posición actual se calcula con un `import()` dinámico en `afterNextRender` |
 | Texturas de la primera vista | ≤ 2,5 MB (nivel alto) · ≤ 1,2 MB (nivel bajo/móvil) |
 | Texturas totales del MVP | ≤ 10 MB |
 | Lighthouse móvil, páginas de contenido | ≥ 95 en las 4 categorías |
@@ -175,6 +176,8 @@ pages / features (Angular)  ──►  state (signals)  ──►  SceneEngine (
 | Accesibilidad | axe: 0 violaciones graves o críticas · todo usable con teclado y sin canvas |
 | Precisión | Planetas: dirección ≤ 0,05° y distancia ≤ 0,1 % frente a JPL Horizons · Luna: ≤ 0,1° y ≤ 0,5 % |
 | Datos | 0 cifras sin fuente |
+
+> **Margen del JS inicial (medido en la fase 0):** la base de Angular (router, hidratación y repetición de eventos) ya ocupa ~272 kB de los 300 kB del aviso. Por eso se mantiene el presupuesto y todo lo nuevo va diferido (ver la fila de `astronomy-engine`).
 
 ---
 
@@ -192,9 +195,10 @@ Tareas:
    - `git rev-parse --show-toplevel` dentro de la carpeta del proyecto **no debe devolver una carpeta padre**: si lo hace, el proyecto está dentro de otro repo.
    - Si falla cualquiera de las dos, **parar y avisar a Iván**.
 2. **`git init -b main`** y primer commit en `main` solo con `CLAUDE.md` y `docs/` (`docs: plan inicial`). Después, crear la rama `fase-0-cimientos`.
-3. **Generar el proyecto en una carpeta temporal**, porque `ng new` crea su propio `CLAUDE.md` y chocaría con el nuestro:
+3. **Generar el proyecto en una carpeta temporal**, porque `ng new` crea su propio `CLAUDE.md` y chocaría con el nuestro. Se lanza **desde la carpeta padre**, porque la CLI 22 no admite `--directory` fuera de la carpeta actual:
    ```
-   npx -y @angular/cli@22 new tierra-luna-sol --directory=../tls-scaffold --style=css --ssr --zoneless --routing --prefix=tls --test-runner=vitest --ai-config=claude-code --skip-git --skip-install
+   cd ..
+   npx -y @angular/cli@22 new tierra-luna-sol --directory=tls-scaffold --style=css --ssr --zoneless --routing --prefix=tls --test-runner=vitest --ai-config=claude-code --skip-git --skip-install
    ```
 4. **Mover el contenido a la carpeta del proyecto** sin pisar `docs/` ni nuestro `CLAUDE.md`:
    - El `CLAUDE.md` que genera Angular se guarda como `docs/angular-buenas-practicas.md` (nuestro CLAUDE.md lo importa).
