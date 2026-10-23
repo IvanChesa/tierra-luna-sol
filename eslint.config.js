@@ -19,9 +19,12 @@ const NO_RXJS = {
   regex: '^rxjs(/|$)',
   message: 'Esta capa no puede depender de RxJS (PLAN §4.2).',
 };
-/** Prohíbe importar (con ruta relativa) de otras carpetas de src/app/. */
+/**
+ * Prohíbe importar (con ruta relativa) de otras carpetas de src/app/. Las rutas que pasan por
+ * public/ (recursos estáticos, p. ej. public/data/stars.bin en un test) no son una capa.
+ */
 const noLayers = (layers, from) => ({
-  regex: `^\\.{1,2}/(.*/)?(${layers.join('|')})(/|$)`,
+  regex: `^\\.{1,2}/(?!(\\.\\./)*public/)(.*/)?(${layers.join('|')})(/|$)`,
   message: `${from} no puede importar de: ${layers.join(', ')} (PLAN §4.2).`,
 });
 const ONLY_SCENE_PUBLIC_API = {

@@ -1,0 +1,62 @@
+{
+ "description": "Filas de HYG v4.1 sin transformar, para comprobar que stars.bin las contiene (ra en grados = ra en horas · 15).",
+ "source": "https://raw.githubusercontent.com/astronexus/HYG-Database/c7f7f883fe678cc7680169a50ccd7dcc49b060ce/hyg/CURRENT/hygdata_v41.csv",
+ "sha256": "d9f69fd86bbf90a4e4d52b4c5c53eacfa6dfc0bfdef85bfd94f095e0bebe4ebd",
+ "maxMagnitude": 6.5,
+ "count": 8920,
+ "stars": [
+  {
+   "id": 32263,
+   "proper": "Sirius",
+   "raDeg": 101.287215,
+   "decDeg": -16.716116,
+   "mag": -1.44,
+   "ci": 0.009
+  },
+  {
+   "id": 30365,
+   "proper": "Canopus",
+   "raDeg": 95.98792499999999,
+   "decDeg": -52.69566,
+   "mag": -0.62,
+   "ci": 0.164
+  },
+  {
+   "id": 90979,
+   "proper": "Vega",
+   "raDeg": 279.2346,
+   "decDeg": 38.783692,
+   "mag": 0.03,
+   "ci": -0.001
+  },
+  {
+   "id": 11734,
+   "proper": "Polaris",
+   "raDeg": 37.94625,
+   "decDeg": 89.264109,
+   "mag": 1.97,
+   "ci": 0.636
+  },
+  {
+   "id": 27919,
+   "proper": "Betelgeuse",
+   "raDeg": 88.792935,
+   "decDeg": 7.407063,
+   "mag": 0.45,
+   "ci": 1.5
+  },
+  {
+   "id": 80519,
+   "proper": "Antares",
+   "raDeg": 247.35191999999998,
+   "decDeg": -26.432002,
+   "mag": 1.06,
+   "ci": 1.865
+  }
+ ],
+ "faintest": {
+  "id": 119388,
+  "mag": 6.5
+ },
+ "withoutColor": 40
+}

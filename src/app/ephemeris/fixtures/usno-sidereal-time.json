@@ -1,0 +1,31 @@
+{
+ "description": "Tiempo sidéreo de Greenwich, medio (GMST) y aparente (GAST), en h:m:s.",
+ "source": "U.S. Naval Observatory, Astronomical Applications API, https://aa.usno.navy.mil/data/api",
+ "retrieved": "2026-10-23",
+ "rows": [
+  {
+   "instant": "1900-01-01T00:00:00Z",
+   "query": "https://aa.usno.navy.mil/api/siderealtime?date=1900-01-01&time=00:00:00&coords=0.0,0.0&reps=1&intv_mag=1&intv_unit=hours",
+   "gmst": "06:40:44.1253",
+   "gast": "06:40:45.1914"
+  },
+  {
+   "instant": "2000-01-01T12:00:00Z",
+   "query": "https://aa.usno.navy.mil/api/siderealtime?date=2000-01-01&time=12:00:00&coords=0.0,0.0&reps=1&intv_mag=1&intv_unit=hours",
+   "gmst": "18:41:50.5494",
+   "gast": "18:41:49.6974"
+  },
+  {
+   "instant": "2026-10-23T00:00:00Z",
+   "query": "https://aa.usno.navy.mil/api/siderealtime?date=2026-10-23&time=00:00:00&coords=0.0,0.0&reps=1&intv_mag=1&intv_unit=hours",
+   "gmst": "02:05:42.4360",
+   "gast": "02:05:42.9257"
+  },
+  {
+   "instant": "2050-12-31T00:00:00Z",
+   "query": "https://aa.usno.navy.mil/api/siderealtime?date=2050-12-31&time=00:00:00&coords=0.0,0.0&reps=1&intv_mag=1&intv_unit=hours",
+   "gmst": "06:38:29.1245",
+   "gast": "06:38:29.8353"
+  }
+ ]
+}

@@ -29,6 +29,9 @@ yarn-error.log
 !.vscode/mcp.json
 .history/*
 
+# Originales descargados por los scripts (se regeneran; no van al repo)
+/assets-src/
+
 # Miscellaneous
 /.angular/cache
 .sass-cache/
@@ -45,3 +48,5 @@ Thumbs.db
 
 # Skills de terceros copiadas en local (no van al repo público)
 .claude/skills/
+# Configuración local de Claude Code
+.claude/settings.local.json

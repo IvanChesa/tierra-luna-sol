@@ -10,6 +10,7 @@ Decisiones y tareas que dependen de Iván. Claude Code añade aquí cada `TODO(i
 - [x] Alcance: **versión 1 con paridad completa con el original + mejoras** (23-10).
 - [x] Cambios al plan propuestos en el informe de la fase 0 (`ng new` desde la carpeta padre, `OnPush` sin declarar, dependencias de lint) (23-10).
 - [x] `/404` siempre con `noindex` y fuera del sitemap (hallazgo 5 de la revisión de la fase 0): incluido en la fase 8 del plan v1; recordatorio `TODO(fase-8)` en `src/app/app.routes.ts`.
+- [x] Decisiones que Iván adelantó en sus instrucciones del modo autónomo por bloques (bloque de la fase 1, 23-10): vistas guiadas de la Tierra (Tierra completa, Pacífico, Himalaya, luces nocturnas y España / Bajo Cinca); constelaciones solo con fuente CC0, CC BY, MIT o de dominio público (si no, se omiten y se apuntan aquí); subdominio provisional de `site.config.ts`; textos con fuente y `reviewed: false`, que Iván revisará al final; móvil y fase 10 para Iván, sin bloquear.
 
 ## Cuanto antes (ideal antes de la fase 1)
 - [ ] Instalar GitHub CLI: `winget install --id GitHub.cli`, luego `gh auth login`.
@@ -18,11 +19,10 @@ Decisiones y tareas que dependen de Iván. Claude Code añade aquí cada `TODO(i
 ## Decisiones
 - [ ] **Subdominio definitivo.** Propuesto: `tierra-luna-sol.ivanchesa.es`. Si cambia, se edita solo `src/app/core/site.config.ts`.
 - [ ] **Licencia del código propio** cuando el repo pase a público (MIT u otra).
-- [ ] **Vistas guiadas de la Tierra** (fase 4). Propuesta: Tierra completa, Pacífico, Himalaya, luces nocturnas y España / Bajo Cinca.
-- [ ] **Líneas de constelaciones** en el cielo del Bajo Cinca (fase 7): solo si hay una fuente con licencia compatible.
+- [ ] **Propuestas de cambio al plan de la fase 1** (`docs/informes/fase-1.md`, §10): elementos medios de las lunas ajustados a Horizons en vez de copiados de la tabla del JPL, catálogo de 30 cuerpos (no 29) y objetivo de precisión de las lunas.
 
 ## Revisiones y pruebas de Iván
-- [ ] Textos de los 29 cuerpos (`reviewed: false`), al final de las fases 1 y 8.
+- [ ] Textos de los 30 cuerpos (120 textos con `reviewed: false`): lista de revisión con las citas que los respaldan en `docs/datos/textos-cuerpos.md`. Al final de las fases 1 y 8.
 - [ ] Textos de las vistas guiadas y de los recorridos (fases 4 y 5).
 - [ ] Pruebas en el móvil real por la red local (fases 4–9).
 - [ ] Visto bueno final en el móvil (fase 9).

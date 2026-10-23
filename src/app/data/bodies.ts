@@ -1,15 +1,22 @@
 /**
- * Catálogo de cuerpos. En la fase 0 solo lleva un cuerpo de prueba para las rutas;
- * la fase 1 lo completa con los 29 cuerpos, sus datos con fuente y body.model.ts.
+ * Catálogo completo: índice + datos con fuente + textos. Pesa decenas de kB, así que solo lo
+ * importa código que se carga en diferido (fichas y visor); las rutas usan `body-index.ts`.
  */
-export interface BodyEntry {
-  /** Slug en español; es el segmento de la URL (`/planetas/marte`). */
-  readonly id: string;
-  readonly name: string;
-}
+import { BODY_DATA } from './body-data';
+import { BODY_INDEX } from './body-index';
+import { BODY_TEXTS } from './body-texts';
+import type { Body, BodyId } from './body.model';
 
-export const PLANETS: readonly BodyEntry[] = [{ id: 'marte', name: 'Marte' }];
+export const BODIES: readonly Body[] = BODY_INDEX.map((entry) => ({
+  ...entry,
+  ...BODY_DATA[entry.id],
+  ...BODY_TEXTS[entry.id],
+}));
 
-export function findPlanet(id: string): BodyEntry | undefined {
-  return PLANETS.find((planet) => planet.id === id);
+const BY_ID = new Map<string, Body>(BODIES.map((body) => [body.id, body]));
+
+export function getBody(id: BodyId): Body {
+  const body = BY_ID.get(id);
+  if (!body) throw new Error(`No hay ningún cuerpo «${id}» en el catálogo.`);
+  return body;
 }

@@ -1,5 +1,5 @@
 import { CanMatchFn, ResolveFn, Routes } from '@angular/router';
-import { findPlanet } from './data/bodies';
+import { findPlanet } from './data/body-index';
 
 /** Solo casan los ids del catálogo; el resto cae en la 404. */
 const planetExists: CanMatchFn = (_route, segments) =>
