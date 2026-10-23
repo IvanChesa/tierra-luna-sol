@@ -60,8 +60,10 @@ describe('moon-elements: las 16 lunas con elementos medios', () => {
 });
 
 describe('moon-elements: precisión frente a Horizons (objetivo §5: ≤ 5° en 2020–2035)', () => {
-  // Instantes que no se usaron en el ajuste: las 3 fechas del plan y cada trimestre de 2020–2035
-  // (en UT), y el 1 de enero de cada década de 1900–2100 (en TT). La cifra sale en el nombre.
+  // Instantes distintos de las muestras del ajuste (salvo 1900-01-01, que es la primera de la
+  // ventana larga), aunque dentro de su intervalo: las 3 fechas del plan y cada trimestre de
+  // 2020–2035 (en UT), y el 1 de enero de cada década de 1900–2100 (en TT). La cifra sale en el
+  // nombre del test.
   for (const id of ids) {
     const bound = 1.5 * MOON_ELEMENTS[id].fit.maxDeg;
     const plan = worst(id, HORIZONS_PLAN_DATES);

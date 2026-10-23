@@ -1,7 +1,7 @@
 import { planetHeliocentric } from './ephemeris';
 import { OrbitCache, OrbitRequest, sampleOrbit } from './orbits';
 import { MAX_DATE, MIN_DATE } from './time';
-import { Vec3, angleBetweenDeg, length, vec3 } from './vec3';
+import { Vec3, angleBetweenDeg, vec3 } from './vec3';
 
 /** Órbita circular de juguete: una vuelta cada `period` días. */
 const circle =
@@ -100,7 +100,6 @@ describe('orbits: caché', () => {
     );
     expect(Math.min(...seen)).toBeGreaterThanOrEqual(MIN_DATE.getTime());
     expect(Math.max(...seen)).toBeLessThanOrEqual(MAX_DATE.getTime());
-    expect(length(vec3(1, 0, 0))).toBe(1);
   });
 
   it('rechaza una validez no positiva', () => {

@@ -2,7 +2,6 @@ import { Body, Equator, Horizon, MakeTime, Observer, ObserverVector } from 'astr
 import {
   ECL_TO_THREE,
   EQJ_TO_ECL,
-  KM_PER_AU,
   earthFixedToEcl,
   earthFixedToGeographic,
   eclRotationToThree,
@@ -17,6 +16,7 @@ import {
   subsolarPoint,
   threeToEcl,
 } from './coordinates';
+import { KM_PER_AU } from './constants';
 import { USNO_SEASONS_2026, USNO_SIDEREAL_TIMES, hmsToHours } from './fixtures/fixtures';
 import { Mat3, Vec3, angleBetweenDeg, mulMat3, mulMat3Vec, normalize, vec3 } from './vec3';
 
@@ -102,11 +102,6 @@ describe('coordinates: tiempo sidéreo frente al USNO', () => {
       expect(Math.abs(hours - hmsToHours(row.gast)) * 3600).toBeLessThan(0.05);
     },
   );
-
-  it('en J2000 (2000-01-01 12:00 UT) el GMST del USNO es 18,697375 h', () => {
-    const j2000 = USNO_SIDEREAL_TIMES.rows.find((row) => row.instant === '2000-01-01T12:00:00Z');
-    expect(hmsToHours(j2000?.gmst ?? '')).toBeCloseTo(18.697375, 5);
-  });
 });
 
 describe('coordinates: orientación de la Tierra', () => {

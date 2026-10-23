@@ -17,15 +17,16 @@ describe('bodies: catálogo completo', () => {
 });
 
 describe('bodies: textos', () => {
-  it('cada cuerpo tiene un resumen y 3 curiosidades, con fuente de la NASA y sin revisar', () => {
+  it('cada cuerpo tiene un resumen y 3 curiosidades, con fuente de la NASA y marca de revisión', () => {
     expect(Object.keys(BODY_TEXTS).sort()).toEqual(BODY_INDEX.map((body) => body.id).sort());
     for (const body of BODY_INDEX) {
       expect(BODY_TEXTS[body.id].facts).toHaveLength(3);
       for (const item of texts(body.id)) {
         expect(item.text.trim().length).toBeGreaterThan(30);
         expect(item.source).toMatch(/^https:\/\/([a-z0-9-]+\.)*nasa\.gov\//);
-        // Textos nuevos: `reviewed: false` hasta que Iván los revise (CLAUDE.md, Datos).
-        expect(item.reviewed).toBe(false);
+        // Los textos nuevos llegan con `reviewed: false` (lo pone el JSON de origen) e Iván los
+        // marca como revisados; aquí solo se exige que la marca exista.
+        expect(typeof item.reviewed).toBe('boolean');
       }
     }
   });
