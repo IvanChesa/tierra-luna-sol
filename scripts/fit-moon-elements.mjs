@@ -4,8 +4,9 @@
 //
 // Por qué no se copian de la tabla del JPL (https://ssd.jpl.nasa.gov/sats/elem/): la tabla avisa de
 // que «no está pensada para calcular efemérides», redondea los periodos (4–5 cifras en Fobos,
-// Deimos, Tritón y Proteo) y, comprobado contra Horizons, no reproduce la posición en su propia
-// época para las lunas de Saturno, Urano y Neptuno. Aquí se hace lo mismo que describe el JPL
+// Deimos, Tritón y Proteo) y, comprobado contra Horizons, para las lunas de Saturno no reproduce la
+// posición ni en su propia época; las demás se desvían decenas de grados en pocos años. Aquí se
+// hace lo mismo que describe el JPL
 // («una elipse con precesión ajustada por mínimos cuadrados a la órbita integrada»), sin redondeo.
 //
 // Modelo (el mismo que src/app/ephemeris/moons.ts), en el plano de referencia de cada luna:

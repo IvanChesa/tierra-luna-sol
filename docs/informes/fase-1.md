@@ -15,10 +15,10 @@ Escrito antes de empezar, como pide el modo autónomo. Lo que cambie durante la 
 | 1.b | `ephemeris/moons.ts` (galileanas con `JupiterMoons`; las otras 16 con elementos medios y Kepler con precesión), `data/moon-elements.ts`, tabla de precisión de las 21 lunas; `ephemeris/scale.ts` y `ephemeris/orbits.ts`. |
 | 1.c | `scripts/build-stars.mjs` (HYG v4.1 → `public/data/stars.bin` + licencia CC BY-SA 4.0), decodificador y test de integridad; `data/places.ts` (Fraga y Lleida, IGN). |
 | 1.d | `data/body.model.ts`, `data/sources.ts`, índice ligero y catálogo completo de cuerpos con datos físicos con fuente y textos (`reviewed: false`); rutas de planetas desde el catálogo; `FUENTES.md`. |
-| 1.e | `npm run check`, informe con evidencias, revisión automática, correcciones, fusión y `DIARIO.md`. |
+| 1.e | `npm run check`, informe con evidencias, revisión automática, correcciones, fusión a `main` (autorizada por Iván en las instrucciones del modo autónomo si no quedan bloqueantes) y `DIARIO.md`. |
 
 ### Archivos
-- Nuevos: `src/app/ephemeris/{time,coordinates,ephemeris,moons,scale,orbits,stars}.ts` (+ tests), `src/app/ephemeris/fixtures/*.json`, `src/app/data/{body.model,sources,body-index,bodies,moon-elements,places}.ts` (+ tests), `scripts/{fetch-horizons-fixtures,fetch-usno-fixtures,fit-moon-elements,build-stars}.mjs`, `public/data/stars.bin` + licencia, `docs/informes/fase-1.md`.
+- Nuevos: `src/app/ephemeris/{time,coordinates,ephemeris,moons,scale,orbits,stars}.ts` (+ tests), `src/app/ephemeris/fixtures/*.json`, `src/app/data/{body.model,sources,body-index,bodies,moon-elements,places}.ts` (+ tests), `scripts/{fetch-horizons-fixtures,fit-moon-elements,build-stars}.mjs` (los fixtures del USNO acabaron en `fetch-horizons-fixtures.mjs`; durante la fase se añadieron `build-body-data`, `build-body-texts` y `check-initial-bundle`), `public/data/stars.bin` + licencia, `docs/informes/fase-1.md`.
 - Tocados: `package.json`, `angular.json` (cobertura), `tsconfig.json` (JSON en los tests), `src/app/app.routes*.ts` y `pages/planets-index` (catálogo nuevo), `docs/FUENTES.md`, `docs/PENDIENTES.md`, `.gitignore` (`assets-src/`).
 
 ### Dependencias (todas de la lista cerrada)
@@ -40,7 +40,7 @@ Escrito antes de empezar, como pide el modo autónomo. Lo que cambie durante la 
 - `threejs-spatial-data` solo como referencia de precisión float64/float32 para la API de escala (la fase no toca `three`).
 
 ### Riesgos y dudas
-1. **La tabla de elementos medios del JPL no sirve para fechar posiciones.** Comprobado antes de empezar: el propio JPL avisa de que *«These mean orbital parameters are not intended for ephemeris computation»*; los periodos de Fobos, Deimos, Tritón y Proteo traen 4–5 cifras (deriva de vueltas enteras en 26 años) y, para las lunas de Saturno, Urano y Neptuno, la tabla no reproduce las posiciones de Horizons **ni en su propia época** (J2000): errores de 50° a 165°. **Plan:** ajustar por mínimos cuadrados elipses con precesión (exactamente la definición de «elementos medios» del JPL) a las efemérides del JPL vía Horizons, con un script reproducible, y guardarlas en `data/moon-elements.ts` con la URL, el plano de referencia (polo de Laplace de la tabla del JPL) y la época de cada fila. Es una desviación de la letra de la tarea 4 («copiados de la tabla»), no del alcance ni de D11 (elementos medios del JPL + Kepler en el navegador, sin caducidad); se documenta en §4 con las cifras.
+1. **La tabla de elementos medios del JPL no sirve para fechar posiciones.** Comprobado antes de empezar: el propio JPL avisa de que *«These mean orbital parameters are not intended for ephemeris computation»*; los periodos de Fobos, Deimos, Tritón y Proteo traen 4–5 cifras (deriva de vueltas enteras en 26 años) y la tabla no reproduce las posiciones de Horizons en la fecha de hoy. _Corrección tras la revisión: la medición previa usaba para Urano el polo norte IAU en vez del de su rotación (§4.5.4). Medido de nuevo, en J2000 solo fallan las lunas de Saturno (de 5,5° a 157°); las de Urano casi aciertan en J2000 (0–1,1°), las de Neptuno se quedan a 4,6° (Tritón) y 15,9° (Proteo), y todas derivan decenas de grados en pocos años por los periodos y las precesiones redondeados (tabla de §4.1)._ **Plan:** ajustar por mínimos cuadrados elipses con precesión (exactamente la definición de «elementos medios» del JPL) a las efemérides del JPL vía Horizons, con un script reproducible, y guardarlas en `data/moon-elements.ts` con la URL, el plano de referencia (polo de Laplace de la tabla del JPL) y la época de cada fila. Es una desviación de la letra de la tarea 4 («copiados de la tabla»), no del alcance ni de D11 (elementos medios del JPL + Kepler en el navegador, sin caducidad); se documenta en §4 con las cifras.
 2. **Mimas** tiene una libración de unos ±44° en longitud (resonancia con Tetis, periodo de ~70 años) que ninguna elipse con precesión recoge. Si no cumple el objetivo, se documenta con causa y propuesta.
 3. **Bundle inicial** (272 de 300 kB): las rutas solo importarán un índice ligero de cuerpos (ids y nombres); los datos y textos completos quedan fuera del bundle inicial. `astronomy-engine` no lo importa ningún código de la app en esta fase.
 4. **Catálogo de 30 cuerpos, no 29:** Sol + 8 planetas + Luna + 20 lunas suman 30 (el «29» del plan cuenta 8 planetas + 21 lunas). Se propone corregir el texto del plan.
@@ -62,7 +62,7 @@ El «cerebro» astronómico está hecho y medido frente a fuentes oficiales, en 
 
 | Criterio | ✅/❌ | Evidencia |
 |---|---|---|
-| Todos los tests pasan; cobertura de `ephemeris/` ≥ 90 % | ✅ | `npm run check` tras `rm -rf node_modules dist .angular && npm ci`, código de salida 0. 142/142 tests en 16 ficheros. Cobertura de `ephemeris/`: **98,9 % sentencias, 92,3 % ramas, 100 % funciones, 100 % líneas**. El umbral del 90 % está en `angular.json` (`coverageThresholds`), así que `npm test` falla si baja. Salida en §6. |
+| Todos los tests pasan; cobertura de `ephemeris/` ≥ 90 % | ✅ | `npm run check` tras `rm -rf node_modules dist .angular && npm ci`, código de salida 0. 141/141 tests en 16 ficheros (142 antes de la revisión, que pidió quitar una prueba que solo leía el fixture). Cobertura de `ephemeris/`: **98,9 % sentencias, 92,3 % ramas, 100 % funciones, 100 % líneas**. El umbral del 90 % está en `angular.json` (`coverageThresholds`), así que `npm test` falla si baja. Salida en §6. |
 | Tabla de **error medido** por cuerpo frente a Horizons, incluidas las 21 lunas. Las que superen el objetivo, con causa y propuesta | ✅ | Tabla de abajo, con los 8 planetas, la Luna y las 20 lunas más. Ninguna supera su objetivo. Cada cifra sale del nombre de su test (`npx ng test --watch=false --reporters=verbose`), así que se reproduce con un comando. |
 | Ningún dato sin fuente; textos listados para que Iván los revise | ✅ | `body-data.spec.ts` recorre todo el catálogo y falla si un número o un booleano no está dentro de un `Sourced` con una fuente registrada en `data/sources.ts`. Cada texto lleva la URL de su página de la NASA y `reviewed: false` (`bodies.spec.ts`). Lista de revisión con las citas en inglés: `docs/datos/textos-cuerpos.md` (120 textos, 332 citas comprobadas por script). Los fixtures llevan su consulta exacta. Las demás fuentes están en `docs/FUENTES.md`. |
 | `astronomy-engine` fuera del bundle inicial (con salida del build) | ✅ | Bundle inicial de **274,17 kB** (aviso a los 300 kB), con `main` y el chunk de la portada. Ninguna cadena característica de astronomy-engine aparece en ningún JS de `dist` (salida abajo). Además, el nuevo `scripts/check-initial-bundle.mjs` lo comprueba en cada `npm run check` y en el CI: falla si una importación lo mete en el bundle inicial (demostrado y revertido). |
@@ -109,7 +109,7 @@ Error angular del vector de posición (heliocéntrico en los planetas, geocéntr
 
 **Otras comprobaciones frente a fuentes oficiales:**
 - **Fases lunares** frente al USNO: las 50 fases de 1900, de 2026 y de 2100 caen a menos de 0,0131° de su ángulo, unos 1,6 minutos. La fracción iluminada coincide con Horizons con menos de 0,5 puntos de diferencia.
-- **Tiempo sidéreo de Greenwich** (GAST) frente al USNO en 1900, J2000, 2026-10-23 y 2050: menos de 0,05 s de diferencia. En J2000, el GMST del USNO es 18,697375 h.
+- **Tiempo sidéreo de Greenwich** (GAST) frente al USNO en 1900, J2000, 2026-10-23 y 2050: menos de 0,05 s de diferencia (en J2000, el USNO da GAST = 18 h 41 min 49,6974 s).
 - **Punto subsolar:** el 21-06-2026 a las 12:00 UTC está a +23,4° de latitud y ≈ 0° de longitud. En los equinoccios y solsticios del USNO de 2026, la latitud subsolar es 0° o ±23,44° (±0,01°). Desde el punto subsolar, `Horizon` de astronomy-engine ve el Sol a más de 89,9° de altura.
 - **Orientación de la Tierra:** el punto (0°, 0°) y el polo norte coinciden con `ObserverVector` de astronomy-engine con menos de 10⁻⁶°.
 
@@ -243,7 +243,7 @@ All files pass linting.
 All matched files use Prettier code style!
 > ng test --watch=false
  Test Files  16 passed (16)
-      Tests  142 passed (142)
+      Tests  141 passed (141)
 =============================== Coverage summary ===============================
 Statements   : 98.9% ( 271/274 )
 Branches     : 92.3% ( 84/91 )
@@ -256,7 +256,7 @@ styles-SOEJ2553.css | styles             |   3.24 kB |                 1.07 kB
                     | Initial total      | 274.17 kB |                75.44 kB
 Prerendered 15 static routes.
 > node scripts/check-initial-bundle.mjs
-✔ Bundle inicial (main-TNFU7NAR.js, chunk-BTktH0VH.js) sin astronomy-engine ni three.
+✔ El JS inicial de las 16 páginas (5 ficheros) no lleva astronomy-engine ni three.
 ```
 - Sin avisos de presupuesto. El bundle inicial pasa de 272,45 kB a 274,17 kB, por el índice de los 30 cuerpos y las 8 fichas de planetas.
 - Se prerenderizan 15 rutas (antes 8), porque ahora salen las 8 fichas de planetas desde el catálogo.
@@ -291,9 +291,9 @@ También están en `docs/PENDIENTES.md`.
 
 ## 10. Propuestas de cambio al plan
 No se aplican hasta que Iván las apruebe.
-1. **D11 y fase 1, tarea 4:** cambiar «copiados a `data/moon-elements.ts`» por «elementos medios ajustados por mínimos cuadrados a las efemérides del JPL (Horizons), con el plano de referencia de la tabla del JPL; script y residuos en `docs/datos/elementos-lunas.md`» (§4.1).
+1. **D11 y fase 1, tarea 4:** cambiar «copiados a `data/moon-elements.ts`» por «elementos medios (elipse con precesión, más una aceleración secular y términos periódicos de la longitud cuando mejoran el ajuste) ajustados por mínimos cuadrados a Horizons en 1900–2100; la tabla del JPL solo aporta los planos de Laplace y los valores iniciales; script y residuos en `docs/datos/elementos-lunas.md`» (§4.1; redacción de la revisión).
 2. **Fase 1 y §4.1 del plan:** «29 cuerpos» → «30 cuerpos (Sol, 8 planetas y 21 lunas)».
-3. **§5, precisión de las otras lunas:** subir el objetivo de «≤ 5° entre 2020 y 2035» a «**≤ 0,5° entre 1900 y 2100**». Medido: ≤ 0,36° en todo el rango (con las fechas en TT).
+3. **§5, precisión de las otras lunas:** subir el objetivo de «≤ 5° entre 2020 y 2035» a «**≤ 0,5° en 1900–2100 medido en TT; en UT, ≤ 0,5° en 2020–2035; a partir de ~2055, el ΔT futuro puede añadir más de 0,5° en las lunas más rápidas y se documenta**» (redacción de la revisión). Medido: ≤ 0,36° en TT en todo el rango; en UT, el ΔT de 2100 añade hasta 1,74° en Fobos. Si se aprueba, el test añadirá esa cota absoluta.
 4. **Backlog (§9), idea:** sustituir el ΔT de astronomy-engine (Espenak–Meeus) por uno con los valores medidos del IERS hasta hoy. Solo se nota en Fobos, que hoy está a ≈ 0,1° (§4.4).
 
 ## 11. Cómo probarlo
@@ -310,3 +310,39 @@ node scripts/build-body-texts.mjs              # comprueba las citas y regenera 
 - Lista de textos para revisar: `docs/datos/textos-cuerpos.md`.
 - Ajuste de las lunas: `docs/datos/elementos-lunas.md`.
 - `/planetas` en `npm start` lista los 8 planetas, cada uno con su ficha prerenderizada.
+
+---
+
+## Respuesta a la revisión
+
+Revisión: `docs/revisiones/fase-1.md`. Veredicto: **APROBADA CON CAMBIOS MENORES**, sin bloqueantes. Hay 2 hallazgos importantes, 5 menores y 4 sugerencias; todos están atendidos.
+
+| Hallazgo | Acción |
+|---|---|
+| 1 · Importante · la comprobación del bundle no detecta importaciones pequeñas | **Arreglado.** Nuevo marcador: el mensaje del constructor de `AstroTime`. Demostración repetida con una importación pequeña: `toAstroTime` en `main.ts` sube `main` a 275,01 kB (+4 kB), y el script responde «✖ astronomy-engine está en el JS inicial (main-AC3G3X4S.js), que cargan: index.html, …» con código de salida 1. Lo revertí y volvió a ✔. |
+| 2 · Importante · `bodies.spec.ts` exige `reviewed: false` | **Arreglado.** Ahora solo se exige que la marca sea booleana. Los textos nuevos siguen llegando con `false` desde el JSON de origen. |
+| 3 · Menor · faltan los textos en `FUENTES.md` | **Arreglado.** Nueva fila con el JSON, el TS y la lista de revisión: páginas de NASA Science, material de la NASA sin respaldo, traducción y resumen con las citas originales. |
+| 4 · Menor · afirmaciones que no cuadran | **Arreglado.** En §0 queda una corrección explícita: en J2000 solo fallan las lunas de Saturno; las de Urano y Neptuno derivan por el redondeo. La medición previa usaba para Urano el polo IAU equivocado (§4.5.4). Se corrigió el comentario de `fit-moon-elements.mjs`, se quitó el script inexistente de §0 y se aclaró en 1.e que la fusión está autorizada por las instrucciones de Iván. |
+| 5 · Menor · pruebas que no prueban el código | **Arreglado.** Fuera la aserción de relleno de `orbits.spec.ts` y el test que solo leía el GMST del fixture. El GAST de J2000 sigue probado contra el USNO en el `it.each`. |
+| 6 · Menor · «no se usaron en el ajuste» | **Matizado** en `moon-elements.spec.ts`: son instantes distintos de las muestras del ajuste (salvo 1900-01-01), pero dentro de su intervalo. La cota absoluta de 0,5° en TT se añadirá si Iván aprueba la propuesta 3, como recomienda la revisión. |
+| 7 · Menor · decisiones de `PENDIENTES.md` | **Aclarado.** Vienen de las instrucciones del modo autónomo por bloques que Iván dio para este bloque. Ahora `PENDIENTES.md` lo dice así. Iván puede confirmarlo al leer el `DIARIO.md`. |
+| 8 · Sugerencia · `coordinates.ts` arrastra astronomy-engine | **Hecho.** `KM_PER_AU` vive en `ephemeris/constants.ts`, sin dependencias. `scale.ts` ya no depende de `coordinates.ts`. |
+| 9 · Sugerencia · solo se revisa `/` | **Hecho.** El script revisa el JS inicial de las 16 páginas prerenderizadas. |
+| 10 · Sugerencia · cuatro textos | **Aplicado.** <br>• Júpiter: «más grande que la Tierra», con su cita. <br>• Mimas: la curiosidad mitológica pasa a ser su descubrimiento en 1789 y su órbita de 22 h 36 min, con 2 citas nuevas verificadas. <br>• Urano: «la otra mitad del planeta». <br>• Umbriel y Proteo: nota para Iván sobre el albedo; él decide. <br>El script volvió a verificar las 120 entradas. |
+| 11 · Sugerencia · `.gitignore` y README | **Hecho.** `.claude/settings.local.json` va en el `.gitignore` del repo, y el README describe el `check` completo. |
+| Propuestas §10 | Las redacciones 1 y 3 de §10 son ahora las de la revisión: la 3 indica la escala de tiempo. Siguen pendientes de Iván, así que `PLAN.md` no se toca. |
+
+**Check final** (`npm run check`, código de salida 0):
+```
+All files pass linting.
+All matched files use Prettier code style!
+ Test Files  16 passed (16)
+      Tests  141 passed (141)
+Statements   : 98.9% ( 271/274 )
+Branches     : 92.3% ( 84/91 )
+Functions    : 100% ( 64/64 )
+Lines        : 100% ( 236/236 )
+                    | Initial total      | 274.17 kB |                75.44 kB
+Prerendered 15 static routes.
+✔ El JS inicial de las 16 páginas (5 ficheros) no lleva astronomy-engine ni three.
+```

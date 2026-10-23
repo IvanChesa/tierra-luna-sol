@@ -10,7 +10,7 @@ Decisiones y tareas que dependen de Iván. Claude Code añade aquí cada `TODO(i
 - [x] Alcance: **versión 1 con paridad completa con el original + mejoras** (23-10).
 - [x] Cambios al plan propuestos en el informe de la fase 0 (`ng new` desde la carpeta padre, `OnPush` sin declarar, dependencias de lint) (23-10).
 - [x] `/404` siempre con `noindex` y fuera del sitemap (hallazgo 5 de la revisión de la fase 0): incluido en la fase 8 del plan v1; recordatorio `TODO(fase-8)` en `src/app/app.routes.ts`.
-- [x] Decisiones adelantadas para el modo autónomo (23-10): vistas guiadas de la Tierra (Tierra completa, Pacífico, Himalaya, luces nocturnas y España / Bajo Cinca); constelaciones solo con fuente CC0, CC BY, MIT o de dominio público (si no, se omiten y se apuntan aquí); subdominio provisional de `site.config.ts`; textos con fuente y `reviewed: false`, que Iván revisará al final; móvil y fase 10 para Iván, sin bloquear.
+- [x] Decisiones que Iván adelantó en sus instrucciones del modo autónomo por bloques (bloque de la fase 1, 23-10): vistas guiadas de la Tierra (Tierra completa, Pacífico, Himalaya, luces nocturnas y España / Bajo Cinca); constelaciones solo con fuente CC0, CC BY, MIT o de dominio público (si no, se omiten y se apuntan aquí); subdominio provisional de `site.config.ts`; textos con fuente y `reviewed: false`, que Iván revisará al final; móvil y fase 10 para Iván, sin bloquear.
 
 ## Cuanto antes (ideal antes de la fase 1)
 - [ ] Instalar GitHub CLI: `winget install --id GitHub.cli`, luego `gh auth login`.
