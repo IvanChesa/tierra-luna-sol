@@ -10,7 +10,7 @@ import planDates from './horizons-plan-dates.json';
 import moonPhases from './usno-moon-phases.json';
 import seasons from './usno-seasons-2026.json';
 import siderealTimes from './usno-sidereal-time.json';
-import { KM_PER_AU } from '../coordinates';
+import { KM_PER_AU } from '../constants';
 import { Vec3, angleBetweenDeg, length, sub, vec3 } from '../vec3';
 
 /** `[instante ISO 8601 en la escala de tiempo del fixture, x, y, z]` en km, eclíptica J2000. */

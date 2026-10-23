@@ -1,4 +1,5 @@
-import { KM_PER_AU, eqjToEcl } from './coordinates';
+import { KM_PER_AU } from './constants';
+import { eqjToEcl } from './coordinates';
 import {
   HORIZONS_DECADES,
   HORIZONS_MOONS_2020_2035,

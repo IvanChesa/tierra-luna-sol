@@ -20,10 +20,6 @@ import {
 import { toAstroTime } from './time';
 import { Mat3, Vec3, mulMat3, mulMat3Vec, rotationX, rotationZ, transposeMat3, vec3 } from './vec3';
 
-/** Unidad astronómica en km, valor exacto por definición (IAU 2012, resolución B2). */
-export const KM_PER_AU = 149_597_870.7;
-export const KM_PER_AU_SOURCE = 'https://www.iau.org/static/resolutions/IAU2012_English.pdf';
-
 const DEG = Math.PI / 180;
 
 /** Convierte una matriz de astronomy-engine en una `Mat3` por filas, girando la base. */

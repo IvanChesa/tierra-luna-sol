@@ -9,7 +9,7 @@
  *   ilustrativa conserva las direcciones y el orden de las distancias, ningún cuerpo adelanta a
  *   otro a mitad de la transición.
  */
-import { KM_PER_AU } from './coordinates';
+import { KM_PER_AU } from './constants';
 import { Vec3, length, lerp, scale } from './vec3';
 
 export type ScaleMode = 'illustrative' | 'real';

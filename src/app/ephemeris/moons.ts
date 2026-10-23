@@ -5,7 +5,8 @@
  *   términos de longitud que haga falta, resuelta con la ecuación de Kepler.
  */
 import { JupiterMoons } from 'astronomy-engine';
-import { KM_PER_AU, eqjToEcl, referencePlaneToEcl } from './coordinates';
+import { KM_PER_AU } from './constants';
+import { eqjToEcl, referencePlaneToEcl } from './coordinates';
 import { GalileanId } from './ids';
 import { toAstroTime } from './time';
 import { Mat3, Vec3, mulMat3Vec, vec3 } from './vec3';

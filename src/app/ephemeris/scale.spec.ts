@@ -1,4 +1,4 @@
-import { KM_PER_AU } from './coordinates';
+import { KM_PER_AU } from './constants';
 import { planetHeliocentric } from './ephemeris';
 import { PLANET_IDS } from './ids';
 import {

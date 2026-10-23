@@ -1,4 +1,4 @@
-import { KM_PER_AU } from './coordinates';
+import { KM_PER_AU } from './constants';
 import {
   MOON_PHASE_NAMES,
   distancesAu,
