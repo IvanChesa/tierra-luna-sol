@@ -2,7 +2,7 @@
 
 - **Rama:** `fase-0-cimientos`
 - **Fecha:** 2026-10-23
-- **Estado:** listo para revisión
+- **Estado:** revisada (APROBADA CON CAMBIOS MENORES); correcciones aplicadas y fusión a `main` aprobada por Iván
 
 ## 1. Resumen
 Proyecto Angular 22.2 (standalone, zoneless, OnPush por defecto, Vitest) en un repo git independiente, con salida estática y las 8 rutas prerenderizadas, cada una con su `<title>` en el HTML. ESLint (angular-eslint) vigila las capas de §4.2 con `no-restricted-imports`; Prettier vigila el formato. Hay estructura de §4.1, `site.config.ts`, CI de GitHub Actions con acciones fijadas por SHA y `docs/DISENO.md` con 2 propuestas visuales. Los tokens de la recomendada (A, «Carta celeste») están aplicados. `npm run check` pasa sin avisos.
@@ -191,5 +191,53 @@ npm start           # http://localhost:4200
 ---
 
 ## Respuesta a la revisión (se añade tras cada revisión)
+
+Revisión: `docs/revisiones/fase-0.md` (veredicto: APROBADA CON CAMBIOS MENORES). Decisiones de Iván:
+- **Dirección visual A**, «Carta celeste».
+- **Aprobadas** las 3 propuestas de cambio al plan (§10) y el cambio de estrategia del hallazgo 2.
+- Corregir los hallazgos 1–4 (y el 6 si es rápido) y dejar un `TODO` para el 5.
+
 | Hallazgo | Acción | Commit |
 |---|---|---|
+| 1 · Importante · `.mcp.json` sin versión | **Arreglado, con una variante de la propuesta.** El servidor arranca con `node node_modules/@angular/cli/bin/ng.js mcp`, es decir, la CLI **local** (22.2.4, fijada con integridad en `package-lock.json`): sin red y siempre alineada con el proyecto. Motivos y pruebas en la nota 1. | `fce5a65` |
+| 2 · Importante · Estrategia del presupuesto inicial | **Aplicado** (aprobado por Iván). En `PLAN.md` §5: fila nueva (`astronomy-engine`, el store del simulador y los controles del visor nunca van en el bundle inicial, sino dentro del `@defer` del visor; en las fichas, `import()` dinámico en `afterNextRender`) y nota con el margen medido (~272 de 300 kB). En `CLAUDE.md` > Rendimiento: la misma regla. | `8e5a779` |
+| 3 · Menor · CI duplicado en las PR | **Arreglado:** `push: { branches: [main] }` + `pull_request`, con un comentario del motivo. | `994a768` |
+| 4 · Menor · `@types/node` en ^22 | **Arreglado:** `@types/node` `^24.19.2` (arrastra `undici-types` 7.24.6). `npm ls @types/node` muestra una sola copia, deduplicada también para `vitest` y `vite`. | `5ca4c1a` |
+| 5 · Menor · `/404` con 200 | **`TODO(fase-5)`** junto a la ruta `/404` en `src/app/app.routes.ts`: llevar siempre `noindex` y quedar fuera del sitemap. Para que no dependa de que alguien lea el `TODO`, propongo llevarlo al plan de la fase 5 (apuntado en `PENDIENTES.md`, pendiente de Iván). | `12d6853` |
+| 6 · Sugerencia · `lang` en dos sitios | **Hecho, con un test.** `site.config.spec.ts` importa `index.html` como texto y comprueba que su `<html lang>` coincide con `SITE_CONFIG.lang`. Comprobé que el test **falla** si se cambia `index.html` a `lang="en"` (`AssertionError: expected 'en' to be 'es'`); después lo revertí. | `4709175` |
+| 7 · Sugerencia · Margen lateral (`--gutter`) | **Sin cambios en esta ronda:** como dice la revisión, puede esperar a la fase 6 (pulido), y no estaba en lo que pidió Iván. | — |
+| Decisión · Propuestas del §10 | **Aplicadas:** comando de `ng new` desde la carpeta padre (PLAN, fase 0, tarea 3); `OnPush` por defecto sin declararlo (`CLAUDE.md` y PLAN D2); `@eslint/js` y `typescript-eslint` en la lista de PLAN §1. Una línea en la cabecera del PLAN remite a esta respuesta. | `2de447c` |
+| Decisión · Dirección visual A | **Registrada:** `DISENO.md` (A elegida, B descartada), comentario de `styles.css` y `PENDIENTES.md`. | `ddbc732` |
+| La revisión en el repo | `docs/revisiones/fase-0.md`, sin cambios. | `887b515` |
+
+**Nota 1: por qué no `npx ng mcp` ni `npx -y @angular/cli@22.2.4 mcp`.**
+- **`npx ng mcp`** es seguro mientras exista `node_modules`. Pero en un clon recién hecho, sin `npm install`, `npx` buscaría `ng` en el registro y lo instalaría sin preguntar, porque un cliente MCP lo lanza sin terminal interactiva. Lo dice la documentación de `npm exec` incluida en npm 11: *«When standard input is not a TTY or a CI environment is detected, `--yes` is assumed.»* El paquete `ng` de npm es de un tercero, no de Angular: `ng@0.0.0`, publicado en 2013 y sin ejecutable. Hoy no haría nada, pero nada garantiza que siga así.
+- **`npx -y @angular/cli@22.2.4`** fija la CLI, pero no sus dependencias transitivas, que el lockfile no cubre. Además habría que subir la versión a mano en cada actualización.
+- **Con `node`** no se usa `npx` y no hay red. Tampoco depende de cómo resuelva el cliente `npx.cmd` en Windows: aquí, `spawn('npx')` sin shell da `ENOENT`.
+- **Pruebas**, con el mismo arranque por stdio que haría Claude Code (script en el scratchpad, no versionado):
+  ```
+  .mcp.json → {"command":"node","args":["node_modules/@angular/cli/bin/ng.js","mcp"]}
+  initialize → {"name":"angular-cli-server","version":"22.2.4"} protocolo 2025-06-18
+  tools/list → 9 herramientas: ai_tutor, get_best_practices, search_documentation, list_projects,
+               onpush_zoneless_migration, run_target, devserver_start, devserver_stop, devserver_wait_for_build
+  (en una carpeta sin node_modules) → el servidor termina con código 1 al instante, sin descargar nada
+  ```
+- **Para Iván:** al reiniciar Claude Code puede que pida aprobar otra vez el servidor `angular-cli` del proyecto. Se comprueba con `/mcp`.
+
+**Check final** (`rm -rf node_modules dist .angular && npm ci && npm run check`, código de salida 0):
+```
+All files pass linting.
+All matched files use Prettier code style!
+ Test Files  4 passed (4)
+      Tests  19 passed (19)
+Initial chunk files | Names              |  Raw size | Estimated transfer size
+main-UKH4FFTE.js    | main               | 269.21 kB |                73.98 kB
+styles-SOEJ2553.css | styles             |   3.24 kB |                 1.07 kB
+                    | Initial total      | 272.45 kB |                75.06 kB
+Prerendered 8 static routes.
+```
+- Sin avisos de presupuesto.
+- El bundle no ha cambiado: el comentario nuevo de `styles.css` desaparece al minificar.
+- `npm audit` sigue igual: las 2 vulnerabilidades del `vite` interno de `@angular/build`. Como acordamos en la revisión, se vuelve a mirar en cada actualización de `@angular/build`.
+
+**Propuesta nueva para el plan** (no aplicada; pendiente de Iván en `PENDIENTES.md`): en la fase 5, tareas 2 y 4, indicar que `/404` lleva siempre `noindex` y queda fuera del sitemap (hallazgo 5).
