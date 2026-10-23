@@ -5,7 +5,9 @@
 // - Vectores geométricos (VEC_CORR=NONE), en km, eclíptica J2000 (REF_PLANE=ECLIPTIC, ICRF).
 // - Planetas respecto al centro del Sol (500@10); la Luna respecto al de la Tierra (500@399);
 //   las lunas respecto al centro de su planeta (500@<planeta>).
-// - Instantes en UT (TIME_TYPE=UT), como el tiempo interno del proyecto.
+// - Instantes en UT (TIME_TYPE=UT), como el tiempo interno del proyecto. El barrido por décadas va
+//   en TT: para 2050–2100 nadie sabe el ΔT (TT − UT) y Horizons y astronomy-engine suponen valores
+//   distintos (hasta ~2 minutos en 2100); en TT se compara solo la dinámica.
 import { mkdir, writeFile } from 'node:fs/promises';
 
 const HORIZONS = 'https://ssd.jpl.nasa.gov/api/horizons.api';
@@ -50,7 +52,7 @@ const MOONS = [
 
 /** Las 3 fechas del plan (PLAN, fase 1, tarea 6), a las 00:00 UT. */
 const PLAN_DATES = ['2026-01-01', '2026-10-23', '2030-06-15'].map((d) => `${d}T00:00:00Z`);
-/** Barrido largo: 1 de enero de cada década, 1900–2100. */
+/** Barrido largo: 1 de enero de cada década, 1900–2100, a las 00:00 TT. */
 const DECADES = Array.from({ length: 21 }, (_, k) => `${1900 + 10 * k}-01-01T00:00:00Z`);
 /** Barrido de las lunas en 2020–2035 (objetivo de §5): cada 3 meses, a las 00:00 UT. */
 const QUARTERS = [];
@@ -82,7 +84,7 @@ async function fetchText(url, attempts = 4) {
 }
 
 /** Vectores de `target` respecto a `center` en los instantes `isoTimes` (UT). */
-async function vectors(target, center, isoTimes) {
+async function vectors(target, center, isoTimes, timeScale) {
   const url = horizonsUrl({
     format: 'json',
     COMMAND: `'${target}'`,
@@ -96,7 +98,7 @@ async function vectors(target, center, isoTimes) {
     VEC_CORR: "'NONE'",
     OUT_UNITS: "'KM-S'",
     CSV_FORMAT: "'YES'",
-    TIME_TYPE: "'UT'",
+    TIME_TYPE: `'${timeScale}'`,
     TLIST_TYPE: "'JD'",
     TLIST: isoTimes.map((iso) => `'${toJd(iso)}'`).join(','),
   });
@@ -117,14 +119,19 @@ async function vectors(target, center, isoTimes) {
   return { query: url, ephemeris, rows };
 }
 
-async function vectorSet(description, times, planets, moons) {
+async function vectorSet(description, times, planets, moons, timeScale = 'UT') {
   const series = [];
   for (const [id, code] of planets) {
-    series.push({ id, target: code, center: '10', ...(await vectors(code, '10', times)) });
+    series.push({
+      id,
+      target: code,
+      center: '10',
+      ...(await vectors(code, '10', times, timeScale)),
+    });
     console.log(`  ${id}`);
   }
   for (const [id, code, center] of moons) {
-    series.push({ id, target: code, center, ...(await vectors(code, center, times)) });
+    series.push({ id, target: code, center, ...(await vectors(code, center, times, timeScale)) });
     console.log(`  ${id}`);
   }
   return {
@@ -134,8 +141,8 @@ async function vectorSet(description, times, planets, moons) {
     frame: 'Eclíptica J2000 (REF_PLANE=ECLIPTIC, REF_SYSTEM=ICRF)',
     units: 'km',
     corrections: 'Ninguna (vectores geométricos, VEC_CORR=NONE)',
-    timeScale: 'UT (TIME_TYPE=UT)',
-    rowFormat: '[instante UT ISO 8601, x, y, z]',
+    timeScale,
+    rowFormat: `[instante ${timeScale} (ISO 8601; la Z solo marca el formato), x, y, z]`,
     series,
   };
 }
@@ -254,7 +261,13 @@ await save(
 console.log('Barrido por décadas 1900–2100 (planetas, Luna y 20 lunas)…');
 await save(
   'horizons-decades.json',
-  await vectorSet('1 de enero de cada década, 1900–2100, a las 00:00 UT.', DECADES, PLANETS, MOONS),
+  await vectorSet(
+    '1 de enero de cada década, 1900–2100, a las 00:00 TT.',
+    DECADES,
+    PLANETS,
+    MOONS,
+    'TT',
+  ),
 );
 console.log('Barrido trimestral 2020–2035 (20 lunas)…');
 await save(

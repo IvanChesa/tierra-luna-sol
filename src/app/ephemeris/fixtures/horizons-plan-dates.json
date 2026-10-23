@@ -5,8 +5,8 @@
  "frame": "Eclíptica J2000 (REF_PLANE=ECLIPTIC, REF_SYSTEM=ICRF)",
  "units": "km",
  "corrections": "Ninguna (vectores geométricos, VEC_CORR=NONE)",
- "timeScale": "UT (TIME_TYPE=UT)",
- "rowFormat": "[instante UT ISO 8601, x, y, z]",
+ "timeScale": "UT",
+ "rowFormat": "[instante UT (ISO 8601; la Z solo marca el formato), x, y, z]",
  "series": [
   {
    "id": "mercurio",

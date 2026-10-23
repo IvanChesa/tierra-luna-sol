@@ -2,6 +2,7 @@
  * Acceso tipado a los fixtures de referencia (solo para tests). Los JSON los genera
  * `scripts/fetch-horizons-fixtures.mjs` y cada serie lleva la URL exacta de su consulta.
  */
+import { AstroTime } from 'astronomy-engine';
 import decades from './horizons-decades.json';
 import moonIllumination from './horizons-moon-illumination.json';
 import moons2020To2035 from './horizons-moons-2020-2035.json';
@@ -12,7 +13,7 @@ import siderealTimes from './usno-sidereal-time.json';
 import { KM_PER_AU } from '../coordinates';
 import { Vec3, angleBetweenDeg, length, sub, vec3 } from '../vec3';
 
-/** `[instante UT ISO 8601, x, y, z]` en km, eclíptica J2000. */
+/** `[instante ISO 8601 en la escala de tiempo del fixture, x, y, z]` en km, eclíptica J2000. */
 export type VectorRow = readonly [string, number, number, number];
 
 export interface VectorSeries {
@@ -26,6 +27,8 @@ export interface VectorSeries {
 
 export interface VectorFixture {
   readonly description: string;
+  /** UT, o TT en el barrido por décadas (ver scripts/fetch-horizons-fixtures.mjs). */
+  readonly timeScale: 'UT' | 'TT';
   readonly source: string;
   readonly retrieved: string;
   readonly series: readonly VectorSeries[];
@@ -73,6 +76,17 @@ export function vectorError(
     distanceRatio: Math.abs(length(actualAu) / length(expected) - 1),
     km: length(sub(actualAu, expected)) * KM_PER_AU,
   };
+}
+
+const J2000_MS = Date.UTC(2000, 0, 1, 12, 0, 0);
+
+/**
+ * Fecha (UT) que hay que pasar al código para evaluar una fila. En los fixtures en TT se usa el
+ * ΔT de astronomy-engine, de modo que el código calcula exactamente en el TT de Horizons.
+ */
+export function rowDate(fixture: VectorFixture, row: VectorRow): Date {
+  if (fixture.timeScale === 'UT') return new Date(row[0]);
+  return AstroTime.FromTerrestrialTime((Date.parse(row[0]) - J2000_MS) / 86_400_000).date;
 }
 
 /** Serie de un cuerpo; falla si no existe (un fixture incompleto debe romper el test). */
