@@ -48,3 +48,5 @@ Thumbs.db
 
 # Skills de terceros copiadas en local (no van al repo público)
 .claude/skills/
+# Configuración local de Claude Code
+.claude/settings.local.json

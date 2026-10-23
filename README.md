@@ -10,4 +10,4 @@ Proyecto en desarrollo. El plan está en [`docs/PLAN.md`](docs/PLAN.md).
 - `npm test`: tests unitarios (Vitest)
 - `npm run lint`: ESLint y Prettier
 - `npm run build`: build con prerenderizado
-- `npm run check`: lint + test + build
+- `npm run check`: lint + test (con cobertura) + build + comprobación de que el JS inicial no lleva librerías pesadas
