@@ -106,6 +106,9 @@ const MIN_DISTANCE_RADII = 1.12;
  * se retrase; los saltos de una pestaña oculta los evita `visibilitychange`.
  */
 const MAX_FRAME_DT_MS = 400;
+
+/** Los únicos cuerpos con nombre en las vistas Tierra y Luna. */
+const DETAIL_LABELS: readonly string[] = ['tierra', 'luna', 'sol'];
 const TIME_EVENT_INTERVAL_MS = 200;
 const STATS_INTERVAL_MS = 1000;
 /** Suavizado del encuadre cuando cambian los márgenes de la interfaz (ms). */
@@ -817,9 +820,27 @@ export class SceneEngine implements SceneEngineApi {
       { width, height },
       this.focusIndex ?? -1,
       planet ? sceneBody(planet).index : -1,
-      { insets: this.insets, hidden: this.aliasing.any ? this.aliasing.orbit : null },
+      { insets: this.insets, hidden: this.hiddenLabels() },
     );
     this.labels.update(boxes, this.focusIndex ?? -1);
+  }
+
+  private readonly detailMask = new Uint8Array(SCENE_BODIES.length);
+
+  /**
+   * Cuerpos sin nombre en pantalla: los que se dibujan como su órbita (velocidades altas) y, en las
+   * vistas Tierra y Luna, todos menos la Tierra, la Luna y el Sol (los planetas lejanos competirían
+   * con el protagonista).
+   */
+  private hiddenLabels(): Uint8Array | null {
+    const aliased = this.aliasing.any ? this.aliasing.orbit : null;
+    if (this._view === 'system') return aliased;
+    const mask = this.detailMask;
+    SCENE_BODIES.forEach((body, k) => {
+      const named = DETAIL_LABELS.includes(body.id);
+      mask[k] = !named || aliased?.[k] === 1 ? 1 : 0;
+    });
+    return mask;
   }
 
   private labelInfoCache: LabelInfo[] | null = null;

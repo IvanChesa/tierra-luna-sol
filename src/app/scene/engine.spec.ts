@@ -615,6 +615,21 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     h.engine.dispose();
   });
 
+  it('en las vistas Tierra y Luna solo se nombran la Tierra, la Luna y el Sol', async () => {
+    const h = await createHarness({ view: 'earth' });
+    settle(h);
+    const named = () =>
+      [...h.labels.querySelectorAll<HTMLElement>('.scene-label:not([hidden])')].map(
+        (el) => el.dataset['body'],
+      );
+    expect(named().length).toBeGreaterThan(0);
+    for (const id of named()) expect(['tierra', 'luna', 'sol']).toContain(id);
+    h.engine.setView('system');
+    settle(h);
+    expect(named().length).toBeGreaterThan(3);
+    h.engine.dispose();
+  });
+
   it('la vista limpia oculta las etiquetas', async () => {
     const h = await createHarness();
     settle(h);
