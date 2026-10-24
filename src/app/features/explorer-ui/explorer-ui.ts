@@ -7,6 +7,7 @@ import {
   inject,
   input,
   output,
+  signal,
 } from '@angular/core';
 import { Router } from '@angular/router';
 import type { ExplorerView, ViewInsets } from '../../scene';
@@ -54,6 +55,7 @@ const SWIPE_CLOSE_PX = 72;
   styleUrl: './explorer-ui.css',
   host: {
     '[class.is-clean]': 'explorer.cleanView()',
+    '[class.is-scene-ready]': 'ready3d()',
     '(document:keydown)': 'onKeydown($event)',
   },
 })
@@ -77,11 +79,18 @@ export class ExplorerUi {
     const id = this.panelBody();
     return id ? [id] : [];
   });
+  /** El 3D se ve: los controles de cámara aparecen (antes, y si falla, no harían nada). */
+  protected readonly ready3d = signal(false);
   private swipeStart: number | null = null;
 
   constructor() {
     this.explorer.connectView(this.view);
     afterNextRender(() => this.trackInsets());
+  }
+
+  protected sceneReady(): void {
+    this.ready3d.set(true);
+    this.ready.emit();
   }
 
   protected closePanel(): void {

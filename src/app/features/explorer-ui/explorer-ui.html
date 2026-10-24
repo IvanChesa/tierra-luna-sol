@@ -1,6 +1,9 @@
 <div class="stage">
-  <tls-viewer-canvas [view]="view()" (ready)="ready.emit()" />
+  <tls-viewer-canvas [view]="view()" (ready)="sceneReady()" />
 </div>
+
+<!-- Orden del foco: el lienzo, su cámara, el índice, la ficha y la barra de tiempo. -->
+<tls-camera-controls class="camera" />
 
 <tls-body-picker class="index" />
 
@@ -21,8 +24,6 @@
 </aside>
 
 <tls-time-controls class="dock" />
-
-<tls-camera-controls class="camera" />
 
 <tls-notices class="notices" />
 
