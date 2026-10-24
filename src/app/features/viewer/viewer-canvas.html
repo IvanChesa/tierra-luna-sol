@@ -1,10 +1,17 @@
-<canvas #canvas class="viewer-canvas" role="img" [attr.aria-label]="label()"></canvas>
-<div #labels class="viewer-labels"></div>
+@if (status() !== 'ready') {
+  <!-- El póster sigue debajo hasta el primer frame (y si el 3D no llega). -->
+  <tls-viewer-poster [view]="view()" />
+}
+
+@for (attempt of attempts(); track attempt) {
+  <canvas #canvas class="viewer-canvas" role="img" [attr.aria-label]="label()"></canvas>
+  <div #labels class="viewer-labels"></div>
+}
 
 @switch (status()) {
   @case ('loading') {
     <div class="viewer-status" role="status">
-      <p class="viewer-status__step">{{ step() }}…</p>
+      <p class="viewer-status__step">Preparando la escena 3D…</p>
       <progress class="viewer-status__bar" [value]="progress()" max="1">
         {{ formatNumber(progress() * 100, 0) }} %
       </progress>
@@ -19,7 +26,7 @@
   }
 }
 
-@if (!capture()) {
+@if (!capture() && status() === 'ready') {
   <label class="viewer-quality">
     <span>Calidad</span>
     <select [value]="quality()" (change)="changeQuality($event)">
