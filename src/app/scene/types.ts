@@ -74,7 +74,10 @@ export interface FrameStats {
 export interface SceneEngineEvents {
   /** Primer frame completo pintado (cuerpos, órbitas, estrellas y etiquetas). */
   readonly ready: { readonly startupMs: number };
-  /** Progreso del arranque y de la carga de texturas. */
+  /**
+   * Progreso del arranque (cálculo, estrellas, sombreados y primer frame). Las texturas llegan después,
+   * de una en una, y no cuentan aquí: el cuerpo se ve con su color esquemático hasta que suben.
+   */
   readonly progress: { readonly loaded: number; readonly total: number; readonly step: string };
   /** El usuario ha elegido un cuerpo en la escena (etiqueta o lienzo). */
   readonly bodyPicked: { readonly id: BodyId };
