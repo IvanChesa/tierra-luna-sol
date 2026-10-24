@@ -5,7 +5,7 @@ Una línea por cada fase cerrada en modo autónomo por bloques y, al terminar ca
 | Fase | Cierre | Veredicto de la revisión | Métricas clave |
 |---|---|---|---|
 | 1 · Efemérides, catálogo y datos | 2026-10-24 | APROBADA CON CAMBIOS MENORES: 0 bloqueantes, 2 importantes, 5 menores y 4 sugerencias, todos atendidos. Fusionada con `--no-ff` (`df1d0eb`) | 141 tests · cobertura de `ephemeris/` del 98,9 % · JS inicial de 274,17 kB (sin astronomy-engine) · error frente a Horizons: planetas ≤ 0,008°, Luna ≤ 0,002°, galileanas ≤ 0,06°, otras 16 lunas ≤ 0,38° (1900–2100, TT; 0,36° en los instantes de test, corregido el 24-10) y ≤ 0,25° en el control independiente · 30 cuerpos y 120 textos con 332 citas verificadas · 8920 estrellas en 71 kB |
-
+| 2 · Motor 3D y escena base | 2026-10-24 | CAMBIOS NECESARIOS: 0 bloqueantes, 5 importantes, 12 menores y 7 sugerencias. Corregidos los 5 importantes («Reintentar» con lienzo nuevo, sin motores huérfanos, conclusión de la prueba de profundidad, Vía Láctea omitida por licencia CC BY-NC de Gaia, `ImageBitmap` liberados) y los 12 menores; 4 sugerencias hechas y 3 llevadas a la fase 3. Fusionada con `--no-ff` (`cfadc72`) | 251 tests · cobertura de `ephemeris/` del 99,57 % · JS inicial de 287,70 kB · chunk del visor de 729,38 kB · 60 FPS en los tres niveles (RTX 3060) · VRAM 27/67/107 MB en alta · 0 frames en reposo · 1 contexto WebGL vivo tras 10 idas y vueltas · libración ≤ 0,005° y anillos ≤ 0,004° frente a Horizons (comprobado por el revisor) |
 ---
 
 ## Resumen del bloque «fases 1 a 1» (2026-10-24)
@@ -52,6 +52,6 @@ No se activó ninguna:
 
 El bloque termina aquí; no se ha empezado la fase 2.
 
-## Bloque B (en curso; sesión cortada el 2026-10-24 por el límite de uso)
-- **Fase 2:** terminada y commiteada en `fase-2-motor` (informe completo en `docs/informes/fase-2.md`, `npm run check` en verde). **Falta su revisión por subagente** (se paró a medias por el límite de uso; no llegó a escribir `docs/revisiones/fase-2.md`), las correcciones, la fusión en `main` y su línea en este diario.
-- **Fase 3:** empezada en un worktree temporal (rama `wip-fase-3`, basada en `fase-2-motor`, en el scratchpad de la sesión): plan en borrador, `docs/ESTILO.md`, formato con `Intl`, stores, árbol de cuerpos, atajos, márgenes de encuadre, vuelos de cámara y aliasing, con sus tests (63 en verde). Al retomar: fusionar la fase 2, crear `fase-3-interfaz` desde `main` y traer esos commits (`git cherry-pick wip-fase-3`); después, `git worktree remove` del worktree temporal.
+## Bloque B (en curso)
+- **Sesión 1** (cortada por el límite de uso): fase 2 terminada; su revisión, a medias; fase 3 empezada en una rama temporal.
+- **Sesión 2 (2026-10-24):** revisión de la fase 2 por subagente (`docs/revisiones/fase-2.md`), correcciones, respuesta en el informe y fusión. La fase 3 sigue en `fase-3-interfaz`, rehecha sobre `main` a partir de la rama temporal.
