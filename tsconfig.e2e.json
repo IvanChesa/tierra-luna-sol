@@ -1,0 +1,10 @@
+/* E2e de Playwright (e2e/) y su configuración: solo se comprueban los tipos (Playwright los transpila). */
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"]
+  },
+  "include": ["e2e/**/*.ts", "playwright.config.ts"]
+}
