@@ -65,7 +65,22 @@ export const DEFAULT_DEPTH: ResolvedDepthMode = 'logarithmic';
 export const BACKGROUND_COLOR = 0x0d1321;
 
 /** Encuadres: distancia de la cámara en radios del cuerpo enfocado. */
-const FRAMING_RADII = { body: 6, detail: 3.2 } as const;
+/**
+ * Encuadres: fracción del lado más corto de la vista que ocupa el cuerpo enfocado (así encaja igual
+ * en un escritorio apaisado que en un móvil vertical).
+ */
+export const FRAMING_FILL = { body: 0.46, detail: 0.82 } as const;
+
+/**
+ * Distancia de la cámara, en radios del cuerpo, para que ocupe la fracción `fill` del lado más
+ * corto de una vista con ese campo vertical (grados) y esa proporción ancho/alto.
+ */
+export function framingDistanceRadii(fill: number, verticalFovDeg: number, aspect: number): number {
+  const halfVertical = (verticalFovDeg * Math.PI) / 360;
+  const halfHorizontal = Math.atan(Math.tan(halfVertical) * aspect);
+  const halfMin = Math.min(halfVertical, halfHorizontal);
+  return 1 / Math.sin(Math.atan(fill * Math.tan(halfMin)));
+}
 /** Elevación de la vista general (rad): una vista oblicua de la eclíptica. */
 const OVERVIEW_ELEVATION = 0.42;
 const OVERVIEW_AZIMUTH = -0.55;
@@ -111,11 +126,12 @@ export interface EngineDeps {
 
 type CameraFraming =
   | { readonly kind: 'overview'; distance: number }
-  | { readonly kind: 'body'; readonly index: number; radii: number };
+  | { readonly kind: 'body'; readonly index: number; readonly fill: number; zoom: number };
 
 type Listener<K extends SceneEngineEventName> = (event: SceneEngineEvents[K]) => void;
 
 const SUN_INDEX = SCENE_BODIES.findIndex((body) => body.kind === 'star');
+const NEPTUNE_INDEX = SCENE_BODIES.findIndex((body) => body.id === 'neptuno');
 
 export class SceneEngine implements SceneEngineApi {
   private readonly clock: SimClock;
@@ -524,16 +540,38 @@ export class SceneEngine implements SceneEngineApi {
     const focusRadius = radii[this.frames.focus] as number;
     if (this.framing.kind === 'body') {
       this.rig.setLimits(focusRadius * MIN_DISTANCE_RADII, Infinity);
-      this.rig.setTarget({ distance: focusRadius * this.framing.radii });
+      const radii = framingDistanceRadii(
+        this.framing.fill,
+        this.world.camera.fov,
+        this.viewport.width / this.viewport.height,
+      );
+      this.rig.setTarget({ distance: focusRadius * radii * this.framing.zoom });
     } else {
-      this.rig.setLimits(focusRadius * MIN_DISTANCE_RADII, this.framing.distance * 4);
-      this.rig.setTarget({ distance: this.framing.distance });
+      // La distancia de la vista general sigue la escala del marco que se ve: durante una
+      // transición (por ejemplo, desde el sistema local de la Tierra) el sistema todavía es enorme
+      // y la cámara no puede llegar antes que él.
+      this.rig.setLimits(focusRadius * MIN_DISTANCE_RADII, Infinity);
+      this.rig.setTarget({ distance: this.framing.distance * this.extentScale() });
     }
     if (this.reducedMotion || this.captureMode) {
       this.rig.snap();
       return false;
     }
     return this.rig.update(dtMs);
+  }
+
+  /**
+   * Cuánto mide ahora el sistema (Neptuno respecto al foco) comparado con la escala ilustrativa, en
+   * la que está calculada la distancia de la vista general. Fuera de las transiciones es ≈ 1.
+   */
+  private extentScale(): number {
+    const p = this.frames.output.position;
+    const k = 3 * NEPTUNE_INDEX;
+    const now = Math.hypot(p[k] as number, p[k + 1] as number, p[k + 2] as number);
+    const state = this.system.at(this.clock.timeMsValue);
+    const helio = state.heliocentricOf('neptuno');
+    const illustrative = illustrativeDistance(Math.hypot(helio.x, helio.y, helio.z));
+    return now > 0 && illustrative > 0 ? now / illustrative : 1;
   }
 
   /** Proyecta los cuerpos y coloca las etiquetas. */
@@ -595,7 +633,11 @@ export class SceneEngine implements SceneEngineApi {
       this.transitionMs(),
     );
     if (framing.kind === 'overview') {
-      this.rig.setTarget({ elevation: OVERVIEW_ELEVATION }, this.reducedMotion || this.captureMode);
+      // La vista general vuelve siempre a su encuadre (todo el sistema a la vista).
+      this.rig.setTarget(
+        { azimuth: OVERVIEW_AZIMUTH, elevation: OVERVIEW_ELEVATION },
+        this.reducedMotion || this.captureMode,
+      );
     }
     if (this.ready) this.world.setFocus(index);
     this.lastFrameMs = null;
@@ -624,7 +666,7 @@ export class SceneEngine implements SceneEngineApi {
   private zoomBy(factor: number): void {
     if (!(factor > 0)) return;
     if (this.framing.kind === 'body') {
-      this.framing.radii = Math.min(Math.max(this.framing.radii * factor, MIN_DISTANCE_RADII), 2e6);
+      this.framing.zoom = Math.min(Math.max(this.framing.zoom * factor, 0.05), 2e5);
     } else {
       const base = this.overviewDistance();
       this.framing.distance = Math.min(
@@ -677,8 +719,8 @@ export class SceneEngine implements SceneEngineApi {
     return { azimuth: Math.atan2(x, z), elevation: Math.asin(y / length) + lift };
   }
 
-  private bodyFraming(index: number, kind: keyof typeof FRAMING_RADII): CameraFraming {
-    return { kind: 'body', index, radii: FRAMING_RADII[kind] };
+  private bodyFraming(index: number, kind: keyof typeof FRAMING_FILL): CameraFraming {
+    return { kind: 'body', index, fill: FRAMING_FILL[kind], zoom: 1 };
   }
 
   private overviewFraming(): CameraFraming {
@@ -722,8 +764,12 @@ export class SceneEngine implements SceneEngineApi {
     this.emit('qualityChanged', { level, setting: this.qualitySetting, reason });
   }
 
+  /**
+   * Densidad de píxeles del lienzo, con el tope de la calidad. En el modo de captura también: la
+   * captura es determinista para un tamaño de ventana y una densidad dados (los fija el script).
+   */
   private pixelRatio(): number {
-    return this.captureMode ? 1 : Math.min(this.viewport.dpr, this.profile.maxPixelRatio);
+    return Math.min(this.viewport.dpr, this.profile.maxPixelRatio);
   }
 
   private applySize(): void {

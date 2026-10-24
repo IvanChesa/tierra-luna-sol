@@ -44,9 +44,17 @@ const SCALE: Readonly<Record<string, ScaleMode>> = { real: 'real', ilustrativa: 
 
 /** Fecha ISO 8601 en UTC (con `Z`) dentro de 1900–2100, o `null`. */
 export function parseUtcDate(value: string | null): Date | null {
-  if (!value || !/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2}(\.\d+)?)?Z)?$/.test(value)) return null;
+  const match = value?.match(/^(\d{4})-(\d{2})-(\d{2})(T\d{2}:\d{2}(:\d{2}(\.\d+)?)?Z)?$/);
+  if (!value || !match) return null;
   const ms = Date.parse(value.includes('T') ? value : `${value}T00:00:00Z`);
-  return Number.isNaN(ms) || ms < MIN_MS || ms > MAX_MS ? null : new Date(ms);
+  if (Number.isNaN(ms) || ms < MIN_MS || ms > MAX_MS) return null;
+  const date = new Date(ms);
+  // Date.parse convierte el 31 de febrero en el 3 de marzo: la fecha tiene que existir.
+  const sameDay =
+    date.getUTCFullYear() === Number(match[1]) &&
+    date.getUTCMonth() + 1 === Number(match[2]) &&
+    date.getUTCDate() === Number(match[3]);
+  return sameDay ? date : null;
 }
 
 const bodyOrNull = (value: string | null): BodyId | null =>

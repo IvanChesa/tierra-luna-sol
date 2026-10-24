@@ -37,7 +37,7 @@ export interface SceneEngineOptions {
   /** `prefers-reduced-motion`: sin animaciones de cámara ni transiciones (cortes directos). */
   readonly reducedMotion: boolean;
   /**
-   * Modo de captura (`?captura=1`): fecha, cámara y calidad fijas, DPR 1, sin calidad adaptativa ni
+   * Modo de captura (`?captura=1`): fecha, cámara y calidad fijas, sin calidad adaptativa ni
    * animaciones. Las capturas de los informes y el póster salen de aquí.
    */
   readonly capture?: boolean;

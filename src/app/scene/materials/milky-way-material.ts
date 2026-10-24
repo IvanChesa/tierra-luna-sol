@@ -73,7 +73,7 @@ export function createMilkyWayMaterial() {
   const uniforms = {
     uMap: new Uniform<Texture | null>(null),
     uHasMap: new Uniform(0),
-    uIntensity: new Uniform(0.35),
+    uIntensity: new Uniform(0.28),
     uSkyDistance: new Uniform(1),
     uEclToEqj: new Uniform(eclToEqjMatrix()),
   };

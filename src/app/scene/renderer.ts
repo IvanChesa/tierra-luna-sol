@@ -86,6 +86,10 @@ export const createWebGLRenderer: RendererFactory = (canvas, options) => {
     canvas.addEventListener(type, listener);
     return () => canvas.removeEventListener(type, listener);
   };
+  // Al recuperar el contexto, three rehace su estado interno con el fondo por defecto (negro): se
+  // vuelve a poner el del visor. Este listener va después del de three (se registra después).
+  const restoreClearColor = () => renderer.setClearColor(options.clearColor, 1);
+  canvas.addEventListener('webglcontextrestored', restoreClearColor);
 
   return {
     capabilities,
@@ -125,6 +129,7 @@ export const createWebGLRenderer: RendererFactory = (canvas, options) => {
     onContextLost: (listener) => listen('webglcontextlost', listener),
     onContextRestored: (listener) => listen('webglcontextrestored', listener),
     dispose() {
+      canvas.removeEventListener('webglcontextrestored', restoreClearColor);
       renderer.dispose();
       // Libera el contexto ya: los navegadores limitan los contextos WebGL vivos (~16). Quien
       // escucha la pérdida de contexto tiene que darse de baja antes.

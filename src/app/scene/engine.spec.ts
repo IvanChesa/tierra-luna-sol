@@ -2,7 +2,13 @@ import starsBin from '../../../public/data/stars.bin' with { loader: 'binary' };
 import { Texture } from 'three';
 import { KM_PER_AU } from '../ephemeris/constants';
 import { MAX_DATE } from '../ephemeris/time';
-import { EngineDeps, FrameScheduler, SceneEngine } from './engine';
+import {
+  EngineDeps,
+  FRAMING_FILL,
+  FrameScheduler,
+  SceneEngine,
+  framingDistanceRadii,
+} from './engine';
 import { hasDepthChunks } from './materials/depth';
 import type { RendererCapabilities, RendererInfo, RendererPort } from './renderer';
 import { SCENE_BODIES, createSolarSystemModel, sceneBody } from './system';
@@ -11,6 +17,9 @@ import type { SceneEngineEventName, SceneEngineEvents, SceneEngineOptions } from
 const WIDTH = 1200;
 const HEIGHT = 800;
 const START = new Date('2026-10-24T00:00:00Z');
+/** Distancias de encuadre (en radios) con la cámara de 40° y la vista de los tests. */
+const BODY_RADII = framingDistanceRadii(FRAMING_FILL.body, 40, WIDTH / HEIGHT);
+const DETAIL_RADII = framingDistanceRadii(FRAMING_FILL.detail, 40, WIDTH / HEIGHT);
 
 /** Renderer falso: cuenta lo que se le pide y permite simular la pérdida del contexto. */
 class FakeRenderer implements RendererPort {
@@ -334,9 +343,9 @@ describe('SceneEngine: foco, marcos y selección', () => {
     const realRadii =
       (length(state.parentOffsetOf('titan')) * KM_PER_AU) / sceneBody('saturno').radiusKm;
     expect(length(titan) / saturn.r).toBeCloseTo(realRadii, 3);
-    // La cámara acaba a 6 radios de Saturno.
+    // La cámara acaba a la distancia de encuadre de un cuerpo enfocado.
     const rig = (h.engine as unknown as { rig: { distance: number } }).rig;
-    expect(rig.distance / saturn.r).toBeCloseTo(6, 3);
+    expect(rig.distance / saturn.r).toBeCloseTo(BODY_RADII, 3);
     h.engine.dispose();
   });
 
@@ -383,7 +392,23 @@ describe('SceneEngine: foco, marcos y selección', () => {
     const elapsed = settle(h);
     expect(elapsed).toBeLessThanOrEqual(32);
     const rig = (h.engine as unknown as { rig: { distance: number } }).rig;
-    expect(rig.distance / position(h, 'jupiter').r).toBeCloseTo(6, 6);
+    expect(rig.distance / position(h, 'jupiter').r).toBeCloseTo(BODY_RADII, 6);
+    h.engine.dispose();
+  });
+
+  it('al volver de la Luna a la vista general, la cámara nunca se echa encima del Sol', async () => {
+    const h = await createHarness({ view: 'moon' });
+    settle(h);
+    h.engine.setView('system');
+    const rig = (h.engine as unknown as { rig: { distance: number; azimuth: number } }).rig;
+    let closest = Infinity;
+    for (let t = 0; t < 4000; t += 16) {
+      h.frames(16, 62.5);
+      closest = Math.min(closest, rig.distance / position(h, 'sol').r);
+    }
+    // En la vista general, la cámara está a ~80 radios solares; nunca a menos de 30 por el camino.
+    expect(closest).toBeGreaterThan(30);
+    expect(Math.abs(Math.sin(rig.azimuth - -0.55))).toBeLessThan(1e-3); // acimut de la vista general
     h.engine.dispose();
   });
 
@@ -424,16 +449,22 @@ describe('SceneEngine: foco, marcos y selección', () => {
     h.engine.dispose();
   });
 
+  it('el encuadre ocupa la misma fracción del lado corto en apaisado y en vertical', () => {
+    // En vertical manda el campo horizontal: la cámara se aleja para que el cuerpo quepa a lo ancho.
+    expect(framingDistanceRadii(0.82, 40, 390 / 844)).toBeGreaterThan(DETAIL_RADII * 1.8);
+    expect(framingDistanceRadii(0.82, 40, 1)).toBeCloseTo(DETAIL_RADII, 9);
+  });
+
   it('las vistas Tierra y Luna encuadran su cuerpo de cerca', async () => {
     const h = await createHarness({ view: 'earth' });
     settle(h);
     expect(h.engine.focusedBody).toBe('tierra');
     const rig = (h.engine as unknown as { rig: { distance: number } }).rig;
-    expect(rig.distance / position(h, 'tierra').r).toBeCloseTo(3.2, 3);
+    expect(rig.distance / position(h, 'tierra').r).toBeCloseTo(DETAIL_RADII, 3);
     h.engine.setView('moon');
     settle(h);
     expect(h.engine.focusedBody).toBe('luna');
-    expect(rig.distance / position(h, 'luna').r).toBeCloseTo(3.2, 3);
+    expect(rig.distance / position(h, 'luna').r).toBeCloseTo(DETAIL_RADII, 3);
     h.engine.setView('system');
     settle(h);
     expect(h.engine.focusedBody).toBeNull();
