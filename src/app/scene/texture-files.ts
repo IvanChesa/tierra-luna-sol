@@ -335,29 +335,6 @@ export const TEXTURE_FILES: TextureFiles = {
       bytes: 15774,
     },
   ],
-  'milky-way': [
-    {
-      level: '1k',
-      path: 'textures/1k/milky-way.5d1592c87c.webp',
-      width: 1024,
-      height: 512,
-      bytes: 25662,
-    },
-    {
-      level: '2k',
-      path: 'textures/2k/milky-way.af123b8dee.webp',
-      width: 2048,
-      height: 1024,
-      bytes: 244408,
-    },
-    {
-      level: '4k',
-      path: 'textures/4k/milky-way.16a4c970d4.webp',
-      width: 4096,
-      height: 2048,
-      bytes: 802754,
-    },
-  ],
 };
 
 /**

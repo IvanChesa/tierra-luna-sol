@@ -22,7 +22,10 @@ export interface QualityProfile {
   /** Nivel de textura de los cuerpos en la vista general y del cuerpo enfocado. */
   readonly overviewTexture: TextureLevel;
   readonly focusTexture: TextureLevel;
-  /** Vía Láctea (si existe), o `null` para no cargarla. */
+  /**
+   * Vía Láctea, o `null` para no cargarla. Ahora es `null` en todos los niveles: la única fuente
+   * evaluada (NASA SVS 4851, derivada de Gaia DR2) tiene licencia CC BY-NC (docs/PENDIENTES.md).
+   */
   readonly milkyWayTexture: TextureLevel | null;
   /** Puntos por vuelta de las órbitas de los planetas (las lunas usan la mitad). */
   readonly orbitSegments: number;
@@ -41,10 +44,11 @@ export const QUALITY_PROFILES: Readonly<Record<QualityLevel, QualityProfile>> = 
     anisotropy: 8,
     overviewTexture: '1k',
     focusTexture: '4k',
-    milkyWayTexture: '4k',
+    milkyWayTexture: null,
     orbitSegments: 360,
     vramBudgetMB: 300,
-    minFps: 45,
+    // §5 pide ≥ 55 FPS en escritorio (alto): con 50 de media en 5 s de animación, ya no llega.
+    minFps: 50,
   },
   medium: {
     level: 'medium',
@@ -54,10 +58,11 @@ export const QUALITY_PROFILES: Readonly<Record<QualityLevel, QualityProfile>> = 
     anisotropy: 4,
     overviewTexture: '1k',
     focusTexture: '2k',
-    milkyWayTexture: '2k',
+    milkyWayTexture: null,
     orbitSegments: 256,
     vramBudgetMB: 200,
-    minFps: 26,
+    // §5 pide ≥ 30 FPS en móvil: por debajo, mejor el nivel bajo.
+    minFps: 30,
   },
   low: {
     level: 'low',
@@ -67,7 +72,7 @@ export const QUALITY_PROFILES: Readonly<Record<QualityLevel, QualityProfile>> = 
     anisotropy: 1,
     overviewTexture: '1k',
     focusTexture: '2k',
-    milkyWayTexture: '1k',
+    milkyWayTexture: null,
     orbitSegments: 180,
     vramBudgetMB: 120,
     minFps: 0,

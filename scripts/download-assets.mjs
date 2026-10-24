@@ -44,6 +44,8 @@ const ASSETS = [
     SVS_MOON + 'lroc_color_poles_4k.tif',
     'https://svs.gsfc.nasa.gov/4720',
   ],
+  // Vía Láctea: se descarga para poder evaluarla, pero no se publica (licencia CC BY-NC de Gaia
+  // DR2; ver OMITTED en build-textures.mjs y docs/PENDIENTES.md).
   ['milkyway_2020_4k.exr', SVS_STARS + 'milkyway_2020_4k.exr', 'https://svs.gsfc.nasa.gov/4851'],
   // Vista previa con estrellas, solo para comprobar la orientación del mapa del cielo.
   [

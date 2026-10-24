@@ -56,6 +56,17 @@ const TEXTURES = {
 };
 
 /**
+ * Texturas que no se publican, con el motivo. La Vía Láctea del NASA SVS (4851) deriva de Gaia DR2,
+ * que se distribuye con licencia CC BY-NC 3.0 IGO (https://www.cosmos.esa.int/web/gaia-users/license):
+ * la cláusula no comercial no entra en la política de licencias del proyecto (revisión de la fase 2,
+ * hallazgo 4). Queda omitida hasta que Iván decida (docs/PENDIENTES.md); el código del cielo sigue
+ * listo para otra fuente.
+ */
+const OMITTED = {
+  'milky-way': 'licencia CC BY-NC 3.0 IGO de Gaia DR2 (pendiente de Iván)',
+};
+
+/**
  * Sondas de alineación: [latitud, longitud este, nombre]. Los puntos oscuros tienen que medir menos
  * de `ratio` (0,6 por defecto) × el claro más tenue; `radius` es el radio de la media en píxeles
  * del nivel 1k (el cráter Kuiper de Mercurio mide unos 4 px).
@@ -272,6 +283,10 @@ const files = {};
 const reports = [];
 let ringStrip = null;
 for (const [id, spec] of Object.entries(TEXTURES)) {
+  if (OMITTED[id]) {
+    console.log(`${id}: omitida (${OMITTED[id]})`);
+    continue;
+  }
   const input = fileURLToPath(new URL(spec.file, SRC));
   let sourceWidth;
   let base;

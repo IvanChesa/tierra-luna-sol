@@ -41,7 +41,14 @@ const rotate = (m: Mat3, v: Vector3) => {
 
 describe('texturas: manifiesto y alineación del meridiano 0', () => {
   it('cada textura del manifiesto tiene ficheros, y cada cuerpo con textura la tiene en el manifiesto', () => {
-    for (const id of ids) expect(TEXTURE_FILES[id]?.length).toBeGreaterThan(0);
+    // La Vía Láctea está omitida (licencia CC BY-NC de Gaia DR2): ni ficheros ni nivel que la pida.
+    for (const id of ids) {
+      if (id === 'milky-way') continue;
+      expect(TEXTURE_FILES[id]?.length).toBeGreaterThan(0);
+    }
+    expect(TEXTURE_FILES['milky-way']).toBeUndefined();
+    for (const profile of Object.values(QUALITY_PROFILES))
+      expect(profile.milkyWayTexture).toBeNull();
     for (const id of Object.values(BODY_TEXTURES)) expect(ids).toContain(id);
   });
 
@@ -91,7 +98,7 @@ describe('texturas: manifiesto y alineación del meridiano 0', () => {
     ).toBeLessThan(1e-9);
   });
 
-  it('la tira de los anillos cubre del interior del anillo C al exterior del F', () => {
+  it('la tira de los anillos cubre del interior del anillo C al exterior del A', () => {
     // Bordes de la ficha de la NASA: anillo C desde 74 658 km; anillo A hasta 136 780 km.
     expect(SATURN_RING_STRIP_KM.inner).toBeLessThan(74_658);
     expect(SATURN_RING_STRIP_KM.outer).toBeGreaterThan(136_780);
