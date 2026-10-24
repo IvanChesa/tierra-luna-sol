@@ -41,21 +41,47 @@ export const MOON_MIN_SEPARATION_PX = 14;
 export const OTHER_MOON_MIN_SEPARATION_PX = 40;
 const GAP_PX = 6;
 const PADDING_PX = 2;
+/** Radio mínimo de un cuerpo como obstáculo para los nombres (su marcador mide 8 px). */
+const OBSTACLE_MIN_RADIUS_PX = 4;
+/**
+ * El halo del Sol (sun-material.ts: 3,2 radios y al menos 26 px de semilado) también tapa: se
+ * reserva la parte brillante, unos dos tercios de su radio.
+ */
+const SUN_HALO_RADII = 3.2;
+const SUN_HALO_MIN_PX = 26;
+const SUN_HALO_VISIBLE = 0.65;
 
 function priority(info: LabelInfo, index: number, selected: number, focusSystem: number): number {
   if (index === selected) return 1000;
   if (info.kind === 'star') return 900;
+  // La Tierra es la referencia de quien mira: su nombre va antes que el de los demás planetas.
+  if (info.id === 'tierra') return 850;
   if (info.kind === 'planet') return 800;
   // Las lunas del sistema enfocado van antes que las demás.
   return info.parentIndex === focusSystem ? 600 : 400;
 }
 
+interface Obstacle {
+  readonly index: number;
+  readonly x: number;
+  readonly y: number;
+  readonly r: number;
+}
+
+/** ¿Toca la caja de un nombre el disco de un cuerpo (o el halo del Sol)? */
+const hitsDisc = (box: LabelBox, disc: Obstacle): boolean => {
+  const nx = Math.min(Math.max(disc.x, box.x), box.x + box.width);
+  const ny = Math.min(Math.max(disc.y, box.y), box.y + box.height);
+  return Math.hypot(disc.x - nx, disc.y - ny) < disc.r;
+};
+
 /**
  * Decide qué etiquetas se ven y dónde. Voraz por prioridad: cada nombre prueba cuatro posiciones
- * (derecha, izquierda, arriba y abajo del disco) y se descarta si choca en todas con otro ya colocado,
- * si su cuerpo está tapado o fuera de la pantalla, si es una luna pegada a su planeta en pantalla
- * (los sistemas de lunas lejanos se ven como un solo punto) o si es una luna de un planeta sin
- * nombre visible. La seleccionada se muestra siempre que esté en pantalla.
+ * (derecha, izquierda, arriba y abajo del disco) y se descarta si en todas choca con otro nombre ya
+ * colocado o con el disco de otro cuerpo visible (o el halo del Sol), si su cuerpo está tapado o fuera
+ * de la pantalla, si es una luna pegada a su planeta en pantalla (los sistemas de lunas lejanos se ven
+ * como un solo punto) o si es una luna de un planeta sin nombre visible. La seleccionada se muestra
+ * siempre que esté en pantalla.
  */
 export function layoutLabels(
   bodies: readonly ScreenBody[],
@@ -82,6 +108,15 @@ export function layoutLabels(
       const pb = priority(infos[b.index] as LabelInfo, b.index, selected, focusSystem);
       return pb - pa || a.depth - b.depth;
     });
+  // Los cuerpos que se ven (los de `order`) son obstáculos para los nombres de los demás.
+  const obstacles: Obstacle[] = order.map((body) => {
+    const disc = Math.max(body.radiusPx, OBSTACLE_MIN_RADIUS_PX);
+    const halo =
+      infos[body.index]?.kind === 'star'
+        ? Math.max(body.radiusPx * SUN_HALO_RADII, SUN_HALO_MIN_PX) * SUN_HALO_VISIBLE
+        : 0;
+    return { index: body.index, x: body.x, y: body.y, r: Math.max(disc, halo) };
+  });
   const placed: LabelBox[] = [];
   const shown = new Set<number>();
   for (const body of order) {
@@ -96,26 +131,35 @@ export function layoutLabels(
       [-w / 2, -gap - h], // arriba
       [-w / 2, gap], // abajo
     ];
-    for (const [dx, dy] of options) {
-      const box: LabelBox = {
-        index: body.index,
-        anchorX: body.x,
-        anchorY: body.y,
-        dx,
-        dy,
-        x: body.x + dx,
-        y: body.y + dy,
-        width: w,
-        height: h,
-        marker: body.radiusPx < MARKER_RADIUS_PX,
-      };
-      const inside =
-        box.x >= 0 && box.x + w <= viewport.width && box.y >= 0 && box.y + h <= viewport.height;
-      if (!inside || placed.some((other) => overlaps(box, other))) continue;
-      placed.push(box);
-      shown.add(body.index);
-      break;
-    }
+    const fit = (avoidDiscs: boolean): LabelBox | null => {
+      for (const [dx, dy] of options) {
+        const box: LabelBox = {
+          index: body.index,
+          anchorX: body.x,
+          anchorY: body.y,
+          dx,
+          dy,
+          x: body.x + dx,
+          y: body.y + dy,
+          width: w,
+          height: h,
+          marker: body.radiusPx < MARKER_RADIUS_PX,
+        };
+        const inside =
+          box.x >= 0 && box.x + w <= viewport.width && box.y >= 0 && box.y + h <= viewport.height;
+        if (!inside || placed.some((other) => overlaps(box, other))) continue;
+        if (avoidDiscs && obstacles.some((d) => d.index !== body.index && hitsDisc(box, d))) {
+          continue;
+        }
+        return box;
+      }
+      return null;
+    };
+    // El nombre del cuerpo elegido sale siempre, aunque tenga que tocar el disco de otro.
+    const box = fit(true) ?? (body.index === selected ? fit(false) : null);
+    if (!box) continue;
+    placed.push(box);
+    shown.add(body.index);
   }
   return placed;
 }

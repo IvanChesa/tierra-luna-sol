@@ -90,6 +90,39 @@ describe('labels: colocación sin solapes', () => {
     expect(layoutLabels(bodies, infos, sizes, viewport, 2, -1).map((b) => b.index)).toContain(2);
   });
 
+  it('un nombre no se monta en el disco de otro cuerpo visible', () => {
+    // Marte (12 px de radio) justo donde caería el nombre de la Tierra: el nombre va a la izquierda.
+    const boxes = layoutLabels(
+      [screen(1, 300, 300), screen(3, 370, 300, 12)],
+      infos,
+      sizes,
+      viewport,
+      -1,
+      -1,
+    );
+    expect(boxes.find((b) => b.index === 1)?.dx).toBeLessThan(0);
+  });
+
+  it('el halo del Sol también aparta los nombres', () => {
+    // Marte a 15 px del Sol: a la derecha su nombre caería sobre el halo; va a la izquierda.
+    const boxes = layoutLabels(
+      [screen(0, 400, 300, 6), screen(3, 385, 300, 2)],
+      infos,
+      sizes,
+      viewport,
+      -1,
+      -1,
+    );
+    expect(boxes.find((b) => b.index === 3)?.dx).toBeLessThan(0);
+  });
+
+  it('la Tierra se nombra antes que los demás planetas', () => {
+    // Pegados al borde izquierdo solo cabe un nombre (a la derecha): gana la Tierra, aunque Marte
+    // esté más cerca de la cámara.
+    const bodies = [screen(3, 10, 300, 4, { depth: 50 }), screen(1, 10, 300)];
+    expect(layoutLabels(bodies, infos, sizes, viewport, -1, -1).map((b) => b.index)).toEqual([1]);
+  });
+
   it('marca con un punto los cuerpos de menos de 3 px', () => {
     const [box] = layoutLabels([screen(3, 400, 300, 0.4)], infos, sizes, viewport, -1, -1);
     expect(box?.marker).toBe(true);
