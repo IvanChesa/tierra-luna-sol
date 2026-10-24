@@ -514,6 +514,9 @@ export class SceneEngine implements SceneEngineApi {
       textures: info.textures,
       vramMB: this.world.vramBytes() / 1_048_576,
       renderedFrames: this.renderedFrames,
+      aliased: SCENE_BODIES.filter((body) => this.aliasing.orbit[body.index] === 1).map(
+        (body) => body.id,
+      ),
       quality: this.level,
       depth: this.renderer.capabilities.depth,
     };

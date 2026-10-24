@@ -78,6 +78,8 @@ export interface FrameStats {
   readonly vramMB: number;
   /** Frames pintados desde el arranque (para comprobar el render bajo demanda). */
   readonly renderedFrames: number;
+  /** Cuerpos que se dibujan como su órbita resaltada porque irían a saltos (§4.5). */
+  readonly aliased: readonly BodyId[];
   readonly quality: QualityLevel;
   readonly depth: Exclude<DepthMode, 'auto'>;
 }

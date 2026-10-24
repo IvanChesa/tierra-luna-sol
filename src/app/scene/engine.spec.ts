@@ -527,7 +527,7 @@ describe('SceneEngine: calidad adaptativa, contexto WebGL y limpieza', () => {
 });
 
 describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas y aliasing)', () => {
-  type Internals = {
+  interface Internals {
     screen: { index: number; x: number; y: number }[];
     rig: { distance: number; azimuth: number; elevation: number };
     look: unknown;
@@ -537,7 +537,7 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
       orbits: { colors: Float32Array };
     };
     labels: { visibleLayer: boolean };
-  };
+  }
   const internals = (h: Harness) => h.engine as unknown as Internals;
   const screenOf = (h: Harness, id: string) => internals(h).screen[sceneBody(id as never).index];
 
@@ -686,10 +686,13 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     settle(h);
     const fobos = () => internals(h).world.scene.getObjectByName('fobos');
     expect(fobos()?.visible).toBe(true);
+    expect(h.engine.stats().aliased).toEqual([]);
     h.engine.setSpeed(365.25 * 86_400);
     h.engine.setPlaying(true);
     h.frames(300);
     expect(fobos()?.visible).toBe(false);
+    // Las cifras lo dicen también (los e2e lo miran ahí): Fobos y Deimos van como órbita.
+    expect(h.engine.stats().aliased).toEqual(expect.arrayContaining(['fobos', 'deimos']));
     // A 1 día/s avanza 18,8° por frame a 60 FPS: por debajo de la entrada (20°) pero por encima de la
     // salida (15°), así que la histéresis lo deja como órbita (no parpadea en el umbral).
     h.engine.setSpeed(86_400);
@@ -699,6 +702,7 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     h.engine.setSpeed(3600);
     h.frames(300);
     expect(fobos()?.visible).toBe(true);
+    expect(h.engine.stats().aliased).not.toContain('fobos');
     h.engine.setPlaying(false);
     h.engine.dispose();
   });
