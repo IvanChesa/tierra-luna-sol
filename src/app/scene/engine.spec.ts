@@ -81,10 +81,14 @@ class FakeRenderer implements RendererPort {
 /** `requestAnimationFrame` manual: los frames solo corren cuando el test lo dice. */
 class ManualScheduler implements FrameScheduler {
   private next = 1;
-  private readonly pending = new Map<number, (time: number) => void>();
-  request(callback: (time: number) => void): number {
+  private readonly pending = new Map<number, { callback: (time: number) => void; due: number }>();
+  /** Peticiones con espera (render lento a 4 Hz) hechas hasta ahora. */
+  delayed = 0;
+  constructor(private readonly now: () => number) {}
+  request(callback: (time: number) => void, delayMs = 0): number {
     const handle = this.next++;
-    this.pending.set(handle, callback);
+    if (delayMs > 0) this.delayed++;
+    this.pending.set(handle, { callback, due: this.now() + delayMs });
     return handle;
   }
   cancel(handle: number): void {
@@ -93,10 +97,11 @@ class ManualScheduler implements FrameScheduler {
   get waiting(): number {
     return this.pending.size;
   }
+  /** Corre los frames pedidos que ya tocan (los que llevan espera, cuando ha pasado). */
   run(time: number): void {
-    const callbacks = [...this.pending.values()];
-    this.pending.clear();
-    callbacks.forEach((callback) => callback(time));
+    const ready = [...this.pending].filter(([, entry]) => entry.due <= time);
+    for (const [handle] of ready) this.pending.delete(handle);
+    ready.forEach(([, entry]) => entry.callback(time));
   }
 }
 
@@ -117,8 +122,8 @@ const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 async function createHarness(overrides: Partial<SceneEngineOptions> = {}): Promise<Harness> {
   const renderer = new FakeRenderer();
-  const scheduler = new ManualScheduler();
   const clock = { now: 1000 };
+  const scheduler = new ManualScheduler(() => clock.now);
   const visibilityListeners = new Set<() => void>();
   const page = { hidden: false, notify: () => visibilityListeners.forEach((l) => l()) };
   const canvas = document.createElement('canvas');
@@ -168,6 +173,7 @@ async function createHarness(overrides: Partial<SceneEngineOptions> = {}): Promi
     qualityChanged: [],
     timeChanged: [],
     limitReached: [],
+    travel: [],
   } as unknown as Harness['events'];
   for (const name of Object.keys(events) as SceneEngineEventName[]) {
     engine.on(name, (event) => (events[name] as unknown[]).push(event));
@@ -517,5 +523,199 @@ describe('SceneEngine: calidad adaptativa, contexto WebGL y limpieza', () => {
     h.engine.focus('marte');
     expect(h.scheduler.waiting).toBe(0);
     expect(SCENE_BODIES).toHaveLength(30);
+  });
+});
+
+describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas y aliasing)', () => {
+  type Internals = {
+    screen: { index: number; x: number; y: number }[];
+    rig: { distance: number; azimuth: number; elevation: number };
+    look: unknown;
+    frames: { output: { position: Float64Array; radius: Float64Array } };
+    world: {
+      scene: { getObjectByName(name: string): { visible: boolean } | undefined };
+      orbits: { colors: Float32Array };
+    };
+    labels: { visibleLayer: boolean };
+  };
+  const internals = (h: Harness) => h.engine as unknown as Internals;
+  const screenOf = (h: Harness, id: string) => internals(h).screen[sceneBody(id as never).index];
+
+  it('con márgenes, el cuerpo enfocado queda en el centro de la parte visible', async () => {
+    const h = await createHarness({ reducedMotion: true, focus: 'saturno' });
+    settle(h);
+    expect(screenOf(h, 'saturno')?.x).toBeCloseTo(WIDTH / 2, 3);
+    h.engine.setViewInsets({ top: 0, right: 0, bottom: 100, left: 300 });
+    settle(h);
+    expect(screenOf(h, 'saturno')?.x).toBeCloseTo(300 + (WIDTH - 300) / 2, 3);
+    expect(screenOf(h, 'saturno')?.y).toBeCloseTo((HEIGHT - 100) / 2, 3);
+    h.engine.dispose();
+  });
+
+  it('los márgenes que llegan antes del primer tamaño del lienzo no se pierden', async () => {
+    const h = await createHarness({ reducedMotion: true, focus: 'jupiter' });
+    h.engine.resize(1, 1, 1);
+    h.engine.setViewInsets({ top: 0, right: 320, bottom: 0, left: 0 });
+    h.engine.resize(WIDTH, HEIGHT, 1);
+    settle(h);
+    expect(screenOf(h, 'jupiter')?.x).toBeCloseTo((WIDTH - 320) / 2, 3);
+    h.engine.dispose();
+  });
+
+  it('elegir un cuerpo es un vuelo: avisa del viaje, mira primero al foco anterior y acaba enfocado', async () => {
+    const h = await createHarness();
+    settle(h);
+    h.engine.focus('marte');
+    expect(h.events.travel).toEqual([{ active: true, kind: 'focus' }]);
+    h.frames(16);
+    // Al despegar, la cámara aún mira hacia el Sol (el foco anterior), no hacia Marte.
+    expect(internals(h).look).not.toBeNull();
+    const elapsed = settle(h);
+    expect(elapsed).toBeGreaterThanOrEqual(1900);
+    expect(h.events.travel.at(-1)).toEqual({ active: false, kind: 'focus' });
+    expect(internals(h).look).toBeNull();
+    h.engine.dispose();
+  });
+
+  it('cambiar de vista es un viaje de ~3 s que se puede saltar', async () => {
+    const h = await createHarness();
+    settle(h);
+    h.engine.setView('earth');
+    expect(h.events.travel).toEqual([{ active: true, kind: 'view' }]);
+    h.frames(1000);
+    expect(h.events.travel).toHaveLength(1); // sigue viajando
+    h.engine.skipTransition();
+    h.frames(32);
+    expect(h.events.travel.at(-1)).toEqual({ active: false, kind: 'view' });
+    const earthRadius = internals(h).frames.output.radius[sceneBody('tierra').index] as number;
+    expect(internals(h).rig.distance / earthRadius).toBeCloseTo(DETAIL_RADII, 2);
+    h.engine.dispose();
+  });
+
+  it('con movimiento reducido no hay viajes: el cambio de vista es un corte', async () => {
+    const h = await createHarness({ reducedMotion: true });
+    settle(h);
+    h.engine.setView('moon');
+    expect(h.events.travel).toEqual([]);
+    expect(settle(h)).toBeLessThanOrEqual(32);
+    h.engine.dispose();
+  });
+
+  it('el teclado gira la cámara y los botones acercan y alejan', async () => {
+    const h = await createHarness({ reducedMotion: true, focus: 'jupiter' });
+    settle(h);
+    const before = { ...internals(h).rig };
+    h.engine.orbitBy(0.2, 0.1);
+    settle(h);
+    expect(internals(h).rig.azimuth - before.azimuth).toBeCloseTo(0.2, 6);
+    expect(internals(h).rig.elevation - before.elevation).toBeCloseTo(0.1, 6);
+    h.engine.zoomBy(0.5);
+    settle(h);
+    expect(internals(h).rig.distance / before.distance).toBeCloseTo(0.5, 6);
+    h.engine.dispose();
+  });
+
+  it('la vista limpia oculta las etiquetas', async () => {
+    const h = await createHarness();
+    settle(h);
+    h.engine.setLabelsVisible(false);
+    expect(internals(h).labels.visibleLayer).toBe(false);
+    expect(h.labels.querySelector<HTMLElement>('.scene-labels')?.hidden).toBe(true);
+    h.engine.setLabelsVisible(true);
+    expect(internals(h).labels.visibleLayer).toBe(true);
+    h.engine.dispose();
+  });
+
+  it('a tiempo real pinta a 4 Hz, no a 60, y sigue avisando al store (≤ 5 por segundo)', async () => {
+    const h = await createHarness();
+    settle(h);
+    h.engine.setSpeed(1);
+    h.engine.setPlaying(true);
+    h.frames(100);
+    const renders = h.renderer.renders;
+    const events = h.events.timeChanged.length;
+    const start = h.engine.time.getTime();
+    h.frames(2000);
+    expect(h.renderer.renders - renders).toBeGreaterThanOrEqual(7);
+    expect(h.renderer.renders - renders).toBeLessThanOrEqual(9);
+    expect(h.scheduler.delayed).toBeGreaterThan(0);
+    expect(h.events.timeChanged.length - events).toBeLessThanOrEqual(10);
+    // El reloj no se retrasa por pintar menos: 2 s reales son ~2 s simulados.
+    expect((h.engine.time.getTime() - start) / 1000).toBeGreaterThan(1.7);
+    h.engine.setPlaying(false);
+    h.engine.dispose();
+  });
+
+  it('movimiento coherente: Mercurio da ~4 vueltas por cada vuelta de la Tierra, también hacia atrás', async () => {
+    for (const direction of [1, -1]) {
+      const h = await createHarness({ reducedMotion: true });
+      settle(h);
+      const angle = (id: string) => {
+        const p = internals(h).frames.output.position;
+        const k = 3 * sceneBody(id as never).index;
+        return Math.atan2(p[k + 1] as number, p[k] as number);
+      };
+      const ids = ['mercurio', 'tierra'] as const;
+      const turns = { mercurio: 0, tierra: 0 };
+      const last = { mercurio: angle('mercurio'), tierra: angle('tierra') };
+      h.engine.setSpeed(direction * 365.25 * 86_400); // 1 año/s
+      h.engine.setPlaying(true);
+      for (let t = 0; t < 1000; t += 1000 / 60) {
+        h.frames(1000 / 60);
+        for (const id of ids) {
+          const now = angle(id);
+          let delta = now - last[id];
+          if (delta > Math.PI) delta -= 2 * Math.PI;
+          if (delta < -Math.PI) delta += 2 * Math.PI;
+          turns[id] += delta / (2 * Math.PI);
+          last[id] = now;
+        }
+      }
+      h.engine.setPlaying(false);
+      // En un año (algo más por el último frame), la Tierra da ~1 vuelta y Mercurio ~4,15.
+      expect(direction * turns.tierra).toBeGreaterThan(0.95);
+      expect(direction * turns.tierra).toBeLessThan(1.1);
+      expect(turns.mercurio / turns.tierra).toBeGreaterThan(4);
+      expect(turns.mercurio / turns.tierra).toBeLessThan(4.3);
+      h.engine.dispose();
+    }
+  });
+
+  it('a 1 año/s, Fobos (con Marte enfocado) se sustituye por su órbita; a 1 hora/s, no', async () => {
+    const h = await createHarness({ reducedMotion: true, focus: 'marte' });
+    settle(h);
+    const fobos = () => internals(h).world.scene.getObjectByName('fobos');
+    expect(fobos()?.visible).toBe(true);
+    h.engine.setSpeed(365.25 * 86_400);
+    h.engine.setPlaying(true);
+    h.frames(300);
+    expect(fobos()?.visible).toBe(false);
+    // A 1 día/s avanza 18,8° por frame a 60 FPS: por debajo de la entrada (20°) pero por encima de la
+    // salida (15°), así que la histéresis lo deja como órbita (no parpadea en el umbral).
+    h.engine.setSpeed(86_400);
+    h.frames(300);
+    expect(fobos()?.visible).toBe(false);
+    // A 1 hora/s, 0,8° por frame: vuelve a verse.
+    h.engine.setSpeed(3600);
+    h.frames(300);
+    expect(fobos()?.visible).toBe(true);
+    h.engine.setPlaying(false);
+    h.engine.dispose();
+  });
+
+  it('al reproducir, la estela del último segundo hace más brillante la órbita junto al cuerpo', async () => {
+    const h = await createHarness({ reducedMotion: true });
+    settle(h);
+    // El primer segmento de las órbitas es el de Mercurio, justo detrás del cuerpo.
+    const head = () => internals(h).world.orbits.colors[0] as number;
+    const paused = head();
+    h.engine.setSpeed(86_400 * 7); // 1 semana/s: la estela cubre 7 días de los 88 de su año
+    h.engine.setPlaying(true);
+    h.frames(200);
+    expect(head()).toBeGreaterThan(paused * 1.1);
+    h.engine.setPlaying(false);
+    settle(h);
+    expect(head()).toBeCloseTo(paused, 6);
+    h.engine.dispose();
   });
 });

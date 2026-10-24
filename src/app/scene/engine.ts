@@ -216,6 +216,8 @@ export class SceneEngine implements SceneEngineApi {
   private focusIndex: number | null = null;
   private framing: CameraFraming;
   private viewport = { width: 1, height: 1, dpr: 1 };
+  /** Márgenes pedidos por la interfaz, tal cual: se recortan contra el tamaño actual del lienzo. */
+  private insetsRequested: ViewInsets = NO_INSETS;
   private insetsTarget: ViewInsets = NO_INSETS;
   private insets: ViewInsets = NO_INSETS;
   private projection: ViewProjection = viewProjection(1, 1, BASE_FOV_DEG, NO_INSETS);
@@ -444,13 +446,16 @@ export class SceneEngine implements SceneEngineApi {
     };
     this.applySize();
     const { width: w, height: h } = this.viewport;
-    this.insetsTarget = sanitizeInsets(this.insetsTarget, w, h);
-    this.insets = sanitizeInsets(this.insets, w, h);
+    // Se recortan los pedidos, no los ya recortados: si llegan antes del primer tamaño (lienzo de 1 px),
+    // se quedarían a cero.
+    this.insetsTarget = sanitizeInsets(this.insetsRequested, w, h);
+    this.insets = sanitizeInsets(this.instant() ? this.insetsTarget : this.insets, w, h);
     this.invalidate();
   }
 
   setViewInsets(insets: ViewInsets): void {
     if (this.disposed) return;
+    this.insetsRequested = insets;
     this.insetsTarget = sanitizeInsets(insets, this.viewport.width, this.viewport.height);
     if (this.instant()) this.insets = this.insetsTarget;
     this.invalidate();
