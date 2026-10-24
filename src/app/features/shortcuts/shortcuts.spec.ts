@@ -40,6 +40,8 @@ describe('shortcuts: atajos de teclado', () => {
     expect(globalCommand(key('ArrowLeft'))).toBeNull();
     expect(canvasCommand(key('ArrowLeft'))).toBe('orbit-left');
     expect(canvasCommand(key('Home'))).toBe('overview');
+    expect(canvasCommand(key('+'))).toBe('zoom-in');
+    expect(canvasCommand(key('-'))).toBe('zoom-out');
     expect(canvasCommand(key(' '))).toBe('toggle-play');
   });
 

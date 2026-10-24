@@ -35,8 +35,8 @@ import { SHORTCUT_HELP } from './shortcuts';
         Atajos de una sola tecla
       </label>
       <p id="shortcuts-option-hint" class="dialog__hint">
-        Desactívalos si usas el control por voz o si se te disparan sin querer. Esc, las flechas del
-        visor y los botones siguen funcionando.
+        Desactívalos si usas el control por voz o si se te disparan sin querer. Siguen funcionando
+        Esc, las teclas del visor cuando tiene el foco y los botones.
       </p>
       @for (group of groups; track group.title) {
         <h3>{{ group.title }}</h3>

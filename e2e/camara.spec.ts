@@ -73,9 +73,14 @@ test.describe('Cámara, vista limpia y atajos', () => {
     await page.keyboard.press('Escape');
     await page.keyboard.press('k');
     await expect(page.locator('.time__play')).toHaveAccessibleName(/Reproducir/);
-    await page.reload();
-    await expect(page.locator('tls-time-controls')).toBeVisible();
+    // Al volver a abrir la página, la preferencia sigue (localStorage).
+    await openExplorer(page, '/?captura=1');
     await page.keyboard.press('k');
     await expect(page.locator('.time__play')).toHaveAccessibleName(/Reproducir/);
+    // Las teclas del lienzo solo actúan con el foco en él: siguen valiendo (también + y −).
+    await page.getByRole('application').focus();
+    const before = await canvasImage(page);
+    await page.keyboard.press('+');
+    expect(await canvasImage(page)).not.toBe(before);
   });
 });

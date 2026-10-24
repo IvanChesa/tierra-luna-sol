@@ -20,7 +20,14 @@ export type ShortcutCommand =
   | 'escape';
 
 export type CanvasCommand =
-  'orbit-left' | 'orbit-right' | 'orbit-up' | 'orbit-down' | 'overview' | 'toggle-play';
+  | 'orbit-left'
+  | 'orbit-right'
+  | 'orbit-up'
+  | 'orbit-down'
+  | 'zoom-in'
+  | 'zoom-out'
+  | 'overview'
+  | 'toggle-play';
 
 export interface ShortcutHelp {
   /** Teclas tal y como se muestran (cada una en su `<kbd>`). */
@@ -46,12 +53,18 @@ const GLOBAL_KEYS: Readonly<Record<string, ShortcutCommand>> = {
   Escape: 'escape',
 };
 
-/** Tecla → orden, solo con el foco en el lienzo (las flechas y el espacio no se roban fuera). */
+/**
+ * Tecla → orden, solo con el foco en el lienzo (las flechas y el espacio no se roban fuera). `+` y
+ * `−` también son globales; en el lienzo siguen valiendo aunque se desactiven los atajos de una sola
+ * tecla, porque solo actúan con el foco (WCAG 2.1.4).
+ */
 const CANVAS_KEYS: Readonly<Record<string, CanvasCommand>> = {
   ArrowLeft: 'orbit-left',
   ArrowRight: 'orbit-right',
   ArrowUp: 'orbit-up',
   ArrowDown: 'orbit-down',
+  '+': 'zoom-in',
+  '-': 'zoom-out',
   Home: 'overview',
   ' ': 'toggle-play',
 };

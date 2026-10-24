@@ -15,6 +15,7 @@ import {
 import { formatNumber } from '../../core/format';
 import type { ExplorerView, FrameStats, SceneEngineApi } from '../../scene';
 import { SimulationStore } from '../../state/simulation.store';
+import { ZOOM_STEP } from '../camera-controls/camera-controls';
 import { ExplorerSession } from '../explorer-ui/explorer-session';
 import { canvasCommand } from '../shortcuts/shortcuts';
 import { viewerErrorText } from './viewer-errors';
@@ -124,6 +125,12 @@ export class ViewerCanvas {
         break;
       case 'orbit-down':
         this.session.orbit(0, -step);
+        break;
+      case 'zoom-in':
+        this.session.zoom(1 / ZOOM_STEP);
+        break;
+      case 'zoom-out':
+        this.session.zoom(ZOOM_STEP);
         break;
       case 'overview':
         this.session.overview();
