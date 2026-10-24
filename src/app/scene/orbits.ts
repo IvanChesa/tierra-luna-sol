@@ -117,8 +117,9 @@ export class OrbitLines {
       const periodMs = source.periodDays * 86_400_000;
       const phase = ((((timeMs - sampled.startMs) / periodMs) % 1) + 1) % 1;
       const behind = Math.floor(phase * n) % n;
-      const color = source.bodyIndex === highlighted ? HIGHLIGHT_COLOR : BASE_COLOR;
-      const strength = source.bodyIndex === highlighted ? Math.max(alpha, 0.9) : alpha;
+      const isHighlighted = source.bodyIndex === highlighted;
+      const color = isHighlighted ? HIGHLIGHT_COLOR : BASE_COLOR;
+      const strength = isHighlighted ? Math.min(1, alpha * 1.4) : alpha;
       // El primer punto es el propio cuerpo; después, las n muestras hacia atrás, y un último tramo
       // de vuelta al cuerpo (la parte de la órbita que tiene justo delante, la más tenue).
       const b = 3 * source.bodyIndex;

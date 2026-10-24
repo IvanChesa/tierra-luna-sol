@@ -32,27 +32,49 @@ describe('labels: colocación sin solapes', () => {
     const [box] = layoutLabels([screen(1, 100, 200, 10)], infos, sizes, viewport, -1, -1);
     expect(box?.x).toBe(100 + 10 + 6);
     expect(box?.y).toBe(200 - 8);
+    expect(box?.dx).toBe(16);
     expect(box?.marker).toBe(false);
   });
 
-  it('si dos etiquetas chocan, gana la de más prioridad (el Sol y los planetas antes que las lunas)', () => {
-    const bodies = [
-      screen(0, 100, 100),
-      screen(1, 300, 300),
-      screen(2, 300 + MOON_MIN_SEPARATION_PX + 1, 302),
-      screen(3, 105, 104),
-    ];
-    const shown = layoutLabels(bodies, infos, sizes, viewport, -1, -1).map((b) => b.index);
-    expect(shown).toContain(0); // el Sol gana a Marte, que está encima
-    expect(shown).not.toContain(3);
-    expect(shown).toContain(1); // la Tierra gana a la Luna
-    expect(shown).not.toContain(2);
+  it('si no cabe a la derecha prueba a la izquierda, arriba y abajo', () => {
+    // Pegado al borde derecho: el nombre pasa a la izquierda.
+    const [left] = layoutLabels([screen(1, 790, 200, 4)], infos, sizes, viewport, -1, -1);
+    expect(left?.x).toBe(790 - 10 - 60);
+    // Dos planetas en la misma fila: el segundo busca otro sitio en vez de desaparecer.
+    const both = layoutLabels(
+      [screen(1, 300, 300), screen(3, 290, 300)],
+      infos,
+      sizes,
+      viewport,
+      -1,
+      -1,
+    );
+    expect(both.map((b) => b.index).sort()).toEqual([1, 3]);
+  });
+
+  it('si chocan en las cuatro posiciones, gana la de más prioridad (el Sol y los planetas antes)', () => {
+    const crowd = [screen(0, 400, 300), screen(3, 400, 300), screen(1, 401, 300)];
+    // Los tres en el mismo punto: caben cuatro sitios, pero el Sol se coloca el primero.
+    const shown = layoutLabels(crowd, infos, sizes, viewport, -1, -1).map((b) => b.index);
+    expect(shown[0]).toBe(0);
+    const bodies = [screen(1, 300, 300), screen(2, 300 + MOON_MIN_SEPARATION_PX + 1, 302)];
+    // Con el sistema de la Tierra enfocado, la Luna (a 15 px) se nombra, después de la Tierra.
+    const order = layoutLabels(bodies, infos, sizes, viewport, -1, 1).map((b) => b.index);
+    expect(order).toEqual([1, 2]);
+    // En la vista general (sin sistema enfocado), una luna a menos de 40 px no se nombra.
+    expect(layoutLabels(bodies, infos, sizes, viewport, -1, -1).map((b) => b.index)).toEqual([1]);
+  });
+
+  it('no etiqueta una luna si su planeta se ha quedado sin etiqueta', () => {
+    const bodies = [screen(1, -100, 300, 4, { onScreen: false }), screen(2, 400, 300)];
+    expect(layoutLabels(bodies, infos, sizes, viewport, -1, -1)).toEqual([]);
+    expect(layoutLabels(bodies, infos, sizes, viewport, 2, -1).map((b) => b.index)).toEqual([2]);
   });
 
   it('la seleccionada va siempre primero', () => {
     const bodies = [screen(0, 100, 100), screen(3, 105, 104)];
     const shown = layoutLabels(bodies, infos, sizes, viewport, 3, -1).map((b) => b.index);
-    expect(shown).toEqual([3]);
+    expect(shown[0]).toBe(3);
   });
 
   it('oculta las lunas pegadas a su planeta, las tapadas y las de fuera de la pantalla', () => {

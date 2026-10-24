@@ -14,9 +14,28 @@ const loadNotFound = () => import('./pages/not-found/not-found-page').then((m) =
 
 export const routes: Routes = [
   {
+    // El explorador (D10): un layout con el lienzo 3D persistente y una ruta hija por vista.
     path: '',
-    pathMatch: 'full',
-    loadComponent: () => import('./pages/home/home-page').then((m) => m.HomePage),
+    loadComponent: () => import('./features/viewer/viewer-layout').then((m) => m.ViewerLayout),
+    children: [
+      {
+        path: '',
+        pathMatch: 'full',
+        loadComponent: () => import('./pages/home/home-page').then((m) => m.HomePage),
+      },
+      {
+        path: 'explorar/tierra',
+        title: 'La Tierra',
+        loadComponent: () =>
+          import('./pages/explore-earth/explore-earth-page').then((m) => m.ExploreEarthPage),
+      },
+      {
+        path: 'explorar/luna',
+        title: 'La Luna',
+        loadComponent: () =>
+          import('./pages/explore-moon/explore-moon-page').then((m) => m.ExploreMoonPage),
+      },
+    ],
   },
   {
     path: 'planetas',

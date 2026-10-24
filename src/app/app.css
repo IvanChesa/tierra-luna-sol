@@ -50,11 +50,10 @@
 }
 
 main {
+  display: flex;
   flex: 1;
+  flex-direction: column;
   width: 100%;
-  max-width: 72rem;
-  margin: 0 auto;
-  padding: var(--space-8) var(--space-4);
 }
 
 main:focus {

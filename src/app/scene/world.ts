@@ -28,6 +28,7 @@ import { Mat3 } from '../ephemeris/vec3';
 import { SCHEMATIC_COLORS } from './body-colors';
 import type { FrameController } from './frames';
 import { BodyMaterialUniforms, createBodyMaterial } from './materials/body-material';
+import { createMilkyWayMaterial } from './materials/milky-way-material';
 import { createRingMaterial } from './materials/ring-material';
 import { createHaloMaterial, createSunMaterial } from './materials/sun-material';
 import { OrbitLines, OrbitSource } from './orbits';
@@ -79,6 +80,8 @@ export interface WorldFrame {
   readonly viewport: { readonly width: number; readonly height: number };
   /** Cuerpos proyectados en pantalla en el frame anterior (para decidir qué órbitas se ven). */
   readonly screen: readonly ScreenBody[];
+  /** Vista de detalle (Tierra, Luna): las órbitas de los planetas pasan a un segundo plano. */
+  readonly detail: boolean;
 }
 
 interface BodyVisual {
@@ -94,7 +97,9 @@ const tmpMatrix = new Matrix4();
 const tmpQuaternion = new Quaternion();
 const tmpVector = new Vector3();
 /** Tamaño del halo del Sol, en radios solares. */
-const HALO_RADII = 4;
+const HALO_RADII = 3.2;
+/** Segmentos de la esfera ligera de las lunas pequeñas (a lo ancho). */
+const COARSE_SEGMENTS = 32;
 
 /** Coloca un vector ECL (x, y, z) en ejes de Three (x, z, −y). */
 function setFromEcl(target: Vector3, array: Float64Array, index: number): Vector3 {
@@ -133,7 +138,10 @@ export class World {
   readonly camera = new PerspectiveCamera(40, 1, 0.01, 1000);
   readonly orbits: OrbitLines;
   private profile: QualityProfile;
+  /** Esfera detallada (Sol, planetas, la Luna y el cuerpo enfocado) y esfera ligera (las demás lunas). */
   private sphere: SphereGeometry;
+  private coarseSphere: SphereGeometry;
+  private focusIndex: number | null = null;
   private readonly visuals: BodyVisual[];
   private readonly sun: ReturnType<typeof createSunMaterial>;
   private readonly halo: Mesh;
@@ -143,13 +151,18 @@ export class World {
   private ringTexture: LoadedTexture | null = null;
   private ringRequested: TextureLevel | null = null;
   private stars: StarField | null = null;
+  private readonly milkyWay: Mesh;
+  private readonly milkyWayMaterial = createMilkyWayMaterial();
+  private milkyWayTexture: LoadedTexture | null = null;
+  private milkyWayRequested: TextureLevel | null = null;
   private orbitSources: readonly OrbitSource[];
   private disposed = false;
 
   constructor(private readonly options: WorldOptions) {
     this.profile = options.profile;
     this.scene.name = 'tierra-luna-sol';
-    this.sphere = this.createSphere(options.profile);
+    this.sphere = this.createSphere(options.profile.sphereSegments);
+    this.coarseSphere = this.createSphere(COARSE_SEGMENTS);
     this.sun = createSunMaterial();
     this.haloMaterial = createHaloMaterial();
     this.halo = new Mesh(new PlaneGeometry(2, 2), this.haloMaterial.material);
@@ -163,7 +176,10 @@ export class World {
       const bodyMaterial = isSun
         ? null
         : createBodyMaterial(new Color(SCHEMATIC_COLORS[body.id]), 1 - body.flattening);
-      const mesh = new Mesh(this.sphere, isSun ? this.sun.material : bodyMaterial?.material);
+      const mesh = new Mesh(
+        this.detailed(body, null) ? this.sphere : this.coarseSphere,
+        isSun ? this.sun.material : bodyMaterial?.material,
+      );
       mesh.name = body.id;
       mesh.matrixAutoUpdate = true;
       this.scene.add(mesh);
@@ -202,6 +218,13 @@ export class World {
     this.orbitSources = options.orbitSources(options.profile);
     this.orbits = new OrbitLines(this.orbitSources);
     this.scene.add(this.orbits.object);
+
+    // Vía Láctea: esfera interior centrada en la cámara (solo gira), pintada antes que todo.
+    this.milkyWay = new Mesh(new SphereGeometry(1, 64, 32), this.milkyWayMaterial.material);
+    this.milkyWay.name = 'milky-way';
+    this.milkyWay.renderOrder = -20;
+    this.milkyWay.frustumCulled = false;
+    this.scene.add(this.milkyWay);
   }
 
   /** Añade el cielo de estrellas cuando llega el catálogo. */
@@ -214,16 +237,29 @@ export class World {
   }
 
   /** Cambia de calidad: esferas, estrellas, órbitas y texturas (las anteriores se liberan). */
-  setQuality(profile: QualityProfile, focusIndex: number): void {
+  setQuality(profile: QualityProfile): void {
     if (profile === this.profile) return;
     this.profile = profile;
     const old = this.sphere;
-    this.sphere = this.createSphere(profile);
-    for (const visual of this.visuals) visual.mesh.geometry = this.sphere;
+    this.sphere = this.createSphere(profile.sphereSegments);
     old.dispose();
     this.stars?.setMagnitudeLimit(profile.starMagnitudeLimit);
     this.orbitSources = this.options.orbitSources(profile);
     this.orbits.setSources(this.orbitSources);
+    this.setFocus(this.focusIndex);
+  }
+
+  /**
+   * Cambia el cuerpo enfocado (`null`: vista general): su esfera pasa a ser la detallada y sus
+   * texturas, las del nivel del foco.
+   */
+  setFocus(focusIndex: number | null): void {
+    this.focusIndex = focusIndex;
+    for (const visual of this.visuals) {
+      visual.mesh.geometry = this.detailed(visual.body, focusIndex)
+        ? this.sphere
+        : this.coarseSphere;
+    }
     this.requestTextures(focusIndex);
   }
 
@@ -231,10 +267,17 @@ export class World {
    * Pide las texturas que tocan: el nivel de la vista general para todos y el del foco para el
    * cuerpo enfocado (y su planeta, si es una luna). Lo que se sustituye se libera.
    */
-  requestTextures(focusIndex: number): void {
+  private requestTextures(focusIndex: number | null): void {
     const source = this.options.textures;
     if (!source) return;
-    const focusBody = this.visuals[focusIndex]?.body;
+    const skyLevel = this.profile.milkyWayTexture;
+    if (skyLevel && this.milkyWayRequested !== skyLevel) {
+      this.milkyWayRequested = skyLevel;
+      void source
+        .load('milky-way', skyLevel)
+        .then((loaded) => this.assignMilkyWay(skyLevel, loaded));
+    }
+    const focusBody = focusIndex === null ? undefined : this.visuals[focusIndex]?.body;
     const focusPlanet = focusBody?.kind === 'moon' ? focusBody.parent : focusBody?.id;
     for (const visual of this.visuals) {
       if (!visual.textureId) continue;
@@ -288,7 +331,9 @@ export class World {
     camera.far = far;
     camera.aspect = frame.viewport.width / Math.max(1, frame.viewport.height);
     camera.updateProjectionMatrix();
-    this.stars?.setSkyDistance(Math.sqrt(near * far));
+    const sky = Math.sqrt(near * far);
+    this.stars?.setSkyDistance(sky);
+    this.milkyWayMaterial.uniforms.uSkyDistance.value = sky;
     this.orbits.setResolution(frame.viewport.width, frame.viewport.height);
     this.orbits.update(
       frames,
@@ -308,7 +353,8 @@ export class World {
   vramBytes(): number {
     const textures =
       this.visuals.reduce((sum, v) => sum + (v.loaded?.vramBytes ?? 0), 0) +
-      (this.ringTexture?.vramBytes ?? 0);
+      (this.ringTexture?.vramBytes ?? 0) +
+      (this.milkyWayTexture?.vramBytes ?? 0);
     const geometryBytes = (geometry: BufferGeometry) =>
       Object.values(geometry.attributes).reduce((sum, a) => sum + a.array.byteLength, 0) +
       (geometry.index?.array.byteLength ?? 0);
@@ -334,20 +380,28 @@ export class World {
     this.disposed = true;
     this.scene.traverse((object) => {
       const mesh = object as Mesh;
-      if (mesh.isMesh && mesh.geometry !== this.sphere) mesh.geometry.dispose();
+      if (mesh.isMesh && mesh.geometry !== this.sphere && mesh.geometry !== this.coarseSphere) {
+        mesh.geometry.dispose();
+      }
       const material = mesh.material;
       for (const m of Array.isArray(material) ? material : material ? [material] : []) m.dispose();
     });
     this.sphere.dispose();
+    this.coarseSphere.dispose();
     for (const visual of this.visuals) visual.loaded?.texture.dispose();
     this.ringTexture?.texture.dispose();
+    this.milkyWayTexture?.texture.dispose();
     this.orbits.dispose();
     this.stars?.dispose();
   }
 
-  private createSphere(profile: QualityProfile): SphereGeometry {
-    const segments = profile.sphereSegments;
+  private createSphere(segments: number): SphereGeometry {
     return new SphereGeometry(1, segments, Math.max(8, segments / 2));
+  }
+
+  /** ¿Lleva la esfera detallada? El Sol, los planetas, la Luna y el cuerpo enfocado. */
+  private detailed(body: SceneBody, focusIndex: number | null): boolean {
+    return body.kind !== 'moon' || body.id === 'luna' || body.index === focusIndex;
   }
 
   private ringRadiiKm(): RingRadii {
@@ -396,6 +450,20 @@ export class World {
     this.options.invalidate();
   }
 
+  private assignMilkyWay(level: TextureLevel, loaded: LoadedTexture | null): void {
+    if (!loaded) return;
+    if (this.disposed || this.milkyWayRequested !== level) {
+      loaded.texture.dispose();
+      return;
+    }
+    const previous = this.milkyWayTexture;
+    this.milkyWayTexture = loaded;
+    this.milkyWayMaterial.uniforms.uMap.value = loaded.texture;
+    this.milkyWayMaterial.uniforms.uHasMap.value = 1;
+    previous?.texture.dispose();
+    this.options.invalidate();
+  }
+
   private updateSunAndRings(frame: WorldFrame): void {
     const sunVisual = this.visuals.find((v) => v.body.kind === 'star');
     if (sunVisual) {
@@ -427,7 +495,13 @@ export class World {
   private orbitOpacity(frame: WorldFrame): number[] {
     const physical = frame.frames.targetSpec.kind === 'physical';
     return this.orbitSources.map((source) => {
-      if (source.parentIndex < 0) return physical ? 0.55 : 0.85;
+      // En un marco físico, la órbita del propio planeta enfocado es casi una recta que lo
+      // atraviesa: se deja tenue (indica hacia dónde se mueve).
+      if (source.parentIndex < 0) {
+        if (!physical) return 0.85;
+        if (frame.detail) return 0.12;
+        return source.bodyIndex === frame.focusIndex ? 0.3 : 0.5;
+      }
       const moon = frame.screen[source.bodyIndex];
       const parent = frame.screen[source.parentIndex];
       if (!moon || !parent || !parent.onScreen) return 0;

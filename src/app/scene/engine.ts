@@ -151,6 +151,7 @@ export class SceneEngine implements SceneEngineApi {
   private screen: ScreenBody[] = [];
   private screenThree = new Float64Array(3 * SCENE_BODIES.length);
   private contextLost = false;
+  private readonly background: number | null;
   private ready = false;
   private disposed = false;
   private readonly startMs: number;
@@ -197,18 +198,26 @@ export class SceneEngine implements SceneEngineApi {
       invalidate: () => this.invalidate(),
     });
 
-    const initial = this.viewSetup(options.view);
+    const initial =
+      options.focus !== undefined && options.focus !== null
+        ? {
+            focus: sceneBody(options.focus).index,
+            framing: this.bodyFraming(sceneBody(options.focus).index, 'body'),
+          }
+        : this.viewSetup(options.view);
     this.focusIndex = initial.focus;
+    this.background = options.background ? sceneBody(options.background).index : null;
     this.frames = new FrameController(
       this.frameSpec(initial.focus),
       initial.focus ?? SUN_INDEX,
       SCENE_BODIES.length,
     );
     this.framing = initial.framing;
+    const angles = options.focus ? null : this.viewAngles(options.view);
     this.rig = new CameraRig({
       distance: 1,
-      azimuth: OVERVIEW_AZIMUTH,
-      elevation: OVERVIEW_ELEVATION,
+      azimuth: angles?.azimuth ?? OVERVIEW_AZIMUTH,
+      elevation: angles?.elevation ?? OVERVIEW_ELEVATION,
     });
     this.renderer.setExposure(EXPOSURE[options.view]);
 
@@ -331,6 +340,8 @@ export class SceneEngine implements SceneEngineApi {
     this.renderer.setExposure(EXPOSURE[view]);
     const setup = this.viewSetup(view);
     this.changeFocus(setup.focus, setup.framing);
+    const angles = this.viewAngles(view);
+    if (angles) this.rig.setTarget(angles, this.reducedMotion || this.captureMode);
   }
 
   resize(width: number, height: number, devicePixelRatio: number): void {
@@ -403,6 +414,7 @@ export class SceneEngine implements SceneEngineApi {
         reason: 'initial',
       });
       this.renderFrame(this.deps.now(), false); // prepara el estado y la cámara sin pintar aún
+      if (this.background !== null) this.alignBehind(this.background);
       await this.deps.yieldToMain();
       if (this.disposed) return;
       this.emit('progress', { loaded: 1, total, step: 'Cargando estrellas' });
@@ -422,7 +434,7 @@ export class SceneEngine implements SceneEngineApi {
       this.emit('progress', { loaded: total, total, step: 'Listo' });
       this.emit('ready', { startupMs: this.deps.now() - this.startMs });
       this.emitTime(true);
-      this.world.requestTextures(this.frames.focus);
+      this.world.setFocus(this.focusIndex);
       this.invalidate();
     } catch (error) {
       if (this.disposed) return;
@@ -489,6 +501,7 @@ export class SceneEngine implements SceneEngineApi {
       speedDaysPerSecond: this.clock.playing ? this.clock.speed / 86_400 : 0,
       viewport: this.viewport,
       screen: this.screen,
+      detail: this._view !== 'system',
     });
     camera.updateMatrixWorld();
     this.updateScreen();
@@ -584,9 +597,28 @@ export class SceneEngine implements SceneEngineApi {
     if (framing.kind === 'overview') {
       this.rig.setTarget({ elevation: OVERVIEW_ELEVATION }, this.reducedMotion || this.captureMode);
     }
-    this.world.requestTextures(frameFocus);
+    if (this.ready) this.world.setFocus(index);
     this.lastFrameMs = null;
     this.invalidate();
+  }
+
+  /** Coloca la cámara de modo que `index` quede justo detrás del foco (modo de captura). */
+  private alignBehind(index: number): void {
+    const p = this.frames.output.position;
+    const x = p[3 * index] as number;
+    const y = p[3 * index + 2] as number;
+    const z = -(p[3 * index + 1] as number);
+    const length = Math.hypot(x, y, z);
+    if (length === 0) return;
+    // Un poco ladeada: el cuerpo de fondo asoma junto al borde del foco en vez de quedar tapado.
+    const focusRadius = this.frames.output.radius[this.frames.focus] as number;
+    const side =
+      1.5 * Math.asin(Math.min(1, focusRadius / Math.max(this.rig.distance, focusRadius)));
+    this.rig.setTarget(
+      { azimuth: Math.atan2(-x, -z) + side, elevation: Math.asin(-y / length) },
+      true,
+    );
+    this.renderFrame(this.deps.now(), false);
   }
 
   private zoomBy(factor: number): void {
@@ -613,6 +645,36 @@ export class SceneEngine implements SceneEngineApi {
       return { focus: index, framing: this.bodyFraming(index, 'detail') };
     }
     return { focus: null, framing: this.overviewFraming() };
+  }
+
+  /**
+   * Desde dónde se mira en las vistas de detalle: la Tierra, con el lado de día y el terminador a la
+   * vista (la cámara, a 40° del Sol y un poco por encima de la eclíptica); la Luna, desde la Tierra
+   * (su cara visible, con la libración del momento).
+   */
+  private viewAngles(view: ExplorerView): { azimuth: number; elevation: number } | null {
+    if (view === 'system') return null;
+    const state = this.system.at(this.clock.timeMsValue);
+    let ecl;
+    let lift = 0;
+    if (view === 'earth') {
+      const sun = state.heliocentricOf('tierra');
+      const angle = (40 * Math.PI) / 180;
+      const c = Math.cos(angle);
+      const s = Math.sin(angle);
+      // Hacia el Sol (−posición heliocéntrica), girado 40° alrededor del polo de la eclíptica.
+      ecl = { x: -(sun.x * c - sun.y * s), y: -(sun.x * s + sun.y * c), z: -sun.z };
+      lift = 0.3;
+    } else {
+      const offset = state.parentOffsetOf('luna');
+      ecl = { x: -offset.x, y: -offset.y, z: -offset.z };
+    }
+    // ECL → Three (x, z, −y).
+    const x = ecl.x;
+    const y = ecl.z;
+    const z = -ecl.y;
+    const length = Math.hypot(x, y, z);
+    return { azimuth: Math.atan2(x, z), elevation: Math.asin(y / length) + lift };
   }
 
   private bodyFraming(index: number, kind: keyof typeof FRAMING_RADII): CameraFraming {
@@ -653,7 +715,7 @@ export class SceneEngine implements SceneEngineApi {
     if (level !== this.level) {
       this.level = level;
       this.profile = QUALITY_PROFILES[level];
-      this.world.setQuality(this.profile, this.frames.focus);
+      this.world.setQuality(this.profile);
       this.applySize();
       this.invalidate();
     }

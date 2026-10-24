@@ -30,6 +30,8 @@ export interface SceneEngineOptions {
   /** Instante inicial de la simulación (UTC). Se lleva al rango 1900–2100. */
   readonly time: Date;
   readonly view: ExplorerView;
+  /** Cuerpo enfocado al empezar (por ejemplo, de la URL); si no se da, el de la vista. */
+  readonly focus?: BodyId | null;
   readonly scale?: ScaleMode;
   readonly quality: QualitySetting;
   /** `prefers-reduced-motion`: sin animaciones de cámara ni transiciones (cortes directos). */
@@ -40,6 +42,11 @@ export interface SceneEngineOptions {
    */
   readonly capture?: boolean;
   readonly depth?: DepthMode;
+  /**
+   * Solo en captura: cuerpo que debe quedar justo detrás del enfocado, visto desde la cámara (las
+   * pruebas de profundidad de D13: «Neptuno con la Tierra en primer plano»).
+   */
+  readonly background?: BodyId;
   /** Base de las URL de los recursos (por defecto, la raíz del sitio). */
   readonly assetsBaseUrl?: string;
 }

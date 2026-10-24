@@ -21,8 +21,9 @@ export interface LabelBox {
   /** Centro del cuerpo en pantalla (px CSS): ahí va el marcador. */
   readonly anchorX: number;
   readonly anchorY: number;
-  /** Separación horizontal del nombre respecto al centro del cuerpo (px CSS). */
-  readonly offset: number;
+  /** Esquina superior izquierda del nombre respecto al centro del cuerpo (px CSS). */
+  readonly dx: number;
+  readonly dy: number;
   /** Caja del nombre (px CSS): esquina superior izquierda y tamaño. */
   readonly x: number;
   readonly y: number;
@@ -36,6 +37,8 @@ export interface LabelBox {
 export const MARKER_RADIUS_PX = 3;
 /** Separación mínima en pantalla entre una luna y su planeta para mostrar su nombre (px). */
 export const MOON_MIN_SEPARATION_PX = 14;
+/** En los sistemas que no están enfocados, solo se nombran las lunas bien separadas (px). */
+export const OTHER_MOON_MIN_SEPARATION_PX = 40;
 const GAP_PX = 6;
 const PADDING_PX = 2;
 
@@ -48,9 +51,11 @@ function priority(info: LabelInfo, index: number, selected: number, focusSystem:
 }
 
 /**
- * Decide qué etiquetas se ven y dónde. Voraz por prioridad: una etiqueta se descarta si choca con
- * otra ya colocada, si su cuerpo está tapado o fuera de la pantalla, o si es una luna pegada a su
- * planeta en pantalla (los sistemas de lunas lejanos se ven como un solo punto).
+ * Decide qué etiquetas se ven y dónde. Voraz por prioridad: cada nombre prueba cuatro posiciones
+ * (derecha, izquierda, arriba y abajo del disco) y se descarta si choca en todas con otro ya colocado,
+ * si su cuerpo está tapado o fuera de la pantalla, si es una luna pegada a su planeta en pantalla
+ * (los sistemas de lunas lejanos se ven como un solo punto) o si es una luna de un planeta sin
+ * nombre visible. La seleccionada se muestra siempre que esté en pantalla.
  */
 export function layoutLabels(
   bodies: readonly ScreenBody[],
@@ -60,14 +65,17 @@ export function layoutLabels(
   selected: number,
   focusSystem: number,
 ): LabelBox[] {
+  const byIndex = new Map(bodies.map((body) => [body.index, body]));
   const order = bodies
     .filter((body) => body.onScreen && !body.occluded)
     .filter((body) => {
       const info = infos[body.index];
       if (!info || body.index === selected || info.kind !== 'moon') return true;
-      const parent = bodies[info.parentIndex];
+      const parent = byIndex.get(info.parentIndex);
       if (!parent) return true;
-      return Math.hypot(body.x - parent.x, body.y - parent.y) >= MOON_MIN_SEPARATION_PX;
+      const minimum =
+        info.parentIndex === focusSystem ? MOON_MIN_SEPARATION_PX : OTHER_MOON_MIN_SEPARATION_PX;
+      return Math.hypot(body.x - parent.x, body.y - parent.y) >= minimum;
     })
     .sort((a, b) => {
       const pa = priority(infos[a.index] as LabelInfo, a.index, selected, focusSystem);
@@ -75,27 +83,39 @@ export function layoutLabels(
       return pb - pa || a.depth - b.depth;
     });
   const placed: LabelBox[] = [];
+  const shown = new Set<number>();
   for (const body of order) {
+    const info = infos[body.index];
+    if (info?.kind === 'moon' && body.index !== selected && !shown.has(info.parentIndex)) continue;
     const size = sizes[body.index] ?? { width: 0, height: 0 };
-    const offset = Math.min(Math.max(body.radiusPx, 2), viewport.width) + GAP_PX;
-    const box: LabelBox = {
-      index: body.index,
-      anchorX: body.x,
-      anchorY: body.y,
-      offset,
-      x: body.x + offset,
-      y: body.y - size.height / 2,
-      width: size.width,
-      height: size.height,
-      marker: body.radiusPx < MARKER_RADIUS_PX,
-    };
-    const inside =
-      box.x < viewport.width &&
-      box.x + box.width > 0 &&
-      box.y < viewport.height &&
-      box.y + box.height > 0;
-    if (!inside || placed.some((other) => overlaps(box, other))) continue;
-    placed.push(box);
+    const gap = Math.min(Math.max(body.radiusPx, 2), viewport.width) + GAP_PX;
+    const { width: w, height: h } = size;
+    const options: readonly (readonly [number, number])[] = [
+      [gap, -h / 2], // derecha
+      [-gap - w, -h / 2], // izquierda
+      [-w / 2, -gap - h], // arriba
+      [-w / 2, gap], // abajo
+    ];
+    for (const [dx, dy] of options) {
+      const box: LabelBox = {
+        index: body.index,
+        anchorX: body.x,
+        anchorY: body.y,
+        dx,
+        dy,
+        x: body.x + dx,
+        y: body.y + dy,
+        width: w,
+        height: h,
+        marker: body.radiusPx < MARKER_RADIUS_PX,
+      };
+      const inside =
+        box.x >= 0 && box.x + w <= viewport.width && box.y >= 0 && box.y + h <= viewport.height;
+      if (!inside || placed.some((other) => overlaps(box, other))) continue;
+      placed.push(box);
+      shown.add(body.index);
+      break;
+    }
   }
   return placed;
 }
@@ -112,6 +132,7 @@ export class LabelLayer {
   private readonly elements: HTMLDivElement[];
   private readonly sizes: { width: number; height: number }[];
   private readonly visible: boolean[];
+  private readonly offsets: string[];
   private readonly onClick = (event: MouseEvent) => {
     const target = (event.target as Element | null)?.closest<HTMLElement>('[data-body]');
     const id = target?.dataset['body'];
@@ -143,6 +164,7 @@ export class LabelLayer {
     });
     this.sizes = infos.map(() => ({ width: 0, height: 0 }));
     this.visible = infos.map(() => false);
+    this.offsets = infos.map(() => '');
     this.root.addEventListener('click', this.onClick);
     host.append(this.root);
   }
@@ -178,7 +200,11 @@ export class LabelLayer {
       if (!this.visible[k]) el.hidden = false;
       this.visible[k] = true;
       el.style.transform = `translate3d(${box.anchorX.toFixed(1)}px, ${box.anchorY.toFixed(1)}px, 0)`;
-      el.style.setProperty('--label-offset', `${box.offset.toFixed(1)}px`);
+      const offset = `translate(${box.dx.toFixed(1)}px, ${box.dy.toFixed(1)}px)`;
+      if (this.offsets[k] !== offset) {
+        this.offsets[k] = offset;
+        (el.lastElementChild as HTMLElement | null)?.style.setProperty('transform', offset);
+      }
       el.classList.toggle('scene-label--marker', box.marker);
       el.classList.toggle('scene-label--selected', k === selected);
     });
