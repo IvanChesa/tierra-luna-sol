@@ -46,8 +46,9 @@ export type IconName =
           <path d="M5 12h14" />
         }
         @case ('overview') {
-          <circle cx="12" cy="12" r="2.25" />
-          <ellipse cx="12" cy="12" rx="9.25" ry="4.5" />
+          <circle class="fill" cx="12" cy="12" r="2.5" />
+          <ellipse cx="12" cy="12" rx="9.5" ry="5.5" transform="rotate(-18 12 12)" />
+          <circle class="fill" cx="4.2" cy="14.6" r="1.6" />
         }
         @case ('clean') {
           <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />

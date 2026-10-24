@@ -52,6 +52,8 @@ Todo se formatea con las funciones de `src/app/core/format.ts`, que usan `Intl.N
   | ≥ 1000 millones de km | millones sin decimales | 4497 millones de km |
   | Planetas y cuerpos lejanos (además) | UA con dos decimales | 30,07 UA |
 
+  Excepción: en el índice de cuerpos del explorador (una tabla de efemérides), las lunas van todas en km enteros (1.221.870 km), para que se comparen en la misma columna.
+
 - **Periodos:** horas con un decimal hasta 48 h (10,7 h); después, días (27,3 días) o años (29,4 años).
 - **Temperaturas:** °C para los planetas y las lunas; K solo para la temperatura efectiva del Sol.
 - **Velocidad de la simulación:** «Tiempo real», «1 hora por segundo», «1 día por segundo», «1 semana por segundo», «1 mes por segundo», «1 año por segundo». El sentido se dice aparte («Hacia atrás»).

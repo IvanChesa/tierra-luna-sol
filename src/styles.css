@@ -201,6 +201,13 @@ tls-root:has(tls-explorer-ui.is-clean) .site-header {
   display: none;
 }
 
+/* Móvil: con la ficha abierta, el texto de la vista se recoge (queda el selector de vista). */
+@media (max-width: 63.99rem) {
+  .explorer:has(.panel:not([hidden])) .explorer__intro {
+    display: none;
+  }
+}
+
 /*
  * Controles de la interfaz del explorador (los usan varios componentes diferidos): botones con
  * borde, desplegables e inputs nativos con el tema oscuro, y etiquetas pequeñas encima.

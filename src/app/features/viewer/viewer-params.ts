@@ -82,7 +82,7 @@ export function parseViewerParams(search: string): ViewerParams {
   const time = parseUtcDate(rawTime);
   if (rawTime !== null && !time)
     warnings.push(
-      `La fecha ${quoted(rawTime)} no vale: tiene que existir, ir en UTC (como 2030-01-01T00:00Z) y estar entre 1900 y 2100.`,
+      `La fecha ${quoted(rawTime)} no vale: tiene que existir, ir en UTC (como 2030‑01‑01T00:00Z) y estar entre 1900 y 2100.`,
     );
 
   const rawBody = params.get('cuerpo');

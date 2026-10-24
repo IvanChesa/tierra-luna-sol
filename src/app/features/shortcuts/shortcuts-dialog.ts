@@ -101,6 +101,7 @@ import { SHORTCUT_HELP } from './shortcuts';
     dt {
       display: flex;
       flex-wrap: wrap;
+      align-items: flex-start;
       gap: var(--space-1);
     }
 
@@ -110,6 +111,7 @@ import { SHORTCUT_HELP } from './shortcuts';
 
     kbd {
       min-width: 1.75rem;
+      line-height: 1.5rem;
       padding: 0 var(--space-2);
       border: var(--border-width) solid var(--color-control);
       border-bottom-width: 2px;
@@ -147,8 +149,14 @@ export class ShortcutsDialog {
     effect(() => {
       const dialog = this.dialog().nativeElement;
       const open = this.explorer.helpOpen();
-      if (open && !dialog.open) dialog.showModal();
-      else if (!open && dialog.open) dialog.close();
+      // Sin <dialog> modal (navegadores antiguos), se abre igual, aunque sin fondo ni foco atrapado.
+      if (open && !dialog.open) {
+        if (typeof dialog.showModal === 'function') dialog.showModal();
+        else dialog.setAttribute('open', '');
+      } else if (!open && dialog.open) {
+        if (typeof dialog.close === 'function') dialog.close();
+        else dialog.removeAttribute('open');
+      }
     });
   }
 

@@ -40,7 +40,7 @@ describe('parámetros del explorador', () => {
       warnings: [],
     });
     expect(params.warnings).toEqual([
-      'La fecha «ayer» no vale: tiene que existir, ir en UTC (como 2030-01-01T00:00Z) y estar entre 1900 y 2100.',
+      'La fecha «ayer» no vale: tiene que existir, ir en UTC (como 2030‑01‑01T00:00Z) y estar entre 1900 y 2100.',
       'El cuerpo «pluton» no está en el explorador.',
       'La escala «gigante» no existe: puede ser «real» o «ilustrativa».',
       'La calidad «ultra» no existe: puede ser «alta», «media», «baja» o «auto».',
