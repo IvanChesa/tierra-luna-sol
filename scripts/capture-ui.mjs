@@ -1,6 +1,6 @@
 // Capturas de la interfaz del explorador para el informe de la fase 3 (?captura=1): escritorio y
 // móvil, con los estados que pide el plan (ficha, vistas, hoja desplegada, atajos, vista limpia,
-// avisos, límite de fechas, error y velocidades altas).
+// avisos, límite de fechas, carga, error y velocidades altas).
 // Uso: npm run build && node scripts/capture-ui.mjs docs/informes/img/fase-3 [--swiftshader]
 import { mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -26,7 +26,16 @@ const press =
 /** A 1 año/s (cinco escalones por encima del tiempo real) y reproduciendo. */
 const yearPerSecond = press('.', '.', '.', '.', '.', 'k');
 
-/** [nombre, ruta, tamaño, acción tras cargar, preparación antes de cargar] */
+/** Las estrellas no llegan nunca: la escena se queda en «Preparando la escena 3D…». */
+const holdStars = async (page) => page.route('**/data/stars.bin', () => undefined);
+/** Las estrellas fallan: estado de error. */
+const failStars = async (page) =>
+  page.route('**/data/stars.bin', (route) => route.fulfill({ status: 503 }));
+
+/**
+ * [nombre, ruta, tamaño, acción tras cargar, preparación antes de cargar, selector que esperar]. Con
+ * preparación, la escena no llega a «lista»: se espera al selector (y a la interfaz diferida).
+ */
 const SHOTS = [
   ['escritorio-sistema', '/?captura=1', DESKTOP],
   ['movil-sistema', '/?captura=1', MOBILE],
@@ -47,19 +56,29 @@ const SHOTS = [
   // Con Marte enfocado a 1 año/s, Fobos y Deimos se dibujan como su órbita (§4.5).
   ['escritorio-aliasing-marte', '/?captura=1&cuerpo=marte', DESKTOP, yearPerSecond],
   [
-    'escritorio-error',
+    'escritorio-carga',
     '/?captura=1',
     DESKTOP,
     null,
-    async (page) => page.route('**/data/stars.bin', (route) => route.fulfill({ status: 503 })),
+    holdStars,
+    '.viewer-status:not(.viewer-status--error)',
   ],
+  [
+    'movil-carga',
+    '/?captura=1',
+    MOBILE,
+    null,
+    holdStars,
+    '.viewer-status:not(.viewer-status--error)',
+  ],
+  ['escritorio-error', '/?captura=1', DESKTOP, null, failStars, '.viewer-status--error'],
+  ['movil-error', '/?captura=1', MOBILE, null, failStars, '.viewer-status--error'],
 ];
 
 const { browser, close } = await openBrowser();
 try {
-  for (const [name, path, size, action, setup] of SHOTS) {
+  for (const [name, path, size, action, setup, selector] of SHOTS) {
     if (setup) {
-      // El error no llega a «listo»: se abre a mano y se espera a la caja de error.
       const page = await browser.newPage({
         ...PAGE_OPTIONS,
         viewport: { width: size.width, height: size.height },
@@ -67,10 +86,11 @@ try {
       });
       await setup(page);
       await page.goto(BASE + path);
-      await page.waitForSelector('.viewer-status--error', { timeout: 90_000 });
-      await page.waitForTimeout(500);
+      await page.waitForSelector(selector, { timeout: 90_000 });
+      await page.waitForSelector('tls-time-controls', { timeout: 30_000 });
+      await page.waitForTimeout(800);
       await webp(await page.screenshot(), `${name}.webp`);
-      console.log(`${name}: estado de error`);
+      console.log(`${name}: ${selector}`);
       await page.close();
       continue;
     }
