@@ -50,3 +50,6 @@ Thumbs.db
 .claude/skills/
 # Configuración local de Claude Code
 .claude/settings.local.json
+
+# Copia local de las skills para otros agentes (no va al repo)
+.agents/
