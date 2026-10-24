@@ -8,7 +8,7 @@ import {
 } from './describe';
 
 /** `Intl` separa con espacios duros: para comparar, espacios normales. */
-const plain = (text: string) => text.replace(/[  ]/g, ' ');
+const plain = (text: string) => text.replace(/[\u00a0\u202f]/g, ' ');
 
 describe('describe: textos de la interfaz sobre los cuerpos y las vistas', () => {
   it('el tipo de cada cuerpo, con su planeta en las lunas', () => {

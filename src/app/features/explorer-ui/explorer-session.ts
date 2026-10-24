@@ -230,7 +230,7 @@ export class ExplorerSession {
   /** Anuncia una frase en la región `aria-live` (también si se repite). */
   announce(text: string): void {
     // Una región viva no repite el mismo texto: se alterna un espacio duro al final.
-    this._announcement.update((current) => (current === text ? `${text} ` : text));
+    this._announcement.update((current) => (current === text ? `${text}\u00a0` : text));
   }
 
   // --- Sincronización ---------------------------------------------------------------------------
