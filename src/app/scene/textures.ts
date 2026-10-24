@@ -7,7 +7,15 @@
  *   lleva alfa, cómo se proyecta y dónde está el meridiano 0.
  * - La carga decodifica fuera del hilo principal (`ImageBitmapLoader`, con `imageOrientation: 'flipY'`
  *   y `premultiplyAlpha: 'none'`: sin eso, las UV salen invertidas y los alfas, mal), limita el tamaño
- *   a `maxTextureSize` y sube a la GPU de una en una, cuando el motor se lo pide en un frame.
+ *   a `maxTextureSize` y sube a la GPU de una en una, cuando el motor se lo pide en un frame. three
+ *   decodifica siempre sin conversión de perfiles de color (`colorSpaceConversion: 'none'`), que es
+ *   lo que conviene a los mapas de datos y no cambia los de color (sRGB).
+ * - Navegadores: `createImageBitmap` con `imageOrientation` necesita Safari 17 o Firefox 98 en
+ *   adelante (para versiones anteriores, el GLTFLoader de three usa otro cargador). Se comprueba en
+ *   el iPhone de la fase 10.
+ * - Una textura que se desecha se libera entera con `releaseTexture`: la GPU y su `ImageBitmap` (three
+ *   no cierra los bitmaps). Mientras está en uso, el bitmap se conserva: si se pierde el contexto,
+ *   three lo vuelve a subir desde él.
  */
 import {
   ImageBitmapLoader,
@@ -126,12 +134,7 @@ export class ManifestTextureSource implements TextureSource {
     if (!file) return null;
     const info = meta[id];
     const loader = new ImageBitmapLoader();
-    loader.setOptions({
-      imageOrientation: 'flipY',
-      premultiplyAlpha: 'none',
-      // Los mapas de datos no se tocan: nada de convertir perfiles de color incrustados.
-      colorSpaceConversion: info.colorSpace === 'data' ? 'none' : 'default',
-    });
+    loader.setOptions({ imageOrientation: 'flipY', premultiplyAlpha: 'none' });
     const bitmap = await loader.loadAsync(new URL(file.path, baseUrl).href);
     const texture = new Texture(bitmap);
     texture.name = `${id}@${file.level}`;
@@ -145,6 +148,13 @@ export class ManifestTextureSource implements TextureSource {
     await this.options.upload(texture);
     return { texture, file, vramBytes: textureVramBytes(file.width, file.height) };
   }
+}
+
+/** Libera una textura que ya no se usa: la memoria de vídeo y el `ImageBitmap` del que salió. */
+export function releaseTexture(texture: Texture): void {
+  texture.dispose();
+  const image = texture.image as { close?: () => void } | null;
+  image?.close?.();
 }
 
 /** Desplazamiento de u para que el meridiano 0 de la textura caiga en el del modelo (u = 0,5). */

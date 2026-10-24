@@ -36,7 +36,14 @@ import type { ScreenBody } from './picking';
 import type { QualityProfile, TextureLevel } from './quality';
 import { StarField } from './stars';
 import type { SceneBody } from './system';
-import { LoadedTexture, TextureId, TextureMeta, TextureSource, meridianOffset } from './textures';
+import {
+  LoadedTexture,
+  TextureId,
+  TextureMeta,
+  TextureSource,
+  meridianOffset,
+  releaseTexture,
+} from './textures';
 
 /** Textura de color de cada cuerpo que la tiene (las demás lunas, en la fase 7). */
 export const BODY_TEXTURES: Readonly<Partial<Record<BodyId, TextureId>>> = {
@@ -224,6 +231,8 @@ export class World {
     this.milkyWay.name = 'milky-way';
     this.milkyWay.renderOrder = -20;
     this.milkyWay.frustumCulled = false;
+    // Sin textura no se dibuja (sería una esfera a pantalla completa que lo descarta todo).
+    this.milkyWay.visible = false;
     this.scene.add(this.milkyWay);
   }
 
@@ -273,9 +282,13 @@ export class World {
     const skyLevel = this.profile.milkyWayTexture;
     if (skyLevel && this.milkyWayRequested !== skyLevel) {
       this.milkyWayRequested = skyLevel;
-      void source
+      source
         .load('milky-way', skyLevel)
-        .then((loaded) => this.assignMilkyWay(skyLevel, loaded));
+        .then((loaded) => this.assignMilkyWay(skyLevel, loaded))
+        .catch((error: unknown) => {
+          if (this.milkyWayRequested === skyLevel) this.milkyWayRequested = null;
+          textureFailed('milky-way', error);
+        });
     }
     const focusBody = focusIndex === null ? undefined : this.visuals[focusIndex]?.body;
     const focusPlanet = focusBody?.kind === 'moon' ? focusBody.parent : focusBody?.id;
@@ -286,12 +299,24 @@ export class World {
       if (visual.requested === level) continue;
       visual.requested = level;
       const id = visual.textureId;
-      void source.load(id, level).then((loaded) => this.assignTexture(visual, level, loaded));
+      // Si falla (red, 404), el cuerpo se queda con su color esquemático y se vuelve a pedir en el
+      // siguiente cambio de foco o de calidad.
+      source
+        .load(id, level)
+        .then((loaded) => this.assignTexture(visual, level, loaded))
+        .catch((error: unknown) => {
+          if (visual.requested === level) visual.requested = null;
+          textureFailed(id, error);
+        });
       if (visual.body.id === 'saturno' && this.ringRequested !== level) {
         this.ringRequested = level;
-        void source
+        source
           .load('saturn-rings', level)
-          .then((loaded) => this.assignRingTexture(level, loaded));
+          .then((loaded) => this.assignRingTexture(level, loaded))
+          .catch((error: unknown) => {
+            if (this.ringRequested === level) this.ringRequested = null;
+            textureFailed('saturn-rings', error);
+          });
       }
     }
   }
@@ -388,9 +413,9 @@ export class World {
     });
     this.sphere.dispose();
     this.coarseSphere.dispose();
-    for (const visual of this.visuals) visual.loaded?.texture.dispose();
-    this.ringTexture?.texture.dispose();
-    this.milkyWayTexture?.texture.dispose();
+    for (const visual of this.visuals) if (visual.loaded) releaseTexture(visual.loaded.texture);
+    if (this.ringTexture) releaseTexture(this.ringTexture.texture);
+    if (this.milkyWayTexture) releaseTexture(this.milkyWayTexture.texture);
     this.orbits.dispose();
     this.stars?.dispose();
   }
@@ -416,7 +441,7 @@ export class World {
   ): void {
     if (!loaded) return;
     if (this.disposed || visual.requested !== level) {
-      loaded.texture.dispose();
+      releaseTexture(loaded.texture);
       return;
     }
     const previous = visual.loaded;
@@ -430,14 +455,14 @@ export class World {
       this.sun.uniforms.uMap.value = loaded.texture;
       this.sun.uniforms.uHasMap.value = 1;
     }
-    if (previous && previous.texture !== loaded.texture) previous.texture.dispose();
+    if (previous && previous.texture !== loaded.texture) releaseTexture(previous.texture);
     this.options.invalidate();
   }
 
   private assignRingTexture(level: TextureLevel, loaded: LoadedTexture | null): void {
     if (!loaded || !this.ringMaterial) return;
     if (this.disposed || this.ringRequested !== level) {
-      loaded.texture.dispose();
+      releaseTexture(loaded.texture);
       return;
     }
     const previous = this.ringTexture;
@@ -446,21 +471,22 @@ export class World {
     this.ringMaterial.uniforms.uHasMap.value = 1;
     const saturn = this.visuals.find((v) => v.body.id === 'saturno');
     if (saturn?.uniforms) saturn.uniforms.uRingMap.value = loaded.texture;
-    previous?.texture.dispose();
+    if (previous) releaseTexture(previous.texture);
     this.options.invalidate();
   }
 
   private assignMilkyWay(level: TextureLevel, loaded: LoadedTexture | null): void {
     if (!loaded) return;
     if (this.disposed || this.milkyWayRequested !== level) {
-      loaded.texture.dispose();
+      releaseTexture(loaded.texture);
       return;
     }
     const previous = this.milkyWayTexture;
     this.milkyWayTexture = loaded;
     this.milkyWayMaterial.uniforms.uMap.value = loaded.texture;
     this.milkyWayMaterial.uniforms.uHasMap.value = 1;
-    previous?.texture.dispose();
+    this.milkyWay.visible = true;
+    if (previous) releaseTexture(previous.texture);
     this.options.invalidate();
   }
 
@@ -510,4 +536,9 @@ export class World {
       return t * t * (3 - 2 * t) * 0.7;
     });
   }
+}
+
+/** Una textura no ha llegado: no es un error fatal (queda el color esquemático), pero se anota. */
+function textureFailed(id: TextureId, error: unknown): void {
+  console.warn(`[texturas] No se ha podido cargar «${id}»:`, error);
 }
