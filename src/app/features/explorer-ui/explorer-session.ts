@@ -128,13 +128,17 @@ export class ExplorerSession {
   attachEngine(engine: ExplorerEngine): void {
     this.detachEngine();
     this.engine = engine;
+    // El estado se lee antes de dar la primera orden: cada orden hace que el motor emita
+    // `timeChanged` con su propio estado (nace en pausa) y el store lo refleja.
+    const speed = this.sim.speed();
+    const playing = this.sim.playing();
     this.engineOffs = [
       this.sim.attach(engine),
       engine.on('bodyPicked', ({ id }) => this.select(id)),
       engine.on('travel', ({ active, kind }) => this.explorer.travelling.set(active ? kind : null)),
     ];
-    engine.setSpeed(this.sim.speed());
-    engine.setPlaying(this.sim.playing());
+    engine.setSpeed(speed);
+    engine.setPlaying(playing);
     engine.setViewInsets(this.insets);
     engine.setLabelsVisible(!this.explorer.cleanView());
   }

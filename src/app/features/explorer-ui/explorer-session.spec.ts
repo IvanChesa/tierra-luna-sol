@@ -7,18 +7,28 @@ import { SystemPositions } from '../../state/positions';
 import { SimulationStore } from '../../state/simulation.store';
 import { ExplorerEngine, ExplorerSession } from './explorer-session';
 
-/** Motor falso: apunta las órdenes y deja emitir eventos a mano. */
+/**
+ * Motor falso: apunta las órdenes y deja emitir eventos a mano. Como el real, nace en pausa y
+ * responde a cada orden de tiempo con `timeChanged` y su propio estado.
+ */
 class FakeEngine implements ExplorerEngine {
   readonly calls: string[] = [];
   private readonly listeners = new Map<string, Set<(event: unknown) => void>>();
+  private state = { time: new Date('2030-01-01T00:00:00Z'), playing: false, speed: 1 };
   setTime(time: Date) {
     this.calls.push(`setTime ${time.toISOString()}`);
+    this.state = { ...this.state, time };
+    this.emit('timeChanged', this.state);
   }
   setPlaying(playing: boolean) {
     this.calls.push(`setPlaying ${playing}`);
+    this.state = { ...this.state, playing };
+    this.emit('timeChanged', this.state);
   }
   setSpeed(speed: number) {
     this.calls.push(`setSpeed ${speed}`);
+    this.state = { ...this.state, speed };
+    this.emit('timeChanged', this.state);
   }
   focus(id: string | null) {
     this.calls.push(`focus ${id}`);
@@ -108,6 +118,14 @@ describe('ExplorerSession: la URL, la selección y el motor', () => {
     expect(fixed.sim.time().toISOString()).toBe('2030-01-01T00:00:00.000Z');
     expect(fixed.sim.selectedBodyId()).toBe('titan');
     expect(fixed.explorer.panelOpen()).toBe(true);
+  });
+
+  it('sin fecha, al conectar el motor (que nace en pausa) sigue en tiempo real', async () => {
+    const { session, sim } = await setup('?cuerpo=marte');
+    const engine = new FakeEngine();
+    session.attachEngine(engine);
+    expect(engine.calls.slice(0, 2)).toEqual(['setSpeed 1', 'setPlaying true']);
+    expect(sim.playing()).toBe(true);
   });
 
   it('un parámetro no válido se ignora y se avisa; el aviso se puede cerrar', async () => {
