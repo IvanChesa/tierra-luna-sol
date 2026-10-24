@@ -99,6 +99,12 @@
     stroke-linecap: round;
   }
 
+  /* Con el menú abierto, el botón se ve pulsado. */
+  .site-menu-button:has(+ .site-nav:popover-open) {
+    background: var(--color-surface-raised);
+    border-color: var(--color-accent);
+  }
+
   .site-nav:not(:popover-open) {
     display: none;
   }
@@ -136,11 +142,13 @@
     font-size: var(--text-sm);
   }
 
+  /* Dentro de una frase: subrayado, no solo el color (WCAG 1.4.1). */
   .site-nav__author a {
     display: inline;
     min-height: 0;
     color: var(--color-accent);
     font-size: inherit;
+    text-decoration: underline;
   }
 }
 

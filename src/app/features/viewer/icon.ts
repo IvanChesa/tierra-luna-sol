@@ -13,7 +13,8 @@ export type IconName =
   | 'chevron'
   | 'help'
   | 'skip'
-  | 'menu';
+  | 'menu'
+  | 'alert';
 
 /**
  * Iconos propios (ESTILO §6; `craft-floor`: un solo trazo, nada de emojis ni glifos). SVG de 24×24
@@ -46,15 +47,22 @@ export type IconName =
           <path d="M5 12h14" />
         }
         @case ('overview') {
-          <circle class="fill" cx="12" cy="12" r="2.5" />
-          <ellipse cx="12" cy="12" rx="9.5" ry="5.5" transform="rotate(-18 12 12)" />
-          <circle class="fill" cx="4.2" cy="14.6" r="1.6" />
+          <!-- El sistema entero: el Sol, dos órbitas y un planeta. -->
+          <circle class="fill" cx="12" cy="12" r="2" />
+          <circle cx="12" cy="12" r="5.5" />
+          <circle cx="12" cy="12" r="9.25" />
+          <circle class="fill" cx="18.55" cy="5.45" r="1.9" />
         }
         @case ('clean') {
-          <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
+          <!-- Ocultar la interfaz: el ojo tachado. -->
+          <path d="M3 12s3.4-6 9-6 9 6 9 6-3.4 6-9 6-9-6-9-6Z" />
+          <circle cx="12" cy="12" r="2.5" />
+          <path d="m4.5 4.5 15 15" />
         }
         @case ('restore') {
-          <path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" />
+          <!-- Mostrar la interfaz: el ojo. -->
+          <path d="M3 12s3.4-6 9-6 9 6 9 6-3.4 6-9 6-9-6-9-6Z" />
+          <circle cx="12" cy="12" r="2.5" />
         }
         @case ('close') {
           <path d="m6.5 6.5 11 11m0-11-11 11" />
@@ -72,6 +80,13 @@ export type IconName =
         }
         @case ('menu') {
           <path d="M4 7h16M4 12h16M4 17h16" />
+        }
+        @case ('alert') {
+          <path
+            d="M10.3 4.9 3 17.5a2 2 0 0 0 1.7 3h14.6a2 2 0 0 0 1.7-3L13.7 4.9a2 2 0 0 0-3.4 0Z"
+          />
+          <path d="M12 10v4" />
+          <circle class="fill" cx="12" cy="17" r="1" />
         }
       }
     </svg>

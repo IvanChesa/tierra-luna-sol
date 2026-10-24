@@ -18,6 +18,7 @@ import { SimulationStore } from '../../state/simulation.store';
 import { ZOOM_STEP } from '../camera-controls/camera-controls';
 import { ExplorerSession } from '../explorer-ui/explorer-session';
 import { canvasCommand } from '../shortcuts/shortcuts';
+import { Icon } from './icon';
 import { viewerErrorText } from './viewer-errors';
 
 /** Lo que el modo de captura expone a los scripts de Playwright (capturas, póster y mediciones). */
@@ -53,6 +54,7 @@ const ORBIT_STEP = (6 * Math.PI) / 180;
  */
 @Component({
   selector: 'tls-viewer-canvas',
+  imports: [Icon],
   templateUrl: './viewer-canvas.html',
   styleUrl: './viewer-canvas.css',
   host: { '[class.is-ready]': "status() === 'ready'" },

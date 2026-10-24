@@ -26,7 +26,10 @@
   }
   @case ('error') {
     <div class="viewer-status viewer-status--error" role="alert">
-      <p>No se ha podido mostrar la escena 3D.</p>
+      <p class="viewer-status__title">
+        <tls-icon name="alert" />
+        No se ha podido mostrar la escena 3D.
+      </p>
       <p class="viewer-status__detail">
         {{ errorMessage() }} El índice, la ficha y el tiempo siguen funcionando.
       </p>
