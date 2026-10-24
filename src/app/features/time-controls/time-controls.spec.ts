@@ -34,6 +34,19 @@ describe('TimeControls: barra de tiempo', () => {
     window.history.replaceState({}, '', '/');
   });
 
+  it('la lectura plegada del móvil dice la zona, la velocidad y el sentido', () => {
+    const { $, fixture, sim } = render();
+    const detail = () => $<HTMLElement>('.time__zone').textContent?.trim();
+    expect(detail()).toMatch(/^Hora local, UTC(\S*)? · tiempo real$/);
+    sim.setSpeed(-365.25 * 86_400);
+    fixture.detectChanges();
+    expect(detail()).toMatch(/· 1 año por segundo, hacia atrás$/);
+    $<HTMLSelectElement>('#time-zone').value = 'utc';
+    $<HTMLSelectElement>('#time-zone').dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+    expect(detail()).toBe('UTC · 1 año por segundo, hacia atrás');
+  });
+
   it('reproducir y pausar cambian el texto del botón (no solo el icono)', () => {
     const { $, fixture, sim } = render();
     const play = $<HTMLButtonElement>('.time__play');

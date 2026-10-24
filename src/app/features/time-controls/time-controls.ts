@@ -51,9 +51,17 @@ export class TimeControls {
     () => this.editing()?.time ?? toTimeInputValue(this.sim.time(), this.zone()),
   );
   protected readonly readout = computed(() => formatDateTime(this.sim.time(), this.zone()));
-  protected readonly zoneLabel = computed(() =>
-    this.zone() === 'utc' ? 'UTC' : utcOffsetLabel(this.sim.time()),
-  );
+  /**
+   * La segunda línea de la lectura plegada del móvil: la zona («Hora local, UTC+2» o «UTC»), la
+   * velocidad y el sentido (ESTILO §3 y §4).
+   */
+  protected readonly readoutDetail = computed(() => {
+    const zone = this.zone() === 'utc' ? 'UTC' : `Hora local, ${utcOffsetLabel(this.sim.time())}`;
+    const step = this.sim.speedStep();
+    const speed = step ? step.label.toLowerCase() : null;
+    const direction = this.sim.reverse() ? ', hacia atrás' : '';
+    return speed ? `${zone} · ${speed}${direction}` : zone;
+  });
   /** La etiqueta del campo ya dice «Zona»: «Local (UTC+2)» o «UTC». */
   protected readonly localZoneLabel = computed(() => `Local (${utcOffsetLabel(this.sim.time())})`);
   protected readonly speedId = computed(() => this.sim.speedStep()?.id ?? 'real');

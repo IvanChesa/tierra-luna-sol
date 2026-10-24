@@ -18,7 +18,8 @@
   flex: none;
   align-items: center;
   gap: var(--space-2);
-  min-width: 8.5rem;
+  /* Cabe «Reproducir»: al cambiar a «Pausar», la barra no se mueve. */
+  min-width: 9rem;
   height: 2.5rem;
   padding: 0 var(--space-4) 0 var(--space-3);
   background: var(--color-accent);
@@ -75,28 +76,15 @@ input[type='time'] {
   width: 7.25rem;
 }
 
-@media (max-width: 79.99rem) {
-  .time__play {
-    min-width: 0;
-  }
-
-  .time__settings .field__label {
-    display: none;
-  }
-}
-
 /*
- * Escritorio estrecho (64–72 rem): la fila completa no cabe. «Reproducir» se queda en su icono (el
- * nombre accesible y el título siguen) y la fila pierde algo de aire.
+ * Escritorio por debajo de 80 rem: la fila completa no cabe con holgura. «Reproducir» se queda en su
+ * icono, con el mismo ancho en los dos estados (el nombre accesible y el título siguen). Por debajo
+ * de 72 rem, la fila pierde además algo de aire.
  */
-@media (min-width: 64rem) and (max-width: 71.99rem) {
-  .time {
-    gap: var(--space-3);
-    padding-inline: var(--space-3);
-  }
-
+@media (min-width: 64rem) and (max-width: 79.99rem) {
   .time__play {
     width: 2.5rem;
+    min-width: 0;
     padding: 0;
     justify-content: center;
   }
@@ -111,6 +99,13 @@ input[type='time'] {
   }
 }
 
+@media (min-width: 64rem) and (max-width: 71.99rem) {
+  .time {
+    gap: var(--space-3);
+    padding-inline: var(--space-3);
+  }
+}
+
 /* Móvil: una fila compacta (reproducir, la fecha, «Ahora» y desplegar) y el resto, desplegable. */
 @media (max-width: 63.99rem) {
   .time {
@@ -122,7 +117,7 @@ input[type='time'] {
       'error error error error';
     grid-template-columns: auto minmax(0, 1fr) auto auto;
     align-items: center;
-    gap: var(--space-2) var(--space-3);
+    gap: var(--space-2);
     padding: var(--space-2) var(--space-4) var(--space-3);
   }
 
@@ -144,6 +139,7 @@ input[type='time'] {
 
   .time__play {
     width: var(--tap-target);
+    min-width: 0;
     height: var(--tap-target);
     padding: 0;
     justify-content: center;

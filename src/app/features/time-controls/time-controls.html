@@ -6,7 +6,7 @@
 
   <p class="time__readout">
     <time [attr.datetime]="sim.time().toISOString()">{{ readout() }}</time>
-    <span class="time__zone">{{ zoneLabel() }}</span>
+    <span class="time__zone">{{ readoutDetail() }}</span>
   </p>
 
   <button
