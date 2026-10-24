@@ -12,6 +12,8 @@
 
 Los 120 textos de los cuerpos ya son impersonales (`docs/revisiones/bloque-A.md`, A5): no se reescriben.
 
+Los textos de las vistas del explorador (su título y su párrafo) van con el registro de la interfaz, en tuteo («la cara que ves»). La primera persona del plural solo para lo que es de todos («nuestro planeta»).
+
 ## 2. Frases y palabras
 
 - **Frases cortas**, una idea por frase. En la interfaz, mejor 3–6 palabras.
@@ -60,7 +62,10 @@ Todo se formatea con las funciones de `src/app/core/format.ts`, que usan `Intl.N
 
 ## 4. Fechas y horas
 
-- **Dentro del explorador**, la hora es la **local del navegador con su zona**, o UTC si lo eliges. Siempre se dice cuál: «hora local (Europe/Madrid, UTC+2)» o «UTC».
+- **Dentro del explorador**, la hora es la **local del navegador con su zona**, o UTC si lo eliges. Siempre se dice cuál:
+  - en el desplegable de la barra de tiempo, «Local (UTC+2)» o «UTC» (su etiqueta ya dice «Zona»);
+  - en la lectura plegada del móvil, «Hora local, UTC+2» o «UTC»;
+  - en los textos largos, con el nombre de la zona: «hora local (Europe/Madrid, UTC+2)».
 - **Formato largo:** 24 de octubre de 2026, 21:40. **Corto** (barras, tablas): 24 oct 2026, 21:40.
 - **Reloj de 24 horas**, con segundos solo donde hacen falta (el tiempo de la simulación).
 - **Rangos:** «entre 1900 y 2100», «de 1900 a 2100».
