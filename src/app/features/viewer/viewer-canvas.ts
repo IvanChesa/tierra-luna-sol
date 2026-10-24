@@ -143,15 +143,17 @@ export class ViewerCanvas {
     const alive = () => !this.destroyed && token === this.attemptToken;
     this.status.set('loading');
     this.progress.set(0);
-    const capture = this.session.capture;
-    if (capture) win.__tlsViewer = { ready: false, engine: null };
+    // El acceso de los scripts solo existe en el modo de captura (y es nuevo en cada intento).
+    const handle: ViewerDebugHandle | null = this.session.capture
+      ? (win.__tlsViewer = { ready: false, engine: null })
+      : null;
     try {
       const { createSceneEngine } = await import('../../scene');
       // Mientras bajaba el chunk se ha podido salir del explorador o pulsar «Reintentar».
       if (!alive()) return;
       const engine = createSceneEngine({ ...this.session.engineOptions(), canvas, labelLayer });
       this.engine = engine;
-      if (win.__tlsViewer) win.__tlsViewer.engine = engine;
+      if (handle) handle.engine = engine;
       engine.on('progress', ({ loaded, total }) => {
         if (alive()) this.progress.set(total > 0 ? loaded / total : 0);
       });
@@ -159,7 +161,7 @@ export class ViewerCanvas {
         if (!alive()) return;
         this.status.set('ready');
         this.ready.emit();
-        if (win.__tlsViewer) win.__tlsViewer.ready = true;
+        if (handle) handle.ready = true;
       });
       engine.on('error', ({ message }) => {
         if (alive()) this.fail(message);
