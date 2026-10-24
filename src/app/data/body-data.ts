@@ -1,4 +1,4 @@
-// GENERADO por scripts/build-body-data.mjs el 2026-10-23. No se edita a mano.
+// GENERADO por scripts/build-body-data.mjs el 2026-10-24. No se edita a mano.
 // Datos físicos y orbitales copiados de las fichas de la NASA (NSSDCA) y del JPL; cada dato lleva
 // el id de su fuente (data/sources.ts). Solo hay cambios de unidad exactos y, en los planetas,
 // radio = diámetro / 2.
@@ -104,6 +104,11 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
         value: false,
         source: 'nssdc-planets',
       },
+      flatteningRatio: {
+        value: 0.0009,
+        source: 'nssdc-mercury',
+        note: 'Achatamiento f = (a − c) / a (radios ecuatorial y polar).',
+      },
     },
     orbit: {
       semiMajorAxisKm: {
@@ -187,6 +192,11 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       ringSystem: {
         value: false,
         source: 'nssdc-planets',
+      },
+      flatteningRatio: {
+        value: 0,
+        source: 'nssdc-venus',
+        note: 'Achatamiento f = (a − c) / a (radios ecuatorial y polar).',
       },
     },
     orbit: {
@@ -272,6 +282,11 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
         value: false,
         source: 'nssdc-planets',
       },
+      flatteningRatio: {
+        value: 0.003353,
+        source: 'nssdc-earth',
+        note: 'Achatamiento f = (a − c) / a (radios ecuatorial y polar).',
+      },
     },
     orbit: {
       semiMajorAxisKm: {
@@ -356,6 +371,11 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
         value: false,
         source: 'nssdc-planets',
       },
+      flatteningRatio: {
+        value: 0.00589,
+        source: 'nssdc-mars',
+        note: 'Achatamiento f = (a − c) / a (radios ecuatorial y polar).',
+      },
     },
     orbit: {
       semiMajorAxisKm: {
@@ -435,6 +455,11 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       ringSystem: {
         value: true,
         source: 'nssdc-planets',
+      },
+      flatteningRatio: {
+        value: 0.06487,
+        source: 'nssdc-jupiter',
+        note: 'Achatamiento f = (a − c) / a (radios ecuatorial y polar).',
       },
     },
     orbit: {
@@ -516,6 +541,11 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
         value: true,
         source: 'nssdc-planets',
       },
+      flatteningRatio: {
+        value: 0.09796,
+        source: 'nssdc-saturn',
+        note: 'Achatamiento f = (a − c) / a (radios ecuatorial y polar).',
+      },
     },
     orbit: {
       semiMajorAxisKm: {
@@ -546,6 +576,28 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       eccentricity: {
         value: 0.052,
         source: 'nssdc-planets',
+      },
+    },
+    rings: {
+      innerRadiusKm: {
+        value: 74658,
+        source: 'nssdc-saturn-rings',
+        note: 'Borde interior del anillo C.',
+      },
+      cassiniInnerKm: {
+        value: 117507,
+        source: 'nssdc-saturn-rings',
+        note: 'Borde exterior del anillo B (empieza la división de Cassini).',
+      },
+      cassiniOuterKm: {
+        value: 122340,
+        source: 'nssdc-saturn-rings',
+        note: 'Borde interior del anillo A (acaba la división de Cassini).',
+      },
+      outerRadiusKm: {
+        value: 136780,
+        source: 'nssdc-saturn-rings',
+        note: 'Borde exterior del anillo A.',
       },
     },
   },
@@ -595,6 +647,11 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       ringSystem: {
         value: true,
         source: 'nssdc-planets',
+      },
+      flatteningRatio: {
+        value: 0.02293,
+        source: 'nssdc-uranus',
+        note: 'Achatamiento f = (a − c) / a (radios ecuatorial y polar).',
       },
     },
     orbit: {
@@ -675,6 +732,11 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       ringSystem: {
         value: true,
         source: 'nssdc-planets',
+      },
+      flatteningRatio: {
+        value: 0.01708,
+        source: 'nssdc-neptune',
+        note: 'Achatamiento f = (a − c) / a (radios ecuatorial y polar).',
       },
     },
     orbit: {

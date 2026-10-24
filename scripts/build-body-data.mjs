@@ -20,6 +20,15 @@ const PAGES = {
   'nssdc-neptunian-satellites':
     'https://nssdc.gsfc.nasa.gov/planetary/factsheet/neptuniansatfact.html',
   'jpl-satellite-physical-parameters': 'https://ssd.jpl.nasa.gov/sats/phys_par/',
+  // Fichas individuales de los planetas (achatamiento) y de los anillos de Saturno (fase 2).
+  'nssdc-mercury': 'https://nssdc.gsfc.nasa.gov/planetary/factsheet/mercuryfact.html',
+  'nssdc-venus': 'https://nssdc.gsfc.nasa.gov/planetary/factsheet/venusfact.html',
+  'nssdc-earth': 'https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html',
+  'nssdc-jupiter': 'https://nssdc.gsfc.nasa.gov/planetary/factsheet/jupiterfact.html',
+  'nssdc-saturn': 'https://nssdc.gsfc.nasa.gov/planetary/factsheet/saturnfact.html',
+  'nssdc-uranus': 'https://nssdc.gsfc.nasa.gov/planetary/factsheet/uranusfact.html',
+  'nssdc-neptune': 'https://nssdc.gsfc.nasa.gov/planetary/factsheet/neptunefact.html',
+  'nssdc-saturn-rings': 'https://nssdc.gsfc.nasa.gov/planetary/factsheet/satringfact.html',
 };
 
 async function page(id) {
@@ -303,6 +312,57 @@ const MOON_NAMES = {
       eccentricity: q(num(row('Orbital eccentricity')[k]), S),
     };
   }
+}
+
+// --- Achatamiento de los planetas: ficha individual de cada uno -------------------------------
+// «Ellipticity (Flattening)» (en Júpiter, «Ellipticity»): f = (a − c) / a. La ficha de la Tierra es
+// texto preformateado y las demás, tablas; en las dos, el primer número tras la etiqueta es el del
+// planeta (las columnas siguientes son la Tierra y el cociente).
+{
+  const sheets = {
+    mercurio: 'nssdc-mercury',
+    venus: 'nssdc-venus',
+    tierra: 'nssdc-earth',
+    marte: 'nssdc-mars',
+    jupiter: 'nssdc-jupiter',
+    saturno: 'nssdc-saturn',
+    urano: 'nssdc-uranus',
+    neptuno: 'nssdc-neptune',
+  };
+  for (const [id, S] of Object.entries(sheets)) {
+    const match = /Ellipticity(?: \(Flattening\))? ([\d.]+)/.exec(clean(await page(S)));
+    if (!match) throw new Error(`Falta el achatamiento en ${S}`);
+    data[id].physical.flatteningRatio = q(
+      num(match[1]),
+      S,
+      'Achatamiento f = (a − c) / a (radios ecuatorial y polar).',
+    );
+  }
+}
+
+// --- Anillos de Saturno: bordes de la ficha de los anillos ------------------------------------
+{
+  const S = 'nssdc-saturn-rings';
+  const table = rows(await page(S));
+  const edge = (label) => {
+    const r = table.find((cells) => cells[0] === label);
+    if (!r) throw new Error(`Falta la fila ${label} de los anillos`);
+    return num(r[1]);
+  };
+  data.saturno.rings = {
+    innerRadiusKm: q(edge('C inner edge'), S, 'Borde interior del anillo C.'),
+    cassiniInnerKm: q(
+      edge('B outer edge'),
+      S,
+      'Borde exterior del anillo B (empieza la división de Cassini).',
+    ),
+    cassiniOuterKm: q(
+      edge('A inner edge'),
+      S,
+      'Borde interior del anillo A (acaba la división de Cassini).',
+    ),
+    outerRadiusKm: q(edge('A outer edge'), S, 'Borde exterior del anillo A.'),
+  };
 }
 
 // --- Salida -----------------------------------------------------------------------------------
