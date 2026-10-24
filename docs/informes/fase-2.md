@@ -2,7 +2,7 @@
 
 - **Rama:** `fase-2-motor`
 - **Fecha:** 2026-10-24
-- **Estado:** lista para revisión (modo autónomo por bloques, bloque B)
+- **Estado:** revisada y corregida (modo autónomo por bloques, bloque B); ver «Respuesta a la revisión» al final
 
 ## 0. Plan de la fase
 
@@ -50,7 +50,7 @@ Escrito antes de empezar, como pide el modo autónomo. Lo que cambie durante la 
 |---|---|---|
 | Solar System Scope, texturas (Sol, planetas, Tierra día/noche/nubes/normales/especular, anillos) | CC BY 4.0 (comprobado en https://www.solarsystemscope.com/textures/) | Texturas de los cuerpos |
 | NASA SVS 4720, CGI Moon Kit (`lroc_color_poles_*`) | Material de la NASA (crédito: NASA's Scientific Visualization Studio) | Luna básica (el mapa está centrado en 0° de longitud, según la página) |
-| NASA SVS 4851, Deep Star Maps 2020 (`milkyway_2020_4k.exr`) | Material de la NASA + datos de Gaia DR2 (uso libre con crédito a ESA/Gaia/DPAC) | Vía Láctea (opcional) |
+| NASA SVS 4851, Deep Star Maps 2020 (`milkyway_2020_4k.exr`) | Material de la NASA derivado de Gaia DR2. **Corregido tras la revisión:** los datos de Gaia son CC BY-NC 3.0 IGO, así que la Vía Láctea no se publica (§4.5) | Vía Láctea (opcional; omitida) |
 | NASA NSSDCA, fichas de cada planeta («Ellipticity (Flattening)») y de los anillos de Saturno | Material de la NASA | `flatteningRatio` y radios de los anillos |
 | three.js r186, `examples/textures/spiritedaway.ktx2` y `examples/textures/ktx2/*` | MIT (repositorio de three) | Solo la prueba de KTX2 (no se publican) |
 
@@ -74,26 +74,26 @@ Escrito antes de empezar, como pide el modo autónomo. Lo que cambie durante la 
 ---
 
 ## 1. Resumen
-El motor 3D está hecho con la arquitectura que pedía el plan y medido. El explorador (`/`, `/explorar/tierra` y `/explorar/luna`) pinta primero el texto prerenderizado y un póster, y después, con `@defer` y un `import()` dinámico, el Sol, los 8 planetas y las 21 lunas en sus posiciones y orientaciones reales del día, con órbitas, estrellas HYG, Vía Láctea alineada y etiquetas. Lo esencial:
+El motor 3D está hecho con la arquitectura que pedía el plan y medido. El explorador (`/`, `/explorar/tierra` y `/explorar/luna`) pinta primero el texto prerenderizado y un póster, y después, con `@defer` y un `import()` dinámico, el Sol, los 8 planetas y las 21 lunas en sus posiciones y orientaciones reales del día, con órbitas, estrellas HYG y etiquetas. La Vía Láctea se hizo y se alineó, pero tras la revisión se ha retirado: su única fuente deriva de Gaia, con licencia no comercial (decide Iván). Lo esencial:
 - **Estado del sistema** (30 cuerpos en una llamada, 0,16 ms por frame con orientaciones) y **orientación IAU** (la libración coincide con `Astronomy.Libration` a 0,025° y la apertura de los anillos es de 0,043° el día del cruce).
 - **Tres marcos con origen flotante**: ilustrativo, sistema local físico y escala real, con transiciones relativas al foco que no atraviesan el foco ni cambian el orden de distancias. Cuerpos y órbitas usan la misma transformación.
 - **Luz y sombras con la geometría verdadera** (float64), independientes del marco: sombras analíticas anillos ↔ Saturno, y planetas achatados con `flatteningRatio` de la NASA.
 - **Motor testable sin WebGL**: el renderer entra por una fábrica; 246 tests (104 más que al cerrar la fase 1).
-- **Profundidad logarítmica** (D13), decidida con capturas: el buffer invertido de three no mejora el estándar con el buffer de enteros del lienzo.
+- **Profundidad logarítmica** (D13): en la prueba, el buffer invertido de three falla (el halo tapa el disco del Sol) y el estándar empata con el logarítmico; se elige el logarítmico por margen de precisión (§5.1, corregido tras la revisión).
 - **Texturas WebP por niveles** con hash y alineación del meridiano 0 comprobada por script; **KTX2 medido** (no compensa ahora).
-- **Medido en una RTX 3060**: 60 FPS en los tres niveles, 0 frames en reposo, VRAM de 29 a 150 MB, memoria estable en 10 idas y vueltas, contexto WebGL recuperado y JS inicial de 283 kB sin three ni astronomy-engine (comprobado por módulos).
+- **Medido en una RTX 3060** (tras las correcciones de la revisión): 60 FPS en los tres niveles, 0 frames en reposo, VRAM de 27 a 107 MB, memoria estable y un solo contexto WebGL vivo en 10 idas y vueltas, 10 cambios de vista y 6 de calidad, contexto WebGL recuperado y JS inicial de 288 kB sin three ni astronomy-engine (comprobado por módulos).
 
 ## 2. Criterios de aceptación
 
 | Criterio | ✅/❌ | Evidencia |
 |---|---|---|
-| Primero se pintan el texto y el póster; después, el Sol, los planetas, las órbitas, las estrellas y las etiquetas en las posiciones de hoy (capturas en escritorio y móvil) | ✅ | Sin JavaScript (lo que llega prerenderizado): `img/fase-2/sin-js-escritorio.webp` y `sin-js-movil.webp` (texto + póster). Con el 3D (modo de captura, 2026-10-24 00:00 UTC, la fecha de hoy): `escritorio-sistema.webp`, `movil-sistema.webp` y las vistas Tierra y Luna en los dos formatos. LCP medido: el párrafo (148 ms, calidad alta) o el póster (40 ms, baja); nunca el lienzo. |
+| Primero se pintan el texto y el póster; después, el Sol, los planetas, las órbitas, las estrellas y las etiquetas en las posiciones de hoy (capturas en escritorio y móvil) | ✅ | Sin JavaScript (lo que llega prerenderizado): `img/fase-2/sin-js-escritorio.webp` y `sin-js-movil.webp` (texto + póster). Con el 3D (modo de captura, 2026-10-24 00:00 UTC, la fecha de hoy): `escritorio-sistema.webp`, `movil-sistema.webp` y las vistas Tierra y Luna en los dos formatos. Tras la revisión, el póster sigue debajo del lienzo hasta el primer frame (y si hay un error): comprobado muestreando la página cada 25 ms. LCP medido: el póster (156 ms en alta, 68 ms en baja); nunca el lienzo. |
 | `three` y `astronomy-engine` en el chunk diferido (salida del build y tamaño) | ✅ | `main` 278,81 kB; inicial total **283,37 kB** (78,35 kB transferidos), sin avisos. `check-initial-bundle`: «✔ El JS inicial de las 18 páginas (7 ficheros) no lleva ningún módulo de three ni de astronomy-engine. Diferido: chunk-…js (**728,71 kB** en bruto) con three y astronomy-engine» (aviso de §5 a 900 kB). |
 | Tests de orientación: la cara de la Luna frente a `Astronomy.Libration` (±1°) en 3 fechas | ✅ | `orientation.spec.ts`, con las cifras en el nombre del test: 2026-10-24 (libración −5,93°, −3,72°): 0,001° y 0,020°; 2027-03-15: 0,002° y 0,024°; 2030-07-01: 0,001° y 0,025°. |
 | Tests de orientación: apertura de los anillos ≈ 0° el 23-03-2025 (±1°) | ✅ | **0,043°** (en el nombre del test). Además, +27° el 2017-10-16 (cara norte) y −27° el 2032-05-01 (cara sur). |
 | Tests de la lógica del motor sin WebGL (marcos, transiciones, selección, tiempo) | ✅ | `engine.spec.ts` (17 tests con renderer y `requestAnimationFrame` falsos): arranque por pasos, render bajo demanda, tiempo y velocidades (también hacia atrás), pausa en 2100, pestaña oculta, foco y sistema local físico, reanclaje de la cámara, escala real, vuelta a la vista general, movimiento reducido, clic y etiquetas, vistas, calidad adaptativa, contexto WebGL, `dispose()` y chunks de profundidad. Además, `frames`, `rig`, `clock`, `quality`, `picking`, `labels` y las texturas. |
-| Decisión de profundidad con capturas sin parpadeos en el marco real | ✅ | §5.1. Fobos junto a Marte y Neptuno con la Tierra en primer plano: idénticas con los tres buffers (2 píxeles distintos). Desde Fobos con el Sol al fondo (1,5 UA), el estándar y el invertido funden el disco del Sol con su halo (centro 255, 255, 254) y el logarítmico no (253, 161, 116): `profundidad-sol-detalle-*.png`. **Elegido: `logarithmicDepthBuffer`.** |
-| Memoria, FPS, VRAM, peso de la primera vista y coste por frame según §5 (cifras) | ✅ | §6. FPS: 60 en alta, media y baja. VRAM (sistema / Tierra / Luna): 70 / 110 / 150 MB en alta, 38 / 46 / 54 en media y 29 / 37 / 45 en baja. Primera vista: texturas de 1162 kB (alta) y 403 kB (baja). Efemérides: 0,16 ms por frame. Memoria: 7 geometrías, 12 texturas y 10 MB de heap antes y después de 10 idas y vueltas y de 10 cambios de vista. |
+| Decisión de profundidad con capturas sin parpadeos en el marco real | ✅ (corregido) | §5.1. Sin parpadeos con ninguno de los tres buffers. Fobos junto a Marte y Neptuno con la Tierra en primer plano: idénticas con los tres. Desde Fobos con el Sol al fondo (1,5 UA), **solo el invertido** funde el disco del Sol con su halo (centro 255, 255, 255); el estándar y el logarítmico dan el mismo píxel (251, 166, 116): `profundidad-sol-detalle-*.png`. **Elegido: `logarithmicDepthBuffer`**, por margen de precisión y no porque el estándar falle en estas escenas (la primera versión del informe decía lo contrario: era un error). |
+| Memoria, FPS, VRAM, peso de la primera vista y coste por frame según §5 (cifras) | ✅ | §6 (repetido tras la revisión, ya sin la Vía Láctea). FPS: 60 en alta, media y baja. VRAM (sistema / Tierra / Luna): 27 / 67 / 107 MB en alta y 27 / 35 / 43 en media y en baja. Primera vista: texturas de 378 kB. Efemérides: 0,17 ms por frame. Memoria: 6 geometrías, 11 texturas, 10 MB de heap y **un contexto WebGL vivo** al empezar, tras 10 idas y vueltas, tras 10 cambios de vista y tras 6 cambios de calidad. |
 | En pausa y sin interacción, 0 FPS; pérdida y recuperación del contexto probadas | ✅ | `measure.mjs`: **0 frames y 0 llamadas a `requestAnimationFrame` en 3 s** de pausa. Contexto: `loseContext()` → evento `contextLost` y 0 frames; `restoreContext()` → `contextRestored` y vuelve a pintar con la fecha nueva (`contexto-recuperado.webp`). También en `engine.spec.ts`. |
 | Calidad adaptativa: con FPS bajos simulados (reloj falso) baja una vez y no oscila | ✅ | `quality.spec.ts`: a 40 FPS baja a media una vez; a 60 FPS no vuelve a subir; sin animación no mide; los picos cortos no cuentan. `engine.spec.ts`: el motor completo a 40 FPS durante 12 s da un solo `qualityChanged` automático. |
 | Etiquetas legibles y sin solaparse en la vista general (captura) | ✅ | `escritorio-sistema.webp` y `movil-sistema.webp`. Colocación voraz por prioridad con 4 posiciones por etiqueta (tests en `labels.spec.ts`). |
@@ -119,7 +119,7 @@ El motor 3D está hecho con la arquitectura que pedía el plan y medido. El expl
 | 2.c.12 Sol y luz | hecha | Oscurecimiento del limbo (ley lineal, u = 0,6) y halo con tamaño mínimo en píxeles; luz sin atenuación, con la dirección real. |
 | 2.c.13 Planetas, anillos y Luna | hecha | Sombras analíticas en los dos sentidos (`escritorio-saturno.webp`). Tira de los anillos calibrada (§5.3). |
 | 2.c.14 Órbitas con `Line2` | hecha | Un solo `LineSegments2` con las 29 órbitas; la estela sale del cuerpo y se desvanece hacia atrás; la órbita del cuerpo enfocado va en el color de acento. |
-| 2.c.15 Estrellas y Vía Láctea | hecha | HYG (magnitud límite de 5,5, 6,0 y 6,5 según la calidad) y Vía Láctea del NASA SVS alineada en ICRF. |
+| 2.c.15 Estrellas y Vía Láctea | hecha (Vía Láctea omitida) | HYG (magnitud límite de 5,5, 6,0 y 6,5 según la calidad). La Vía Láctea del NASA SVS se generó y se alineó en ICRF, pero no se publica: deriva de Gaia DR2 (CC BY-NC 3.0 IGO). El código queda listo para otra fuente (`PENDIENTES.md`). |
 | 2.c.16 Etiquetas | hecha | Capa HTML gestionada por `scene/`, `aria-hidden`, sin solapes y con marcador para los cuerpos diminutos; el clic emite `bodyPicked`. |
 | 2.c.17 Póster provisional | hecha | `public/img/poster-{system,earth,moon}-{escritorio,movil}.webp` (13–36 kB), con `width` y `height`. |
 | 2.d.18 `ViewerLayout` | hecha | Ruta padre de las tres vistas; el motor persiste entre ellas; `@defer (on idle)` y `afterNextRender`. |
@@ -155,7 +155,7 @@ El encuadre de un cuerpo es «ocupa el 46 % (foco) o el 82 % (vistas Tierra y Lu
 2. **Las lunas pequeñas usan una esfera ligera** (32 segmentos), salvo la enfocada: la vista general pasa de 523 000 a 220 000 triángulos.
 3. **El modo de captura respeta la densidad de píxeles.** El plan decía «semilla fija», pero el motor no tiene aleatoriedad. La captura es determinista para una ventana y una densidad dadas, que fija el script.
 4. **Las capturas del informe van en WebP** (calidad 88): 1,4 MB en vez de 12 MB en PNG. Los recortes de la prueba de profundidad van en PNG.
-5. **La Vía Láctea en 4k lleva un desenfoque de 0,6 px**: el grano de las estrellas débiles duplicaba el peso (1,67 MB, por encima del límite de 1,5 MB de §5). Queda en 784 kB.
+5. **La Vía Láctea en 4k llevaba un desenfoque de 0,6 px**: el grano de las estrellas débiles duplicaba el peso (1,67 MB, por encima del límite de 1,5 MB de §5) y quedaba en 784 kB. **Tras la revisión está omitida** (licencia CC BY-NC de Gaia DR2): `build-textures.mjs` la salta (`OMITTED`), sus WebP se han retirado de `public/textures/`, ningún nivel de calidad la pide y la esfera del cielo no se dibuja sin textura.
 
 ### 4.6 Añadidos al contrato de `SceneEngine`
 - `stats()` (indicador de desarrollo y mediciones).
@@ -164,13 +164,14 @@ El encuadre de un cuerpo es «ocupa el 46 % (foco) o el 82 % (vistas Tierra y Lu
 
 ## 5. Decisiones técnicas nuevas
 
-### 5.1 Profundidad (D13): `logarithmicDepthBuffer`
-Prueba en el marco real con los tres buffers (`?profundidad=logaritmica|invertida|estandar`), en Chromium con ANGLE sobre D3D11:
-- En este equipo existe `EXT_clip_control` y el modo invertido se activa de verdad (`stats().depth = reversed`).
+### 5.1 Profundidad (D13): `logarithmicDepthBuffer` (corregido tras la revisión)
+Prueba en el marco real con los tres buffers (`?profundidad=logaritmica|invertida|estandar`), en Chromium con ANGLE sobre D3D11. Repetida tras la revisión con el build corregido (`scripts` propios: el píxel central del Sol en la página, el plano cercano real y `DEPTH_BITS`):
+- En este equipo existe `EXT_clip_control` y el modo invertido se activa de verdad (`stats().depth = reversed`). El lienzo tiene 24 bits de profundidad (`DEPTH_BITS`).
 - **Fobos junto a Marte** y **Neptuno con la Tierra en primer plano**: las tres capturas coinciden (2 píxeles distintos de 1,44 millones). No hay nada lejano que compita en profundidad.
-- **Desde Fobos, con el Sol al fondo** (cámara a 66 km de Fobos, Sol a 1,5 UA): con el buffer estándar y con el invertido, el halo se pinta sobre el disco del Sol (píxel central 255, 255, 254). Con el logarítmico, el disco se ve dentro del halo (253, 161, 116). Recortes: `profundidad-sol-detalle-{logaritmica,invertida,estandar}.png`.
-- **Por qué el invertido no ayuda:** three lo implementa sobre el buffer de profundidad del lienzo, que es de enteros de 24 bits. La ventaja del Z invertido viene de combinarlo con un buffer en coma flotante, que el lienzo no ofrece. Haría falta pintar en un render target con `DepthTexture` flotante y copiarlo al lienzo: más memoria y más pasos, sin una ventaja medible.
-- **Coste del logarítmico:** escribe `gl_FragDepth` y pierde el early-Z. Con 35 llamadas y 220 000 triángulos: 60 FPS y 1,9 ms de CPU por frame. Los planos de recorte se ajustan en cada frame (el cercano, a la mitad de la distancia a la superficie más próxima).
+- **Desde Fobos, con el Sol al fondo** (cámara a 66 km de Fobos, Sol a 1,5 UA; plano cercano real 0,0127 unidades y Sol a 108 306): **el invertido** pinta el halo sobre el disco del Sol (centro 255, 255, 255). **El estándar y el logarítmico** dan exactamente el mismo píxel en el centro (251, 166, 116) y a medio radio (250, 148, 97): el disco se ve dentro del halo. Recortes: `profundidad-sol-detalle-{logaritmica,invertida,estandar}.png`. La primera versión de este informe decía que el estándar también fallaba: no es lo que muestran sus capturas ni la repetición; era un error.
+- **Lo que predice el cálculo:** con un buffer de enteros de 24 bits, el estándar separa profundidades a esa distancia de unas 5,5·10⁴ unidades (z²/(cerca · 2²⁴)), y el Sol mide 274 de radio: el disco y el halo deberían caer en el mismo valor y el halo pintarse encima. No pasa en esta GPU; lo más probable es que compare la profundidad del fragmento antes de redondearla a 24 bits. Eso no está garantizado en otras GPU (las de móvil, sobre todo).
+- **Por qué el invertido empeora:** three lo implementa sobre el buffer de profundidad del lienzo, que es de enteros de 24 bits. La ventaja del Z invertido viene de combinarlo con un buffer en coma flotante, que el lienzo no ofrece; con enteros, lo lejano queda peor resuelto que con el estándar. Haría falta pintar en un render target con `DepthTexture` flotante y copiarlo al lienzo.
+- **Decisión:** el logarítmico, por margen de precisión en las escalas extremas (el error relativo es el mismo a cualquier distancia) y porque su coste está medido: escribe `gl_FragDepth` y pierde el early-Z, y con 35 llamadas y 220 000 triángulos da 60 FPS y 1,9 ms de CPU por frame. El estándar empata en estas capturas: si Iván prefiere conservar el early-Z, es la alternativa (propuesta 2 de §10). Los planos de recorte se ajustan en cada frame (el cercano, a la mitad de la distancia a la superficie más próxima).
 
 ### 5.2 KTX2 frente a WebP: seguir con WebP
 `scripts/bench-ktx2.mjs` usa las únicas texturas KTX2 del repositorio de three r186 (la grande es UASTC; de ETC1S solo hay una de 40 × 40 px) y WebP con los mismos píxeles (calidad 82). RTX 3060, ANGLE/D3D11, mediana de 7 repeticiones:
@@ -182,7 +183,7 @@ Prueba en el marco real con los tres buffers (`?profundidad=logaritmica|invertid
 | 2d_etc1s.ktx2 | ETC1S | 40×40 | BC7 (6 mipmaps) | 0,9 kB · 4,83 · 3,0 ms · 0,1 ms · 2,1 kB | 0,6 kB · 3,13 · 2,6 ms · 0,1 ms · 8,3 kB |
 
 «Carga» incluye la descarga local y la transcodificación o decodificación. La VRAM de WebP es la de RGBA8 con mipmaps.
-- **A favor de KTX2:** 5,3 veces menos VRAM y subidas 6 veces más rápidas.
+- **A favor de KTX2:** unas 4 veces menos VRAM en igualdad de condiciones (la cifra de 5,3 de la tabla compara el WebP con mipmaps contra el KTX2 de muestra sin ellos; corregido tras la revisión) y subidas 6 veces más rápidas.
 - **En contra:** UASTC pesa 3,9 veces más que WebP (8 frente a 2 bits por píxel). Con nuestras texturas, la primera vista pasaría de 1,2 MB a unos 4–5 MB, y §5 permite 2,5. ETC1S pesaría parecido a WebP, pero con más artefactos en los degradados de color de los planetas, y no se puede medir a escala con estas muestras. Además, generar KTX2 necesita una herramienta externa (`toktx`).
 - **Recomendación:** seguir con WebP. Toda la VRAM medida cabe con holgura en §5 (como mucho 150 de 300 MB en alta y 45 de 120 en baja). Volver a medir en la **fase 6**: la Luna en 8K (8192 × 4096 en RGBA8 con mipmaps, unos 179 MB) solo cabría en alta con KTX2 o sin mipmaps. Si hace falta, en esa fase se propondrá `toktx` a Iván.
 
@@ -195,7 +196,7 @@ Sondas sobre el nivel 1k ya generado. El script falla si no se cumplen y comprue
 - Luna (CGI Moon Kit, «centrado en 0°»): Mare Imbrium (85) y Crisium (83) frente a las tierras altas (145) y la cara oculta (166).
 - Marte: Syrtis Major (58) y Acidalia (48) frente a Hellas (123) y Tharsis (145).
 - Mercurio: el cráter Kuiper (215) frente a la llanura vecina (140).
-- Vía Láctea: el centro galáctico (131) frente al polo galáctico norte (22). El mapa tiene la AR 0 en el centro y crece hacia la izquierda; también lo comprobé con las Nubes de Magallanes.
+- Vía Láctea (antes de omitirla): el centro galáctico (131) frente al polo galáctico norte (22). El mapa tiene la AR 0 en el centro y crece hacia la izquierda; también lo comprobé con las Nubes de Magallanes.
 
 `texture-meta.spec.ts` cierra la cadena en el modelo: el vértice u = 0,5 de la esfera de three es +X (meridiano 0) y, con la orientación de la escena, cae en (0°, 0°) de la Tierra; u = 0,75 cae en 90° E.
 
@@ -210,25 +211,26 @@ Sondas sobre el nivel 1k ya generado. El script falla si no se cumplen y comprue
 - **Etiquetas:** cuatro posiciones antes de descartar una; las lunas solo se nombran si su planeta tiene nombre y están separadas de él (14 px en el sistema enfocado, 40 px en los demás).
 
 ## 6. Salida de los checks
+Tras las correcciones de la revisión:
 ```
 $ npm run check            (código de salida 0)
 All files pass linting.
 All matched files use Prettier code style!
- Test Files  28 passed (28)
-      Tests  246 passed (246)
+ Test Files  29 passed (29)
+      Tests  251 passed (251)
 Statements   : 99.57% ( 466/468 )
 Branches     : 96.73% ( 178/184 )
 Functions    : 100% ( 107/107 )
 Lines        : 100% ( 407/407 )
 Initial chunk files | Names              |  Raw size | Estimated transfer size
-main-CNOXVGRA.js    | main               | 278.81 kB |                76.62 kB
+main-TV2OUQ2R.js    | main               | 283.14 kB |                78.08 kB
 styles-OMJHEEKH.css | styles             |   4.09 kB |                 1.27 kB
-                    | Initial total      | 283.37 kB |                78.35 kB
+                    | Initial total      | 287.70 kB |                79.81 kB
 Prerendered 17 static routes.
 ✔ El JS inicial de las 18 páginas (7 ficheros) no lleva ningún módulo de three ni de astronomy-engine.
-  Diferido: chunk-…js (728.71 kB en bruto) con three y astronomy-engine
+  Diferido: chunk-…js (729.38 kB en bruto) con three y astronomy-engine
 ```
-- Sin avisos de presupuesto. El inicial pasa de 274,17 a 283,37 kB por el router del layout, `@defer` y `@Service`; three y astronomy-engine siguen fuera.
+- Sin avisos de presupuesto. El inicial pasa de 274,17 a 283,37 kB por el router del layout, `@defer` y `@Service`, y a 287,70 kB con las correcciones: el lienzo nuevo por intento usa `@for`, y esbuild coloca el código de Angular que lo ejecuta en el chunk que comparte con `main` (las funciones del núcleo que usa cualquier componente diferido acaban ahí). three y astronomy-engine siguen fuera.
 - 17 rutas prerenderizadas (antes, 15): `/explorar/tierra` y `/explorar/luna`.
 
 **Demostración de la comprobación por módulos** (`import { Vector3 } from 'three'` y `new Vector3(1, 2, 3).length()` en `pages/planets-index`):
@@ -245,24 +247,25 @@ Equipo: Ryzen 7 5700G y RTX 3060; Chromium 1248 de Playwright con ANGLE sobre D3
 | Medición | Resultado | §5 |
 |---|---|---|
 | Reposo (3 s en pausa, sin tocar nada) | 0 frames · 0 `requestAnimationFrame` | 0 FPS ✅ |
-| Reproducción a 1 día/s, alta | 60 FPS (mín. 60) · 1,86 ms de CPU por frame · 0,16 ms de efemérides · 35 llamadas · 221 k triángulos | ≥ 55 ✅ · ≤ 2 ms ✅ |
-| Reproducción, media | 59,8 FPS (mín. 59) · 1,38 ms · 0,17 ms · 100 k triángulos | ✅ |
-| Reproducción, baja | 59,8 FPS (mín. 59) · 1,19 ms · 0,16 ms · 64 k triángulos | ✅ |
-| VRAM en alta: sistema / Tierra / Luna | 70 / 110 / 150 MB | ≤ 300 ✅ |
-| VRAM en media | 38 / 46 / 54 MB | — |
-| VRAM en baja | 29 / 37 / 45 MB | ≤ 120 ✅ |
-| Primera vista, alta | Texturas 1162 kB (Vía Láctea 4k 784 kB + cuerpos en 1k 378 kB) · estrellas 70 kB · póster 36 kB · fuentes 52 kB · JS 997 kB en bruto (283 inicial + 729 diferido) | ≤ 2,5 MB ✅ · estrellas ≤ 250 kB ✅ · Vía Láctea ≤ 1,5 MB ✅ |
-| Primera vista, baja | Texturas 403 kB (Vía Láctea 1k 25 kB) | ≤ 1,2 MB ✅ · Vía Láctea ≤ 400 kB ✅ |
+| Reproducción a 1 día/s, alta | 60 FPS (mín. 60) · 1,59 ms de CPU por frame · 0,17 ms de efemérides · 34 llamadas · 218 k triángulos | ≥ 55 ✅ · ≤ 2 ms ✅ |
+| Reproducción, media | 59,8 FPS (mín. 59) · 1,34 ms · 0,18 ms · 96 k triángulos | ✅ |
+| Reproducción, baja | 60 FPS (mín. 60) · 1,17 ms · 0,20 ms · 60 k triángulos | ✅ |
+| VRAM en alta: sistema / Tierra / Luna | 27 / 67 / 107 MB | ≤ 300 ✅ |
+| VRAM en media | 27 / 35 / 43 MB | — |
+| VRAM en baja | 27 / 35 / 43 MB | ≤ 120 ✅ |
+| Primera vista, alta y baja | Texturas 378 kB (los cuerpos en 1k; sin Vía Láctea) · estrellas 70 kB · póster 31 kB · fuentes 52 kB · JS 1003 kB en bruto (288 inicial + 729 diferido + chunks de las rutas) | ≤ 2,5 MB y ≤ 1,2 MB ✅ · estrellas ≤ 250 kB ✅ |
 | Vistas Tierra y Luna en alta (adicional) | Tierra de día 4k: 437 kB · Luna 4k: 965 kB | ≤ 6 MB ✅ · ≤ 10 MB ✅ |
-| Tareas largas en la carga | Una de 53 ms (alta); ninguna (baja) | Ninguna > 200 ms ✅ |
-| LCP | Párrafo de la portada a 148 ms (alta) · póster a 40 ms (baja) | Nunca el lienzo ✅ |
-| Memoria: inicio → 10 idas y vueltas explorador ↔ ficha → 10 cambios de vista | 7 geometrías y 12 texturas en los tres momentos · heap de JS 10 → 10 → 10 MB · un solo lienzo | Sin crecimiento ✅ |
+| Tareas largas en la carga | Ninguna (alta y baja) | Ninguna > 200 ms ✅ |
+| LCP | Póster: 156 ms (alta) · 68 ms (baja) | Nunca el lienzo ✅ |
+| Memoria: inicio → 10 idas y vueltas explorador ↔ ficha → 10 cambios de vista → 6 cambios de calidad | 6 geometrías y 11 texturas en los cuatro momentos · heap de JS 10 → 10 → 10 → 10 MB · **1 contexto WebGL vivo** en los cuatro (se cuentan envolviendo `getContext` y descontando los perdidos) | Sin crecimiento ✅ |
 | Contexto WebGL | `contextLost` → 0 frames; `contextRestored` → vuelve a pintar y conserva la fecha y el fondo | ✅ |
+
+Qué demuestra cada cifra de memoria (corregido tras la revisión, hallazgo 15): el heap de JS (tras forzar el recolector) no crece; los contextos WebGL vivos siguen siendo uno (la primera versión contaba lienzos en el DOM, que no ve un motor huérfano fuera del DOM); y `renderer.info.memory` del motor que queda no acumula geometrías ni texturas. Al liberar una textura se cierra además su `ImageBitmap` (hallazgo 5), memoria del proceso que ni el heap ni `renderer.info` miden.
 
 Los 60 FPS son el límite de la pantalla (vsync). Las cifras en móvil (≥ 30 FPS en baja) quedan para cuando Iván pueda probar (fase 4 o red local); por decisión ya tomada, no bloquean.
 
 ## 7. Capturas
-En `docs/informes/img/fase-2/` (modo de captura: 2026-10-24 00:00 UTC, calidad alta; escritorio 1600 × 900; móvil 390 × 844 con densidad 2):
+En `docs/informes/img/fase-2/` (modo de captura: 2026-10-24 00:00 UTC, calidad alta; escritorio 1600 × 900; móvil 390 × 844 con densidad 2). **Regeneradas tras la revisión**, sin la Vía Láctea y con las etiquetas que evitan los discos:
 - Vista general: `escritorio-sistema.webp` y `movil-sistema.webp`. Escala real: `escritorio-escala-real.webp` y `movil-escala-real.webp`.
 - Vistas de detalle: `escritorio-tierra.webp`, `movil-tierra.webp`, `escritorio-luna.webp` y `movil-luna.webp` (la cara visible tal como se ve hoy desde la Tierra, gibosa creciente).
 - Achatamiento y sombras: `escritorio-saturno.webp` (sombra de los anillos sobre el planeta y del planeta sobre los anillos) y `escritorio-jupiter.webp`.
@@ -286,13 +289,15 @@ Sin herramientas externas: la prueba de KTX2 usa el transcodificador de three, y
 ## 9. Pendientes y `TODO(ivan)`
 - **Probar en un móvil real** (≥ 30 FPS en baja): cuando haya staging o por la red local (`npm start -- --host 0.0.0.0`). No bloquea.
 - **KTX2 en la fase 6:** si la Luna en 8K lo necesita, decidir sobre `toktx` (herramienta externa).
-- No hay otros `TODO(ivan)` nuevos.
+- **TODO(ivan): Vía Láctea** (tras la revisión): omitida por la licencia CC BY-NC 3.0 IGO de Gaia DR2; opciones en `PENDIENTES.md`.
+- **Fase 10:** comprobar en el iPhone que las texturas no salen invertidas (`ImageBitmapLoader` con `imageOrientation` necesita Safari 17).
+- **Fase 3:** revisar el encuadre de la vista general en móvil vertical con los paneles (sugerencia 18) y el orden del texto en el DOM (sugerencia 22).
 
 ## 10. Propuestas de cambio al plan
 No se aplican hasta que Iván las apruebe.
 1. **§4.4, punto 2 (sistema local físico):** «al enfocar un planeta (o una de sus lunas), toda la escena pasa a geometría real alrededor de él, con la unidad que conserva su radio ilustrativo: el planeta y sus lunas quedan a escala física real entre ellos, y el resto del sistema a su distancia real (desde el planeta se ve el cielo verdadero)» (§4.1).
-2. **D13:** «Profundidad logarítmica (`logarithmicDepthBuffer`) en todos los dispositivos: el buffer invertido de three trabaja sobre el buffer de enteros del lienzo y no mejora el estándar en la prueba de la fase 2 (§5.1 del informe). Todo `ShaderMaterial` incluye los chunks de `scene/materials/depth.ts`».
-3. **D18:** «KTX2 se descarta por ahora (fase 2, §5.2 del informe: con UASTC pesa 4 veces más que WebP); se reevalúa en la fase 6 para la Luna en 8K».
+2. **D13** (redacción corregida tras la revisión): «Profundidad logarítmica (`logarithmicDepthBuffer`) en todos los dispositivos. En la prueba de la fase 2, el buffer invertido de three falla (el halo del Sol tapa su disco desde Fobos) y el estándar empata con el logarítmico en las capturas; se elige el logarítmico por margen de precisión, a costa del early-Z (medido: 60 FPS). Todo `ShaderMaterial` incluye los chunks de `scene/materials/depth.ts`». Si Iván prefiere conservar el early-Z, la alternativa es el estándar.
+3. **D18:** «KTX2 se descarta por ahora (fase 2, §5.2 del informe: con UASTC pesa 4 veces más que WebP; ahorra unas 4 veces la VRAM); se reevalúa en la fase 6 para la Luna en 8K».
 4. **§5 (efemérides por frame):** añadir que la cifra incluye las orientaciones de los 30 cuerpos (medido: 0,16 ms).
 
 ## 11. Cómo probarlo
@@ -305,6 +310,38 @@ npm run build && node scripts/serve-dist.mjs    # el build prerenderizado en htt
 - Arrastra para girar, usa la rueda o pellizca para el zoom y haz clic en un cuerpo o en su nombre para enfocarlo.
 - `/?captura=1&cuerpo=saturno`: Saturno con sus sombras. `/?captura=1&escala=real`: la escala real.
 - `/explorar/tierra` y `/explorar/luna`: las vistas de detalle.
-- `/?captura=1&escala=real&cuerpo=fobos&detras=sol&profundidad=estandar`: el fallo del buffer estándar.
+- `/?captura=1&escala=real&cuerpo=fobos&detras=sol&profundidad=invertida`: el fallo del buffer invertido (con `estandar` o `logaritmica`, el disco del Sol se ve dentro del halo).
 - Texturas: `node scripts/download-assets.mjs && node scripts/build-textures.mjs` (con las comprobaciones).
 - Mediciones: `node scripts/measure.mjs` · KTX2: `node scripts/bench-ktx2.mjs` · póster: `node scripts/build-poster.mjs`.
+
+---
+
+## Respuesta a la revisión
+Revisión: `docs/revisiones/fase-2.md` (CAMBIOS NECESARIOS: 0 bloqueantes, 5 importantes, 12 menores y 7 sugerencias). Corregidos los 5 importantes y los 12 menores; de las sugerencias, 4 hechas y 3 llevadas a la fase 3 o anotadas. Sin bloqueantes, no hace falta otra ronda de revisión (`CLAUDE.md`). Comprobaciones repetidas con scripts propios contra el build corregido (Chromium con la GPU, como el revisor).
+
+| Hallazgo | Acción | Commit |
+|---|---|---|
+| 1 · «Reintentar» no recuperaba la escena (Importante) | Cada intento crea un `<canvas>` nuevo (`@for` sobre un contador de intentos). Repetido: con `stars.bin` respondiendo 503 sale el error en español con el póster detrás; con la red ya bien, «Reintentar» → escena lista, 1 contexto vivo, 1 lienzo y ningún error de página | `00f8c66` |
+| 2 · Motor huérfano al salir durante la carga (Importante) | `start()` comprueba tras cada `await` que el componente y el intento siguen vivos. Repetido: con el chunk del motor retrasado 3 s y «Planetas» → **0 contextos vivos**; al volver, 1 | `00f8c66` |
+| 3 · La prueba de profundidad no decía lo que se afirmaba (Importante) | Repetida con el build corregido: solo el invertido funde el disco del Sol (255, 255, 255); el estándar y el logarítmico dan el mismo píxel (251, 166, 116). Corregidos §1, §2, §5.1, §10.2 y §11; se mantiene el logarítmico por margen de precisión, con la redacción que propone la revisión, y se explica por qué el estándar no falla en esta GPU (compara antes de redondear a 24 bits) | este commit |
+| 4 · Licencia de la Vía Láctea (Importante) | Comprobada en la fuente: «Gaia data are distributed under the CC BY-NC 3.0 IGO license». Omitida: `build-textures.mjs` la salta, sus WebP salen de `public/textures/`, ningún nivel la pide y la esfera del cielo no se dibuja. Pósters y capturas regenerados sin ella. Corregidos `FUENTES.md`, el script y el informe; `TODO(ivan)` con opciones en `PENDIENTES.md` (dejarla fuera, un panorama CC BY como el de ESO o pedir permiso a ESA) | `356852c` y este commit |
+| 5 · Los `ImageBitmap` no se liberaban (Importante) | `releaseTexture()` cierra el bitmap al sustituir, descartar o liberar una textura (se conserva mientras está en uso, para recuperar el contexto) | `59daf6e` |
+| 6 · Texturas que fallan (Menor) | Se captura el error, el cuerpo se queda con su color esquemático y se vuelve a pedir en el siguiente cambio de foco o de calidad; corregido el comentario de `progress` | `59daf6e`, `8176f91` |
+| 7 · El póster se iba antes de tiempo (Menor) | El póster sigue debajo del lienzo hasta el primer frame y en el estado de error. Comprobado muestreando la página cada 25 ms: siempre hay póster o escena | `00f8c66` |
+| 8 · El selector de calidad tapaba las cajas (Menor) | Oculto hasta que la escena está lista y con fondo de panel (en la fase 3 pasa a la barra de tiempo) | `00f8c66` |
+| 9 · Mensajes técnicos (Menor) | `viewer-errors.ts`: un mensaje en español por tipo (sin WebGL, red, otro) y el detalle en la consola; un solo texto de carga con el porcentaje. Con tests | `00f8c66` |
+| 10 · Etiquetas sobre otros cuerpos (Menor) | Los discos visibles y el halo del Sol son obstáculos; la Tierra va antes que los demás planetas; el nombre del cuerpo elegido sale siempre. 3 tests nuevos y capturas regeneradas | `bc19c08` |
+| 11 · Umbrales de la calidad adaptativa (Menor) | 50 FPS en alta y 30 en media, alineados con §5 | `322aa26` |
+| 12 · `colorSpaceConversion` sin efecto (Menor) | Quitada, con el comentario y el informe corregidos | `59daf6e` |
+| 13 · `ImageBitmapLoader` sin alternativa (Menor) | Documentado el navegador mínimo (Safari 17, Firefox 98) y anotado para el iPhone de la fase 10 (§9) | `59daf6e` |
+| 14 · La comprobación por módulos fallaba en abierto (Menor) | Patrones sin ancla y fallo si alguno no casa con ningún módulo del metafile | `322aa26` |
+| 15 · La prueba de memoria demostraba menos (Menor) | `measure.mjs` cuenta contextos WebGL vivos y hace 6 cambios de calidad; §6 dice qué demuestra cada cifra | `322aa26` y este commit |
+| 16 · `/creditos` sin las atribuciones (Menor) | Lista mínima con las licencias de lo que ya se publica y el aviso de que la NASA no respalda el proyecto | `8d59450` |
+| 17 · Restos (Menor) | Corregidos los tres | `322aa26` |
+| 18 · Encuadre de la vista general en móvil (Sugerencia) | A la fase 3 (paneles y `setViewOffset`) | — |
+| 19 · Caché de los puntos de las órbitas (Sugerencia) | Anotada para la fase 10 (rendimiento en móvil): hoy el frame entero cuesta 1,6 ms | — |
+| 20 · Lint de la API del motor en `core/` y `src/app/` (Sugerencia) | Hecho | `322aa26` |
+| 21 · VRAM de KTX2 sin mipmaps (Sugerencia) | Corregido en §5.2 y en la propuesta 3: unas 4 veces, no 5,3 | este commit |
+| 22 · Orden del H1 y `NgOptimizedImage` (Sugerencia) | El orden, en la fase 3 (el layout nuevo pone el texto antes del escenario). El póster usa `<picture>` con un recorte distinto por formato, que `NgOptimizedImage` no cubre: se mantiene como excepción justificada | — |
+| 23 · Guardas de `capture()` (Sugerencia) | Hecho | `322aa26` |
+| 24 · Estado de la vista en el chunk del layout (Sugerencia) | En la fase 3 los stores van en el bloque `@defer` y la vista sale de la ruta | — |
