@@ -35,6 +35,17 @@ export async function openBrowser(argv = process.argv) {
 export const PAGE_OPTIONS = { locale: 'es-ES', timezoneId: 'Europe/Madrid' };
 
 /**
+ * Opciones de página para un tamaño. `mobile`: un teléfono de verdad (`isMobile` y pantalla táctil,
+ * que activan `(pointer: coarse)` y los controles de 44 px), no solo una ventana estrecha.
+ */
+export const pageOptions = ({ width, height, scale = 1, mobile = false }) => ({
+  ...PAGE_OPTIONS,
+  viewport: { width, height },
+  deviceScaleFactor: scale,
+  ...(mobile ? { isMobile: true, hasTouch: true } : {}),
+});
+
+/**
  * Abre una URL del explorador y espera a que el motor esté listo y, en el modo de captura, a que no
  * queden texturas por subir (el motor deja de pintar). Devuelve la página y los errores de consola.
  * `setup` se ejecuta antes de cargar la página (para interceptar peticiones, por ejemplo).
@@ -42,13 +53,9 @@ export const PAGE_OPTIONS = { locale: 'es-ES', timezoneId: 'Europe/Madrid' };
 export async function openViewer(
   browser,
   path,
-  { width = 1600, height = 900, scale = 1, setup } = {},
+  { width = 1600, height = 900, scale = 1, mobile = false, setup } = {},
 ) {
-  const page = await browser.newPage({
-    ...PAGE_OPTIONS,
-    viewport: { width, height },
-    deviceScaleFactor: scale,
-  });
+  const page = await browser.newPage(pageOptions({ width, height, scale, mobile }));
   if (setup) await setup(page);
   const problems = [];
   page.on('pageerror', (error) => problems.push(`[pageerror] ${error.message}`));

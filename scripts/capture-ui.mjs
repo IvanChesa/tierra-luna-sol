@@ -5,7 +5,7 @@
 import { mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
-import { BASE, PAGE_OPTIONS, openBrowser, openViewer, waitForIdle } from './capture-lib.mjs';
+import { BASE, openBrowser, openViewer, pageOptions, waitForIdle } from './capture-lib.mjs';
 
 const out = process.argv[2];
 if (!out) throw new Error('Uso: node scripts/capture-ui.mjs <carpeta de salida>');
@@ -18,7 +18,12 @@ const DESKTOP = { width: 1600, height: 900, scale: 1 };
 const LAPTOP = { width: 1280, height: 720, scale: 1 };
 /** El escritorio más estrecho (64 rem): la barra de tiempo, en su versión compacta. */
 const NARROW = { width: 1024, height: 768, scale: 1 };
-const MOBILE = { width: 390, height: 844, scale: 2 };
+const MOBILE = { width: 390, height: 844, scale: 2, mobile: true };
+/** Un teléfono pequeño y uno en horizontal, y una ventana de 1280 × 720 con el zoom al 200 %. */
+const SMALL = { width: 360, height: 640, scale: 2, mobile: true };
+const LANDSCAPE = { width: 844, height: 390, scale: 2, mobile: true };
+const ZOOM_200 = { width: 640, height: 360, scale: 2 };
+const expand = async (page) => page.click('.time__more');
 
 const press =
   (...keys) =>
@@ -50,7 +55,10 @@ const SHOTS = [
   ['movil-tierra', '/explorar/tierra?captura=1', MOBILE],
   ['escritorio-luna', '/explorar/luna?captura=1', DESKTOP],
   ['movil-luna', '/explorar/luna?captura=1', MOBILE],
-  ['movil-tiempo-desplegado', '/?captura=1', MOBILE, async (page) => page.click('.time__more')],
+  ['movil-tiempo-desplegado', '/?captura=1', MOBILE, expand],
+  ['movil-pequeno-desplegado', '/?captura=1', SMALL, expand],
+  ['movil-horizontal', '/?captura=1', LANDSCAPE],
+  ['zoom-200-desplegado', '/?captura=1', ZOOM_200, expand],
   ['escritorio-atajos', '/?captura=1', DESKTOP, press('?')],
   ['movil-menu', '/?captura=1', MOBILE, async (page) => page.click('.site-menu-button')],
   ['escritorio-vista-limpia', '/?captura=1', DESKTOP, press('v')],
@@ -82,11 +90,7 @@ const { browser, close } = await openBrowser();
 try {
   for (const [name, path, size, action, setup, selector] of SHOTS) {
     if (setup) {
-      const page = await browser.newPage({
-        ...PAGE_OPTIONS,
-        viewport: { width: size.width, height: size.height },
-        deviceScaleFactor: size.scale,
-      });
+      const page = await browser.newPage(pageOptions(size));
       await setup(page);
       await page.goto(BASE + path);
       await page.waitForSelector(selector, { timeout: 90_000 });

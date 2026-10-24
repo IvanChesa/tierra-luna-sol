@@ -13,20 +13,21 @@ const VIEWS = [
   ['moon', '/explorar/luna'],
 ];
 const FORMATS = [
-  // [nombre, ventana CSS, densidad, tamaño final]
-  ['escritorio', 1600, 900, 1, 1600, 900],
-  ['movil', 360, 760, 2, 720, 1280],
+  // [nombre, ventana CSS, densidad, tamaño final, teléfono (táctil)]
+  ['escritorio', 1600, 900, 1, 1600, 900, false],
+  ['movil', 360, 760, 2, 720, 1280, true],
 ];
 
 await mkdir(OUT, { recursive: true });
 const { browser, close } = await openBrowser();
 try {
   for (const [view, path] of VIEWS) {
-    for (const [format, width, height, scale, outWidth, outHeight] of FORMATS) {
+    for (const [format, width, height, scale, outWidth, outHeight, mobile] of FORMATS) {
       const { page, problems } = await openViewer(browser, `${path}?captura=1`, {
         width,
         height,
         scale,
+        mobile,
       });
       // Solo los píxeles del lienzo (engine.capture()): sin la interfaz ni las etiquetas, que van en
       // el HTML encima. El lienzo ocupa todo el explorador y la escena ya viene centrada en la parte
