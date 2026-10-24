@@ -1,5 +1,6 @@
 // Mediciones de rendimiento y robustez del explorador para el informe (PLAN §5).
-// Uso: npm run build && node scripts/measure.mjs [--swiftshader]
+// Uso: npm run build && node scripts/measure.mjs [--swiftshader] [--img=docs/informes/img/fase-N]
+// (con --img, guarda ahí la captura del contexto recuperado).
 //
 // - Reposo: frames pintados y llamadas a requestAnimationFrame en 3 s de pausa sin interacción.
 // - Reproducción: FPS y coste por frame a 1 día/s durante 6 s (por calidad).
@@ -9,13 +10,24 @@
 //   WebGL vivos (se cuentan envolviendo getContext y descontando los perdidos) siguen siendo uno; y
 //   renderer.info.memory del motor que queda no acumula geometrías ni texturas.
 // - Arranque: peso de la primera vista por tipo, tareas largas (> 50 ms) y elemento LCP.
+// - Estado y URL (§4.5): actualizaciones del store por segundo a 1 año/s (eventos `timeChanged`) y
+//   cambios de la URL durante la reproducción.
 import { stat } from 'node:fs/promises';
 import sharp from 'sharp';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { BASE, openBrowser, openViewer, rendererName, stats, waitForIdle } from './capture-lib.mjs';
+import {
+  BASE,
+  PAGE_OPTIONS,
+  openBrowser,
+  openViewer,
+  rendererName,
+  stats,
+  waitForIdle,
+} from './capture-lib.mjs';
 
 const DIST = fileURLToPath(new URL('../dist/tierra-luna-sol/browser/', import.meta.url));
+const IMG_DIR = process.argv.find((arg) => arg.startsWith('--img='))?.slice('--img='.length);
 
 const results = {};
 const { browser, close } = await openBrowser();
@@ -152,9 +164,11 @@ try {
         time: engine.time.toISOString(),
       };
     });
-    await sharp(await page.screenshot())
-      .webp({ quality: 88 })
-      .toFile('docs/informes/img/fase-2/contexto-recuperado.webp');
+    if (IMG_DIR) {
+      await sharp(await page.screenshot())
+        .webp({ quality: 88 })
+        .toFile(join(IMG_DIR, 'contexto-recuperado.webp'));
+    }
     const center = await page.evaluate(() => {
       const canvas = document.querySelector('canvas.viewer-canvas');
       const probe = document.createElement('canvas');
@@ -195,6 +209,60 @@ try {
     });
     results[`reproduccion-${quality}`] = measured;
     await page.close();
+  }
+
+  // --- Estado y URL durante la reproducción (§4.5) ------------------------------------------
+  {
+    // Actualizaciones del store: eventos `timeChanged` del motor a 1 año/s durante 5 s.
+    const { page } = await openViewer(browser, '/?captura=1&cuerpo=marte');
+    const events = await page.evaluate(async () => {
+      const engine = window.__tlsViewer.engine;
+      let count = 0;
+      const off = engine.on('timeChanged', () => count++);
+      engine.setSpeed(365.25 * 86_400);
+      engine.setPlaying(true);
+      await new Promise((r) => setTimeout(r, 1000));
+      const start = count;
+      await new Promise((r) => setTimeout(r, 5000));
+      const perSecond = (count - start) / 5;
+      engine.setPlaying(false);
+      off();
+      return perSecond;
+    });
+    await page.close();
+    // Cambios de la URL (pushState y replaceState) durante 5 s de reproducción, sin modo de captura.
+    const context = await browser.newContext({
+      ...PAGE_OPTIONS,
+      viewport: { width: 1600, height: 900 },
+    });
+    await context.addInitScript(() => {
+      window.__urlChanges = 0;
+      for (const method of ['pushState', 'replaceState']) {
+        const original = history[method].bind(history);
+        history[method] = (...args) => {
+          window.__urlChanges++;
+          return original(...args);
+        };
+      }
+    });
+    const live = await context.newPage();
+    await live.goto(`${BASE}/?fecha=2030-06-01T12:00Z&cuerpo=marte`);
+    await live.waitForSelector('tls-viewer-canvas.is-ready', { timeout: 60_000 });
+    await live.selectOption('#time-speed', 'year');
+    await live.click('.time__play');
+    // Al empezar, la fecha sale de la URL (un cambio); después, ninguno.
+    await live.waitForTimeout(1000);
+    const urlBefore = await live.evaluate(() => window.__urlChanges);
+    await live.waitForTimeout(5000);
+    const urlDuring = (await live.evaluate(() => window.__urlChanges)) - urlBefore;
+    await live.click('.time__play');
+    await live.waitForTimeout(500);
+    results.estado = {
+      actualizacionesDelStorePorSegundo: events,
+      cambiosDeUrlEn5sDeReproduccion: urlDuring,
+      urlAlPausar: new URL(live.url()).search,
+    };
+    await context.close();
   }
 
   // --- VRAM por vista y nivel -------------------------------------------------------------
@@ -242,7 +310,8 @@ try {
     for (let k = 0; k < 10; k++) {
       await page.click('a[href="/planetas"]');
       await page.waitForURL('**/planetas');
-      await page.click('a.site-name');
+      // Atrás (como el botón del navegador): vuelve a /?captura=1, la escena determinista.
+      await page.goBack();
       await page.waitForFunction(() => window.__tlsViewer?.ready === true, null, {
         timeout: 60_000,
       });
