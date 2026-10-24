@@ -32,6 +32,8 @@ Iván lo aplazó: ahora basta con tenerlo antes del bloque C (ver la sección si
 - [ ] `gh secret set FTP_SERVER`, `FTP_USERNAME_STAGING` y `FTP_PASSWORD_STAGING` (la contraseña la escribe Iván).
 
 ## Decisiones
+- [ ] **Propuestas de cambio al plan de la fase 2** (`docs/informes/fase-2.md`, §10): redacción del sistema local físico (§4.4), D13 (profundidad logarítmica), D18 (KTX2 descartado por ahora) y §5 (efemérides con orientaciones).
+- [ ] **(Fase 6) `toktx` (KTX-Software):** solo si la Luna en 8K no cabe en la VRAM de §5 con WebP (prueba de KTX2 de la fase 2, §5.2 del informe).
 - [ ] **Subdominio definitivo.** Propuesto: `tierra-luna-sol.ivanchesa.es`. Si cambia, se edita solo `src/app/core/site.config.ts`.
 - [ ] **Licencia del código propio** cuando el repo pase a público (MIT u otra; fase 11).
 

@@ -10,6 +10,8 @@ if (!out) throw new Error('Uso: node scripts/capture.mjs <carpeta de salida>');
 const dir = new URL(`../${out.replace(/\/?$/, '/')}`, import.meta.url);
 await mkdir(dir, { recursive: true });
 const file = (name) => fileURLToPath(new URL(name, dir));
+/** Las capturas van en WebP (calidad 88): pesan unas 8 veces menos que en PNG. */
+const webp = (png, name) => sharp(png).webp({ quality: 88 }).toFile(file(name));
 
 const DESKTOP = { width: 1600, height: 900, scale: 1 };
 const MOBILE = { width: 390, height: 844, scale: 2 };
@@ -40,7 +42,7 @@ const { browser, close } = await openBrowser();
 try {
   for (const [name, path, size] of SHOTS) {
     const { page, problems } = await openViewer(browser, path, size);
-    await page.screenshot({ path: file(`${name}.png`) });
+    await webp(await page.screenshot(), `${name}.webp`);
     const s = await stats(page);
     console.log(
       `${name}: ${s.depth}, ${s.drawCalls} llamadas, ${Math.round(s.triangles / 1000)} k triángulos, ${s.textures} texturas, ${Math.round(s.vramMB)} MB de VRAM`,
@@ -51,7 +53,11 @@ try {
   }
   // Detalle del Sol en la prueba de profundidad (3× sin suavizar).
   for (const mode of ['logaritmica', 'invertida', 'estandar']) {
-    await sharp(file(`profundidad-fobos-sol-${mode}.png`))
+    await sharp(
+      await sharp(file(`profundidad-fobos-sol-${mode}.webp`))
+        .png()
+        .toBuffer(),
+    )
       .extract({ left: 1010, top: 400, width: 120, height: 120 })
       .resize(360, 360, { kernel: 'nearest' })
       .toFile(file(`profundidad-sol-detalle-${mode}.png`));
@@ -69,7 +75,7 @@ try {
     const page = await context.newPage();
     await page.goto(`${BASE}/`);
     await page.waitForLoadState('networkidle');
-    await page.screenshot({ path: file(`${name}.png`) });
+    await webp(await page.screenshot(), `${name}.webp`);
     await context.close();
     console.log(`${name}: sin JavaScript`);
   }

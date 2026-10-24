@@ -59,19 +59,29 @@ describe('orientation: modelo IAU (RotationAxis)', () => {
 
 describe('orientation: la Luna frente a Astronomy.Libration (criterio de la fase 2)', () => {
   // Tres fechas con libraciones distintas en signo y tamaño.
-  const dates = ['2026-10-24T00:00:00Z', '2027-03-15T06:00:00Z', '2030-07-01T12:00:00Z'];
-  it.each(dates)('el punto que mira a la Tierra coincide con la libración (±1°) el %s', (iso) => {
-    const date = new Date(iso);
-    const toEarth = scale(moonGeocentric(date), -1);
-    const subEarth = bodyCentricLatLon(bodyFixedToEcl('luna', date), toEarth);
-    const libration = Libration(toAstroTime(date));
-    const dLon = Math.abs(subEarth.lonDeg - libration.elon);
-    const dLat = Math.abs(subEarth.latDeg - libration.elat);
-    expect(dLon).toBeLessThan(1);
-    expect(dLat).toBeLessThan(1);
-    // Diferencias medidas: unas centésimas de grado (la libración física del modelo IAU).
-    expect(Math.max(dLon, dLat)).toBeLessThan(0.05);
-  });
+  const cases = ['2026-10-24T00:00:00Z', '2027-03-15T06:00:00Z', '2030-07-01T12:00:00Z'].map(
+    (iso) => {
+      const date = new Date(iso);
+      const toEarth = scale(moonGeocentric(date), -1);
+      const subEarth = bodyCentricLatLon(bodyFixedToEcl('luna', date), toEarth);
+      const libration = Libration(toAstroTime(date));
+      return {
+        iso,
+        libration: `${fmt(libration.elon, 2)}°, ${fmt(libration.elat, 2)}°`,
+        dLon: Math.abs(subEarth.lonDeg - libration.elon),
+        dLat: Math.abs(subEarth.latDeg - libration.elat),
+      };
+    },
+  );
+  it.each(cases.map((c) => [c.iso, c.libration, fmt(c.dLon, 3), fmt(c.dLat, 3), c] as const))(
+    'el %s (libración %s) el punto subterrestre difiere %s° en longitud y %s° en latitud (±1°)',
+    (_iso, _libration, _dLon, _dLat, c) => {
+      expect(c.dLon).toBeLessThan(1);
+      expect(c.dLat).toBeLessThan(1);
+      // Lo medido: centésimas de grado (la libración física que incluye el modelo IAU).
+      expect(Math.max(c.dLon, c.dLat)).toBeLessThan(0.05);
+    },
+  );
 });
 
 describe('orientation: apertura de los anillos de Saturno vista desde la Tierra', () => {

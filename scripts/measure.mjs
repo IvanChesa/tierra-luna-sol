@@ -7,6 +7,7 @@
 // - Memoria: 10 idas y vueltas explorador ↔ ficha y 10 cambios de vista.
 // - Arranque: peso de la primera vista por tipo, tareas largas (> 50 ms) y elemento LCP.
 import { stat } from 'node:fs/promises';
+import sharp from 'sharp';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { BASE, openBrowser, openViewer, rendererName, stats, waitForIdle } from './capture-lib.mjs';
@@ -148,7 +149,9 @@ try {
         time: engine.time.toISOString(),
       };
     });
-    await page.screenshot({ path: 'docs/informes/img/fase-2/contexto-recuperado.png' });
+    await sharp(await page.screenshot())
+      .webp({ quality: 88 })
+      .toFile('docs/informes/img/fase-2/contexto-recuperado.webp');
     const center = await page.evaluate(() => {
       const canvas = document.querySelector('canvas.viewer-canvas');
       const probe = document.createElement('canvas');
