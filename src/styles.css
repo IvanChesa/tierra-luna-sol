@@ -164,3 +164,72 @@ a:hover {
 .skip-link:focus {
   transform: none;
 }
+
+/* Páginas de contenido (fichas, créditos…): el explorador ocupa todo el ancho. */
+.page {
+  display: block;
+  width: 100%;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-4);
+}
+
+/*
+ * Etiquetas de los cuerpos (las crea scene/labels.ts fuera de Angular, por eso van aquí).
+ * Se colocan con transform en el centro del cuerpo; el nombre, desplazado a la derecha.
+ */
+.scene-labels {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.scene-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: var(--font-weight-strong);
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  pointer-events: auto;
+  cursor: pointer;
+  will-change: transform;
+}
+
+.scene-label--planet,
+.scene-label--star {
+  color: var(--color-text);
+}
+
+.scene-label--selected {
+  color: var(--color-accent);
+}
+
+.scene-label__name {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 1px 4px;
+  text-shadow:
+    0 0 3px var(--color-bg),
+    0 0 6px var(--color-bg);
+}
+
+.scene-label__marker {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  display: none;
+  width: 8px;
+  height: 8px;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+}
+
+.scene-label--marker .scene-label__marker {
+  display: block;
+}

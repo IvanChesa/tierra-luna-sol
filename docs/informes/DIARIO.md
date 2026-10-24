@@ -51,3 +51,7 @@ No se activó ninguna:
 4. **Crear el repo en GitHub:** el CI todavía no se ha ejecutado en remoto. Ahora no hay remoto, así que no se ha hecho push.
 
 El bloque termina aquí; no se ha empezado la fase 2.
+
+## Bloque B (en curso; sesión cortada el 2026-10-24 por el límite de uso)
+- **Fase 2:** terminada y commiteada en `fase-2-motor` (informe completo en `docs/informes/fase-2.md`, `npm run check` en verde). **Falta su revisión por subagente** (se paró a medias por el límite de uso; no llegó a escribir `docs/revisiones/fase-2.md`), las correcciones, la fusión en `main` y su línea en este diario.
+- **Fase 3:** empezada en un worktree temporal (rama `wip-fase-3`, basada en `fase-2-motor`, en el scratchpad de la sesión): plan en borrador, `docs/ESTILO.md`, formato con `Intl`, stores, árbol de cuerpos, atajos, márgenes de encuadre, vuelos de cámara y aliasing, con sus tests (63 en verde). Al retomar: fusionar la fase 2, crear `fase-3-interfaz` desde `main` y traer esos commits (`git cherry-pick wip-fase-3`); después, `git worktree remove` del worktree temporal.

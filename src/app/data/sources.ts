@@ -60,6 +60,54 @@ export const SOURCES = {
     url: 'https://ssd.jpl.nasa.gov/sats/phys_par/',
     accessed: '2026-10-23',
   },
+  'nssdc-mercury': {
+    title: 'Mercury Fact Sheet',
+    publisher: 'NASA, NSSDCA (Goddard Space Flight Center)',
+    url: 'https://nssdc.gsfc.nasa.gov/planetary/factsheet/mercuryfact.html',
+    accessed: '2026-10-24',
+  },
+  'nssdc-venus': {
+    title: 'Venus Fact Sheet',
+    publisher: 'NASA, NSSDCA (Goddard Space Flight Center)',
+    url: 'https://nssdc.gsfc.nasa.gov/planetary/factsheet/venusfact.html',
+    accessed: '2026-10-24',
+  },
+  'nssdc-earth': {
+    title: 'Earth Fact Sheet',
+    publisher: 'NASA, NSSDCA (Goddard Space Flight Center)',
+    url: 'https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html',
+    accessed: '2026-10-24',
+  },
+  'nssdc-jupiter': {
+    title: 'Jupiter Fact Sheet',
+    publisher: 'NASA, NSSDCA (Goddard Space Flight Center)',
+    url: 'https://nssdc.gsfc.nasa.gov/planetary/factsheet/jupiterfact.html',
+    accessed: '2026-10-24',
+  },
+  'nssdc-saturn': {
+    title: 'Saturn Fact Sheet',
+    publisher: 'NASA, NSSDCA (Goddard Space Flight Center)',
+    url: 'https://nssdc.gsfc.nasa.gov/planetary/factsheet/saturnfact.html',
+    accessed: '2026-10-24',
+  },
+  'nssdc-uranus': {
+    title: 'Uranus Fact Sheet',
+    publisher: 'NASA, NSSDCA (Goddard Space Flight Center)',
+    url: 'https://nssdc.gsfc.nasa.gov/planetary/factsheet/uranusfact.html',
+    accessed: '2026-10-24',
+  },
+  'nssdc-neptune': {
+    title: 'Neptune Fact Sheet',
+    publisher: 'NASA, NSSDCA (Goddard Space Flight Center)',
+    url: 'https://nssdc.gsfc.nasa.gov/planetary/factsheet/neptunefact.html',
+    accessed: '2026-10-24',
+  },
+  'nssdc-saturn-rings': {
+    title: 'Saturnian Rings Fact Sheet',
+    publisher: 'NASA, NSSDCA (Goddard Space Flight Center)',
+    url: 'https://nssdc.gsfc.nasa.gov/planetary/factsheet/satringfact.html',
+    accessed: '2026-10-24',
+  },
 } as const satisfies Record<string, Source>;
 
 export type SourceId = keyof typeof SOURCES;

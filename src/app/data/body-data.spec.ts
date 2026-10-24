@@ -53,6 +53,38 @@ describe('body-data: datos físicos y orbitales', () => {
     }
   });
 
+  it('da el achatamiento de cada planeta (fichas individuales) y solo de los planetas', () => {
+    for (const body of BODY_INDEX) {
+      const flattening = BODY_DATA[body.id].physical.flatteningRatio;
+      if (body.kind !== 'planet') {
+        expect(flattening).toBeUndefined();
+        continue;
+      }
+      expect(flattening?.value).toBeGreaterThanOrEqual(0);
+      expect(flattening?.value).toBeLessThan(0.1);
+    }
+    // Los gigantes gaseosos son los más achatados: Saturno ≈ 1/10 y Júpiter ≈ 1/15.
+    expect(BODY_DATA.saturno.physical.flatteningRatio?.value).toBeCloseTo(0.098, 3);
+    expect(BODY_DATA.jupiter.physical.flatteningRatio?.value).toBeCloseTo(0.065, 3);
+  });
+
+  it('da los bordes de los anillos de Saturno en orden y fuera del planeta', () => {
+    const rings = BODY_DATA.saturno.rings;
+    const edges = [
+      rings?.innerRadiusKm.value,
+      rings?.cassiniInnerKm.value,
+      rings?.cassiniOuterKm.value,
+      rings?.outerRadiusKm.value,
+    ].map((v) => v ?? NaN);
+    expect([...edges].sort((a, b) => a - b)).toEqual(edges);
+    expect(edges[0]).toBeGreaterThan(BODY_DATA.saturno.physical.radiusKm.value);
+    expect(
+      Object.entries(BODY_DATA)
+        .filter(([, d]) => d.rings)
+        .map(([id]) => id),
+    ).toEqual(['saturno']);
+  });
+
   it('marca los casos especiales que dan las fichas', () => {
     expect(BODY_DATA.venus.physical.rotationPeriodH?.value).toBeLessThan(0); // rotación retrógrada
     expect(BODY_DATA.urano.physical.rotationPeriodH?.value).toBeLessThan(0);

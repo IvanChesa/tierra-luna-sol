@@ -4,6 +4,7 @@ import { PLANETS } from '../../data/body-index';
 
 @Component({
   selector: 'tls-planets-index-page',
+  host: { class: 'page' },
   imports: [RouterLink],
   template: `
     <h1>Planetas</h1>

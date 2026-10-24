@@ -32,6 +32,9 @@ Iván lo aplazó: ahora basta con tenerlo antes del bloque C (ver la sección si
 - [ ] `gh secret set FTP_SERVER`, `FTP_USERNAME_STAGING` y `FTP_PASSWORD_STAGING` (la contraseña la escribe Iván).
 
 ## Decisiones
+- [ ] **Propuestas de cambio al plan de la fase 2** (`docs/informes/fase-2.md`, §10): redacción del sistema local físico (§4.4), D13 (profundidad logarítmica, con la redacción corregida tras la revisión), D18 (KTX2 descartado por ahora) y §5 (efemérides con orientaciones).
+- [ ] **TODO(ivan): Vía Láctea** (revisión de la fase 2, hallazgo 4). La única fuente evaluada (NASA SVS 4851, Deep Star Maps 2020) deriva de Gaia DR2, cuyos datos tienen licencia **CC BY-NC 3.0 IGO** (uso comercial con autorización previa de ESA). Está **omitida**: no se publica ni la carga ningún nivel de calidad, y el cielo es solo el catálogo de estrellas. Opciones: (a) dejarla fuera en la v1 (el plan la admite «si hay una fuente libre adecuada»); (b) buscar un panorama con licencia libre (candidato: «The Milky Way panorama», ESO/S. Brunier, https://www.eso.org/public/images/eso0932a/; ESO publica sus imágenes con CC BY 4.0 salvo que se indique otra cosa, https://www.eso.org/public/outreach/copyright/; está en coordenadas galácticas, así que habría que reproyectarlo a ecuatoriales y comprobar la alineación como la de Gaia); (c) pedir autorización a ESA para usar la de Gaia. El código del cielo sigue listo para otra fuente.
+- [ ] **(Fase 6) `toktx` (KTX-Software):** solo si la Luna en 8K no cabe en la VRAM de §5 con WebP (prueba de KTX2 de la fase 2, §5.2 del informe).
 - [ ] **Subdominio definitivo.** Propuesto: `tierra-luna-sol.ivanchesa.es`. Si cambia, se edita solo `src/app/core/site.config.ts`.
 - [ ] **Licencia del código propio** cuando el repo pase a público (MIT u otra; fase 11).
 

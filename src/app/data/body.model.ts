@@ -41,6 +41,11 @@ export interface PhysicalData {
   readonly lengthOfDayH?: Sourced<number>;
   /** Inclinación del eje respecto a la órbita (oblicuidad), en grados. */
   readonly axialTiltDeg?: Sourced<number>;
+  /**
+   * Achatamiento f = (a − c) / a, con a y c los radios ecuatorial y polar. Solo en los planetas:
+   * la escena los dibuja como elipsoides (Saturno ≈ 0,1).
+   */
+  readonly flatteningRatio?: Sourced<number>;
   readonly meanTemperatureC?: Sourced<number>;
   readonly surfacePressureBar?: Sourced<number>;
   readonly globalMagneticField?: Sourced<boolean>;
@@ -68,10 +73,24 @@ export interface OrbitData {
   readonly retrograde?: Sourced<boolean>;
 }
 
+/** Bordes de los anillos principales de Saturno, en km desde el centro del planeta. */
+export interface RingData {
+  /** Borde interior del anillo C. */
+  readonly innerRadiusKm: Sourced<number>;
+  /** Borde exterior del anillo B, donde empieza la división de Cassini. */
+  readonly cassiniInnerKm: Sourced<number>;
+  /** Borde interior del anillo A, donde acaba la división de Cassini. */
+  readonly cassiniOuterKm: Sourced<number>;
+  /** Borde exterior del anillo A. */
+  readonly outerRadiusKm: Sourced<number>;
+}
+
 export interface BodyData {
   readonly physical: PhysicalData;
   /** Sin órbita para el Sol. */
   readonly orbit?: OrbitData;
+  /** Solo Saturno: los anillos que dibuja la escena. */
+  readonly rings?: RingData;
 }
 
 export interface SourcedText {

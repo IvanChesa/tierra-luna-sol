@@ -128,6 +128,8 @@ describe('coordinates: orientación de la Tierra', () => {
     expect(latDeg).toBeCloseTo(41.52, 10);
     expect(lonDeg).toBeCloseTo(0.35, 10);
     expect(earthFixedToGeographic(vec3(-1, 0, 0)).lonDeg).toBe(180);
+    // atan2(−0, −1) = −180°: la longitud se lleva a +180° para quedar en (−180, 180].
+    expect(earthFixedToGeographic(vec3(-1, -0, 0)).lonDeg).toBe(180);
   });
 });
 

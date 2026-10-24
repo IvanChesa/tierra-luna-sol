@@ -14,3 +14,6 @@ assets-src/
 .claude/skills/
 # Configuración local de Claude Code (no se versiona)
 .claude/settings.local.json
+
+# Copia local de las skills para otros agentes (no es código del proyecto)
+.agents/

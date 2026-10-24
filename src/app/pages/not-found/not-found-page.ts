@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'tls-not-found-page',
+  host: { class: 'page' },
   imports: [RouterLink],
   template: `
     <h1>Página no encontrada</h1>
