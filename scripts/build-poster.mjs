@@ -28,9 +28,19 @@ try {
         height,
         scale,
       });
-      // Solo el escenario 3D: sin el texto de la vista (que va en el HTML encima del póster).
-      await page.addStyleTag({ content: '.viewer__text { visibility: hidden !important; }' });
-      const png = await page.locator('.viewer__stage').screenshot();
+      // Solo los píxeles del lienzo (engine.capture()): sin la interfaz ni las etiquetas, que van en
+      // el HTML encima. El lienzo ocupa todo el explorador y la escena ya viene centrada en la parte
+      // que dejan libre los paneles, como la verá quien llegue.
+      const base64 = await page.evaluate(async () => {
+        const blob = await window.__tlsViewer.engine.capture();
+        const bytes = new Uint8Array(await blob.arrayBuffer());
+        let binary = '';
+        for (let i = 0; i < bytes.length; i += 0x8000) {
+          binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+        }
+        return btoa(binary);
+      });
+      const png = Buffer.from(base64, 'base64');
       const target = fileURLToPath(new URL(`poster-${view}-${format}.webp`, OUT));
       const info = await sharp(png)
         .resize(outWidth, outHeight, { fit: 'cover' })

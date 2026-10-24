@@ -29,11 +29,27 @@ export async function openBrowser(argv = process.argv) {
 }
 
 /**
+ * Idioma y zona fijos: la interfaz escribe fechas y horas en la hora local del navegador, así que las
+ * capturas solo son deterministas con una zona dada.
+ */
+export const PAGE_OPTIONS = { locale: 'es-ES', timezoneId: 'Europe/Madrid' };
+
+/**
  * Abre una URL del explorador y espera a que el motor esté listo y, en el modo de captura, a que no
  * queden texturas por subir (el motor deja de pintar). Devuelve la página y los errores de consola.
+ * `setup` se ejecuta antes de cargar la página (para interceptar peticiones, por ejemplo).
  */
-export async function openViewer(browser, path, { width = 1600, height = 900, scale = 1 } = {}) {
-  const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: scale });
+export async function openViewer(
+  browser,
+  path,
+  { width = 1600, height = 900, scale = 1, setup } = {},
+) {
+  const page = await browser.newPage({
+    ...PAGE_OPTIONS,
+    viewport: { width, height },
+    deviceScaleFactor: scale,
+  });
+  if (setup) await setup(page);
   const problems = [];
   page.on('pageerror', (error) => problems.push(`[pageerror] ${error.message}`));
   page.on('console', (message) => {
