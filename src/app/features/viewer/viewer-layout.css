@@ -84,6 +84,10 @@
 }
 
 @media (max-width: 63.99rem) {
+  /*
+   * El lienzo nunca baja de su suelo; si la hoja inferior no cabe (la barra de tiempo desplegada en
+   * un móvil bajo), es ella la que se desplaza por dentro (explorer-ui.css), no la página.
+   */
   .explorer {
     min-height: 0;
     grid-template-areas:
@@ -92,7 +96,7 @@
       'index'
       'dock';
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    grid-template-rows: auto minmax(min(12rem, 35svh), 1fr) auto minmax(0, auto);
   }
 
   .explorer__column {
@@ -101,9 +105,12 @@
     border-bottom: var(--border-width) solid var(--color-line);
   }
 
+  /*
+   * Sin alto mínimo: abarca la fila del índice y la de la barra, y un mínimo se repartiría entero en
+   * la del índice (la otra no tiene mínimo intrínseco) y estiraría la tira de cuerpos.
+   */
   .explorer__sheet {
     grid-area: index / 1 / -1 / -1;
-    min-height: 7.5rem;
   }
 
   .explorer__lead {
@@ -113,5 +120,17 @@
 
   .explorer__credits {
     display: none;
+  }
+}
+
+/*
+ * Muy bajo (móvil en horizontal, zoom al 200 %): no cabe todo en la ventana. La página se desplaza:
+ * el lienzo ocupa el 70 % de la altura y la hoja inferior va debajo, entera (styles.css suelta la
+ * altura fija del explorador).
+ */
+@media (max-width: 63.99rem) and (max-height: 30rem) {
+  .explorer {
+    overflow: visible;
+    grid-template-rows: auto 70svh auto auto;
   }
 }

@@ -56,6 +56,13 @@ export const ZOOM_STEP = 1.4;
     .control {
       background: var(--color-surface);
     }
+
+    /* Móvil: en dos columnas, para que quepa en un lienzo bajo. */
+    @media (max-width: 63.99rem) {
+      .camera {
+        grid-template-columns: repeat(2, auto);
+      }
+    }
   `,
 })
 export class CameraControls {

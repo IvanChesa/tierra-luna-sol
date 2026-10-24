@@ -67,12 +67,16 @@
   margin: var(--space-4);
 }
 
+/* Los avisos no salen de la parte visible del lienzo: si no caben, se desplazan. */
 .notices {
   z-index: 4;
   grid-area: view;
   align-self: start;
   justify-self: center;
+  max-height: calc(100% - 2 * var(--space-3));
   margin: var(--space-4) var(--space-4) 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .skip {
@@ -102,6 +106,11 @@ kbd {
 
 /* Vista limpia: solo el 3D y el botón para volver. */
 :host(.is-clean) :is(.index, .panel, .dock, .camera) {
+  display: none;
+}
+
+/* Sin 3D (cargando o con error), acercar y alejar no harían nada: la cámara no se muestra. */
+:host(:not(.is-scene-ready)) .camera {
   display: none;
 }
 
@@ -145,7 +154,22 @@ kbd {
     margin: var(--space-3);
   }
 
+  /* La barra de tiempo desplegada que no cabe se desplaza dentro de la hoja (viewer-layout.css). */
+  .dock {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  /* Los avisos y «Saltar» dejan libre la columna de la cámara, abajo a la derecha. */
+  .notices {
+    justify-self: stretch;
+    margin: var(--space-3) calc(2 * var(--space-3) + var(--tap-target) * 2 + var(--space-1)) 0
+      var(--space-3);
+  }
+
   .skip {
-    margin-bottom: var(--space-3);
+    justify-self: start;
+    margin: 0 0 var(--space-3) var(--space-3);
   }
 }
