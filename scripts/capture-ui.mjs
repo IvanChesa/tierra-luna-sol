@@ -16,6 +16,8 @@ const webp = (png, name) => sharp(png).webp({ quality: 88 }).toFile(file(name));
 
 const DESKTOP = { width: 1600, height: 900, scale: 1 };
 const LAPTOP = { width: 1280, height: 720, scale: 1 };
+/** El escritorio más estrecho (64 rem): la barra de tiempo, en su versión compacta. */
+const NARROW = { width: 1024, height: 768, scale: 1 };
 const MOBILE = { width: 390, height: 844, scale: 2 };
 
 const press =
@@ -42,6 +44,7 @@ const SHOTS = [
   ['escritorio-ficha-saturno', '/?captura=1&cuerpo=saturno', DESKTOP],
   ['movil-ficha-saturno', '/?captura=1&cuerpo=saturno', MOBILE],
   ['portatil-ficha-jupiter', '/?captura=1&cuerpo=jupiter', LAPTOP],
+  ['estrecho-ficha-saturno', '/?captura=1&cuerpo=saturno', NARROW],
   ['escritorio-luna-de-saturno', '/?captura=1&cuerpo=titan', DESKTOP],
   ['escritorio-tierra', '/explorar/tierra?captura=1', DESKTOP],
   ['movil-tierra', '/explorar/tierra?captura=1', MOBILE],

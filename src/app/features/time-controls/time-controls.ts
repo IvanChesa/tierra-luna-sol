@@ -54,9 +54,8 @@ export class TimeControls {
   protected readonly zoneLabel = computed(() =>
     this.zone() === 'utc' ? 'UTC' : utcOffsetLabel(this.sim.time()),
   );
-  protected readonly localZoneLabel = computed(
-    () => `Hora local (${utcOffsetLabel(this.sim.time())})`,
-  );
+  /** La etiqueta del campo ya dice «Zona»: «Local (UTC+2)» o «UTC». */
+  protected readonly localZoneLabel = computed(() => `Local (${utcOffsetLabel(this.sim.time())})`);
   protected readonly speedId = computed(() => this.sim.speedStep()?.id ?? 'real');
   protected readonly playLabel = computed(() => (this.sim.playing() ? 'Pausar' : 'Reproducir'));
 

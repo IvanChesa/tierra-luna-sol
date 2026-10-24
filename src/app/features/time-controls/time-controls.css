@@ -85,6 +85,32 @@ input[type='time'] {
   }
 }
 
+/*
+ * Escritorio estrecho (64–72 rem): la fila completa no cabe. «Reproducir» se queda en su icono (el
+ * nombre accesible y el título siguen) y la fila pierde algo de aire.
+ */
+@media (min-width: 64rem) and (max-width: 71.99rem) {
+  .time {
+    gap: var(--space-3);
+    padding-inline: var(--space-3);
+  }
+
+  .time__play {
+    width: 2.5rem;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .time__play-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
 /* Móvil: una fila compacta (reproducir, la fecha, «Ahora» y desplegar) y el resto, desplegable. */
 @media (max-width: 63.99rem) {
   .time {
