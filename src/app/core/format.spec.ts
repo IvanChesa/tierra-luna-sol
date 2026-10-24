@@ -24,6 +24,8 @@ describe('format: cifras con Intl es-ES (ESTILO §3)', () => {
   it('distancias: km, millones con un decimal y millones sin decimales', () => {
     expect(plain(formatDistanceKm(384_399.6))).toBe('384.400 km');
     expect(plain(formatDistanceKm(149_597_870.7))).toBe('149,6 millones de km');
+    // El decimal se escribe también si es cero: la cifra no cambia de ancho al reproducir.
+    expect(plain(formatDistanceKm(795_012_000))).toBe('795,0 millones de km');
     expect(plain(formatDistanceKm(1_433_530_000))).toBe('1434 millones de km');
     expect(plain(formatDistanceKm(Number.POSITIVE_INFINITY))).toBe('—');
   });

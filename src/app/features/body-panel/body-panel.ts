@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { formatAu, formatDistanceKm, formatPeriodHours } from '../../core/format';
 import { getBody } from '../../data/bodies';
 import type { BodyId } from '../../data/body.model';
+import { isMeanElementsMoon } from '../../data/solar-system';
 import { SOURCES } from '../../data/sources';
 import { SystemPositions } from '../../state/positions';
 import { bodyKindLabel, bodyPagePath, toBodyLabel } from '../explorer-ui/describe';
@@ -10,9 +11,18 @@ import { Icon } from '../viewer/icon';
 
 interface Row {
   readonly label: string;
-  readonly value: string;
+  /** La cifra y su unidad, por separado: la unidad va en el color secundario (DISENO.md). */
+  readonly value: { readonly number: string; readonly unit: string };
   /** La misma cifra en otra unidad (los km junto a las UA). */
   readonly detail?: string;
+}
+
+/** Separa la cifra de su unidad, que `core/format.ts` une con un espacio duro (ESTILO §3). */
+function splitUnit(text: string): Row['value'] {
+  const at = text.indexOf('\u00a0');
+  return at < 0
+    ? { number: text, unit: '' }
+    : { number: text.slice(0, at), unit: text.slice(at + 1) };
 }
 
 /** Más cerca que esto, las distancias se dan en km; más lejos, en UA con los km al lado. */
@@ -39,6 +49,13 @@ export class BodyPanel {
   protected readonly kind = computed(() => bodyKindLabel(this.bodyId()));
   protected readonly link = computed(() => bodyPagePath(this.bodyId()));
   protected readonly source = computed(() => SOURCES[this.body().physical.radiusKm.source]);
+  /** Con qué se calculan las distancias (ESTILO §5). */
+  protected readonly calculation = computed(() => {
+    const body = this.body();
+    const base = 'Las distancias se calculan en tu navegador con astronomy-engine';
+    if (!body.parent || !isMeanElementsMoon(body.id)) return `${base}.`;
+    return `${base}; la posición de ${body.name} respecto a ${getBody(body.parent).name}, con elementos orbitales ajustados a las efemérides del JPL.`;
+  });
 
   protected readonly distances = computed<Row[]>(() => {
     const body = this.body();
@@ -60,23 +77,23 @@ export class BodyPanel {
     const rows: Row[] = [
       {
         label: body.kind === 'planet' ? 'Radio ecuatorial' : 'Radio medio',
-        value: formatDistanceKm(physical.radiusKm.value),
+        value: splitUnit(formatDistanceKm(physical.radiusKm.value)),
       },
     ];
     if (physical.synchronousRotation?.value) {
-      rows.push({ label: 'Rotación', value: 'Síncrona' });
+      rows.push({ label: 'Rotación', value: splitUnit('Síncrona') });
     } else if (physical.rotationPeriodH) {
       const hours = physical.rotationPeriodH.value;
       rows.push({
         label: 'Rotación',
-        value: formatPeriodHours(hours),
+        value: splitUnit(formatPeriodHours(hours)),
         detail: hours < 0 ? 'retrógrada' : undefined,
       });
     }
     if (body.orbit) {
       rows.push({
         label: body.kind === 'planet' ? 'Año' : 'Órbita',
-        value: formatPeriodHours(body.orbit.periodDays.value * 24),
+        value: splitUnit(formatPeriodHours(body.orbit.periodDays.value * 24)),
       });
     }
     return rows;
@@ -84,7 +101,7 @@ export class BodyPanel {
 
   private far(label: string, km: number): Row {
     return km < NEAR_KM
-      ? { label, value: formatDistanceKm(km) }
-      : { label, value: formatAu(km), detail: formatDistanceKm(km) };
+      ? { label, value: splitUnit(formatDistanceKm(km)) }
+      : { label, value: splitUnit(formatAu(km)), detail: formatDistanceKm(km) };
   }
 }

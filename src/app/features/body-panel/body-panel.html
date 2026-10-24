@@ -25,7 +25,10 @@
           <div class="card__row">
             <dt>{{ row.label }}</dt>
             <dd>
-              {{ row.value }}
+              <span class="card__number">{{ row.value.number }}</span>
+              @if (row.value.unit) {
+                <span class="card__unit">&nbsp;{{ row.value.unit }}</span>
+              }
               @if (row.detail) {
                 <span class="card__detail">{{ row.detail }}</span>
               }
@@ -41,7 +44,10 @@
         <div class="card__row">
           <dt>{{ row.label }}</dt>
           <dd>
-            {{ row.value }}
+            <span class="card__number">{{ row.value.number }}</span>
+            @if (row.value.unit) {
+              <span class="card__unit">&nbsp;{{ row.value.unit }}</span>
+            }
             @if (row.detail) {
               <span class="card__detail">{{ row.detail }}</span>
             }
@@ -50,12 +56,16 @@
       }
     </dl>
 
-    @if (link(); as path) {
-      <a class="card__link" [routerLink]="path">Ficha completa de {{ body().name }}</a>
-    }
     <p class="card__source">
       Datos de <a [href]="source().url">{{ source().publisher }}</a
-      >. Las distancias se calculan en tu navegador.
+      >. {{ calculation() }}
     </p>
   </div>
+
+  <!-- Siempre a la vista, aunque los datos se desplacen (escritorio bajo, hoja del móvil). -->
+  @if (link(); as path) {
+    <footer class="card__foot">
+      <a class="card__link" [routerLink]="path">Ficha completa de {{ body().name }}</a>
+    </footer>
+  }
 </article>

@@ -40,7 +40,9 @@ export function formatDistanceKm(km: number): string {
   const abs = Math.abs(km);
   if (abs < 1e6) return `${formatNumber(km, 0)}${NBSP}km`;
   const millions = km / 1e6;
-  return `${formatNumber(millions, Math.abs(millions) < 1000 ? 1 : 0)}${NBSP}millones de km`;
+  // Con un decimal siempre, también si es cero («795,0»): la cifra no cambia de ancho al reproducir.
+  const digits = Math.abs(millions) < 1000 ? 1 : 0;
+  return `${formatNumber(millions, digits, true)}${NBSP}millones de km`;
 }
 
 /** Distancia en unidades astronómicas con dos decimales («9,63 UA»). */
