@@ -9,9 +9,11 @@ import type { BodyId, BodyKind } from '../data/body.model';
 import { MOON_ELEMENTS, MeanElementsMoonId } from '../data/moon-elements';
 import { KM_PER_AU } from '../ephemeris/constants';
 import { GALILEAN_IDS, GalileanId, PlanetId, isPlanetId } from '../ephemeris/ids';
-import { MeanElements } from '../ephemeris/moons';
+import { moonGeocentric, planetHeliocentric } from '../ephemeris/ephemeris';
+import { MeanElements, galileanMoons, meanElementsPosition } from '../ephemeris/moons';
 import { IauBodyId } from '../ephemeris/orientation';
 import { SolarSystemModel, SystemBodySpec } from '../ephemeris/system-state';
+import { Vec3, vec3 } from '../ephemeris/vec3';
 
 /** Cómo se orienta cada cuerpo (D19). */
 export type RotationModel =
@@ -100,3 +102,25 @@ function neptuneSemiMajorAxisAu(): number {
 
 /** Semieje mayor de Neptuno (UA, de la ficha de la NASA): la referencia de la escala real global. */
 export const NEPTUNE_SEMI_MAJOR_AXIS_AU = neptuneSemiMajorAxisAu();
+
+/**
+ * Posición de un cuerpo respecto a su padre (UA, ECL; heliocéntrica en los planetas), con las MISMAS
+ * funciones que usa el estado del sistema. Para muestrear órbitas sin calcular los 30 cuerpos.
+ */
+export function offsetFunction(id: BodyId): (date: Date) => Vec3 {
+  const source = sourceOf(id);
+  switch (source.kind) {
+    case 'sun':
+      return () => vec3(0, 0, 0);
+    case 'planet':
+      return (date) => planetHeliocentric(id as PlanetId, date);
+    case 'earth-moon':
+      return moonGeocentric;
+    case 'galilean':
+      return (date) => galileanMoons(date)[id as GalileanId];
+    case 'mean-elements': {
+      const elements = source.elements;
+      return (date) => meanElementsPosition(elements, date);
+    }
+  }
+}

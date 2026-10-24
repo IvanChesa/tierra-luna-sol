@@ -4,6 +4,8 @@
  */
 import type { BodyId } from '../data/body.model';
 
+export type { BodyId } from '../data/body.model';
+
 /** Vistas del explorador (D10). El cielo del Bajo Cinca llega en la fase 8. */
 export type ExplorerView = 'system' | 'earth' | 'moon';
 
@@ -112,6 +114,8 @@ export interface SceneEngineApi {
   capture(): Promise<Blob>;
   /** Libera la GPU, los listeners y el DOM de las etiquetas. El motor no se puede reutilizar. */
   dispose(): void;
+  /** Cifras de rendimiento del momento (el indicador de desarrollo y las mediciones). */
+  stats(): FrameStats;
 
   // --- Eventos ---
   /** Se suscribe a un evento; devuelve la función para darse de baja. */

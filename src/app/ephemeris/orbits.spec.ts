@@ -102,6 +102,18 @@ describe('orbits: caché', () => {
     expect(Math.max(...seen)).toBeLessThanOrEqual(MAX_DATE.getTime());
   });
 
+  it('dice cuándo empieza la vuelta muestreada (para dibujar la estela desde el cuerpo)', () => {
+    const cache = new OrbitCache();
+    const date = new Date('2026-10-23T00:00:00Z');
+    const sampled = cache.sample(request({ date }));
+    const validityMs = 30 * 86_400_000;
+    expect(sampled.startMs).toBe(Math.floor(date.getTime() / validityMs) * validityMs);
+    expect(sampled.periodDays).toBe(10);
+    expect(cache.get(request({ date }))).toBe(sampled.points);
+    // Con otra validez (otra velocidad de reproducción) es otra entrada.
+    expect(cache.sample(request({ date, validityDays: 7 }))).not.toBe(sampled);
+  });
+
   it('rechaza una validez no positiva', () => {
     expect(() => new OrbitCache().get(request({ validityDays: 0 }))).toThrow(RangeError);
   });

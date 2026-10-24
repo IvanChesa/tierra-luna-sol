@@ -46,9 +46,16 @@ export interface OrbitRequest {
   readonly position: (date: Date) => Vec3;
 }
 
+/** Una vuelta muestreada: los puntos y el instante del primero (UTC, ms). */
+export interface SampledOrbit {
+  readonly points: Float64Array;
+  readonly startMs: number;
+  readonly periodDays: number;
+}
+
 /** Caché LRU de órbitas muestreadas, por cuerpo, tramo de validez y resolución. */
 export class OrbitCache {
-  private readonly entries = new Map<string, Float64Array>();
+  private readonly entries = new Map<string, SampledOrbit>();
 
   constructor(private readonly maxEntries = 128) {}
 
@@ -57,9 +64,17 @@ export class OrbitCache {
   }
 
   get(request: OrbitRequest): Float64Array {
+    return this.sample(request).points;
+  }
+
+  /**
+   * Como {@link get}, pero dice también cuándo empieza la vuelta muestreada: con eso la escena sabe
+   * en qué punto de la vuelta está el cuerpo y dibuja la estela desde él.
+   */
+  sample(request: OrbitRequest): SampledOrbit {
     if (!(request.validityDays > 0)) throw new RangeError('Validez no válida.');
     const bucket = Math.floor(request.date.getTime() / (request.validityDays * MS_PER_DAY));
-    const key = `${request.id}|${bucket}|${request.segments}|${request.periodDays}`;
+    const key = `${request.id}|${request.validityDays}|${bucket}|${request.segments}|${request.periodDays}`;
     const cached = this.entries.get(key);
     if (cached) {
       // Se reinserta para que cuente como la más reciente.
@@ -75,12 +90,13 @@ export class OrbitCache {
     );
     const start = new Date(startMs);
     const points = sampleOrbit(request.position, start, request.periodDays, request.segments);
-    this.entries.set(key, points);
+    const sampled: SampledOrbit = { points, startMs, periodDays: request.periodDays };
+    this.entries.set(key, sampled);
     if (this.entries.size > this.maxEntries) {
       const oldest = this.entries.keys().next().value;
       if (oldest !== undefined) this.entries.delete(oldest);
     }
-    return points;
+    return sampled;
   }
 
   clear(): void {
