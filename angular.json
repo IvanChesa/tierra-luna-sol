@@ -31,7 +31,8 @@
             "outputMode": "static",
             "security": {
               "allowedHosts": []
-            }
+            },
+            "statsJson": true
           },
           "configurations": {
             "production": {
