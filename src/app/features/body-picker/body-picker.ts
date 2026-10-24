@@ -74,7 +74,8 @@ export class BodyPicker {
   });
   /** Distancias de cada cuerpo, ya formateadas (ESTILO §3). */
   protected readonly values = computed(() => {
-    const values = new Map<BodyId, string>();
+    // El Sol no tiene distancia en esta columna (es el origen de las de los planetas).
+    const values = new Map<BodyId, string>([['sol', '—']]);
     for (const root of ROOT_NODES) {
       const toSun = this.positions.distances(root.id).toSunKm;
       if (root.kind === 'planet' && toSun !== null) values.set(root.id, formatAu(toSun));

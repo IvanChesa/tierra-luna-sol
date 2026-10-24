@@ -66,9 +66,11 @@ export const VIEW_LINKS: readonly ViewLink[] = [
       color: var(--color-text);
     }
 
+    /* La vista actual: fondo, texto claro y un subrayado en acento (no solo el color). */
     .views__link[aria-current='page'] {
       background: var(--color-surface-raised);
       color: var(--color-text);
+      box-shadow: inset 0 -2px 0 var(--color-accent);
     }
 
     @media (pointer: coarse) {
