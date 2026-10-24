@@ -5,6 +5,12 @@
   </div>
   <h2 class="visually-hidden" id="index-title">Cuerpos del sistema solar</h2>
 
+  <!--
+    Árbol plano: las lunas van detrás de su planeta y el nivel lo dicen aria-level, aria-setsize y
+    aria-posinset. Así el nombre de cada fila sale de su contenido (solo el nombre del cuerpo) y no
+    arrastra las lunas. La distancia es un dato que cambia al reproducir: queda fuera del árbol
+    accesible (aria-hidden) para que el lector no la repita; está en la ficha y en el anuncio.
+  -->
   <ul
     class="tree"
     role="tree"
@@ -24,8 +30,6 @@
         [attr.aria-posinset]="i + 1"
         [attr.aria-expanded]="node.children.length > 0 ? isExpanded(node.id) : null"
         [attr.aria-selected]="selected() === node.id"
-        [attr.aria-labelledby]="'tree-' + node.id + '-name'"
-        [attr.aria-describedby]="values().has(node.id) ? 'tree-' + node.id + '-value' : null"
         [attr.tabindex]="tabStop() === node.id ? 0 : -1"
       >
         <div class="row">
@@ -36,40 +40,32 @@
           } @else {
             <span class="row__toggle row__toggle--none"></span>
           }
-          <span class="row__name" [id]="'tree-' + node.id + '-name'">{{ node.name }}</span>
-          <span class="row__value" [id]="'tree-' + node.id + '-value'">{{
-            values().get(node.id)
-          }}</span>
+          <span class="row__name">{{ node.name }}</span>
+          <span class="row__value" aria-hidden="true">{{ values().get(node.id) }}</span>
         </div>
-
-        @if (isExpanded(node.id)) {
-          <ul class="tree__group" role="group">
-            @for (moon of children(node); track moon.id; let j = $index) {
-              <li
-                class="tree__item tree__item--moon"
-                role="treeitem"
-                [id]="'tree-' + moon.id"
-                [attr.data-body]="moon.id"
-                aria-level="2"
-                [attr.aria-setsize]="node.children.length"
-                [attr.aria-posinset]="j + 1"
-                [attr.aria-selected]="selected() === moon.id"
-                [attr.aria-labelledby]="'tree-' + moon.id + '-name'"
-                [attr.aria-describedby]="'tree-' + moon.id + '-value'"
-                [attr.tabindex]="tabStop() === moon.id ? 0 : -1"
-              >
-                <div class="row">
-                  <span class="row__toggle row__toggle--none"></span>
-                  <span class="row__name" [id]="'tree-' + moon.id + '-name'">{{ moon.name }}</span>
-                  <span class="row__value" [id]="'tree-' + moon.id + '-value'">{{
-                    values().get(moon.id)
-                  }}</span>
-                </div>
-              </li>
-            }
-          </ul>
-        }
       </li>
+
+      @if (isExpanded(node.id)) {
+        @for (moon of children(node); track moon.id; let j = $index) {
+          <li
+            class="tree__item tree__item--moon"
+            role="treeitem"
+            [id]="'tree-' + moon.id"
+            [attr.data-body]="moon.id"
+            aria-level="2"
+            [attr.aria-setsize]="node.children.length"
+            [attr.aria-posinset]="j + 1"
+            [attr.aria-selected]="selected() === moon.id"
+            [attr.tabindex]="tabStop() === moon.id ? 0 : -1"
+          >
+            <div class="row">
+              <span class="row__toggle row__toggle--none"></span>
+              <span class="row__name">{{ moon.name }}</span>
+              <span class="row__value" aria-hidden="true">{{ values().get(moon.id) }}</span>
+            </div>
+          </li>
+        }
+      }
     }
   </ul>
 

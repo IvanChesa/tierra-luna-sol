@@ -47,10 +47,12 @@ describe('BodyPicker: índice de cuerpos como árbol accesible', () => {
     ).toHaveLength(1);
     expect(item('saturno')?.getAttribute('aria-expanded')).toBe('false');
     expect(item('venus')?.hasAttribute('aria-expanded')).toBe(false);
-    // El nombre accesible es solo el nombre; la distancia, la descripción.
-    expect(item('saturno')?.getAttribute('aria-labelledby')).toBe('tree-saturno-name');
-    const value = root.querySelector('#tree-saturno-value')?.textContent ?? '';
-    expect(value.replace(/\s/g, ' ')).toMatch(/^\d+,\d\d UA$/);
+    // El nombre sale del contenido (el nombre del cuerpo); la distancia, que cambia al reproducir,
+    // se ve pero queda fuera del árbol accesible (el lector no la repite a cada cambio).
+    expect(item('saturno')?.hasAttribute('aria-labelledby')).toBe(false);
+    const value = item('saturno')?.querySelector('.row__value');
+    expect(value?.getAttribute('aria-hidden')).toBe('true');
+    expect((value?.textContent ?? '').replace(/\s/g, ' ')).toMatch(/^\d+,\d\d UA$/);
   });
 
   it('flechas, Inicio y Fin recorren las filas; derecha abre las lunas e izquierda vuelve', () => {
@@ -80,7 +82,10 @@ describe('BodyPicker: índice de cuerpos como árbol accesible', () => {
     expect(sim.selectedBodyId()).toBe('saturno');
     expect(item('saturno')?.getAttribute('aria-selected')).toBe('true');
     expect(item('saturno')?.getAttribute('aria-expanded')).toBe('true');
-    expect(item('titan')).not.toBeNull();
+    // Árbol plano: las lunas van detrás de su planeta, en el nivel 2.
+    expect(item('saturno')?.nextElementSibling?.id).toBe('tree-mimas');
+    expect(item('titan')?.getAttribute('aria-level')).toBe('2');
+    expect(item('titan')?.getAttribute('aria-setsize')).toBe('7');
   });
 
   it('un clic en el triángulo abre o cierra las lunas sin elegir el planeta', () => {
