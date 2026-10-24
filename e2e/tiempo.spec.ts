@@ -95,7 +95,10 @@ test.describe('Tiempo y URL', () => {
     await openExplorer(page, '/?fecha=2100-12-31T23:00Z');
     await page.locator('#time-speed').selectOption('day');
     await page.locator('.time__play').click();
-    await expect(page.locator('tls-notices')).toContainText('al final de 2100 (UTC)');
+    // En UTC y en la hora de Madrid (que ya es 2101), con lo que puedes hacer.
+    await expect(page.locator('tls-notices')).toContainText(
+      'en el límite del explorador: 31 dic 2100, 23:59 UTC (1 ene 2101, 00:59 en tu hora local). Elige una fecha anterior o vuelve a «Ahora».',
+    );
     await expect(page.locator('.time__play')).toHaveAccessibleName(/Reproducir/);
     expect(await simTime(page)).toBe(Date.parse('2100-12-31T23:59:59Z'));
     await page.getByRole('button', { name: 'Cerrar el aviso' }).click();

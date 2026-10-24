@@ -40,10 +40,10 @@ describe('parámetros del explorador', () => {
       warnings: [],
     });
     expect(params.warnings).toEqual([
-      'La fecha «ayer» no vale: tiene que existir, ir en UTC (como 2030‑01‑01T00:00Z) y estar entre 1900 y 2100.',
-      'El cuerpo «pluton» no está en el explorador.',
-      'La escala «gigante» no existe: puede ser «real» o «ilustrativa».',
-      'La calidad «ultra» no existe: puede ser «alta», «media», «baja» o «auto».',
+      'La fecha «ayer» no vale y se muestra el momento actual. Tiene que existir, ir en UTC (como 2030‑01‑01T00:00Z) y estar entre 1900 y 2100.',
+      'El cuerpo «pluton» no está en el explorador y se ha ignorado.',
+      'La escala «gigante» no existe y se usa la ilustrativa. Puede ser «real» o «ilustrativa».',
+      'La calidad «ultra» no existe y se ha ignorado. Puede ser «alta», «media», «baja» o «auto».',
     ]);
     // Un valor larguísimo se recorta en el aviso.
     const long = parseViewerParams(`?cuerpo=${'x'.repeat(200)}`);

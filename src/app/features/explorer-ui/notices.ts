@@ -1,34 +1,41 @@
 import { Component, computed, inject } from '@angular/core';
+import { formatDateTime, utcOffsetLabel } from '../../core/format';
+import { MAX_DATE, MIN_DATE } from '../../ephemeris/constants';
 import { SimulationStore } from '../../state/simulation.store';
 import { Icon } from '../viewer/icon';
 import { ExplorerSession } from './explorer-session';
 
 /**
- * Avisos discretos del explorador: los parámetros de la URL que se han ignorado (PLAN 3.d.9) y la
- * llegada a 1900 o a 2100 (3.b.4). Se pueden cerrar y no tapan el lienzo más de lo necesario.
+ * Avisos discretos del explorador: los parámetros de la URL que se han ignorado (PLAN 3.d.9), todos
+ * en una caja, y la llegada a 1900 o a 2100 (3.b.4). Dicen qué ha pasado, qué ha hecho el explorador
+ * y qué puedes hacer (ESTILO §2); se pueden cerrar.
  */
 @Component({
   selector: 'tls-notices',
   imports: [Icon],
   template: `
     <div class="notices" role="status">
-      @for (warning of session.warnings(); track warning; let i = $index) {
-        <p class="notice">
-          <span>{{ warning }}</span>
+      @if (session.warnings().length > 0) {
+        <div class="notice">
+          <ul class="notice__list">
+            @for (warning of session.warnings(); track warning) {
+              <li>{{ warning }}</li>
+            }
+          </ul>
           <button
             type="button"
             class="notice__close"
             title="Cerrar el aviso"
-            (click)="session.dismissWarning(i)"
+            (click)="session.dismissWarnings()"
           >
             <tls-icon name="close" />
             <span class="visually-hidden">Cerrar el aviso</span>
           </button>
-        </p>
+        </div>
       }
       @if (limitText(); as text) {
-        <p class="notice">
-          <span>{{ text }}</span>
+        <div class="notice">
+          <p class="notice__text">{{ text }}</p>
           <button
             type="button"
             class="notice__close"
@@ -38,7 +45,7 @@ import { ExplorerSession } from './explorer-session';
             <tls-icon name="close" />
             <span class="visually-hidden">Cerrar el aviso</span>
           </button>
-        </p>
+        </div>
       }
     </div>
   `,
@@ -51,16 +58,27 @@ import { ExplorerSession } from './explorer-session';
 
     .notice {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: var(--space-2);
       max-width: 36rem;
-      margin: 0;
       padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
       background: var(--color-surface-raised);
       border: var(--border-width) solid var(--color-control);
       border-radius: var(--radius-md);
       font-size: var(--text-sm);
       box-shadow: 0 8px 24px rgb(0 0 0 / 0.35);
+    }
+
+    .notice__text,
+    .notice__list {
+      margin: 0;
+      padding: var(--space-1) 0;
+    }
+
+    .notice__list {
+      display: grid;
+      gap: var(--space-2);
+      list-style: none;
     }
 
     .notice__close {
@@ -81,16 +99,32 @@ import { ExplorerSession } from './explorer-session';
     .notice__close:hover {
       color: var(--color-text);
     }
+
+    @media (pointer: coarse) {
+      .notice__close {
+        width: var(--tap-target);
+        height: var(--tap-target);
+      }
+    }
   `,
 })
 export class Notices {
   protected readonly session = inject(ExplorerSession);
   protected readonly sim = inject(SimulationStore);
+  /**
+   * El límite, en UTC (el intervalo del explorador) y en tu hora local, que puede caer en otro día:
+   * el final de 2100 es el 1 de enero de 2101 en Madrid.
+   */
   protected readonly limitText = computed(() => {
     const limit = this.sim.limit();
     if (!limit) return null;
-    // El intervalo es en UTC: en hora local, el final de 2100 puede caer ya en 2101.
-    const edge = limit === 'max' ? 'al final de 2100' : 'al principio de 1900';
-    return `La simulación se ha parado ${edge} (UTC): el explorador calcula posiciones entre 1900 y 2100.`;
+    const edge = limit === 'max' ? MAX_DATE : MIN_DATE;
+    const utc = `${formatDateTime(edge, 'utc', false)} UTC`;
+    const local =
+      utcOffsetLabel(edge) === 'UTC'
+        ? ''
+        : ` (${formatDateTime(edge, 'local', false)} en tu hora local)`;
+    const next = limit === 'max' ? 'una fecha anterior' : 'una fecha posterior';
+    return `La simulación se ha parado en el límite del explorador: ${utc}${local}. Elige ${next} o vuelve a «Ahora».`;
   });
 }

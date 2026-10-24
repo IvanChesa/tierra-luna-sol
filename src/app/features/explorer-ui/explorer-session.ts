@@ -223,8 +223,9 @@ export class ExplorerSession {
     writeSingleKeyShortcuts(this.storage, enabled);
   }
 
-  dismissWarning(index: number): void {
-    this._warnings.update((list) => list.filter((_, k) => k !== index));
+  /** Cierra el aviso de los parámetros de la URL (van todos en una caja). */
+  dismissWarnings(): void {
+    this._warnings.set([]);
   }
 
   /** Anuncia una frase en la región `aria-live` (también si se repite). */

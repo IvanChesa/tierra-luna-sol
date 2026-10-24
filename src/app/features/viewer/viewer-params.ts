@@ -82,24 +82,26 @@ export function parseViewerParams(search: string): ViewerParams {
   const time = parseUtcDate(rawTime);
   if (rawTime !== null && !time)
     warnings.push(
-      `La fecha ${quoted(rawTime)} no vale: tiene que existir, ir en UTC (como 2030‑01‑01T00:00Z) y estar entre 1900 y 2100.`,
+      `La fecha ${quoted(rawTime)} no vale y se muestra el momento actual. Tiene que existir, ir en UTC (como 2030‑01‑01T00:00Z) y estar entre 1900 y 2100.`,
     );
 
   const rawBody = params.get('cuerpo');
   const body = rawBody !== null && isBodyId(rawBody) ? rawBody : null;
   if (rawBody !== null && !body)
-    warnings.push(`El cuerpo ${quoted(rawBody)} no está en el explorador.`);
+    warnings.push(`El cuerpo ${quoted(rawBody)} no está en el explorador y se ha ignorado.`);
 
   const rawScale = params.get('escala');
   const scale = SCALE[rawScale ?? ''] ?? null;
   if (rawScale !== null && !scale)
-    warnings.push(`La escala ${quoted(rawScale)} no existe: puede ser «real» o «ilustrativa».`);
+    warnings.push(
+      `La escala ${quoted(rawScale)} no existe y se usa la ilustrativa. Puede ser «real» o «ilustrativa».`,
+    );
 
   const rawQuality = params.get('calidad');
   const quality = QUALITY[rawQuality ?? ''] ?? null;
   if (rawQuality !== null && !quality)
     warnings.push(
-      `La calidad ${quoted(rawQuality)} no existe: puede ser «alta», «media», «baja» o «auto».`,
+      `La calidad ${quoted(rawQuality)} no existe y se ha ignorado. Puede ser «alta», «media», «baja» o «auto».`,
     );
 
   const background = capture ? params.get('detras') : null;

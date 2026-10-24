@@ -6,19 +6,26 @@ test.describe('Parámetros de la URL', () => {
     const problems = trackProblems(page);
     await openExplorer(page, '/?fecha=2030-02-31T00:00Z&cuerpo=pluton&escala=gigante');
 
+    // Una sola caja, con una línea por parámetro: qué no vale y qué ha hecho el explorador.
     const notices = page.locator('tls-notices .notice');
-    await expect(notices).toHaveCount(3);
-    await expect(notices.nth(0)).toContainText('La fecha «2030-02-31T00:00Z» no vale');
-    await expect(notices.nth(1)).toContainText('El cuerpo «pluton» no está en el explorador.');
-    await expect(notices.nth(2)).toContainText('La escala «gigante» no existe');
+    await expect(notices).toHaveCount(1);
+    const lines = notices.locator('li');
+    await expect(lines).toHaveCount(3);
+    await expect(lines.nth(0)).toContainText(
+      'La fecha «2030-02-31T00:00Z» no vale y se muestra el momento actual.',
+    );
+    await expect(lines.nth(1)).toContainText('El cuerpo «pluton» no está en el explorador');
+    await expect(lines.nth(2)).toContainText(
+      'La escala «gigante» no existe y se usa la ilustrativa.',
+    );
     // Sin fecha válida, el explorador abre en «ahora» y en tiempo real; sin ficha.
     await expect(page.locator('.time__play')).toHaveAccessibleName(/Pausar/);
     await expect(page.locator('.panel')).toBeHidden();
     // Los parámetros que no valen salen de la URL.
     await expect(page).not.toHaveURL(/pluton|gigante|2030-02-31/);
 
-    await notices.nth(1).getByRole('button', { name: 'Cerrar el aviso' }).click();
-    await expect(notices).toHaveCount(2);
+    await notices.getByRole('button', { name: 'Cerrar el aviso' }).click();
+    await expect(notices).toHaveCount(0);
     // Lo demás sigue funcionando.
     await page.locator('#tree-saturno > .row').click();
     await expect(page.locator('#card-title')).toHaveText('Saturno');

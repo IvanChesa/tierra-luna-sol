@@ -132,8 +132,8 @@ describe('ExplorerSession: la URL, la selección y el motor', () => {
     const { session, sim } = await setup('?fecha=hola&escala=gigante');
     expect(session.warnings()).toHaveLength(2);
     expect(sim.scaleFrame()).toBe('illustrative');
-    session.dismissWarning(0);
-    expect(session.warnings()).toHaveLength(1);
+    session.dismissWarnings();
+    expect(session.warnings()).toHaveLength(0);
   });
 
   it('al conectar el motor le pasa el estado y escucha sus elecciones y sus viajes', async () => {
