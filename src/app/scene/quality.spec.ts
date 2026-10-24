@@ -50,7 +50,7 @@ describe('quality: bajada automática con histéresis (reloj falso)', () => {
   it('con FPS bajos durante la animación baja UNA vez y no oscila', () => {
     const quality = new AdaptiveQuality({ windowMs: 5000, cooldownMs: 8000 });
     const level = { current: 'high' as QualityLevel };
-    // 40 FPS: por debajo del umbral de alto (45) y por encima del de medio (26).
+    // 40 FPS: por debajo del umbral de alto (50) y por encima del de medio (30).
     const first = run(quality, level, 40, 60);
     expect(first.changes).toEqual(['medium']);
     // Aunque luego vaya a 60 FPS, nunca vuelve a subir sola.
@@ -62,7 +62,7 @@ describe('quality: bajada automática con histéresis (reloj falso)', () => {
   it('no baja por picos cortos ni sin animación (render bajo demanda)', () => {
     const quality = new AdaptiveQuality({ windowMs: 5000, cooldownMs: 8000 });
     const level = { current: 'high' as QualityLevel };
-    // 1 s a 20 FPS en medio de 60 FPS: la media de la ventana (5 s) sigue por encima de 45.
+    // 1 s a 20 FPS en medio de 60 FPS: la media de la ventana (5 s) sigue por encima de 50.
     let t = run(quality, level, 60, 2).endMs;
     t = run(quality, level, 20, 1, t).endMs;
     const steady = run(quality, level, 60, 20, t);

@@ -479,7 +479,7 @@ describe('SceneEngine: calidad adaptativa, contexto WebGL y limpieza', () => {
     settle(h);
     h.engine.setSpeed(3600);
     h.engine.setPlaying(true);
-    h.frames(12_000, 40); // 40 FPS: por debajo de 45 (alto), por encima de 26 (medio)
+    h.frames(12_000, 40); // 40 FPS: por debajo de 50 (alto), por encima de 30 (medio)
     expect(h.events.qualityChanged.filter((e) => e.reason === 'auto')).toEqual([
       { level: 'medium', setting: 'auto', reason: 'auto' },
     ]);

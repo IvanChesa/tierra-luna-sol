@@ -64,7 +64,6 @@ export const DEFAULT_DEPTH: ResolvedDepthMode = 'logarithmic';
 /** Color del fondo del visor (`--color-bg` de docs/DISENO.md). */
 export const BACKGROUND_COLOR = 0x0d1321;
 
-/** Encuadres: distancia de la cámara en radios del cuerpo enfocado. */
 /**
  * Encuadres: fracción del lado más corto de la vista que ocupa el cuerpo enfocado (así encaja igual
  * en un escritorio apaisado que en un móvil vertical).
@@ -373,6 +372,9 @@ export class SceneEngine implements SceneEngineApi {
   }
 
   async capture(): Promise<Blob> {
+    if (this.disposed) throw new Error('El motor ya se ha liberado.');
+    if (this.contextLost) throw new Error('Sin contexto WebGL: no se puede capturar.');
+    if (!this.ready) throw new Error('La escena aún no está lista.');
     this.renderFrame(this.deps.now());
     return this.renderer.toBlob();
   }

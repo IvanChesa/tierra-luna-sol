@@ -102,7 +102,7 @@ module.exports = defineConfig([
     rules: restrict(NO_ANGULAR, NO_RXJS, noLayers(['state', 'features', 'pages'], 'scene/')),
   },
   {
-    files: ['src/app/{state,features,pages}/**/*.ts'],
+    files: ['src/app/{state,features,pages,core}/**/*.ts', 'src/app/*.ts'],
     rules: restrict(NO_THREE, ONLY_SCENE_PUBLIC_API),
   },
 ]);

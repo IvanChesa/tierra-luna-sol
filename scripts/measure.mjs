@@ -4,7 +4,10 @@
 // - Reposo: frames pintados y llamadas a requestAnimationFrame en 3 s de pausa sin interacción.
 // - Reproducción: FPS y coste por frame a 1 día/s durante 6 s (por calidad).
 // - Contexto WebGL: WEBGL_lose_context.loseContext() y restoreContext().
-// - Memoria: 10 idas y vueltas explorador ↔ ficha y 10 cambios de vista.
+// - Memoria: 10 idas y vueltas explorador ↔ ficha, 10 cambios de vista y 6 cambios de calidad.
+//   Lo que demuestra cada cifra: el heap de JS (tras forzar el recolector) no crece; los contextos
+//   WebGL vivos (se cuentan envolviendo getContext y descontando los perdidos) siguen siendo uno; y
+//   renderer.info.memory del motor que queda no acumula geometrías ni texturas.
 // - Arranque: peso de la primera vista por tipo, tareas largas (> 50 ms) y elemento LCP.
 import { stat } from 'node:fs/promises';
 import sharp from 'sharp';
@@ -208,9 +211,21 @@ try {
     }
   }
 
-  // --- Memoria: 10 idas y vueltas explorador ↔ ficha y 10 cambios de vista ----------------
+  // --- Memoria: 10 idas y vueltas explorador ↔ ficha, 10 cambios de vista y de calidad ------
   {
     const context = await browser.newContext({ viewport: { width: 1600, height: 900 } });
+    // Cuenta los contextos WebGL que se crean y los que se pierden (dispose() fuerza la pérdida).
+    await context.addInitScript(() => {
+      const original = HTMLCanvasElement.prototype.getContext;
+      window.__glContexts = [];
+      HTMLCanvasElement.prototype.getContext = function (type, ...rest) {
+        const context = original.call(this, type, ...rest);
+        if (context && /webgl/.test(type) && !window.__glContexts.includes(context)) {
+          window.__glContexts.push(context);
+        }
+        return context;
+      };
+    });
     const page = await context.newPage();
     const cdp = await context.newCDPSession(page);
     await page.goto(`${BASE}/?captura=1`);
@@ -235,7 +250,10 @@ try {
     }
     const afterTrips = await memory();
     const heapTrips = await heap();
-    const contexts = await page.evaluate(() => document.querySelectorAll('canvas').length);
+    const liveContexts = () =>
+      page.evaluate(() => window.__glContexts.filter((gl) => !gl.isContextLost()).length);
+    const contexts = await liveContexts();
+    const canvases = await page.evaluate(() => document.querySelectorAll('canvas').length);
     for (let k = 0; k < 10; k++) {
       const view = ['/explorar/tierra', '/explorar/luna', '/'][k % 3];
       await page.evaluate((url) => {
@@ -251,18 +269,33 @@ try {
     await waitForIdle(page);
     const afterViews = await memory();
     const heapViews = await heap();
+    const contextsViews = await liveContexts();
+    for (const setting of ['medium', 'low', 'high', 'medium', 'low', 'high']) {
+      await page.evaluate((value) => window.__tlsViewer.engine.setQuality(value), setting);
+      await waitForIdle(page);
+    }
+    const afterQuality = await memory();
+    const heapQuality = await heap();
     results.memoria = {
       inicio: { geometrias: first.geometries, texturas: first.textures, heapMB: heapStart },
       tras10IdasYVueltas: {
         geometrias: afterTrips.geometries,
         texturas: afterTrips.textures,
         heapMB: heapTrips,
-        lienzos: contexts,
+        contextosWebGLVivos: contexts,
+        lienzos: canvases,
       },
       tras10CambiosDeVista: {
         geometrias: afterViews.geometries,
         texturas: afterViews.textures,
         heapMB: heapViews,
+        contextosWebGLVivos: contextsViews,
+      },
+      tras6CambiosDeCalidad: {
+        geometrias: afterQuality.geometries,
+        texturas: afterQuality.textures,
+        heapMB: heapQuality,
+        contextosWebGLVivos: await liveContexts(),
       },
     };
     await context.close();

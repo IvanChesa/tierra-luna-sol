@@ -100,8 +100,8 @@ describe('system-state: posiciones de todo el sistema en una llamada', () => {
     expect(() => state.heliocentricOf('pluton')).toThrow(RangeError);
   });
 
-  // Presupuesto de §5: ≤ 2 ms por frame en escritorio con los 30 cuerpos. Aquí hay 15; el test de la
-  // escena (scene/system.spec.ts) mide los 30 del catálogo.
+  // Presupuesto de §5: ≤ 2 ms por frame en escritorio con los 30 cuerpos. Aquí hay 15; los 30 del
+  // catálogo, con sus orientaciones, los mide scripts/measure.mjs en el navegador.
   const start = Date.UTC(2026, 0, 1);
   const samples = 300;
   const t0 = performance.now();

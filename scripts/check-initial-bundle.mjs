@@ -15,8 +15,9 @@ const DIST = new URL('../dist/tierra-luna-sol/', import.meta.url);
 const BROWSER = new URL('browser/', DIST);
 /** Módulos prohibidos en el JS inicial (rutas del metafile). */
 const FORBIDDEN = {
-  three: /^node_modules\/three\//,
-  'astronomy-engine': /^node_modules\/astronomy-engine\//,
+  // Sin ancla: con node_modules enlazado (fuera de la raíz), el metafile guarda «../../…/node_modules/…».
+  three: /(^|\/)node_modules\/three\//,
+  'astronomy-engine': /(^|\/)node_modules\/astronomy-engine\//,
 };
 /** Cadenas literales que sobreviven a la minificación de cada librería. */
 const MARKERS = {
@@ -91,6 +92,19 @@ for (const file of initial) {
       console.error(`✖ ${library} (por su código) está en el JS inicial (${file})`);
       failed = true;
     }
+  }
+}
+// Si un patrón no casa con ningún módulo del build, la capa por módulos no vería nada (por ejemplo,
+// si cambia cómo esbuild escribe las rutas): eso es un fallo, no un aprobado.
+for (const [library, pattern] of Object.entries(FORBIDDEN)) {
+  const found = Object.values(outputs).some((output) =>
+    Object.keys(output.inputs ?? {}).some((input) => pattern.test(input)),
+  );
+  if (!found) {
+    console.error(
+      `✖ Ningún módulo del metafile casa con el patrón de ${library}: revisa FORBIDDEN`,
+    );
+    failed = true;
   }
 }
 if (failed) process.exit(1);
