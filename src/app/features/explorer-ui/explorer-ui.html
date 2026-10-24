@@ -1,0 +1,44 @@
+<div class="stage">
+  <tls-viewer-canvas [view]="view()" (ready)="ready.emit()" />
+</div>
+
+<tls-body-picker class="index" />
+
+<aside class="panel" data-chrome [hidden]="!panelBody()" aria-label="Ficha del cuerpo elegido">
+  @if (panelBody(); as id) {
+    <div
+      class="panel__grip"
+      aria-hidden="true"
+      (pointerdown)="swipeDown($event)"
+      (pointerup)="swipeEnd($event)"
+      (pointercancel)="swipeEnd($event)"
+    ></div>
+    <tls-body-panel [bodyId]="id" (closed)="closePanel()" />
+  }
+</aside>
+
+<tls-time-controls class="dock" />
+
+<tls-camera-controls class="camera" />
+
+<tls-notices class="notices" />
+
+@if (explorer.travelling() === 'view') {
+  <button type="button" class="control skip" (click)="session.skipTravel()">
+    <tls-icon name="skip" />
+    Saltar el viaje
+    <kbd>Esc</kbd>
+  </button>
+}
+
+@if (explorer.cleanView()) {
+  <button type="button" class="control restore" (click)="session.setCleanView(false)">
+    <tls-icon name="restore" />
+    Mostrar la interfaz
+    <kbd>Esc</kbd>
+  </button>
+}
+
+<tls-shortcuts-dialog />
+
+<p class="visually-hidden" aria-live="polite">{{ session.announcement() }}</p>

@@ -1,0 +1,117 @@
+/*
+ * Marco del explorador (PLAN 3.a.1, docs/DISENO.md). Una rejilla con el lienzo a sangre detrás y los
+ * paneles encima, planos y opacos. Las áreas las usa también la interfaz diferida (explorer-ui):
+ * - escritorio (≥ 64rem): «lead/index/foot» en la columna izquierda, «view» el lienzo visible,
+ *   «panel» la ficha a la derecha y «dock» la barra de tiempo abajo;
+ * - móvil: «lead» arriba, «view», y la hoja inferior con «index» (la tira de cuerpos) y «dock».
+ */
+:host {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.explorer {
+  --explorer-start: 20rem;
+  --explorer-panel: 22rem;
+  --explorer-dock: 4.5rem;
+  position: relative;
+  display: grid;
+  flex: 1;
+  min-height: 30rem;
+  overflow: hidden;
+  background: var(--color-bg);
+  grid-template-areas:
+    'lead  view panel'
+    'index view panel'
+    'foot  view panel'
+    'dock  dock dock';
+  grid-template-columns: var(--explorer-start) minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr) auto var(--explorer-dock);
+}
+
+.explorer__poster {
+  grid-area: 1 / 1 / -1 / -1;
+}
+
+.explorer__column,
+.explorer__sheet {
+  position: relative;
+  z-index: 1;
+  background: var(--color-surface);
+}
+
+.explorer__column {
+  grid-area: 1 / 1 / 4 / 2;
+  border-right: var(--border-width) solid var(--color-line);
+}
+
+.explorer__sheet {
+  grid-area: dock;
+  border-top: var(--border-width) solid var(--color-line);
+}
+
+.explorer__lead,
+.explorer__credits {
+  position: relative;
+  z-index: 2;
+}
+
+.explorer__lead {
+  grid-area: lead;
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-4) var(--space-3);
+}
+
+.explorer__intro {
+  min-width: 0;
+}
+
+.explorer__credits {
+  grid-area: foot;
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-top: var(--border-width) solid var(--color-line);
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+/* La vista limpia oculta el marco (la interfaz diferida pone la clase en su anfitrión). */
+.explorer:has(> tls-explorer-ui.is-clean)
+  > :is(.explorer__column, .explorer__sheet, .explorer__lead, .explorer__credits) {
+  display: none;
+}
+
+@media (max-width: 63.99rem) {
+  .explorer {
+    min-height: 0;
+    grid-template-areas:
+      'lead'
+      'view'
+      'index'
+      'dock';
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+  }
+
+  .explorer__column {
+    grid-area: lead;
+    border-right: 0;
+    border-bottom: var(--border-width) solid var(--color-line);
+  }
+
+  .explorer__sheet {
+    grid-area: index / 1 / -1 / -1;
+    min-height: 7.5rem;
+  }
+
+  .explorer__lead {
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .explorer__credits {
+    display: none;
+  }
+}

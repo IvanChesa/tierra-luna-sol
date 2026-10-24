@@ -1,41 +1,38 @@
-@if (status() !== 'ready') {
-  <!-- El póster sigue debajo hasta el primer frame (y si el 3D no llega). -->
-  <tls-viewer-poster [view]="view()" />
-}
-
+<!-- Un lienzo por intento: «Reintentar» crea uno nuevo (el anterior pierde su contexto). -->
 @for (attempt of attempts(); track attempt) {
-  <canvas #canvas class="viewer-canvas" role="img" [attr.aria-label]="label()"></canvas>
+  <canvas
+    #canvas
+    class="viewer-canvas"
+    role="application"
+    tabindex="0"
+    [attr.aria-label]="label()"
+    aria-describedby="viewer-help"
+    (keydown)="onKeydown($event)"
+  ></canvas>
   <div #labels class="viewer-labels"></div>
 }
+<p class="visually-hidden" id="viewer-help">
+  Usa las flechas para girar alrededor del cuerpo (con Mayús, más deprisa), más y menos para acercar
+  o alejar, e Inicio para la vista general. La misma información está en el índice de cuerpos y en
+  la ficha.
+</p>
 
 @switch (status()) {
   @case ('loading') {
     <div class="viewer-status" role="status">
       <p class="viewer-status__step">Preparando la escena 3D…</p>
-      <progress class="viewer-status__bar" [value]="progress()" max="1">
-        {{ formatNumber(progress() * 100, 0) }} %
-      </progress>
+      <progress class="viewer-status__bar" [value]="progress()" max="1">{{ percent() }} %</progress>
     </div>
   }
   @case ('error') {
     <div class="viewer-status viewer-status--error" role="alert">
       <p>No se ha podido mostrar la escena 3D.</p>
-      <p class="viewer-status__detail">{{ errorMessage() }}</p>
-      <button type="button" class="viewer-button" (click)="retry()">Reintentar</button>
+      <p class="viewer-status__detail">
+        {{ errorMessage() }} El índice, la ficha y el tiempo siguen funcionando.
+      </p>
+      <button type="button" class="control" (click)="retry()">Reintentar</button>
     </div>
   }
-}
-
-@if (!capture() && status() === 'ready') {
-  <label class="viewer-quality">
-    <span>Calidad</span>
-    <select [value]="quality()" (change)="changeQuality($event)">
-      <option value="auto">Automática</option>
-      <option value="high">Alta</option>
-      <option value="medium">Media</option>
-      <option value="low">Baja</option>
-    </select>
-  </label>
 }
 
 @if (showStats()) {
@@ -45,17 +42,17 @@
       <dt>FPS</dt>
       <dd>{{ s.fps }}</dd>
       <dt>CPU</dt>
-      <dd>{{ formatNumber(s.frameMs, 2) }} ms</dd>
+      <dd>{{ format(s.frameMs, 2) }} ms</dd>
       <dt>Efemérides</dt>
-      <dd>{{ formatNumber(s.ephemerisMs, 3) }} ms</dd>
+      <dd>{{ format(s.ephemerisMs, 3) }} ms</dd>
       <dt>Llamadas</dt>
       <dd>{{ s.drawCalls }}</dd>
       <dt>Triángulos</dt>
-      <dd>{{ formatNumber(s.triangles, 0) }}</dd>
+      <dd>{{ format(s.triangles, 0) }}</dd>
       <dt>Texturas</dt>
       <dd>{{ s.textures }}</dd>
       <dt>VRAM</dt>
-      <dd>{{ formatNumber(s.vramMB, 0) }} MB</dd>
+      <dd>{{ format(s.vramMB, 0) }} MB</dd>
       <dt>Calidad</dt>
       <dd>{{ s.quality }}</dd>
       <dt>Profundidad</dt>

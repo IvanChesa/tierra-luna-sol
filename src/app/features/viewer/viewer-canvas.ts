@@ -5,24 +5,19 @@ import {
   Injector,
   afterNextRender,
   computed,
-  effect,
   inject,
   input,
   isDevMode,
+  output,
   signal,
   viewChild,
 } from '@angular/core';
-import type {
-  ExplorerView,
-  FrameStats,
-  QualitySetting,
-  SceneEngineApi,
-  SceneEngineOptions,
-} from '../../scene';
-import { readQualityPreference, writeQualityPreference } from './quality-preference';
+import { formatNumber } from '../../core/format';
+import type { ExplorerView, FrameStats, SceneEngineApi } from '../../scene';
+import { SimulationStore } from '../../state/simulation.store';
+import { ExplorerSession } from '../explorer-ui/explorer-session';
+import { canvasCommand } from '../shortcuts/shortcuts';
 import { viewerErrorText } from './viewer-errors';
-import { CAPTURE_DATE, ViewerParams, parseViewerParams } from './viewer-params';
-import { ViewerPoster } from './viewer-poster';
 
 /** Lo que el modo de captura expone a los scripts de Playwright (capturas, póster y mediciones). */
 export interface ViewerDebugHandle {
@@ -42,37 +37,39 @@ const VIEW_LABELS: Readonly<Record<ExplorerView, string>> = {
   moon: 'Vista 3D de la Luna',
 };
 
+/** Giro por pulsación de una flecha en el lienzo (rad); con Mayús, el triple. */
+const ORBIT_STEP = (6 * Math.PI) / 180;
+
 /**
  * El lienzo 3D (D10): crea el motor en `afterNextRender` con un `import()` dinámico, así three y
  * astronomy-engine nunca van en el bundle inicial ni se ejecutan al prerenderizar (PLAN §4.6). El
- * motor persiste mientras el layout del visor esté vivo, aunque cambie la vista.
+ * motor persiste mientras el explorador esté vivo, aunque cambie la vista; la sesión lo conecta a
+ * los stores. Con el foco, el lienzo se controla con el teclado (PLAN 3.c.6).
  *
- * Robustez (revisión de la fase 2):
- * - cada intento usa un `<canvas>` nuevo: al liberar el motor se fuerza la pérdida del contexto del
- *   lienzo anterior (para no acumular contextos), así que no se puede reutilizar;
- * - después de cada `await` se comprueba que el componente y el intento siguen vivos: si no, no se
- *   crea ningún motor (no quedan contextos WebGL huérfanos);
- * - el póster sigue debajo hasta el primer frame, y también si hay un error.
+ * Robustez (revisión de la fase 2): cada intento usa un `<canvas>` nuevo (al liberar el motor se
+ * fuerza la pérdida del contexto del anterior) y después de cada `await` se comprueba que el
+ * componente y el intento siguen vivos, así que nunca queda un contexto WebGL huérfano.
  */
 @Component({
   selector: 'tls-viewer-canvas',
-  imports: [ViewerPoster],
   templateUrl: './viewer-canvas.html',
   styleUrl: './viewer-canvas.css',
   host: { '[class.is-ready]': "status() === 'ready'" },
 })
 export class ViewerCanvas {
   readonly view = input.required<ExplorerView>();
+  /** El primer frame completo ya está pintado. */
+  readonly ready = output<void>();
 
+  private readonly session = inject(ExplorerSession);
+  private readonly sim = inject(SimulationStore);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
   private readonly canvas = viewChild<ElementRef<HTMLCanvasElement>>('canvas');
   private readonly labelLayer = viewChild<ElementRef<HTMLElement>>('labels');
   private engine: SceneEngineApi | null = null;
   private observer: ResizeObserver | null = null;
-  private storage: Storage | undefined;
-  private params: ViewerParams | null = null;
-  /** Intento en curso: uno nuevo (Reintentar) invalida los `await` del anterior. */
+  /** Intento en curso: uno nuevo («Reintentar») invalida los `await` del anterior. */
   private attemptToken = 0;
   private destroyed = false;
 
@@ -82,20 +79,14 @@ export class ViewerCanvas {
   protected readonly progress = signal(0);
   protected readonly errorMessage = signal('');
   protected readonly stats = signal<FrameStats | null>(null);
-  protected readonly quality = signal<QualitySetting>('auto');
-  protected readonly capture = signal(false);
   protected readonly showStats = computed(
-    () => isDevMode() && !this.capture() && this.stats() !== null,
+    () => isDevMode() && !this.session.capture && this.stats() !== null,
   );
   protected readonly label = computed(() => VIEW_LABELS[this.view()]);
+  protected readonly percent = computed(() => formatNumber(this.progress() * 100, 0));
 
   constructor() {
     afterNextRender(() => void this.start());
-    // Sincroniza la vista con el motor (sistema externo): el único uso de effect() aquí.
-    effect(() => {
-      const view = this.view();
-      this.engine?.setView(view);
-    });
     inject(DestroyRef).onDestroy(() => {
       this.destroyed = true;
       this.stop();
@@ -110,54 +101,55 @@ export class ViewerCanvas {
     afterNextRender(() => void this.start(), { injector: this.injector });
   }
 
-  protected changeQuality(event: Event): void {
-    const value = (event.target as HTMLSelectElement).value;
-    const setting = (['auto', 'high', 'medium', 'low'] as const).find((v) => v === value) ?? 'auto';
-    this.quality.set(setting);
-    writeQualityPreference(this.storage, setting);
-    this.engine?.setQuality(setting);
+  protected format(value: number, digits = 1): string {
+    return formatNumber(value, digits);
   }
 
-  protected formatNumber(value: number, digits = 1): string {
-    return value.toLocaleString('es-ES', { maximumFractionDigits: digits });
+  /** Teclado con el foco en el lienzo: flechas para girar, Inicio y Espacio (los demás, globales). */
+  protected onKeydown(event: KeyboardEvent): void {
+    const command = canvasCommand(event);
+    if (!command) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const step = event.shiftKey ? 3 * ORBIT_STEP : ORBIT_STEP;
+    switch (command) {
+      case 'orbit-left':
+        this.session.orbit(-step, 0);
+        break;
+      case 'orbit-right':
+        this.session.orbit(step, 0);
+        break;
+      case 'orbit-up':
+        this.session.orbit(0, step);
+        break;
+      case 'orbit-down':
+        this.session.orbit(0, -step);
+        break;
+      case 'overview':
+        this.session.overview();
+        break;
+      case 'toggle-play':
+        this.sim.togglePlaying();
+        break;
+    }
   }
 
   private async start(): Promise<void> {
-    const doc = this.host.nativeElement.ownerDocument;
-    const win = doc.defaultView;
+    const win = this.host.nativeElement.ownerDocument.defaultView;
     const canvas = this.canvas()?.nativeElement;
     const labelLayer = this.labelLayer()?.nativeElement;
     if (!win || !canvas || !labelLayer || this.destroyed) return;
     const token = ++this.attemptToken;
     const alive = () => !this.destroyed && token === this.attemptToken;
-    this.storage = safeLocalStorage(win);
-    const params = parseViewerParams(win.location.search);
-    this.params = params;
-    this.capture.set(params.capture);
-    const quality =
-      params.quality ?? (params.capture ? 'high' : readQualityPreference(this.storage));
-    this.quality.set(quality);
     this.status.set('loading');
     this.progress.set(0);
-    if (params.capture) win.__tlsViewer = { ready: false, engine: null };
+    const capture = this.session.capture;
+    if (capture) win.__tlsViewer = { ready: false, engine: null };
     try {
       const { createSceneEngine } = await import('../../scene');
       // Mientras bajaba el chunk se ha podido salir del explorador o pulsar «Reintentar».
       if (!alive()) return;
-      const options: SceneEngineOptions = {
-        canvas,
-        labelLayer,
-        time: params.time ?? (params.capture ? CAPTURE_DATE : new Date()),
-        view: this.view(),
-        focus: params.body,
-        scale: params.scale ?? 'illustrative',
-        quality,
-        reducedMotion: win.matchMedia('(prefers-reduced-motion: reduce)').matches,
-        capture: params.capture,
-        depth: params.depth ?? 'auto',
-        background: params.background ?? undefined,
-      };
-      const engine = createSceneEngine(options);
+      const engine = createSceneEngine({ ...this.session.engineOptions(), canvas, labelLayer });
       this.engine = engine;
       if (win.__tlsViewer) win.__tlsViewer.engine = engine;
       engine.on('progress', ({ loaded, total }) => {
@@ -166,13 +158,14 @@ export class ViewerCanvas {
       engine.on('ready', () => {
         if (!alive()) return;
         this.status.set('ready');
+        this.ready.emit();
         if (win.__tlsViewer) win.__tlsViewer.ready = true;
       });
       engine.on('error', ({ message }) => {
         if (alive()) this.fail(message);
       });
       engine.on('frameStats', (stats) => this.stats.set(stats));
-      engine.on('bodyPicked', ({ id }) => engine.focus(id));
+      this.session.attachEngine(engine);
       this.observer = new ResizeObserver(() => this.resize());
       this.observer.observe(this.host.nativeElement);
       this.resize();
@@ -198,17 +191,10 @@ export class ViewerCanvas {
     this.attemptToken++;
     this.observer?.disconnect();
     this.observer = null;
+    if (this.engine) this.session.detachEngine(this.engine);
     this.engine?.dispose();
     this.engine = null;
     const win = this.host.nativeElement.ownerDocument.defaultView;
-    if (win?.__tlsViewer && this.params?.capture) win.__tlsViewer = { ready: false, engine: null };
-  }
-}
-
-function safeLocalStorage(win: Window): Storage | undefined {
-  try {
-    return win.localStorage;
-  } catch {
-    return undefined;
+    if (win?.__tlsViewer && this.session.capture) win.__tlsViewer = { ready: false, engine: null };
   }
 }

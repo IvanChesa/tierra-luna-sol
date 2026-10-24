@@ -1,65 +1,56 @@
-import { Component, inject } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
-import { ExplorerViewState } from '../../state/explorer-view';
-import { ViewerCanvas } from './viewer-canvas';
+import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { ActivatedRoute, RouterLink, RouterOutlet } from '@angular/router';
+import { SITE_CONFIG } from '../../core/site.config';
+import type { ExplorerView } from '../../scene';
+import { ExplorerUi } from '../explorer-ui/explorer-ui';
+import { ViewSwitcher } from '../view-switcher/view-switcher';
 import { ViewerPoster } from './viewer-poster';
+
+const VIEWS: readonly ExplorerView[] = ['system', 'earth', 'moon'];
+/** El póster se quita cuando el lienzo ya se ve (su fundido dura `--duration-base`). */
+const POSTER_FADE_MS = 400;
 
 /**
  * Layout del explorador (D10): ruta padre de `/`, `/explorar/tierra` y `/explorar/luna`. Conserva el
- * lienzo y el motor mientras se cambia de vista; las páginas hijas solo ponen su texto y su vista.
+ * lienzo, el motor y la interfaz mientras se cambia de vista; las páginas hijas solo ponen su texto y
+ * su vista va en los datos de la ruta (`data.view`).
  *
- * Primero se pintan el texto (prerenderizado) y el póster; el 3D llega con `@defer` cuando el
- * navegador está libre y se crea en `afterNextRender` (PLAN §4.6 y §4.7).
+ * Lo prerenderizado es el marco: el póster, el selector de vista, el texto de la vista y los fondos
+ * de los paneles (así nada se mueve cuando llega el resto). El lienzo y toda la interfaz (stores,
+ * controles, índice, ficha) llegan en un `@defer` cuando el navegador está libre: nada de eso va en
+ * el bundle inicial (PLAN §4.6).
  */
 @Component({
   selector: 'tls-viewer-layout',
-  imports: [RouterOutlet, ViewerCanvas, ViewerPoster],
-  template: `
-    <section class="viewer" aria-label="Explorador">
-      <div class="viewer__stage">
-        @defer (on idle) {
-          <tls-viewer-canvas [view]="state.view()" />
-        } @placeholder {
-          <tls-viewer-poster [view]="state.view()" />
-        }
-      </div>
-      <div class="viewer__text">
-        <router-outlet />
-      </div>
-    </section>
-  `,
-  styles: `
-    :host {
-      display: flex;
-      flex: 1;
-      min-height: 0;
-    }
-
-    .viewer {
-      position: relative;
-      flex: 1;
-      min-height: 26rem;
-      background: var(--color-bg);
-    }
-
-    .viewer__stage {
-      position: absolute;
-      inset: 0;
-    }
-
-    .viewer__text {
-      position: absolute;
-      top: var(--space-4);
-      left: var(--space-4);
-      max-width: min(30rem, calc(100% - 2 * var(--space-4)));
-      padding: var(--space-4);
-      background: color-mix(in srgb, var(--color-bg) 82%, transparent);
-      border: var(--border-width) solid var(--color-line);
-      border-radius: var(--radius-md);
-      pointer-events: auto;
-    }
-  `,
+  imports: [RouterOutlet, RouterLink, ViewSwitcher, ViewerPoster, ExplorerUi],
+  templateUrl: './viewer-layout.html',
+  styleUrl: './viewer-layout.css',
 })
 export class ViewerLayout {
-  protected readonly state = inject(ExplorerViewState);
+  private readonly route = inject(ActivatedRoute);
+  protected readonly site = SITE_CONFIG;
+  protected readonly view = signal<ExplorerView>('system');
+  /** El 3D ya está pintado: el póster puede irse. */
+  protected readonly posterGone = signal(false);
+  private posterTimer: ReturnType<typeof setTimeout> | null = null;
+
+  constructor() {
+    inject(DestroyRef).onDestroy(() => {
+      if (this.posterTimer !== null) clearTimeout(this.posterTimer);
+    });
+  }
+
+  /** La ruta hija activa dice qué vista toca (también al prerenderizar). */
+  protected onActivate(): void {
+    const value: unknown = this.route.firstChild?.snapshot.data['view'];
+    this.view.set(VIEWS.find((view) => view === value) ?? 'system');
+  }
+
+  protected onReady(): void {
+    if (this.posterGone() || this.posterTimer !== null) return;
+    this.posterTimer = setTimeout(() => {
+      this.posterTimer = null;
+      this.posterGone.set(true);
+    }, POSTER_FADE_MS);
+  }
 }

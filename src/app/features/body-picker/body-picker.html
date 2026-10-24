@@ -1,0 +1,77 @@
+<div class="index">
+  <div class="index__head" aria-hidden="true">
+    <span>Cuerpo</span>
+    <span>Distancia</span>
+  </div>
+  <h2 class="visually-hidden" id="index-title">Cuerpos del sistema solar</h2>
+
+  <ul
+    class="tree"
+    role="tree"
+    aria-labelledby="index-title"
+    tabindex="-1"
+    (keydown)="onKeydown($event)"
+    (click)="onClick($event)"
+  >
+    @for (node of roots; track node.id; let i = $index) {
+      <li
+        class="tree__item"
+        role="treeitem"
+        [id]="'tree-' + node.id"
+        [attr.data-body]="node.id"
+        aria-level="1"
+        [attr.aria-setsize]="roots.length"
+        [attr.aria-posinset]="i + 1"
+        [attr.aria-expanded]="node.children.length > 0 ? isExpanded(node.id) : null"
+        [attr.aria-selected]="selected() === node.id"
+        [attr.aria-labelledby]="'tree-' + node.id + '-name'"
+        [attr.aria-describedby]="values().has(node.id) ? 'tree-' + node.id + '-value' : null"
+        [attr.tabindex]="tabStop() === node.id ? 0 : -1"
+      >
+        <div class="row">
+          @if (node.children.length > 0) {
+            <span class="row__toggle" [class.is-open]="isExpanded(node.id)">
+              <tls-icon name="chevron" />
+            </span>
+          } @else {
+            <span class="row__toggle row__toggle--none"></span>
+          }
+          <span class="row__name" [id]="'tree-' + node.id + '-name'">{{ node.name }}</span>
+          <span class="row__value" [id]="'tree-' + node.id + '-value'">{{
+            values().get(node.id)
+          }}</span>
+        </div>
+
+        @if (isExpanded(node.id)) {
+          <ul class="tree__group" role="group">
+            @for (moon of children(node); track moon.id; let j = $index) {
+              <li
+                class="tree__item tree__item--moon"
+                role="treeitem"
+                [id]="'tree-' + moon.id"
+                [attr.data-body]="moon.id"
+                aria-level="2"
+                [attr.aria-setsize]="node.children.length"
+                [attr.aria-posinset]="j + 1"
+                [attr.aria-selected]="selected() === moon.id"
+                [attr.aria-labelledby]="'tree-' + moon.id + '-name'"
+                [attr.aria-describedby]="'tree-' + moon.id + '-value'"
+                [attr.tabindex]="tabStop() === moon.id ? 0 : -1"
+              >
+                <div class="row">
+                  <span class="row__toggle row__toggle--none"></span>
+                  <span class="row__name" [id]="'tree-' + moon.id + '-name'">{{ moon.name }}</span>
+                  <span class="row__value" [id]="'tree-' + moon.id + '-value'">{{
+                    values().get(moon.id)
+                  }}</span>
+                </div>
+              </li>
+            }
+          </ul>
+        }
+      </li>
+    }
+  </ul>
+
+  <p class="index__note">Planetas: distancia al Sol. Lunas: a su planeta.</p>
+</div>

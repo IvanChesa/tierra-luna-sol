@@ -1,5 +1,6 @@
 import { CanMatchFn, ResolveFn, Routes } from '@angular/router';
 import { findPlanet } from './data/body-index';
+import type { ExplorerView } from './scene';
 
 /** Solo casan los ids del catálogo; el resto cae en la 404. */
 const planetExists: CanMatchFn = (_route, segments) =>
@@ -14,24 +15,28 @@ const loadNotFound = () => import('./pages/not-found/not-found-page').then((m) =
 
 export const routes: Routes = [
   {
-    // El explorador (D10): un layout con el lienzo 3D persistente y una ruta hija por vista.
+    // El explorador (D10): un layout con el lienzo 3D persistente y una ruta hija por vista. Cada
+    // hija dice su vista en `data.view` (la lee el layout: no hace falta ningún estado inicial).
     path: '',
     loadComponent: () => import('./features/viewer/viewer-layout').then((m) => m.ViewerLayout),
     children: [
       {
         path: '',
         pathMatch: 'full',
+        data: { view: 'system' satisfies ExplorerView },
         loadComponent: () => import('./pages/home/home-page').then((m) => m.HomePage),
       },
       {
         path: 'explorar/tierra',
         title: 'La Tierra',
+        data: { view: 'earth' satisfies ExplorerView },
         loadComponent: () =>
           import('./pages/explore-earth/explore-earth-page').then((m) => m.ExploreEarthPage),
       },
       {
         path: 'explorar/luna',
         title: 'La Luna',
+        data: { view: 'moon' satisfies ExplorerView },
         loadComponent: () =>
           import('./pages/explore-moon/explore-moon-page').then((m) => m.ExploreMoonPage),
       },

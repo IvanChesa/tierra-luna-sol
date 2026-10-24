@@ -1,0 +1,25 @@
+<section class="explorer" aria-label="Explorador">
+  @if (!posterGone()) {
+    <tls-viewer-poster class="explorer__poster" [view]="view()" />
+  }
+
+  <!-- Fondos de los paneles: su tamaño es el encuadre que respeta la interfaz (data-chrome). -->
+  <div class="explorer__column" data-chrome></div>
+  <div class="explorer__sheet" data-chrome></div>
+
+  <div class="explorer__lead">
+    <tls-view-switcher [view]="view()" />
+    <div class="explorer__intro">
+      <router-outlet (activate)="onActivate()" />
+    </div>
+  </div>
+
+  <p class="explorer__credits">
+    Un proyecto de <a [href]="site.author.url">{{ site.author.name }}</a> ·
+    <a routerLink="/creditos">Créditos</a>
+  </p>
+
+  @defer (on idle) {
+    <tls-explorer-ui [view]="view()" (ready)="onReady()" />
+  }
+</section>
