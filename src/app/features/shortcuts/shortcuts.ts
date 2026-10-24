@@ -104,9 +104,14 @@ const normalize = (key: string): string => (key.length === 1 ? key.toLowerCase()
 /** Los atajos no se aplican con Ctrl, Cmd o Alt (son del navegador). Mayús sí vale (`?`, `+`). */
 const hasModifier = (event: KeyLike): boolean => event.ctrlKey || event.metaKey || event.altKey;
 
-export function globalCommand(event: KeyLike): ShortcutCommand | null {
+/**
+ * Orden global de una tecla. Con los atajos de una sola tecla desactivados (WCAG 2.1.4; se activan
+ * y desactivan en el diálogo de atajos) solo queda `Esc`, que no es una tecla de carácter.
+ */
+export function globalCommand(event: KeyLike, singleKey = true): ShortcutCommand | null {
   if (hasModifier(event)) return null;
-  return GLOBAL_KEYS[normalize(event.key)] ?? null;
+  const command = GLOBAL_KEYS[normalize(event.key)] ?? null;
+  return singleKey || command === 'escape' ? command : null;
 }
 
 export function canvasCommand(event: KeyLike): CanvasCommand | null {

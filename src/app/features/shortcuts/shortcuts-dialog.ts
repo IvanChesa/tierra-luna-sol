@@ -1,12 +1,14 @@
 import { Component, ElementRef, effect, inject, viewChild } from '@angular/core';
 import { ExplorerStore } from '../../state/explorer.store';
+import { ExplorerSession } from '../explorer-ui/explorer-session';
 import { Icon } from '../viewer/icon';
 import { SHORTCUT_HELP } from './shortcuts';
 
 /**
  * Diálogo de atajos de teclado (PLAN 3.d.10), con `?`. Un `<dialog>` nativo y modal: el navegador
  * lleva el foco dentro, lo cierra con `Esc` y lo devuelve al cerrar. Lo que muestra sale de la misma
- * tabla que usan los manejadores de teclado (`shortcuts.ts`).
+ * tabla que usan los manejadores de teclado (`shortcuts.ts`). Aquí se desactivan los atajos de una
+ * sola tecla (WCAG 2.1.4).
  */
 @Component({
   selector: 'tls-shortcuts-dialog',
@@ -22,6 +24,19 @@ import { SHORTCUT_HELP } from './shortcuts';
       </header>
       <p class="dialog__intro">
         Funcionan en todo el explorador, salvo mientras escribes en un campo.
+      </p>
+      <label class="dialog__option">
+        <input
+          type="checkbox"
+          [checked]="explorer.singleKeyShortcuts()"
+          aria-describedby="shortcuts-option-hint"
+          (change)="toggleSingleKey($event)"
+        />
+        Atajos de una sola tecla
+      </label>
+      <p id="shortcuts-option-hint" class="dialog__hint">
+        Desactívalos si usas el control por voz o si se te disparan sin querer. Esc, las flechas del
+        visor y los botones siguen funcionando.
       </p>
       @for (group of groups; track group.title) {
         <h3>{{ group.title }}</h3>
@@ -79,10 +94,28 @@ import { SHORTCUT_HELP } from './shortcuts';
       font-weight: var(--font-weight-strong);
     }
 
-    .dialog__intro {
+    .dialog__intro,
+    .dialog__hint {
       margin: 0;
       color: var(--color-text-muted);
       font-size: var(--text-sm);
+    }
+
+    .dialog__option {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      min-height: var(--tap-target);
+      margin-top: var(--space-4);
+      font-weight: var(--font-weight-strong);
+      cursor: pointer;
+    }
+
+    .dialog__option input {
+      width: 1.125rem;
+      height: 1.125rem;
+      margin: 0;
+      accent-color: var(--color-accent);
     }
 
     dl {
@@ -140,7 +173,8 @@ import { SHORTCUT_HELP } from './shortcuts';
   `,
 })
 export class ShortcutsDialog {
-  private readonly explorer = inject(ExplorerStore);
+  protected readonly explorer = inject(ExplorerStore);
+  private readonly session = inject(ExplorerSession);
   private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
   protected readonly groups = SHORTCUT_HELP;
 
@@ -162,5 +196,9 @@ export class ShortcutsDialog {
 
   protected closed(): void {
     this.explorer.helpOpen.set(false);
+  }
+
+  protected toggleSingleKey(event: Event): void {
+    this.session.setSingleKeyShortcuts((event.target as HTMLInputElement).checked);
   }
 }

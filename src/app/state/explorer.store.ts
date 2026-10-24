@@ -31,6 +31,8 @@ export class ExplorerStore {
   readonly panelOpen = signal(false);
   /** Diálogo de atajos de teclado abierto. */
   readonly helpOpen = signal(false);
+  /** Atajos de una sola tecla activos (WCAG 2.1.4: se pueden desactivar en el diálogo de atajos). */
+  readonly singleKeyShortcuts = signal(true);
   readonly tour = signal<TourState | null>(null);
 
   /** La vista la decide la ruta: el layout del explorador pasa aquí la señal que la lleva. */

@@ -92,7 +92,7 @@ export class ExplorerUi {
     if (event.defaultPrevented || this.explorer.helpOpen()) return;
     // Los atajos no actúan mientras se escribe (PLAN 3.d.10).
     if (isTextField(event.target instanceof Element ? event.target : null)) return;
-    const command = globalCommand(event);
+    const command = globalCommand(event, this.explorer.singleKeyShortcuts());
     if (!command || !this.run(command)) return;
     event.preventDefault();
   }

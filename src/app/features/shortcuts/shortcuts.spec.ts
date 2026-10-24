@@ -29,6 +29,13 @@ describe('shortcuts: atajos de teclado', () => {
     expect(canvasCommand(key('ArrowLeft', { altKey: true }))).toBeNull();
   });
 
+  it('desactivados los atajos de una tecla (WCAG 2.1.4), solo queda Esc', () => {
+    expect(globalCommand(key('k'), false)).toBeNull();
+    expect(globalCommand(key('?'), false)).toBeNull();
+    expect(globalCommand(key('2'), false)).toBeNull();
+    expect(globalCommand(key('Escape'), false)).toBe('escape');
+  });
+
   it('las flechas, Inicio y el espacio solo son del lienzo', () => {
     expect(globalCommand(key('ArrowLeft'))).toBeNull();
     expect(canvasCommand(key('ArrowLeft'))).toBe('orbit-left');

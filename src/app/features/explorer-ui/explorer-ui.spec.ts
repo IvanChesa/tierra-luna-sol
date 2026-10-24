@@ -39,7 +39,10 @@ async function render() {
 }
 
 describe('ExplorerUi: atajos de teclado del explorador', () => {
-  afterEach(() => window.history.replaceState({}, '', '/'));
+  afterEach(() => {
+    window.history.replaceState({}, '', '/');
+    window.localStorage.removeItem('tls.atajos');
+  });
 
   it('K reproduce y pausa; «,» y «.» cambian de escalón; R invierte; N vuelve a ahora', async () => {
     const { sim, press } = await render();
@@ -84,6 +87,26 @@ describe('ExplorerUi: atajos de teclado del explorador', () => {
     });
     press('1'); // ya está en la vista del sistema solar: no hace nada
     expect(navigate).toHaveBeenCalledTimes(1);
+  });
+
+  it('se pueden desactivar en el diálogo (WCAG 2.1.4): entonces solo queda Esc', async () => {
+    const { sim, explorer, press, host, fixture } = await render();
+    const option = host.querySelector<HTMLInputElement>('.dialog__option input');
+    expect(option?.checked).toBe(true);
+    option?.click();
+    fixture.detectChanges();
+    expect(explorer.singleKeyShortcuts()).toBe(false);
+    expect(window.localStorage.getItem('tls.atajos')).toBe('no');
+    press('k');
+    expect(sim.playing()).toBe(false);
+    press('Escape');
+    expect(explorer.panelOpen()).toBe(false);
+    option?.click();
+    fixture.detectChanges();
+    expect(window.localStorage.getItem('tls.atajos')).toBeNull();
+    press('k');
+    expect(sim.playing()).toBe(true);
+    sim.pause();
   });
 
   it('no actúan con el foco en un campo de texto ni con Ctrl, Cmd o Alt', async () => {

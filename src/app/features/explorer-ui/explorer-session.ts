@@ -11,6 +11,7 @@ import type {
 import { ExplorerStore } from '../../state/explorer.store';
 import { SystemPositions } from '../../state/positions';
 import { SimulationEngine, SimulationStore } from '../../state/simulation.store';
+import { readSingleKeyShortcuts, writeSingleKeyShortcuts } from '../shortcuts/shortcut-preference';
 import { readQualityPreference, writeQualityPreference } from '../viewer/quality-preference';
 import {
   CAPTURE_DATE,
@@ -95,6 +96,7 @@ export class ExplorerSession {
       quality: this.params.quality ?? (this.capture ? 'high' : readQualityPreference(this.storage)),
     });
     this.explorer.panelOpen.set(this.params.body !== null);
+    this.explorer.singleKeyShortcuts.set(readSingleKeyShortcuts(this.storage));
 
     // La vista sale de la ruta: el motor y la selección la siguen (sistema externo).
     effect(() => {
@@ -213,6 +215,12 @@ export class ExplorerSession {
   setQuality(setting: Parameters<SimulationStore['setQuality']>[0]): void {
     this.sim.setQuality(setting);
     writeQualityPreference(this.storage, setting);
+  }
+
+  /** Activa o desactiva los atajos de una sola tecla (y lo recuerda). */
+  setSingleKeyShortcuts(enabled: boolean): void {
+    this.explorer.singleKeyShortcuts.set(enabled);
+    writeSingleKeyShortcuts(this.storage, enabled);
   }
 
   dismissWarning(index: number): void {
