@@ -28,6 +28,9 @@ export const scale = (v: Vec3, k: number): Vec3 => vec3(v.x * k, v.y * k, v.z * 
 
 export const dot = (a: Vec3, b: Vec3): number => a.x * b.x + a.y * b.y + a.z * b.z;
 
+export const cross = (a: Vec3, b: Vec3): Vec3 =>
+  vec3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+
 export const length = (v: Vec3): number => Math.hypot(v.x, v.y, v.z);
 
 export const normalize = (v: Vec3): Vec3 => {
@@ -41,9 +44,28 @@ export const lerp = (a: Vec3, b: Vec3, t: number): Vec3 =>
 
 /** Ángulo entre dos vectores, en grados. Usa `atan2` para no perder precisión cerca de 0°. */
 export function angleBetweenDeg(a: Vec3, b: Vec3): number {
-  const c = vec3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
-  return (Math.atan2(length(c), dot(a, b)) * 180) / Math.PI;
+  return (Math.atan2(length(cross(a, b)), dot(a, b)) * 180) / Math.PI;
 }
+
+/** Columna `k` (0, 1 o 2) de una matriz: la imagen del eje X, Y o Z. */
+export function columnOf(m: Mat3, k: 0 | 1 | 2): Vec3 {
+  if (k === 0) return vec3(m[0], m[3], m[6]);
+  if (k === 1) return vec3(m[1], m[4], m[7]);
+  return vec3(m[2], m[5], m[8]);
+}
+
+/** Matriz cuyas columnas son `x`, `y` y `z`. */
+export const fromColumns = (x: Vec3, y: Vec3, z: Vec3): Mat3 => [
+  x.x,
+  y.x,
+  z.x,
+  x.y,
+  y.y,
+  z.y,
+  x.z,
+  y.z,
+  z.z,
+];
 
 export const mulMat3Vec = (m: Mat3, v: Vec3): Vec3 =>
   vec3(
