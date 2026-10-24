@@ -79,6 +79,22 @@ export class CameraRig {
     if (immediate) this.snap();
   }
 
+  /** Coloca la cámara en una pose exacta (los vuelos la calculan en cada frame). */
+  setPose(pose: RigPose): void {
+    this.distance = this.targetDistance = pose.distance;
+    this.azimuth = this.targetAzimuth = pose.azimuth;
+    this.elevation = this.targetElevation = clampElevation(pose.elevation);
+    this.inertiaAzimuth = this.inertiaElevation = 0;
+  }
+
+  /** Gira el objetivo con amortiguación (el teclado). Con `immediate`, salta. */
+  nudge(deltaAzimuth: number, deltaElevation: number, immediate = false): void {
+    this.targetAzimuth += deltaAzimuth;
+    this.targetElevation = clampElevation(this.targetElevation + deltaElevation);
+    this.inertiaAzimuth = this.inertiaElevation = 0;
+    if (immediate) this.snap();
+  }
+
   /** Gira directamente (arrastre del usuario), sin amortiguación. */
   rotate(deltaAzimuth: number, deltaElevation: number): void {
     this.azimuth = this.targetAzimuth = this.azimuth + deltaAzimuth;
@@ -171,12 +187,15 @@ export class CameraRig {
     );
   }
 
-  /** Coloca una cámara de Three mirando al foco, con la eclíptica norte hacia arriba. */
-  applyTo(camera: PerspectiveCamera): void {
+  /**
+   * Coloca una cámara de Three mirando al foco (o a `look`, relativo a él, durante un vuelo), con la
+   * eclíptica norte hacia arriba.
+   */
+  applyTo(camera: PerspectiveCamera, look: Vec3 | null = null): void {
     const p = this.position;
     camera.position.set(p.x, p.y, p.z);
     camera.up.set(0, 1, 0);
-    camera.lookAt(0, 0, 0);
+    camera.lookAt(look?.x ?? 0, look?.y ?? 0, look?.z ?? 0);
   }
 
   private clampDistance(d: number): number {

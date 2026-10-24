@@ -5,6 +5,7 @@
  * lista accesible de cuerpos es HTML de la interfaz (fase 3). Un clic en una etiqueta elige el cuerpo.
  */
 import type { ScreenBody } from './picking';
+import type { ViewInsets } from './types';
 
 export type LabelKind = 'star' | 'planet' | 'moon';
 
@@ -61,6 +62,13 @@ function priority(info: LabelInfo, index: number, selected: number, focusSystem:
   return info.parentIndex === focusSystem ? 600 : 400;
 }
 
+export interface LabelLayoutOptions {
+  /** Márgenes tapados por la interfaz: los nombres solo se colocan en la parte visible. */
+  readonly insets?: ViewInsets;
+  /** 1 para los cuerpos que no se dibujan (velocidades altas, §4.5): tampoco llevan nombre. */
+  readonly hidden?: Uint8Array | null;
+}
+
 interface Obstacle {
   readonly index: number;
   readonly x: number;
@@ -78,10 +86,10 @@ const hitsDisc = (box: LabelBox, disc: Obstacle): boolean => {
 /**
  * Decide qué etiquetas se ven y dónde. Voraz por prioridad: cada nombre prueba cuatro posiciones
  * (derecha, izquierda, arriba y abajo del disco) y se descarta si en todas choca con otro nombre ya
- * colocado o con el disco de otro cuerpo visible (o el halo del Sol), si su cuerpo está tapado o fuera
- * de la pantalla, si es una luna pegada a su planeta en pantalla (los sistemas de lunas lejanos se ven
- * como un solo punto) o si es una luna de un planeta sin nombre visible. La seleccionada se muestra
- * siempre que esté en pantalla.
+ * colocado o con el disco de otro cuerpo visible (o el halo del Sol), si su cuerpo está tapado,
+ * oculto o fuera de la parte visible, si es una luna pegada a su planeta en pantalla (los sistemas de
+ * lunas lejanos se ven como un solo punto) o si es una luna de un planeta sin nombre visible. La
+ * seleccionada se muestra siempre que esté en pantalla.
  */
 export function layoutLabels(
   bodies: readonly ScreenBody[],
@@ -90,10 +98,17 @@ export function layoutLabels(
   viewport: { readonly width: number; readonly height: number },
   selected: number,
   focusSystem: number,
+  options: LabelLayoutOptions = {},
 ): LabelBox[] {
+  const insets = options.insets ?? { top: 0, right: 0, bottom: 0, left: 0 };
+  const hidden = options.hidden;
+  const minX = insets.left;
+  const minY = insets.top;
+  const maxX = viewport.width - insets.right;
+  const maxY = viewport.height - insets.bottom;
   const byIndex = new Map(bodies.map((body) => [body.index, body]));
   const order = bodies
-    .filter((body) => body.onScreen && !body.occluded)
+    .filter((body) => body.onScreen && !body.occluded && hidden?.[body.index] !== 1)
     .filter((body) => {
       const info = infos[body.index];
       if (!info || body.index === selected || info.kind !== 'moon') return true;
@@ -145,8 +160,7 @@ export function layoutLabels(
           height: h,
           marker: body.radiusPx < MARKER_RADIUS_PX,
         };
-        const inside =
-          box.x >= 0 && box.x + w <= viewport.width && box.y >= 0 && box.y + h <= viewport.height;
+        const inside = box.x >= minX && box.x + w <= maxX && box.y >= minY && box.y + h <= maxY;
         if (!inside || placed.some((other) => overlaps(box, other))) continue;
         if (avoidDiscs && obstacles.some((d) => d.index !== body.index && hitsDisc(box, d))) {
           continue;
@@ -230,6 +244,15 @@ export class LabelLayer {
       size.height = rect.height || 18;
     });
     return this.sizes;
+  }
+
+  /** Muestra u oculta toda la capa (la vista limpia). */
+  setVisible(visible: boolean): void {
+    this.root.hidden = !visible;
+  }
+
+  get visibleLayer(): boolean {
+    return !this.root.hidden;
   }
 
   update(boxes: readonly LabelBox[], selected: number): void {

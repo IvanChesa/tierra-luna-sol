@@ -13,7 +13,10 @@ import type { Texture } from 'three';
 import { decodeStarCatalog } from '../ephemeris/stars';
 import type { SystemState } from '../ephemeris/system-state';
 import type { PlacementInput } from '../ephemeris/scale';
-import { CameraRig } from './camera/rig';
+import { Vec3, vec3 } from '../ephemeris/vec3';
+import { AliasingState, MotionBody } from './aliasing';
+import { FOCUS_FLIGHT_MS, FRAME_START, Flight, VIEW_TRIP_MS, flightFrame } from './camera/flight';
+import { CameraRig, RigPose } from './camera/rig';
 import { attachPointerControls } from './camera/pointer';
 import { SimClock } from './clock';
 import { FRAME_TRANSITION_MS, FrameController, frameFor } from './frames';
@@ -52,8 +55,16 @@ import type {
   SceneEngineEventName,
   SceneEngineEvents,
   SceneEngineOptions,
+  ViewInsets,
 } from './types';
 import { OrbitSource } from './orbits';
+import {
+  NO_INSETS,
+  ViewProjection,
+  approachInsets,
+  sanitizeInsets,
+  viewProjection,
+} from './view-insets';
 import { World } from './world';
 import { illustrativeDistance } from '../ephemeris/scale';
 import { BODY_DATA } from '../data/body-data';
@@ -65,10 +76,12 @@ export const DEFAULT_DEPTH: ResolvedDepthMode = 'logarithmic';
 export const BACKGROUND_COLOR = 0x0d1321;
 
 /**
- * Encuadres: fracción del lado más corto de la vista que ocupa el cuerpo enfocado (así encaja igual
- * en un escritorio apaisado que en un móvil vertical).
+ * Encuadres: fracción del lado más corto de la parte visible que ocupa el cuerpo enfocado (así
+ * encaja igual en un escritorio apaisado que en un móvil vertical, con o sin paneles).
  */
 export const FRAMING_FILL = { body: 0.46, detail: 0.82 } as const;
+/** Campo de visión vertical de la cámara con todo el lienzo visible (grados). */
+export const BASE_FOV_DEG = 40;
 
 /**
  * Distancia de la cámara, en radios del cuerpo, para que ocupe la fracción `fill` del lado más
@@ -83,16 +96,32 @@ export function framingDistanceRadii(fill: number, verticalFovDeg: number, aspec
 /** Elevación de la vista general (rad): una vista oblicua de la eclíptica. */
 const OVERVIEW_ELEVATION = 0.42;
 const OVERVIEW_AZIMUTH = -0.55;
+const OVERVIEW_ANGLES = { azimuth: OVERVIEW_AZIMUTH, elevation: OVERVIEW_ELEVATION } as const;
 /** Exposición por vista (D21). */
 const EXPOSURE: Readonly<Record<ExplorerView, number>> = { system: 1, earth: 1, moon: 1 };
 /** La cámara no entra en el cuerpo enfocado. */
 const MIN_DISTANCE_RADII = 1.12;
-const MAX_FRAME_DT_MS = 100;
+/**
+ * Paso máximo de tiempo entre frames: más que el intervalo del render a 4 Hz, para que el reloj no
+ * se retrase; los saltos de una pestaña oculta los evita `visibilitychange`.
+ */
+const MAX_FRAME_DT_MS = 400;
 const TIME_EVENT_INTERVAL_MS = 200;
 const STATS_INTERVAL_MS = 1000;
+/** Suavizado del encuadre cuando cambian los márgenes de la interfaz (ms). */
+const INSETS_SMOOTHING_MS = 180;
+/**
+ * Render bajo demanda también al reproducir: hasta esta velocidad (s simulados por s real) nada se
+ * mueve un píxel en un frame (a tiempo real, la Tierra gira 0,004° por segundo) y se pinta a 4 Hz.
+ */
+export const SLOW_SPEED = 60;
+export const SLOW_FRAME_MS = 250;
+/** La estela de movimiento cubre el camino del último segundo real (PLAN 3.c.7). */
+export const TRAIL_SECONDS = 1;
 
 export interface FrameScheduler {
-  request(callback: (timeMs: number) => void): number;
+  /** Pide un frame; con `delayMs`, no antes de que pase ese tiempo (el render a 4 Hz). */
+  request(callback: (timeMs: number) => void, delayMs?: number): number;
   cancel(handle: number): void;
 }
 
@@ -124,13 +153,44 @@ export interface EngineDeps {
 }
 
 type CameraFraming =
-  | { readonly kind: 'overview'; distance: number }
+  | { readonly kind: 'overview'; zoom: number }
   | { readonly kind: 'body'; readonly index: number; readonly fill: number; zoom: number };
+
+type TravelKind = SceneEngineEvents['travel']['kind'];
+type Angles = Pick<RigPose, 'azimuth' | 'elevation'>;
+
+/** Un vuelo de cámara en curso (PLAN 3.c.6 y 3.c.8). */
+interface ActiveFlight extends Flight {
+  readonly kind: TravelKind;
+  /** Ángulos de llegada (`null`: los de salida, la cámara solo se acerca o se aleja). */
+  readonly angles: Angles | null;
+  /** Foco de partida: al despegar la cámara aún mira hacia él. */
+  readonly fromIndex: number;
+  /** El usuario ha tomado la cámara: solo termina el giro de la mirada. */
+  userControl: boolean;
+}
 
 type Listener<K extends SceneEngineEventName> = (event: SceneEngineEvents[K]) => void;
 
 const SUN_INDEX = SCENE_BODIES.findIndex((body) => body.kind === 'star');
 const NEPTUNE_INDEX = SCENE_BODIES.findIndex((body) => body.id === 'neptuno');
+
+/** Periodos de cada cuerpo para decidir el aliasing (§4.5), del catálogo. */
+export const MOTION_BODIES: readonly MotionBody[] = SCENE_BODIES.map((body) => {
+  const data = BODY_DATA[body.id];
+  const orbitDays = data.orbit ? Math.abs(data.orbit.periodDays.value) : null;
+  const rotationH = data.physical.rotationPeriodH?.value;
+  return {
+    orbitDays,
+    spinDays: data.physical.synchronousRotation?.value
+      ? orbitDays
+      : rotationH !== undefined
+        ? Math.abs(rotationH) / 24
+        : null,
+    parentIndex: body.parent ? sceneBody(body.parent).index : -1,
+    isMoon: body.kind === 'moon',
+  };
+});
 
 export class SceneEngine implements SceneEngineApi {
   private readonly clock: SimClock;
@@ -142,6 +202,7 @@ export class SceneEngine implements SceneEngineApi {
   private readonly world: World;
   private readonly labels: LabelLayer;
   private readonly adaptive = new AdaptiveQuality(DEFAULT_ADAPTIVE_OPTIONS);
+  private readonly aliasing = new AliasingState(MOTION_BODIES);
   private readonly listeners = new Map<SceneEngineEventName, Set<Listener<SceneEngineEventName>>>();
   private readonly unsubscribe: (() => void)[] = [];
   private readonly uploads: { texture: Texture; resolve: () => void }[] = [];
@@ -155,7 +216,19 @@ export class SceneEngine implements SceneEngineApi {
   private focusIndex: number | null = null;
   private framing: CameraFraming;
   private viewport = { width: 1, height: 1, dpr: 1 };
+  private insetsTarget: ViewInsets = NO_INSETS;
+  private insets: ViewInsets = NO_INSETS;
+  private projection: ViewProjection = viewProjection(1, 1, BASE_FOV_DEG, NO_INSETS);
+  private flight: ActiveFlight | null = null;
+  /** Adónde mira la cámara durante un vuelo (relativo al foco; `null`: al foco). */
+  private look: Vec3 | null = null;
+  /** El próximo frame coloca la cámara directamente (el primero, sin animación de entrada). */
+  private snapCamera = true;
+  /** Intervalo real entre frames (suavizado), para el aliasing. */
+  private frameIntervalMs = 1000 / 60;
   private handle: number | null = null;
+  /** El frame pedido es uno del render lento (4 Hz): una orden con prisa lo adelanta. */
+  private handleDelayed = false;
   private lastFrameMs: number | null = null;
   private lastTimeEventMs = -Infinity;
   private lastStatsMs = -Infinity;
@@ -249,17 +322,19 @@ export class SceneEngine implements SceneEngineApi {
     this.unsubscribe.push(
       attachPointerControls(options.canvas, {
         rotate: (dAz, dEl) => {
+          this.takeControl();
           this.rig.rotate(dAz, dEl);
           this.invalidate();
         },
         fling: (vAz, vEl) => {
-          if (this.reducedMotion || this.captureMode) return;
+          if (this.instant()) return;
           this.rig.fling(vAz, vEl);
           this.invalidate();
         },
         zoom: (factor) => this.zoomBy(factor),
         pick: (x, y) => {
-          const index = pickBody(this.screen, x, y);
+          const visible = this.screen.filter((body) => this.aliasing.orbit[body.index] !== 1);
+          const index = pickBody(visible, x, y);
           const body = index === null ? undefined : SCENE_BODIES[index];
           if (body) this.emit('bodyPicked', { id: body.id });
         },
@@ -326,6 +401,8 @@ export class SceneEngine implements SceneEngineApi {
     this.changeFocus(
       index,
       index === null ? this.overviewFraming() : this.bodyFraming(index, 'body'),
+      'focus',
+      null,
     );
   }
 
@@ -354,9 +431,8 @@ export class SceneEngine implements SceneEngineApi {
     this._view = view;
     this.renderer.setExposure(EXPOSURE[view]);
     const setup = this.viewSetup(view);
-    this.changeFocus(setup.focus, setup.framing);
-    const angles = this.viewAngles(view);
-    if (angles) this.rig.setTarget(angles, this.reducedMotion || this.captureMode);
+    // Un viaje entre vistas (~3 s): la cámara gira hacia la pose de la vista mientras se acerca.
+    this.changeFocus(setup.focus, setup.framing, 'view', this.viewAngles(view));
   }
 
   resize(width: number, height: number, devicePixelRatio: number): void {
@@ -367,7 +443,47 @@ export class SceneEngine implements SceneEngineApi {
       dpr: devicePixelRatio,
     };
     this.applySize();
-    if (this.framing.kind === 'overview') this.framing.distance = this.overviewDistance();
+    const { width: w, height: h } = this.viewport;
+    this.insetsTarget = sanitizeInsets(this.insetsTarget, w, h);
+    this.insets = sanitizeInsets(this.insets, w, h);
+    this.invalidate();
+  }
+
+  setViewInsets(insets: ViewInsets): void {
+    if (this.disposed) return;
+    this.insetsTarget = sanitizeInsets(insets, this.viewport.width, this.viewport.height);
+    if (this.instant()) this.insets = this.insetsTarget;
+    this.invalidate();
+  }
+
+  orbitBy(deltaAzimuth: number, deltaElevation: number): void {
+    if (this.disposed) return;
+    this.takeControl();
+    this.rig.nudge(deltaAzimuth, deltaElevation, this.instant());
+    this.invalidate();
+  }
+
+  zoomBy(factor: number): void {
+    if (this.disposed || !(factor > 0)) return;
+    this.takeControl();
+    const [min, max] = this.framing.kind === 'body' ? [0.05, 2e5] : [0.02, 4];
+    this.framing.zoom = Math.min(Math.max(this.framing.zoom * factor, min), max);
+    this.invalidate();
+  }
+
+  skipTransition(): void {
+    if (this.disposed) return;
+    this.frames.finish();
+    const flight = this.flight;
+    // El siguiente frame ya cae al final del vuelo (pose de llegada, mirando al foco).
+    if (flight) this.flight = { ...flight, startMs: this.deps.now() - flight.durationMs };
+    this.insets = this.insetsTarget;
+    this.invalidate();
+  }
+
+  setLabelsVisible(visible: boolean): void {
+    if (this.disposed) return;
+    this.labels.setVisible(visible);
     this.invalidate();
   }
 
@@ -433,6 +549,7 @@ export class SceneEngine implements SceneEngineApi {
       });
       this.renderFrame(this.deps.now(), false); // prepara el estado y la cámara sin pintar aún
       if (this.background !== null) this.alignBehind(this.background);
+      this.snapCamera = true;
       await this.deps.yieldToMain();
       if (this.disposed) return;
       this.emit('progress', { loaded: 1, total, step: 'Cargando estrellas' });
@@ -465,21 +582,33 @@ export class SceneEngine implements SceneEngineApi {
 
   // --- Bucle ----------------------------------------------------------------------------------
 
-  /** Pide un frame si no hay uno pedido (render bajo demanda). */
-  private invalidate(): void {
-    if (this.disposed || this.contextLost || !this.ready || this.handle !== null) return;
+  /**
+   * Pide un frame si no hay uno pedido (render bajo demanda). Con `delayMs`, uno del render lento;
+   * una petición sin espera adelanta a una lenta pendiente (un arrastre no espera 250 ms).
+   */
+  private invalidate(delayMs = 0): void {
+    if (this.disposed || this.contextLost || !this.ready) return;
+    if (this.handle !== null) {
+      if (!this.handleDelayed || delayMs > 0) return;
+      this.deps.scheduler.cancel(this.handle);
+      this.handle = null;
+    }
     if (this.deps.visibility.hidden()) return;
+    this.handleDelayed = delayMs > 0;
     this.handle = this.deps.scheduler.request((time) => {
       this.handle = null;
+      this.handleDelayed = false;
       this.tick(time);
-    });
+    }, delayMs);
   }
 
   private tick(timeMs: number): void {
     if (this.disposed || this.contextLost) return;
     const dt =
       this.lastFrameMs === null ? 16 : Math.min(timeMs - this.lastFrameMs, MAX_FRAME_DT_MS);
+    const continuous = this.lastFrameMs !== null && dt < SLOW_FRAME_MS * 0.8;
     this.lastFrameMs = timeMs;
+    if (continuous) this.frameIntervalMs = 0.8 * this.frameIntervalMs + 0.2 * dt;
     const limit = this.clock.advance(dt);
     if (limit) {
       this.emit('limitReached', { limit });
@@ -490,12 +619,23 @@ export class SceneEngine implements SceneEngineApi {
     const moving = this.renderFrame(timeMs, true, dt);
     const uploading = this.processUpload();
     const animating = this.clock.playing || moving || this.frames.animating;
+    // Reproducción lenta y nada más en marcha: 4 frames por segundo bastan (y no se miden FPS).
+    const slow =
+      this.clock.playing &&
+      !moving &&
+      !this.frames.animating &&
+      !uploading &&
+      this.uploads.length === 0 &&
+      Math.abs(this.clock.speed) <= SLOW_SPEED;
     if (this.qualitySetting === 'auto' && !this.captureMode) {
-      const lower = this.adaptive.sample(this.deps.now(), animating, this.level);
+      const lower = this.adaptive.sample(this.deps.now(), animating && !slow, this.level);
       if (lower) this.applyQuality(lower, 'auto');
     }
-    if (animating || uploading || this.uploads.length > 0) this.invalidate();
-    else this.lastFrameMs = null;
+    if (animating || uploading || this.uploads.length > 0) {
+      this.invalidate(slow ? SLOW_FRAME_MS : 0);
+    } else {
+      this.lastFrameMs = null;
+    }
   }
 
   /**
@@ -506,20 +646,32 @@ export class SceneEngine implements SceneEngineApi {
     const state = this.system.at(this.clock.timeMsValue);
     const orientations = this.orientations.at(state);
     this.ephemerisMs = 0.9 * this.ephemerisMs + 0.1 * (this.deps.now() - cpuStart);
-    this.frames.update(placementInput(state), this.deps.now());
-    const moving = this.updateCamera(dtMs);
+    const nowMs = this.deps.now();
+    this.frames.update(placementInput(state), nowMs);
+    const insets = approachInsets(this.insets, this.insetsTarget, dtMs, INSETS_SMOOTHING_MS);
+    this.insets = insets.insets;
+    const { width, height } = this.viewport;
+    this.projection = viewProjection(width, height, BASE_FOV_DEG, this.insets);
+    const moving = this.updateCamera(dtMs, nowMs) || !insets.settled;
+    const daysPerSecond = this.clock.playing ? this.clock.speed / 86_400 : 0;
+    this.aliasing.update(daysPerSecond, this.frameIntervalMs, this.frames.focus);
+    const aliased = this.aliasing.any;
     const camera = this.world.camera;
-    this.rig.applyTo(camera);
+    this.rig.applyTo(camera, this.look);
     this.world.update({
       frames: this.frames,
       state,
       orientations,
       focusIndex: this.frames.focus,
       highlighted: this.focusIndex ?? -1,
-      speedDaysPerSecond: this.clock.playing ? this.clock.speed / 86_400 : 0,
+      speedDaysPerSecond: daysPerSecond,
       viewport: this.viewport,
       screen: this.screen,
       detail: this._view !== 'system',
+      projection: this.projection,
+      trailDays: daysPerSecond * TRAIL_SECONDS,
+      aliasedOrbit: aliased ? this.aliasing.orbit : null,
+      frozenSpin: aliased ? this.aliasing.spin : null,
     });
     camera.updateMatrixWorld();
     this.updateScreen();
@@ -536,30 +688,89 @@ export class SceneEngine implements SceneEngineApi {
     return moving;
   }
 
-  /** Objetivos de la cámara según el encuadre; avanza su amortiguación. */
-  private updateCamera(dtMs: number): boolean {
-    const radii = this.frames.output.radius;
-    const focusRadius = radii[this.frames.focus] as number;
+  /**
+   * Coloca la cámara: en un vuelo, la pose del vuelo; si no, la amortiguación del rig hacia el
+   * encuadre. Devuelve si sigue moviéndose.
+   */
+  private updateCamera(dtMs: number, nowMs: number): boolean {
+    const focusRadius = this.frames.output.radius[this.frames.focus] as number;
+    this.rig.setLimits(focusRadius * MIN_DISTANCE_RADII, Infinity);
+    const distance = this.framingDistance(focusRadius);
+    const flight = this.flight;
+    if (flight && !flight.userControl) {
+      const to = {
+        distance,
+        azimuth: flight.angles?.azimuth ?? flight.from.azimuth,
+        elevation: flight.angles?.elevation ?? flight.from.elevation,
+      };
+      const frame = flightFrame(flight, to, nowMs);
+      this.rig.setPose(frame.pose);
+      this.look = this.lookAt(flight.fromIndex, frame.lookWeight);
+      if (frame.done) this.endFlight();
+      return !frame.done;
+    }
+    this.rig.setTarget({ distance });
+    let moving = false;
+    if (this.instant() || this.snapCamera) this.rig.snap();
+    else moving = this.rig.update(dtMs);
+    this.snapCamera = false;
+    if (flight) {
+      // El usuario lleva la cámara; la mirada termina de girar hacia el foco a su ritmo.
+      const frame = flightFrame(flight, flight.from, nowMs);
+      this.look = this.lookAt(flight.fromIndex, frame.lookWeight);
+      if (frame.done) this.endFlight();
+      else moving = true;
+    } else {
+      this.look = null;
+    }
+    return moving;
+  }
+
+  /** Distancia de la cámara que pide el encuadre, en la parte visible del lienzo. */
+  private framingDistance(focusRadius: number): number {
     if (this.framing.kind === 'body') {
-      this.rig.setLimits(focusRadius * MIN_DISTANCE_RADII, Infinity);
       const radii = framingDistanceRadii(
         this.framing.fill,
-        this.world.camera.fov,
-        this.viewport.width / this.viewport.height,
+        this.projection.visibleFovDeg,
+        this.projection.visibleAspect,
       );
-      this.rig.setTarget({ distance: focusRadius * radii * this.framing.zoom });
-    } else {
-      // La distancia de la vista general sigue la escala del marco que se ve: durante una
-      // transición (por ejemplo, desde el sistema local de la Tierra) el sistema todavía es enorme
-      // y la cámara no puede llegar antes que él.
-      this.rig.setLimits(focusRadius * MIN_DISTANCE_RADII, Infinity);
-      this.rig.setTarget({ distance: this.framing.distance * this.extentScale() });
+      return focusRadius * radii * this.framing.zoom;
     }
-    if (this.reducedMotion || this.captureMode) {
-      this.rig.snap();
-      return false;
-    }
-    return this.rig.update(dtMs);
+    // La distancia de la vista general sigue la escala del marco que se ve: durante una transición
+    // (por ejemplo, desde el sistema local de la Tierra) el sistema todavía es enorme y la cámara no
+    // puede llegar antes que él.
+    return this.overviewDistance() * this.framing.zoom * this.extentScale();
+  }
+
+  /** Punto al que mira la cámara en un vuelo: el foco de partida con ese peso (relativo al nuevo). */
+  private lookAt(fromIndex: number, weight: number): Vec3 | null {
+    if (weight <= 0 || fromIndex === this.frames.focus) return null;
+    const p = this.frames.output.position;
+    const k = 3 * fromIndex;
+    // ECL → Three (x, z, −y).
+    return vec3(
+      (p[k] as number) * weight,
+      (p[k + 2] as number) * weight,
+      -(p[k + 1] as number) * weight,
+    );
+  }
+
+  private endFlight(): void {
+    const flight = this.flight;
+    if (!flight) return;
+    this.flight = null;
+    this.look = null;
+    this.emit('travel', { active: false, kind: flight.kind });
+  }
+
+  /** El usuario toma la cámara (arrastre, rueda, teclado): el vuelo deja de llevarla. */
+  private takeControl(): void {
+    if (this.flight) this.flight.userControl = true;
+  }
+
+  /** Sin animaciones de cámara: movimiento reducido o modo de captura. */
+  private instant(): boolean {
+    return this.reducedMotion || this.captureMode;
   }
 
   /**
@@ -588,6 +799,7 @@ export class SceneEngine implements SceneEngineApi {
     }
     const { width, height } = this.viewport;
     this.screen = projectBodies(this.world.camera, t, output.radius, width, height);
+    if (!this.labels.visibleLayer) return;
     const focusBody = this.focusIndex === null ? null : SCENE_BODIES[this.focusIndex];
     const planet = focusBody ? systemPlanetOf(focusBody.id) : null;
     const boxes = layoutLabels(
@@ -597,6 +809,7 @@ export class SceneEngine implements SceneEngineApi {
       { width, height },
       this.focusIndex ?? -1,
       planet ? sceneBody(planet).index : -1,
+      { insets: this.insets, hidden: this.aliasing.any ? this.aliasing.orbit : null },
     );
     this.labels.update(boxes, this.focusIndex ?? -1);
   }
@@ -614,9 +827,20 @@ export class SceneEngine implements SceneEngineApi {
 
   // --- Cámara, foco y vistas -----------------------------------------------------------------
 
-  private changeFocus(index: number | null, framing: CameraFraming): void {
+  /**
+   * Cambia de foco con un vuelo de cámara (PLAN 3.c.6 y 3.c.8): la cámara no se mueve en el mundo
+   * (se reancla al foco nuevo), mira primero del foco anterior al nuevo y después se acerca o se
+   * aleja hasta el encuadre, con el cambio de marco solapado. Con movimiento reducido, un corte.
+   */
+  private changeFocus(
+    index: number | null,
+    framing: CameraFraming,
+    kind: TravelKind,
+    angles: Angles | null,
+  ): void {
     const frameFocus = index ?? SUN_INDEX;
-    if (this.frames.focus !== frameFocus) {
+    const fromIndex = this.frames.focus;
+    if (fromIndex !== frameFocus) {
       // La cámara no se mueve en el mundo: se recoloca respecto al foco nuevo.
       const out = this.frames.output.position;
       const k = 3 * frameFocus;
@@ -628,18 +852,35 @@ export class SceneEngine implements SceneEngineApi {
     }
     this.focusIndex = index;
     this.framing = framing;
+    // La vista general vuelve siempre a su encuadre (todo el sistema a la vista).
+    const arrival = framing.kind === 'overview' ? OVERVIEW_ANGLES : angles;
+    const duration = this.instant() ? 0 : kind === 'view' ? VIEW_TRIP_MS : FOCUS_FLIGHT_MS;
+    const now = this.deps.now();
     this.frames.transitionTo(
       this.frameSpec(index),
       frameFocus,
-      this.deps.now(),
-      this.transitionMs(),
+      now + FRAME_START * duration,
+      (1 - FRAME_START) * duration,
     );
-    if (framing.kind === 'overview') {
-      // La vista general vuelve siempre a su encuadre (todo el sistema a la vista).
-      this.rig.setTarget(
-        { azimuth: OVERVIEW_AZIMUTH, elevation: OVERVIEW_ELEVATION },
-        this.reducedMotion || this.captureMode,
-      );
+    if (duration === 0) {
+      if (arrival) this.rig.setTarget(arrival, true);
+      this.endFlight();
+    } else {
+      const replaced = this.flight !== null;
+      this.flight = {
+        startMs: now,
+        durationMs: duration,
+        from: {
+          distance: this.rig.distance,
+          azimuth: this.rig.azimuth,
+          elevation: this.rig.elevation,
+        },
+        kind,
+        angles: arrival,
+        fromIndex,
+        userControl: false,
+      };
+      if (!replaced || kind === 'view') this.emit('travel', { active: true, kind });
     }
     if (this.ready) this.world.setFocus(index);
     this.lastFrameMs = null;
@@ -663,20 +904,6 @@ export class SceneEngine implements SceneEngineApi {
       true,
     );
     this.renderFrame(this.deps.now(), false);
-  }
-
-  private zoomBy(factor: number): void {
-    if (!(factor > 0)) return;
-    if (this.framing.kind === 'body') {
-      this.framing.zoom = Math.min(Math.max(this.framing.zoom * factor, 0.05), 2e5);
-    } else {
-      const base = this.overviewDistance();
-      this.framing.distance = Math.min(
-        Math.max(this.framing.distance * factor, base * 0.02),
-        base * 4,
-      );
-    }
-    this.invalidate();
   }
 
   private viewSetup(view: ExplorerView): { focus: number | null; framing: CameraFraming } {
@@ -726,15 +953,17 @@ export class SceneEngine implements SceneEngineApi {
   }
 
   private overviewFraming(): CameraFraming {
-    return { kind: 'overview', distance: this.overviewDistance() };
+    return { kind: 'overview', zoom: 1 };
   }
 
-  /** Distancia a la que la órbita de Neptuno cabe en pantalla (en la escala ilustrativa y la real). */
+  /**
+   * Distancia a la que la órbita de Neptuno cabe en la parte visible (en la escala ilustrativa y la
+   * real).
+   */
   private overviewDistance(): number {
     const extent = illustrativeDistance(NEPTUNE_SEMI_MAJOR_AXIS_AU * 1.012);
-    const vertical = (this.world.camera.fov * Math.PI) / 360;
-    const aspect = this.viewport.width / this.viewport.height;
-    const horizontal = Math.atan(Math.tan(vertical) * aspect);
+    const vertical = (this.projection.visibleFovDeg * Math.PI) / 360;
+    const horizontal = Math.atan(Math.tan(vertical) * this.projection.visibleAspect);
     // Con la vista oblicua, la órbita se ve como una elipse: el ancho es lo que manda.
     return (extent / Math.tan(Math.min(horizontal, vertical * 1.9))) * 1.06;
   }
@@ -750,7 +979,7 @@ export class SceneEngine implements SceneEngineApi {
   }
 
   private transitionMs(): number {
-    return this.reducedMotion || this.captureMode ? 0 : FRAME_TRANSITION_MS;
+    return this.instant() ? 0 : FRAME_TRANSITION_MS;
   }
 
   // --- Calidad y tamaño ------------------------------------------------------------------------

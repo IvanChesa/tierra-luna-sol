@@ -44,6 +44,7 @@ import {
   meridianOffset,
   releaseTexture,
 } from './textures';
+import type { ViewProjection } from './view-insets';
 
 /** Textura de color de cada cuerpo que la tiene (las demás lunas, en la fase 7). */
 export const BODY_TEXTURES: Readonly<Partial<Record<BodyId, TextureId>>> = {
@@ -89,6 +90,14 @@ export interface WorldFrame {
   readonly screen: readonly ScreenBody[];
   /** Vista de detalle (Tierra, Luna): las órbitas de los planetas pasan a un segundo plano. */
   readonly detail: boolean;
+  /** Proyección de la cámara con los márgenes de la interfaz (`setViewOffset`, PLAN 3.c.6). */
+  readonly projection: ViewProjection;
+  /** Días simulados que cubre la estela de movimiento (0 en pausa; negativo hacia atrás). */
+  readonly trailDays: number;
+  /** Velocidades altas (§4.5): cuerpos que no se dibujan (su órbita los sustituye)… */
+  readonly aliasedOrbit: Uint8Array | null;
+  /** …y cuerpos cuya rotación propia se congela. */
+  readonly frozenSpin: Uint8Array | null;
 }
 
 interface BodyVisual {
@@ -98,6 +107,8 @@ interface BodyVisual {
   readonly textureId: TextureId | null;
   loaded: LoadedTexture | null;
   requested: TextureLevel | null;
+  /** La rotación está congelada (velocidades altas): se conserva la última orientación. */
+  frozen: boolean;
 }
 
 const tmpMatrix = new Matrix4();
@@ -197,6 +208,7 @@ export class World {
         textureId: BODY_TEXTURES[body.id] ?? null,
         loaded: null,
         requested: null,
+        frozen: false,
       };
     });
 
@@ -336,9 +348,15 @@ export class World {
       setFromEcl(mesh.position, positions, k);
       const r = radii[k] as number;
       mesh.scale.set(r, r * (1 - visual.body.flattening), r);
-      const m = eclRotationToThree(orientations[k] as Mat3);
-      tmpMatrix.set(m[0], m[1], m[2], 0, m[3], m[4], m[5], 0, m[6], m[7], m[8], 0, 0, 0, 0, 1);
-      mesh.quaternion.setFromRotationMatrix(tmpMatrix);
+      mesh.visible = frame.aliasedOrbit?.[k] !== 1;
+      // Con la rotación congelada se conserva la última orientación pintada (§4.5).
+      const frozen = frame.frozenSpin?.[k] === 1;
+      if (!frozen || !visual.frozen) {
+        const m = eclRotationToThree(orientations[k] as Mat3);
+        tmpMatrix.set(m[0], m[1], m[2], 0, m[3], m[4], m[5], 0, m[6], m[7], m[8], 0, 0, 0, 0, 1);
+        mesh.quaternion.setFromRotationMatrix(tmpMatrix);
+      }
+      visual.frozen = frozen;
       const distance = tmpVector.copy(mesh.position).sub(camera.position).length();
       nearest = Math.min(nearest, distance - r * 1.02);
       farthest = Math.max(farthest, distance + r);
@@ -354,7 +372,22 @@ export class World {
     const far = Math.max(farthest * 4, near * 10);
     camera.near = near;
     camera.far = far;
-    camera.aspect = frame.viewport.width / Math.max(1, frame.viewport.height);
+    const projection = frame.projection;
+    camera.fov = projection.fovDeg;
+    camera.aspect = projection.aspect;
+    const offset = projection.offset;
+    if (offset) {
+      camera.setViewOffset(
+        offset.fullWidth,
+        offset.fullHeight,
+        offset.x,
+        offset.y,
+        offset.width,
+        offset.height,
+      );
+    } else {
+      camera.clearViewOffset();
+    }
     camera.updateProjectionMatrix();
     const sky = Math.sqrt(near * far);
     this.stars?.setSkyDistance(sky);
@@ -366,6 +399,8 @@ export class World {
       this.orbitOpacity(frame),
       frame.highlighted,
       frame.speedDaysPerSecond,
+      frame.trailDays,
+      frame.aliasedOrbit,
     );
     return { near, far };
   }
