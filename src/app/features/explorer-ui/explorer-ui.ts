@@ -73,6 +73,10 @@ export class ExplorerUi {
   protected readonly panelBody = computed(() =>
     this.explorer.panelOpen() ? this.sim.selectedBodyId() : null,
   );
+  protected readonly panelBodies = computed(() => {
+    const id = this.panelBody();
+    return id ? [id] : [];
+  });
   private swipeStart: number | null = null;
 
   constructor() {

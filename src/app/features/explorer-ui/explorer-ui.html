@@ -5,7 +5,7 @@
 <tls-body-picker class="index" />
 
 <aside class="panel" data-chrome [hidden]="!panelBody()" aria-label="Ficha del cuerpo elegido">
-  @if (panelBody(); as id) {
+  @if (panelBody()) {
     <div
       class="panel__grip"
       aria-hidden="true"
@@ -13,6 +13,9 @@
       (pointerup)="swipeEnd($event)"
       (pointercancel)="swipeEnd($event)"
     ></div>
+  }
+  <!-- Una ficha por cuerpo: al cambiar de cuerpo se crea otra y entra con un fundido. -->
+  @for (id of panelBodies(); track id) {
     <tls-body-panel [bodyId]="id" (closed)="closePanel()" />
   }
 </aside>

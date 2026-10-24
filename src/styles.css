@@ -201,6 +201,26 @@ tls-root:has(tls-explorer-ui.is-clean) .site-header {
   display: none;
 }
 
+/*
+ * Transiciones de los textos (PLAN 3.d.11): al cambiar de vista, el texto nuevo entra con un fundido
+ * corto; al cambiar de cuerpo, también la ficha. Solo CSS: con movimiento reducido, las duraciones son
+ * 0 (regla de arriba). La primera pintura (prerenderizada) no se anima.
+ */
+.explorer__intro > :not(router-outlet),
+.panel > tls-body-panel {
+  transition:
+    opacity var(--duration-base) var(--ease-standard),
+    translate var(--duration-base) var(--ease-standard);
+}
+
+@starting-style {
+  .explorer__intro > :not(router-outlet),
+  .panel > tls-body-panel {
+    opacity: 0;
+    translate: 0 0.375rem;
+  }
+}
+
 /* Móvil: con la ficha abierta, el texto de la vista se recoge (queda el selector de vista). */
 @media (max-width: 63.99rem) {
   .explorer:has(.panel:not([hidden])) .explorer__intro {
