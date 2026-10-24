@@ -44,6 +44,11 @@
   pointer-events: none;
 }
 
+/* Hasta el primer frame (y si hay un error) no hay etiquetas: debajo solo está el póster. */
+:host(:not(.is-ready)) .viewer-labels {
+  visibility: hidden;
+}
+
 .viewer-status {
   position: absolute;
   bottom: calc(var(--view-bottom, 4.5rem) + var(--space-4));

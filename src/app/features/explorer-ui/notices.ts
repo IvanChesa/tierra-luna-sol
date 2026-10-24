@@ -89,7 +89,8 @@ export class Notices {
   protected readonly limitText = computed(() => {
     const limit = this.sim.limit();
     if (!limit) return null;
-    const date = limit === 'max' ? 'el 31 de diciembre de 2100' : 'el 1 de enero de 1900';
-    return `La simulación se ha parado ${date}: el explorador calcula posiciones entre 1900 y 2100.`;
+    // El intervalo es en UTC: en hora local, el final de 2100 puede caer ya en 2101.
+    const edge = limit === 'max' ? 'al final de 2100' : 'al principio de 1900';
+    return `La simulación se ha parado ${edge} (UTC): el explorador calcula posiciones entre 1900 y 2100.`;
   });
 }
