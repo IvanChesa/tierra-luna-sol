@@ -1,11 +1,11 @@
 import { AstroTime, MakeTime } from 'astronomy-engine';
+import { MAX_DATE, MIN_DATE } from './constants';
 
 /**
- * Rango de fechas del explorador (PLAN §0.2: «cualquier fecha, 1900–2100»).
- * El tiempo interno es siempre UTC; los `Date` de JavaScript ya lo son.
+ * Rango de fechas del explorador (PLAN §0.2: «cualquier fecha, 1900–2100»), definido en
+ * `constants.ts`. El tiempo interno es siempre UTC; los `Date` de JavaScript ya lo son.
  */
-export const MIN_DATE = new Date(Date.UTC(1900, 0, 1, 0, 0, 0));
-export const MAX_DATE = new Date(Date.UTC(2100, 11, 31, 23, 59, 59));
+export { MAX_DATE, MIN_DATE };
 
 const MS_PER_DAY = 86_400_000;
 /** 2000-01-01T12:00:00Z en milisegundos Unix: el origen de los días J2000 en UT. */
