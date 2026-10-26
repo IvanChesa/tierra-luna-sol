@@ -39,6 +39,7 @@ varying vec3 vNormal;
 varying vec3 vSunDirection;
 varying vec3 vLocal;
 varying vec3 vViewPosition;
+varying vec3 vCenterView;
 varying vec3 vEast;
 varying vec3 vNorth;
 
@@ -56,6 +57,7 @@ void main() {
   vSunDirection = normalize((viewMatrix * vec4(uSunDirection, 0.0)).xyz);
   vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
   vViewPosition = mvPosition.xyz;
+  vCenterView = (modelViewMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
   gl_Position = projectionMatrix * mvPosition;
   ${DEPTH_VERTEX}
 }
@@ -86,6 +88,7 @@ varying vec3 vNormal;
 varying vec3 vSunDirection;
 varying vec3 vLocal;
 varying vec3 vViewPosition;
+varying vec3 vCenterView;
 varying vec3 vEast;
 varying vec3 vNorth;
 
@@ -129,7 +132,11 @@ void main() {
   vec3 normal = uNormalStrength > 0.0 ? reliefNormal(geometric, uv) : geometric;
   vec3 toSun = normalize(vSunDirection);
   vec3 toViewer = normalize(-vViewPosition);
-  float cosAlpha = clamp(dot(toSun, toViewer), -1.0, 1.0);
+  // Ángulo de fase de un observador lejano (Sol, centro del cuerpo y cámara), el mismo en todo el
+  // disco: la distancia de la cámara es un recurso de encuadre (en la escala ilustrativa, ni siquiera
+  // es real), no la de una sonda. Con el de cada punto, a unos radios del cuerpo, el pico de oposición
+  // oscurecería el borde del disco en fase llena. μ₀ y μ sí son los de cada punto.
+  float cosAlpha = clamp(dot(toSun, normalize(-vCenterView)), -1.0, 1.0);
   float alpha = acos(cosAlpha);
   float light = tlsReflectance(dot(normal, toSun), dot(normal, toViewer), alpha, cosAlpha);
   float muViewer = dot(geometric, toViewer);

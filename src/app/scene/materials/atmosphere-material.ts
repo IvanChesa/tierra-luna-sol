@@ -68,7 +68,8 @@ void main() {
   vec3 toSun = normalize(vSunDirection);
   float lit = smoothstep(-uHaze.z, uHaze.z, dot(normalize(offset), toSun));
   float g = uHazeColor.w;
-  float cosAlpha = dot(toSun, -ray);
+  // Ángulo de fase de un observador lejano, como en el disco (body-material.ts).
+  float cosAlpha = dot(toSun, normalize(-vCenter));
   float forward = 1.0 + uHaze.w * tlsHenyeyGreenstein(cosAlpha, g) / tlsHenyeyGreenstein(-1.0, g);
   float glow = uHaze.x * density * lit * forward;
   gl_FragColor = vec4(uHazeColor.rgb * glow, 1.0);

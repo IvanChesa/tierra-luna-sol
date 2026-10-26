@@ -8,7 +8,7 @@
  *   se ve oscuro y los tenues (el C, la división de Cassini) brillan, como en las fotos de Cassini
  *   a contraluz.
  * - Función de fase de las partículas (pico de oposición y un lóbulo hacia delante para el polvo
- *   fino), de `data/photometry.ts`.
+ *   fino), de `data/photometry.ts`, con el ángulo de fase de un observador lejano.
  * - Lo que tapan de lo que hay detrás: 1 − e^(−τ/μ), más cuanto más rasante es la vista. El color
  *   sale premultiplicado por esa cobertura.
  * - Sombra del planeta: rayo desde cada punto del anillo hacia el Sol contra el elipsoide del
@@ -68,7 +68,10 @@ void main() {
   float mu0 = abs(s.y);
   float mu = max(abs(v.y), 0.002);
   bool litSide = s.y * v.y > 0.0;
-  float cosAlpha = clamp(dot(s, v), -1.0, 1.0);
+  // Ángulo de fase de un observador lejano (Sol, centro de Saturno y cámara), como en el material de
+  // los cuerpos: con el de cada punto, desde unos radios de distancia, las ansas se verían a ~20° de
+  // fase en vez de a los 2° de una foto del Hubble y el pico de oposición las apagaría un 30 %.
+  float cosAlpha = clamp(dot(s, normalize(uCameraLocal)), -1.0, 1.0);
   float phase = tlsPhase(acos(cosAlpha), cosAlpha) * uPhaseNorm;
   float reflected = tlsRingReflectance(mu0, mu, tau, litSide) * phase;
   // Sombra del planeta: el elipsoide x² + (y / c)² + z² = 1 se vuelve una esfera escalando y.
