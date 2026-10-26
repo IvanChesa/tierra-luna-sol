@@ -277,6 +277,12 @@ export function normalMap(elevation, width, height, radiusM, exaggeration) {
 /**
  * Elevación en 16 bits empaquetada en dos canales de 8 (D15: R = byte alto, G = byte bajo), entre
  * `minM` y `maxM`. La resolución vertical es (maxM − minM) / 65535.
+ *
+ * Ojo (fase 6): este empaquetado no puede pasar por el `emit()` con pérdidas de build-textures.mjs
+ * (WebP con croma 4:2:0): el byte bajo se volvería ruido. Tiene que ir sin pérdidas. Los mapas de
+ * normales sí van con pérdidas (calidad 85): pierden un 15–17 % de la pendiente media (en Marte 2k,
+ * de 4,36° a 3,61°) y el error angular tiene un p99 de 14° (revisión de la fase 3b); la exageración
+ * se ajustó a la vista sobre esos mapas. Casi sin pérdidas pesarían unas siete veces más.
  */
 export function packElevation16(elevation, minM, maxM) {
   const out = Buffer.alloc(elevation.length * 3);

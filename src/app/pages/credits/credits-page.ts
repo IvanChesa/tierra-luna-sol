@@ -42,7 +42,9 @@ import { Component } from '@angular/core';
       <li>
         Vía Láctea: «The Milky Way panorama», de
         <a href="https://www.eso.org/public/images/eso0932a/">ESO/S. Brunier</a>, con licencia
-        <a href="https://creativecommons.org/licenses/by/4.0/deed.es">CC BY 4.0</a>.
+        <a href="https://creativecommons.org/licenses/by/4.0/deed.es">CC BY 4.0</a>. Modificada: se
+        le han quitado las estrellas (un filtro de mediana; las pone el catálogo de estrellas), se
+        ha reducido, suavizado y convertido a WebP.
       </li>
     </ul>
 
