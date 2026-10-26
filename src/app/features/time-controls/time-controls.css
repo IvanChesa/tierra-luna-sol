@@ -108,6 +108,10 @@ input[type='time'] {
 
 /* Móvil: una fila compacta (reproducir, la fecha, «Ahora» y desplegar) y el resto, desplegable. */
 @media (max-width: 63.99rem) {
+  /*
+   * Sin alto fijo: si la barra desplegada no cabe, la hoja se desplaza (explorer-ui.css) y la
+   * última fila conserva su margen.
+   */
   .time {
     display: grid;
     grid-template-areas:
@@ -118,6 +122,8 @@ input[type='time'] {
     grid-template-columns: auto minmax(0, 1fr) auto auto;
     align-items: center;
     gap: var(--space-2);
+    height: auto;
+    min-height: 100%;
     padding: var(--space-2) var(--space-4) var(--space-3);
   }
 
@@ -227,5 +233,12 @@ input[type='time'] {
   .time__error {
     position: static;
     grid-area: error;
+  }
+}
+
+/* Muy estrecho (320 px, o el zoom al 400 %): la fecha y la hora no caben una al lado de la otra. */
+@media (max-width: 22rem) {
+  .time__fields {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

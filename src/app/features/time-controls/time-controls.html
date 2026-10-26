@@ -9,6 +9,11 @@
     <span class="time__zone">{{ readoutDetail() }}</span>
   </p>
 
+  <!-- Antes que el botón de desplegar: el DOM sigue la fila del móvil (y la del escritorio). -->
+  <button type="button" class="control time__now" title="Volver a ahora (N)" (click)="now()">
+    Ahora
+  </button>
+
   <button
     type="button"
     class="time__more"
@@ -49,15 +54,16 @@
         id="time-date"
         class="control"
         type="date"
-        [min]="minDate"
-        [max]="maxDate"
+        [min]="minDate()"
+        [max]="maxDate()"
         required
         [value]="dateValue()"
         [attr.aria-invalid]="invalid()"
         [attr.aria-describedby]="invalid() ? 'time-error' : null"
         (focus)="startEditing(date, clock)"
-        (blur)="stopEditing()"
-        (change)="commit(date, clock)"
+        (blur)="stopEditing(date, clock)"
+        (change)="changed(date, clock)"
+        (keydown.enter)="confirm(date, clock)"
       />
     </div>
 
@@ -71,8 +77,9 @@
         step="1"
         [value]="timeValue()"
         (focus)="startEditing(date, clock)"
-        (blur)="stopEditing()"
-        (change)="commit(date, clock)"
+        (blur)="stopEditing(date, clock)"
+        (change)="changed(date, clock)"
+        (keydown.enter)="confirm(date, clock)"
       />
     </div>
 
@@ -84,10 +91,6 @@
       </select>
     </div>
   </div>
-
-  <button type="button" class="control time__now" title="Volver a ahora (N)" (click)="now()">
-    Ahora
-  </button>
 
   <div class="time__settings">
     <div class="field">

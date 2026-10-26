@@ -26,8 +26,9 @@ test.describe('Tiempo y URL', () => {
     await expect.poll(() => simTime(page)).toBe(Date.parse('2031-03-15T13:00:00Z'));
     await expect(page).toHaveURL(/fecha=2031-03-15T13:00Z/);
 
-    // Una fecha fuera del rango no se aplica y se explica.
+    // Una fecha fuera del rango no se aplica y, al confirmarla (Intro o al salir), se explica.
     await page.locator('#time-date').fill('1850-01-01');
+    await page.locator('#time-date').press('Enter');
     await expect(page.getByRole('alert')).toContainText('entre 1900 y 2100');
     expect(await simTime(page)).toBe(Date.parse('2031-03-15T13:00:00Z'));
   });
@@ -71,6 +72,34 @@ test.describe('Tiempo y URL', () => {
     await page.keyboard.press('k');
   });
 
+  test('al escribir una fecha a mano no pasa por fechas intermedias ni avisa a medio escribir', async ({
+    page,
+  }) => {
+    await openExplorer(page, '/?fecha=2030-06-01T12:00Z');
+    await countUrlChanges(page);
+    await page.evaluate(() => {
+      const time = document.querySelector('.time__readout time');
+      window.__e2eTimeChanges = 0;
+      new MutationObserver((records) => {
+        window.__e2eTimeChanges = (window.__e2eTimeChanges ?? 0) + records.length;
+      }).observe(time as Node, { attributes: true, attributeFilter: ['datetime'] });
+      new MutationObserver(() => {
+        if (document.querySelector('#time-error')) document.body.dataset['e2eAlert'] = 'sí';
+      }).observe(document.body, { childList: true, subtree: true });
+    });
+    // El campo empieza en el día; a medio escribir, el año pasa por 0002, 0020 y 0203.
+    const date = page.locator('#time-date');
+    await date.focus();
+    await page.keyboard.type('15032031');
+    await page.waitForTimeout(1500);
+    // Las 14:00 de Madrid del 15 de marzo de 2031 (UTC+1): un solo salto y una sola URL.
+    expect(await simTime(page)).toBe(Date.parse('2031-03-15T13:00:00Z'));
+    expect(await page.evaluate(() => window.__e2eTimeChanges ?? 0)).toBe(1);
+    expect(await urlChanges(page)).toBe(1);
+    expect(await page.evaluate(() => document.body.dataset['e2eAlert'] ?? 'no')).toBe('no');
+    await expect(page).toHaveURL(/fecha=2031-03-15T13:00Z/);
+  });
+
   test('la barra de tiempo cambia como mucho 5 veces por segundo a 1 año por segundo', async ({
     page,
   }) => {
@@ -95,9 +124,9 @@ test.describe('Tiempo y URL', () => {
     await openExplorer(page, '/?fecha=2100-12-31T23:00Z');
     await page.locator('#time-speed').selectOption('day');
     await page.locator('.time__play').click();
-    // En UTC y en la hora de Madrid (que ya es 2101), con lo que puedes hacer.
+    // En UTC y en la hora de Madrid (que ya es 2101), con el nombre de la zona y lo que puedes hacer.
     await expect(page.locator('tls-notices')).toContainText(
-      'en el límite del explorador: 31 dic 2100, 23:59 UTC (1 ene 2101, 00:59 en tu hora local). Elige una fecha anterior o vuelve a «Ahora».',
+      'en el límite del explorador: el 31 de diciembre de 2100 a las 23:59 UTC, que en tu hora local (Europe/Madrid, UTC+1) es el 1 de enero de 2101 a las 0:59. Elige una fecha anterior o vuelve a «Ahora».',
     );
     await expect(page.locator('.time__play')).toHaveAccessibleName(/Reproducir/);
     expect(await simTime(page)).toBe(Date.parse('2100-12-31T23:59:59Z'));
