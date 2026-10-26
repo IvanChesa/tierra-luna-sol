@@ -1,6 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { getBody } from '../../data/bodies';
 import type { BodyId } from '../../data/body.model';
+import { SOURCES } from '../../data/sources';
 import { SystemPositions } from '../../state/positions';
 import { SimulationStore } from '../../state/simulation.store';
 import { BodyPanel } from './body-panel';
@@ -48,6 +50,28 @@ describe('BodyPanel: ficha resumida', () => {
     expect(root.querySelector('.card__body .card__link')).toBeNull();
     // Las lunas aún no tienen ficha completa (fase 9): sin pie.
     expect(render('titan').querySelector('.card__foot')).toBeNull();
+  });
+
+  it('cita la fuente de cada dato de la ficha y, si son varias, qué respalda cada una', () => {
+    for (const id of ['titan', 'luna', 'saturno', 'sol', 'fobos'] as const) {
+      const body = getBody(id);
+      const rotation = body.physical.synchronousRotation?.value
+        ? body.physical.synchronousRotation
+        : body.physical.rotationPeriodH;
+      const expected = new Set(
+        [body.physical.radiusKm.source, rotation?.source, body.orbit?.periodDays.source]
+          .filter((source) => source !== undefined)
+          .map((source) => new URL(SOURCES[source].url).href),
+      );
+      const links = [...render(id).querySelectorAll<HTMLAnchorElement>('.card__source a')];
+      expect(new Set(links.map((link) => link.href))).toEqual(expected);
+    }
+    const text = (id: BodyId) =>
+      (render(id).querySelector('.card__source')?.textContent ?? '').replace(/\s+/g, ' ').trim();
+    expect(text('titan')).toMatch(
+      /^Radio: NASA\/JPL, Solar System Dynamics\. Rotación y órbita: NASA, NSSDCA [^.]+\. Las distancias/,
+    );
+    expect(text('saturno')).toMatch(/^Datos de NASA, NSSDCA [^.]+\. Las distancias/);
   });
 
   it('dice con qué se calculan las distancias (ESTILO §5)', () => {

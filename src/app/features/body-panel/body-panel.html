@@ -56,9 +56,18 @@
       }
     </dl>
 
+    @let cited = citations();
     <p class="card__source">
-      Datos de <a [href]="source().url">{{ source().publisher }}</a
-      >. {{ calculation() }}
+      @if (cited.length === 1 && cited[0]; as only) {
+        Datos de <a [href]="only.source.url">{{ only.source.publisher }}</a
+        >.
+      } @else {
+        @for (citation of cited; track citation.source.url) {
+          {{ citation.what }}: <a [href]="citation.source.url">{{ citation.source.publisher }}</a
+          >.
+        }
+      }
+      {{ calculation() }}
     </p>
   </div>
 

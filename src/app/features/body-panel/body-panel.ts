@@ -4,7 +4,7 @@ import { formatAu, formatDistanceKm, formatPeriodHours } from '../../core/format
 import { getBody } from '../../data/bodies';
 import type { BodyId } from '../../data/body.model';
 import { isMeanElementsMoon } from '../../data/solar-system';
-import { SOURCES } from '../../data/sources';
+import { SOURCES, Source, SourceId } from '../../data/sources';
 import { SystemPositions } from '../../state/positions';
 import { bodyKindLabel, bodyPagePath, toBodyLabel } from '../explorer-ui/describe';
 import { Icon } from '../viewer/icon';
@@ -15,7 +15,17 @@ interface Row {
   readonly value: { readonly number: string; readonly unit: string };
   /** La misma cifra en otra unidad (los km junto a las UA). */
   readonly detail?: string;
+  /** De dónde sale el dato (las distancias son un cálculo propio: no llevan). */
+  readonly source?: SourceId;
 }
+
+/** Una fuente de la ficha y los datos que respalda («Rotación y órbita»). */
+interface Citation {
+  readonly source: Source;
+  readonly what: string;
+}
+
+const LIST = new Intl.ListFormat('es-ES', { type: 'conjunction' });
 
 /** Separa la cifra de su unidad, que `core/format.ts` une con un espacio duro (ESTILO §3). */
 function splitUnit(text: string): Row['value'] {
@@ -48,7 +58,23 @@ export class BodyPanel {
   protected readonly body = computed(() => getBody(this.bodyId()));
   protected readonly kind = computed(() => bodyKindLabel(this.bodyId()));
   protected readonly link = computed(() => bodyPagePath(this.bodyId()));
-  protected readonly source = computed(() => SOURCES[this.body().physical.radiusKm.source]);
+  /**
+   * Las fuentes de los datos de la ficha (ESTILO §5). Si son varias (en las lunas, el radio sale
+   * del JPL y la rotación y la órbita de la NSSDCA), cada una dice qué respalda.
+   */
+  protected readonly citations = computed<Citation[]>(() => {
+    const groups = new Map<SourceId, string[]>();
+    for (const row of this.facts()) {
+      if (!row.source) continue;
+      const names = groups.get(row.source) ?? [];
+      names.push((row.label.split(' ')[0] ?? row.label).toLowerCase());
+      groups.set(row.source, names);
+    }
+    return [...groups].map(([id, names]) => {
+      const what = LIST.format(names);
+      return { source: SOURCES[id], what: what.charAt(0).toUpperCase() + what.slice(1) };
+    });
+  });
   /** Con qué se calculan las distancias (ESTILO §5). */
   protected readonly calculation = computed(() => {
     const body = this.body();
@@ -78,22 +104,29 @@ export class BodyPanel {
       {
         label: body.kind === 'planet' ? 'Radio ecuatorial' : 'Radio medio',
         value: splitUnit(formatDistanceKm(physical.radiusKm.value)),
+        source: physical.radiusKm.source,
       },
     ];
     if (physical.synchronousRotation?.value) {
-      rows.push({ label: 'Rotación', value: splitUnit('Síncrona') });
+      rows.push({
+        label: 'Rotación',
+        value: splitUnit('Síncrona'),
+        source: physical.synchronousRotation.source,
+      });
     } else if (physical.rotationPeriodH) {
       const hours = physical.rotationPeriodH.value;
       rows.push({
         label: 'Rotación',
         value: splitUnit(formatPeriodHours(hours)),
         detail: hours < 0 ? 'retrógrada' : undefined,
+        source: physical.rotationPeriodH.source,
       });
     }
     if (body.orbit) {
       rows.push({
         label: body.kind === 'planet' ? 'Año' : 'Órbita',
         value: splitUnit(formatPeriodHours(body.orbit.periodDays.value * 24)),
+        source: body.orbit.periodDays.source,
       });
     }
     return rows;
