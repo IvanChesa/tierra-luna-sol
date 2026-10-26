@@ -29,6 +29,8 @@ import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 import { BODY_DATA } from '../src/app/data/body-data.ts';
+import { RING_PHOTOMETRY } from '../src/app/data/photometry.ts';
+import { phaseFunction, ringReflectance } from '../src/app/ephemeris/photometry.ts';
 import {
   DEMS,
   checkAlignmentWithColor,
@@ -314,6 +316,24 @@ const RING_TINTS = {
 const typical = ([lo, hi]) => (lo > 0 ? Math.sqrt(lo * hi) : (lo + hi) / 2);
 
 /**
+ * Reflectividad de los anillos medida por el Hubble (F555W, banda V) a 6° de fase con los anillos
+ * abiertos 23,6°: I/F = 0,4650 en el anillo B (100 000–107 000 km) y 0,2970 en el A
+ * (127 000–129 000 km), del ajuste de la tabla 5 de Salo y French (2010), «The opposition and tilt
+ * effects of Saturn's rings from HST observations», Icarus 210, 785 (arXiv:1007.0349). El albedo de
+ * esos anillos en la tira es el que hace que el modelo de la escena (dispersión simple con la función
+ * de fase de `data/photometry.ts`) dé esa reflectividad, sin salir del intervalo de la ficha de la
+ * NASA. El C y la división de Cassini se quedan con el valor típico de la ficha.
+ */
+const RING_HST = {
+  phaseDeg: 6,
+  openingDeg: 23.6,
+  rings: {
+    B: { from: 100_000, to: 107_000, reflectance: 0.465 },
+    A: { from: 127_000, to: 129_000, reflectance: 0.297 },
+  },
+};
+
+/**
  * Tira física de los anillos (fase 3b): la estructura radial de la textura con la profundidad óptica
  * y el albedo de cada anillo de la ficha de la NASA. Devuelve la tira RGBA (8 bits, sRGB) y un
  * informe. Falla si la mediana de τ de algún anillo queda fuera de su intervalo.
@@ -384,7 +404,6 @@ async function physicalRingStrip(file, calibration) {
     const total = w.reduce((sum, v) => sum + v, 0) || 1;
     return w.map((v) => v / total);
   };
-  const strip = Buffer.alloc(width * RING_HEIGHT * 4);
   const tauPhysical = new Float64Array(width);
   for (let x = 0; x < width; x++) {
     const w = weightsAt(radius(x));
@@ -394,8 +413,27 @@ async function physicalRingStrip(file, calibration) {
       0,
     );
     const ceiling = fitted.reduce((s, ring, j) => s + w[j] * ring.region.opticalDepth.value[1], 0);
-    const tau = Math.min(Math.exp(logTau), 1.5 * ceiling);
-    tauPhysical[x] = tau;
+    tauPhysical[x] = Math.min(Math.exp(logTau), 1.5 * ceiling);
+  }
+  // Albedo de los anillos B y A: el que da la reflectividad medida por el Hubble (RING_HST) con la τ
+  // de la tira en esa zona, el Sol y la vista a la misma elevación y la función de fase de la escena.
+  const mu = Math.sin((RING_HST.openingDeg * Math.PI) / 180);
+  const particles = RING_PHOTOMETRY.photometry;
+  const phase =
+    phaseFunction((RING_HST.phaseDeg * Math.PI) / 180, particles) / phaseFunction(0, particles);
+  for (const ring of fitted) {
+    const measured = RING_HST.rings[ring.name];
+    if (!measured) continue;
+    const tau = median(columnsOf(measured.from, measured.to).map((x) => tauPhysical[x]));
+    const model = ringReflectance(mu, mu, tau, true) * phase;
+    const [lo, hi] = ring.region.albedo.value;
+    ring.albedo = Math.min(Math.max(measured.reflectance / model, lo), hi);
+    ring.calibration = `I/F ${measured.reflectance} del Hubble a ${RING_HST.phaseDeg}° con τ ${tau.toFixed(2)}`;
+  }
+  const strip = Buffer.alloc(width * RING_HEIGHT * 4);
+  for (let x = 0; x < width; x++) {
+    const w = weightsAt(radius(x));
+    const tau = tauPhysical[x];
     const albedo = fitted.reduce((s, ring, j) => s + w[j] * ring.albedo, 0);
     const chroma = [0, 1, 2].map((i) =>
       fitted.reduce((s, ring, j) => s + w[j] * ring.chroma[i], 0),
@@ -420,7 +458,9 @@ async function physicalRingStrip(file, calibration) {
         `La τ del anillo ${ring.name} (${after.toFixed(2)}) no está en [${lo}, ${hi}]`,
       );
     }
-    return `${ring.name}: τ mediana ${ring.sourceMedian.toFixed(2)} → ${after.toFixed(2)} (ficha ${lo}–${hi}), albedo ${ring.albedo.toFixed(2)}, matiz ${ring.chroma.map((v) => v.toFixed(2)).join('/')}`;
+    const [albedoLo, albedoHi] = ring.region.albedo.value;
+    const albedoSource = ring.calibration ?? 'típico de la ficha';
+    return `${ring.name}: τ mediana ${ring.sourceMedian.toFixed(2)} → ${after.toFixed(2)} (ficha ${lo}–${hi}), albedo ${ring.albedo.toFixed(3)} (${albedoSource}; ficha ${albedoLo}–${albedoHi}), matiz ${ring.chroma.map((v) => v.toFixed(2)).join('/')}`;
   });
   return {
     image: () => sharp(strip, { raw: { width, height: RING_HEIGHT, channels: 4 } }),
