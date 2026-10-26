@@ -1,5 +1,5 @@
 import type { BodyId } from '../../data/body.model';
-import { BODY_TREE, systemOf, treeKey, treeNode, visibleRows } from './body-tree';
+import { BODY_TREE, rowByInitial, systemOf, treeKey, treeNode, visibleRows } from './body-tree';
 
 const none = new Set<BodyId>();
 
@@ -42,6 +42,17 @@ describe('body-tree: índice de cuerpos como árbol (WAI-ARIA Tree View)', () =>
     });
     // Sin lunas, derecha no hace nada.
     expect(treeKey('ArrowRight', 'venus', none)).toEqual({ focus: 'venus' });
+  });
+
+  it('la búsqueda por la inicial va a la siguiente fila visible con esa letra, sin tildes', () => {
+    expect(rowByInitial('m', 'sol', none)).toBe('mercurio');
+    expect(rowByInitial('M', 'mercurio', none)).toBe('marte');
+    // Da la vuelta y salta las lunas de los planetas cerrados.
+    expect(rowByInitial('m', 'marte', none)).toBe('mercurio');
+    const open = new Set<BodyId>(['jupiter']);
+    expect(rowByInitial('i', 'jupiter', open)).toBe('io');
+    expect(rowByInitial('g', 'io', open)).toBe('ganimedes');
+    expect(rowByInitial('x', 'sol', none)).toBeNull();
   });
 
   it('el sistema de un cuerpo: el planeta de una luna, el planeta con lunas, o ninguno', () => {

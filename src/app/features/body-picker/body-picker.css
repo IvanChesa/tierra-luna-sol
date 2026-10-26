@@ -30,8 +30,9 @@
   grid-column: 3;
 }
 
+/* Sin estirarse: la nota de la columna «Distancia» va justo debajo de la última fila. */
 .tree {
-  flex: 1;
+  flex: 0 1 auto;
   min-height: 0;
   margin: 0;
   padding: 0 var(--space-2) var(--space-2);
@@ -39,6 +40,41 @@
   list-style: none;
   scrollbar-width: thin;
   scrollbar-color: var(--color-control) transparent;
+}
+
+/*
+ * Si la lista no cabe, su borde de abajo se funde mientras quede algo por ver: las barras de
+ * desplazamiento superpuestas (macOS, pantallas táctiles) no se ven en reposo. Es una animación
+ * ligada al desplazamiento, sin JS: sin desbordamiento, su línea de tiempo no está activa y no hay
+ * fundido; donde no se admite, queda la barra.
+ */
+@property --tree-fade {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@keyframes tree-fade {
+  0%,
+  92% {
+    --tree-fade: 2rem;
+  }
+
+  100% {
+    --tree-fade: 0px;
+  }
+}
+
+@media (min-width: 64rem) {
+  @supports (animation-timeline: scroll()) {
+    /* La fila elegida no queda bajo el fundido (body-picker.ts la desplaza con este margen). */
+    .tree {
+      scroll-padding-block-end: 2rem;
+      mask-image: linear-gradient(to bottom, #000 calc(100% - var(--tree-fade)), transparent);
+      animation: tree-fade linear both;
+      animation-timeline: scroll(self block);
+    }
+  }
 }
 
 .tree:focus {

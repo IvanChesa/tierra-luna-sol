@@ -1,4 +1,5 @@
 import {
+  ChangeDetectorRef,
   Component,
   ElementRef,
   Injector,
@@ -7,17 +8,23 @@ import {
   effect,
   inject,
   linkedSignal,
+  signal,
+  untracked,
 } from '@angular/core';
 import { formatAu, formatNumber } from '../../core/format';
 import type { BodyId } from '../../data/body.model';
+import { ExplorerStore } from '../../state/explorer.store';
 import { SystemPositions } from '../../state/positions';
 import { SimulationStore } from '../../state/simulation.store';
+import { ofBody } from '../explorer-ui/describe';
 import { ExplorerSession } from '../explorer-ui/explorer-session';
 import { Icon } from '../viewer/icon';
 import {
+  BODY_TREE,
   ROOT_NODES,
   TreeKey,
   TreeNode,
+  rowByInitial,
   systemOf,
   treeKey,
   treeNode,
@@ -50,9 +57,11 @@ const NBSP = ' ';
 })
 export class BodyPicker {
   private readonly sim = inject(SimulationStore);
+  private readonly explorer = inject(ExplorerStore);
   private readonly session = inject(ExplorerSession);
   private readonly positions = inject(SystemPositions);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   protected readonly roots = ROOT_NODES;
   protected readonly selected = this.sim.selectedBodyId;
@@ -86,6 +95,23 @@ export class BodyPicker {
     }
     return values;
   });
+  /** La fila con el foco: al llegar a otra, su descripción se pone al día. */
+  private readonly focusedRow = signal<BodyId | null>(null);
+  /**
+   * La distancia de cada fila para el lector de pantalla, como descripción («A 9,54 UA del Sol»):
+   * la columna se ve, pero queda fuera del nombre accesible (informe, §4.3). Al reproducir no
+   * cambia mientras el foco sigue en la fila, para que el lector no la repita: se pone al día al
+   * llegar a otra fila o al pausar.
+   */
+  protected readonly descriptions = computed(() => {
+    this.focusedRow();
+    const values = this.sim.playing() ? untracked(this.values) : this.values();
+    return BODY_TREE.map((node) => {
+      const value = values.get(node.id);
+      const of = node.parent ? ofBody(node.parent) : 'del Sol';
+      return { id: node.id, text: node.kind === 'star' || !value ? '' : `A ${value} ${of}` };
+    });
+  });
 
   constructor() {
     // En la tira horizontal del móvil, el cuerpo elegido se desplaza a la vista (DOM: sistema
@@ -94,14 +120,37 @@ export class BodyPicker {
     effect(() => {
       const id = this.selected();
       if (!id) return;
-      afterNextRender(
-        () => {
-          const row = this.host.nativeElement.querySelector<HTMLElement>(`#tree-${id} > .row`);
-          row?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
-        },
-        { injector },
-      );
+      afterNextRender(() => this.revealRow(id), { injector });
     });
+  }
+
+  /**
+   * Desplaza solo la lista (la tira del móvil o la columna del escritorio) hasta la fila: con
+   * `scrollIntoView` se moverían también los contenedores de fuera, y en las pantallas bajas, donde
+   * se desplaza la página, la página entera.
+   */
+  private revealRow(id: BodyId): void {
+    const tree = this.host.nativeElement.querySelector<HTMLElement>('.tree');
+    const row = tree?.querySelector<HTMLElement>(`#tree-${id} > .row`);
+    if (!tree || !row) return;
+    const box = tree.getBoundingClientRect();
+    const target = row.getBoundingClientRect();
+    // La parte visible de la lista, sin su borde ni sus márgenes de desplazamiento (el de los lados
+    // en la tira del móvil; el de abajo, el del fundido del escritorio).
+    const style = tree.ownerDocument.defaultView?.getComputedStyle(tree);
+    const pad = Number.parseFloat(style?.scrollPaddingInlineStart ?? '') || 0;
+    const padEnd = Number.parseFloat(style?.scrollPaddingBlockEnd ?? '') || 0;
+    const left = box.left + tree.clientLeft + pad;
+    const right = box.left + tree.clientLeft + tree.clientWidth - pad;
+    const top = box.top + tree.clientTop;
+    const bottom = top + tree.clientHeight - padEnd;
+    let dx = 0;
+    if (target.left < left) dx = target.left - left;
+    else if (target.right > right) dx = target.right - right;
+    let dy = 0;
+    if (target.top < top) dy = target.top - top;
+    else if (target.bottom > bottom) dy = target.bottom - bottom;
+    if (dx !== 0 || dy !== 0) tree.scrollBy?.({ left: dx, top: dy });
   }
 
   protected children(node: TreeNode): readonly TreeNode[] {
@@ -131,6 +180,15 @@ export class BodyPicker {
     this.choose(id);
   }
 
+  /** El foco llega a una fila: su descripción, ya al día antes de que el lector la lea. */
+  protected onFocus(event: FocusEvent): void {
+    const item = (event.target as HTMLElement).closest<HTMLElement>('[role="treeitem"]');
+    const id = item?.dataset['body'] as BodyId | undefined;
+    if (!id || id === this.focusedRow()) return;
+    this.focusedRow.set(id);
+    this.cdr.detectChanges();
+  }
+
   protected onKeydown(event: KeyboardEvent): void {
     const item = (event.target as HTMLElement).closest<HTMLElement>('[role="treeitem"]');
     const current = item?.dataset['body'] as BodyId | undefined;
@@ -140,13 +198,25 @@ export class BodyPicker {
       this.choose(current);
       return;
     }
-    if (!TREE_KEYS.includes(event.key) || event.altKey || event.ctrlKey || event.metaKey) return;
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
+    // Con los atajos de una sola tecla desactivados, una letra lleva a la fila que empieza por ella.
+    if (!this.explorer.singleKeyShortcuts() && /^\p{L}$/u.test(event.key)) {
+      event.preventDefault();
+      const next = rowByInitial(event.key, current, this.expanded());
+      if (next) this.moveTo(next);
+      return;
+    }
+    if (!TREE_KEYS.includes(event.key)) return;
     event.preventDefault();
     const move = treeKey(event.key as TreeKey, current, this.expanded());
     if (move.expand) this.setExpanded(move.expand, true);
     if (move.collapse) this.setExpanded(move.collapse, false);
-    this.cursor.set(move.focus);
-    this.host.nativeElement.querySelector<HTMLElement>(`#tree-${move.focus}`)?.focus();
+    this.moveTo(move.focus);
+  }
+
+  private moveTo(id: BodyId): void {
+    this.cursor.set(id);
+    this.host.nativeElement.querySelector<HTMLElement>(`#tree-${id}`)?.focus();
   }
 
   private setExpanded(id: BodyId, open: boolean): void {

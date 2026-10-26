@@ -3,8 +3,9 @@
  * nivel y las lunas dentro de su planeta. Lógica pura de navegación con el teclado, sin Angular:
  * qué fila es la siguiente, la anterior, la madre o la primera hija.
  *
- * Sin búsqueda por la primera letra (recomendada, no obligatoria, en la guía de WAI-ARIA): las letras
- * son atajos globales del explorador (K, R, N, G, V) y se pisarían con «Neptuno», «Rea»…
+ * La búsqueda por la primera letra (recomendada, no obligatoria, en la guía de WAI-ARIA) solo vale
+ * con los atajos de una sola tecla desactivados: si no, las letras son atajos globales del
+ * explorador (K, R, N, G, V) y se pisarían con «Neptuno», «Rea»…
  */
 import { BODY_INDEX } from '../../data/body-index';
 import type { BodyId } from '../../data/body.model';
@@ -79,6 +80,28 @@ export function treeKey(key: TreeKey, current: BodyId, expanded: ReadonlySet<Bod
         return { focus: current, collapse: current };
       return { focus: node.parent ?? current };
   }
+}
+
+/** Sin mayúsculas ni tildes: «Ío» empieza por «i» y «Ganímedes» se busca igual que «ganimedes». */
+const fold = (text: string): string => text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+
+/**
+ * La siguiente fila visible (después de `current`, dando la vuelta) cuyo nombre empieza por esa
+ * letra; `null` si no hay ninguna.
+ */
+export function rowByInitial(
+  letter: string,
+  current: BodyId,
+  expanded: ReadonlySet<BodyId>,
+): BodyId | null {
+  const rows = visibleRows(expanded);
+  const start = rows.indexOf(current);
+  const initial = fold(letter);
+  for (let step = 1; step <= rows.length; step++) {
+    const id = rows[(start + step) % rows.length] as BodyId;
+    if (fold(treeNode(id).name).startsWith(initial)) return id;
+  }
+  return null;
 }
 
 /** Planeta cuyas lunas se abren al elegir un cuerpo: el suyo (si es una luna) o él mismo. */

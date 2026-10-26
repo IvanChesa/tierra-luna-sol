@@ -8,8 +8,9 @@
   <!--
     Árbol plano: las lunas van detrás de su planeta y el nivel lo dicen aria-level, aria-setsize y
     aria-posinset. Así el nombre de cada fila sale de su contenido (solo el nombre del cuerpo) y no
-    arrastra las lunas. La distancia es un dato que cambia al reproducir: queda fuera del árbol
-    accesible (aria-hidden) para que el lector no la repita; está en la ficha y en el anuncio.
+    arrastra las lunas. La distancia es un dato que cambia al reproducir: la columna queda fuera del
+    árbol accesible (aria-hidden) y llega al lector como descripción de la fila, que no cambia
+    mientras el foco sigue en ella (body-picker.ts).
   -->
   <ul
     class="tree"
@@ -18,6 +19,7 @@
     tabindex="-1"
     (keydown)="onKeydown($event)"
     (click)="onClick($event)"
+    (focusin)="onFocus($event)"
   >
     @for (node of roots; track node.id; let i = $index) {
       <li
@@ -30,6 +32,7 @@
         [attr.aria-posinset]="i + 1"
         [attr.aria-expanded]="node.children.length > 0 ? isExpanded(node.id) : null"
         [attr.aria-selected]="selected() === node.id"
+        [attr.aria-describedby]="node.kind === 'star' ? null : 'tree-desc-' + node.id"
         [attr.tabindex]="tabStop() === node.id ? 0 : -1"
       >
         <div class="row">
@@ -56,6 +59,7 @@
             [attr.aria-setsize]="node.children.length"
             [attr.aria-posinset]="j + 1"
             [attr.aria-selected]="selected() === moon.id"
+            [attr.aria-describedby]="'tree-desc-' + moon.id"
             [attr.tabindex]="tabStop() === moon.id ? 0 : -1"
           >
             <div class="row">
@@ -70,4 +74,11 @@
   </ul>
 
   <p class="index__note">Planetas: distancia al Sol. Lunas: a su planeta.</p>
+
+  <!-- Las descripciones de las filas (aria-describedby): ocultas, no se leen sueltas. -->
+  <div hidden>
+    @for (entry of descriptions(); track entry.id) {
+      <span [id]="'tree-desc-' + entry.id">{{ entry.text }}</span>
+    }
+  </div>
 </div>
