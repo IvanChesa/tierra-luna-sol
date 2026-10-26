@@ -53,24 +53,24 @@ export const TEXTURE_FILES: TextureFiles = {
   'earth-day': [
     {
       level: '1k',
-      path: 'textures/1k/earth-day.6b661a313b.webp',
+      path: 'textures/1k/earth-day.7e71a443cb.webp',
       width: 1024,
       height: 512,
-      bytes: 43528,
+      bytes: 39706,
     },
     {
       level: '2k',
-      path: 'textures/2k/earth-day.36d55340e6.webp',
+      path: 'textures/2k/earth-day.1094337c7d.webp',
       width: 2048,
       height: 1024,
-      bytes: 134626,
+      bytes: 130026,
     },
     {
       level: '4k',
-      path: 'textures/4k/earth-day.122ddc74db.webp',
+      path: 'textures/4k/earth-day.2d4de76ce1.webp',
       width: 4096,
       height: 2048,
-      bytes: 447358,
+      bytes: 423478,
     },
   ],
   'earth-night': [
@@ -390,7 +390,7 @@ export const TEXTURE_FILES: TextureFiles = {
 export const TEXTURE_MEAN_LUMINANCE: Readonly<Partial<Record<TextureId, number>>> = {
   mercury: 0.2294,
   venus: 0.554,
-  'earth-day': 0.1187,
+  'earth-day': 0.1197,
   'earth-night': 0.0034,
   moon: 0.3014,
   mars: 0.1819,

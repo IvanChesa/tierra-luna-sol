@@ -17,8 +17,10 @@ import { Component } from '@angular/core';
         Planetas, Tierra y anillos de Saturno:
         <a href="https://www.solarsystemscope.com/textures/">Solar System Scope</a>, con licencia
         <a href="https://creativecommons.org/licenses/by/4.0/deed.es">CC BY 4.0</a>. Se han reducido
-        y convertido a WebP; el color de algunos planetas se ha corregido con fotos del Hubble y la
-        opacidad de los anillos, con la ficha de los anillos de la NASA.
+        y convertido a WebP; el color de algunos planetas se ha corregido con fotos del Hubble; el
+        del océano de la Tierra, con fotos de
+        <a href="https://epic.gsfc.nasa.gov/">EPIC (DSCOVR), del NASA EPIC Team</a>, y la opacidad
+        de los anillos, con la ficha de los anillos de la NASA.
       </li>
       <li>
         Luna: CGI Moon Kit del

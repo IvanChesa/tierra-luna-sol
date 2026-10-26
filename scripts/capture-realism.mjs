@@ -68,6 +68,12 @@ const SHOTS = [
   ],
   ['venus-messenger-2007', '/?captura=1&cuerpo=venus&fecha=2007-06-05T12:00Z&fase=23', SQUARE],
   ['venus-fase-150', '/?captura=1&cuerpo=venus&fase=150', SQUARE],
+  // La Tierra desde DSCOVR (EPIC): fase y latitud de los metadatos de la imagen.
+  [
+    'tierra-epic-2016',
+    '/?captura=1&cuerpo=tierra&fecha=2016-06-21T22:58Z&fase=9.4&latitud=22.3',
+    SQUARE,
+  ],
   ['urano-voyager-1986', '/?captura=1&cuerpo=urano&fecha=1986-01-14T21:00Z&fase=13.8', SQUARE],
   ['neptuno-voyager-1989', '/?captura=1&cuerpo=neptuno&fecha=1989-08-20T08:00Z&fase=15', SQUARE],
   ['luna-fase-90', '/?captura=1&cuerpo=luna&fase=90', SQUARE],

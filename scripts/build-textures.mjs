@@ -17,6 +17,8 @@
 //   anillo (C, B, A y la división de Cassini) a la profundidad óptica normal y al albedo de la ficha;
 //   la textura solo aporta el matiz del color. El alfa de la tira es la opacidad vista de frente,
 //   1 − e^(−τ), y su color, el albedo.
+// - Color del océano de la Tierra (fase 3b): el de la textura es un azul plano y saturado; se lleva
+//   al medido en fotos de EPIC (DSCOVR) con la máscara del agua y se comprueba el resultado.
 // - Orientación de la Vía Láctea (panorama de ESO en coordenadas galácticas, con l = 0 en el centro y
 //   creciendo hacia la izquierda): el centro galáctico, más brillante que los polos y que el
 //   anticentro, y la Gran Nube de Magallanes donde dice SIMBAD (l = 280,4652°, b = −32,8884°), más
@@ -50,12 +52,18 @@ const RING_HEIGHT = 16;
  * kind: color (sRGB), gray (datos en escala de grises, sin espacio de color), normal (datos RGB),
  * ring (tira RGBA de los anillos), panorama (cielo en coordenadas galácticas), relief (mapa de normales
  * calculado con build-relief.mjs a partir de un modelo de elevación; `color`: la textura con la que
- * se comprueba la alineación).
+ * se comprueba la alineación). `ocean`: máscara del agua con la que se corrige el color del océano
+ * (OCEAN_CHROMA).
  */
 const TEXTURES = {
   mercury: { file: '8k_mercury.jpg', kind: 'color', quality: 80 },
   venus: { file: '4k_venus_atmosphere.jpg', kind: 'color', quality: 80 },
-  'earth-day': { file: '8k_earth_daymap.jpg', kind: 'color', quality: 82 },
+  'earth-day': {
+    file: '8k_earth_daymap.jpg',
+    kind: 'color',
+    quality: 82,
+    ocean: '8k_earth_specular_map.tif',
+  },
   'earth-night': { file: '8k_earth_nightmap.jpg', kind: 'color', quality: 80 },
   'earth-clouds': { file: '8k_earth_clouds.jpg', kind: 'gray', quality: 80 },
   'earth-normal': { file: '8k_earth_normal_map.tif', kind: 'normal', quality: 90 },
@@ -421,6 +429,84 @@ async function physicalRingStrip(file, calibration) {
 }
 
 /**
+ * Color del océano de la Tierra visto desde el espacio (RGB lineal / luminancia). La textura de Solar
+ * System Scope pinta todo el océano abierto de un azul plano y saturado (≈ 0,28/0,93/3,84). Medido en
+ * tres fotos en color natural de EPIC (DSCOVR, NASA; https://epic.gsfc.nasa.gov/) del 21-06-2016,
+ * centradas en el Pacífico, el Atlántico y el Índico (epic_1b_20160621230313, …152458 y …074644):
+ * cada píxel a menos de 0,6 radios del centro del disco se lleva a su latitud y longitud, se quedan
+ * los de agua de la máscara especular (a 2 px de la costa) y, de ellos, el 20 % más oscuro (sin
+ * nubes). Incluye la luz que dispersa la atmósfera, que la escena aún no dibuja (fase 5).
+ */
+const OCEAN_CHROMA = [0.683, 1.029, 1.651];
+
+/**
+ * Lleva el océano de la textura de día a OCEAN_CHROMA (fase 3b, arreglo de base de la Tierra). En el
+ * agua de la máscara, cada píxel se multiplica por la ganancia por canal que lleva el océano abierto
+ * a ese color y conserva su luminancia: se mantienen el detalle y las diferencias de las aguas
+ * someras. Los píxeles poco azules (hielo marino, costas) apenas cambian. Se hace al tamaño del nivel
+ * mayor (4096 px) y falla si el océano abierto no queda en el color medido.
+ */
+async function correctOcean(file, maskFile, width) {
+  const height = width / 2;
+  const read = (name, data) =>
+    sharp(fileURLToPath(new URL(name, SRC)), { limitInputPixels: false, ignoreIcc: data }).resize(
+      width,
+      height,
+      { fit: 'fill', kernel: 'lanczos3' },
+    );
+  const color = await read(file, false).removeAlpha().raw().toBuffer();
+  const mask = await read(maskFile, true).toColourspace('b-w').raw().toBuffer();
+  const table = Float64Array.from({ length: 256 }, (_, c) => srgbToLinear(c / 255));
+  const lum = (r, g, b) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  const pixels = width * height;
+  const linear = new Float64Array(pixels * 3);
+  for (let i = 0; i < pixels * 3; i++) linear[i] = table[color[i]];
+  // Océano abierto: agua en toda la máscara y muy azul. Media ponderada por el área (cos φ).
+  const blueness = (p) =>
+    linear[3 * p + 2] / Math.max(lum(linear[3 * p], linear[3 * p + 1], linear[3 * p + 2]), 1e-6);
+  const open = new Uint8Array(pixels);
+  for (let p = 0; p < pixels; p++) open[p] = mask[p] >= 250 && blueness(p) > 2 ? 1 : 0;
+  const chromaOf = (values) => {
+    const sum = [0, 0, 0];
+    for (let y = 0; y < height; y++) {
+      const weight = Math.cos((((y + 0.5) / height) * 2 - 1) * (Math.PI / 2));
+      for (let x = 0; x < width; x++) {
+        const p = y * width + x;
+        if (!open[p]) continue;
+        for (let c = 0; c < 3; c++) sum[c] += weight * values[3 * p + c];
+      }
+    }
+    const l = lum(...sum);
+    return sum.map((v) => v / l);
+  };
+  const before = chromaOf(linear);
+  const gains = OCEAN_CHROMA.map((v, c) => v / before[c]);
+  const corrected = new Float64Array(pixels * 3);
+  const out = Buffer.alloc(pixels * 3);
+  for (let p = 0; p < pixels; p++) {
+    const [r, g, b] = [linear[3 * p], linear[3 * p + 1], linear[3 * p + 2]];
+    const l = lum(r, g, b);
+    const weight = (mask[p] / 255) * smooth((blueness(p) - 1.2) / 0.8);
+    const scaled = [r * gains[0], g * gains[1], b * gains[2]];
+    const keep = l / Math.max(lum(...scaled), 1e-9);
+    [r, g, b].forEach((v, c) => {
+      const value = v + weight * (scaled[c] * keep - v);
+      corrected[3 * p + c] = value;
+      out[3 * p + c] = Math.round(255 * linearToSrgb(Math.min(Math.max(value, 0), 1)));
+    });
+  }
+  const after = chromaOf(corrected);
+  if (after.some((v, c) => Math.abs(v - OCEAN_CHROMA[c]) > 0.03)) {
+    throw new Error(`El océano de la Tierra no queda en el color medido: ${after.join(', ')}`);
+  }
+  const show = (v) => v.map((x) => x.toFixed(3)).join('/');
+  return {
+    image: () => sharp(out, { raw: { width, height, channels: 3 } }),
+    report: `océano de la Tierra: abierto ${show(before)} → ${show(after)} (EPIC ${show(OCEAN_CHROMA)}), ganancias ${show(gains)}, conservando la luminancia de cada píxel`,
+  };
+}
+
+/**
  * Orientación del panorama de la Vía Láctea (coordenadas galácticas, l = 0 en el centro y creciendo
  * hacia la izquierda, el norte galáctico arriba): falla si no está como se espera.
  */
@@ -500,6 +586,11 @@ for (const [id, spec] of Object.entries(TEXTURES)) {
     const data = spec.kind === 'normal' || spec.kind === 'gray';
     sourceWidth = (await sharp(input, { limitInputPixels: false }).metadata()).width;
     base = () => sharp(input, { limitInputPixels: false, ignoreIcc: data });
+  }
+  if (spec.ocean) {
+    const ocean = await correctOcean(spec.file, spec.ocean, LEVELS.at(-1)[1]);
+    reports.push(ocean.report);
+    base = ocean.image;
   }
   if (spec.kind === 'ring') {
     ringStrip = await calibrateRings(spec.file);

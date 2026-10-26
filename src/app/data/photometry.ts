@@ -167,11 +167,11 @@ export const BODY_PHOTOMETRY: Readonly<Record<Exclude<BodyId, 'sol'>, BodyPhotom
   tierra: {
     kind: 'atmosphere',
     photometry: giant(1),
-    haze: haze(0.45, 4, 0.12, 1.2),
-    hazeColor: '#8fb4ff',
-    haloScaleHeight: 0.009,
+    haze: haze(0.1, 1.5, 0.12, 1.2),
+    hazeColor: '#f6f9ff',
+    haloScaleHeight: 0.002,
     calibrateAlbedo: false,
-    note: 'Provisional hasta la fase 5: Lambert y una atmósfera azul (ajuste visual).',
+    note: 'Provisional hasta la fase 5: Lambert. Atmósfera ajustada al limbo de las fotos de EPIC (DSCOVR, 21-06-2016; docs/realismo/referencias.md): se aclara desde 0,8 radios (el doble de brillo hacia 0,95), casi blanca, y no se ve halo por fuera del disco. Intensidad y exponente, del perfil medido en dos de ellas (ajuste visual).',
   },
   marte: {
     kind: 'atmosphere',
