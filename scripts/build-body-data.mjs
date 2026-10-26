@@ -373,8 +373,22 @@ const MOON_NAMES = {
     if (!r) throw new Error(`Falta la fila ${label} de los anillos`);
     return num(r[1]);
   };
+  // Profundidad óptica y albedo (fase 3b): los dos primeros intervalos «a - b» de la fila (la de la
+  // división de Cassini no tiene radio, así que no se cuenta por columnas).
+  const region = (label, name) => {
+    const r = table.find((cells) => cells[0] === label);
+    if (!r) throw new Error(`Falta la fila ${label} de los anillos`);
+    const ranges = r.filter((cell) => /^[\d.]+ - [\d.]+$/.test(cell));
+    if (ranges.length < 2) throw new Error(`Faltan la profundidad óptica o el albedo de ${label}`);
+    const range = (text) => text.split(' - ').map(num);
+    return {
+      opticalDepth: q(range(ranges[0]), S, `Profundidad óptica normal ${name}.`),
+      albedo: q(range(ranges[1]), S, `Albedo ${name} (columna «Albedo» de la ficha).`),
+    };
+  };
   data.saturno.rings = {
     innerRadiusKm: q(edge('C inner edge'), S, 'Borde interior del anillo C.'),
+    bInnerKm: q(edge('B inner edge'), S, 'Borde interior del anillo B (exterior del C).'),
     cassiniInnerKm: q(
       edge('B outer edge'),
       S,
@@ -386,6 +400,12 @@ const MOON_NAMES = {
       'Borde interior del anillo A (acaba la división de Cassini).',
     ),
     outerRadiusKm: q(edge('A outer edge'), S, 'Borde exterior del anillo A.'),
+    regions: {
+      c: region('C inner edge', 'del anillo C'),
+      b: region('B inner edge', 'del anillo B'),
+      cassini: region('Cassini division', 'de la división de Cassini'),
+      a: region('A inner edge', 'del anillo A'),
+    },
   };
 }
 

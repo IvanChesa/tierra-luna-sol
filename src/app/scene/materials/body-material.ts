@@ -13,7 +13,8 @@
  *   posición en el sistema propio del cuerpo (no hacen falta atributos de tangentes).
  * - Sombra analítica de los anillos sobre el planeta (Saturno): desde cada punto de la superficie se
  *   lanza un rayo hacia el Sol y, si cruza el plano de los anillos entre sus bordes, se atenúa con
- *   la opacidad del anillo en ese radio. Todo en el sistema propio del planeta, en radios.
+ *   la transmisión del anillo en ese radio por el camino inclinado de la luz, e^(−τ/μ₀) (con la
+ *   profundidad óptica física de la tira). Todo en el sistema propio del planeta, en radios.
  *
  * La geometría es la esfera unidad (Y = polo, meridiano 0 en +X, longitud este hacia −Z, como
  * `SphereGeometry`); el elipsoide sale de la escala de la malla (radio ecuatorial, polar, ecuatorial).
@@ -73,6 +74,7 @@ uniform float uFill;
 uniform sampler2D uNormalMap;
 uniform float uNormalStrength;
 uniform float uRingShadow;
+uniform float uRingShine;
 uniform vec3 uSunDirectionLocal;
 uniform float uPolarScale;
 uniform vec2 uRingRadii;
@@ -95,7 +97,8 @@ float ringShadow() {
   float r = length((p + t * s).xz);
   float u = (r - uRingRadii.x) / (uRingRadii.y - uRingRadii.x);
   if (u < 0.0 || u > 1.0) return 1.0;
-  return 1.0 - texture2D(uRingMap, vec2(u, 0.5)).a;
+  float tau = -log(1.0 - clamp(texture2D(uRingMap, vec2(u, 0.5)).a, 0.0, 0.995));
+  return exp(-tau / max(abs(s.y), 1e-3));
 }
 
 // Normal con el relieve: el mapa guarda (este, norte, arriba) en [0, 1].
@@ -131,6 +134,13 @@ void main() {
   }
   // Relleno ilustrativo (configuración visual): una luz suave desde la cámara.
   vec3 fill = albedo * uFill * (0.25 + 0.75 * max(muViewer, 0.0));
+  // Luz de los anillos (Saturno): la cara iluminada de los anillos alumbra el hemisferio que la ve,
+  // más cuanto más alto está el Sol sobre ellos (aproximación; se nota en el lado nocturno).
+  if (uRingShine > 0.0) {
+    vec3 sunLocal = normalize(uSunDirectionLocal);
+    float facing = max(normalize(vLocal).y * sign(sunLocal.y), 0.0);
+    fill += albedo * uRingShine * abs(sunLocal.y) * facing;
+  }
   gl_FragColor = vec4(albedo * light + uHazeColor.rgb * haze + fill, 1.0);
   ${OUTPUT_FRAGMENT}
 }
@@ -153,6 +163,8 @@ export interface BodyMaterialUniforms extends ShadingUniforms {
   /** Dirección hacia el Sol en el mundo (ejes de Three, unitaria). */
   readonly uSunDirection: Uniform<Vector3>;
   readonly uRingShadow: Uniform<number>;
+  /** Luz de los anillos sobre el planeta (0 = sin anillos). */
+  readonly uRingShine: Uniform<number>;
   /** Dirección hacia el Sol en el sistema propio del planeta (para la sombra de los anillos). */
   readonly uSunDirectionLocal: Uniform<Vector3>;
   /** Radio polar / ecuatorial = 1 − achatamiento. */
@@ -184,6 +196,7 @@ export function createBodyMaterial(options: BodyMaterialOptions) {
     uNormalStrength: new Uniform(0),
     uSunDirection: new Uniform(new Vector3(1, 0, 0)),
     uRingShadow: new Uniform(0),
+    uRingShine: new Uniform(0),
     uSunDirectionLocal: new Uniform(new Vector3(1, 0, 0)),
     uPolarScale: new Uniform(options.polarScale),
     uRingRadii: new Uniform(new Vector2(1, 2)),

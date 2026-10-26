@@ -1,15 +1,21 @@
 /**
- * Anillos de Saturno (D20): color y opacidad de la textura a lo largo del radio, iluminación según
- * la cara que se ve y sombra analítica del planeta sobre los anillos.
+ * Anillos de Saturno (D20, fase 3b): una capa de partículas con la profundidad óptica y el albedo de
+ * cada anillo (la tira de `build-textures.mjs`, calibrada con la ficha de la NASA) y dispersión
+ * simple, la misma fórmula que `ringReflectance` de `ephemeris/photometry.ts`:
  *
- * - Cara iluminada: reflexión de Lommel–Seeliger, I ∝ μ₀ / (μ₀ + μ), con μ₀ y μ los senos de las
- *   elevaciones del Sol y del observador sobre el plano. Con el Sol rasante, los anillos se apagan.
- * - Cara en sombra: solo la luz que atraviesa; las zonas más transparentes (anillo C, división de
- *   Cassini) brillan más que el denso anillo B, como en las imágenes de Cassini.
+ * - Cara iluminada: 2μ₀/(μ₀ + μ) · (1 − e^(−τ(1/μ₀ + 1/μ))). Con el Sol rasante, se apagan.
+ * - Cara oscura (la luz que atraviesa): 2μ₀/(μ₀ − μ) · (e^(−τ/μ₀) − e^(−τ/μ)). El denso anillo B
+ *   se ve oscuro y los tenues (el C, la división de Cassini) brillan, como en las fotos de Cassini
+ *   a contraluz.
+ * - Función de fase de las partículas (pico de oposición y un lóbulo hacia delante para el polvo
+ *   fino), de `data/photometry.ts`.
+ * - Lo que tapan de lo que hay detrás: 1 − e^(−τ/μ), más cuanto más rasante es la vista. El color
+ *   sale premultiplicado por esa cobertura.
  * - Sombra del planeta: rayo desde cada punto del anillo hacia el Sol contra el elipsoide del
  *   planeta. Todo en el sistema propio del planeta y en radios ecuatoriales.
  */
 import { DoubleSide, Texture, Uniform, Vector3 } from 'three';
+import type { Photometry } from '../../ephemeris/photometry';
 import {
   DEPTH_FRAGMENT,
   DEPTH_FRAGMENT_PARS,
@@ -18,6 +24,7 @@ import {
   OUTPUT_FRAGMENT,
   sceneShaderMaterial,
 } from './depth';
+import { SHADING_PARS, shadingUniforms } from './shading';
 
 const vertexShader = /* glsl */ `
 ${DEPTH_VERTEX_PARS}
@@ -34,45 +41,64 @@ void main() {
 
 const fragmentShader = /* glsl */ `
 ${DEPTH_FRAGMENT_PARS}
+${SHADING_PARS}
 uniform sampler2D uRingMap;
 uniform float uHasMap;
 uniform vec3 uSunDirectionLocal;
 uniform vec3 uCameraLocal;
 uniform float uPolarScale;
-uniform float uAmbient;
+uniform float uFill;
 varying vec2 vUv;
 varying vec3 vLocal;
 
+float tlsRingReflectance(float mu0, float mu, float tau, bool litSide) {
+  if (mu0 <= 0.0 || tau <= 0.0) return 0.0;
+  if (litSide) return 2.0 * mu0 / (mu0 + mu) * (1.0 - exp(-tau * (1.0 / mu0 + 1.0 / mu)));
+  if (abs(mu0 - mu) < 1e-4) return 2.0 * tau / mu0 * exp(-tau / mu0);
+  return 2.0 * mu0 / (mu0 - mu) * (exp(-tau / mu0) - exp(-tau / mu));
+}
+
 void main() {
   ${DEPTH_FRAGMENT}
-  vec4 ring = uHasMap > 0.5 ? texture2D(uRingMap, vec2(vUv.x, 0.5)) : vec4(0.8, 0.75, 0.65, 0.6);
-  if (ring.a < 0.01) discard;
+  vec4 ring = uHasMap > 0.5 ? texture2D(uRingMap, vec2(vUv.x, 0.5)) : vec4(0.45, 0.42, 0.36, 0.6);
+  float tau = -log(1.0 - clamp(ring.a, 0.0, 0.995));
+  if (tau < 0.002) discard;
   vec3 s = normalize(uSunDirectionLocal);
   vec3 v = normalize(uCameraLocal - vLocal);
   float mu0 = abs(s.y);
-  float mu = abs(v.y);
-  float lommel = mu0 / max(mu0 + mu, 1e-4);
+  float mu = max(abs(v.y), 0.002);
   bool litSide = s.y * v.y > 0.0;
-  float brightness = litSide ? 2.0 * lommel : 1.2 * lommel * (1.0 - ring.a);
+  float cosAlpha = clamp(dot(s, v), -1.0, 1.0);
+  float phase = tlsPhase(acos(cosAlpha), cosAlpha) * uPhaseNorm;
+  float reflected = tlsRingReflectance(mu0, mu, tau, litSide) * phase;
   // Sombra del planeta: el elipsoide x² + (y / c)² + z² = 1 se vuelve una esfera escalando y.
   vec3 ps = vec3(vLocal.x, vLocal.y / uPolarScale, vLocal.z);
   vec3 ss = normalize(vec3(s.x, s.y / uPolarScale, s.z));
   float b = dot(ps, ss);
   float disc = b * b - (dot(ps, ps) - 1.0);
-  float lit = (disc > 0.0 && b < 0.0) ? 0.0 : 1.0;
-  gl_FragColor = vec4(ring.rgb * (brightness * lit + uAmbient), ring.a);
+  float sunlit = b < 0.0 ? 1.0 - smoothstep(-0.002, 0.002, disc) : 1.0;
+  float coverage = 1.0 - exp(-tau / mu);
+  vec3 color = ring.rgb * (reflected * sunlit + uFill * coverage);
+  gl_FragColor = vec4(color, coverage);
   ${OUTPUT_FRAGMENT}
 }
 `;
 
-export function createRingMaterial(polarScale: number) {
+export interface RingMaterialOptions {
+  readonly polarScale: number;
+  /** Función de fase de las partículas (solo cuentan sus términos de fase). */
+  readonly photometry: Photometry;
+}
+
+export function createRingMaterial(options: RingMaterialOptions) {
   const uniforms = {
+    ...shadingUniforms(options.photometry, null, '#ffffff'),
     uRingMap: new Uniform<Texture | null>(null),
     uHasMap: new Uniform(0),
     uSunDirectionLocal: new Uniform(new Vector3(1, 0.3, 0)),
     uCameraLocal: new Uniform(new Vector3(0, 1, 5)),
-    uPolarScale: new Uniform(polarScale),
-    uAmbient: new Uniform(0.02),
+    uPolarScale: new Uniform(options.polarScale),
+    uFill: new Uniform(0),
   };
   const material = sceneShaderMaterial({
     name: 'tls-rings',
@@ -80,6 +106,8 @@ export function createRingMaterial(polarScale: number) {
     vertexShader,
     fragmentShader,
     transparent: true,
+    // El color va multiplicado por la cobertura: se mezcla con (1, 1 − α).
+    premultipliedAlpha: true,
     depthWrite: false,
     side: DoubleSide,
   });

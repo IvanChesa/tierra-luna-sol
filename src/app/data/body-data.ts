@@ -614,6 +614,11 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
         source: 'nssdc-saturn-rings',
         note: 'Borde interior del anillo C.',
       },
+      bInnerKm: {
+        value: 91975,
+        source: 'nssdc-saturn-rings',
+        note: 'Borde interior del anillo B (exterior del C).',
+      },
       cassiniInnerKm: {
         value: 117507,
         source: 'nssdc-saturn-rings',
@@ -628,6 +633,56 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
         value: 136780,
         source: 'nssdc-saturn-rings',
         note: 'Borde exterior del anillo A.',
+      },
+      regions: {
+        c: {
+          opticalDepth: {
+            value: [0.05, 0.35],
+            source: 'nssdc-saturn-rings',
+            note: 'Profundidad óptica normal del anillo C.',
+          },
+          albedo: {
+            value: [0.12, 0.3],
+            source: 'nssdc-saturn-rings',
+            note: 'Albedo del anillo C (columna «Albedo» de la ficha).',
+          },
+        },
+        b: {
+          opticalDepth: {
+            value: [0.4, 2.5],
+            source: 'nssdc-saturn-rings',
+            note: 'Profundidad óptica normal del anillo B.',
+          },
+          albedo: {
+            value: [0.4, 0.6],
+            source: 'nssdc-saturn-rings',
+            note: 'Albedo del anillo B (columna «Albedo» de la ficha).',
+          },
+        },
+        cassini: {
+          opticalDepth: {
+            value: [0, 0.1],
+            source: 'nssdc-saturn-rings',
+            note: 'Profundidad óptica normal de la división de Cassini.',
+          },
+          albedo: {
+            value: [0.2, 0.4],
+            source: 'nssdc-saturn-rings',
+            note: 'Albedo de la división de Cassini (columna «Albedo» de la ficha).',
+          },
+        },
+        a: {
+          opticalDepth: {
+            value: [0.4, 1],
+            source: 'nssdc-saturn-rings',
+            note: 'Profundidad óptica normal del anillo A.',
+          },
+          albedo: {
+            value: [0.4, 0.6],
+            source: 'nssdc-saturn-rings',
+            note: 'Albedo del anillo A (columna «Albedo» de la ficha).',
+          },
+        },
       },
     },
   },

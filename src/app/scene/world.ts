@@ -27,7 +27,7 @@ import {
 } from 'three';
 import { BODY_DATA } from '../data/body-data';
 import type { BodyId } from '../data/body.model';
-import { BODY_PHOTOMETRY, BodyPhotometry } from '../data/photometry';
+import { BODY_PHOTOMETRY, BodyPhotometry, RING_PHOTOMETRY } from '../data/photometry';
 import { eclRotationToThree } from '../ephemeris/coordinates';
 import { albedoScale } from '../ephemeris/photometry';
 import type { SystemState } from '../ephemeris/system-state';
@@ -276,7 +276,10 @@ export class World {
     if (saturn) {
       const radiusKm = saturn.body.radiusKm;
       const ringRadii = this.ringRadiiKm();
-      this.ringMaterial = createRingMaterial(1 - saturn.body.flattening);
+      this.ringMaterial = createRingMaterial({
+        polarScale: 1 - saturn.body.flattening,
+        photometry: RING_PHOTOMETRY.photometry,
+      });
       this.rings = new Mesh(
         createRingGeometry(ringRadii.innerKm / radiusKm, ringRadii.outerKm / radiusKm, 256),
         this.ringMaterial.material,
@@ -287,6 +290,7 @@ export class World {
       saturn.mesh.add(this.rings);
       if (saturn.uniforms) {
         saturn.uniforms.uRingShadow.value = 1;
+        saturn.uniforms.uRingShine.value = RING_PHOTOMETRY.ringShine;
         saturn.uniforms.uRingRadii.value.set(
           ringRadii.innerKm / radiusKm,
           ringRadii.outerKm / radiusKm,
@@ -474,6 +478,7 @@ export class World {
   /** Relleno ilustrativo de los cuerpos (configuración visual), en fracción de la luz del Sol. */
   setFill(fill: number): void {
     for (const visual of this.visuals) if (visual.uniforms) visual.uniforms.uFill.value = fill;
+    if (this.ringMaterial) this.ringMaterial.uniforms.uFill.value = fill;
   }
 
   /** Factor de albedo de un cuerpo (para las pruebas y el informe). */

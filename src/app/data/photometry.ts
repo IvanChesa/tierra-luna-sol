@@ -107,6 +107,24 @@ const giant = (minnaertK: number): Photometry => ({
 const haze = (strength: number, limbExponent: number, twilight: number, forwardBoost: number) =>
   ({ strength, limbExponent, twilight, forwardBoost, forwardAsymmetry: 0.7 }) as const;
 
+/**
+ * Partículas de los anillos de Saturno (solo cuenta su función de fase; la profundidad óptica y el
+ * albedo de cada anillo salen de la ficha de la NASA, en la tira de los anillos): el pico de
+ * oposición y la dispersión hacia atrás de la Luna, como unas partículas heladas y rugosas, y un
+ * lóbulo hacia delante para el polvo fino que hace brillar los anillos tenues a contraluz.
+ * Aproximación y ajuste visual, comparando con las fotos del Hubble y de Cassini.
+ */
+export const RING_PHOTOMETRY: {
+  readonly photometry: Photometry;
+  /** Luz de los anillos sobre el planeta (fracción de la del Sol): se ve en su lado nocturno. */
+  readonly ringShine: number;
+  readonly note: string;
+} = {
+  photometry: { ...MOON, forwardFraction: 0.08, forwardAsymmetry: 0.75 },
+  ringShine: 0.12,
+  note: 'Fase de la Luna y un lóbulo hacia delante (8 %, g = 0,75) para el polvo fino; luz de los anillos sobre el planeta, 0,12 de la del Sol por el seno de su elevación: aproximación y ajuste visual.',
+};
+
 /** Las lunas sin atmósfera usan la fotometría de la Luna (aproximación documentada). */
 const airless = (
   note = 'Fotometría de la Luna (aproximación: no hay leyes de fase de cada luna en el proyecto).',
@@ -164,7 +182,8 @@ export const BODY_PHOTOMETRY: Readonly<Record<Exclude<BodyId, 'sol'>, BodyPhotom
   jupiter: {
     kind: 'giant',
     photometry: giant(1),
-    haze: haze(0.04, 4, 0.07, 1.5),
+    haze: haze(0.02, 4, 0.07, 10),
+    haloScaleHeight: 0.005,
     hazeColor: '#f2e3cc',
     chromaticity: {
       rgb: [1.202, 0.972, 0.679],
@@ -178,7 +197,8 @@ export const BODY_PHOTOMETRY: Readonly<Record<Exclude<BodyId, 'sol'>, BodyPhotom
   saturno: {
     kind: 'giant',
     photometry: giant(0.85),
-    haze: haze(0.04, 4, 0.07, 1.5),
+    haze: haze(0.02, 4, 0.07, 10),
+    haloScaleHeight: 0.005,
     hazeColor: '#f0e2c4',
     chromaticity: {
       rgb: [1.357, 0.938, 0.559],
@@ -192,7 +212,8 @@ export const BODY_PHOTOMETRY: Readonly<Record<Exclude<BodyId, 'sol'>, BodyPhotom
   urano: {
     kind: 'giant',
     photometry: giant(0.8),
-    haze: haze(0.06, 3, 0.07, 1.5),
+    haze: haze(0.04, 3, 0.07, 8),
+    haloScaleHeight: 0.006,
     hazeColor: '#c9f0f2',
     chromaticity: {
       rgb: [0.767, 1.063, 1.061],
@@ -206,7 +227,8 @@ export const BODY_PHOTOMETRY: Readonly<Record<Exclude<BodyId, 'sol'>, BodyPhotom
   neptuno: {
     kind: 'giant',
     photometry: giant(0.8),
-    haze: haze(0.06, 3, 0.07, 1.5),
+    haze: haze(0.04, 3, 0.07, 8),
+    haloScaleHeight: 0.006,
     hazeColor: '#bfe0f5',
     chromaticity: {
       rgb: [0.65, 1.075, 1.288],

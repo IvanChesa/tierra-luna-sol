@@ -283,24 +283,24 @@ export const TEXTURE_FILES: TextureFiles = {
   'saturn-rings': [
     {
       level: '1k',
-      path: 'textures/1k/saturn-rings.e0727b54d0.webp',
+      path: 'textures/1k/saturn-rings.7e269775a3.webp',
       width: 1024,
       height: 16,
-      bytes: 2186,
+      bytes: 1378,
     },
     {
       level: '2k',
-      path: 'textures/2k/saturn-rings.cade5e7408.webp',
+      path: 'textures/2k/saturn-rings.e0f8389a48.webp',
       width: 2048,
       height: 16,
-      bytes: 3702,
+      bytes: 2362,
     },
     {
       level: '4k',
-      path: 'textures/4k/saturn-rings.79da8259fb.webp',
+      path: 'textures/4k/saturn-rings.505a19b88f.webp',
       width: 4096,
       height: 16,
-      bytes: 5862,
+      bytes: 3570,
     },
   ],
   uranus: [
