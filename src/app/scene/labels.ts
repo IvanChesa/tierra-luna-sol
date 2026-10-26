@@ -67,6 +67,11 @@ export interface LabelLayoutOptions {
   readonly insets?: ViewInsets;
   /** 1 para los cuerpos que no se dibujan (velocidades altas, §4.5): tampoco llevan nombre. */
   readonly hidden?: Uint8Array | null;
+  /**
+   * Radio que ocupa cada cuerpo en pantalla, en radios de su disco (1 si falta): los anillos de
+   * Saturno. Su nombre va por fuera y los demás no se colocan encima (fase 3b, tarea 8).
+   */
+  readonly extents?: readonly number[];
 }
 
 interface Obstacle {
@@ -85,7 +90,7 @@ const hitsDisc = (box: LabelBox, disc: Obstacle): boolean => {
 
 /**
  * Decide qué etiquetas se ven y dónde. Voraz por prioridad: cada nombre prueba cuatro posiciones
- * (derecha, izquierda, arriba y abajo del disco) y se descarta si en todas choca con otro nombre ya
+ * (derecha, izquierda, arriba y abajo del disco, o de sus anillos) y se descarta si en todas choca con otro nombre ya
  * colocado o con el disco de otro cuerpo visible (o el halo del Sol), si su cuerpo está tapado,
  * oculto o fuera de la parte visible, si es una luna pegada a su planeta en pantalla (los sistemas de
  * lunas lejanos se ven como un solo punto) o si es una luna de un planeta sin nombre visible. La
@@ -102,6 +107,7 @@ export function layoutLabels(
 ): LabelBox[] {
   const insets = options.insets ?? { top: 0, right: 0, bottom: 0, left: 0 };
   const hidden = options.hidden;
+  const extent = (index: number) => options.extents?.[index] ?? 1;
   const minX = insets.left;
   const minY = insets.top;
   const maxX = viewport.width - insets.right;
@@ -125,7 +131,7 @@ export function layoutLabels(
     });
   // Los cuerpos que se ven (los de `order`) son obstáculos para los nombres de los demás.
   const obstacles: Obstacle[] = order.map((body) => {
-    const disc = Math.max(body.radiusPx, OBSTACLE_MIN_RADIUS_PX);
+    const disc = Math.max(body.radiusPx * extent(body.index), OBSTACLE_MIN_RADIUS_PX);
     const halo =
       infos[body.index]?.kind === 'star'
         ? Math.max(body.radiusPx * SUN_HALO_RADII, SUN_HALO_MIN_PX) * SUN_HALO_VISIBLE
@@ -138,7 +144,7 @@ export function layoutLabels(
     const info = infos[body.index];
     if (info?.kind === 'moon' && body.index !== selected && !shown.has(info.parentIndex)) continue;
     const size = sizes[body.index] ?? { width: 0, height: 0 };
-    const gap = Math.min(Math.max(body.radiusPx, 2), viewport.width) + GAP_PX;
+    const gap = Math.min(Math.max(body.radiusPx * extent(body.index), 2), viewport.width) + GAP_PX;
     const { width: w, height: h } = size;
     const options: readonly (readonly [number, number])[] = [
       [gap, -h / 2], // derecha

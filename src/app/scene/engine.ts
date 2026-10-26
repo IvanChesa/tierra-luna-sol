@@ -218,6 +218,15 @@ const FOCUS_ALBEDO: readonly (number | null)[] = SCENE_BODIES.map((body) => {
     : null;
 });
 
+/**
+ * Radio que ocupa cada cuerpo para las etiquetas, en radios de su disco: con anillos (Saturno), el
+ * borde exterior del anillo A de la ficha de la NASA. Así su nombre no los tapa (fase 3b, tarea 8).
+ */
+const LABEL_EXTENTS: readonly number[] = SCENE_BODIES.map((body) => {
+  const rings = BODY_DATA[body.id].rings;
+  return rings ? rings.outerRadiusKm.value / body.radiusKm : 1;
+});
+
 /** Periodos de cada cuerpo para decidir el aliasing (§4.5), del catálogo. */
 export const MOTION_BODIES: readonly MotionBody[] = SCENE_BODIES.map((body) => {
   const data = BODY_DATA[body.id];
@@ -897,7 +906,7 @@ export class SceneEngine implements SceneEngineApi {
       { width, height },
       this.focusIndex ?? -1,
       planet ? sceneBody(planet).index : -1,
-      { insets: this.insets, hidden: this.hiddenLabels() },
+      { insets: this.insets, hidden: this.hiddenLabels(), extents: LABEL_EXTENTS },
     );
     this.labels.update(boxes, this.focusIndex ?? -1);
   }
