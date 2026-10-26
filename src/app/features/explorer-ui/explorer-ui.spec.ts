@@ -50,10 +50,11 @@ describe('ExplorerUi: atajos de teclado del explorador', () => {
     expect(sim.playing()).toBe(true);
     press('K');
     expect(sim.playing()).toBe(false);
+    // Desde la velocidad de entrada (3 días por segundo, D31), un escalón arriba y otro abajo.
     press('.');
-    expect(sim.speed()).toBe(3600);
+    expect(sim.speed()).toBe(7 * 86_400);
     press(',');
-    expect(sim.speed()).toBe(1);
+    expect(sim.speed()).toBe(3 * 86_400);
     press('r');
     expect(sim.reverse()).toBe(true);
     press('n');
