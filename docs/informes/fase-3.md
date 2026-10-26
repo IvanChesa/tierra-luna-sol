@@ -60,7 +60,7 @@ Escrito antes de empezar, como pide el modo autónomo, a partir del borrador de 
 - 3.b ✅ Stores, barra de tiempo, índice de cuerpos y ficha resumida.
 - 3.c ✅ Cámara, encuadre con `setViewOffset`, vista limpia, estelas, aliasing, selector de vista y viajes.
 - 3.d ✅ URL, teclado y atajos (desactivables), `aria-live`, transiciones de texto, Playwright con SwiftShader, axe y privacidad.
-- 3.e ✅ Checks, informe, revisión de código por subagente y fusión (ver «Respuesta a la revisión»).
+- 3.e ⏳ Checks e informe al día (26-10, sobre el código final). En curso: la revisión de código por subagente (`docs/revisiones/fase-3.md`), la verificación de las correcciones de diseño (§12), la respuesta a las dos y la fusión.
 
 ## 1. Resumen
 El explorador tiene ya su interfaz completa sobre el lienzo 3D, en escritorio y en móvil, y todo se puede hacer sin el lienzo y con el teclado:
@@ -116,10 +116,10 @@ El plan de la fase (§0.12) la incluía, pero las letras son atajos globales del
 ### 4.4 Atajos de una sola tecla desactivables (añadido)
 WCAG 2.1.4 (nivel A) exige que los atajos de un solo carácter se puedan desactivar o reasignar, o que solo actúen con el foco. Una casilla en el diálogo de atajos los desactiva, y se recuerda en `localStorage` (`tls.atajos`, con try/catch). Desactivados, solo queda `Esc`. El botón de ayuda de la barra de tiempo sigue abriendo el diálogo. Se propone añadirlo al plan (§10).
 
-### 4.5 JS inicial: +7,8 kB (287,70 → 295,46 kB), por debajo del aviso de 300 kB
+### 4.5 JS inicial: +8,6 kB (287,70 → 296,25 kB), por debajo del aviso de 300 kB
 No entra ningún código de la aplicación nuevo: `check-initial-bundle.mjs` vigila ahora también `src/app/state/` y los controles del visor, y el `main` solo lleva `app.ts`, `app.routes.ts`, `body-index.ts`, el título y la configuración.
 
-El aumento es de `@angular/core`, `@angular/router` y `@angular/common`. esbuild no parte un módulo entre chunks, así que las piezas de Angular que solo usa el código diferido acaban en el chunk compartido con `main`. Esas piezas son el runtime de `@defer`, `linkedSignal`, `effect`, `afterNextRender`, `@Service` y los inputs de señal. Se probó a quitar `afterRenderEffect` (se sustituyó por `effect` + `afterNextRender`). Margen hasta el aviso: 4,5 kB.
+El aumento es de `@angular/core`, `@angular/router` y `@angular/common`. esbuild no parte un módulo entre chunks, así que las piezas de Angular que solo usa el código diferido acaban en el chunk compartido con `main`. Esas piezas son el runtime de `@defer`, `linkedSignal`, `effect`, `afterNextRender`, `@Service` y los inputs de señal. Se probó a quitar `afterRenderEffect` (se sustituyó por `effect` + `afterNextRender`). El chunk inicial de 464 bytes son los ayudantes de esbuild para la propagación de objetos (`__spreadValues`), compartidos por `main`, la interfaz y el motor. Los CSS globales suben de 5,82 a 6,51 kB con las correcciones de diseño. Margen hasta el aviso: 3,75 kB.
 
 ### 4.6 Archivos distintos de los previstos
 - La sesión está en `features/explorer-ui/explorer-session.ts`, no en `state/`: depende del router y de la interfaz.
@@ -161,48 +161,50 @@ El motor no deja avanzar el reloj más de 400 ms por frame (`MAX_FRAME_DT_MS`) p
 10. **Playwright.** Tres proyectos (`escritorio` 1280 × 800, `movil` con Pixel 7 y `sin-webgl`), el build servido por `serve-dist.mjs` en el puerto 4330, `es-ES` y `Europe/Madrid`. Los e2e están en TypeScript: `tsconfig.e2e.json` comprueba sus tipos en `npm run e2e` y entran en `ng lint`. axe con las reglas WCAG 2.1 A y AA: falla con cualquier violación grave o crítica.
 
 ## 6. Salida de los checks
+Repetidos el 26-10 sobre el código final (`93657b7`, con las correcciones de la revisión de diseño).
 ```
-npm run check
+npm run check                                   (2 min 9 s, código 0)
 > ng lint && prettier --check .
 All files pass linting.
 All matched files use Prettier code style!
 > ng test --watch=false
- Test Files  45 passed (45)
-      Tests  344 passed (344)
+ Test Files  47 passed (47)
+      Tests  349 passed (349)
 All files (ephemeris/)  |   99.57 |    96.73 |     100 |     100
 > ng build
 Initial chunk files | Names    |  Raw size | Estimated transfer size
-main-…js            | main     | 289.18 kB |                79.59 kB
-styles-…css         | styles   |   5.82 kB |                 1.72 kB
-                    | Initial total | 295.46 kB |            81.79 kB
+main-…js            | main     | 289.28 kB |                79.63 kB
+styles-…css         | styles   |   6.51 kB |                 1.80 kB
+chunk-…js           | -        | 464 bytes |               464 bytes
+                    | Initial total | 296.25 kB |            81.90 kB
 Lazy chunk files
-chunk-…js           | index        | 635.80 kB | 137.64 kB   (three + motor)
-chunk-…js           | explorer-ui  | 209.69 kB |  55.27 kB   (astronomy-engine, stores e interfaz)
-chunk-…js           | viewer-layout|   6.80 kB |   2.18 kB
+chunk-…js           | index        | 636.11 kB | 137.76 kB   (three + motor)
+chunk-…js           | explorer-ui  | 213.33 kB |  56.04 kB   (astronomy-engine, stores e interfaz)
+chunk-…js           | viewer-layout|   7.00 kB |   2.25 kB
 Prerendered 17 static routes.
 > node scripts/check-initial-bundle.mjs
 ✔ El JS inicial de las 18 páginas (6 ficheros) no lleva ningún módulo de three ni de astronomy-engine
   ni de los stores ni de los controles del visor.
 ```
-Sin avisos de presupuesto. El chunk del visor (three y el motor) pesa 635,80 kB (aviso de §5 a 900 kB). La interfaz diferida, con astronomy-engine, 209,69 kB.
+Sin avisos de presupuesto. El chunk del visor (three y el motor) pesa 636,11 kB (aviso de §5 a 900 kB). La interfaz diferida, con astronomy-engine, 213,33 kB.
 
 ```
-npx playwright test
+npx tsc -p tsconfig.e2e.json && npx playwright test
   39 passed (2.0m)
 ```
 
-### Mediciones (`node scripts/measure.mjs`, Chromium con la GPU: RTX 3060, ANGLE D3D11)
+### Mediciones (`node scripts/measure.mjs`, 26-10, Chromium con la GPU: RTX 3060, ANGLE D3D11)
 | Medida | Resultado | Objetivo (§5) |
 |---|---|---|
-| Reproducción a 1 día/s (alta, media y baja) | 60 FPS (mín. 60) · 1,55 / 1,36 / 1,23 ms de CPU por frame · 0,17–0,19 ms de efemérides · 34 llamadas | ≥ 55 ✅ · ≤ 2 ms ✅ |
+| Reproducción a 1 día/s (alta, media y baja) | 60 / 59,8 / 59,6 FPS de media (mín. 60 / 59 / 59) · 1,76 / 1,44 / 1,36 ms de CPU por frame · 0,17 ms de efemérides · 34 llamadas | ≥ 55 ✅ · ≤ 2 ms ✅ |
 | Reposo (3 s en pausa) | 0 frames · 0 `requestAnimationFrame` | ✅ |
 | Store a 1 año/s | 4,8 actualizaciones por segundo | ≤ 5 ✅ |
-| URL durante 5 s de reproducción | 0 cambios; al pausar, `?cuerpo=marte&fecha=2036-06-18T22:24:38Z` | ✅ |
+| URL durante 5 s de reproducción | 0 cambios; al pausar, `?cuerpo=marte&fecha=2036-06-24T23:55:34Z` | ✅ |
 | VRAM alta (sistema / Tierra / Luna) | 27 / 67 / 107 MB (media y baja: 27 / 35 / 43) | ≤ 300 / ≤ 120 ✅ |
 | Memoria tras 10 idas y vueltas explorador ↔ `/planetas` | 6 geometrías · 11 texturas · 10 MB de heap · 1 contexto WebGL vivo · 1 lienzo | sin crecimiento ✅ |
 | Memoria tras 10 cambios de vista y 6 de calidad | 6 geometrías · 11 texturas · 10 MB · 1 contexto | sin crecimiento ✅ |
 | Contexto WebGL perdido y recuperado | `contextLost` → `contextRestored`, 0 frames mientras está perdido y la fecha cambiada se conserva (captura `contexto-recuperado.webp`) | ✅ |
-| Primera vista (`/`, alta) | JS 1116 kB, texturas 378 kB, estrellas 70 kB, póster 28 kB, fuentes 52 kB · una tarea larga de 108 ms · LCP: `img.poster` a 148 ms | texturas ≤ 2,5 MB ✅ · sin tareas > 200 ms ✅ · el LCP no es el lienzo ✅ |
+| Primera vista (`/`, alta) | JS 1120 kB, texturas 378 kB, estrellas 70 kB, póster 28 kB, fuentes 52 kB · una tarea larga de 90 ms (ninguna en baja) · LCP: `img.poster` a 180 ms | texturas ≤ 2,5 MB ✅ · sin tareas > 200 ms ✅ · el LCP no es el lienzo ✅ |
 
 ## 7. Capturas
 En `docs/informes/img/fase-3/`, deterministas (`?captura=1`, 2026-10-24 00:00 UTC, `es-ES`, `Europe/Madrid`), con `node scripts/capture-ui.mjs docs/informes/img/fase-3`:
@@ -250,4 +252,4 @@ npm run build && node scripts/serve-dist.mjs    # el build prerenderizado en htt
 - Capturas: `node scripts/capture-ui.mjs <carpeta>` · pósters: `node scripts/build-poster.mjs` · mediciones: `node scripts/measure.mjs [--img=<carpeta>]`.
 
 ## 12. Revisión de diseño (3.a)
-Revisión por subagente en `docs/revisiones/fase-3-diseno.md`. Veredicto: CAMBIOS NECESARIOS, con 1 bloqueante, 6 importantes, 10 menores y 6 sugerencias. Todos corregidos en los commits `15f8f0b`–`6380652`, salvo las sugerencias 18 y 23 (textos), que quedan para Iván. **Verificación por el mismo subagente: pendiente** (se cortó la sesión por el límite de uso).
+Revisión por subagente en `docs/revisiones/fase-3-diseno.md`. Veredicto: CAMBIOS NECESARIOS, con 1 bloqueante, 6 importantes, 10 menores y 6 sugerencias. Todos corregidos en los commits `15f8f0b`–`6380652`, salvo la sugerencia 18 (el H1 «Tierra Luna Sol» es un texto: decide Iván). La 23 se resolvió con una regla en `ESTILO.md` §1 (tuteo en los textos de las vistas; «nuestro» solo para lo que es de todos), que los dos textos ya cumplen. **Verificación: en curso.** El subagente de la revisión de diseño ya no existe (la sesión se cortó por el límite de uso), así que la hace otro, también sin contexto, sobre el código final.
