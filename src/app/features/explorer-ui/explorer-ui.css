@@ -56,6 +56,11 @@
   display: none;
 }
 
+/* El foco llega a la ficha cuando tapa lo que lo tenía (móvil): el anillo, por dentro de su borde. */
+.panel:focus-visible {
+  outline-offset: calc(-1 * var(--focus-ring-width));
+}
+
 .panel__grip {
   display: none;
 }
@@ -161,15 +166,28 @@ kbd {
     overscroll-behavior: contain;
   }
 
-  /* Los avisos y «Saltar» dejan libre la columna de la cámara, abajo a la derecha. */
-  .notices {
-    justify-self: stretch;
-    margin: var(--space-3) calc(2 * var(--space-3) + var(--tap-target) * 2 + var(--space-1)) 0
-      var(--space-3);
+  /*
+   * La hoja de la ficha tapa la tira de cuerpos, la barra de tiempo y la cámara: mientras está
+   * abierta, salen del orden del foco y del árbol accesible (el foco pasa a la ficha, explorer-ui.ts).
+   */
+  :host(.has-panel) :is(.camera, .index, .dock) {
+    visibility: hidden;
   }
 
+  /*
+   * Los avisos ocupan el ancho del lienzo y acaban por encima de la cámara (dos filas de botones,
+   * abajo a la derecha); si no caben, se desplazan.
+   */
+  .notices {
+    justify-self: stretch;
+    max-height: calc(100% - 3 * var(--space-3) - 2 * var(--tap-target) - var(--space-1));
+    margin: var(--space-3) var(--space-3) 0;
+  }
+
+  /* «Saltar el viaje», en la parte visible: encima de la hoja inferior o de la ficha abierta. */
   .skip {
+    grid-area: 1 / 1 / -1 / -1;
     justify-self: start;
-    margin: 0 0 var(--space-3) var(--space-3);
+    margin: 0 0 calc(var(--view-bottom, 0px) + var(--space-3)) var(--space-3);
   }
 }

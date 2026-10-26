@@ -7,7 +7,15 @@
 
 <tls-body-picker class="index" />
 
-<aside class="panel" data-chrome [hidden]="!panelBody()" aria-label="Ficha del cuerpo elegido">
+<!-- tabindex="-1": el foco llega aquí cuando la ficha tapa lo que lo tenía (la hoja del móvil). -->
+<aside
+  #panel
+  class="panel"
+  data-chrome
+  tabindex="-1"
+  [hidden]="!panelBody()"
+  aria-label="Ficha del cuerpo elegido"
+>
   @if (panelBody()) {
     <div
       class="panel__grip"
@@ -36,7 +44,7 @@
 }
 
 @if (explorer.cleanView()) {
-  <button type="button" class="control restore" (click)="session.setCleanView(false)">
+  <button #restore type="button" class="control restore" (click)="session.setCleanView(false)">
     <tls-icon name="restore" />
     Mostrar la interfaz
     <kbd>Esc</kbd>

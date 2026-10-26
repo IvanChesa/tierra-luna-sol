@@ -254,6 +254,14 @@ tls-root:has(tls-explorer-ui.is-clean) .site-header {
     clip-path: inset(50%);
     white-space: nowrap;
   }
+
+  /*
+   * Con la barra de tiempo desplegada, el lienzo de un móvil bajo mide unos 190 px: la cámara se
+   * queda en acercar y alejar para no tapar las etiquetas (G y V siguen valiendo).
+   */
+  .explorer:has(.time.is-expanded) .camera__extra {
+    display: none;
+  }
 }
 
 @media (min-width: 64rem) and (max-height: 50rem) {

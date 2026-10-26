@@ -2,12 +2,16 @@ import {
   Component,
   DestroyRef,
   ElementRef,
+  Injector,
   afterNextRender,
   computed,
+  effect,
   inject,
   input,
   output,
   signal,
+  untracked,
+  viewChild,
 } from '@angular/core';
 import { Router } from '@angular/router';
 import type { ExplorerView, ViewInsets } from '../../scene';
@@ -17,7 +21,7 @@ import { SimulationStore } from '../../state/simulation.store';
 import { BodyPanel } from '../body-panel/body-panel';
 import { BodyPicker } from '../body-picker/body-picker';
 import { CameraControls, ZOOM_STEP } from '../camera-controls/camera-controls';
-import { ShortcutCommand, globalCommand, isTextField } from '../shortcuts/shortcuts';
+import { ShortcutCommand, globalCommand, isTextField, repeats } from '../shortcuts/shortcuts';
 import { ShortcutsDialog } from '../shortcuts/shortcuts-dialog';
 import { TimeControls } from '../time-controls/time-controls';
 import { VIEW_LINKS } from '../view-switcher/view-switcher';
@@ -29,6 +33,23 @@ import { Notices } from './notices';
 
 /** Deslizar la ficha hacia abajo más que esto la cierra (móvil). */
 const SWIPE_CLOSE_PX = 72;
+
+/** Lo que la interfaz no recuerda como «el último foco»: lo que aparece y desaparece. */
+const TRANSIENT = '.panel, .restore, .skip';
+
+/** Lo que decide adónde va el foco: la vista limpia y el cuerpo de la ficha abierta. */
+interface FocusState {
+  readonly clean: boolean;
+  readonly panel: string | null;
+}
+
+/** ¿Se ve el elemento? Sin `checkVisibility` (jsdom, navegadores antiguos), se supone que sí. */
+function isShown(element: Element | null | undefined): element is HTMLElement {
+  if (!(element instanceof HTMLElement) || !element.isConnected) return false;
+  return typeof element.checkVisibility === 'function'
+    ? element.checkVisibility({ checkVisibilityCSS: true, visibilityProperty: true })
+    : true;
+}
 
 /**
  * La parte interactiva del explorador, diferida (`@defer` en el layout): el lienzo 3D y toda la
@@ -56,7 +77,9 @@ const SWIPE_CLOSE_PX = 72;
   host: {
     '[class.is-clean]': 'explorer.cleanView()',
     '[class.is-scene-ready]': 'ready3d()',
+    '[class.has-panel]': 'panelBody() !== null',
     '(document:keydown)': 'onKeydown($event)',
+    '(focusin)': 'rememberFocus($event)',
   },
 })
 export class ExplorerUi {
@@ -82,10 +105,32 @@ export class ExplorerUi {
   /** El 3D se ve: los controles de cámara aparecen (antes, y si falla, no harían nada). */
   protected readonly ready3d = signal(false);
   private swipeStart: number | null = null;
+  private readonly panel = viewChild.required<ElementRef<HTMLElement>>('panel');
+  private readonly restoreButton = viewChild<ElementRef<HTMLElement>>('restore');
+  /** El último elemento con el foco que no es de quita y pon (la ficha, «Mostrar la interfaz»). */
+  private lastFocus: HTMLElement | null = null;
 
   constructor() {
     this.explorer.connectView(this.view);
     afterNextRender(() => this.trackInsets());
+
+    // Gestión del foco (WCAG 2.4.3): si la interfaz oculta o quita el elemento que tiene el foco
+    // (la vista limpia, la ficha que se cierra o, en móvil, la hoja que tapa la tira, la barra y la
+    // cámara), el foco pasa a donde se puede seguir. El DOM es un sistema externo: se mira cuando
+    // ya está pintado.
+    const injector = inject(Injector);
+    let previous: FocusState = { clean: false, panel: null };
+    effect(() => {
+      const next: FocusState = { clean: this.explorer.cleanView(), panel: this.panelBody() };
+      const before = previous;
+      previous = next;
+      untracked(() => afterNextRender(() => this.keepFocus(before, next), { injector }));
+    });
+  }
+
+  protected rememberFocus(event: FocusEvent): void {
+    const target = event.target;
+    if (target instanceof HTMLElement && !target.closest(TRANSIENT)) this.lastFocus = target;
   }
 
   protected sceneReady(): void {
@@ -102,7 +147,7 @@ export class ExplorerUi {
     // Los atajos no actúan mientras se escribe (PLAN 3.d.10).
     if (isTextField(event.target instanceof Element ? event.target : null)) return;
     const command = globalCommand(event, this.explorer.singleKeyShortcuts());
-    if (!command || !this.run(command)) return;
+    if (!command || (event.repeat && !repeats(command)) || !this.run(command)) return;
     event.preventDefault();
   }
 
@@ -190,6 +235,36 @@ export class ExplorerUi {
       this.session.closePanel();
     }
     this.swipeStart = null;
+  }
+
+  // --- Foco -----------------------------------------------------------------------------------------
+
+  /**
+   * Tras un cambio de la vista limpia o de la ficha, si el foco se ha perdido (en `<body>` o en algo
+   * que ya no se ve): al entrar en la vista limpia, a «Mostrar la interfaz»; al abrir la ficha (en
+   * móvil tapa lo que tenía el foco), a la ficha; y al cerrar una u otra, a donde estaba antes (o a
+   * la ficha, a la fila del índice o al lienzo). Si nunca ha habido foco en el explorador (al cargar
+   * con `?cuerpo=`), no se mueve.
+   */
+  private keepFocus(before: FocusState, now: FocusState): void {
+    const doc = this.host.nativeElement.ownerDocument;
+    const active = doc.activeElement;
+    if (active && active !== doc.body && isShown(active)) return;
+    const entering = now.clean && !before.clean;
+    if (!entering && this.lastFocus === null) return;
+    const root = this.host.nativeElement.parentElement;
+    const panel = this.panel().nativeElement;
+    const candidates = entering
+      ? [this.restoreButton()?.nativeElement]
+      : now.panel !== null && now.panel !== before.panel
+        ? [panel]
+        : [
+            this.lastFocus,
+            panel,
+            root?.querySelector('[role="treeitem"][tabindex="0"]'),
+            root?.querySelector('canvas[tabindex="0"]'),
+          ];
+    candidates.find(isShown)?.focus();
   }
 
   // --- Márgenes del encuadre (PLAN 3.c.6) -------------------------------------------------------

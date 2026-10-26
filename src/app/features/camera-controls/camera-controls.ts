@@ -27,9 +27,10 @@ export const ZOOM_STEP = 1.4;
         <tls-icon name="minus" />
         <span class="visually-hidden">Alejar</span>
       </button>
+      <!-- camera__extra: en un lienzo muy bajo se ocultan (styles.css); G y V siguen valiendo. -->
       <button
         type="button"
-        class="control control--icon"
+        class="control control--icon camera__extra"
         title="Vista general (G)"
         (click)="session.overview()"
       >
@@ -38,7 +39,7 @@ export const ZOOM_STEP = 1.4;
       </button>
       <button
         type="button"
-        class="control control--icon"
+        class="control control--icon camera__extra"
         title="Vista limpia: ocultar la interfaz (V)"
         (click)="session.setCleanView(true)"
       >

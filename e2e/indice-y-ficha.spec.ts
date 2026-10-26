@@ -50,17 +50,28 @@ test.describe('Índice de cuerpos y ficha resumida', () => {
     await expect(page.locator('[role="treeitem"]:focus')).toHaveCount(0);
   });
 
-  test('la ficha se cierra con su botón y con Esc', async ({ page }) => {
+  test('la ficha se cierra con su botón y con Esc, y el foco vuelve a la fila', async ({
+    page,
+  }) => {
     await openExplorer(page, '/?captura=1&cuerpo=marte');
     const panel = page.locator('.panel');
     await expect(panel.locator('#card-title')).toHaveText('Marte');
     await page.getByRole('button', { name: 'Cerrar la ficha' }).click();
     await expect(panel).toBeHidden();
 
+    // Elegir en el índice, ir a la ficha y cerrarla con su botón: el foco no se queda en <body>.
     await treeRow(page, 'venus').click();
+    await expect(panel.locator('#card-title')).toHaveText('Venus');
+    await page.getByRole('button', { name: 'Cerrar la ficha' }).focus();
+    await page.keyboard.press('Enter');
+    await expect(panel).toBeHidden();
+    await expect(page.locator('#tree-venus')).toBeFocused();
+
+    await page.keyboard.press('Enter');
     await expect(panel.locator('#card-title')).toHaveText('Venus');
     await page.keyboard.press('Escape');
     await expect(panel).toBeHidden();
+    await expect(page.locator('#tree-venus')).toBeFocused();
   });
 
   test('un clic en la etiqueta de un cuerpo en el lienzo lo elige', async ({ page }) => {

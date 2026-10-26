@@ -154,6 +154,11 @@ describe('ExplorerSession: la URL, la selección y el motor', () => {
     expect(session.announcement()).toMatch(
       /^Júpiter, planeta\. A .* del Sol y a .* de la Tierra\.$/,
     );
+    // La vista general también se dice (cierra la ficha y aleja la cámara).
+    session.overview();
+    expect(engine.calls).toContain('focus null');
+    expect(explorer.panelOpen()).toBe(false);
+    expect(session.announcement()).toBe('Vista general del sistema solar.');
     engine.emit('travel', { active: true, kind: 'view' });
     expect(explorer.travelling()).toBe('view');
     session.detachEngine(engine);

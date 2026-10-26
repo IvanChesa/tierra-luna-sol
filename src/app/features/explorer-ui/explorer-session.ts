@@ -165,6 +165,7 @@ export class ExplorerSession {
       this.sim.select(id);
       this.explorer.panelOpen.set(id !== null);
       if (id) this.announceBody(id);
+      else this.announce('Vista general del sistema solar.');
       return;
     }
     if (id !== null && id === VIEW_BODY[view]) {

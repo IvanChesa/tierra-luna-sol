@@ -198,3 +198,35 @@ for (const screen of LOW_SCREENS) {
     await context.close();
   });
 }
+
+/**
+ * La ficha abierta en pantallas bajas (segunda ronda de la revisión de diseño, 25 y 26): elegir un
+ * cuerpo solo desplaza la tira, no la página, y la cámara no asoma cortada por encima de la ficha.
+ */
+for (const screen of [
+  { name: 'táctil 844 × 390 (horizontal)', width: 844, height: 390, touch: true },
+  { name: 'zoom al 200 % (640 × 360)', width: 640, height: 360, touch: false },
+]) {
+  test(`${screen.name}: con la ficha abierta, la página no se mueve y la cámara no asoma`, async ({
+    browser,
+    baseURL,
+  }) => {
+    const context = await browser.newContext({
+      baseURL,
+      locale: 'es-ES',
+      timezoneId: 'Europe/Madrid',
+      viewport: { width: screen.width, height: screen.height },
+      deviceScaleFactor: 2,
+      isMobile: screen.touch,
+      hasTouch: screen.touch,
+    });
+    const page = await context.newPage();
+    await page.goto('/?captura=1&cuerpo=saturno');
+    await expect(page.locator('tls-viewer-canvas')).toHaveClass(/is-ready/, { timeout: 90_000 });
+    await expect(page.locator('#card-title')).toHaveText('Saturno');
+    await page.waitForTimeout(500);
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+    await expect(page.locator('tls-camera-controls')).toBeHidden();
+    await context.close();
+  });
+}
