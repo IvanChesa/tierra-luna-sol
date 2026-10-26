@@ -38,3 +38,13 @@ Ninguna nueva.
 1. **Dos filas de fichas + la barra en un móvil bajo** pueden tapar mucho lienzo: la segunda fila solo aparece con un planeta con lunas elegido, y la hoja inferior se desplaza por dentro si no cabe (como ahora).
 2. **La reproducción automática** gasta CPU y batería: se pausa con la pestaña oculta (ya existe) y se mide.
 3. **Los e2e y las capturas** suponen hoy un arranque en pausa: el modo de captura sigue arrancando en pausa en su fecha fija; los e2e que dependan del arranque se adaptan.
+
+### Estado de las entregas (se actualiza al cerrar cada una)
+- **3c.a — hecha** (`ddfbf7e`, `17aec80`): 3 y 10 días por segundo en `state/speeds.ts`; arranque a 3 días por segundo desde «ahora», en pausa con movimiento reducido o con `?fecha=` (D31); tests unitarios y `e2e/arranque.spec.ts` (los tres casos); con la GPU, 3,01 días por segundo real. `ESTILO.md` §3 al día.
+- **3c.b–3c.e — pendientes** (sesión cortada por el límite de uso el 26-10). Diseño decidido para retomarlo:
+  - lienzo a sangre; arriba a la izquierda, las pestañas de vista, el texto de presentación (se pliega con la clase `is-interacted` del anfitrión de la interfaz diferida, por CSS desde el layout) y el botón «Índice»;
+  - abajo, una franja opaca (`data-chrome`, reservada en el marco prerenderizado para no mover nada al llegar la interfaz) con las fichas de cuerpos, la barra de tiempo compacta y el pie (pistas, «1900–2100 · NASA/JPL · astronomy-engine», autor y créditos);
+  - el panel «Índice», superpuesto a la izquierda (`data-chrome` mientras está abierto; hoja inferior en móvil), con el árbol actual;
+  - la ficha, como tarjeta flotante a la derecha (hoja inferior en móvil, como ahora);
+  - miniaturas: parámetro de captura `aislado=1` (el motor oculta estrellas, Vía Láctea, órbitas, etiquetas y los demás cuerpos) y `scripts/build-body-thumbnails.mjs`, que recorta por el fondo uniforme y escribe `public/img/cuerpos/<id>.webp` (96 × 96);
+  - los e2e que eligen en el árbol tendrán que abrir antes el «Índice» o usar las fichas.
