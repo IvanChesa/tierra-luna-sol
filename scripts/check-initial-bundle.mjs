@@ -9,6 +9,10 @@
 //    ese JS no puede haber ningún módulo de node_modules/three ni de node_modules/astronomy-engine:
 //    basta un `import { Vector3 } from 'three'` para que salte.
 // 2. Por CADENAS (fase 1): marcadores literales de cada librería, como segunda red.
+//
+// Y un presupuesto (revisión del bloque B, B4): el aviso de 320 kB de angular.json lo consume sobre
+// todo Angular, así que el CÓDIGO PROPIO (módulos de src/) de los chunks iniciales del build (main
+// y lo que importa de forma estática) no puede pasar de 15 kB.
 import { readFile, readdir } from 'node:fs/promises';
 
 const DIST = new URL('../dist/tierra-luna-sol/', import.meta.url);
@@ -36,6 +40,11 @@ const MARKERS = {
 };
 /** Aviso de §5 para el chunk del visor (en bruto). */
 const VIEWER_CHUNK_WARNING_BYTES = 900 * 1000;
+/** Código propio en los chunks iniciales (B4; en kB de 1000 bytes, como el build de Angular). */
+const OWN_CODE_LIMIT_BYTES = 15 * 1000;
+/** Módulos propios en el metafile: rutas relativas a la raíz del proyecto. */
+const OWN_CODE = /^src\//;
+const kB = (bytes) => (bytes / 1000).toFixed(2);
 
 const stats = JSON.parse(await readFile(new URL('browser-stats.json', DIST), 'utf8'));
 const outputs = stats.outputs;
@@ -111,6 +120,36 @@ for (const [library, pattern] of Object.entries(FORBIDDEN)) {
     failed = true;
   }
 }
+
+// Código propio de los chunks iniciales del build: los de la entrada (src/main.ts) y sus
+// importaciones estáticas, lo mismo que mide el presupuesto «initial» de angular.json.
+const entries = Object.entries(outputs)
+  .filter(([, output]) => output.entryPoint === 'src/main.ts')
+  .map(([file]) => file);
+if (entries.length === 0)
+  throw new Error('No encuentro la entrada src/main.ts en browser-stats.json');
+const buildInitial = new Set();
+for (const file of entries) staticClosure(file, buildInitial);
+const ownModules = [...buildInitial]
+  .flatMap((file) => Object.entries(outputs[file]?.inputs ?? {}))
+  .filter(([input]) => OWN_CODE.test(input))
+  .map(([input, { bytesInOutput }]) => ({ input, bytes: bytesInOutput }))
+  .sort((a, b) => b.bytes - a.bytes);
+const ownBytes = ownModules.reduce((sum, module) => sum + module.bytes, 0);
+const ownDetail = ownModules
+  .slice(0, 4)
+  .map((module) => `${module.input.replace(OWN_CODE, '')} ${kB(module.bytes)}`)
+  .join(', ');
+if (ownModules.length === 0) {
+  // Sin ningún módulo propio, el patrón no ve nada: es un fallo, no un aprobado.
+  console.error('✖ Ningún módulo de los chunks iniciales casa con OWN_CODE: revísalo');
+  failed = true;
+} else if (ownBytes > OWN_CODE_LIMIT_BYTES) {
+  console.error(
+    `✖ El código propio de los chunks iniciales ocupa ${kB(ownBytes)} kB (límite: ${kB(OWN_CODE_LIMIT_BYTES)} kB). Los que más: ${ownDetail}…`,
+  );
+  failed = true;
+}
 if (failed) process.exit(1);
 
 // Dónde están las librerías y cuánto pesa el chunk del visor.
@@ -127,10 +166,12 @@ const lazy = Object.entries(outputs)
 console.log(
   `✔ El JS inicial de las ${pages.length} páginas (${initial.length} ficheros) no lleva ningún módulo de ${Object.keys(FORBIDDEN).join(' ni de ')}.`,
 );
+console.log(
+  `✔ Código propio en los chunks iniciales: ${kB(ownBytes)} kB de ${kB(OWN_CODE_LIMIT_BYTES)} (${ownDetail}…).`,
+);
 for (const entry of lazy) {
-  const kb = (entry.bytes / 1000).toFixed(2);
   const warning = entry.bytes > VIEWER_CHUNK_WARNING_BYTES ? ' ⚠ supera el aviso de 900 kB' : '';
   console.log(
-    `  Diferido: ${entry.file} (${kb} kB en bruto) con ${entry.libraries.join(' y ')}${warning}`,
+    `  Diferido: ${entry.file} (${kB(entry.bytes)} kB en bruto) con ${entry.libraries.join(' y ')}${warning}`,
   );
 }
