@@ -17,15 +17,15 @@
 //   anillo (C, B, A y la división de Cassini) a la profundidad óptica normal y al albedo de la ficha;
 //   la textura solo aporta el matiz del color. El alfa de la tira es la opacidad vista de frente,
 //   1 − e^(−τ), y su color, el albedo.
-// - Orientación del cielo (Vía Láctea, ICRF): el centro galáctico tiene que ser más brillante que el
-//   polo galáctico norte.
+// - Orientación de la Vía Láctea (panorama de ESO en coordenadas galácticas, con l = 0 en el centro y
+//   creciendo hacia la izquierda): el centro galáctico, más brillante que los polos y que el
+//   anticentro, y la Gran Nube de Magallanes donde dice SIMBAD (l = 280,4652°, b = −32,8884°), más
+//   brillante que el punto simétrico (el panorama al revés la pondría allí).
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
-import { FloatType } from 'three';
-import { EXRLoader } from 'three/addons/loaders/EXRLoader.js';
 import { BODY_DATA } from '../src/app/data/body-data.ts';
 import {
   DEMS,
@@ -48,7 +48,7 @@ const RING_HEIGHT = 16;
 
 /**
  * kind: color (sRGB), gray (datos en escala de grises, sin espacio de color), normal (datos RGB),
- * ring (tira RGBA de los anillos), sky (EXR del cielo, se tonemapea), relief (mapa de normales
+ * ring (tira RGBA de los anillos), panorama (cielo en coordenadas galácticas), relief (mapa de normales
  * calculado con build-relief.mjs a partir de un modelo de elevación; `color`: la textura con la que
  * se comprueba la alineación).
  */
@@ -69,19 +69,14 @@ const TEXTURES = {
   'mars-normal': { dem: 'mars', kind: 'relief', color: 'mars', quality: 85 },
   uranus: { file: '2k_uranus.jpg', kind: 'color', quality: 82 },
   neptune: { file: '2k_neptune.jpg', kind: 'color', quality: 82 },
-  'milky-way': { file: 'milkyway_2020_4k.exr', kind: 'sky', quality: 72 },
+  'milky-way': { file: 'eso0932a.tif', kind: 'panorama', quality: 70 },
 };
 
 /**
- * Texturas que no se publican, con el motivo. La Vía Láctea del NASA SVS (4851) deriva de Gaia DR2,
- * que se distribuye con licencia CC BY-NC 3.0 IGO (https://www.cosmos.esa.int/web/gaia-users/license):
- * la cláusula no comercial no entra en la política de licencias del proyecto (revisión de la fase 2,
- * hallazgo 4). Queda omitida hasta que Iván decida (docs/PENDIENTES.md); el código del cielo sigue
- * listo para otra fuente.
+ * Texturas que no se publican, con el motivo (ninguna ahora: la Vía Láctea de Gaia, CC BY-NC, se ha
+ * sustituido por el panorama de ESO, CC BY 4.0, por decisión de Iván en la revisión del bloque B).
  */
-const OMITTED = {
-  'milky-way': 'licencia CC BY-NC 3.0 IGO de Gaia DR2 (pendiente de Iván)',
-};
+const OMITTED = {};
 
 /**
  * Sondas de alineación: [latitud, longitud este, nombre]. Los puntos oscuros tienen que medir menos
@@ -425,45 +420,27 @@ async function physicalRingStrip(file, calibration) {
   };
 }
 
-/** Vía Láctea: EXR lineal (0–1) → sRGB de 8 bits con una ganancia que lleva el p99,9 a ~1. */
-async function skyImage(file) {
-  const buffer = await readFile(new URL(file, SRC));
-  const loader = new EXRLoader();
-  loader.setDataType(FloatType);
-  const exr = loader.parse(
-    buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength),
-  );
-  const { width, height, data } = exr;
-  const channels = data.length / (width * height);
-  const GAIN = 2.5;
-  const encode = (v) => {
-    const c = Math.min(1, Math.max(0, v * GAIN));
-    return Math.round(255 * (c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055));
-  };
-  const out = Buffer.alloc(width * height * 3);
-  // El EXRLoader entrega las filas de abajo arriba (convención de WebGL): se dan la vuelta.
-  for (let y = 0; y < height; y++) {
-    const src = (height - 1 - y) * width;
-    for (let x = 0; x < width; x++) {
-      const i = (src + x) * channels;
-      const o = (y * width + x) * 3;
-      out[o] = encode(data[i]);
-      out[o + 1] = encode(data[i + 1]);
-      out[o + 2] = encode(data[i + 2]);
-    }
+/**
+ * Orientación del panorama de la Vía Láctea (coordenadas galácticas, l = 0 en el centro y creciendo
+ * hacia la izquierda, el norte galáctico arriba): falla si no está como se espera.
+ */
+async function checkPanorama(file) {
+  const image = await sharp(fileURLToPath(new URL(file.path, PUBLIC)))
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  // u = 0,5 − l/360: en luminanceAt, la «longitud» es −l.
+  const at = (l, b, radius = 6) => luminanceAt(image, b, -l, radius);
+  const center = at(0, 0);
+  const anticenter = at(180, 0);
+  const poles = Math.max(at(0, 89), at(0, -89));
+  const lmc = at(280.4652, -32.8884, 3);
+  const mirrored = at(79.5348, -32.8884, 3);
+  if (!(center > 2 * poles && center > 2 * anticenter && lmc > 1.5 * mirrored)) {
+    throw new Error(
+      `La Vía Láctea no está orientada como se espera (centro ${center}, anticentro ${anticenter}, polos ${poles}, Nube de Magallanes ${lmc} frente a ${mirrored})`,
+    );
   }
-  const image = sharp(out, { raw: { width, height, channels: 3 } });
-  // Orientación: el centro galáctico (AR 266,4°, Dec −28,9°) más brillante que el polo norte galáctico.
-  const raw = { data: out, info: { width, height, channels: 3 } };
-  const at = (raDeg, decDeg) => luminanceAt(raw, decDeg, -raDeg, 8); // u = 0,5 − AR/360
-  const center = at(266.4, -28.9);
-  const pole = at(192.9, 27.1);
-  if (!(center > 2 * pole)) throw new Error('La Vía Láctea no está orientada como se espera');
-  return {
-    image,
-    width,
-    report: `vía láctea: centro galáctico ${Math.round(center)} · polo galáctico norte ${Math.round(pole)}`,
-  };
+  return `vía láctea: centro galáctico ${Math.round(center)} · anticentro ${Math.round(anticenter)} · polos ${Math.round(poles)} · Gran Nube de Magallanes ${Math.round(lmc)} frente a ${Math.round(mirrored)} en el punto simétrico`;
 }
 
 // --- Generación ----------------------------------------------------------------------------------
@@ -519,12 +496,7 @@ for (const [id, spec] of Object.entries(TEXTURES)) {
   const input = fileURLToPath(new URL(spec.file, SRC));
   let sourceWidth;
   let base;
-  if (spec.kind === 'sky') {
-    const sky = await skyImage(spec.file);
-    reports.push(sky.report);
-    sourceWidth = sky.width;
-    base = () => sky.image.clone();
-  } else {
+  {
     const data = spec.kind === 'normal' || spec.kind === 'gray';
     sourceWidth = (await sharp(input, { limitInputPixels: false }).metadata()).width;
     base = () => sharp(input, { limitInputPixels: false, ignoreIcc: data });
@@ -546,14 +518,15 @@ for (const [id, spec] of Object.entries(TEXTURES)) {
       pipeline = pipeline.resize(width, width / 2, { fit: 'fill', kernel: 'lanczos3' });
     }
     if (spec.kind === 'gray') pipeline = pipeline.toColourspace('b-w');
-    // El nivel 4k del cielo lleva un grano de estrellas débiles que dobla el peso sin aportar nada
-    // como fondo: un desenfoque leve lo deja dentro del presupuesto de §5 (≤ 1,5 MB).
-    if (spec.kind === 'sky' && level === '4k') pipeline = pipeline.blur(0.6);
+    // El panorama lleva el grano de las estrellas débiles, que dobla el peso sin aportar nada como
+    // fondo (las estrellas las pone el catálogo HYG): un desenfoque leve lo deja dentro de §5.
+    if (spec.kind === 'panorama') pipeline = pipeline.blur(level === '4k' ? 0.8 : 0.5);
     list.push(await emit(id, level, pipeline, spec.quality, { alpha: spec.kind === 'ring' }));
   }
   files[id] = list;
   if (spec.kind === 'color') luminance[id] = Number((await meanLuminance(list[0])).toFixed(4));
-  const report = await checkAlignment(id, list[0]);
+  const report =
+    spec.kind === 'panorama' ? await checkPanorama(list[0]) : await checkAlignment(id, list[0]);
   if (report) reports.push(report);
   console.log(
     `${id}: ${list.map((f) => `${f.level} ${(f.bytes / 1024).toFixed(0)} kB`).join(' · ')}`,

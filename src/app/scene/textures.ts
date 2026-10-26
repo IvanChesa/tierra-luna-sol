@@ -53,9 +53,10 @@ export interface TextureMeta {
   /**
    * - `equirectangular`: longitud en u (de −180° a 180°) y latitud en v.
    * - `ring-strip`: tira radial de los anillos (u = radio, de `innerKm` a `outerKm`).
-   * - `celestial`: cielo en ascensión recta y declinación (ICRF/J2000).
+   * - `galactic`: cielo en longitud y latitud galácticas (l = 0 en el centro, creciendo hacia la
+   *   izquierda; el norte galáctico arriba).
    */
-  readonly projection: 'equirectangular' | 'ring-strip' | 'celestial';
+  readonly projection: 'equirectangular' | 'ring-strip' | 'galactic';
   /**
    * u del meridiano 0 en los mapas de superficie (0,5: centrado), o `null` si no tiene sentido
    * (Sol, nubes de Venus y de los gigantes gaseosos, que no tienen accidentes fijos). La escena lo

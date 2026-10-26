@@ -4,8 +4,11 @@
 //
 // Licencias (comprobadas en la página de cada fuente; detalle en docs/FUENTES.md):
 // - Solar System Scope: CC BY 4.0 (https://www.solarsystemscope.com/textures/).
-// - NASA SVS 4720 (CGI Moon Kit) y 4851 (Deep Star Maps 2020): material de la NASA; los datos de
-//   Gaia DR2 son de uso libre con crédito a ESA/Gaia/DPAC.
+// - NASA SVS 4720 (CGI Moon Kit): material de la NASA.
+// - Vía Láctea (fase 3b): «The Milky Way panorama», ESO/S. Brunier, con la licencia por defecto de
+//   las imágenes de ESO, CC BY 4.0 (https://www.eso.org/public/outreach/copyright/); su página no
+//   indica ninguna excepción. Sustituye al mapa de NASA SVS 4851, descartado por la licencia
+//   CC BY-NC de Gaia DR2.
 // - three.js r186 (texturas KTX2 de ejemplo, solo para la prueba de KTX2): MIT.
 // - Modelos de elevación (fase 3b, relieve): MOLA MEGDR de 16 px/° (PDS Geosciences Node, datos de
 //   la NASA) y MESSENGER, modelo global de 665 m v2 (USGS Astrogeology: «USGS-authored or produced
@@ -21,7 +24,8 @@ const FORCE = process.argv.includes('--force');
 const SSS = 'https://www.solarsystemscope.com/textures/download/';
 const SSS_REFERER = 'https://www.solarsystemscope.com/textures/';
 const SVS_MOON = 'https://svs.gsfc.nasa.gov/vis/a000000/a004700/a004720/';
-const SVS_STARS = 'https://svs.gsfc.nasa.gov/vis/a000000/a004800/a004851/';
+const ESO_MILKY_WAY = 'https://cdn.eso.org/images/original/eso0932a.tif';
+const ESO_MILKY_WAY_PAGE = 'https://www.eso.org/public/images/eso0932a/';
 const THREE_RAW = 'https://raw.githubusercontent.com/mrdoob/three.js/r186/examples/textures/';
 const MOLA = 'https://pds-geosciences.wustl.edu/mgs/mgs-m-mola-5-megdr-l3-v1/mgsl_300x/meg016/';
 const MOLA_PAGE = 'https://pds-geosciences.wustl.edu/missions/mgs/megdr.html';
@@ -52,15 +56,8 @@ const ASSETS = [
     SVS_MOON + 'lroc_color_poles_4k.tif',
     'https://svs.gsfc.nasa.gov/4720',
   ],
-  // Vía Láctea: se descarga para poder evaluarla, pero no se publica (licencia CC BY-NC de Gaia
-  // DR2; ver OMITTED en build-textures.mjs y docs/PENDIENTES.md).
-  ['milkyway_2020_4k.exr', SVS_STARS + 'milkyway_2020_4k.exr', 'https://svs.gsfc.nasa.gov/4851'],
-  // Vista previa con estrellas, solo para comprobar la orientación del mapa del cielo.
-  [
-    'starmap_2020_4k_print.jpg',
-    SVS_STARS + 'starmap_2020_4k_print.jpg',
-    'https://svs.gsfc.nasa.gov/4851',
-  ],
+  // Vía Láctea: panorama de 6000 × 3000 px en coordenadas galácticas (el original completo).
+  ['eso0932a.tif', ESO_MILKY_WAY, ESO_MILKY_WAY_PAGE],
 ];
 
 /** Modelos de elevación (fase 3b): a assets-src/elevation/, con su propio manifiesto. */

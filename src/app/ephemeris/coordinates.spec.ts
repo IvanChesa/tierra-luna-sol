@@ -1,14 +1,19 @@
 import { Body, Equator, Horizon, MakeTime, Observer, ObserverVector } from 'astronomy-engine';
 import {
+  ECL_TO_GALACTIC,
   ECL_TO_THREE,
   EQJ_TO_ECL,
+  EQJ_TO_GALACTIC,
+  GALACTIC_TO_EQJ,
   earthFixedToEcl,
   earthFixedToGeographic,
   eclRotationToThree,
   eclToEqj,
   eclToThree,
   eqjToEcl,
+  eqjToGalactic,
   equatorialToVector,
+  galacticToVector,
   geographicToEarthFixed,
   greenwichSiderealTimeHours,
   referencePlaneToEcl,
@@ -160,6 +165,44 @@ describe('coordinates: punto subsolar', () => {
       expect(Math.abs(latDeg - expected)).toBeLessThan(0.01);
     },
   );
+});
+
+describe('coordinates: galácticas (Hipparcos)', () => {
+  const raDec = (v: Vec3) => ({
+    ra: ((Math.atan2(v.y, v.x) * 180) / Math.PI + 360) % 360,
+    dec: (Math.asin(v.z) * 180) / Math.PI,
+  });
+
+  it('el centro galáctico cae en α = 266,40510°, δ = −28,936175° (definición de Hipparcos)', () => {
+    // A menos de 0,0005° (1,8″): las constantes publicadas van redondeadas a 5 decimales.
+    const center = raDec(mulMat3Vec(GALACTIC_TO_EQJ, galacticToVector(0, 0)));
+    expect(center.ra).toBeCloseTo(266.4051, 3);
+    expect(center.dec).toBeCloseTo(-28.936175, 3);
+  });
+
+  it('el polo norte galáctico tiene b = 90° y el polo celeste, l = 122,93192°', () => {
+    expect(eqjToGalactic(equatorialToVector(192.85948, 27.12825)).bDeg).toBeCloseTo(90, 6);
+    const pole = eqjToGalactic(vec3(0, 0, 1));
+    expect(pole.lDeg).toBeCloseTo(122.93192, 6);
+    expect(pole.bDeg).toBeCloseTo(27.12825, 6);
+  });
+
+  it('Vega cae en sus coordenadas galácticas de SIMBAD (l = 67,44820813°, b = +19,23725227°)', () => {
+    // SIMBAD (CDS): ICRS 18 36 56.33635 +38 47 01.2802.
+    const vega = equatorialToVector(
+      (18 + 36 / 60 + 56.33635 / 3600) * 15,
+      38 + 47 / 60 + 1.2802 / 3600,
+    );
+    const galactic = eqjToGalactic(vega);
+    expect(galactic.lDeg).toBeCloseTo(67.44820813, 4);
+    expect(galactic.bDeg).toBeCloseTo(19.23725227, 4);
+  });
+
+  it('las matrices son rotaciones (ida y vuelta) y la de ECL encadena la de EQJ', () => {
+    const v = equatorialToVector(10, 20);
+    expectVecClose(mulMat3Vec(GALACTIC_TO_EQJ, mulMat3Vec(EQJ_TO_GALACTIC, v)), v);
+    expectVecClose(mulMat3Vec(ECL_TO_GALACTIC, eqjToEcl(v)), mulMat3Vec(EQJ_TO_GALACTIC, v));
+  });
 });
 
 describe('coordinates: constantes', () => {

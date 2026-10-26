@@ -16,7 +16,7 @@ import {
   textureVramBytes,
 } from './textures';
 import { QUALITY_PROFILES } from './quality';
-import { BODY_TEXTURES } from './world';
+import { BODY_RELIEF_TEXTURES, BODY_TEXTURES } from './world';
 
 const ids = Object.keys(TEXTURE_META) as TextureId[];
 
@@ -41,15 +41,15 @@ const rotate = (m: Mat3, v: Vector3) => {
 
 describe('texturas: manifiesto y alineación del meridiano 0', () => {
   it('cada textura del manifiesto tiene ficheros, y cada cuerpo con textura la tiene en el manifiesto', () => {
-    // La Vía Láctea está omitida (licencia CC BY-NC de Gaia DR2): ni ficheros ni nivel que la pida.
-    for (const id of ids) {
-      if (id === 'milky-way') continue;
-      expect(TEXTURE_FILES[id]?.length).toBeGreaterThan(0);
-    }
-    expect(TEXTURE_FILES['milky-way']).toBeUndefined();
-    for (const profile of Object.values(QUALITY_PROFILES))
-      expect(profile.milkyWayTexture).toBeNull();
+    for (const id of ids) expect(TEXTURE_FILES[id]?.length).toBeGreaterThan(0);
+    // La Vía Láctea (el panorama de ESO, fase 3b): en todos los niveles, dentro de §5 (≤ 1,5 MB en
+    // alta y ≤ 400 kB en baja).
+    const sky = (level: string | null) =>
+      TEXTURE_FILES['milky-way']?.find((file) => file.level === level)?.bytes ?? Infinity;
+    expect(sky(QUALITY_PROFILES.high.milkyWayTexture)).toBeLessThanOrEqual(1_500_000);
+    expect(sky(QUALITY_PROFILES.low.milkyWayTexture)).toBeLessThanOrEqual(400_000);
     for (const id of Object.values(BODY_TEXTURES)) expect(ids).toContain(id);
+    for (const id of Object.values(BODY_RELIEF_TEXTURES)) expect(ids).toContain(id);
   });
 
   it('los niveles son 1k/2k/4k, en proporción 2:1 los mapas y con hash en el nombre', () => {

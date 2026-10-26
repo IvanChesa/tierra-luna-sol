@@ -79,9 +79,9 @@ export const TEXTURE_META: Readonly<Record<TextureId, TextureMeta>> = {
   'milky-way': {
     colorSpace: 'srgb',
     alpha: false,
-    projection: 'celestial',
+    projection: 'galactic',
     primeMeridianU: null,
     alignment:
-      'Cielo ICRF/J2000 con la ascensión recta 0 en el centro y creciendo hacia la izquierda (comprobado con las Nubes de Magallanes y el centro galáctico).',
+      'Panorama de ESO en coordenadas galácticas, con el centro galáctico en el centro y la longitud creciendo hacia la izquierda. build-textures.mjs comprueba el centro frente a los polos y al anticentro y la Gran Nube de Magallanes en sus coordenadas de SIMBAD (frente al punto simétrico).',
   },
 };
