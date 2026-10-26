@@ -2,7 +2,14 @@
 
 <header class="site-header">
   <a class="site-name" routerLink="/">{{ site.name }}</a>
-  <nav aria-label="Principal">
+  <!-- En móvil, la navegación va en un menú (Popover API: funciona sin JavaScript). -->
+  <button type="button" class="site-menu-button" popovertarget="site-menu">
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+      <path d="M4 7h16M4 12h16M4 17h16" />
+    </svg>
+    Menú
+  </button>
+  <nav id="site-menu" class="site-nav" aria-label="Principal" popover>
     <ul>
       <li>
         <a routerLink="/planetas" routerLinkActive="is-active" ariaCurrentWhenActive="page"
@@ -20,7 +27,15 @@
           >Sobre el proyecto</a
         >
       </li>
+      <li class="site-nav__extra">
+        <a routerLink="/creditos" routerLinkActive="is-active" ariaCurrentWhenActive="page"
+          >Créditos</a
+        >
+      </li>
     </ul>
+    <p class="site-nav__extra site-nav__author">
+      Un proyecto de <a [href]="site.author.url">{{ site.author.name }}</a>
+    </p>
   </nav>
 </header>
 

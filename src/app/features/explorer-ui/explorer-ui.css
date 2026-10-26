@@ -1,0 +1,193 @@
+/*
+ * Cada pieza en su área de la rejilla del layout (viewer-layout.css): el anfitrión no tiene caja.
+ * Capas: el lienzo (0), los fondos de los paneles (1, en el layout), los paneles (2-3), los avisos (4).
+ */
+:host {
+  display: contents;
+}
+
+.stage {
+  position: relative;
+  z-index: 0;
+  grid-area: 1 / 1 / -1 / -1;
+}
+
+.index,
+.dock,
+.camera,
+.notices,
+.panel,
+.skip,
+.restore {
+  position: relative;
+  z-index: 2;
+}
+
+.index {
+  grid-area: index;
+}
+
+.dock {
+  grid-area: dock;
+}
+
+.panel {
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  grid-area: panel;
+  width: var(--explorer-panel);
+  min-height: 0;
+  background: var(--color-surface);
+  border-left: var(--border-width) solid var(--color-line);
+  transition:
+    opacity var(--duration-base) var(--ease-standard),
+    translate var(--duration-base) var(--ease-standard);
+}
+
+@starting-style {
+  .panel {
+    opacity: 0;
+    translate: 1rem 0;
+  }
+}
+
+.panel[hidden] {
+  display: none;
+}
+
+/* El foco llega a la ficha cuando tapa lo que lo tenía (móvil): el anillo, por dentro de su borde. */
+.panel:focus-visible {
+  outline-offset: calc(-1 * var(--focus-ring-width));
+}
+
+.panel__grip {
+  display: none;
+}
+
+.camera {
+  grid-area: view;
+  align-self: end;
+  justify-self: end;
+  margin: var(--space-4);
+}
+
+/* Los avisos no salen de la parte visible del lienzo: si no caben, se desplazan. */
+.notices {
+  z-index: 4;
+  grid-area: view;
+  align-self: start;
+  justify-self: center;
+  max-height: calc(100% - 2 * var(--space-3));
+  margin: var(--space-4) var(--space-4) 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.skip {
+  z-index: 4;
+  grid-area: view;
+  align-self: end;
+  justify-self: center;
+  margin-bottom: var(--space-4);
+}
+
+.restore {
+  z-index: 4;
+  grid-area: 1 / 1 / -1 / -1;
+  align-self: start;
+  justify-self: end;
+  margin: var(--space-4);
+}
+
+kbd {
+  padding: 0 var(--space-1);
+  border: var(--border-width) solid var(--color-control);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+}
+
+/* Vista limpia: solo el 3D y el botón para volver. */
+:host(.is-clean) :is(.index, .panel, .dock, .camera) {
+  display: none;
+}
+
+/* Sin 3D (cargando o con error), acercar y alejar no harían nada: la cámara no se muestra. */
+:host(:not(.is-scene-ready)) .camera {
+  display: none;
+}
+
+@media (max-width: 63.99rem) {
+  .panel {
+    grid-area: view / 1 / -1 / -1;
+    align-self: end;
+    width: auto;
+    max-height: 72%;
+    border-top: var(--border-width) solid var(--color-control);
+    border-left: 0;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    box-shadow: 0 -12px 32px rgb(0 0 0 / 0.4);
+  }
+
+  @starting-style {
+    .panel {
+      translate: 0 2rem;
+    }
+  }
+
+  .panel__grip {
+    display: block;
+    flex: none;
+    height: 1.25rem;
+    touch-action: none;
+    cursor: grab;
+  }
+
+  .panel__grip::before {
+    display: block;
+    width: 2.5rem;
+    height: 4px;
+    margin: var(--space-2) auto 0;
+    background: var(--color-control);
+    border-radius: 2px;
+    content: '';
+  }
+
+  .camera {
+    margin: var(--space-3);
+  }
+
+  /* La barra de tiempo desplegada que no cabe se desplaza dentro de la hoja (viewer-layout.css). */
+  .dock {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  /*
+   * La hoja de la ficha tapa la tira de cuerpos, la barra de tiempo y la cámara: mientras está
+   * abierta, salen del orden del foco y del árbol accesible (el foco pasa a la ficha, explorer-ui.ts).
+   */
+  :host(.has-panel) :is(.camera, .index, .dock) {
+    visibility: hidden;
+  }
+
+  /*
+   * Los avisos ocupan el ancho del lienzo y acaban por encima de la cámara (dos filas de botones,
+   * abajo a la derecha); si no caben, se desplazan.
+   */
+  .notices {
+    justify-self: stretch;
+    max-height: calc(100% - 3 * var(--space-3) - 2 * var(--tap-target) - var(--space-1));
+    margin: var(--space-3) var(--space-3) 0;
+  }
+
+  /* «Saltar el viaje», en la parte visible: encima de la hoja inferior o de la ficha abierta. */
+  .skip {
+    grid-area: 1 / 1 / -1 / -1;
+    justify-self: start;
+    margin: 0 0 calc(var(--view-bottom, 0px) + var(--space-3)) var(--space-3);
+  }
+}

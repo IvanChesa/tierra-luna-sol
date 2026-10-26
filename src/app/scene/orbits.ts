@@ -6,6 +6,10 @@
  * de una vuelta. Los puntos salen de la caché de órbitas muestreadas (las mismas funciones de
  * posición que los cuerpos) y pasan por la misma transformación de marco que ellos (`FrameController`),
  * en float64 y relativos al foco; solo al final se escriben en float32.
+ *
+ * Al reproducir (PLAN 3.c.7), el camino recorrido en el último segundo real brilla más: la estela de
+ * movimiento, detrás del cuerpo (o delante, hacia atrás en el tiempo). Un cuerpo que se mueve
+ * demasiado deprisa para seguirlo (§4.5) no se dibuja y su órbita se resalta entera.
  */
 import { AdditiveBlending, Color } from 'three';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
@@ -29,6 +33,10 @@ export interface OrbitSource {
 
 /** Opacidad de la estela en su extremo (justo delante del cuerpo). */
 const TAIL_ALPHA = 0.1;
+/** Brillo extra de la estela de movimiento (el camino del último segundo real) junto al cuerpo. */
+const MOTION_TRAIL_BOOST = 0.9;
+/** Opacidad uniforme de una órbita que sustituye a su cuerpo (velocidades altas, §4.5). */
+const ALIASED_ALPHA = 0.6;
 const BASE_COLOR = new Color('#7d8aa6');
 const HIGHLIGHT_COLOR = new Color('#d9b76e');
 
@@ -91,6 +99,9 @@ export class OrbitLines {
    * @param highlighted índice de cuerpo cuya órbita va resaltada, o −1.
    * @param speedDaysPerSecond velocidad de la reproducción: con velocidades altas, cada vuelta
    *        muestreada se reutiliza más tiempo para no recalcular órbitas en cada frame.
+   * @param trailDays días simulados que cubre la estela de movimiento (0 en pausa; negativo hacia
+   *        atrás en el tiempo).
+   * @param aliased 1 en los cuerpos sustituidos por su órbita (velocidades altas).
    */
   update(
     frames: FrameController,
@@ -98,6 +109,8 @@ export class OrbitLines {
     opacity: readonly number[],
     highlighted: number,
     speedDaysPerSecond: number,
+    trailDays = 0,
+    aliased: Uint8Array | null = null,
   ): void {
     const date = new Date(timeMs);
     const out = frames.output.position;
@@ -120,6 +133,16 @@ export class OrbitLines {
       const isHighlighted = source.bodyIndex === highlighted;
       const color = isHighlighted ? HIGHLIGHT_COLOR : BASE_COLOR;
       const strength = isHighlighted ? Math.min(1, alpha * 1.4) : alpha;
+      const replaced = aliased?.[source.bodyIndex] === 1;
+      // Fracción de la vuelta que cubre la estela de movimiento y hacia qué lado.
+      const trail = replaced ? 0 : Math.min(1, Math.abs(trailDays) / source.periodDays);
+      const ahead = trailDays < 0;
+      const shade = (u: number): number => {
+        if (replaced) return Math.max(strength, ALIASED_ALPHA);
+        const along = ahead ? 1 - u : u;
+        const boost = trail > 0 && along < trail ? MOTION_TRAIL_BOOST * (1 - along / trail) : 0;
+        return Math.min(1, strength * fade(u) + boost * Math.max(strength, 0.4));
+      };
       // El primer punto es el propio cuerpo; después, las n muestras hacia atrás, y un último tramo
       // de vuelta al cuerpo (la parte de la órbita que tiene justo delante, la más tenue).
       const b = 3 * source.bodyIndex;
@@ -130,17 +153,10 @@ export class OrbitLines {
         const current = this.place(frames, source, sampled.points, index);
         const u0 = step / (n + 1);
         const u1 = (step + 1) / (n + 1);
-        this.write(segment++, previous, current, color, strength * fade(u0), strength * fade(u1));
+        this.write(segment++, previous, current, color, shade(u0), shade(u1));
         previous = current;
       }
-      this.write(
-        segment++,
-        previous,
-        head,
-        color,
-        strength * fade(n / (n + 1)),
-        strength * fade(1),
-      );
+      this.write(segment++, previous, head, color, shade(n / (n + 1)), shade(1));
     });
     this.geometry.instanceCount = segment;
     const start = this.geometry.attributes['instanceStart'];

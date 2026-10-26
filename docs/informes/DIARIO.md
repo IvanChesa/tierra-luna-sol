@@ -55,3 +55,6 @@ El bloque termina aquí; no se ha empezado la fase 2.
 ## Bloque B (en curso)
 - **Sesión 1** (cortada por el límite de uso): fase 2 terminada; su revisión, a medias; fase 3 empezada en una rama temporal.
 - **Sesión 2 (2026-10-24):** revisión de la fase 2 por subagente (`docs/revisiones/fase-2.md`), correcciones, respuesta en el informe y fusión. La fase 3 sigue en `fase-3-interfaz`, rehecha sobre `main` a partir de la rama temporal.
+- **Sesión 3 (2026-10-24, cortada por el límite de uso):** fase 3 casi cerrada en `fase-3-interfaz`.
+  - **Hecho:** e2e con Playwright, SwiftShader y axe (39 en verde); arranque en tiempo real corregido; atajos desactivables (WCAG 2.1.4); índice en árbol plano (WCAG 2.5.3); revisión de diseño por subagente (1 bloqueante, 6 importantes y 10 menores) y todas sus correcciones; capturas, pósters e informe.
+  - **Falta:** la verificación de las correcciones de diseño (por subagente), `npm run check`, la revisión de código por subagente (`docs/revisiones/fase-3.md`), «Respuesta a la revisión», la fusión, la línea de la fase 3 en la tabla y el resumen del bloque.

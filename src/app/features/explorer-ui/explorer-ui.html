@@ -1,0 +1,56 @@
+<div class="stage">
+  <tls-viewer-canvas [view]="view()" (ready)="sceneReady()" />
+</div>
+
+<!-- Orden del foco: el lienzo, su cámara, el índice, la ficha y la barra de tiempo. -->
+<tls-camera-controls class="camera" />
+
+<tls-body-picker class="index" />
+
+<!-- tabindex="-1": el foco llega aquí cuando la ficha tapa lo que lo tenía (la hoja del móvil). -->
+<aside
+  #panel
+  class="panel"
+  data-chrome
+  tabindex="-1"
+  [hidden]="!panelBody()"
+  aria-label="Ficha del cuerpo elegido"
+>
+  @if (panelBody()) {
+    <div
+      class="panel__grip"
+      aria-hidden="true"
+      (pointerdown)="swipeDown($event)"
+      (pointerup)="swipeEnd($event)"
+      (pointercancel)="swipeEnd($event)"
+    ></div>
+  }
+  <!-- Una ficha por cuerpo: al cambiar de cuerpo se crea otra y entra con un fundido. -->
+  @for (id of panelBodies(); track id) {
+    <tls-body-panel [bodyId]="id" (closed)="closePanel()" />
+  }
+</aside>
+
+<tls-time-controls class="dock" />
+
+<tls-notices class="notices" />
+
+@if (explorer.travelling() === 'view') {
+  <button type="button" class="control skip" (click)="session.skipTravel()">
+    <tls-icon name="skip" />
+    Saltar el viaje
+    <kbd>Esc</kbd>
+  </button>
+}
+
+@if (explorer.cleanView()) {
+  <button #restore type="button" class="control restore" (click)="session.setCleanView(false)">
+    <tls-icon name="restore" />
+    Mostrar la interfaz
+    <kbd>Esc</kbd>
+  </button>
+}
+
+<tls-shortcuts-dialog />
+
+<p class="visually-hidden" aria-live="polite">{{ session.announcement() }}</p>

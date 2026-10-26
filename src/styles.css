@@ -165,6 +165,189 @@ a:hover {
   transform: none;
 }
 
+/* Superficies del navegador con la paleta (selección, barras de desplazamiento). */
+::selection {
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+
+html {
+  scrollbar-color: var(--color-control) var(--color-bg);
+}
+
+/* Texto solo para lectores de pantalla. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/*
+ * El explorador ocupa la ventana: sin pie (sus créditos van dentro) y sin desplazar la página. En la
+ * vista limpia, tampoco la cabecera.
+ */
+tls-root:has(.explorer) {
+  height: 100svh;
+}
+
+/* Muy bajo, en móvil: la página se desplaza (viewer-layout.css). */
+@media (max-width: 63.99rem) and (max-height: 30rem) {
+  tls-root:has(.explorer) {
+    height: auto;
+  }
+}
+
+tls-root:has(.explorer) .site-footer,
+tls-root:has(tls-explorer-ui.is-clean) .site-header {
+  display: none;
+}
+
+/*
+ * Transiciones de los textos (PLAN 3.d.11): al cambiar de vista, el texto nuevo entra con un fundido
+ * corto; al cambiar de cuerpo, también la ficha. Solo CSS: con movimiento reducido, las duraciones son
+ * 0 (regla de arriba). La primera pintura (prerenderizada) no se anima.
+ */
+.explorer__intro > :not(router-outlet),
+.panel > tls-body-panel {
+  transition:
+    opacity var(--duration-base) var(--ease-standard),
+    translate var(--duration-base) var(--ease-standard);
+}
+
+@starting-style {
+  .explorer__intro > :not(router-outlet),
+  .panel > tls-body-panel {
+    opacity: 0;
+    translate: 0 0.375rem;
+  }
+}
+
+/*
+ * El texto de la vista se recoge donde falta sitio (queda el selector de vista). Se oculta solo a la
+ * vista: el H1 y el párrafo siguen para los lectores de pantalla.
+ * - Móvil: con la ficha abierta, con la barra de tiempo desplegada y en pantallas bajas.
+ * - Escritorio bajo: solo el párrafo, para que el índice gane alto.
+ */
+@media (max-width: 63.99rem) {
+  .explorer:has(.panel:not([hidden]), .time.is-expanded) .explorer__intro {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 63.99rem) and (max-height: 45rem) {
+  .explorer__intro {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /*
+   * Con la barra de tiempo desplegada, el lienzo de un móvil bajo mide unos 190 px: la cámara se
+   * queda en acercar y alejar para no tapar las etiquetas (G y V siguen valiendo).
+   */
+  .explorer:has(.time.is-expanded) .camera__extra {
+    display: none;
+  }
+}
+
+@media (min-width: 64rem) and (max-height: 50rem) {
+  .explorer__intro p {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+/*
+ * Controles de la interfaz del explorador (los usan varios componentes diferidos): botones con
+ * borde, desplegables e inputs nativos con el tema oscuro, y etiquetas pequeñas encima.
+ */
+.control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 2.25rem;
+  padding: 0 var(--space-3);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: var(--border-width) solid var(--color-control);
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.control:hover {
+  background: var(--color-surface-raised);
+}
+
+.control[aria-pressed='true'] {
+  background: var(--color-surface-raised);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.control--icon {
+  width: 2.25rem;
+  padding: 0;
+}
+
+select.control,
+input.control {
+  justify-content: flex-start;
+  cursor: auto;
+}
+
+select.control {
+  padding-right: var(--space-2);
+  cursor: pointer;
+}
+
+.field {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.field__label {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  line-height: 1.2;
+}
+
+.field__group {
+  display: flex;
+  gap: var(--space-1);
+}
+
+@media (pointer: coarse) {
+  .control {
+    min-height: var(--tap-target);
+  }
+
+  .control--icon {
+    width: var(--tap-target);
+  }
+}
+
 /* Páginas de contenido (fichas, créditos…): el explorador ocupa todo el ancho. */
 .page {
   display: block;
@@ -209,14 +392,22 @@ a:hover {
   color: var(--color-accent);
 }
 
+/* Un contorno nítido del color del fondo (no un halo difuso): las órbitas no cruzan las letras. */
 .scene-label__name {
   position: absolute;
   top: 0;
   left: 0;
   padding: 1px 4px;
   text-shadow:
-    0 0 3px var(--color-bg),
-    0 0 6px var(--color-bg);
+    1px 0 0 var(--color-bg),
+    -1px 0 0 var(--color-bg),
+    0 1px 0 var(--color-bg),
+    0 -1px 0 var(--color-bg),
+    1px 1px 0 var(--color-bg),
+    -1px 1px 0 var(--color-bg),
+    1px -1px 0 var(--color-bg),
+    -1px -1px 0 var(--color-bg),
+    0 0 4px var(--color-bg);
 }
 
 .scene-label__marker {

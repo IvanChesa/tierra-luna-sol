@@ -13,6 +13,17 @@ export type ExplorerView = 'system' | 'earth' | 'moon';
 export type ScaleMode = 'illustrative' | 'real';
 
 export type QualityLevel = 'low' | 'medium' | 'high';
+
+/**
+ * Márgenes del lienzo que tapa la interfaz, en píxeles CSS (PLAN 3.c.6). El motor centra y encuadra
+ * la escena en la parte que queda visible (`camera.setViewOffset`).
+ */
+export interface ViewInsets {
+  readonly top: number;
+  readonly right: number;
+  readonly bottom: number;
+  readonly left: number;
+}
 /** `auto`: detección inicial y bajada automática si los FPS no llegan (D22). */
 export type QualitySetting = QualityLevel | 'auto';
 
@@ -67,6 +78,8 @@ export interface FrameStats {
   readonly vramMB: number;
   /** Frames pintados desde el arranque (para comprobar el render bajo demanda). */
   readonly renderedFrames: number;
+  /** Cuerpos que se dibujan como su órbita resaltada porque irían a saltos (§4.5). */
+  readonly aliased: readonly BodyId[];
   readonly quality: QualityLevel;
   readonly depth: Exclude<DepthMode, 'auto'>;
 }
@@ -102,6 +115,11 @@ export interface SceneEngineEvents {
   };
   /** La reproducción ha llegado a 1900 o a 2100 y se ha pausado. */
   readonly limitReached: { readonly limit: 'min' | 'max' };
+  /**
+   * Empieza o termina un viaje de cámara: un vuelo a un cuerpo (`focus`) o un viaje entre vistas
+   * (`view`, ~3 s, con «Saltar»). Con movimiento reducido no hay viajes: los cambios son directos.
+   */
+  readonly travel: { readonly active: boolean; readonly kind: 'focus' | 'view' };
 }
 
 export type SceneEngineEventName = keyof SceneEngineEvents;
@@ -120,6 +138,19 @@ export interface SceneEngineApi {
   setView(view: ExplorerView): void;
   /** Tamaño del lienzo en píxeles CSS y densidad de píxeles del dispositivo. */
   resize(width: number, height: number, devicePixelRatio: number): void;
+  /**
+   * Márgenes del lienzo que tapa la interfaz (px CSS): la escena se centra y se encuadra en la parte
+   * visible (`camera.setViewOffset`), sin redimensionar el renderer (PLAN 3.c.6).
+   */
+  setViewInsets(insets: ViewInsets): void;
+  /** Gira la cámara alrededor del foco (radianes): el teclado en el lienzo. */
+  orbitBy(deltaAzimuth: number, deltaElevation: number): void;
+  /** Acerca (`factor` < 1) o aleja (> 1) la cámara: los botones y las teclas de zoom. */
+  zoomBy(factor: number): void;
+  /** Termina ya el viaje de cámara o la transición de marco en curso («Saltar», `Esc`). */
+  skipTransition(): void;
+  /** Muestra u oculta las etiquetas de los cuerpos (la vista limpia las oculta). */
+  setLabelsVisible(visible: boolean): void;
   /** Pinta un frame y devuelve la imagen del lienzo (PNG). */
   capture(): Promise<Blob>;
   /** Libera la GPU, los listeners y el DOM de las etiquetas. El motor no se puede reutilizar. */

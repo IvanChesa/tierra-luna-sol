@@ -26,6 +26,7 @@ export type {
   SceneEngineEventName,
   SceneEngineEvents,
   SceneEngineOptions,
+  ViewInsets,
 } from './types';
 
 /** Crea el motor con el renderer WebGL del navegador. Arranca en segundo plano (eventos). */

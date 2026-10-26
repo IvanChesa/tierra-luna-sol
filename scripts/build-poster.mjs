@@ -13,24 +13,35 @@ const VIEWS = [
   ['moon', '/explorar/luna'],
 ];
 const FORMATS = [
-  // [nombre, ventana CSS, densidad, tamaño final]
-  ['escritorio', 1600, 900, 1, 1600, 900],
-  ['movil', 360, 760, 2, 720, 1280],
+  // [nombre, ventana CSS, densidad, tamaño final, teléfono (táctil)]
+  ['escritorio', 1600, 900, 1, 1600, 900, false],
+  ['movil', 360, 760, 2, 720, 1280, true],
 ];
 
 await mkdir(OUT, { recursive: true });
 const { browser, close } = await openBrowser();
 try {
   for (const [view, path] of VIEWS) {
-    for (const [format, width, height, scale, outWidth, outHeight] of FORMATS) {
+    for (const [format, width, height, scale, outWidth, outHeight, mobile] of FORMATS) {
       const { page, problems } = await openViewer(browser, `${path}?captura=1`, {
         width,
         height,
         scale,
+        mobile,
       });
-      // Solo el escenario 3D: sin el texto de la vista (que va en el HTML encima del póster).
-      await page.addStyleTag({ content: '.viewer__text { visibility: hidden !important; }' });
-      const png = await page.locator('.viewer__stage').screenshot();
+      // Solo los píxeles del lienzo (engine.capture()): sin la interfaz ni las etiquetas, que van en
+      // el HTML encima. El lienzo ocupa todo el explorador y la escena ya viene centrada en la parte
+      // que dejan libre los paneles, como la verá quien llegue.
+      const base64 = await page.evaluate(async () => {
+        const blob = await window.__tlsViewer.engine.capture();
+        const bytes = new Uint8Array(await blob.arrayBuffer());
+        let binary = '';
+        for (let i = 0; i < bytes.length; i += 0x8000) {
+          binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+        }
+        return btoa(binary);
+      });
+      const png = Buffer.from(base64, 'base64');
       const target = fileURLToPath(new URL(`poster-${view}-${format}.webp`, OUT));
       const info = await sharp(png)
         .resize(outWidth, outHeight, { fit: 'cover' })

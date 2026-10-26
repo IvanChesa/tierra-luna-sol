@@ -42,6 +42,11 @@ testem.log
 /typings
 __screenshots__/
 
+# Resultados de Playwright (e2e)
+/test-results/
+/playwright-report/
+/blob-report/
+
 # System files
 .DS_Store
 Thumbs.db

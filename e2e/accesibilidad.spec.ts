@@ -1,0 +1,71 @@
+import AxeBuilder from '@axe-core/playwright';
+import { expect, test, type Page } from '@playwright/test';
+import { readFileSync } from 'node:fs';
+import { openExplorer } from './support';
+
+/** Las rutas prerenderizadas del build (todas las páginas del sitio). */
+const ROUTES = Object.keys(
+  (
+    JSON.parse(readFileSync('dist/tierra-luna-sol/prerendered-routes.json', 'utf8')) as {
+      routes: Record<string, unknown>;
+    }
+  ).routes,
+);
+
+/** axe con las reglas de WCAG 2.1 A y AA; el criterio del plan: 0 violaciones graves o críticas. */
+async function seriousViolations(page: Page): Promise<string[]> {
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze();
+  return results.violations
+    .filter((violation) => violation.impact === 'serious' || violation.impact === 'critical')
+    .map(
+      (violation) =>
+        `${violation.id} (${violation.impact}): ${violation.help} → ${violation.nodes
+          .map((node) => node.target.join(' '))
+          .join(', ')}`,
+    );
+}
+
+test.describe('Accesibilidad (axe)', () => {
+  test('el explorador en sus estados: vista, ficha, Tierra, Luna, atajos y vista limpia', async ({
+    page,
+  }) => {
+    await openExplorer(page, '/?captura=1');
+    expect(await seriousViolations(page)).toEqual([]);
+
+    await page.locator('#tree-saturno > .row').click();
+    await expect(page.locator('#card-title')).toHaveText('Saturno');
+    expect(await seriousViolations(page)).toEqual([]);
+
+    await page.goto('/explorar/tierra?captura=1');
+    await expect(page.locator('tls-viewer-canvas')).toHaveClass(/is-ready/, { timeout: 90_000 });
+    expect(await seriousViolations(page)).toEqual([]);
+
+    await page.goto('/explorar/luna?captura=1');
+    await expect(page.locator('tls-viewer-canvas')).toHaveClass(/is-ready/, { timeout: 90_000 });
+    expect(await seriousViolations(page)).toEqual([]);
+
+    // En móvil, el botón de los atajos está en la parte plegada de la barra de tiempo.
+    const help = page.getByRole('button', { name: 'Atajos de teclado' });
+    if (!(await help.isVisible())) await page.locator('.time__more').click();
+    await help.click();
+    await expect(page.getByRole('dialog', { name: 'Atajos de teclado' })).toBeVisible();
+    expect(await seriousViolations(page)).toEqual([]);
+    await page.keyboard.press('Escape');
+
+    await page.keyboard.press('v');
+    await expect(page.getByRole('button', { name: /Mostrar la interfaz/ })).toBeVisible();
+    expect(await seriousViolations(page)).toEqual([]);
+  });
+
+  test('todas las páginas del sitio', async ({ page }) => {
+    expect(ROUTES.length).toBeGreaterThan(10);
+    for (const route of ROUTES) {
+      await page.goto(route);
+      await page.waitForLoadState('networkidle');
+      const violations = await seriousViolations(page);
+      expect(violations, route).toEqual([]);
+    }
+  });
+});

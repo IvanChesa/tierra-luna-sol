@@ -6,15 +6,15 @@
 }
 
 .viewer-canvas {
-  position: relative;
   display: block;
   width: 100%;
   height: 100%;
   /* Los gestos táctiles los gestiona el motor (girar, pellizcar). */
   touch-action: none;
   cursor: grab;
-  /* Hasta el primer frame se ve el póster de debajo (el lienzo aún está vacío). */
+  /* Hasta el primer frame, se ve el póster de debajo; luego, un fundido corto. */
   opacity: 0;
+  transition: opacity var(--duration-base) var(--ease-standard);
 }
 
 :host(.is-ready) .viewer-canvas {
@@ -25,16 +25,45 @@
   cursor: grabbing;
 }
 
+/* El foco del lienzo se dibuja dentro de la parte visible (los paneles tapan el resto). */
+.viewer-canvas:focus-visible {
+  outline: none;
+}
+
+:host:has(.viewer-canvas:focus-visible)::after {
+  position: absolute;
+  inset: var(--view-top, 0) var(--view-right, 0) var(--view-bottom, 0) var(--view-left, 0);
+  border: var(--focus-ring-width) solid var(--color-focus);
+  content: '';
+  pointer-events: none;
+}
+
 .viewer-labels {
   position: absolute;
   inset: 0;
   pointer-events: none;
 }
 
+/* Hasta el primer frame (y si hay un error) no hay etiquetas: debajo solo está el póster. */
+:host(:not(.is-ready)) .viewer-labels {
+  visibility: hidden;
+}
+
+/*
+ * Carga y error, en la parte visible del lienzo. Mientras se ven, la cámara no (explorer-ui.css):
+ * pueden usar todo el ancho. Si no caben (una ficha abierta en un móvil pequeño), se desplazan.
+ */
 .viewer-status {
   position: absolute;
-  inset: auto var(--space-4) var(--space-4) auto;
-  max-width: 20rem;
+  bottom: calc(var(--view-bottom, 4.5rem) + var(--space-4));
+  left: calc(var(--view-left, 0px) + var(--space-4));
+  max-width: min(
+    22rem,
+    calc(100% - var(--view-left, 0px) - var(--view-right, 0px) - 2 * var(--space-4))
+  );
+  max-height: calc(100% - var(--view-top, 0px) - var(--view-bottom, 4.5rem) - 2 * var(--space-4));
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: var(--space-3) var(--space-4);
   background: var(--color-surface);
   border: var(--border-width) solid var(--color-line);
@@ -46,6 +75,13 @@
   margin: 0 0 var(--space-2);
 }
 
+.viewer-status__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: var(--font-weight-strong);
+}
+
 .viewer-status__bar {
   width: 100%;
   accent-color: var(--color-accent);
@@ -55,52 +91,16 @@
   color: var(--color-text-muted);
 }
 
-.viewer-button {
-  min-height: var(--tap-target);
-  padding: 0 var(--space-4);
-  background: var(--color-accent);
-  color: var(--color-bg);
-  border: 0;
-  border-radius: var(--radius-sm);
-  font: inherit;
-  font-weight: var(--font-weight-strong);
-  cursor: pointer;
-}
-
-.viewer-quality {
-  position: absolute;
-  right: var(--space-3);
-  bottom: var(--space-3);
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: 0 0 0 var(--space-3);
-  background: var(--color-surface);
-  border-radius: var(--radius-md);
-  color: var(--color-text-muted);
-  font-size: var(--text-sm);
-}
-
-.viewer-quality select {
-  min-height: var(--tap-target);
-  padding: 0 var(--space-2);
-  background: var(--color-surface);
-  color: var(--color-text);
-  border: var(--border-width) solid var(--color-control);
-  border-radius: var(--radius-sm);
-  font: inherit;
-}
-
 .viewer-stats {
   position: absolute;
-  top: var(--space-3);
-  right: var(--space-3);
+  top: calc(var(--view-top, 0px) + var(--space-3));
+  right: calc(var(--view-right, 0px) + var(--space-3));
   display: grid;
   grid-template-columns: auto auto;
   gap: 0 var(--space-3);
   margin: 0;
   padding: var(--space-2) var(--space-3);
-  background: color-mix(in srgb, var(--color-surface) 88%, transparent);
+  background: var(--color-surface);
   border: var(--border-width) solid var(--color-line);
   border-radius: var(--radius-md);
   font-size: 0.75rem;

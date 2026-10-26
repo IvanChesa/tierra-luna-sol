@@ -18,6 +18,10 @@ const FORBIDDEN = {
   // Sin ancla: con node_modules enlazado (fuera de la raíz), el metafile guarda «../../…/node_modules/…».
   three: /(^|\/)node_modules\/three\//,
   'astronomy-engine': /(^|\/)node_modules\/astronomy-engine\//,
+  // CLAUDE.md: los stores y los controles del visor tampoco van en el bundle inicial (fase 3).
+  'los stores': /(^|\/)src\/app\/state\//,
+  'los controles del visor':
+    /(^|\/)src\/app\/features\/(explorer-ui|time-controls|body-picker|body-panel|camera-controls|shortcuts)\//,
 };
 /** Cadenas literales que sobreviven a la minificación de cada librería. */
 const MARKERS = {

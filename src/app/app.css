@@ -5,12 +5,15 @@
 }
 
 .site-header {
+  position: relative;
+  z-index: 3;
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2) var(--space-6);
-  padding: var(--space-3) var(--space-4);
+  min-height: 3.5rem;
+  padding: 0 var(--space-4);
+  background: var(--color-bg);
   border-bottom: var(--border-width) solid var(--color-line);
 }
 
@@ -22,7 +25,26 @@
   text-decoration: none;
 }
 
-.site-header ul {
+.site-menu-button {
+  display: none;
+}
+
+/* Escritorio: la navegación en línea (anula el estilo de popover del navegador). */
+.site-nav {
+  position: static;
+  inset: auto;
+  display: block;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  background: none;
+  color: inherit;
+  border: 0;
+}
+
+.site-nav ul {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-1) var(--space-4);
@@ -31,22 +53,103 @@
   list-style: none;
 }
 
-.site-header nav a {
+.site-nav a {
   display: inline-flex;
   align-items: center;
-  min-height: var(--tap-target);
+  min-height: 2.5rem;
   color: var(--color-text-muted);
   text-decoration: none;
 }
 
-.site-header nav a:hover,
-.site-header nav a.is-active {
+.site-nav a:hover,
+.site-nav a.is-active {
   color: var(--color-text);
 }
 
-.site-header nav a.is-active {
+.site-nav a.is-active {
   text-decoration: underline;
   text-decoration-color: var(--color-accent);
+}
+
+.site-nav__extra {
+  display: none;
+}
+
+/* Móvil: «Menú» abre la navegación en un panel flotante. */
+@media (max-width: 63.99rem) {
+  .site-menu-button {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: var(--tap-target);
+    padding: 0 var(--space-3);
+    background: transparent;
+    color: var(--color-text);
+    border: var(--border-width) solid var(--color-control);
+    border-radius: var(--radius-md);
+    font: inherit;
+    font-size: var(--text-sm);
+    cursor: pointer;
+  }
+
+  .site-menu-button svg {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+  }
+
+  /* Con el menú abierto, el botón se ve pulsado. */
+  .site-menu-button:has(+ .site-nav:popover-open) {
+    background: var(--color-surface-raised);
+    border-color: var(--color-accent);
+  }
+
+  .site-nav:not(:popover-open) {
+    display: none;
+  }
+
+  .site-nav:popover-open {
+    position: fixed;
+    inset: 3.5rem var(--space-2) auto auto;
+    width: min(18rem, calc(100vw - 2 * var(--space-2)));
+    padding: var(--space-2) var(--space-4) var(--space-4);
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-control);
+    border-radius: var(--radius-md);
+    box-shadow: 0 12px 32px rgb(0 0 0 / 0.45);
+  }
+
+  .site-nav ul {
+    display: grid;
+    gap: 0;
+  }
+
+  .site-nav a {
+    min-height: var(--tap-target);
+    font-size: var(--text-base);
+  }
+
+  .site-nav__extra {
+    display: block;
+  }
+
+  .site-nav__author {
+    margin: var(--space-2) 0 0;
+    padding-top: var(--space-3);
+    border-top: var(--border-width) solid var(--color-line);
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+  }
+
+  /* Dentro de una frase: subrayado, no solo el color (WCAG 1.4.1). */
+  .site-nav__author a {
+    display: inline;
+    min-height: 0;
+    color: var(--color-accent);
+    font-size: inherit;
+    text-decoration: underline;
+  }
 }
 
 main {
@@ -54,6 +157,7 @@ main {
   flex: 1;
   flex-direction: column;
   width: 100%;
+  min-height: 0;
 }
 
 main:focus {

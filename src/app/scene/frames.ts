@@ -103,9 +103,15 @@ export class FrameController {
     return this.root.kind === 'blend';
   }
 
+  /** Termina ya cualquier transición en curso: queda el marco de destino («Saltar»). */
+  finish(): void {
+    if (this.root.kind === 'blend') this.root = this.root.to;
+  }
+
   /**
    * Cambia de marco y/o de foco. Con `durationMs = 0` (movimiento reducido o modo de captura) el
-   * cambio es directo.
+   * cambio es directo. `nowMs` puede estar en el futuro: la transición espera hasta entonces (los
+   * vuelos de cámara empiezan a cambiar de marco un poco después de despegar).
    */
   transitionTo(spec: FrameSpec, focusIndex: number, nowMs: number, durationMs: number): void {
     const count = this.output.radius.length;

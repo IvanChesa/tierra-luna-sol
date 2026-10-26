@@ -1,0 +1,80 @@
+<article class="card" aria-labelledby="card-title">
+  <header class="card__head">
+    <div class="card__heading">
+      <h2 class="card__title" id="card-title">{{ body().name }}</h2>
+      <p class="card__kind">{{ kind() }}</p>
+    </div>
+    <button
+      type="button"
+      class="card__close"
+      aria-label="Cerrar la ficha"
+      title="Cerrar la ficha (Esc)"
+      (click)="closed.emit()"
+    >
+      <tls-icon name="close" />
+    </button>
+  </header>
+
+  <div class="card__body">
+    <p class="card__summary">{{ body().summary.text }}</p>
+
+    @if (distances().length > 0) {
+      <h3 class="card__section">Distancia</h3>
+      <dl class="card__data">
+        @for (row of distances(); track row.label) {
+          <div class="card__row">
+            <dt>{{ row.label }}</dt>
+            <dd>
+              <span class="card__number">{{ row.value.number }}</span>
+              @if (row.value.unit) {
+                <span class="card__unit">&nbsp;{{ row.value.unit }}</span>
+              }
+              @if (row.detail) {
+                <span class="card__detail">{{ row.detail }}</span>
+              }
+            </dd>
+          </div>
+        }
+      </dl>
+    }
+
+    <h3 class="card__section">Datos</h3>
+    <dl class="card__data">
+      @for (row of facts(); track row.label) {
+        <div class="card__row">
+          <dt>{{ row.label }}</dt>
+          <dd>
+            <span class="card__number">{{ row.value.number }}</span>
+            @if (row.value.unit) {
+              <span class="card__unit">&nbsp;{{ row.value.unit }}</span>
+            }
+            @if (row.detail) {
+              <span class="card__detail">{{ row.detail }}</span>
+            }
+          </dd>
+        </div>
+      }
+    </dl>
+
+    @let cited = citations();
+    <p class="card__source">
+      @if (cited.length === 1 && cited[0]; as only) {
+        Datos de <a [href]="only.source.url">{{ only.source.publisher }}</a
+        >.
+      } @else {
+        @for (citation of cited; track citation.source.url) {
+          {{ citation.what }}: <a [href]="citation.source.url">{{ citation.source.publisher }}</a
+          >.
+        }
+      }
+      {{ calculation() }}
+    </p>
+  </div>
+
+  <!-- Siempre a la vista, aunque los datos se desplacen (escritorio bajo, hoja del móvil). -->
+  @if (link(); as path) {
+    <footer class="card__foot">
+      <a class="card__link" [routerLink]="path">Ficha completa de {{ body().name }}</a>
+    </footer>
+  }
+</article>

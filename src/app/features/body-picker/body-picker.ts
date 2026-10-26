@@ -1,0 +1,230 @@
+import {
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  Injector,
+  afterNextRender,
+  computed,
+  effect,
+  inject,
+  linkedSignal,
+  signal,
+  untracked,
+} from '@angular/core';
+import { formatAu, formatNumber } from '../../core/format';
+import type { BodyId } from '../../data/body.model';
+import { ExplorerStore } from '../../state/explorer.store';
+import { SystemPositions } from '../../state/positions';
+import { SimulationStore } from '../../state/simulation.store';
+import { ofBody } from '../explorer-ui/describe';
+import { ExplorerSession } from '../explorer-ui/explorer-session';
+import { Icon } from '../viewer/icon';
+import {
+  BODY_TREE,
+  ROOT_NODES,
+  TreeKey,
+  TreeNode,
+  rowByInitial,
+  systemOf,
+  treeKey,
+  treeNode,
+  visibleRows,
+} from './body-tree';
+
+const TREE_KEYS: readonly string[] = [
+  'ArrowDown',
+  'ArrowUp',
+  'ArrowRight',
+  'ArrowLeft',
+  'Home',
+  'End',
+];
+/** Espacio duro entre la cifra y la unidad (ESTILO §3). */
+const NBSP = ' ';
+
+/**
+ * Índice de cuerpos (PLAN 3.b.5): un árbol accesible (WAI-ARIA Tree View, una sola parada de
+ * tabulación) con el Sol, los planetas y sus lunas. Se lee como una tabla de efemérides: cada cuerpo
+ * lleva su distancia actual, al Sol los planetas y a su planeta las lunas, en cifras tabulares que
+ * cambian al reproducir (como mucho 5 veces por segundo). En móvil es la tira horizontal de la hoja
+ * inferior. Funciona sin WebGL: las distancias salen de `SystemPositions`, no del motor.
+ */
+@Component({
+  selector: 'tls-body-picker',
+  imports: [Icon],
+  templateUrl: './body-picker.html',
+  styleUrl: './body-picker.css',
+})
+export class BodyPicker {
+  private readonly sim = inject(SimulationStore);
+  private readonly explorer = inject(ExplorerStore);
+  private readonly session = inject(ExplorerSession);
+  private readonly positions = inject(SystemPositions);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly cdr = inject(ChangeDetectorRef);
+
+  protected readonly roots = ROOT_NODES;
+  protected readonly selected = this.sim.selectedBodyId;
+  /** Planetas abiertos: el del cuerpo elegido se abre solo; el usuario abre y cierra los demás. */
+  protected readonly expanded = linkedSignal<BodyId | null, ReadonlySet<BodyId>>({
+    source: () => systemOf(this.selected()),
+    computation: (system, previous) => {
+      const next = new Set(previous?.value ?? []);
+      if (system) next.add(system);
+      return next;
+    },
+  });
+  /** La fila que recibe el foco con el tabulador (patrón de tabindex itinerante). */
+  private readonly cursor = linkedSignal<BodyId>(() => this.selected() ?? 'sol');
+  protected readonly tabStop = computed(() => {
+    const cursor = this.cursor();
+    const rows = visibleRows(this.expanded());
+    return rows.includes(cursor) ? cursor : (treeNode(cursor).parent ?? 'sol');
+  });
+  /** Distancias de cada cuerpo, ya formateadas (ESTILO §3). */
+  protected readonly values = computed(() => {
+    // El Sol no tiene distancia en esta columna (es el origen de las de los planetas).
+    const values = new Map<BodyId, string>([['sol', '—']]);
+    for (const root of ROOT_NODES) {
+      const toSun = this.positions.distances(root.id).toSunKm;
+      if (root.kind === 'planet' && toSun !== null) values.set(root.id, formatAu(toSun));
+      for (const child of root.children) {
+        const km = this.positions.distances(child).toParentKm;
+        if (km !== null) values.set(child, `${formatNumber(km, 0)}${NBSP}km`);
+      }
+    }
+    return values;
+  });
+  /** La fila con el foco: al llegar a otra, su descripción se pone al día. */
+  private readonly focusedRow = signal<BodyId | null>(null);
+  /**
+   * La distancia de cada fila para el lector de pantalla, como descripción («A 9,54 UA del Sol»):
+   * la columna se ve, pero queda fuera del nombre accesible (informe, §4.3). Al reproducir no
+   * cambia mientras el foco sigue en la fila, para que el lector no la repita: se pone al día al
+   * llegar a otra fila o al pausar.
+   */
+  protected readonly descriptions = computed(() => {
+    this.focusedRow();
+    const values = this.sim.playing() ? untracked(this.values) : this.values();
+    return BODY_TREE.map((node) => {
+      const value = values.get(node.id);
+      const of = node.parent ? ofBody(node.parent) : 'del Sol';
+      return { id: node.id, text: node.kind === 'star' || !value ? '' : `A ${value} ${of}` };
+    });
+  });
+
+  constructor() {
+    // En la tira horizontal del móvil, el cuerpo elegido se desplaza a la vista (DOM: sistema
+    // externo), cuando ya está pintado.
+    const injector = inject(Injector);
+    effect(() => {
+      const id = this.selected();
+      if (!id) return;
+      afterNextRender(() => this.revealRow(id), { injector });
+    });
+  }
+
+  /**
+   * Desplaza solo la lista (la tira del móvil o la columna del escritorio) hasta la fila: con
+   * `scrollIntoView` se moverían también los contenedores de fuera, y en las pantallas bajas, donde
+   * se desplaza la página, la página entera.
+   */
+  private revealRow(id: BodyId): void {
+    const tree = this.host.nativeElement.querySelector<HTMLElement>('.tree');
+    const row = tree?.querySelector<HTMLElement>(`#tree-${id} > .row`);
+    if (!tree || !row) return;
+    const box = tree.getBoundingClientRect();
+    const target = row.getBoundingClientRect();
+    // La parte visible de la lista, sin su borde ni sus márgenes de desplazamiento (el de los lados
+    // en la tira del móvil; el de abajo, el del fundido del escritorio).
+    const style = tree.ownerDocument.defaultView?.getComputedStyle(tree);
+    const pad = Number.parseFloat(style?.scrollPaddingInlineStart ?? '') || 0;
+    const padEnd = Number.parseFloat(style?.scrollPaddingBlockEnd ?? '') || 0;
+    const left = box.left + tree.clientLeft + pad;
+    const right = box.left + tree.clientLeft + tree.clientWidth - pad;
+    const top = box.top + tree.clientTop;
+    const bottom = top + tree.clientHeight - padEnd;
+    let dx = 0;
+    if (target.left < left) dx = target.left - left;
+    else if (target.right > right) dx = target.right - right;
+    let dy = 0;
+    if (target.top < top) dy = target.top - top;
+    else if (target.bottom > bottom) dy = target.bottom - bottom;
+    if (dx !== 0 || dy !== 0) tree.scrollBy?.({ left: dx, top: dy });
+  }
+
+  protected children(node: TreeNode): readonly TreeNode[] {
+    return node.children.map((id) => treeNode(id));
+  }
+
+  protected isExpanded(id: BodyId): boolean {
+    return this.expanded().has(id);
+  }
+
+  protected choose(id: BodyId): void {
+    this.cursor.set(id);
+    this.session.select(id);
+  }
+
+  /** Un clic en una fila la elige; en el triángulo de un planeta, abre o cierra sus lunas. */
+  protected onClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    const item = target.closest<HTMLElement>('[role="treeitem"]');
+    const id = item?.dataset['body'] as BodyId | undefined;
+    if (!id || !target.closest('.row')) return;
+    if (target.closest('.row__toggle:not(.row__toggle--none)')) {
+      this.cursor.set(id);
+      this.setExpanded(id, !this.isExpanded(id));
+      return;
+    }
+    this.choose(id);
+  }
+
+  /** El foco llega a una fila: su descripción, ya al día antes de que el lector la lea. */
+  protected onFocus(event: FocusEvent): void {
+    const item = (event.target as HTMLElement).closest<HTMLElement>('[role="treeitem"]');
+    const id = item?.dataset['body'] as BodyId | undefined;
+    if (!id || id === this.focusedRow()) return;
+    this.focusedRow.set(id);
+    this.cdr.detectChanges();
+  }
+
+  protected onKeydown(event: KeyboardEvent): void {
+    const item = (event.target as HTMLElement).closest<HTMLElement>('[role="treeitem"]');
+    const current = item?.dataset['body'] as BodyId | undefined;
+    if (!current) return;
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      this.choose(current);
+      return;
+    }
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
+    // Con los atajos de una sola tecla desactivados, una letra lleva a la fila que empieza por ella.
+    if (!this.explorer.singleKeyShortcuts() && /^\p{L}$/u.test(event.key)) {
+      event.preventDefault();
+      const next = rowByInitial(event.key, current, this.expanded());
+      if (next) this.moveTo(next);
+      return;
+    }
+    if (!TREE_KEYS.includes(event.key)) return;
+    event.preventDefault();
+    const move = treeKey(event.key as TreeKey, current, this.expanded());
+    if (move.expand) this.setExpanded(move.expand, true);
+    if (move.collapse) this.setExpanded(move.collapse, false);
+    this.moveTo(move.focus);
+  }
+
+  private moveTo(id: BodyId): void {
+    this.cursor.set(id);
+    this.host.nativeElement.querySelector<HTMLElement>(`#tree-${id}`)?.focus();
+  }
+
+  private setExpanded(id: BodyId, open: boolean): void {
+    this.expanded.update((set) => {
+      const next = new Set(set);
+      if (open) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }
+}

@@ -1,7 +1,9 @@
-import { Component, inject } from '@angular/core';
-import { ExplorerViewState } from '../../state/explorer-view';
+import { Component } from '@angular/core';
 
-/** La Luna en detalle (fase 2: encuadre básico; la fase 6 añade el relieve y el recorrido). */
+/**
+ * La Luna en detalle (fase 2: encuadre básico; la fase 6 añade el relieve y el recorrido).
+ * La vista la dice la ruta (`data.view`); el layout del explorador la pasa al motor.
+ */
 @Component({
   selector: 'tls-explore-moon-page',
   template: `
@@ -10,18 +12,21 @@ import { ExplorerViewState } from '../../state/explorer-view';
   `,
   styles: `
     h1 {
-      font-size: var(--text-2xl);
       margin-bottom: var(--space-2);
+      font-size: 1.75rem;
     }
 
     p {
       margin: 0;
       color: var(--color-text-muted);
+      font-size: var(--text-sm);
+    }
+
+    @media (max-width: 63.99rem) {
+      h1 {
+        font-size: 1.375rem;
+      }
     }
   `,
 })
-export class ExploreMoonPage {
-  constructor() {
-    inject(ExplorerViewState).view.set('moon');
-  }
-}
+export class ExploreMoonPage {}
