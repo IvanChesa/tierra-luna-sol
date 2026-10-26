@@ -124,7 +124,7 @@ describe('texturas: nivel elegido y VRAM', () => {
   it('estima la VRAM con mipmaps (4/3) y deja las vistas dentro del presupuesto de §5', () => {
     expect(textureVramBytes(1024, 512)).toBeCloseTo(1024 * 512 * 4 * (4 / 3), 6);
     expect(textureVramBytes(1024, 512, false)).toBe(1024 * 512 * 4);
-    // Vista general en alto: todos los cuerpos en su nivel general, la Vía Láctea en 4k y, como
+    // Vista general en alto: todos los cuerpos en su nivel general, la Vía Láctea en 2k y, como
     // peor caso, un cuerpo enfocado en 4k.
     const level = (id: TextureId, wanted: '1k' | '2k' | '4k') =>
       chooseTextureFile(TEXTURE_FILES[id], wanted, 16_384);

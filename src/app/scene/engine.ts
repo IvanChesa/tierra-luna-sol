@@ -66,12 +66,19 @@ import {
   sanitizeInsets,
   viewProjection,
 } from './view-insets';
-import { World } from './world';
-import { VISUAL_CONFIG, closeUpAmount, exposureFor, fillLight } from './visual-config';
+import { BODY_TEXTURES, World } from './world';
+import { TEXTURE_MEAN_LUMINANCE } from './texture-files';
+import {
+  VISUAL_CONFIG,
+  backgroundGain,
+  closeUpAmount,
+  exposureFor,
+  fillLight,
+} from './visual-config';
 import { illustrativeDistance } from '../ephemeris/scale';
 import { BODY_DATA } from '../data/body-data';
 import { BODY_PHOTOMETRY } from '../data/photometry';
-import { interpolateLitBrightness, litBrightnessTable } from '../ephemeris/photometry';
+import { discFactor, interpolateLitBrightness, litBrightnessTable } from '../ephemeris/photometry';
 
 /** Profundidad elegida en la fase 2 (D13); ver docs/informes/fase-2.md. */
 export const DEFAULT_DEPTH: ResolvedDepthMode = 'logarithmic';
@@ -131,9 +138,6 @@ const MIN_DISTANCE_RADII = 1.12;
  * `visibilitychange`.
  */
 const MAX_FRAME_DT_MS = 400;
-
-/** Por debajo de este radio en pantalla (px CSS), un cuerpo no aparta las órbitas de su disco. */
-const ORBIT_DISC_MIN_PX = 3;
 
 /** Los únicos cuerpos con nombre en las vistas Tierra y Luna. */
 const DETAIL_LABELS: readonly string[] = ['tierra', 'luna', 'sol'];
@@ -208,14 +212,19 @@ const NEPTUNE_INDEX = SCENE_BODIES.findIndex((body) => body.id === 'neptuno');
 const EARTH_INDEX = SCENE_BODIES.findIndex((body) => body.id === 'tierra');
 
 /**
- * Albedo geométrico de cada cuerpo para la exposición del primer plano (configuración visual), o
- * `null` si no se calibra con él (el Sol; la Tierra hasta la fase 5).
+ * Albedo con el que se compensa la exposición del primer plano de cada cuerpo (configuración visual),
+ * o `null` (el Sol, que emite luz). Los que se calibran, el geométrico del catálogo. La Tierra, hasta
+ * la fase 5, el efectivo de su propia textura (su luminancia media por el factor del disco de su
+ * modelo, ≈ 0,08): el del catálogo (0,434) incluye las nubes, que aún no se dibujan, y sin compensar
+ * quedaba casi negra (revisión de la fase 3b).
  */
 const FOCUS_ALBEDO: readonly (number | null)[] = SCENE_BODIES.map((body) => {
-  const photometry = body.id === 'sol' ? null : BODY_PHOTOMETRY[body.id];
-  return photometry?.calibrateAlbedo
-    ? (BODY_DATA[body.id].physical.geometricAlbedo?.value ?? null)
-    : null;
+  if (body.id === 'sol') return null;
+  const photometry = BODY_PHOTOMETRY[body.id];
+  if (photometry.calibrateAlbedo) return BODY_DATA[body.id].physical.geometricAlbedo?.value ?? null;
+  const texture = BODY_TEXTURES[body.id];
+  const luminance = texture ? TEXTURE_MEAN_LUMINANCE[texture] : undefined;
+  return luminance ? luminance * discFactor(photometry.photometry) : null;
 });
 
 /**
@@ -936,6 +945,8 @@ export class SceneEngine implements SceneEngineApi {
     if (this.exposure < 0 || Math.abs(exposure - this.exposure) > 1e-4) {
       this.exposure = exposure;
       this.renderer.setExposure(exposure);
+      // El fondo no sigue la exposición del primer plano: se ve igual en todas las vistas.
+      this.world.setBackgroundGain(backgroundGain(exposure));
     }
   }
 
@@ -950,7 +961,7 @@ export class SceneEngine implements SceneEngineApi {
           body.onScreen &&
           !body.occluded &&
           Number.isFinite(body.radiusPx) &&
-          body.radiusPx >= ORBIT_DISC_MIN_PX &&
+          body.radiusPx >= VISUAL_CONFIG.orbitDiscMinRadiusPx &&
           this.aliasing.orbit[body.index] !== 1,
       )
       .sort((a, b) => b.radiusPx - a.radiusPx);

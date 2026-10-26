@@ -11,9 +11,11 @@
  * Todo lo que crea lo libera en `dispose()`, también al cambiar de calidad (geometrías y texturas).
  */
 import {
+  BackSide,
   BufferAttribute,
   BufferGeometry,
   Color,
+  FrontSide,
   Matrix4,
   Mesh,
   PerspectiveCamera,
@@ -50,6 +52,7 @@ import type { QualityProfile, TextureLevel } from './quality';
 import { StarField, temperatureToSrgb } from './stars';
 import type { SceneBody } from './system';
 import { TEXTURE_MEAN_LUMINANCE } from './texture-files';
+import { VISUAL_CONFIG } from './visual-config';
 import {
   LoadedTexture,
   TextureId,
@@ -149,19 +152,9 @@ interface BodyVisual {
 const tmpMatrix = new Matrix4();
 const tmpQuaternion = new Quaternion();
 const tmpVector = new Vector3();
-/** Tamaño e intensidad del halo del Sol, en radios solares: en la vista general y en primer plano. */
-const HALO = { overview: { radii: 3.2, intensity: 1.1 }, closeUp: { radii: 1.7, intensity: 0.45 } };
-/** Amplitud de la granulación del Sol en primer plano (ilustrativa) y su ritmo (unidades de ruido/s). */
-const GRANULATION = { amplitude: 0.05, rate: 0.015 };
-/**
- * Intensidad de la fotosfera: muy por encima de 1 en la vista general (el Sol deslumbra) y cerca de 1
- * en primer plano, para que el tone mapping no aplane el oscurecimiento del limbo.
- */
-const SUN_INTENSITY = { overview: 2.6, closeUp: 0.85 };
+const { halo: HALO, granulation: GRANULATION, intensity: SUN_INTENSITY } = VISUAL_CONFIG.sun;
 /** Segmentos de la esfera ligera de las lunas pequeñas (a lo ancho). */
 const COARSE_SEGMENTS = 32;
-/** Por debajo de este radio en pantalla (px CSS), el halo de la atmósfera no se dibuja: no se vería. */
-const ATMOSPHERE_MIN_RADIUS_PX = 2;
 
 /**
  * Factor de albedo de un cuerpo (D29): lleva su textura (o su color esquemático, mientras no llega)
@@ -231,6 +224,8 @@ export class World {
   private ringTexture: LoadedTexture | null = null;
   private ringRequested: TextureLevel | null = null;
   private stars: StarField | null = null;
+  /** Ganancia del fondo vigente (las estrellas llegan después de crear el mundo). */
+  private backgroundGain = 1;
   private readonly milkyWay: Mesh;
   private readonly milkyWayMaterial = createMilkyWayMaterial();
   private milkyWayTexture: LoadedTexture | null = null;
@@ -349,6 +344,7 @@ export class World {
     if (this.stars) this.scene.remove(this.stars.object);
     this.stars = stars;
     stars.setMagnitudeLimit(this.profile.starMagnitudeLimit);
+    stars.setBrightness(this.backgroundGain);
     this.scene.add(stars.object);
   }
 
@@ -507,7 +503,11 @@ export class World {
       }
       visual.frozen = frozen;
       const distance = tmpVector.copy(mesh.position).sub(camera.position).length();
-      nearest = Math.min(nearest, distance - r * 1.02);
+      // El plano cercano, por delante de la superficie o, con la cámara fuera de él, del halo de la
+      // atmósfera (el de Titán mide 1,2 radios: si no, se recortaba su parte delantera).
+      const shell = visual.atmosphere ? r * visual.atmosphere.mesh.scale.x : r;
+      const front = distance > shell * 1.02 ? shell : r;
+      nearest = Math.min(nearest, distance - front * 1.02);
       farthest = Math.max(farthest, distance + r);
       if (visual.uniforms) {
         // Dirección REAL hacia el Sol: −(posición heliocéntrica verdadera), en ejes de Three.
@@ -517,7 +517,14 @@ export class World {
         const onScreen = frame.screen[k];
         visual.atmosphere.uniforms.uRadius.value = r;
         visual.atmosphere.mesh.visible =
-          mesh.visible && (!onScreen || onScreen.radiusPx >= ATMOSPHERE_MIN_RADIUS_PX);
+          mesh.visible && (!onScreen || onScreen.radiusPx >= VISUAL_CONFIG.atmosphereMinRadiusPx);
+        // Con la cámara dentro de la esfera del halo, se ven sus caras interiores.
+        const side = distance < shell ? BackSide : FrontSide;
+        const material = visual.atmosphere.mesh.material as ShaderMaterial;
+        if (material.side !== side) {
+          material.side = side;
+          material.needsUpdate = true;
+        }
       }
     }
     this.updateSunAndRings(frame);
@@ -575,6 +582,17 @@ export class World {
     this.sun.uniforms.uTime.value = timeSeconds * GRANULATION.rate;
   }
 
+  /**
+   * Ganancia del fondo (configuración visual, `backgroundGain`): la Vía Láctea, las estrellas y las
+   * órbitas no siguen la exposición del primer plano.
+   */
+  setBackgroundGain(gain: number): void {
+    this.milkyWayMaterial.uniforms.uGain.value = gain;
+    this.stars?.setBrightness(gain);
+    this.backgroundGain = gain;
+    this.orbits.setGain(gain);
+  }
+
   /** Relleno ilustrativo de los cuerpos (configuración visual), en fracción de la luz del Sol. */
   setFill(fill: number): void {
     for (const visual of this.visuals) if (visual.uniforms) visual.uniforms.uFill.value = fill;
@@ -593,11 +611,6 @@ export class World {
     if (!(length > 0)) return 0;
     const cos = tmpVector.dot(visual.uniforms.uSunDirection.value) / length;
     return Math.acos(Math.min(Math.max(cos, -1), 1));
-  }
-
-  /** Factor de albedo de un cuerpo (para las pruebas y el informe). */
-  albedoScaleOf(id: BodyId): number | null {
-    return this.visuals.find((v) => v.body.id === id)?.uniforms?.uAlbedoScale.value ?? null;
   }
 
   setPixelRatio(pixelRatio: number): void {

@@ -87,6 +87,11 @@ export class StarField {
     this.geometry.setDrawRange(0, countBrighterThan(this.catalog, limit));
   }
 
+  /** Ganancia del fondo (configuración visual): compensa la exposición del primer plano. */
+  setBrightness(gain: number): void {
+    this.material.uniforms.uBrightness.value = gain;
+  }
+
   setPixelRatio(pixelRatio: number): void {
     this.material.uniforms.uPixelRatio.value = pixelRatio;
   }

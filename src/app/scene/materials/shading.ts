@@ -10,7 +10,11 @@
  */
 import { Color, Uniform, Vector4 } from 'three';
 import type { Haze, Photometry } from '../../ephemeris/photometry';
-import { phaseFunction } from '../../ephemeris/photometry';
+import { MIN_MU, phaseFunction } from '../../ephemeris/photometry';
+
+/** Un número de TS como literal float de GLSL (con punto decimal). */
+const glslFloat = (value: number): string =>
+  Number.isInteger(value) ? value.toFixed(1) : String(value);
 
 /** Declaraciones y funciones (después de los chunks de profundidad del fragment shader). */
 export const SHADING_PARS = /* glsl */ `
@@ -37,7 +41,7 @@ float tlsPhase(float alpha, float cosAlpha) {
 // Reflectancia relativa (1 en μ₀ = μ = 1, α = 0): Lommel–Seeliger y Minnaert con el peso L(α).
 float tlsReflectance(float mu0, float mu, float alpha, float cosAlpha) {
   if (mu0 <= 0.0) return 0.0;
-  float m = max(mu, 0.02);
+  float m = max(mu, ${glslFloat(MIN_MU)});
   float lommelSeeliger = 2.0 * mu0 / (mu0 + m);
   float k = uPhotometryA.z;
   float minnaert = pow(mu0, k) * pow(m, k - 1.0);

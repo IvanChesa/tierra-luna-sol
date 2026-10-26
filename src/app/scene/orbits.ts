@@ -62,6 +62,7 @@ export interface ScreenDisc {
 const DISC_FADE_PARS = /* glsl */ `
 uniform vec4 uTlsDiscs[${ORBIT_FADE_DISCS}];
 uniform int uTlsDiscCount;
+uniform float uTlsGain;
 
 // 0 sobre el disco de un cuerpo, 1 a partir de un margen alrededor (px del lienzo, origen abajo).
 float tlsDiscFade() {
@@ -87,6 +88,7 @@ export class OrbitLines {
     Array.from({ length: ORBIT_FADE_DISCS }, () => new Vector4()),
   );
   private readonly discCount = new Uniform(0);
+  private readonly gain = new Uniform(1);
 
   constructor(private sources: readonly OrbitSource[]) {
     this.capacity = this.segmentCount();
@@ -106,6 +108,7 @@ export class OrbitLines {
     this.material.onBeforeCompile = (shader) => {
       shader.uniforms['uTlsDiscs'] = this.discs;
       shader.uniforms['uTlsDiscCount'] = this.discCount;
+      shader.uniforms['uTlsGain'] = this.gain;
       shader.fragmentShader = shader.fragmentShader
         .replace(
           'uniform float linewidth;',
@@ -114,7 +117,7 @@ ${DISC_FADE_PARS}`,
         )
         .replace(
           'gl_FragColor = vec4( diffuseColor.rgb, alpha );',
-          'gl_FragColor = vec4( diffuseColor.rgb, alpha ) * tlsDiscFade();',
+          'gl_FragColor = vec4( diffuseColor.rgb * uTlsGain, alpha ) * tlsDiscFade();',
         );
     };
     this.material.customProgramCacheKey = () => 'tls-orbits-discs';
@@ -157,6 +160,11 @@ ${DISC_FADE_PARS}`,
       );
     }
     this.discCount.value = count;
+  }
+
+  /** Ganancia del fondo (configuración visual): compensa la exposición del primer plano. */
+  setGain(gain: number): void {
+    this.gain.value = gain;
   }
 
   /** Tamaño del lienzo en píxeles CSS (el grosor de la línea depende de él). */

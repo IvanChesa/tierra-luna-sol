@@ -41,7 +41,39 @@ export const VISUAL_CONFIG = {
     min: 0.6,
     max: 6,
   },
+  /** El Sol (tarea 6). */
+  sun: {
+    /**
+     * Intensidad de la fotosfera: muy por encima de 1 en la vista general (el Sol deslumbra) y cerca
+     * de 1 en primer plano, para que el tone mapping no aplane el oscurecimiento del limbo (el borde
+     * queda al ~33 % del centro, cerca del 30 % de la ley de Allen).
+     */
+    intensity: { overview: 2.6, closeUp: 0.85 },
+    /** Halo, en radios solares, y su intensidad: hace de resplandor (no hay bloom). */
+    halo: { overview: { radii: 3.2, intensity: 1.1 }, closeUp: { radii: 1.7, intensity: 0.45 } },
+    /** Granulación en primer plano: amplitud ilustrativa y ritmo (unidades de ruido por segundo). */
+    granulation: { amplitude: 0.05, rate: 0.015 },
+  },
+  /** Por debajo de este radio en pantalla (px CSS), el halo de una atmósfera no se dibuja: no se vería. */
+  atmosphereMinRadiusPx: 2,
+  /** Por debajo de este radio en pantalla (px CSS), un cuerpo no aparta las órbitas de su disco. */
+  orbitDiscMinRadiusPx: 3,
+  /**
+   * Vía Láctea (tarea 5b): sutil, por debajo de las estrellas. Intensidad del panorama y codo de la
+   * compresión de sus zonas brillantes (luminancia lineal, L / (1 + L / codo)): el centro galáctico
+   * queda en ~0,03 y la banda tenue apenas cambia. Como las estrellas y las órbitas, no sigue la
+   * exposición del primer plano (`backgroundGain`): el fondo se ve igual en todas las vistas.
+   */
+  milkyWay: { intensity: 0.25, knee: 0.05 },
 } as const;
+
+/**
+ * Ganancia del fondo (Vía Láctea, estrellas y órbitas) para una exposición: la base dividida por ella,
+ * de modo que el fondo no cambie al ajustar la exposición al cuerpo de un primer plano (de 0,6 a 6).
+ */
+export function backgroundGain(exposure: number): number {
+  return exposure > 0 ? VISUAL_CONFIG.exposure / exposure : 1;
+}
 
 /** Cuánto de primer plano hay (0: vista general; 1: primer plano), según el radio del foco en pantalla. */
 export function closeUpAmount(focusRadiusPx: number | null): number {
@@ -63,9 +95,9 @@ export function fillLight(closeUp: number): number {
 
 /**
  * Exposición: la base y, en primer plano, la compensación del brillo del cuerpo enfocado: su albedo
- * geométrico (`null`: sin compensación, como la Tierra hasta la fase 5) por el brillo medio de su
- * parte iluminada a la fase con la que se ve, respecto a fase llena (`litBrightness`, de
- * `litDiscBrightness`).
+ * (`null`, sin compensación: el Sol; la Tierra, hasta la fase 5, el efectivo de su textura) por el
+ * brillo medio de su parte iluminada a la fase con la que se ve, respecto a fase llena
+ * (`litBrightness`, de `litDiscBrightness`).
  */
 export function exposureFor(
   closeUp: number,

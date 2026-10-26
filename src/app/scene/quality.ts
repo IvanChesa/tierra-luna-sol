@@ -24,7 +24,8 @@ export interface QualityProfile {
   readonly focusTexture: TextureLevel;
   /**
    * Vía Láctea (el panorama de ESO, fase 3b), o `null` para no cargarla. §5: ≤ 1,5 MB en alta y
-   * ≤ 400 kB en baja (4k pesa 433 kB y 2k, 181 kB).
+   * ≤ 400 kB en baja. Sin las estrellas del panorama, 2k en todos los niveles: 4k no aportaba detalle
+   * y costaba 43 MB de VRAM, frente a 11 (revisión de la fase 3b).
    */
   readonly milkyWayTexture: TextureLevel | null;
   /** Puntos por vuelta de las órbitas de los planetas (las lunas usan la mitad). */
@@ -44,7 +45,7 @@ export const QUALITY_PROFILES: Readonly<Record<QualityLevel, QualityProfile>> = 
     anisotropy: 8,
     overviewTexture: '1k',
     focusTexture: '4k',
-    milkyWayTexture: '4k',
+    milkyWayTexture: '2k',
     orbitSegments: 360,
     vramBudgetMB: 300,
     // §5 pide ≥ 55 FPS en escritorio (alto): con 50 de media en 5 s de animación, ya no llega.

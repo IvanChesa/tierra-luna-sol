@@ -6,11 +6,14 @@
  * (sistema de Hipparcos, testada con el centro galáctico, el polo y Vega): u = 0,5 − l / 360°,
  * v = 0,5 + b / 180°.
  *
- * Brillo sutil, por debajo de las estrellas del catálogo HYG, que se pintan encima. En la costura de
- * l = 180° las derivadas de u saltan; se usa la variante continua de u para elegir el mipmap.
+ * Brillo sutil, por debajo de las estrellas del catálogo HYG, que se pintan encima: intensidad y
+ * compresión de las zonas brillantes de la configuración visual, y la ganancia del fondo, que compensa
+ * la exposición del primer plano. En la costura de l = 180° las derivadas de u saltan; se usa la
+ * variante continua de u para elegir el mipmap.
  */
 import { AdditiveBlending, BackSide, Matrix3, Texture, Uniform } from 'three';
 import { ECL_TO_GALACTIC } from '../../ephemeris/coordinates';
+import { VISUAL_CONFIG } from '../visual-config';
 import {
   DEPTH_FRAGMENT,
   DEPTH_FRAGMENT_PARS,
@@ -39,6 +42,8 @@ ${DEPTH_FRAGMENT_PARS}
 uniform sampler2D uMap;
 uniform float uHasMap;
 uniform float uIntensity;
+uniform float uKnee;
+uniform float uGain;
 uniform mat3 uEclToGalactic;
 varying vec3 vDirection;
 
@@ -60,8 +65,10 @@ void main() {
     dx = dxSeam;
     dy = dySeam;
   }
-  vec3 color = textureGrad(uMap, uv, dx, dy).rgb;
-  gl_FragColor = vec4(color * uIntensity, 1.0);
+  vec3 sky = textureGrad(uMap, uv, dx, dy).rgb * uIntensity;
+  // Compresión suave de lo brillante (el centro galáctico), sin cambiar el matiz.
+  sky /= 1.0 + dot(sky, vec3(0.2126, 0.7152, 0.0722)) / uKnee;
+  gl_FragColor = vec4(sky * uGain, 1.0);
   ${OUTPUT_FRAGMENT}
 }
 `;
@@ -72,14 +79,14 @@ function eclToGalacticMatrix(): Matrix3 {
   return new Matrix3().set(m[0], m[1], m[2], m[3], m[4], m[5], m[6], m[7], m[8]);
 }
 
-/** Brillo del panorama: tenue, para que no compita con las estrellas ni con los cuerpos. */
-export const MILKY_WAY_INTENSITY = 0.35;
-
 export function createMilkyWayMaterial() {
   const uniforms = {
     uMap: new Uniform<Texture | null>(null),
     uHasMap: new Uniform(0),
-    uIntensity: new Uniform(MILKY_WAY_INTENSITY),
+    uIntensity: new Uniform(VISUAL_CONFIG.milkyWay.intensity),
+    uKnee: new Uniform(VISUAL_CONFIG.milkyWay.knee),
+    /** Ganancia del fondo (configuración visual): compensa la exposición del primer plano. */
+    uGain: new Uniform(1),
     uSkyDistance: new Uniform(1),
     uEclToGalactic: new Uniform(eclToGalacticMatrix()),
   };

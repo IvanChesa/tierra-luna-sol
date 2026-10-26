@@ -34,8 +34,7 @@ describe('configuración visual', () => {
       12,
     );
     expect(exposureFor(1, 0.01)).toBe(max);
-    // Un cuerpo claro se expone menos (sin pasar del mínimo); sin albedo (la Tierra hasta la fase 5),
-    // la base.
+    // Un cuerpo claro se expone menos (sin pasar del mínimo); sin albedo (el Sol), la base.
     expect(exposureFor(1, 0.689)).toBeLessThan(VISUAL_CONFIG.exposure);
     expect(exposureFor(1, 5)).toBe(min);
     expect(exposureFor(1, null)).toBe(VISUAL_CONFIG.exposure);
