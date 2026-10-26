@@ -84,6 +84,13 @@ const SHOTS = [
     '/?captura=1&cuerpo=saturno&fecha=2013-07-19T21:30Z&fase=176&latitud=-17',
     SQUARE,
   ],
+  // Sombra del planeta sobre los anillos: en 2017, el Sol a unos 26° sobre los anillos; la cámara, a
+  // 60° de fase y 30° por encima (como las vistas de Cassini desde latitudes altas).
+  [
+    'saturno-sombra',
+    '/?captura=1&cuerpo=saturno&fecha=2017-06-15T12:00Z&fase=60&latitud=30',
+    SQUARE,
+  ],
   // Relieve con luz rasante (cerca del terminador).
   ['marte-terminador', '/?captura=1&cuerpo=marte&fase=80&latitud=10', SQUARE],
   ['mercurio-terminador', '/?captura=1&cuerpo=mercurio&fase=80&latitud=10', SQUARE],
