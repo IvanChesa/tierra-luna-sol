@@ -58,3 +58,7 @@ Thumbs.db
 
 # Copia local de las skills para otros agentes (no va al repo)
 .agents/
+
+# Configuración local de otras herramientas (Codex): AGENTS.md es una copia de CLAUDE.md que se desfasaría
+.codex/
+/AGENTS.md
