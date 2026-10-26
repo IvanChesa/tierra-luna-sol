@@ -5,7 +5,8 @@
  * - `fecha=2030-01-01T00:00Z`: instante UTC (1900–2100). Con fecha, el explorador abre en pausa.
  * - `cuerpo=titan`: cuerpo elegido (solo en la vista del sistema solar).
  * - `escala=real|ilustrativa`.
- * - `calidad=alta|media|baja|auto`.
+ * - `calidad=alta|media|baja|auto`: se lee al abrir y sale de la URL (es del dispositivo, no del
+ *   estado que se comparte: la elección del selector se recuerda en `localStorage`).
  * - `captura=1`: modo de captura determinista (fecha fija, calidad alta, sin animaciones).
  * - Solo en captura: `profundidad=logaritmica|invertida|estandar` (prueba de D13) y `detras=neptuno`
  *   (encuadre con ese cuerpo detrás del enfocado).
@@ -125,10 +126,12 @@ export interface UrlState {
   readonly scale: ScaleMode;
 }
 
+/** `calidad` siempre sale: si no, la URL pisaría la preferencia guardada al recargar. */
 export function viewerQueryParams(state: UrlState): Record<string, string | null> {
   return {
     fecha: state.time ? formatUtcParam(state.time) : null,
     cuerpo: state.body && findBody(state.body) ? state.body : null,
     escala: state.scale === 'illustrative' ? null : SCALE_PARAM[state.scale],
+    calidad: null,
   };
 }

@@ -22,6 +22,8 @@ function render(search: string) {
   TestBed.inject(ExplorerStore).connectView(signal('system'));
   const fixture = TestBed.createComponent(Notices);
   fixture.detectChanges();
+  // Los avisos de la URL llegan un render después de la región viva (para que se anuncien).
+  fixture.detectChanges();
   return {
     fixture,
     root: fixture.nativeElement as HTMLElement,
@@ -53,7 +55,7 @@ describe('Notices: avisos del explorador', () => {
     fixture.detectChanges();
     const text = root.querySelector('.notice__text')?.textContent?.trim() ?? '';
     expect(text.replace(/\s/g, ' ')).toMatch(
-      /^La simulación se ha parado en el límite del explorador: 31 dic 2100, 23:59 UTC( \(.+ en tu hora local\))?\. Elige una fecha anterior o vuelve a «Ahora»\.$/,
+      /^La simulación se ha parado en el límite del explorador: el 31 de diciembre de 2100 a las 23:59 UTC(, que en tu hora local \(\S+, UTC\S+\) es el .+)?\. Elige una fecha anterior o vuelve a «Ahora»\.$/,
     );
   });
 });

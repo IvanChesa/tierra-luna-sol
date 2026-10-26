@@ -2,7 +2,8 @@ import {
   formatAu,
   formatDateTime,
   formatDistanceKm,
-  formatLongDate,
+  formatLongDateTime,
+  localZoneName,
   formatNumber,
   formatPeriodHours,
   utcOffsetLabel,
@@ -50,11 +51,23 @@ describe('format: fechas', () => {
   it('en UTC, con día, mes abreviado, año y hora de 24 h', () => {
     expect(plain(formatDateTime(instant, 'utc'))).toBe('24 oct 2026, 19:40:05');
     expect(plain(formatDateTime(instant, 'utc', false))).toBe('24 oct 2026, 19:40');
-    expect(formatLongDate(instant, 'utc')).toBe('24 de octubre de 2026');
+    expect(plain(formatLongDateTime(instant, 'utc'))).toBe('24 de octubre de 2026 a las 19:40');
   });
 
   it('el desfase de la zona local se escribe como UTC±h (o UTC si no hay)', () => {
     const label = utcOffsetLabel(instant);
-    expect(label).toMatch(/^UTC([+−]\d{1,2}(:\d{2})?)?$/);
+    expect(label).toMatch(/^UTC([+−]\d{1,2}(:\d{2}){0,2})?$/);
+    expect(localZoneName()).toBe(Intl.DateTimeFormat().resolvedOptions().timeZone);
   });
+
+  // La hora solar de Madrid (UTC−0:14:44) hasta 1901: el desfase lleva sus segundos, como el campo
+  // de la hora (23:45:16 a las 00:00 UTC). Solo se puede comprobar con esa zona.
+  it.runIf(localZoneName() === 'Europe/Madrid')(
+    'en Madrid, en 1900, el desfase de la hora solar con sus segundos',
+    () => {
+      expect(utcOffsetLabel(new Date('1900-01-01T00:00:00Z'))).toBe('UTC−0:14:44');
+      expect(utcOffsetLabel(new Date('2026-07-01T00:00:00Z'))).toBe('UTC+2');
+      expect(utcOffsetLabel(new Date('2026-01-01T00:00:00Z'))).toBe('UTC+1');
+    },
+  );
 });

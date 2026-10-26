@@ -1,6 +1,6 @@
 import { DestroyRef, Service, computed, inject, signal } from '@angular/core';
 import { MAX_DATE, MIN_DATE } from '../ephemeris/constants';
-import type { BodyId, QualityLevel, QualitySetting, ScaleMode, SceneEngineApi } from '../scene';
+import type { BodyId, QualitySetting, ScaleMode, SceneEngineApi } from '../scene';
 import { SPEED_STEPS, shiftSpeed } from './speeds';
 
 /** Lo que el store necesita del motor: un subconjunto de `SceneEngineApi` (en los tests, un doble). */
@@ -35,7 +35,6 @@ export class SimulationStore {
   private readonly _selected = signal<BodyId | null>(null);
   private readonly _scale = signal<ScaleMode>('illustrative');
   private readonly _quality = signal<QualitySetting>('auto');
-  private readonly _qualityLevel = signal<QualityLevel | null>(null);
   private readonly _limit = signal<TimeLimit | null>(null);
 
   readonly time = this._time.asReadonly();
@@ -44,8 +43,6 @@ export class SimulationStore {
   readonly selectedBodyId = this._selected.asReadonly();
   readonly scaleFrame = this._scale.asReadonly();
   readonly quality = this._quality.asReadonly();
-  /** Nivel real del motor (con `auto`, el que ha detectado o al que ha bajado). */
-  readonly qualityLevel = this._qualityLevel.asReadonly();
   /** Último límite alcanzado (1900 o 2100), para avisar; se borra al cambiar de tiempo. */
   readonly limit = this._limit.asReadonly();
   readonly reverse = computed(() => this._speed() < 0);
@@ -100,7 +97,6 @@ export class SimulationStore {
         this._speed.set(speed);
       }),
       engine.on('limitReached', ({ limit }) => this._limit.set(limit)),
-      engine.on('qualityChanged', ({ level }) => this._qualityLevel.set(level)),
     ];
     this.detachEngine = () => offs.forEach((off) => off());
     return () => {

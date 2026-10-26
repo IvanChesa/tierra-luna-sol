@@ -1,5 +1,5 @@
-import { Component, computed, inject } from '@angular/core';
-import { formatDateTime, utcOffsetLabel } from '../../core/format';
+import { Component, afterNextRender, computed, inject, signal } from '@angular/core';
+import { formatLongDateTime, localZoneName, utcOffsetLabel } from '../../core/format';
 import { MAX_DATE, MIN_DATE } from '../../ephemeris/constants';
 import { SimulationStore } from '../../state/simulation.store';
 import { Icon } from '../viewer/icon';
@@ -15,7 +15,7 @@ import { ExplorerSession } from './explorer-session';
   imports: [Icon],
   template: `
     <div class="notices" role="status">
-      @if (session.warnings().length > 0) {
+      @if (mounted() && session.warnings().length > 0) {
         <div class="notice">
           <ul class="notice__list">
             @for (warning of session.warnings(); track warning) {
@@ -112,19 +112,29 @@ export class Notices {
   protected readonly session = inject(ExplorerSession);
   protected readonly sim = inject(SimulationStore);
   /**
+   * Los avisos de la URL existen desde el arranque, igual que la región `role="status"`: si
+   * nacieran juntos, el lector no los anunciaría. Llegan un render después de la región.
+   */
+  protected readonly mounted = signal(false);
+
+  constructor() {
+    afterNextRender(() => this.mounted.set(true));
+  }
+  /**
    * El límite, en UTC (el intervalo del explorador) y en tu hora local, que puede caer en otro día:
-   * el final de 2100 es el 1 de enero de 2101 en Madrid.
+   * el final de 2100 es el 1 de enero de 2101 en Madrid. Es un texto largo: formato largo y el
+   * nombre de la zona (ESTILO §4).
    */
   protected readonly limitText = computed(() => {
     const limit = this.sim.limit();
     if (!limit) return null;
     const edge = limit === 'max' ? MAX_DATE : MIN_DATE;
-    const utc = `${formatDateTime(edge, 'utc', false)} UTC`;
+    const offset = utcOffsetLabel(edge);
     const local =
-      utcOffsetLabel(edge) === 'UTC'
+      offset === 'UTC'
         ? ''
-        : ` (${formatDateTime(edge, 'local', false)} en tu hora local)`;
+        : `, que en tu hora local (${localZoneName()}, ${offset}) es el ${formatLongDateTime(edge, 'local')}`;
     const next = limit === 'max' ? 'una fecha anterior' : 'una fecha posterior';
-    return `La simulación se ha parado en el límite del explorador: ${utc}${local}. Elige ${next} o vuelve a «Ahora».`;
+    return `La simulación se ha parado en el límite del explorador: el ${formatLongDateTime(edge, 'utc')} UTC${local}. Elige ${next} o vuelve a «Ahora».`;
   });
 }

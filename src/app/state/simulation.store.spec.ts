@@ -89,8 +89,6 @@ describe('SimulationStore', () => {
     expect(engine.calls).toEqual([]);
     engine.emit('limitReached', { limit: 'max' });
     expect(store.limit()).toBe('max');
-    engine.emit('qualityChanged', { level: 'medium', setting: 'auto', reason: 'auto' });
-    expect(store.qualityLevel()).toBe('medium');
   });
 
   it('las fechas se llevan al rango 1900–2100 y una fecha inválida no hace nada', () => {
@@ -113,7 +111,8 @@ describe('SimulationStore', () => {
   it('desconectar el motor deja de escucharlo', () => {
     const engine = new FakeEngine();
     const detach = store.attach(engine);
-    expect(engine.listening).toBe(3);
+    // `timeChanged` y `limitReached`.
+    expect(engine.listening).toBe(2);
     detach();
     expect(engine.listening).toBe(0);
     engine.emit('timeChanged', {

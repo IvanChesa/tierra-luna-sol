@@ -55,11 +55,12 @@ describe('parámetros del explorador', () => {
     expect(formatUtcParam(new Date('2030-01-01T10:20:30Z'))).toBe('2030-01-01T10:20:30Z');
     expect(
       viewerQueryParams({ time: new Date('2030-01-01T00:00:00Z'), body: 'titan', scale: 'real' }),
-    ).toEqual({ fecha: '2030-01-01T00:00Z', cuerpo: 'titan', escala: 'real' });
+    ).toEqual({ fecha: '2030-01-01T00:00Z', cuerpo: 'titan', escala: 'real', calidad: null });
     expect(viewerQueryParams({ time: null, body: null, scale: 'illustrative' })).toEqual({
       fecha: null,
       cuerpo: null,
       escala: null,
+      calidad: null,
     });
     // Ida y vuelta: lo que se escribe se vuelve a leer igual.
     const written = viewerQueryParams({
