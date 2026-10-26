@@ -10,16 +10,35 @@
 // - Radios que cubre la tira de los anillos de Saturno: Solar System Scope no los documenta. Se
 //   calibran con dos bordes de la ficha de los anillos de la NASA (src/app/data/body-data.ts): el
 //   exterior del anillo B (empieza la división de Cassini) y el exterior del anillo A. Se comprueba
-//   después que el borde interior del anillo C cae donde la textura empieza a ser opaca.
-// - Orientación del cielo (Vía Láctea, ICRF): el centro galáctico tiene que ser más brillante que el
-//   polo galáctico norte.
+//   después que el borde interior del anillo C cae donde la textura empieza a ser opaca y que la
+//   división de Encke está donde dice la ficha.
+// - Opacidad física de los anillos (fase 3b): la opacidad de la textura es artística (la división
+//   de Cassini tiene τ ≈ 0,6; la NASA da 0–0,1). Se conserva su estructura radial y se lleva cada
+//   anillo (C, B, A y la división de Cassini) a la profundidad óptica normal y al albedo de la ficha;
+//   la textura solo aporta el matiz del color. El alfa de la tira es la opacidad vista de frente,
+//   1 − e^(−τ), y su color, el albedo.
+// - Color del océano de la Tierra (fase 3b): el de la textura es un azul plano y saturado; se lleva
+//   al medido en fotos de EPIC (DSCOVR) con la máscara del agua y se comprueba el resultado.
+// - Orientación de la Vía Láctea (panorama de ESO en coordenadas galácticas, con l = 0 en el centro y
+//   creciendo hacia la izquierda): el centro galáctico, más brillante que los polos y que el
+//   anticentro, y la Gran Nube de Magallanes donde dice SIMBAD (l = 280,4652°, b = −32,8884°), más
+//   brillante que el punto simétrico (el panorama al revés la pondría allí).
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
-import { FloatType } from 'three';
-import { EXRLoader } from 'three/addons/loaders/EXRLoader.js';
+import { BODY_DATA } from '../src/app/data/body-data.ts';
+import { RING_PHOTOMETRY } from '../src/app/data/photometry.ts';
+import { phaseFunction, ringReflectance } from '../src/app/ephemeris/photometry.ts';
+import { OCEAN_CHROMA, RING_TINTS } from './reference-colors.mjs';
+import {
+  DEMS,
+  checkAlignmentWithColor,
+  checkElevation,
+  loadElevation,
+  normalMap,
+} from './build-relief.mjs';
 
 const ROOT = new URL('../', import.meta.url);
 const SRC = new URL('assets-src/textures/', ROOT);
@@ -34,13 +53,20 @@ const RING_HEIGHT = 16;
 
 /**
  * kind: color (sRGB), gray (datos en escala de grises, sin espacio de color), normal (datos RGB),
- * ring (tira RGBA de los anillos), sky (EXR del cielo, se tonemapea).
+ * ring (tira RGBA de los anillos), panorama (cielo en coordenadas galácticas), relief (mapa de normales
+ * calculado con build-relief.mjs a partir de un modelo de elevación; `color`: la textura con la que
+ * se comprueba la alineación). `ocean`: máscara del agua con la que se corrige el color del océano
+ * (OCEAN_CHROMA). `maxWidth`: el nivel más grande que se genera.
  */
 const TEXTURES = {
-  sun: { file: '8k_sun.jpg', kind: 'color', quality: 80 },
   mercury: { file: '8k_mercury.jpg', kind: 'color', quality: 80 },
   venus: { file: '4k_venus_atmosphere.jpg', kind: 'color', quality: 80 },
-  'earth-day': { file: '8k_earth_daymap.jpg', kind: 'color', quality: 82 },
+  'earth-day': {
+    file: '8k_earth_daymap.jpg',
+    kind: 'color',
+    quality: 82,
+    ocean: '8k_earth_specular_map.tif',
+  },
   'earth-night': { file: '8k_earth_nightmap.jpg', kind: 'color', quality: 80 },
   'earth-clouds': { file: '8k_earth_clouds.jpg', kind: 'gray', quality: 80 },
   'earth-normal': { file: '8k_earth_normal_map.tif', kind: 'normal', quality: 90 },
@@ -50,21 +76,18 @@ const TEXTURES = {
   jupiter: { file: '8k_jupiter.jpg', kind: 'color', quality: 80 },
   saturn: { file: '8k_saturn.jpg', kind: 'color', quality: 80 },
   'saturn-rings': { file: '8k_saturn_ring_alpha.png', kind: 'ring', quality: 90 },
+  'mercury-normal': { dem: 'mercury', kind: 'relief', color: 'mercury', quality: 85 },
+  'mars-normal': { dem: 'mars', kind: 'relief', color: 'mars', quality: 85 },
   uranus: { file: '2k_uranus.jpg', kind: 'color', quality: 82 },
   neptune: { file: '2k_neptune.jpg', kind: 'color', quality: 82 },
-  'milky-way': { file: 'milkyway_2020_4k.exr', kind: 'sky', quality: 72 },
+  'milky-way': { file: 'eso0932a.tif', kind: 'panorama', quality: 80, maxWidth: 2048 },
 };
 
 /**
- * Texturas que no se publican, con el motivo. La Vía Láctea del NASA SVS (4851) deriva de Gaia DR2,
- * que se distribuye con licencia CC BY-NC 3.0 IGO (https://www.cosmos.esa.int/web/gaia-users/license):
- * la cláusula no comercial no entra en la política de licencias del proyecto (revisión de la fase 2,
- * hallazgo 4). Queda omitida hasta que Iván decida (docs/PENDIENTES.md); el código del cielo sigue
- * listo para otra fuente.
+ * Texturas que no se publican, con el motivo (ninguna ahora: la Vía Láctea de Gaia, CC BY-NC, se ha
+ * sustituido por el panorama de ESO, CC BY 4.0, por decisión de Iván en la revisión del bloque B).
  */
-const OMITTED = {
-  'milky-way': 'licencia CC BY-NC 3.0 IGO de Gaia DR2 (pendiente de Iván)',
-};
+const OMITTED = {};
 
 /**
  * Sondas de alineación: [latitud, longitud este, nombre]. Los puntos oscuros tienen que medir menos
@@ -168,6 +191,34 @@ async function checkAlignment(id, file) {
   return `${id}: oscuros ${show(aligned.dark)} · claros ${show(aligned.bright)} (girado 180°, fallaría)`;
 }
 
+/**
+ * Luminancia lineal media (Rec. 709) de un mapa equirrectangular de color, ponderada por el área de
+ * cada fila (cos φ). Con ella, la escena lleva cada cuerpo a su albedo geométrico (D29).
+ */
+async function meanLuminance(file) {
+  const { data, info } = await sharp(fileURLToPath(new URL(file.path, PUBLIC)))
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const linear = (c) => {
+    const v = c / 255;
+    return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  };
+  const table = Float64Array.from({ length: 256 }, (_, c) => linear(c));
+  let sum = 0;
+  let weights = 0;
+  for (let y = 0; y < info.height; y++) {
+    const weight = Math.cos((((y + 0.5) / info.height) * 2 - 1) * (Math.PI / 2));
+    for (let x = 0; x < info.width; x++) {
+      const k = (y * info.width + x) * info.channels;
+      sum +=
+        weight *
+        (0.2126 * table[data[k]] + 0.7152 * table[data[k + 1]] + 0.0722 * table[data[k + 2]]);
+      weights += weight;
+    }
+  }
+  return sum / weights;
+}
+
 /** Perfil radial (alfa medio por columna) de la tira de los anillos. */
 async function ringProfile(file) {
   const { data, info } = await sharp(fileURLToPath(new URL(file, SRC)))
@@ -196,16 +247,16 @@ function steepestDrop(alpha, from, to) {
   return best.x;
 }
 
+/** Los anillos de Saturno del catálogo (ficha de la NASA). */
+const RINGS = BODY_DATA.saturno.rings;
+if (!RINGS) throw new Error('Faltan los anillos de Saturno en body-data.ts');
+/** Borde interior y anchura de la división de Encke en la ficha de los anillos de la NASA. */
+const ENCKE_GAP_KM = { inner: 133410, width: 325 };
+
 async function calibrateRings(file) {
-  const bodyData = await readFile(new URL('src/app/data/body-data.ts', ROOT), 'utf8');
-  const edge = (name) => {
-    const match = new RegExp(`${name}: \\{\\s*value: (\\d+)`).exec(bodyData);
-    if (!match) throw new Error(`Falta ${name} de los anillos en body-data.ts`);
-    return Number(match[1]);
-  };
-  const bOuter = edge('cassiniInnerKm');
-  const aOuter = edge('outerRadiusKm');
-  const cInner = edge('innerRadiusKm');
+  const bOuter = RINGS.cassiniInnerKm.value;
+  const aOuter = RINGS.outerRadiusKm.value;
+  const cInner = RINGS.innerRadiusKm.value;
   const alpha = await ringProfile(file);
   const width = alpha.length;
   // Ventanas: la división de Cassini y el borde exterior del anillo A están en el último tercio.
@@ -224,52 +275,277 @@ async function calibrateRings(file) {
       `La calibración de los anillos no cuadra con el anillo C (${before} → ${after})`,
     );
   }
+  // Segunda comprobación independiente: el mínimo de opacidad cerca de la división de Encke cae
+  // dentro de ella (o a menos de su anchura).
+  const enckeCenter = ENCKE_GAP_KM.inner + ENCKE_GAP_KM.width / 2;
+  const xE = Math.round((enckeCenter - inner) / kmPerPx);
+  let xMin = xE;
+  for (let x = xE - 60; x <= xE + 60; x++) if (alpha[x] < alpha[xMin]) xMin = x;
+  const enckeFound = inner + (xMin + 0.5) * kmPerPx;
+  if (Math.abs(enckeFound - enckeCenter) > ENCKE_GAP_KM.width) {
+    throw new Error(
+      `La división de Encke no está donde dice la ficha (${Math.round(enckeFound)} km)`,
+    );
+  }
   return {
     inner: Math.round(inner),
     outer: Math.round(outer),
-    report: `anillos: borde exterior del B en x = ${xB} px y del A en x = ${xA} px → ${kmPerPx.toFixed(3)} km/px; la tira cubre de ${Math.round(inner)} a ${Math.round(outer)} km; el anillo C (${cInner} km) cae en x = ${xC} px, donde el alfa sube de ${before.toFixed(2)} a ${after.toFixed(2)}`,
+    kmPerPx,
+    report: `anillos: borde exterior del B en x = ${xB} px y del A en x = ${xA} px → ${kmPerPx.toFixed(3)} km/px; la tira cubre de ${Math.round(inner)} a ${Math.round(outer)} km; el anillo C (${cInner} km) cae en x = ${xC} px, donde el alfa sube de ${before.toFixed(2)} a ${after.toFixed(2)}; la división de Encke (${Math.round(enckeCenter)} km) tiene su mínimo a ${Math.round(enckeFound - enckeCenter)} km`,
   };
 }
 
-/** Vía Láctea: EXR lineal (0–1) → sRGB de 8 bits con una ganancia que lleva el p99,9 a ~1. */
-async function skyImage(file) {
-  const buffer = await readFile(new URL(file, SRC));
-  const loader = new EXRLoader();
-  loader.setDataType(FloatType);
-  const exr = loader.parse(
-    buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength),
-  );
-  const { width, height, data } = exr;
-  const channels = data.length / (width * height);
-  const GAIN = 2.5;
-  const encode = (v) => {
-    const c = Math.min(1, Math.max(0, v * GAIN));
-    return Math.round(255 * (c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055));
+const srgbToLinear = (c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+const linearToSrgb = (v) => (v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055);
+const smooth = (t) => {
+  const x = Math.min(Math.max(t, 0), 1);
+  return x * x * (3 - 2 * x);
+};
+
+/** Valor típico de un intervalo de la ficha: la media geométrica (la aritmética si empieza en 0). */
+const typical = ([lo, hi]) => (lo > 0 ? Math.sqrt(lo * hi) : (lo + hi) / 2);
+
+/**
+ * Reflectividad de los anillos medida por el Hubble (F555W, banda V) a 6° de fase con los anillos
+ * abiertos 23,6°: I/F = 0,4650 en el anillo B (100 000–107 000 km) y 0,2970 en el A
+ * (127 000–129 000 km), del ajuste de la tabla 5 de Salo y French (2010), «The opposition and tilt
+ * effects of Saturn's rings from HST observations», Icarus 210, 785 (arXiv:1007.0349). El albedo de
+ * esos anillos en la tira es el que hace que el modelo de la escena (dispersión simple con la función
+ * de fase de `data/photometry.ts`) dé esa reflectividad, sin salir del intervalo de la ficha de la
+ * NASA. El C y la división de Cassini se quedan con el valor típico de la ficha.
+ */
+const RING_HST = {
+  phaseDeg: 6,
+  openingDeg: 23.6,
+  rings: {
+    B: { from: 100_000, to: 107_000, reflectance: 0.465 },
+    A: { from: 127_000, to: 129_000, reflectance: 0.297 },
+  },
+};
+
+/**
+ * Tira física de los anillos (fase 3b): la estructura radial de la textura con la profundidad óptica
+ * y el albedo de cada anillo de la ficha de la NASA. Devuelve la tira RGBA (8 bits, sRGB) y un
+ * informe. Falla si la mediana de τ de algún anillo queda fuera de su intervalo.
+ */
+async function physicalRingStrip(file, calibration) {
+  const { data, info } = await sharp(fileURLToPath(new URL(file, SRC)))
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const width = info.width;
+  const radius = (x) => calibration.inner + (x + 0.5) * calibration.kmPerPx;
+  // Por columna, la opacidad media de la textura y su profundidad óptica aparente.
+  const tauSource = new Float64Array(width);
+  for (let x = 0; x < width; x++) {
+    let a = 0;
+    for (let y = 0; y < info.height; y++) a += data[(y * width + x) * info.channels + 3] / 255;
+    tauSource[x] = -Math.log(1 - Math.min(a / info.height, 0.995));
+  }
+  const { regions } = RINGS;
+  const bounds = [
+    ['C', RINGS.innerRadiusKm.value, RINGS.bInnerKm.value, regions.c],
+    ['B', RINGS.bInnerKm.value, RINGS.cassiniInnerKm.value, regions.b],
+    ['Cassini', RINGS.cassiniInnerKm.value, RINGS.cassiniOuterKm.value, regions.cassini],
+    ['A', RINGS.cassiniOuterKm.value, RINGS.outerRadiusKm.value, regions.a],
+  ];
+  const columnsOf = (from, to) => {
+    const list = [];
+    for (let x = 0; x < width; x++) if (radius(x) >= from && radius(x) < to) list.push(x);
+    return list;
   };
-  const out = Buffer.alloc(width * height * 3);
-  // El EXRLoader entrega las filas de abajo arriba (convención de WebGL): se dan la vuelta.
-  for (let y = 0; y < height; y++) {
-    const src = (height - 1 - y) * width;
-    for (let x = 0; x < width; x++) {
-      const i = (src + x) * channels;
-      const o = (y * width + x) * 3;
-      out[o] = encode(data[i]);
-      out[o + 1] = encode(data[i + 1]);
-      out[o + 2] = encode(data[i + 2]);
+  const quantile = (values, q) =>
+    [...values].sort((p, r) => p - r)[Math.floor(q * (values.length - 1))];
+  const median = (values) => quantile(values, 0.5);
+  // Para cada anillo, una ley de potencia que lleva sus percentiles 10 y 90 de τ a los extremos del
+  // intervalo de la ficha (conserva el orden y los contrastes de la estructura radial), su albedo y
+  // su matiz, medido en la foto del Hubble.
+  const fitted = bounds.map(([name, from, to, region]) => {
+    const columns = columnsOf(from, to);
+    const logs = columns.map((x) => Math.log(Math.max(tauSource[x], 1e-4)));
+    const [lo, hi] = region.opticalDepth.value;
+    const low = Math.log(Math.max(lo, hi / 20));
+    const p10 = quantile(logs, 0.1);
+    const p90 = quantile(logs, 0.9);
+    const slope = (Math.log(hi) - low) / Math.max(p90 - p10, 1e-3);
+    const sourceMedian = median(columns.map((x) => tauSource[x]));
+    return {
+      name,
+      from,
+      to,
+      region,
+      slope,
+      intercept: low - slope * p10,
+      albedo: typical(region.albedo.value),
+      chroma: RING_TINTS[name],
+      sourceMedian,
+    };
+  });
+  // Mezcla suave entre anillos vecinos (±250 km en cada borde), en escala logarítmica para τ.
+  const BLEND_KM = 250;
+  const weightsAt = (r) => {
+    const w = fitted.map((ring) => {
+      const rise = smooth((r - (ring.from - BLEND_KM)) / (2 * BLEND_KM));
+      const fall = 1 - smooth((r - (ring.to - BLEND_KM)) / (2 * BLEND_KM));
+      return Math.min(rise, fall);
+    });
+    // Por dentro del C y por fuera del A, el anillo más cercano.
+    if (r < fitted[0].from) w[0] = 1;
+    if (r > fitted[fitted.length - 1].to) w[w.length - 1] = 1;
+    const total = w.reduce((sum, v) => sum + v, 0) || 1;
+    return w.map((v) => v / total);
+  };
+  const tauPhysical = new Float64Array(width);
+  for (let x = 0; x < width; x++) {
+    const w = weightsAt(radius(x));
+    const logSource = Math.log(Math.max(tauSource[x], 1e-4));
+    const logTau = fitted.reduce(
+      (s, ring, j) => s + w[j] * (ring.intercept + ring.slope * logSource),
+      0,
+    );
+    const ceiling = fitted.reduce((s, ring, j) => s + w[j] * ring.region.opticalDepth.value[1], 0);
+    tauPhysical[x] = Math.min(Math.exp(logTau), 1.5 * ceiling);
+  }
+  // Albedo de los anillos B y A: el que da la reflectividad medida por el Hubble (RING_HST) con la τ
+  // de la tira en esa zona, el Sol y la vista a la misma elevación y la función de fase de la escena.
+  const mu = Math.sin((RING_HST.openingDeg * Math.PI) / 180);
+  const particles = RING_PHOTOMETRY.photometry;
+  const phase =
+    phaseFunction((RING_HST.phaseDeg * Math.PI) / 180, particles) / phaseFunction(0, particles);
+  for (const ring of fitted) {
+    const measured = RING_HST.rings[ring.name];
+    if (!measured) continue;
+    const tau = median(columnsOf(measured.from, measured.to).map((x) => tauPhysical[x]));
+    const model = ringReflectance(mu, mu, tau, true) * phase;
+    const [lo, hi] = ring.region.albedo.value;
+    ring.albedo = Math.min(Math.max(measured.reflectance / model, lo), hi);
+    ring.calibration = `I/F ${measured.reflectance} del Hubble a ${RING_HST.phaseDeg}° con τ ${tau.toFixed(2)}`;
+  }
+  const strip = Buffer.alloc(width * RING_HEIGHT * 4);
+  for (let x = 0; x < width; x++) {
+    const w = weightsAt(radius(x));
+    const tau = tauPhysical[x];
+    const albedo = fitted.reduce((s, ring, j) => s + w[j] * ring.albedo, 0);
+    const chroma = [0, 1, 2].map((i) =>
+      fitted.reduce((s, ring, j) => s + w[j] * ring.chroma[i], 0),
+    );
+    const rgb = chroma.map((v) => Math.round(255 * linearToSrgb(Math.min(albedo * v, 1))));
+    const alpha = Math.round(255 * (1 - Math.exp(-tau)));
+    for (let y = 0; y < RING_HEIGHT; y++) {
+      const k = (y * width + x) * 4;
+      strip[k] = rgb[0];
+      strip[k + 1] = rgb[1];
+      strip[k + 2] = rgb[2];
+      strip[k + 3] = alpha;
     }
   }
-  const image = sharp(out, { raw: { width, height, channels: 3 } });
-  // Orientación: el centro galáctico (AR 266,4°, Dec −28,9°) más brillante que el polo norte galáctico.
-  const raw = { data: out, info: { width, height, channels: 3 } };
-  const at = (raDeg, decDeg) => luminanceAt(raw, decDeg, -raDeg, 8); // u = 0,5 − AR/360
-  const center = at(266.4, -28.9);
-  const pole = at(192.9, 27.1);
-  if (!(center > 2 * pole)) throw new Error('La Vía Láctea no está orientada como se espera');
+  // Comprobación: la mediana de τ de cada anillo, ya física, cae en el intervalo de la ficha.
+  const lines = fitted.map((ring) => {
+    const columns = columnsOf(ring.from, ring.to);
+    const after = median(columns.map((x) => tauPhysical[x]));
+    const [lo, hi] = ring.region.opticalDepth.value;
+    if (after < lo || after > hi) {
+      throw new Error(
+        `La τ del anillo ${ring.name} (${after.toFixed(2)}) no está en [${lo}, ${hi}]`,
+      );
+    }
+    const [albedoLo, albedoHi] = ring.region.albedo.value;
+    const albedoSource = ring.calibration ?? 'típico de la ficha';
+    return `${ring.name}: τ mediana ${ring.sourceMedian.toFixed(2)} → ${after.toFixed(2)} (ficha ${lo}–${hi}), albedo ${ring.albedo.toFixed(3)} (${albedoSource}; ficha ${albedoLo}–${albedoHi}), matiz ${ring.chroma.map((v) => v.toFixed(2)).join('/')}`;
+  });
   return {
-    image,
-    width,
-    report: `vía láctea: centro galáctico ${Math.round(center)} · polo galáctico norte ${Math.round(pole)}`,
+    image: () => sharp(strip, { raw: { width, height: RING_HEIGHT, channels: 4 } }),
+    report: `anillos físicos: ${lines.join(' · ')}`,
   };
+}
+
+/**
+ * Lleva el océano de la textura de día a OCEAN_CHROMA (fase 3b, arreglo de base de la Tierra). En el
+ * agua de la máscara, cada píxel se multiplica por la ganancia por canal que lleva el océano abierto
+ * a ese color y conserva su luminancia: se mantienen el detalle y las diferencias de las aguas
+ * someras. Los píxeles poco azules (hielo marino, costas) apenas cambian. Se hace al tamaño del nivel
+ * mayor (4096 px) y falla si el océano abierto no queda en el color medido.
+ */
+async function correctOcean(file, maskFile, width) {
+  const height = width / 2;
+  const read = (name, data) =>
+    sharp(fileURLToPath(new URL(name, SRC)), { limitInputPixels: false, ignoreIcc: data }).resize(
+      width,
+      height,
+      { fit: 'fill', kernel: 'lanczos3' },
+    );
+  const color = await read(file, false).removeAlpha().raw().toBuffer();
+  const mask = await read(maskFile, true).toColourspace('b-w').raw().toBuffer();
+  const table = Float64Array.from({ length: 256 }, (_, c) => srgbToLinear(c / 255));
+  const lum = (r, g, b) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  const pixels = width * height;
+  const linear = new Float64Array(pixels * 3);
+  for (let i = 0; i < pixels * 3; i++) linear[i] = table[color[i]];
+  // Océano abierto: agua en toda la máscara y muy azul. Media ponderada por el área (cos φ).
+  const blueness = (p) =>
+    linear[3 * p + 2] / Math.max(lum(linear[3 * p], linear[3 * p + 1], linear[3 * p + 2]), 1e-6);
+  const open = new Uint8Array(pixels);
+  for (let p = 0; p < pixels; p++) open[p] = mask[p] >= 250 && blueness(p) > 2 ? 1 : 0;
+  const chromaOf = (values) => {
+    const sum = [0, 0, 0];
+    for (let y = 0; y < height; y++) {
+      const weight = Math.cos((((y + 0.5) / height) * 2 - 1) * (Math.PI / 2));
+      for (let x = 0; x < width; x++) {
+        const p = y * width + x;
+        if (!open[p]) continue;
+        for (let c = 0; c < 3; c++) sum[c] += weight * values[3 * p + c];
+      }
+    }
+    const l = lum(...sum);
+    return sum.map((v) => v / l);
+  };
+  const before = chromaOf(linear);
+  const gains = OCEAN_CHROMA.map((v, c) => v / before[c]);
+  const corrected = new Float64Array(pixels * 3);
+  const out = Buffer.alloc(pixels * 3);
+  for (let p = 0; p < pixels; p++) {
+    const [r, g, b] = [linear[3 * p], linear[3 * p + 1], linear[3 * p + 2]];
+    const l = lum(r, g, b);
+    const weight = (mask[p] / 255) * smooth((blueness(p) - 1.2) / 0.8);
+    const scaled = [r * gains[0], g * gains[1], b * gains[2]];
+    const keep = l / Math.max(lum(...scaled), 1e-9);
+    [r, g, b].forEach((v, c) => {
+      const value = v + weight * (scaled[c] * keep - v);
+      corrected[3 * p + c] = value;
+      out[3 * p + c] = Math.round(255 * linearToSrgb(Math.min(Math.max(value, 0), 1)));
+    });
+  }
+  const after = chromaOf(corrected);
+  if (after.some((v, c) => Math.abs(v - OCEAN_CHROMA[c]) > 0.03)) {
+    throw new Error(`El océano de la Tierra no queda en el color medido: ${after.join(', ')}`);
+  }
+  const show = (v) => v.map((x) => x.toFixed(3)).join('/');
+  return {
+    image: () => sharp(out, { raw: { width, height, channels: 3 } }),
+    report: `océano de la Tierra: abierto ${show(before)} → ${show(after)} (EPIC ${show(OCEAN_CHROMA)}), ganancias ${show(gains)}, conservando la luminancia de cada píxel`,
+  };
+}
+
+/**
+ * Orientación del panorama de la Vía Láctea (coordenadas galácticas, l = 0 en el centro y creciendo
+ * hacia la izquierda, el norte galáctico arriba): falla si no está como se espera.
+ */
+async function checkPanorama(file) {
+  const image = await sharp(fileURLToPath(new URL(file.path, PUBLIC)))
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  // u = 0,5 − l/360: en luminanceAt, la «longitud» es −l.
+  const at = (l, b, radius = 6) => luminanceAt(image, b, -l, radius);
+  const center = at(0, 0);
+  const anticenter = at(180, 0);
+  const poles = Math.max(at(0, 89), at(0, -89));
+  const lmc = at(280.4652, -32.8884, 3);
+  const mirrored = at(79.5348, -32.8884, 3);
+  if (!(center > 2 * poles && center > 2 * anticenter && lmc > 1.5 * mirrored)) {
+    throw new Error(
+      `La Vía Láctea no está orientada como se espera (centro ${center}, anticentro ${anticenter}, polos ${poles}, Nube de Magallanes ${lmc} frente a ${mirrored})`,
+    );
+  }
+  return `vía láctea: centro galáctico ${Math.round(center)} · anticentro ${Math.round(anticenter)} · polos ${Math.round(poles)} · Gran Nube de Magallanes ${Math.round(lmc)} frente a ${Math.round(mirrored)} en el punto simétrico`;
 }
 
 // --- Generación ----------------------------------------------------------------------------------
@@ -280,6 +556,7 @@ for (const [level] of LEVELS) {
 }
 
 const files = {};
+const luminance = {};
 const reports = [];
 let ringStrip = null;
 for (const [id, spec] of Object.entries(TEXTURES)) {
@@ -287,26 +564,72 @@ for (const [id, spec] of Object.entries(TEXTURES)) {
     console.log(`${id}: omitida (${OMITTED[id]})`);
     continue;
   }
+  if (spec.kind === 'relief') {
+    // Mapas de normales: uno por nivel, calculado del modelo remuestreado a ese tamaño (las
+    // pendientes son las de esa resolución) y comprobado contra su textura de color.
+    const dem = DEMS[spec.dem];
+    const list = [];
+    for (const [level, width] of LEVELS) {
+      const elevation = await loadElevation(spec.dem, width);
+      if (level === '1k') {
+        reports.push(checkElevation(spec.dem, elevation, width));
+        const colorFile = files[spec.color]?.[0];
+        if (!colorFile)
+          throw new Error(`Falta la textura de color «${spec.color}» para comprobar el relieve`);
+        const color = await sharp(fileURLToPath(new URL(colorFile.path, PUBLIC)))
+          .raw()
+          .toBuffer({ resolveWithObject: true });
+        reports.push(
+          checkAlignmentWithColor(spec.dem, elevation, {
+            data: color.data,
+            width: color.info.width,
+            height: color.info.height,
+            channels: color.info.channels,
+          }),
+        );
+      }
+      const normals = normalMap(elevation, width, width / 2, dem.radiusM, dem.exaggeration);
+      const pipeline = sharp(normals, { raw: { width, height: width / 2, channels: 3 } });
+      list.push(await emit(id, level, pipeline, spec.quality));
+    }
+    files[id] = list;
+    console.log(
+      `${id}: ${list.map((f) => `${f.level} ${(f.bytes / 1024).toFixed(0)} kB`).join(' · ')}`,
+    );
+    continue;
+  }
   const input = fileURLToPath(new URL(spec.file, SRC));
   let sourceWidth;
   let base;
-  if (spec.kind === 'sky') {
-    const sky = await skyImage(spec.file);
-    reports.push(sky.report);
-    sourceWidth = sky.width;
-    base = () => sky.image.clone();
-  } else {
+  {
     const data = spec.kind === 'normal' || spec.kind === 'gray';
     sourceWidth = (await sharp(input, { limitInputPixels: false }).metadata()).width;
     base = () => sharp(input, { limitInputPixels: false, ignoreIcc: data });
   }
+  if (spec.ocean) {
+    const ocean = await correctOcean(spec.file, spec.ocean, LEVELS.at(-1)[1]);
+    reports.push(ocean.report);
+    base = ocean.image;
+  }
+  // El panorama, sin sus estrellas (las pone el catálogo HYG, nítidas y en su sitio): una mediana de
+  // 5 × 5 px en el original las quita y conserva la luz difusa, las nubes de estrellas y el polvo. Con
+  // ellas, en los primeros planos salían como trazos (la proyección equirrectangular galáctica las
+  // estira lejos del plano de la Galaxia) y el grano doblaba el peso. Sin el detalle de las estrellas,
+  // el nivel de 4k ya no aporta nada sobre el de 2k y costaría 43 MB de VRAM: se genera hasta 2k.
+  if (spec.kind === 'panorama') {
+    const filtered = await base().median(5).png({ compressionLevel: 1 }).toBuffer();
+    base = () => sharp(filtered, { limitInputPixels: false });
+  }
   if (spec.kind === 'ring') {
     ringStrip = await calibrateRings(spec.file);
     reports.push(ringStrip.report);
+    const physical = await physicalRingStrip(spec.file, ringStrip);
+    reports.push(physical.report);
+    base = physical.image;
   }
   const list = [];
   for (const [level, width] of LEVELS) {
-    if (width > sourceWidth) continue;
+    if (width > sourceWidth || width > (spec.maxWidth ?? Infinity)) continue;
     let pipeline = base();
     if (spec.kind === 'ring') {
       pipeline = pipeline.resize(width, RING_HEIGHT, { fit: 'fill', kernel: 'lanczos3' });
@@ -314,13 +637,15 @@ for (const [id, spec] of Object.entries(TEXTURES)) {
       pipeline = pipeline.resize(width, width / 2, { fit: 'fill', kernel: 'lanczos3' });
     }
     if (spec.kind === 'gray') pipeline = pipeline.toColourspace('b-w');
-    // El nivel 4k del cielo lleva un grano de estrellas débiles que dobla el peso sin aportar nada
-    // como fondo: un desenfoque leve lo deja dentro del presupuesto de §5 (≤ 1,5 MB).
-    if (spec.kind === 'sky' && level === '4k') pipeline = pipeline.blur(0.6);
+    // El panorama sin estrellas se ve ampliado en los primeros planos (un píxel de 2k mide 0,18°): un
+    // desenfoque leve quita las manchas de la mediana y de la compresión.
+    if (spec.kind === 'panorama') pipeline = pipeline.blur(level === '1k' ? 0.6 : 1);
     list.push(await emit(id, level, pipeline, spec.quality, { alpha: spec.kind === 'ring' }));
   }
   files[id] = list;
-  const report = await checkAlignment(id, list[0]);
+  if (spec.kind === 'color') luminance[id] = Number((await meanLuminance(list[0])).toFixed(4));
+  const report =
+    spec.kind === 'panorama' ? await checkPanorama(list[0]) : await checkAlignment(id, list[0]);
   if (report) reports.push(report);
   console.log(
     `${id}: ${list.map((f) => `${f.level} ${(f.bytes / 1024).toFixed(0)} kB`).join(' · ')}`,
@@ -342,11 +667,17 @@ const entries = Object.entries(files)
 const ts = `// GENERADO por scripts/build-textures.mjs el ${today}. No se edita a mano.
 // WebP por niveles con hash (public/textures/), a partir de los originales de assets-src/textures/
 // (origen y licencia de cada uno en docs/FUENTES.md).
-import type { TextureFiles } from './textures';
+import type { TextureFiles, TextureId } from './textures';
 
 export const TEXTURE_FILES: TextureFiles = {
 ${entries}
 };
+
+/**
+ * Luminancia lineal media (Rec. 709) de cada mapa de color, ponderada por el área (cos φ), medida en
+ * el nivel 1k: con ella, la escena lleva cada cuerpo a su albedo geométrico (D29).
+ */
+export const TEXTURE_MEAN_LUMINANCE: Readonly<Partial<Record<TextureId, number>>> = ${JSON.stringify(luminance)};
 
 /**
  * Radios (km) que cubre la tira de los anillos de Saturno, calibrada con los bordes exteriores de los

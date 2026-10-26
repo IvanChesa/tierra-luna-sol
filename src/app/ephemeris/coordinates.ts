@@ -6,6 +6,7 @@
  * - ECL: eclíptica media J2000. Es el sistema común de la escena.
  * - Three: Y hacia arriba. ECL (x, y, z) → Three (x, z, −y).
  * - Terrestre: fijo a la Tierra. X hacia el meridiano de Greenwich en el ecuador, Z hacia el polo norte.
+ * - Galácticas (fase 3b, Vía Láctea): X hacia el centro galáctico, Z hacia el polo norte galáctico.
  */
 import {
   Body,
@@ -18,7 +19,21 @@ import {
   Vector,
 } from 'astronomy-engine';
 import { toAstroTime } from './time';
-import { Mat3, Vec3, mulMat3, mulMat3Vec, rotationX, rotationZ, transposeMat3, vec3 } from './vec3';
+import {
+  Mat3,
+  Vec3,
+  cross,
+  dot,
+  mulMat3,
+  mulMat3Vec,
+  normalize,
+  rotationX,
+  rotationZ,
+  scale,
+  sub,
+  transposeMat3,
+  vec3,
+} from './vec3';
 
 const DEG = Math.PI / 180;
 
@@ -59,6 +74,51 @@ export function equatorialToVector(raDeg: number, decDeg: number): Vec3 {
   const ra = raDeg * DEG;
   const dec = decDeg * DEG;
   return vec3(Math.cos(dec) * Math.cos(ra), Math.cos(dec) * Math.sin(ra), Math.sin(dec));
+}
+
+/**
+ * Sistema galáctico de Hipparcos (ESA, 1997, The Hipparcos and Tycho Catalogues, ESA SP-1200, vol. 1,
+ * §1.5.3): el polo norte galáctico en el ICRS y la longitud galáctica del polo norte celeste. Con
+ * ellos, el centro galáctico (l = 0°, b = 0°) cae en α = 266,40510°, δ = −28,936175°.
+ */
+export const GALACTIC_NORTH_POLE = { raDeg: 192.85948, decDeg: 27.12825 } as const;
+export const CELESTIAL_POLE_GALACTIC_LONGITUDE_DEG = 122.93192;
+
+/** EQJ → galácticas: las filas son los ejes galácticos expresados en EQJ. */
+function eqjToGalacticMatrix(): Mat3 {
+  const z = equatorialToVector(GALACTIC_NORTH_POLE.raDeg, GALACTIC_NORTH_POLE.decDeg);
+  // El polo norte celeste, proyectado en el plano galáctico, está a la longitud l del polo: el eje X
+  // (l = 0) es esa dirección girada −l alrededor del polo galáctico.
+  const celestialPole = vec3(0, 0, 1);
+  const p = normalize(sub(celestialPole, scale(z, dot(celestialPole, z))));
+  const l = CELESTIAL_POLE_GALACTIC_LONGITUDE_DEG * DEG;
+  const q = cross(z, p);
+  const x = vec3(
+    p.x * Math.cos(l) - q.x * Math.sin(l),
+    p.y * Math.cos(l) - q.y * Math.sin(l),
+    p.z * Math.cos(l) - q.z * Math.sin(l),
+  );
+  const y = cross(z, x);
+  return [x.x, x.y, x.z, y.x, y.y, y.z, z.x, z.y, z.z];
+}
+
+export const EQJ_TO_GALACTIC: Mat3 = eqjToGalacticMatrix();
+export const GALACTIC_TO_EQJ: Mat3 = transposeMat3(EQJ_TO_GALACTIC);
+/** ECL → galácticas (para la Vía Láctea, que se muestrea desde la escena). */
+export const ECL_TO_GALACTIC: Mat3 = mulMat3(EQJ_TO_GALACTIC, ECL_TO_EQJ);
+
+/** Vector unitario galáctico a partir de la longitud y la latitud galácticas (grados). */
+export function galacticToVector(lDeg: number, bDeg: number): Vec3 {
+  const l = lDeg * DEG;
+  const b = bDeg * DEG;
+  return vec3(Math.cos(b) * Math.cos(l), Math.cos(b) * Math.sin(l), Math.sin(b));
+}
+
+/** Longitud (0–360°) y latitud galácticas de un vector EQJ. */
+export function eqjToGalactic(v: Vec3): { lDeg: number; bDeg: number } {
+  const g = normalize(mulMat3Vec(EQJ_TO_GALACTIC, v));
+  const lDeg = (Math.atan2(g.y, g.x) / DEG + 360) % 360;
+  return { lDeg, bDeg: Math.asin(Math.min(Math.max(g.z, -1), 1)) / DEG };
 }
 
 /**

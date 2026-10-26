@@ -1,18 +1,26 @@
 /**
- * Material de los planetas y las lunas (D20, D21).
+ * Material de los planetas y las lunas (D20, D21, D29).
  *
  * - Luz del Sol sin atenuación por distancia (D21) y con su dirección REAL: la calcula el motor con
  *   la geometría verdadera en float64, no con la posición del Sol en la escena. Así ningún marco de
  *   escala puede falsear una fase o una estación.
- * - Lambert con un poco de luz ambiente (documentado: deja ver la forma del lado nocturno).
+ * - Sombreado físico por tipo de cuerpo (D29, `shading.ts`): Lommel–Seeliger en los rocosos,
+ *   Minnaert en los gigantes y una atmósfera aproximada en el limbo y el crepúsculo.
+ * - Brillo calibrado: el color de la textura por `uAlbedoScale` hace que el disco lleno valga el
+ *   albedo geométrico del cuerpo. La luz ambiente plana ya no existe: solo un relleno ilustrativo
+ *   (`uFill`, del módulo de configuración visual) que mira a la cámara.
+ * - Relieve (fase 3b): mapa de normales en el marco tangente este–norte–arriba, que sale de la
+ *   posición en el sistema propio del cuerpo (no hacen falta atributos de tangentes).
  * - Sombra analítica de los anillos sobre el planeta (Saturno): desde cada punto de la superficie se
  *   lanza un rayo hacia el Sol y, si cruza el plano de los anillos entre sus bordes, se atenúa con
- *   la opacidad del anillo en ese radio. Todo en el sistema propio del planeta, en radios.
+ *   la transmisión del anillo en ese radio por el camino inclinado de la luz, e^(−τ/μ₀) (con la
+ *   profundidad óptica física de la tira). Todo en el sistema propio del planeta, en radios.
  *
- * La geometría es la esfera unidad (Y = polo, meridiano 0 en +X, como `SphereGeometry`); el
- * elipsoide sale de la escala de la malla (radio ecuatorial, polar, ecuatorial).
+ * La geometría es la esfera unidad (Y = polo, meridiano 0 en +X, longitud este hacia −Z, como
+ * `SphereGeometry`); el elipsoide sale de la escala de la malla (radio ecuatorial, polar, ecuatorial).
  */
-import { Color, Texture, Uniform, Vector2, Vector3 } from 'three';
+import { Color, Texture, Uniform, Vector2, Vector3, Vector4 } from 'three';
+import type { Haze, Photometry } from '../../ephemeris/photometry';
 import {
   DEPTH_FRAGMENT,
   DEPTH_FRAGMENT_PARS,
@@ -21,6 +29,7 @@ import {
   OUTPUT_FRAGMENT,
   sceneShaderMaterial,
 } from './depth';
+import { SHADING_PARS, ShadingUniforms, shadingUniforms } from './shading';
 
 const vertexShader = /* glsl */ `
 ${DEPTH_VERTEX_PARS}
@@ -29,25 +38,47 @@ varying vec2 vUv;
 varying vec3 vNormal;
 varying vec3 vSunDirection;
 varying vec3 vLocal;
+varying vec3 vViewPosition;
+varying vec3 vCenterView;
+varying vec3 vEast;
+varying vec3 vNorth;
 
 void main() {
   vUv = uv;
   vLocal = position;
   vNormal = normalize(normalMatrix * normal);
+  // Marco tangente del relieve: este y norte en el sistema propio, llevados a la vista.
+  vec3 up = normalize(position);
+  vec3 east = vec3(up.z, 0.0, -up.x);
+  float eastLength = length(east);
+  east = eastLength > 1e-5 ? east / eastLength : vec3(1.0, 0.0, 0.0);
+  vEast = normalize((modelViewMatrix * vec4(east, 0.0)).xyz);
+  vNorth = normalize((modelViewMatrix * vec4(cross(up, east), 0.0)).xyz);
   vSunDirection = normalize((viewMatrix * vec4(uSunDirection, 0.0)).xyz);
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+  vViewPosition = mvPosition.xyz;
+  vCenterView = (modelViewMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+  gl_Position = projectionMatrix * mvPosition;
   ${DEPTH_VERTEX}
 }
 `;
 
 const fragmentShader = /* glsl */ `
 ${DEPTH_FRAGMENT_PARS}
+${SHADING_PARS}
 uniform sampler2D uMap;
 uniform float uHasMap;
 uniform vec3 uColor;
 uniform float uMeridianOffset;
-uniform float uAmbient;
+uniform float uAlbedoScale;
+uniform vec4 uChromaticity;
+uniform float uContrast;
+uniform float uMeanLuminance;
+uniform float uFill;
+uniform sampler2D uNormalMap;
+uniform float uNormalStrength;
 uniform float uRingShadow;
+uniform float uRingShine;
 uniform vec3 uSunDirectionLocal;
 uniform float uPolarScale;
 uniform vec2 uRingRadii;
@@ -56,6 +87,10 @@ varying vec2 vUv;
 varying vec3 vNormal;
 varying vec3 vSunDirection;
 varying vec3 vLocal;
+varying vec3 vViewPosition;
+varying vec3 vCenterView;
+varying vec3 vEast;
+varying vec3 vNorth;
 
 float ringShadow() {
   // Punto de la superficie en radios ecuatoriales, en el sistema propio (Y = polo).
@@ -67,28 +102,86 @@ float ringShadow() {
   float r = length((p + t * s).xz);
   float u = (r - uRingRadii.x) / (uRingRadii.y - uRingRadii.x);
   if (u < 0.0 || u > 1.0) return 1.0;
-  return 1.0 - texture2D(uRingMap, vec2(u, 0.5)).a;
+  float tau = -log(1.0 - clamp(texture2D(uRingMap, vec2(u, 0.5)).a, 0.0, 0.995));
+  return exp(-tau / max(abs(s.y), 1e-3));
+}
+
+// Normal con el relieve: el mapa guarda (este, norte, arriba) en [0, 1].
+vec3 reliefNormal(vec3 geometric, vec2 uv) {
+  vec3 t = texture2D(uNormalMap, uv).xyz * 2.0 - 1.0;
+  t.xy *= uNormalStrength;
+  return normalize(normalize(vEast) * t.x + normalize(vNorth) * t.y + geometric * max(t.z, 0.05));
 }
 
 void main() {
   ${DEPTH_FRAGMENT}
-  vec3 albedo = uHasMap > 0.5 ? texture2D(uMap, vec2(vUv.x + uMeridianOffset, vUv.y)).rgb : uColor;
-  float light = max(dot(normalize(vNormal), vSunDirection), 0.0);
-  if (uRingShadow > 0.5 && light > 0.0) light *= ringShadow();
-  gl_FragColor = vec4(albedo * (light + uAmbient), 1.0);
+  vec2 uv = vec2(vUv.x + uMeridianOffset, vUv.y);
+  vec3 base = uHasMap > 0.5 ? texture2D(uMap, uv).rgb : uColor;
+  // Color medido (data/photometry.ts): la textura conserva su luminancia y toma esa cromaticidad.
+  if (uChromaticity.w > 0.0) {
+    float luminance = dot(base, vec3(0.2126, 0.7152, 0.0722));
+    base = mix(base, luminance * uChromaticity.rgb, uChromaticity.w);
+  }
+  // Contraste (data/photometry.ts): se acerca la luminancia a la media sin cambiar el matiz.
+  if (uContrast < 1.0) {
+    float luminance = max(dot(base, vec3(0.2126, 0.7152, 0.0722)), 1e-4);
+    base *= (uMeanLuminance + (luminance - uMeanLuminance) * uContrast) / luminance;
+  }
+  vec3 albedo = base * uAlbedoScale;
+  vec3 geometric = normalize(vNormal);
+  vec3 normal = uNormalStrength > 0.0 ? reliefNormal(geometric, uv) : geometric;
+  vec3 toSun = normalize(vSunDirection);
+  vec3 toViewer = normalize(-vViewPosition);
+  // Ángulo de fase de un observador lejano (Sol, centro del cuerpo y cámara), el mismo en todo el
+  // disco: la distancia de la cámara es un recurso de encuadre (en la escala ilustrativa, ni siquiera
+  // es real), no la de una sonda. Con el de cada punto, a unos radios del cuerpo, el pico de oposición
+  // oscurecería el borde del disco en fase llena. μ₀ y μ sí son los de cada punto.
+  float cosAlpha = clamp(dot(toSun, normalize(-vCenterView)), -1.0, 1.0);
+  float alpha = acos(cosAlpha);
+  float light = tlsReflectance(dot(normal, toSun), dot(normal, toViewer), alpha, cosAlpha);
+  float muViewer = dot(geometric, toViewer);
+  float haze = tlsHaze(dot(geometric, toSun), muViewer, cosAlpha);
+  if (uRingShadow > 0.5 && (light > 0.0 || haze > 0.0)) {
+    float shadow = ringShadow();
+    light *= shadow;
+    haze *= shadow;
+  }
+  // Relleno ilustrativo (configuración visual): una luz suave desde la cámara.
+  vec3 fill = albedo * uFill * (0.25 + 0.75 * max(muViewer, 0.0));
+  // Luz de los anillos (Saturno): la cara iluminada de los anillos alumbra el hemisferio que la ve,
+  // más cuanto más alto está el Sol sobre ellos (aproximación; se nota en el lado nocturno).
+  if (uRingShine > 0.0) {
+    vec3 sunLocal = normalize(uSunDirectionLocal);
+    float facing = max(normalize(vLocal).y * sign(sunLocal.y), 0.0);
+    fill += albedo * uRingShine * abs(sunLocal.y) * facing;
+  }
+  gl_FragColor = vec4(albedo * light + uHazeColor.rgb * haze + fill, 1.0);
   ${OUTPUT_FRAGMENT}
 }
 `;
 
-export interface BodyMaterialUniforms {
+export interface BodyMaterialUniforms extends ShadingUniforms {
   readonly uMap: Uniform<Texture | null>;
   readonly uHasMap: Uniform<number>;
   readonly uColor: Uniform<Color>;
   readonly uMeridianOffset: Uniform<number>;
-  readonly uAmbient: Uniform<number>;
+  /** Lleva la textura (o el color) al albedo geométrico del cuerpo (D29). */
+  readonly uAlbedoScale: Uniform<number>;
+  /** Cromaticidad medida (rgb) y cuánto se aplica (w; 0 = el color de la textura). */
+  readonly uChromaticity: Uniform<Vector4>;
+  /** Contraste de la textura (1 = el suyo) y su luminancia media, que conserva. */
+  readonly uContrast: Uniform<number>;
+  readonly uMeanLuminance: Uniform<number>;
+  /** Relleno ilustrativo, en fracción de la luz del Sol (configuración visual). */
+  readonly uFill: Uniform<number>;
+  readonly uNormalMap: Uniform<Texture | null>;
+  /** Intensidad del relieve (0 = sin mapa de normales). */
+  readonly uNormalStrength: Uniform<number>;
   /** Dirección hacia el Sol en el mundo (ejes de Three, unitaria). */
   readonly uSunDirection: Uniform<Vector3>;
   readonly uRingShadow: Uniform<number>;
+  /** Luz de los anillos sobre el planeta (0 = sin anillos). */
+  readonly uRingShine: Uniform<number>;
   /** Dirección hacia el Sol en el sistema propio del planeta (para la sombra de los anillos). */
   readonly uSunDirectionLocal: Uniform<Vector3>;
   /** Radio polar / ecuatorial = 1 − achatamiento. */
@@ -98,20 +191,33 @@ export interface BodyMaterialUniforms {
   readonly uRingMap: Uniform<Texture | null>;
 }
 
-/** Luz ambiente: deja intuir el lado nocturno sin falsear el terminador. */
-export const BODY_AMBIENT = 0.025;
+export interface BodyMaterialOptions {
+  readonly color: Color;
+  readonly polarScale: number;
+  readonly photometry: Photometry;
+  readonly haze: Haze | null;
+  readonly hazeColor: string;
+}
 
-export function createBodyMaterial(color: Color, polarScale = 1) {
+export function createBodyMaterial(options: BodyMaterialOptions) {
   const uniforms: BodyMaterialUniforms = {
+    ...shadingUniforms(options.photometry, options.haze, options.hazeColor),
     uMap: new Uniform<Texture | null>(null),
     uHasMap: new Uniform(0),
-    uColor: new Uniform(color),
+    uColor: new Uniform(options.color),
     uMeridianOffset: new Uniform(0),
-    uAmbient: new Uniform(BODY_AMBIENT),
+    uAlbedoScale: new Uniform(1),
+    uChromaticity: new Uniform(new Vector4(1, 1, 1, 0)),
+    uContrast: new Uniform(1),
+    uMeanLuminance: new Uniform(0.5),
+    uFill: new Uniform(0),
+    uNormalMap: new Uniform<Texture | null>(null),
+    uNormalStrength: new Uniform(0),
     uSunDirection: new Uniform(new Vector3(1, 0, 0)),
     uRingShadow: new Uniform(0),
+    uRingShine: new Uniform(0),
     uSunDirectionLocal: new Uniform(new Vector3(1, 0, 0)),
-    uPolarScale: new Uniform(polarScale),
+    uPolarScale: new Uniform(options.polarScale),
     uRingRadii: new Uniform(new Vector2(1, 2)),
     uRingMap: new Uniform<Texture | null>(null),
   };

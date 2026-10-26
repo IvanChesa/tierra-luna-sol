@@ -1,5 +1,5 @@
 import starsBin from '../../../public/data/stars.bin' with { loader: 'binary' };
-import { Texture } from 'three';
+import { BackSide, FrontSide, Texture } from 'three';
 import { KM_PER_AU } from '../ephemeris/constants';
 import { MAX_DATE } from '../ephemeris/time';
 import {
@@ -240,6 +240,28 @@ describe('SceneEngine: arranque y render bajo demanda', () => {
     settle(h);
     expect(h.renderer.renders).toBe(before + 1);
     h.engine.dispose();
+  });
+
+  it('expone la vista general con la base y un primer plano para el brillo del cuerpo', async () => {
+    const overview = await createHarness();
+    settle(overview);
+    expect(overview.renderer.exposure).toBe(1);
+    overview.engine.dispose();
+    // La Luna (albedo 0,12) en primer plano: más exposición. Venus (0,689): menos.
+    const moon = await createHarness({ focus: 'luna' });
+    settle(moon);
+    expect(moon.renderer.exposure).toBeGreaterThan(1.5);
+    moon.engine.dispose();
+    const venus = await createHarness({ focus: 'venus' });
+    settle(venus);
+    expect(venus.renderer.exposure).toBeLessThan(1);
+    venus.engine.dispose();
+    // La Tierra (sin calibrar hasta la fase 5) se compensa con el albedo efectivo de su textura
+    // (≈ 0,08): sin eso quedaba casi negra.
+    const earth = await createHarness({ focus: 'tierra' });
+    settle(earth);
+    expect(earth.renderer.exposure).toBeGreaterThan(2.5);
+    earth.engine.dispose();
   });
 
   it('todos los ShaderMaterial de la escena llevan los chunks de profundidad (D13)', async () => {
@@ -599,6 +621,21 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     h.engine.setView('moon');
     expect(h.events.travel).toEqual([]);
     expect(settle(h)).toBeLessThanOrEqual(32);
+    h.engine.dispose();
+  });
+
+  it('con la cámara dentro del halo de Titán (1,2 radios), se pintan sus caras interiores', async () => {
+    const h = await createHarness({ reducedMotion: true, focus: 'titan' });
+    settle(h);
+    const shell = () =>
+      internals(h).world.scene.getObjectByName('titan-atmosphere') as unknown as {
+        material: { side: number };
+      };
+    expect(shell().material.side).toBe(FrontSide);
+    // Lo más cerca que deja la cámara (1,12 radios): dentro de la esfera del halo.
+    for (let k = 0; k < 40; k++) h.engine.zoomBy(0.5);
+    settle(h);
+    expect(shell().material.side).toBe(BackSide);
     h.engine.dispose();
   });
 

@@ -124,6 +124,8 @@ export class ExplorerSession {
       capture: this.capture,
       depth: this.params.depth ?? 'auto',
       background: this.params.background ?? undefined,
+      viewFrom: this.params.viewFrom ?? undefined,
+      toneMapping: this.params.toneMapping ?? undefined,
     };
   }
 

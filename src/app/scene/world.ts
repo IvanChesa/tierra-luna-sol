@@ -5,12 +5,17 @@
  * - la orientación verdadera de cada cuerpo (D19) y la dirección real del Sol (D21);
  * - la cámara, para los planos de recorte y los uniformes que dependen de la vista.
  *
+ * Cada cuerpo lleva el sombreado de su tipo (D29, `data/photometry.ts`) con el brillo calibrado con
+ * su albedo geométrico, y los que tienen atmósfera, un halo por encima del limbo.
+ *
  * Todo lo que crea lo libera en `dispose()`, también al cambiar de calidad (geometrías y texturas).
  */
 import {
+  BackSide,
   BufferAttribute,
   BufferGeometry,
   Color,
+  FrontSide,
   Matrix4,
   Mesh,
   PerspectiveCamera,
@@ -18,15 +23,25 @@ import {
   Quaternion,
   Scene,
   ShaderMaterial,
+  SRGBColorSpace,
   SphereGeometry,
+  Uniform,
   Vector3,
 } from 'three';
+import { BODY_DATA } from '../data/body-data';
 import type { BodyId } from '../data/body.model';
+import { BODY_PHOTOMETRY, BodyPhotometry, RING_PHOTOMETRY } from '../data/photometry';
 import { eclRotationToThree } from '../ephemeris/coordinates';
+import { albedoScale } from '../ephemeris/photometry';
 import type { SystemState } from '../ephemeris/system-state';
 import { Mat3 } from '../ephemeris/vec3';
 import { SCHEMATIC_COLORS } from './body-colors';
 import type { FrameController } from './frames';
+import {
+  ATMOSPHERE_SHELL_HEIGHTS,
+  AtmosphereUniforms,
+  createAtmosphereMaterial,
+} from './materials/atmosphere-material';
 import { BodyMaterialUniforms, createBodyMaterial } from './materials/body-material';
 import { createMilkyWayMaterial } from './materials/milky-way-material';
 import { createRingMaterial } from './materials/ring-material';
@@ -34,8 +49,10 @@ import { createHaloMaterial, createSunMaterial } from './materials/sun-material'
 import { OrbitLines, OrbitSource } from './orbits';
 import type { ScreenBody } from './picking';
 import type { QualityProfile, TextureLevel } from './quality';
-import { StarField } from './stars';
+import { StarField, temperatureToSrgb } from './stars';
 import type { SceneBody } from './system';
+import { TEXTURE_MEAN_LUMINANCE } from './texture-files';
+import { VISUAL_CONFIG } from './visual-config';
 import {
   LoadedTexture,
   TextureId,
@@ -46,9 +63,11 @@ import {
 } from './textures';
 import type { ViewProjection } from './view-insets';
 
-/** Textura de color de cada cuerpo que la tiene (las demás lunas, en la fase 7). */
+/**
+ * Textura de color de cada cuerpo que la tiene (las demás lunas, en la fase 7). El Sol no lleva:
+ * su fotosfera es procedural (fase 3b).
+ */
 export const BODY_TEXTURES: Readonly<Partial<Record<BodyId, TextureId>>> = {
-  sol: 'sun',
   mercurio: 'mercury',
   venus: 'venus',
   tierra: 'earth-day',
@@ -58,6 +77,15 @@ export const BODY_TEXTURES: Readonly<Partial<Record<BodyId, TextureId>>> = {
   urano: 'uranus',
   neptuno: 'neptune',
   luna: 'moon',
+};
+
+/**
+ * Mapa de normales del relieve de cada cuerpo que lo tiene (fase 3b; la Luna, en la fase 6). Solo se
+ * carga con el cuerpo en primer plano: en la vista general no se vería.
+ */
+export const BODY_RELIEF_TEXTURES: Readonly<Partial<Record<BodyId, TextureId>>> = {
+  mercurio: 'mercury-normal',
+  marte: 'mars-normal',
 };
 
 /** Radios de los anillos (km), del catálogo; los sustituye la tira calibrada si hay textura. */
@@ -104,6 +132,16 @@ interface BodyVisual {
   readonly body: SceneBody;
   readonly mesh: Mesh;
   readonly uniforms: BodyMaterialUniforms | null;
+  /** Fotometría del cuerpo (`null` en el Sol, que emite luz). */
+  readonly photometry: BodyPhotometry | null;
+  /** Halo de la atmósfera, si la tiene. */
+  readonly atmosphere: { readonly mesh: Mesh; readonly uniforms: AtmosphereUniforms } | null;
+  /** Mapa de normales del relieve (solo en primer plano), si lo tiene. */
+  readonly relief: {
+    readonly id: TextureId;
+    loaded: LoadedTexture | null;
+    requested: TextureLevel | null;
+  } | null;
   readonly textureId: TextureId | null;
   loaded: LoadedTexture | null;
   requested: TextureLevel | null;
@@ -114,10 +152,27 @@ interface BodyVisual {
 const tmpMatrix = new Matrix4();
 const tmpQuaternion = new Quaternion();
 const tmpVector = new Vector3();
-/** Tamaño del halo del Sol, en radios solares. */
-const HALO_RADII = 3.2;
+const { halo: HALO, granulation: GRANULATION, intensity: SUN_INTENSITY } = VISUAL_CONFIG.sun;
 /** Segmentos de la esfera ligera de las lunas pequeñas (a lo ancho). */
 const COARSE_SEGMENTS = 32;
+
+/**
+ * Factor de albedo de un cuerpo (D29): lleva su textura (o su color esquemático, mientras no llega)
+ * a su albedo geométrico. 1 si el cuerpo no se calibra (la Tierra, hasta la fase 5).
+ */
+export function bodyAlbedoScale(
+  id: BodyId,
+  photometry: BodyPhotometry,
+  meanLuminance: number,
+): number {
+  const albedo = BODY_DATA[id].physical.geometricAlbedo?.value;
+  if (!photometry.calibrateAlbedo || albedo === undefined) return 1;
+  return albedoScale(albedo, meanLuminance, photometry.photometry);
+}
+
+/** Luminancia lineal (Rec. 709) de un color de three (sus componentes ya son lineales). */
+const colorLuminance = (color: Color): number =>
+  0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b;
 
 /** Coloca un vector ECL (x, y, z) en ejes de Three (x, z, −y). */
 function setFromEcl(target: Vector3, array: Float64Array, index: number): Vector3 {
@@ -169,6 +224,8 @@ export class World {
   private ringTexture: LoadedTexture | null = null;
   private ringRequested: TextureLevel | null = null;
   private stars: StarField | null = null;
+  /** Ganancia del fondo vigente (las estrellas llegan después de crear el mundo). */
+  private backgroundGain = 1;
   private readonly milkyWay: Mesh;
   private readonly milkyWayMaterial = createMilkyWayMaterial();
   private milkyWayTexture: LoadedTexture | null = null;
@@ -181,7 +238,10 @@ export class World {
     this.scene.name = 'tierra-luna-sol';
     this.sphere = this.createSphere(options.profile.sphereSegments);
     this.coarseSphere = this.createSphere(COARSE_SEGMENTS);
-    this.sun = createSunMaterial();
+    // Color de la fotosfera: un cuerpo negro a la temperatura efectiva del catálogo.
+    const temperature = BODY_DATA.sol.physical.effectiveTemperatureK?.value ?? 5772;
+    const [r, g, b] = temperatureToSrgb(temperature);
+    this.sun = createSunMaterial(new Color().setRGB(r, g, b, SRGBColorSpace));
     this.haloMaterial = createHaloMaterial();
     this.halo = new Mesh(new PlaneGeometry(2, 2), this.haloMaterial.material);
     this.halo.name = 'sun-halo';
@@ -190,13 +250,31 @@ export class World {
     this.scene.add(this.halo);
 
     this.visuals = options.bodies.map((body) => {
-      const isSun = body.kind === 'star';
-      const bodyMaterial = isSun
-        ? null
-        : createBodyMaterial(new Color(SCHEMATIC_COLORS[body.id]), 1 - body.flattening);
+      const photometry = body.id === 'sol' ? null : BODY_PHOTOMETRY[body.id];
+      const color = new Color(SCHEMATIC_COLORS[body.id]);
+      const bodyMaterial = photometry
+        ? createBodyMaterial({
+            color,
+            polarScale: 1 - body.flattening,
+            photometry: photometry.photometry,
+            haze: photometry.haze,
+            hazeColor: photometry.hazeColor,
+          })
+        : null;
+      if (bodyMaterial && photometry?.chromaticity) {
+        const [r, g, b] = photometry.chromaticity.rgb;
+        bodyMaterial.uniforms.uChromaticity.value.set(r, g, b, photometry.chromaticity.mix);
+      }
+      if (bodyMaterial && photometry) {
+        bodyMaterial.uniforms.uAlbedoScale.value = bodyAlbedoScale(
+          body.id,
+          photometry,
+          colorLuminance(color),
+        );
+      }
       const mesh = new Mesh(
         this.detailed(body, null) ? this.sphere : this.coarseSphere,
-        isSun ? this.sun.material : bodyMaterial?.material,
+        bodyMaterial ? bodyMaterial.material : this.sun.material,
       );
       mesh.name = body.id;
       mesh.matrixAutoUpdate = true;
@@ -205,7 +283,15 @@ export class World {
         body,
         mesh,
         uniforms: bodyMaterial?.uniforms ?? null,
+        photometry,
+        atmosphere:
+          bodyMaterial && photometry
+            ? this.createAtmosphere(mesh, photometry, bodyMaterial.uniforms)
+            : null,
         textureId: BODY_TEXTURES[body.id] ?? null,
+        relief: BODY_RELIEF_TEXTURES[body.id]
+          ? { id: BODY_RELIEF_TEXTURES[body.id] as TextureId, loaded: null, requested: null }
+          : null,
         loaded: null,
         requested: null,
         frozen: false,
@@ -216,7 +302,10 @@ export class World {
     if (saturn) {
       const radiusKm = saturn.body.radiusKm;
       const ringRadii = this.ringRadiiKm();
-      this.ringMaterial = createRingMaterial(1 - saturn.body.flattening);
+      this.ringMaterial = createRingMaterial({
+        polarScale: 1 - saturn.body.flattening,
+        photometry: RING_PHOTOMETRY.photometry,
+      });
       this.rings = new Mesh(
         createRingGeometry(ringRadii.innerKm / radiusKm, ringRadii.outerKm / radiusKm, 256),
         this.ringMaterial.material,
@@ -227,6 +316,7 @@ export class World {
       saturn.mesh.add(this.rings);
       if (saturn.uniforms) {
         saturn.uniforms.uRingShadow.value = 1;
+        saturn.uniforms.uRingShine.value = RING_PHOTOMETRY.ringShine;
         saturn.uniforms.uRingRadii.value.set(
           ringRadii.innerKm / radiusKm,
           ringRadii.outerKm / radiusKm,
@@ -254,6 +344,7 @@ export class World {
     if (this.stars) this.scene.remove(this.stars.object);
     this.stars = stars;
     stars.setMagnitudeLimit(this.profile.starMagnitudeLimit);
+    stars.setBrightness(this.backgroundGain);
     this.scene.add(stars.object);
   }
 
@@ -308,6 +399,7 @@ export class World {
       if (!visual.textureId) continue;
       const near = visual.body.id === focusBody?.id || visual.body.id === focusPlanet;
       const level = near ? this.profile.focusTexture : this.profile.overviewTexture;
+      if (visual.relief) this.requestRelief(visual, near ? this.profile.focusTexture : null);
       if (visual.requested === level) continue;
       visual.requested = level;
       const id = visual.textureId;
@@ -331,6 +423,59 @@ export class World {
           });
       }
     }
+  }
+
+  /**
+   * Pide (o suelta, con `null`) el mapa de normales del relieve de un cuerpo, al nivel del primer
+   * plano. Fuera del primer plano se libera: en la vista general no se vería y ocupa memoria.
+   */
+  private requestRelief(visual: BodyVisual, level: TextureLevel | null): void {
+    const relief = visual.relief;
+    const source = this.options.textures;
+    if (!relief || !source || relief.requested === level) return;
+    relief.requested = level;
+    if (level === null) {
+      this.releaseRelief(visual);
+      return;
+    }
+    source
+      .load(relief.id, level)
+      .then((loaded) => this.assignRelief(visual, level, loaded))
+      .catch((error: unknown) => {
+        if (relief.requested === level) relief.requested = null;
+        textureFailed(relief.id, error);
+      });
+  }
+
+  private assignRelief(
+    visual: BodyVisual,
+    level: TextureLevel,
+    loaded: LoadedTexture | null,
+  ): void {
+    const relief = visual.relief;
+    if (!loaded || !relief) return;
+    if (this.disposed || relief.requested !== level || !visual.uniforms) {
+      releaseTexture(loaded.texture);
+      return;
+    }
+    const previous = relief.loaded;
+    relief.loaded = loaded;
+    visual.uniforms.uNormalMap.value = loaded.texture;
+    visual.uniforms.uNormalStrength.value = 1;
+    if (previous && previous.texture !== loaded.texture) releaseTexture(previous.texture);
+    this.options.invalidate();
+  }
+
+  private releaseRelief(visual: BodyVisual): void {
+    const relief = visual.relief;
+    if (!relief?.loaded) return;
+    if (visual.uniforms) {
+      visual.uniforms.uNormalMap.value = null;
+      visual.uniforms.uNormalStrength.value = 0;
+    }
+    releaseTexture(relief.loaded.texture);
+    relief.loaded = null;
+    this.options.invalidate();
   }
 
   /** Actualiza el grafo para un frame. Devuelve los planos de recorte que ha puesto. */
@@ -358,11 +503,28 @@ export class World {
       }
       visual.frozen = frozen;
       const distance = tmpVector.copy(mesh.position).sub(camera.position).length();
-      nearest = Math.min(nearest, distance - r * 1.02);
+      // El plano cercano, por delante de la superficie o, con la cámara fuera de él, del halo de la
+      // atmósfera (el de Titán mide 1,2 radios: si no, se recortaba su parte delantera).
+      const shell = visual.atmosphere ? r * visual.atmosphere.mesh.scale.x : r;
+      const front = distance > shell * 1.02 ? shell : r;
+      nearest = Math.min(nearest, distance - front * 1.02);
       farthest = Math.max(farthest, distance + r);
       if (visual.uniforms) {
         // Dirección REAL hacia el Sol: −(posición heliocéntrica verdadera), en ejes de Three.
         setFromEcl(visual.uniforms.uSunDirection.value, helio, k).negate().normalize();
+      }
+      if (visual.atmosphere) {
+        const onScreen = frame.screen[k];
+        visual.atmosphere.uniforms.uRadius.value = r;
+        visual.atmosphere.mesh.visible =
+          mesh.visible && (!onScreen || onScreen.radiusPx >= VISUAL_CONFIG.atmosphereMinRadiusPx);
+        // Con la cámara dentro de la esfera del halo, se ven sus caras interiores.
+        const side = distance < shell ? BackSide : FrontSide;
+        const material = visual.atmosphere.mesh.material as ShaderMaterial;
+        if (material.side !== side) {
+          material.side = side;
+          material.needsUpdate = true;
+        }
       }
     }
     this.updateSunAndRings(frame);
@@ -405,6 +567,52 @@ export class World {
     return { near, far };
   }
 
+  /** Cuánto primer plano del Sol hay (0–1): recoge su halo y enciende la granulación. */
+  private sunCloseUp = 0;
+
+  /**
+   * Aspecto del Sol según el encuadre (configuración visual) y el reloj de pared de la granulación
+   * (0 con movimiento reducido o en captura: quieta).
+   */
+  setSunAppearance(closeUp: number, timeSeconds: number): void {
+    this.sunCloseUp = closeUp;
+    this.sun.uniforms.uGranulation.value = GRANULATION.amplitude * closeUp;
+    this.sun.uniforms.uIntensity.value =
+      SUN_INTENSITY.overview + (SUN_INTENSITY.closeUp - SUN_INTENSITY.overview) * closeUp;
+    this.sun.uniforms.uTime.value = timeSeconds * GRANULATION.rate;
+  }
+
+  /**
+   * Ganancia del fondo (configuración visual, `backgroundGain`): la Vía Láctea, las estrellas y las
+   * órbitas no siguen la exposición del primer plano.
+   */
+  setBackgroundGain(gain: number): void {
+    this.milkyWayMaterial.uniforms.uGain.value = gain;
+    this.stars?.setBrightness(gain);
+    this.backgroundGain = gain;
+    this.orbits.setGain(gain);
+  }
+
+  /** Relleno ilustrativo de los cuerpos (configuración visual), en fracción de la luz del Sol. */
+  setFill(fill: number): void {
+    for (const visual of this.visuals) if (visual.uniforms) visual.uniforms.uFill.value = fill;
+    if (this.ringMaterial) this.ringMaterial.uniforms.uFill.value = fill;
+  }
+
+  /**
+   * Ángulo de fase (rad) con el que la cámara ve un cuerpo: entre la dirección real hacia el Sol y
+   * la dirección hacia la cámara. 0 sin datos.
+   */
+  phaseAngleOf(index: number): number {
+    const visual = this.visuals[index];
+    if (!visual?.uniforms) return 0;
+    tmpVector.copy(this.camera.position).sub(visual.mesh.position);
+    const length = tmpVector.length();
+    if (!(length > 0)) return 0;
+    const cos = tmpVector.dot(visual.uniforms.uSunDirection.value) / length;
+    return Math.acos(Math.min(Math.max(cos, -1), 1));
+  }
+
   setPixelRatio(pixelRatio: number): void {
     this.stars?.setPixelRatio(pixelRatio);
   }
@@ -412,7 +620,10 @@ export class World {
   /** Memoria de vídeo estimada (texturas + geometría), en bytes. */
   vramBytes(): number {
     const textures =
-      this.visuals.reduce((sum, v) => sum + (v.loaded?.vramBytes ?? 0), 0) +
+      this.visuals.reduce(
+        (sum, v) => sum + (v.loaded?.vramBytes ?? 0) + (v.relief?.loaded?.vramBytes ?? 0),
+        0,
+      ) +
       (this.ringTexture?.vramBytes ?? 0) +
       (this.milkyWayTexture?.vramBytes ?? 0);
     const geometryBytes = (geometry: BufferGeometry) =>
@@ -448,11 +659,37 @@ export class World {
     });
     this.sphere.dispose();
     this.coarseSphere.dispose();
-    for (const visual of this.visuals) if (visual.loaded) releaseTexture(visual.loaded.texture);
+    for (const visual of this.visuals) {
+      if (visual.loaded) releaseTexture(visual.loaded.texture);
+      if (visual.relief?.loaded) releaseTexture(visual.relief.loaded.texture);
+    }
     if (this.ringTexture) releaseTexture(this.ringTexture.texture);
     if (this.milkyWayTexture) releaseTexture(this.milkyWayTexture.texture);
     this.orbits.dispose();
     this.stars?.dispose();
+  }
+
+  /** Halo de la atmósfera: hijo del cuerpo (hereda su orientación y su escala), algo mayor que él. */
+  private createAtmosphere(
+    mesh: Mesh,
+    photometry: BodyPhotometry,
+    body: BodyMaterialUniforms,
+  ): BodyVisual['atmosphere'] {
+    const scaleHeight = photometry.haloScaleHeight;
+    if (!photometry.haze || !scaleHeight) return null;
+    const { material, uniforms } = createAtmosphereMaterial({
+      uRadius: new Uniform(1),
+      uScaleHeight: new Uniform(scaleHeight),
+      uHaze: body.uHaze,
+      uHazeColor: body.uHazeColor,
+      uSunDirection: body.uSunDirection,
+    });
+    const shell = new Mesh(this.coarseSphere, material);
+    shell.name = `${mesh.name}-atmosphere`;
+    shell.scale.setScalar(1 + ATMOSPHERE_SHELL_HEIGHTS * scaleHeight);
+    shell.renderOrder = 2;
+    mesh.add(shell);
+    return { mesh: shell, uniforms };
   }
 
   private createSphere(segments: number): SphereGeometry {
@@ -486,9 +723,17 @@ export class World {
       visual.uniforms.uMap.value = loaded.texture;
       visual.uniforms.uHasMap.value = 1;
       visual.uniforms.uMeridianOffset.value = meta ? meridianOffset(meta) : 0;
-    } else {
-      this.sun.uniforms.uMap.value = loaded.texture;
-      this.sun.uniforms.uHasMap.value = 1;
+      const luminance = visual.textureId ? TEXTURE_MEAN_LUMINANCE[visual.textureId] : undefined;
+      if (luminance !== undefined) visual.uniforms.uMeanLuminance.value = luminance;
+      if (visual.photometry?.contrast)
+        visual.uniforms.uContrast.value = visual.photometry.contrast.value;
+      if (visual.photometry && luminance !== undefined) {
+        visual.uniforms.uAlbedoScale.value = bodyAlbedoScale(
+          visual.body.id,
+          visual.photometry,
+          luminance,
+        );
+      }
     }
     if (previous && previous.texture !== loaded.texture) releaseTexture(previous.texture);
     this.options.invalidate();
@@ -529,7 +774,11 @@ export class World {
     const sunVisual = this.visuals.find((v) => v.body.kind === 'star');
     if (sunVisual) {
       this.halo.position.copy(sunVisual.mesh.position);
-      this.haloMaterial.uniforms.uRadius.value = sunVisual.mesh.scale.x * HALO_RADII;
+      const t = this.sunCloseUp;
+      const radii = HALO.overview.radii + (HALO.closeUp.radii - HALO.overview.radii) * t;
+      this.haloMaterial.uniforms.uRadius.value = sunVisual.mesh.scale.x * radii;
+      this.haloMaterial.uniforms.uIntensity.value =
+        HALO.overview.intensity + (HALO.closeUp.intensity - HALO.overview.intensity) * t;
       this.haloMaterial.uniforms.uViewportHeight.value = frame.viewport.height;
     }
     const saturn = this.visuals.find((v) => v.body.id === 'saturno');

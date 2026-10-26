@@ -1,4 +1,4 @@
-// GENERADO por scripts/build-body-data.mjs el 2026-10-24. No se edita a mano.
+// GENERADO por scripts/build-body-data.mjs el 2026-10-26. No se edita a mano.
 // Datos físicos y orbitales copiados de las fichas de la NASA (NSSDCA) y del JPL; cada dato lleva
 // el id de su fuente (data/sources.ts). Solo hay cambios de unidad exactos y, en los planetas,
 // radio = diámetro / 2.
@@ -109,6 +109,11 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
         source: 'nssdc-mercury',
         note: 'Achatamiento f = (a − c) / a (radios ecuatorial y polar).',
       },
+      geometricAlbedo: {
+        value: 0.142,
+        source: 'nssdc-mercury',
+        note: 'Albedo geométrico (visual).',
+      },
     },
     orbit: {
       semiMajorAxisKm: {
@@ -197,6 +202,11 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
         value: 0,
         source: 'nssdc-venus',
         note: 'Achatamiento f = (a − c) / a (radios ecuatorial y polar).',
+      },
+      geometricAlbedo: {
+        value: 0.689,
+        source: 'nssdc-venus',
+        note: 'Albedo geométrico (visual).',
       },
     },
     orbit: {
@@ -287,6 +297,11 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
         source: 'nssdc-earth',
         note: 'Achatamiento f = (a − c) / a (radios ecuatorial y polar).',
       },
+      geometricAlbedo: {
+        value: 0.434,
+        source: 'nssdc-earth',
+        note: 'Albedo geométrico (visual).',
+      },
     },
     orbit: {
       semiMajorAxisKm: {
@@ -376,6 +391,11 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
         source: 'nssdc-mars',
         note: 'Achatamiento f = (a − c) / a (radios ecuatorial y polar).',
       },
+      geometricAlbedo: {
+        value: 0.17,
+        source: 'nssdc-mars',
+        note: 'Albedo geométrico (visual).',
+      },
     },
     orbit: {
       semiMajorAxisKm: {
@@ -460,6 +480,11 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
         value: 0.06487,
         source: 'nssdc-jupiter',
         note: 'Achatamiento f = (a − c) / a (radios ecuatorial y polar).',
+      },
+      geometricAlbedo: {
+        value: 0.538,
+        source: 'nssdc-jupiter',
+        note: 'Albedo geométrico (visual).',
       },
     },
     orbit: {
@@ -546,6 +571,11 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
         source: 'nssdc-saturn',
         note: 'Achatamiento f = (a − c) / a (radios ecuatorial y polar).',
       },
+      geometricAlbedo: {
+        value: 0.499,
+        source: 'nssdc-saturn',
+        note: 'Albedo geométrico (visual).',
+      },
     },
     orbit: {
       semiMajorAxisKm: {
@@ -584,6 +614,11 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
         source: 'nssdc-saturn-rings',
         note: 'Borde interior del anillo C.',
       },
+      bInnerKm: {
+        value: 91975,
+        source: 'nssdc-saturn-rings',
+        note: 'Borde interior del anillo B (exterior del C).',
+      },
       cassiniInnerKm: {
         value: 117507,
         source: 'nssdc-saturn-rings',
@@ -598,6 +633,56 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
         value: 136780,
         source: 'nssdc-saturn-rings',
         note: 'Borde exterior del anillo A.',
+      },
+      regions: {
+        c: {
+          opticalDepth: {
+            value: [0.05, 0.35],
+            source: 'nssdc-saturn-rings',
+            note: 'Profundidad óptica normal del anillo C.',
+          },
+          albedo: {
+            value: [0.12, 0.3],
+            source: 'nssdc-saturn-rings',
+            note: 'Albedo del anillo C (columna «Albedo» de la ficha).',
+          },
+        },
+        b: {
+          opticalDepth: {
+            value: [0.4, 2.5],
+            source: 'nssdc-saturn-rings',
+            note: 'Profundidad óptica normal del anillo B.',
+          },
+          albedo: {
+            value: [0.4, 0.6],
+            source: 'nssdc-saturn-rings',
+            note: 'Albedo del anillo B (columna «Albedo» de la ficha).',
+          },
+        },
+        cassini: {
+          opticalDepth: {
+            value: [0, 0.1],
+            source: 'nssdc-saturn-rings',
+            note: 'Profundidad óptica normal de la división de Cassini.',
+          },
+          albedo: {
+            value: [0.2, 0.4],
+            source: 'nssdc-saturn-rings',
+            note: 'Albedo de la división de Cassini (columna «Albedo» de la ficha).',
+          },
+        },
+        a: {
+          opticalDepth: {
+            value: [0.4, 1],
+            source: 'nssdc-saturn-rings',
+            note: 'Profundidad óptica normal del anillo A.',
+          },
+          albedo: {
+            value: [0.4, 0.6],
+            source: 'nssdc-saturn-rings',
+            note: 'Albedo del anillo A (columna «Albedo» de la ficha).',
+          },
+        },
       },
     },
   },
@@ -652,6 +737,11 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
         value: 0.02293,
         source: 'nssdc-uranus',
         note: 'Achatamiento f = (a − c) / a (radios ecuatorial y polar).',
+      },
+      geometricAlbedo: {
+        value: 0.488,
+        source: 'nssdc-uranus',
+        note: 'Albedo geométrico (visual).',
       },
     },
     orbit: {
@@ -738,6 +828,11 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
         source: 'nssdc-neptune',
         note: 'Achatamiento f = (a − c) / a (radios ecuatorial y polar).',
       },
+      geometricAlbedo: {
+        value: 0.442,
+        source: 'nssdc-neptune',
+        note: 'Albedo geométrico (visual).',
+      },
     },
     orbit: {
       semiMajorAxisKm: {
@@ -817,6 +912,11 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
         value: 1737.4,
         source: 'jpl-satellite-physical-parameters',
         note: 'Radio medio.',
+      },
+      geometricAlbedo: {
+        value: 0.12,
+        source: 'nssdc-moon',
+        note: 'Albedo geométrico (visual).',
       },
     },
     orbit: {

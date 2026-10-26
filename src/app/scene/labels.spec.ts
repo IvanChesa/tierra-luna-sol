@@ -36,6 +36,40 @@ describe('labels: colocación sin solapes', () => {
     expect(box?.marker).toBe(false);
   });
 
+  it('los anillos cuentan como parte del cuerpo: su nombre va por fuera y nadie se pone encima', () => {
+    // Saturno (índice 3 aquí) con anillos de 2,27 radios: 20 px de disco, 45,4 px de anillos.
+    const extents = [1, 1, 1, 2.27];
+    const [own] = layoutLabels([screen(3, 300, 300, 20)], infos, sizes, viewport, 3, -1, {
+      extents,
+    });
+    expect(own?.x).toBeCloseTo(300 + 20 * 2.27 + 6, 6);
+    // Otro planeta justo encima de los anillos: su nombre no puede caer dentro de ellos.
+    const boxes = layoutLabels(
+      [screen(3, 300, 300, 20), screen(1, 300, 262, 3)],
+      infos,
+      sizes,
+      viewport,
+      3,
+      -1,
+      { extents },
+    );
+    const earth = boxes.find((b) => b.index === 1);
+    expect(earth).toBeDefined();
+    const nx = Math.min(Math.max(300, earth!.x), earth!.x + earth!.width);
+    const ny = Math.min(Math.max(300, earth!.y), earth!.y + earth!.height);
+    expect(Math.hypot(300 - nx, 300 - ny)).toBeGreaterThanOrEqual(20 * 2.27);
+    // Sin anillos, el mismo nombre sí cabría a la derecha, sobre esa zona.
+    const plain = layoutLabels(
+      [screen(3, 300, 300, 20), screen(1, 300, 262, 3)],
+      infos,
+      sizes,
+      viewport,
+      3,
+      -1,
+    ).find((b) => b.index === 1);
+    expect(plain?.x).toBe(300 + 3 + 6);
+  });
+
   it('si no cabe a la derecha prueba a la izquierda, arriba y abajo', () => {
     // Pegado al borde derecho: el nombre pasa a la izquierda.
     const [left] = layoutLabels([screen(1, 790, 200, 4)], infos, sizes, viewport, -1, -1);

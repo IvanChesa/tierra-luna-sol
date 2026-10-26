@@ -4,8 +4,25 @@
  *
  * Aquí se crea el único `WebGLRenderer` del explorador (D10: nunca un segundo renderer).
  */
-import { Camera, NeutralToneMapping, SRGBColorSpace, Scene, Texture, WebGLRenderer } from 'three';
+import {
+  ACESFilmicToneMapping,
+  AgXToneMapping,
+  Camera,
+  NeutralToneMapping,
+  SRGBColorSpace,
+  Scene,
+  Texture,
+  ToneMapping,
+  WebGLRenderer,
+} from 'three';
 import type { DepthMode } from './types';
+import type { ToneMappingMode } from './visual-config';
+
+const TONE_MAPPING: Readonly<Record<ToneMappingMode, ToneMapping>> = {
+  neutral: NeutralToneMapping,
+  agx: AgXToneMapping,
+  aces: ACESFilmicToneMapping,
+};
 
 export type ResolvedDepthMode = Exclude<DepthMode, 'auto'>;
 
@@ -49,6 +66,8 @@ export interface RendererOptions {
   readonly antialias: boolean;
   /** Color de fondo (sRGB). */
   readonly clearColor: number;
+  /** Tone mapping (configuración visual; en captura se puede cambiar para compararlos). */
+  readonly toneMapping: ToneMappingMode;
 }
 
 export type RendererFactory = (canvas: HTMLCanvasElement, options: RendererOptions) => RendererPort;
@@ -64,9 +83,9 @@ export const createWebGLRenderer: RendererFactory = (canvas, options) => {
     reversedDepthBuffer: options.depth === 'reversed',
   });
   renderer.outputColorSpace = SRGBColorSpace;
-  // Tone mapping neutro (Khronos PBR Neutral): conserva los colores de las texturas hasta ~0,8 y
-  // comprime las luces altas (el Sol) sin virarlas.
-  renderer.toneMapping = NeutralToneMapping;
+  // Tone mapping de la configuración visual (por defecto, el neutro de Khronos: conserva los colores
+  // de las texturas hasta ~0,8 y comprime las luces altas, como el Sol, sin virarlas).
+  renderer.toneMapping = TONE_MAPPING[options.toneMapping];
   renderer.toneMappingExposure = 1;
   renderer.setClearColor(options.clearColor, 1);
 

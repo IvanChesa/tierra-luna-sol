@@ -1,32 +1,9 @@
-// GENERADO por scripts/build-textures.mjs el 2026-10-24. No se edita a mano.
+// GENERADO por scripts/build-textures.mjs el 2026-10-26. No se edita a mano.
 // WebP por niveles con hash (public/textures/), a partir de los originales de assets-src/textures/
 // (origen y licencia de cada uno en docs/FUENTES.md).
-import type { TextureFiles } from './textures';
+import type { TextureFiles, TextureId } from './textures';
 
 export const TEXTURE_FILES: TextureFiles = {
-  sun: [
-    {
-      level: '1k',
-      path: 'textures/1k/sun.739229444a.webp',
-      width: 1024,
-      height: 512,
-      bytes: 78108,
-    },
-    {
-      level: '2k',
-      path: 'textures/2k/sun.a1f56cf146.webp',
-      width: 2048,
-      height: 1024,
-      bytes: 206624,
-    },
-    {
-      level: '4k',
-      path: 'textures/4k/sun.47675f8d0e.webp',
-      width: 4096,
-      height: 2048,
-      bytes: 537346,
-    },
-  ],
   mercury: [
     {
       level: '1k',
@@ -76,24 +53,24 @@ export const TEXTURE_FILES: TextureFiles = {
   'earth-day': [
     {
       level: '1k',
-      path: 'textures/1k/earth-day.6b661a313b.webp',
+      path: 'textures/1k/earth-day.7e71a443cb.webp',
       width: 1024,
       height: 512,
-      bytes: 43528,
+      bytes: 39706,
     },
     {
       level: '2k',
-      path: 'textures/2k/earth-day.36d55340e6.webp',
+      path: 'textures/2k/earth-day.1094337c7d.webp',
       width: 2048,
       height: 1024,
-      bytes: 134626,
+      bytes: 130026,
     },
     {
       level: '4k',
-      path: 'textures/4k/earth-day.122ddc74db.webp',
+      path: 'textures/4k/earth-day.2d4de76ce1.webp',
       width: 4096,
       height: 2048,
-      bytes: 447358,
+      bytes: 423478,
     },
   ],
   'earth-night': [
@@ -283,24 +260,70 @@ export const TEXTURE_FILES: TextureFiles = {
   'saturn-rings': [
     {
       level: '1k',
-      path: 'textures/1k/saturn-rings.e0727b54d0.webp',
+      path: 'textures/1k/saturn-rings.a0982a6763.webp',
       width: 1024,
       height: 16,
-      bytes: 2186,
+      bytes: 1466,
     },
     {
       level: '2k',
-      path: 'textures/2k/saturn-rings.cade5e7408.webp',
+      path: 'textures/2k/saturn-rings.49f49f099c.webp',
       width: 2048,
       height: 16,
-      bytes: 3702,
+      bytes: 2420,
     },
     {
       level: '4k',
-      path: 'textures/4k/saturn-rings.79da8259fb.webp',
+      path: 'textures/4k/saturn-rings.3b4bae59e7.webp',
       width: 4096,
       height: 16,
-      bytes: 5862,
+      bytes: 3742,
+    },
+  ],
+  'mercury-normal': [
+    {
+      level: '1k',
+      path: 'textures/1k/mercury-normal.ac577f9c68.webp',
+      width: 1024,
+      height: 512,
+      bytes: 71748,
+    },
+    {
+      level: '2k',
+      path: 'textures/2k/mercury-normal.19d72cebee.webp',
+      width: 2048,
+      height: 1024,
+      bytes: 319518,
+    },
+    {
+      level: '4k',
+      path: 'textures/4k/mercury-normal.53f1e9f47e.webp',
+      width: 4096,
+      height: 2048,
+      bytes: 1230728,
+    },
+  ],
+  'mars-normal': [
+    {
+      level: '1k',
+      path: 'textures/1k/mars-normal.b4b2c59fe1.webp',
+      width: 1024,
+      height: 512,
+      bytes: 44874,
+    },
+    {
+      level: '2k',
+      path: 'textures/2k/mars-normal.883675c9c9.webp',
+      width: 2048,
+      height: 1024,
+      bytes: 226930,
+    },
+    {
+      level: '4k',
+      path: 'textures/4k/mars-normal.338c36b536.webp',
+      width: 4096,
+      height: 2048,
+      bytes: 1002672,
     },
   ],
   uranus: [
@@ -335,6 +358,39 @@ export const TEXTURE_FILES: TextureFiles = {
       bytes: 15774,
     },
   ],
+  'milky-way': [
+    {
+      level: '1k',
+      path: 'textures/1k/milky-way.78a1ac434c.webp',
+      width: 1024,
+      height: 512,
+      bytes: 6394,
+    },
+    {
+      level: '2k',
+      path: 'textures/2k/milky-way.b8a26e3a7a.webp',
+      width: 2048,
+      height: 1024,
+      bytes: 21284,
+    },
+  ],
+};
+
+/**
+ * Luminancia lineal media (Rec. 709) de cada mapa de color, ponderada por el área (cos φ), medida en
+ * el nivel 1k: con ella, la escena lleva cada cuerpo a su albedo geométrico (D29).
+ */
+export const TEXTURE_MEAN_LUMINANCE: Readonly<Partial<Record<TextureId, number>>> = {
+  mercury: 0.2294,
+  venus: 0.554,
+  'earth-day': 0.1197,
+  'earth-night': 0.0034,
+  moon: 0.3014,
+  mars: 0.1819,
+  jupiter: 0.4093,
+  saturn: 0.6154,
+  uranus: 0.5649,
+  neptune: 0.1231,
 };
 
 /**

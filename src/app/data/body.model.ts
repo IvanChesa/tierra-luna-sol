@@ -73,16 +73,34 @@ export interface OrbitData {
   readonly retrograde?: Sourced<boolean>;
 }
 
+/** Intervalo [mínimo, máximo] de una magnitud, tal como lo da la fuente. */
+export type Range = readonly [number, number];
+
+/** Profundidad óptica normal y albedo de un anillo o una división (intervalos de la ficha). */
+export interface RingRegion {
+  readonly opticalDepth: Sourced<Range>;
+  readonly albedo: Sourced<Range>;
+}
+
 /** Bordes de los anillos principales de Saturno, en km desde el centro del planeta. */
 export interface RingData {
   /** Borde interior del anillo C. */
   readonly innerRadiusKm: Sourced<number>;
+  /** Borde interior del anillo B (el exterior del C). */
+  readonly bInnerKm: Sourced<number>;
   /** Borde exterior del anillo B, donde empieza la división de Cassini. */
   readonly cassiniInnerKm: Sourced<number>;
   /** Borde interior del anillo A, donde acaba la división de Cassini. */
   readonly cassiniOuterKm: Sourced<number>;
   /** Borde exterior del anillo A. */
   readonly outerRadiusKm: Sourced<number>;
+  /** Profundidad óptica y albedo de los anillos C, B y A y de la división de Cassini (fase 3b). */
+  readonly regions: {
+    readonly c: RingRegion;
+    readonly b: RingRegion;
+    readonly cassini: RingRegion;
+    readonly a: RingRegion;
+  };
 }
 
 export interface BodyData {

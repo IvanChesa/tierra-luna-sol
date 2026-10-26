@@ -20,9 +20,33 @@ describe('parámetros del explorador', () => {
       quality: 'medium',
       depth: 'reversed',
       background: 'neptuno',
+      viewFrom: null,
+      toneMapping: null,
       warnings: [],
     });
     expect(CAPTURE_DATE.toISOString()).toBe('2026-10-24T00:00:00.000Z');
+  });
+
+  it('lee la geometría de las fotos de referencia y el tone mapping solo en captura', () => {
+    expect(parseViewerParams('?captura=1&cuerpo=marte&desde=tierra').viewFrom).toEqual({
+      kind: 'earth',
+    });
+    expect(parseViewerParams('?captura=1&fase=160&latitud=-17').viewFrom).toEqual({
+      kind: 'phase',
+      phaseDeg: 160,
+      latitudeDeg: -17,
+    });
+    expect(parseViewerParams('?captura=1&fase=30').viewFrom).toEqual({
+      kind: 'phase',
+      phaseDeg: 30,
+    });
+    expect(parseViewerParams('?captura=1&fase=200').viewFrom).toBeNull();
+    expect(parseViewerParams('?captura=1&tonemapping=agx').toneMapping).toBe('agx');
+    expect(parseViewerParams('?captura=1&tonemapping=filmico').toneMapping).toBeNull();
+    // Fuera del modo de captura no existen.
+    const normal = parseViewerParams('?desde=tierra&tonemapping=aces');
+    expect(normal.viewFrom).toBeNull();
+    expect(normal.toneMapping).toBeNull();
   });
 
   it('ignora lo que no es válido sin romper nada y explica cada parámetro ignorado', () => {
@@ -37,6 +61,8 @@ describe('parámetros del explorador', () => {
       quality: null,
       depth: null, // solo en el modo de captura
       background: null,
+      viewFrom: null,
+      toneMapping: null,
       warnings: [],
     });
     expect(params.warnings).toEqual([

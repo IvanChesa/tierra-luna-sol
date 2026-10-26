@@ -14,15 +14,37 @@ import { Component } from '@angular/core';
     <h2>Texturas</h2>
     <ul>
       <li>
-        Sol, planetas, Tierra y anillos de Saturno:
+        Planetas, Tierra y anillos de Saturno:
         <a href="https://www.solarsystemscope.com/textures/">Solar System Scope</a>, con licencia
         <a href="https://creativecommons.org/licenses/by/4.0/deed.es">CC BY 4.0</a>. Se han reducido
-        y convertido a WebP.
+        y convertido a WebP; el color de algunos planetas se ha corregido con fotos del Hubble; el
+        del océano de la Tierra, con fotos de
+        <a href="https://epic.gsfc.nasa.gov/">EPIC (DSCOVR), del NASA EPIC Team</a>; la opacidad de
+        los anillos, con la ficha de los anillos de la NASA, y su brillo, con las medidas del Hubble
+        de <a href="https://arxiv.org/abs/1007.0349">Salo y French (2010)</a>.
       </li>
       <li>
         Luna: CGI Moon Kit del
         <a href="https://svs.gsfc.nasa.gov/4720">Scientific Visualization Studio de la NASA</a>, con
         datos de LRO/LROC.
+      </li>
+      <li>
+        Relieve de Mercurio: modelo de elevación global de MESSENGER del
+        <a href="https://astrogeology.usgs.gov/search/map/mercury_messenger_global_dem_665m"
+          >USGS Astrogeology</a
+        >
+        (Becker et al., 2016).
+      </li>
+      <li>
+        Relieve de Marte: altímetro MOLA de la Mars Global Surveyor (NASA), en el
+        <a href="https://pds-geosciences.wustl.edu/missions/mgs/megdr.html">PDS</a>.
+      </li>
+      <li>
+        Vía Láctea: «The Milky Way panorama», de
+        <a href="https://www.eso.org/public/images/eso0932a/">ESO/S. Brunier</a>, con licencia
+        <a href="https://creativecommons.org/licenses/by/4.0/deed.es">CC BY 4.0</a>. Modificada: se
+        le han quitado las estrellas (un filtro de mediana; las pone el catálogo de estrellas), se
+        ha reducido, suavizado y convertido a WebP.
       </li>
     </ul>
 
@@ -48,6 +70,11 @@ import { Component } from '@angular/core';
         <a href="https://aa.usno.navy.mil/">USNO</a>.
       </li>
       <li>Fraga y Lleida: © Instituto Geográfico Nacional.</li>
+      <li>
+        Brillo y color de los planetas: leyes de fase de Hilton (2005) y de astronomy-engine,
+        colores medidos en fotos del Hubble (NASA/ESA) y en la reconstrucción de Urano y Neptuno de
+        <a href="https://doi.org/10.1093/mnras/stad3761">Irwin et al. (2024)</a>.
+      </li>
     </ul>
 
     <h2>Software</h2>

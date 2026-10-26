@@ -108,6 +108,12 @@ export const SOURCES = {
     url: 'https://nssdc.gsfc.nasa.gov/planetary/factsheet/satringfact.html',
     accessed: '2026-10-24',
   },
+  'nssdc-moon': {
+    title: 'Moon Fact Sheet',
+    publisher: 'NASA, NSSDCA (Goddard Space Flight Center)',
+    url: 'https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html',
+    accessed: '2026-10-26',
+  },
 } as const satisfies Record<string, Source>;
 
 export type SourceId = keyof typeof SOURCES;

@@ -13,9 +13,10 @@ import type { Texture } from 'three';
 import { decodeStarCatalog } from '../ephemeris/stars';
 import type { SystemState } from '../ephemeris/system-state';
 import type { PlacementInput } from '../ephemeris/scale';
-import { Vec3, vec3 } from '../ephemeris/vec3';
+import { Mat3, Vec3, columnOf, normalize, vec3 } from '../ephemeris/vec3';
 import { AliasingState, MotionBody } from './aliasing';
 import { FOCUS_FLIGHT_MS, FRAME_START, Flight, VIEW_TRIP_MS, flightFrame } from './camera/flight';
+import { ViewFrom, anglesFromEcl, phaseViewDirection } from './camera/view-from';
 import { CameraRig, RigPose } from './camera/rig';
 import { attachPointerControls } from './camera/pointer';
 import { SimClock } from './clock';
@@ -65,9 +66,19 @@ import {
   sanitizeInsets,
   viewProjection,
 } from './view-insets';
-import { World } from './world';
+import { BODY_TEXTURES, World } from './world';
+import { TEXTURE_MEAN_LUMINANCE } from './texture-files';
+import {
+  VISUAL_CONFIG,
+  backgroundGain,
+  closeUpAmount,
+  exposureFor,
+  fillLight,
+} from './visual-config';
 import { illustrativeDistance } from '../ephemeris/scale';
 import { BODY_DATA } from '../data/body-data';
+import { BODY_PHOTOMETRY } from '../data/photometry';
+import { discFactor, interpolateLitBrightness, litBrightnessTable } from '../ephemeris/photometry';
 
 /** Profundidad elegida en la fase 2 (D13); ver docs/informes/fase-2.md. */
 export const DEFAULT_DEPTH: ResolvedDepthMode = 'logarithmic';
@@ -119,8 +130,6 @@ const OVERVIEW_ELEVATION = 0.42;
 const OVERVIEW_MARGIN = 1.05;
 const OVERVIEW_AZIMUTH = -0.55;
 const OVERVIEW_ANGLES = { azimuth: OVERVIEW_AZIMUTH, elevation: OVERVIEW_ELEVATION } as const;
-/** Exposición por vista (D21). */
-const EXPOSURE: Readonly<Record<ExplorerView, number>> = { system: 1, earth: 1, moon: 1 };
 /** La cámara no entra en el cuerpo enfocado. */
 const MIN_DISTANCE_RADII = 1.12;
 /**
@@ -200,6 +209,32 @@ type Listener<K extends SceneEngineEventName> = (event: SceneEngineEvents[K]) =>
 
 const SUN_INDEX = SCENE_BODIES.findIndex((body) => body.kind === 'star');
 const NEPTUNE_INDEX = SCENE_BODIES.findIndex((body) => body.id === 'neptuno');
+const EARTH_INDEX = SCENE_BODIES.findIndex((body) => body.id === 'tierra');
+
+/**
+ * Albedo con el que se compensa la exposición del primer plano de cada cuerpo (configuración visual),
+ * o `null` (el Sol, que emite luz). Los que se calibran, el geométrico del catálogo. La Tierra, hasta
+ * la fase 5, el efectivo de su propia textura (su luminancia media por el factor del disco de su
+ * modelo, ≈ 0,08): el del catálogo (0,434) incluye las nubes, que aún no se dibujan, y sin compensar
+ * quedaba casi negra (revisión de la fase 3b).
+ */
+const FOCUS_ALBEDO: readonly (number | null)[] = SCENE_BODIES.map((body) => {
+  if (body.id === 'sol') return null;
+  const photometry = BODY_PHOTOMETRY[body.id];
+  if (photometry.calibrateAlbedo) return BODY_DATA[body.id].physical.geometricAlbedo?.value ?? null;
+  const texture = BODY_TEXTURES[body.id];
+  const luminance = texture ? TEXTURE_MEAN_LUMINANCE[texture] : undefined;
+  return luminance ? luminance * discFactor(photometry.photometry) : null;
+});
+
+/**
+ * Radio que ocupa cada cuerpo para las etiquetas, en radios de su disco: con anillos (Saturno), el
+ * borde exterior del anillo A de la ficha de la NASA. Así su nombre no los tapa (fase 3b, tarea 8).
+ */
+const LABEL_EXTENTS: readonly number[] = SCENE_BODIES.map((body) => {
+  const rings = BODY_DATA[body.id].rings;
+  return rings ? rings.outerRadiusKm.value / body.radiusKm : 1;
+});
 
 /** Periodos de cada cuerpo para decidir el aliasing (§4.5), del catálogo. */
 export const MOTION_BODIES: readonly MotionBody[] = SCENE_BODIES.map((body) => {
@@ -270,6 +305,10 @@ export class SceneEngine implements SceneEngineApi {
   private screenThree = new Float64Array(3 * SCENE_BODIES.length);
   private contextLost = false;
   private readonly background: number | null;
+  /** Solo en captura: geometría de una foto de referencia (fase 3b). */
+  private readonly viewFrom: ViewFrom | null;
+  /** Exposición que tiene ahora el renderer (configuración visual; −1: aún ninguna). */
+  private exposure = -1;
   private ready = false;
   private disposed = false;
   private readonly startMs: number;
@@ -288,6 +327,7 @@ export class SceneEngine implements SceneEngineApi {
       depth: resolveDepth(options.depth ?? 'auto'),
       antialias: true,
       clearColor: BACKGROUND_COLOR,
+      toneMapping: options.toneMapping ?? VISUAL_CONFIG.toneMapping,
     });
     const caps = this.renderer.capabilities;
     this.qualitySetting = options.quality;
@@ -325,6 +365,7 @@ export class SceneEngine implements SceneEngineApi {
         : this.viewSetup(options.view);
     this.focusIndex = initial.focus;
     this.background = options.background ? sceneBody(options.background).index : null;
+    this.viewFrom = this.captureMode ? (options.viewFrom ?? null) : null;
     this.frames = new FrameController(
       this.frameSpec(initial.focus),
       initial.focus ?? SUN_INDEX,
@@ -337,7 +378,6 @@ export class SceneEngine implements SceneEngineApi {
       azimuth: angles?.azimuth ?? OVERVIEW_AZIMUTH,
       elevation: angles?.elevation ?? OVERVIEW_ELEVATION,
     });
-    this.renderer.setExposure(EXPOSURE[options.view]);
 
     const infos: LabelInfo[] = SCENE_BODIES.map((body) => ({
       id: body.id,
@@ -464,7 +504,6 @@ export class SceneEngine implements SceneEngineApi {
   setView(view: ExplorerView): void {
     if (this.disposed || view === this._view) return;
     this._view = view;
-    this.renderer.setExposure(EXPOSURE[view]);
     const setup = this.viewSetup(view);
     // Un viaje entre vistas (~3 s): la cámara gira hacia la pose de la vista mientras se acerca.
     this.changeFocus(setup.focus, setup.framing, 'view', this.viewAngles(view));
@@ -590,6 +629,7 @@ export class SceneEngine implements SceneEngineApi {
       });
       this.renderFrame(this.deps.now(), false); // prepara el estado y la cámara sin pintar aún
       if (this.background !== null) this.alignBehind(this.background);
+      if (this.viewFrom) this.alignViewFrom(this.viewFrom);
       this.snapCamera = true;
       await this.deps.yieldToMain();
       if (this.disposed) return;
@@ -739,6 +779,8 @@ export class SceneEngine implements SceneEngineApi {
     });
     camera.updateMatrixWorld();
     this.updateScreen();
+    this.updateOrbitDiscs();
+    this.applyLighting();
     if (!paint) return moving;
     this.renderer.render(this.world.scene, camera);
     this.renderedFrames++;
@@ -873,9 +915,72 @@ export class SceneEngine implements SceneEngineApi {
       { width, height },
       this.focusIndex ?? -1,
       planet ? sceneBody(planet).index : -1,
-      { insets: this.insets, hidden: this.hiddenLabels() },
+      { insets: this.insets, hidden: this.hiddenLabels(), extents: LABEL_EXTENTS },
     );
     this.labels.update(boxes, this.focusIndex ?? -1);
+  }
+
+  /**
+   * Relleno y exposición de la configuración visual (fase 3b, tarea 11), según lo grande que se vea
+   * el cuerpo enfocado: en la vista general, relleno ilustrativo; en primer plano, la luz física con
+   * la exposición compensada para el albedo del cuerpo.
+   */
+  private applyLighting(): void {
+    const focus = this.focusIndex;
+    const radiusPx = focus === null ? null : (this.screen[focus]?.radiusPx ?? null);
+    const closeUp = closeUpAmount(radiusPx);
+    this.world.setFill(fillLight(closeUp));
+    const albedo = focus === null ? null : (FOCUS_ALBEDO[focus] ?? null);
+    const lit =
+      focus === null || albedo === null
+        ? 1
+        : this.litBrightness(focus, this.world.phaseAngleOf(focus));
+    const exposure = exposureFor(closeUp, albedo, lit);
+    // El Sol: halo y granulación según su primer plano; la granulación cambia con el reloj de pared
+    // (quieta con movimiento reducido y en las capturas).
+    this.world.setSunAppearance(
+      focus === SUN_INDEX ? closeUp : 0,
+      this.instant() ? 0 : this.deps.now() / 1000,
+    );
+    if (this.exposure < 0 || Math.abs(exposure - this.exposure) > 1e-4) {
+      this.exposure = exposure;
+      this.renderer.setExposure(exposure);
+      // El fondo no sigue la exposición del primer plano: se ve igual en todas las vistas.
+      this.world.setBackgroundGain(backgroundGain(exposure));
+    }
+  }
+
+  /**
+   * Discos sobre los que se desvanecen las órbitas (fase 3b, tarea 8): los cuerpos que se ven, de
+   * más de unos píxeles, del más grande al más pequeño.
+   */
+  private updateOrbitDiscs(): void {
+    const discs = this.screen
+      .filter(
+        (body) =>
+          body.onScreen &&
+          !body.occluded &&
+          Number.isFinite(body.radiusPx) &&
+          body.radiusPx >= VISUAL_CONFIG.orbitDiscMinRadiusPx &&
+          this.aliasing.orbit[body.index] !== 1,
+      )
+      .sort((a, b) => b.radiusPx - a.radiusPx);
+    this.world.orbits.setDiscs(discs, this.viewport.height, this.pixelRatio());
+  }
+
+  /** Tablas del brillo de la parte iluminada de cada cuerpo según la fase (se calculan al enfocarlo). */
+  private readonly litTables = new Map<number, Float64Array>();
+
+  private litBrightness(index: number, phase: number): number {
+    const body = SCENE_BODIES[index];
+    const photometry = body && body.id !== 'sol' ? BODY_PHOTOMETRY[body.id] : null;
+    if (!photometry) return 1;
+    let table = this.litTables.get(index);
+    if (!table) {
+      table = litBrightnessTable(photometry.photometry);
+      this.litTables.set(index, table);
+    }
+    return interpolateLitBrightness(table, phase);
   }
 
   private readonly detailMask = new Uint8Array(SCENE_BODIES.length);
@@ -985,6 +1090,35 @@ export class SceneEngine implements SceneEngineApi {
       { azimuth: Math.atan2(-x, -z) + side, elevation: Math.asin(-y / length) },
       true,
     );
+    this.renderFrame(this.deps.now(), false);
+  }
+
+  /**
+   * Coloca la cámara con la geometría de una foto de referencia (modo de captura, fase 3b): desde la
+   * Tierra en la fecha, o con un ángulo de fase y una latitud sobre el ecuador del cuerpo.
+   */
+  private alignViewFrom(view: ViewFrom): void {
+    const focus = this.focusIndex;
+    if (focus === null) return;
+    const state = this.system.at(this.clock.timeMsValue);
+    const h = state.heliocentric;
+    const k = 3 * focus;
+    let direction;
+    if (view.kind === 'earth') {
+      const e = 3 * EARTH_INDEX;
+      direction = vec3(
+        (h[e] as number) - (h[k] as number),
+        (h[e + 1] as number) - (h[k + 1] as number),
+        (h[e + 2] as number) - (h[k + 2] as number),
+      );
+    } else {
+      const toSun = normalize(
+        vec3(-(h[k] as number), -(h[k + 1] as number), -(h[k + 2] as number)),
+      );
+      const pole = columnOf(this.orientations.at(state)[focus] as Mat3, 2);
+      direction = phaseViewDirection(toSun, pole, view.phaseDeg, view.latitudeDeg);
+    }
+    this.rig.setTarget(anglesFromEcl(direction), true);
     this.renderFrame(this.deps.now(), false);
   }
 
