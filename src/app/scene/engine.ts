@@ -918,6 +918,12 @@ export class SceneEngine implements SceneEngineApi {
         ? 1
         : this.litBrightness(focus, this.world.phaseAngleOf(focus));
     const exposure = exposureFor(closeUp, albedo, lit);
+    // El Sol: halo y granulación según su primer plano; la granulación cambia con el reloj de pared
+    // (quieta con movimiento reducido y en las capturas).
+    this.world.setSunAppearance(
+      focus === SUN_INDEX ? closeUp : 0,
+      this.instant() ? 0 : this.deps.now() / 1000,
+    );
     if (this.exposure < 0 || Math.abs(exposure - this.exposure) > 1e-4) {
       this.exposure = exposure;
       this.renderer.setExposure(exposure);

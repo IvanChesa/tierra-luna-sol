@@ -4,29 +4,6 @@
 import type { TextureFiles, TextureId } from './textures';
 
 export const TEXTURE_FILES: TextureFiles = {
-  sun: [
-    {
-      level: '1k',
-      path: 'textures/1k/sun.739229444a.webp',
-      width: 1024,
-      height: 512,
-      bytes: 78108,
-    },
-    {
-      level: '2k',
-      path: 'textures/2k/sun.a1f56cf146.webp',
-      width: 2048,
-      height: 1024,
-      bytes: 206624,
-    },
-    {
-      level: '4k',
-      path: 'textures/4k/sun.47675f8d0e.webp',
-      width: 4096,
-      height: 2048,
-      bytes: 537346,
-    },
-  ],
   mercury: [
     {
       level: '1k',
@@ -388,7 +365,6 @@ export const TEXTURE_FILES: TextureFiles = {
  * el nivel 1k: con ella, la escena lleva cada cuerpo a su albedo geométrico (D29).
  */
 export const TEXTURE_MEAN_LUMINANCE: Readonly<Partial<Record<TextureId, number>>> = {
-  sun: 0.3602,
   mercury: 0.2294,
   venus: 0.554,
   'earth-day': 0.1187,

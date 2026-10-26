@@ -1,14 +1,23 @@
 /**
- * El Sol: disco con oscurecimiento del limbo y un halo (PLAN, fase 2, 2.c.12).
+ * El Sol (fase 3b, tarea 6): la fotosfera con el oscurecimiento del limbo medido, el color de su
+ * temperatura efectiva, una granulación procedural tenue y un halo.
  *
- * - Oscurecimiento del limbo con la ley lineal I(μ) / I(1) = 1 − u · (1 − μ), con μ el coseno del
- *   ángulo entre la normal y la visual, y u = 0,6 (valor clásico para la luz visible).
- * - Emite luz (no se ilumina) con intensidad por encima de 1: el tone mapping la lleva casi a blanco
- *   en el centro y deja ver el color de la textura hacia el borde.
+ * - Oscurecimiento del limbo: la ley cuadrática a 550 nm de Allen's Astrophysical Quantities
+ *   (Cox, 2000), I(μ)/I(1) = 0,3 + 0,93·μ − 0,23·μ², con μ el coseno entre la normal y la visual
+ *   (`solarLimbDarkening` de `ephemeris/photometry.ts`, con su test). El borde queda al 30 %.
+ * - Color: el de un cuerpo negro a la temperatura efectiva del catálogo (5772 K), en lineal.
+ * - Emite luz (no se ilumina) con intensidad por encima de 1: el tone mapping lo lleva casi a blanco
+ *   en el centro y deja ver el tono hacia el borde, más oscuro.
+ * - Granulación: ruido procedural en la esfera que cambia despacio con el reloj de pared (quieto con
+ *   movimiento reducido y en las capturas) y solo en primer plano. Es ilustrativa: los gránulos
+ *   reales (~1000 km) no se distinguirían en el disco entero; esto es un moteado del 5 % que da
+ *   textura a la superficie.
  * - El halo es un cuadrado orientado a la cámara, aditivo, con un tamaño mínimo en píxeles para que
- *   el Sol se vea aunque mida menos de un píxel (escala real, desde Neptuno).
+ *   el Sol se vea aunque mida menos de un píxel (escala real, desde Neptuno). En primer plano se
+ *   recoge (configuración visual).
  */
-import { AdditiveBlending, Color, Texture, Uniform } from 'three';
+import { AdditiveBlending, Color, Uniform, Vector3 } from 'three';
+import { SOLAR_LIMB_DARKENING } from '../../ephemeris/photometry';
 import {
   DEPTH_FRAGMENT,
   DEPTH_FRAGMENT_PARS,
@@ -18,17 +27,14 @@ import {
   sceneShaderMaterial,
 } from './depth';
 
-/** Coeficiente de la ley lineal del oscurecimiento del limbo en el visible. */
-export const SUN_LIMB_DARKENING = 0.6;
-
 const sunVertex = /* glsl */ `
 ${DEPTH_VERTEX_PARS}
-varying vec2 vUv;
 varying vec3 vNormal;
 varying vec3 vViewPosition;
+varying vec3 vLocal;
 
 void main() {
-  vUv = uv;
+  vLocal = position;
   vNormal = normalize(normalMatrix * normal);
   vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
   vViewPosition = mvPosition.xyz;
@@ -39,32 +45,58 @@ void main() {
 
 const sunFragment = /* glsl */ `
 ${DEPTH_FRAGMENT_PARS}
-uniform sampler2D uMap;
-uniform float uHasMap;
 uniform vec3 uColor;
 uniform float uIntensity;
-uniform float uLimbDarkening;
-varying vec2 vUv;
+uniform vec3 uLimb;
+uniform float uGranulation;
+uniform float uTime;
 varying vec3 vNormal;
 varying vec3 vViewPosition;
+varying vec3 vLocal;
+
+float tlsHash(vec3 p) {
+  p = fract(p * 0.3183099 + 0.1);
+  p *= 17.0;
+  return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+}
+
+float tlsValueNoise(vec3 x) {
+  vec3 i = floor(x);
+  vec3 f = fract(x);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(mix(tlsHash(i), tlsHash(i + vec3(1.0, 0.0, 0.0)), f.x),
+        mix(tlsHash(i + vec3(0.0, 1.0, 0.0)), tlsHash(i + vec3(1.0, 1.0, 0.0)), f.x), f.y),
+    mix(mix(tlsHash(i + vec3(0.0, 0.0, 1.0)), tlsHash(i + vec3(1.0, 0.0, 1.0)), f.x),
+        mix(tlsHash(i + vec3(0.0, 1.0, 1.0)), tlsHash(i + vec3(1.0, 1.0, 1.0)), f.x), f.y),
+    f.z);
+}
 
 void main() {
   ${DEPTH_FRAGMENT}
   float mu = clamp(dot(normalize(vNormal), normalize(-vViewPosition)), 0.0, 1.0);
-  float limb = 1.0 - uLimbDarkening * (1.0 - mu);
-  vec3 base = uHasMap > 0.5 ? texture2D(uMap, vUv).rgb : uColor;
-  gl_FragColor = vec4(base * limb * uIntensity, 1.0);
+  float limb = uLimb.x + uLimb.y * mu + uLimb.z * mu * mu;
+  float grain = 1.0;
+  if (uGranulation > 0.0) {
+    vec3 q = normalize(vLocal) * 38.0 + vec3(0.0, 0.0, uTime);
+    float n = 0.5 * tlsValueNoise(q) + 0.3 * tlsValueNoise(q * 2.3 + 7.1) + 0.2 * tlsValueNoise(q * 5.1 + 3.7);
+    grain = 1.0 + uGranulation * (n - 0.5) * 2.0;
+  }
+  gl_FragColor = vec4(uColor * limb * grain * uIntensity, 1.0);
   ${OUTPUT_FRAGMENT}
 }
 `;
 
-export function createSunMaterial() {
+export function createSunMaterial(color: Color) {
+  const [a, b, c] = SOLAR_LIMB_DARKENING;
   const uniforms = {
-    uMap: new Uniform<Texture | null>(null),
-    uHasMap: new Uniform(0),
-    uColor: new Uniform(new Color(1, 0.62, 0.25)),
+    uColor: new Uniform(color),
     uIntensity: new Uniform(2.6),
-    uLimbDarkening: new Uniform(SUN_LIMB_DARKENING),
+    uLimb: new Uniform(new Vector3(a, b, c)),
+    /** Amplitud de la granulación (0: sin ella; la configuración visual la da en primer plano). */
+    uGranulation: new Uniform(0),
+    /** Tiempo de la granulación (s del reloj de pared, a su ritmo lento). */
+    uTime: new Uniform(0),
   };
   const material = sceneShaderMaterial({
     name: 'tls-sun',

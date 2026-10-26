@@ -21,6 +21,7 @@ import {
   ringCoverage,
   ringReflectance,
   smoothstep,
+  solarLimbDarkening,
   srgbLuminance,
   twilightWidth,
 } from './photometry';
@@ -215,6 +216,21 @@ describe('fotometría: atmósfera', () => {
     expect(twilightWidth(1, 0)).toBe(0);
     expect(twilightWidth(6052, 90)).toBeCloseTo(Math.sqrt(1 - (6052 / 6142) ** 2), 12);
     expect(smoothstep(0, 1, 0.5)).toBe(0.5);
+  });
+});
+
+describe('fotometría: limbo del Sol', () => {
+  it('va del centro (1) al borde (0,3) y el disco medio vale el 80,5 % del centro', () => {
+    expect(solarLimbDarkening(1)).toBeCloseTo(1, 12);
+    expect(solarLimbDarkening(0)).toBeCloseTo(0.3, 12);
+    // Media sobre el disco: ∫ I(μ) · 2μ dμ.
+    let sum = 0;
+    const n = 10000;
+    for (let i = 0; i < n; i++) {
+      const mu = (i + 0.5) / n;
+      sum += solarLimbDarkening(mu) * 2 * mu;
+    }
+    expect(sum / n).toBeCloseTo(0.805, 3);
   });
 });
 

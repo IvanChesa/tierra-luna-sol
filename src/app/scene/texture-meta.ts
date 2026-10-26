@@ -32,9 +32,6 @@ const earthData = (colorSpace: 'srgb' | 'data'): TextureMeta => ({
 });
 
 export const TEXTURE_META: Readonly<Record<TextureId, TextureMeta>> = {
-  sun: clouds(
-    'Sin accidentes fijos: el Sol gira con su modelo IAU, pero la granulación es ilustrativa.',
-  ),
   mercury: surface(
     'Sondas: el cráter Kuiper (11,3° S, 31,5° O) brillante frente a la llanura vecina.',
   ),

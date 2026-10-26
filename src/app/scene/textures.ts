@@ -28,7 +28,6 @@ import {
 import type { TextureLevel } from './quality';
 
 export type TextureId =
-  | 'sun'
   | 'mercury'
   | 'venus'
   | 'earth-day'

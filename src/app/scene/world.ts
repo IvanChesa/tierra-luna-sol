@@ -21,6 +21,7 @@ import {
   Quaternion,
   Scene,
   ShaderMaterial,
+  SRGBColorSpace,
   SphereGeometry,
   Uniform,
   Vector3,
@@ -46,7 +47,7 @@ import { createHaloMaterial, createSunMaterial } from './materials/sun-material'
 import { OrbitLines, OrbitSource } from './orbits';
 import type { ScreenBody } from './picking';
 import type { QualityProfile, TextureLevel } from './quality';
-import { StarField } from './stars';
+import { StarField, temperatureToSrgb } from './stars';
 import type { SceneBody } from './system';
 import { TEXTURE_MEAN_LUMINANCE } from './texture-files';
 import {
@@ -59,9 +60,11 @@ import {
 } from './textures';
 import type { ViewProjection } from './view-insets';
 
-/** Textura de color de cada cuerpo que la tiene (las demás lunas, en la fase 7). */
+/**
+ * Textura de color de cada cuerpo que la tiene (las demás lunas, en la fase 7). El Sol no lleva:
+ * su fotosfera es procedural (fase 3b).
+ */
 export const BODY_TEXTURES: Readonly<Partial<Record<BodyId, TextureId>>> = {
-  sol: 'sun',
   mercurio: 'mercury',
   venus: 'venus',
   tierra: 'earth-day',
@@ -146,8 +149,15 @@ interface BodyVisual {
 const tmpMatrix = new Matrix4();
 const tmpQuaternion = new Quaternion();
 const tmpVector = new Vector3();
-/** Tamaño del halo del Sol, en radios solares. */
-const HALO_RADII = 3.2;
+/** Tamaño e intensidad del halo del Sol, en radios solares: en la vista general y en primer plano. */
+const HALO = { overview: { radii: 3.2, intensity: 1.1 }, closeUp: { radii: 1.7, intensity: 0.45 } };
+/** Amplitud de la granulación del Sol en primer plano (ilustrativa) y su ritmo (unidades de ruido/s). */
+const GRANULATION = { amplitude: 0.05, rate: 0.015 };
+/**
+ * Intensidad de la fotosfera: muy por encima de 1 en la vista general (el Sol deslumbra) y cerca de 1
+ * en primer plano, para que el tone mapping no aplane el oscurecimiento del limbo.
+ */
+const SUN_INTENSITY = { overview: 2.6, closeUp: 0.85 };
 /** Segmentos de la esfera ligera de las lunas pequeñas (a lo ancho). */
 const COARSE_SEGMENTS = 32;
 /** Por debajo de este radio en pantalla (px CSS), el halo de la atmósfera no se dibuja: no se vería. */
@@ -233,7 +243,10 @@ export class World {
     this.scene.name = 'tierra-luna-sol';
     this.sphere = this.createSphere(options.profile.sphereSegments);
     this.coarseSphere = this.createSphere(COARSE_SEGMENTS);
-    this.sun = createSunMaterial();
+    // Color de la fotosfera: un cuerpo negro a la temperatura efectiva del catálogo.
+    const temperature = BODY_DATA.sol.physical.effectiveTemperatureK?.value ?? 5772;
+    const [r, g, b] = temperatureToSrgb(temperature);
+    this.sun = createSunMaterial(new Color().setRGB(r, g, b, SRGBColorSpace));
     this.haloMaterial = createHaloMaterial();
     this.halo = new Mesh(new PlaneGeometry(2, 2), this.haloMaterial.material);
     this.halo.name = 'sun-halo';
@@ -547,6 +560,21 @@ export class World {
     return { near, far };
   }
 
+  /** Cuánto primer plano del Sol hay (0–1): recoge su halo y enciende la granulación. */
+  private sunCloseUp = 0;
+
+  /**
+   * Aspecto del Sol según el encuadre (configuración visual) y el reloj de pared de la granulación
+   * (0 con movimiento reducido o en captura: quieta).
+   */
+  setSunAppearance(closeUp: number, timeSeconds: number): void {
+    this.sunCloseUp = closeUp;
+    this.sun.uniforms.uGranulation.value = GRANULATION.amplitude * closeUp;
+    this.sun.uniforms.uIntensity.value =
+      SUN_INTENSITY.overview + (SUN_INTENSITY.closeUp - SUN_INTENSITY.overview) * closeUp;
+    this.sun.uniforms.uTime.value = timeSeconds * GRANULATION.rate;
+  }
+
   /** Relleno ilustrativo de los cuerpos (configuración visual), en fracción de la luz del Sol. */
   setFill(fill: number): void {
     for (const visual of this.visuals) if (visual.uniforms) visual.uniforms.uFill.value = fill;
@@ -683,6 +711,9 @@ export class World {
       visual.uniforms.uHasMap.value = 1;
       visual.uniforms.uMeridianOffset.value = meta ? meridianOffset(meta) : 0;
       const luminance = visual.textureId ? TEXTURE_MEAN_LUMINANCE[visual.textureId] : undefined;
+      if (luminance !== undefined) visual.uniforms.uMeanLuminance.value = luminance;
+      if (visual.photometry?.contrast)
+        visual.uniforms.uContrast.value = visual.photometry.contrast.value;
       if (visual.photometry && luminance !== undefined) {
         visual.uniforms.uAlbedoScale.value = bodyAlbedoScale(
           visual.body.id,
@@ -690,9 +721,6 @@ export class World {
           luminance,
         );
       }
-    } else {
-      this.sun.uniforms.uMap.value = loaded.texture;
-      this.sun.uniforms.uHasMap.value = 1;
     }
     if (previous && previous.texture !== loaded.texture) releaseTexture(previous.texture);
     this.options.invalidate();
@@ -733,7 +761,11 @@ export class World {
     const sunVisual = this.visuals.find((v) => v.body.kind === 'star');
     if (sunVisual) {
       this.halo.position.copy(sunVisual.mesh.position);
-      this.haloMaterial.uniforms.uRadius.value = sunVisual.mesh.scale.x * HALO_RADII;
+      const t = this.sunCloseUp;
+      const radii = HALO.overview.radii + (HALO.closeUp.radii - HALO.overview.radii) * t;
+      this.haloMaterial.uniforms.uRadius.value = sunVisual.mesh.scale.x * radii;
+      this.haloMaterial.uniforms.uIntensity.value =
+        HALO.overview.intensity + (HALO.closeUp.intensity - HALO.overview.intensity) * t;
       this.haloMaterial.uniforms.uViewportHeight.value = frame.viewport.height;
     }
     const saturn = this.visuals.find((v) => v.body.id === 'saturno');

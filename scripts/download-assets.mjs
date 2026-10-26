@@ -33,7 +33,6 @@ const MERCURY_DEM_PAGE =
 /** [fichero local, URL, página de la fuente (para el Referer y FUENTES.md)] */
 const ASSETS = [
   ...[
-    '8k_sun.jpg',
     '8k_mercury.jpg',
     '4k_venus_atmosphere.jpg',
     '8k_earth_daymap.jpg',

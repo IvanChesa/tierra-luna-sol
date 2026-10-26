@@ -53,7 +53,6 @@ const RING_HEIGHT = 16;
  * se comprueba la alineación).
  */
 const TEXTURES = {
-  sun: { file: '8k_sun.jpg', kind: 'color', quality: 80 },
   mercury: { file: '8k_mercury.jpg', kind: 'color', quality: 80 },
   venus: { file: '4k_venus_atmosphere.jpg', kind: 'color', quality: 80 },
   'earth-day': { file: '8k_earth_daymap.jpg', kind: 'color', quality: 82 },

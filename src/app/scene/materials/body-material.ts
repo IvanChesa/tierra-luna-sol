@@ -70,6 +70,8 @@ uniform vec3 uColor;
 uniform float uMeridianOffset;
 uniform float uAlbedoScale;
 uniform vec4 uChromaticity;
+uniform float uContrast;
+uniform float uMeanLuminance;
 uniform float uFill;
 uniform sampler2D uNormalMap;
 uniform float uNormalStrength;
@@ -117,6 +119,11 @@ void main() {
     float luminance = dot(base, vec3(0.2126, 0.7152, 0.0722));
     base = mix(base, luminance * uChromaticity.rgb, uChromaticity.w);
   }
+  // Contraste (data/photometry.ts): se acerca la luminancia a la media sin cambiar el matiz.
+  if (uContrast < 1.0) {
+    float luminance = max(dot(base, vec3(0.2126, 0.7152, 0.0722)), 1e-4);
+    base *= (uMeanLuminance + (luminance - uMeanLuminance) * uContrast) / luminance;
+  }
   vec3 albedo = base * uAlbedoScale;
   vec3 geometric = normalize(vNormal);
   vec3 normal = uNormalStrength > 0.0 ? reliefNormal(geometric, uv) : geometric;
@@ -155,6 +162,9 @@ export interface BodyMaterialUniforms extends ShadingUniforms {
   readonly uAlbedoScale: Uniform<number>;
   /** Cromaticidad medida (rgb) y cuánto se aplica (w; 0 = el color de la textura). */
   readonly uChromaticity: Uniform<Vector4>;
+  /** Contraste de la textura (1 = el suyo) y su luminancia media, que conserva. */
+  readonly uContrast: Uniform<number>;
+  readonly uMeanLuminance: Uniform<number>;
   /** Relleno ilustrativo, en fracción de la luz del Sol (configuración visual). */
   readonly uFill: Uniform<number>;
   readonly uNormalMap: Uniform<Texture | null>;
@@ -191,6 +201,8 @@ export function createBodyMaterial(options: BodyMaterialOptions) {
     uMeridianOffset: new Uniform(0),
     uAlbedoScale: new Uniform(1),
     uChromaticity: new Uniform(new Vector4(1, 1, 1, 0)),
+    uContrast: new Uniform(1),
+    uMeanLuminance: new Uniform(0.5),
     uFill: new Uniform(0),
     uNormalMap: new Uniform<Texture | null>(null),
     uNormalStrength: new Uniform(0),

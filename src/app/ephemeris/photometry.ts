@@ -208,6 +208,19 @@ export const twilightWidth = (radius: number, hazeHeight: number): number =>
   Math.sqrt(1 - (radius / (radius + hazeHeight)) ** 2);
 
 /**
+ * Oscurecimiento del limbo del Sol a 550 nm: I(μ)/I(1) = 0,3 + 0,93·μ − 0,23·μ² (Allen's
+ * Astrophysical Quantities, Cox, 2000). El borde queda al 30 % del centro y el disco, de media, al
+ * 80,5 %.
+ */
+export const SOLAR_LIMB_DARKENING = [0.3, 0.93, -0.23] as const;
+
+export const solarLimbDarkening = (mu: number): number => {
+  const m = Math.min(Math.max(mu, 0), 1);
+  const [a, b, c] = SOLAR_LIMB_DARKENING;
+  return a + b * m + c * m * m;
+};
+
+/**
  * Anillos (fase 3b): una capa de partículas de profundidad óptica normal τ con dispersión simple
  * (el modelo clásico de los anillos de Saturno, como en Cuzzi et al.). Con μ₀ y μ los senos de las
  * elevaciones del Sol y de quien mira sobre el plano, y normalizado para que una capa opaca valga 1 en

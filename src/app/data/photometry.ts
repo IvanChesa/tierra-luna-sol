@@ -39,6 +39,11 @@ export interface BodyPhotometry {
     readonly source: string;
   };
   /**
+   * Contraste de la textura (1: el suyo; menos, más plano), si en luz visible el cuerpo tiene menos
+   * detalle que la textura. Conserva el brillo medio.
+   */
+  readonly contrast?: { readonly value: number; readonly note: string };
+  /**
    * ¿Se calibra el brillo con el albedo geométrico? En la Tierra, no hasta la fase 5: su albedo
    * (0,434) incluye las nubes, que todavía no se dibujan.
    */
@@ -121,8 +126,8 @@ export const RING_PHOTOMETRY: {
   readonly note: string;
 } = {
   photometry: { ...MOON, forwardFraction: 0.08, forwardAsymmetry: 0.75 },
-  ringShine: 0.12,
-  note: 'Fase de la Luna y un lóbulo hacia delante (8 %, g = 0,75) para el polvo fino; luz de los anillos sobre el planeta, 0,12 de la del Sol por el seno de su elevación: aproximación y ajuste visual.',
+  ringShine: 0.05,
+  note: 'Fase de la Luna y un lóbulo hacia delante (8 %, g = 0,75) para el polvo fino; luz de los anillos sobre el planeta, 0,05 de la del Sol por el seno de su elevación: aproximación y ajuste visual.',
 };
 
 /** Las lunas sin atmósfera usan la fotometría de la Luna (aproximación documentada). */
@@ -152,6 +157,10 @@ export const BODY_PHOTOMETRY: Readonly<Record<Exclude<BodyId, 'sol'>, BodyPhotom
     haze: haze(0.35, 3, 0.18, 2.5),
     hazeColor: '#f4e6c8',
     haloScaleHeight: 0.012,
+    contrast: {
+      value: 0.3,
+      note: 'En luz visible, las nubes de Venus casi no tienen contraste (PIA10124, MESSENGER); la textura las realza como en las imágenes en ultravioleta.',
+    },
     calibrateAlbedo: true,
     note: 'Ajustada a la ley de fase de Hilton (2005); la neblina (tono, limbo y crepúsculo), ajuste visual.',
   },
