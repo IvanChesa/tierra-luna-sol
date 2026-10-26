@@ -1,4 +1,4 @@
-import { SHORTCUT_HELP, canvasCommand, globalCommand, isTextField } from './shortcuts';
+import { SHORTCUT_HELP, canvasCommand, globalCommand, isTextField, repeats } from './shortcuts';
 
 const key = (
   k: string,
@@ -59,6 +59,24 @@ describe('shortcuts: atajos de teclado', () => {
     expect(isTextField(make('<input type="checkbox">'))).toBe(false);
     expect(isTextField(make('<button>Ir</button>'))).toBe(false);
     expect(isTextField(null)).toBe(false);
+  });
+
+  it('con la tecla pulsada se repiten el zoom, la velocidad y el giro; lo que alterna, no', () => {
+    for (const command of ['zoom-in', 'zoom-out', 'slower', 'faster', 'orbit-left'] as const) {
+      expect(repeats(command)).toBe(true);
+    }
+    for (const command of [
+      'toggle-play',
+      'clean-view',
+      'reverse',
+      'now',
+      'view-earth',
+      'escape',
+      'help',
+      'overview',
+    ] as const) {
+      expect(repeats(command)).toBe(false);
+    }
   });
 
   it('la ayuda documenta todas las órdenes globales', () => {

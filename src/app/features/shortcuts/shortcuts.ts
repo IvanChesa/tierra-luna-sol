@@ -133,6 +133,24 @@ export function canvasCommand(event: KeyLike): CanvasCommand | null {
 }
 
 /**
+ * Las órdenes que se repiten si se deja pulsada la tecla: el zoom, la velocidad y el giro. Las que
+ * alternan o saltan (reproducir, la vista limpia, el sentido, las vistas, `Esc`…) actúan una vez.
+ */
+const REPEATABLE: ReadonlySet<ShortcutCommand | CanvasCommand> = new Set([
+  'zoom-in',
+  'zoom-out',
+  'slower',
+  'faster',
+  'orbit-left',
+  'orbit-right',
+  'orbit-up',
+  'orbit-down',
+]);
+
+export const repeats = (command: ShortcutCommand | CanvasCommand): boolean =>
+  REPEATABLE.has(command);
+
+/**
  * ¿Está el foco en un campo donde se escribe? Ahí no actúa ningún atajo (PLAN 3.d.10): ni en los
  * inputs de texto, fecha u hora, ni en los `select` (buscan opciones al teclear), ni en un área de
  * texto o un elemento editable.
