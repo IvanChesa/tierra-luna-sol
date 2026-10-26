@@ -12,8 +12,11 @@ import {
   integratedPhase,
   lawPhaseMagnitude,
   lommelWeight,
+  opticalDepth,
   phaseFunction,
   reflectance,
+  ringCoverage,
+  ringReflectance,
   smoothstep,
   srgbLuminance,
   twilightWidth,
@@ -191,6 +194,51 @@ describe('fotometría: atmósfera', () => {
     expect(twilightWidth(1, 0)).toBe(0);
     expect(twilightWidth(6052, 90)).toBeCloseTo(Math.sqrt(1 - (6052 / 6142) ** 2), 12);
     expect(smoothstep(0, 1, 0.5)).toBe(0.5);
+  });
+});
+
+describe('fotometría: anillos (dispersión simple)', () => {
+  it('una capa opaca vista por la cara iluminada vale 1 con el Sol y la vista iguales', () => {
+    expect(ringReflectance(0.4, 0.4, 50, true)).toBeCloseTo(1, 9);
+    expect(ringReflectance(0.8, 0.2, 50, true)).toBeCloseTo((2 * 0.8) / 1, 9);
+  });
+
+  it('una capa fina refleja en proporción a τ (el límite 2τ/μ)', () => {
+    const tau = 1e-4;
+    expect(ringReflectance(0.5, 0.3, tau, true) / ((2 * tau) / 0.3)).toBeCloseTo(1, 3);
+  });
+
+  it('por la cara oscura, nada si es opaca o vacía y un máximo entre medias', () => {
+    expect(ringReflectance(0.4, 0.3, 50, false)).toBeLessThan(1e-9);
+    expect(ringReflectance(0.4, 0.3, 0, false)).toBe(0);
+    const thin = ringReflectance(0.4, 0.3, 0.1, false);
+    const mid = ringReflectance(0.4, 0.3, 0.35, false);
+    const thick = ringReflectance(0.4, 0.3, 2.5, false);
+    expect(mid).toBeGreaterThan(thin);
+    expect(mid).toBeGreaterThan(thick);
+  });
+
+  it('la cara oscura es continua cuando la elevación de la vista iguala la del Sol', () => {
+    const at = ringReflectance(0.4, 0.4, 0.3, false);
+    expect(ringReflectance(0.4, 0.4 + 1e-4, 0.3, false)).toBeCloseTo(at, 3);
+    expect(at).toBeCloseTo(((2 * 0.3) / 0.4) * Math.exp(-0.3 / 0.4), 12);
+  });
+
+  it('con el Sol rasante, los anillos se apagan', () => {
+    expect(ringReflectance(0, 0.5, 1, true)).toBe(0);
+    expect(ringReflectance(1e-3, 0.5, 1, true)).toBeLessThan(0.01);
+  });
+
+  it('tapan más cuanto más rasante es la vista: 1 − e^(−τ/μ)', () => {
+    expect(ringCoverage(1, 0.5)).toBeCloseTo(1 - Math.exp(-0.5), 12);
+    expect(ringCoverage(0.1, 0.5)).toBeGreaterThan(ringCoverage(1, 0.5));
+    expect(ringCoverage(0, 0.5)).toBe(1);
+  });
+
+  it('la profundidad óptica sale de la opacidad de frente', () => {
+    expect(opticalDepth(1 - Math.exp(-1.2))).toBeCloseTo(1.2, 9);
+    expect(opticalDepth(0)).toBe(0);
+    expect(opticalDepth(1)).toBeCloseTo(-Math.log(0.005), 9);
   });
 });
 

@@ -10,10 +10,20 @@
  * - `captura=1`: modo de captura determinista (fecha fija, calidad alta, sin animaciones).
  * - Solo en captura: `profundidad=logaritmica|invertida|estandar` (prueba de D13) y `detras=neptuno`
  *   (encuadre con ese cuerpo detrás del enfocado).
+ * - Solo en captura, para comparar con fotos reales (fase 3b): `desde=tierra` (la geometría de una
+ *   foto del Hubble en esa fecha), `fase=30` y `latitud=-17` (ángulo de fase y latitud de la cámara
+ *   sobre el ecuador del cuerpo, en grados) y `tonemapping=neutral|agx|aces`.
  */
 import { findBody, isBodyId } from '../../data/body-index';
 import { MAX_DATE, MIN_DATE } from '../../ephemeris/constants';
-import type { BodyId, DepthMode, QualitySetting, ScaleMode } from '../../scene';
+import type {
+  BodyId,
+  DepthMode,
+  QualitySetting,
+  ScaleMode,
+  ToneMappingMode,
+  ViewFrom,
+} from '../../scene';
 
 /** Fecha fija del modo de captura cuando la URL no trae otra. */
 export const CAPTURE_DATE = new Date('2026-10-24T00:00:00Z');
@@ -28,6 +38,8 @@ export interface ViewerParams {
   readonly quality: QualitySetting | null;
   readonly depth: DepthMode | null;
   readonly background: BodyId | null;
+  readonly viewFrom: ViewFrom | null;
+  readonly toneMapping: ToneMappingMode | null;
   /** Avisos de los parámetros que se han ignorado, ya redactados para la interfaz. */
   readonly warnings: readonly string[];
 }
@@ -44,6 +56,29 @@ const DEPTH: Readonly<Record<string, DepthMode>> = {
   estandar: 'standard',
 };
 const SCALE: Readonly<Record<string, ScaleMode>> = { real: 'real', ilustrativa: 'illustrative' };
+const TONE_MAPPING: Readonly<Record<string, ToneMappingMode>> = {
+  neutral: 'neutral',
+  agx: 'agx',
+  aces: 'aces',
+};
+
+/** Número de un parámetro dentro de [min, max], o `null`. */
+function numberParam(value: string | null, min: number, max: number): number | null {
+  if (value === null || value.trim() === '') return null;
+  const number = Number(value);
+  return Number.isFinite(number) && number >= min && number <= max ? number : null;
+}
+
+/** Geometría de una foto de referencia (solo en captura). */
+function parseViewFrom(params: URLSearchParams): ViewFrom | null {
+  if (params.get('desde') === 'tierra') return { kind: 'earth' };
+  const phaseDeg = numberParam(params.get('fase'), 0, 180);
+  if (phaseDeg === null) return null;
+  const latitudeDeg = numberParam(params.get('latitud'), -90, 90);
+  return latitudeDeg === null
+    ? { kind: 'phase', phaseDeg }
+    : { kind: 'phase', phaseDeg, latitudeDeg };
+}
 const SCALE_PARAM: Readonly<Record<ScaleMode, string>> = {
   real: 'real',
   illustrative: 'ilustrativa',
@@ -114,6 +149,8 @@ export function parseViewerParams(search: string): ViewerParams {
     quality,
     depth: capture ? (DEPTH[params.get('profundidad') ?? ''] ?? null) : null,
     background: background !== null && isBodyId(background) ? background : null,
+    viewFrom: capture ? parseViewFrom(params) : null,
+    toneMapping: capture ? (TONE_MAPPING[params.get('tonemapping') ?? ''] ?? null) : null,
     warnings,
   };
 }

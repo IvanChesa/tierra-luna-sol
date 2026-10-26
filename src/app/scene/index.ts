@@ -23,6 +23,8 @@ export type {
   QualitySetting,
   ScaleMode,
   SceneEngineApi,
+  ToneMappingMode,
+  ViewFrom,
   SceneEngineEventName,
   SceneEngineEvents,
   SceneEngineOptions,

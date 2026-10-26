@@ -1,7 +1,7 @@
-// GENERADO por scripts/build-textures.mjs el 2026-10-24. No se edita a mano.
+// GENERADO por scripts/build-textures.mjs el 2026-10-26. No se edita a mano.
 // WebP por niveles con hash (public/textures/), a partir de los originales de assets-src/textures/
 // (origen y licencia de cada uno en docs/FUENTES.md).
-import type { TextureFiles } from './textures';
+import type { TextureFiles, TextureId } from './textures';
 
 export const TEXTURE_FILES: TextureFiles = {
   sun: [
@@ -335,6 +335,24 @@ export const TEXTURE_FILES: TextureFiles = {
       bytes: 15774,
     },
   ],
+};
+
+/**
+ * Luminancia lineal media (Rec. 709) de cada mapa de color, ponderada por el área (cos φ), medida en
+ * el nivel 1k: con ella, la escena lleva cada cuerpo a su albedo geométrico (D29).
+ */
+export const TEXTURE_MEAN_LUMINANCE: Readonly<Partial<Record<TextureId, number>>> = {
+  sun: 0.3602,
+  mercury: 0.2294,
+  venus: 0.554,
+  'earth-day': 0.1187,
+  'earth-night': 0.0034,
+  moon: 0.3014,
+  mars: 0.1819,
+  jupiter: 0.4093,
+  saturn: 0.6154,
+  uranus: 0.5649,
+  neptune: 0.1231,
 };
 
 /**

@@ -10,8 +10,14 @@
  * Al reproducir (PLAN 3.c.7), el camino recorrido en el último segundo real brilla más: la estela de
  * movimiento, detrás del cuerpo (o delante, hacia atrás en el tiempo). Un cuerpo que se mueve
  * demasiado deprisa para seguirlo (§4.5) no se dibuja y su órbita se resalta entera.
+ *
+ * Sobre los discos (fase 3b, tarea 8): la prueba de profundidad oculta lo que queda detrás de un
+ * cuerpo, pero una órbita que pasa POR DELANTE (la del propio planeta enfocado, que lo atraviesa, o
+ * las de sus lunas) cruzaría su disco. El material recibe los discos en pantalla de los cuerpos más
+ * grandes y desvanece las líneas sobre ellos y un poco más allá (`onBeforeCompile` del
+ * `LineMaterial`, que ya lleva los chunks de profundidad de three).
  */
-import { AdditiveBlending, Color } from 'three';
+import { AdditiveBlending, Color, Uniform, Vector4 } from 'three';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
 import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
@@ -43,6 +49,32 @@ const HIGHLIGHT_COLOR = new Color('#d9b76e');
 /** Grosor de las órbitas en píxeles CSS. */
 export const ORBIT_WIDTH_PX = 1.25;
 
+/** Discos que desvanecen las órbitas (los de los cuerpos más grandes en pantalla). */
+export const ORBIT_FADE_DISCS = 8;
+
+/** Un disco en pantalla, en píxeles CSS desde la esquina superior izquierda. */
+export interface ScreenDisc {
+  readonly x: number;
+  readonly y: number;
+  readonly radiusPx: number;
+}
+
+const DISC_FADE_PARS = /* glsl */ `
+uniform vec4 uTlsDiscs[${ORBIT_FADE_DISCS}];
+uniform int uTlsDiscCount;
+
+// 0 sobre el disco de un cuerpo, 1 a partir de un margen alrededor (px del lienzo, origen abajo).
+float tlsDiscFade() {
+  float fade = 1.0;
+  for (int i = 0; i < ${ORBIT_FADE_DISCS}; i++) {
+    if (i >= uTlsDiscCount) break;
+    vec4 disc = uTlsDiscs[i];
+    fade *= smoothstep(disc.z, disc.z + disc.w, distance(gl_FragCoord.xy, disc.xy));
+  }
+  return fade;
+}
+`;
+
 export class OrbitLines {
   readonly object: LineSegments2;
   private readonly geometry = new LineSegmentsGeometry();
@@ -51,6 +83,10 @@ export class OrbitLines {
   private positions: Float32Array;
   private colors: Float32Array;
   private capacity: number;
+  private readonly discs = new Uniform(
+    Array.from({ length: ORBIT_FADE_DISCS }, () => new Vector4()),
+  );
+  private readonly discCount = new Uniform(0);
 
   constructor(private sources: readonly OrbitSource[]) {
     this.capacity = this.segmentCount();
@@ -67,6 +103,21 @@ export class OrbitLines {
       worldUnits: false,
     });
     this.material.name = 'tls-orbits';
+    this.material.onBeforeCompile = (shader) => {
+      shader.uniforms['uTlsDiscs'] = this.discs;
+      shader.uniforms['uTlsDiscCount'] = this.discCount;
+      shader.fragmentShader = shader.fragmentShader
+        .replace(
+          'uniform float linewidth;',
+          `uniform float linewidth;
+${DISC_FADE_PARS}`,
+        )
+        .replace(
+          'gl_FragColor = vec4( diffuseColor.rgb, alpha );',
+          'gl_FragColor = vec4( diffuseColor.rgb, alpha ) * tlsDiscFade();',
+        );
+    };
+    this.material.customProgramCacheKey = () => 'tls-orbits-discs';
     this.object = new LineSegments2(this.geometry, this.material);
     this.object.name = 'orbits';
     // Los vértices se reescriben en cada frame: la esfera envolvente se quedaría vieja.
@@ -85,6 +136,27 @@ export class OrbitLines {
       this.geometry.setPositions(this.positions);
       this.geometry.setColors(this.colors);
     }
+  }
+
+  /**
+   * Discos sobre los que se desvanecen las órbitas: los más grandes primero (como mucho
+   * `ORBIT_FADE_DISCS`). Se pasan a píxeles del lienzo con su densidad y con el origen abajo.
+   * El margen alrededor de cada disco crece con él (un cuarto del radio, de 2 a 10 px CSS).
+   */
+  setDiscs(discs: readonly ScreenDisc[], heightPx: number, pixelRatio: number): void {
+    const list = this.discs.value;
+    const count = Math.min(discs.length, ORBIT_FADE_DISCS);
+    for (let k = 0; k < count; k++) {
+      const disc = discs[k] as ScreenDisc;
+      const margin = Math.min(Math.max(disc.radiusPx * 0.25, 2), 10);
+      list[k]?.set(
+        disc.x * pixelRatio,
+        (heightPx - disc.y) * pixelRatio,
+        disc.radiusPx * pixelRatio,
+        margin * pixelRatio,
+      );
+    }
+    this.discCount.value = count;
   }
 
   /** Tamaño del lienzo en píxeles CSS (el grosor de la línea depende de él). */

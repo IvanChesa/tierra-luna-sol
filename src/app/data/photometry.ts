@@ -24,6 +24,21 @@ export interface BodyPhotometry {
   /** Tono de la atmósfera (sRGB). */
   readonly hazeColor: string;
   /**
+   * Altura de escala del halo por encima del limbo, en radios del cuerpo (ajuste visual: a escala
+   * real, la atmósfera de la Tierra apenas mide un píxel en un primer plano).
+   */
+  readonly haloScaleHeight?: number;
+  /**
+   * Color medido en una foto de referencia, si la textura no lo respeta: la textura conserva sus
+   * detalles (su luminancia) y toma esta cromaticidad (RGB lineal / luminancia) en la proporción
+   * `mix` (1: toda; menos, conserva parte de las variaciones de color de la textura).
+   */
+  readonly chromaticity?: {
+    readonly rgb: readonly [number, number, number];
+    readonly mix: number;
+    readonly source: string;
+  };
+  /**
    * ¿Se calibra el brillo con el albedo geométrico? En la Tierra, no hasta la fase 5: su albedo
    * (0,434) incluye las nubes, que todavía no se dibujan.
    */
@@ -118,6 +133,7 @@ export const BODY_PHOTOMETRY: Readonly<Record<Exclude<BodyId, 'sol'>, BodyPhotom
     photometry: VENUS,
     haze: haze(0.35, 3, 0.18, 2.5),
     hazeColor: '#f4e6c8',
+    haloScaleHeight: 0.012,
     calibrateAlbedo: true,
     note: 'Ajustada a la ley de fase de Hilton (2005); la neblina (tono, limbo y crepúsculo), ajuste visual.',
   },
@@ -126,6 +142,7 @@ export const BODY_PHOTOMETRY: Readonly<Record<Exclude<BodyId, 'sol'>, BodyPhotom
     photometry: giant(1),
     haze: haze(0.45, 4, 0.12, 1.2),
     hazeColor: '#8fb4ff',
+    haloScaleHeight: 0.009,
     calibrateAlbedo: false,
     note: 'Provisional hasta la fase 5: Lambert y una atmósfera azul (ajuste visual).',
   },
@@ -133,41 +150,72 @@ export const BODY_PHOTOMETRY: Readonly<Record<Exclude<BodyId, 'sol'>, BodyPhotom
     kind: 'atmosphere',
     photometry: MARS,
     haze: haze(0.12, 4, 0.12, 1),
-    hazeColor: '#e9b48a',
+    hazeColor: '#cfe0f2',
+    chromaticity: {
+      rgb: [1.789, 0.838, 0.285],
+      mix: 0.75,
+      source:
+        'Media del disco (70 % del radio) en la foto del Hubble de Marte del 12-05-2016 (heic1609, NASA/ESA), medida en su imagen: la textura era más roja y saturada',
+    },
+    haloScaleHeight: 0.006,
     calibrateAlbedo: true,
-    note: 'Ajustada a la ley de fase lineal de astronomy-engine; la neblina, ajuste visual.',
+    note: 'Ajustada a la ley de fase lineal de astronomy-engine. Neblina azulada y blanquecina en el limbo, como en las fotos del Hubble (ajuste visual). Color: Hubble 2016.',
   },
   jupiter: {
     kind: 'giant',
     photometry: giant(1),
-    haze: haze(0.06, 4, 0.07, 1.5),
+    haze: haze(0.04, 4, 0.07, 1.5),
     hazeColor: '#f2e3cc',
+    chromaticity: {
+      rgb: [1.202, 0.972, 0.679],
+      mix: 0.5,
+      source:
+        'Media del disco (60 % del radio) en la foto del Hubble de Júpiter del 27-06-2019 (OPAL, NASA/ESA), medida en su imagen: las zonas de la textura eran azuladas',
+    },
     calibrateAlbedo: true,
     note: 'Minnaert k = 1,0 en el visible (NASA-CR-131891, 1973; y Lambert en las correcciones de Cassini ISS). Neblina: ajuste visual.',
   },
   saturno: {
     kind: 'giant',
     photometry: giant(0.85),
-    haze: haze(0.06, 4, 0.07, 1.5),
+    haze: haze(0.04, 4, 0.07, 1.5),
     hazeColor: '#f0e2c4',
+    chromaticity: {
+      rgb: [1.357, 0.938, 0.559],
+      mix: 0.5,
+      source:
+        'Media del disco (60 % del radio) en la foto del Hubble de Saturno del 20-06-2019 (OPAL, NASA/ESA), medida en su imagen',
+    },
     calibrateAlbedo: true,
     note: 'Minnaert k = 0,85, en el intervalo 0,75–0,90 medido según la latitud (NASA-CR-131891, 1973). Neblina: ajuste visual.',
   },
   urano: {
     kind: 'giant',
     photometry: giant(0.8),
-    haze: haze(0.12, 3, 0.07, 1.5),
+    haze: haze(0.06, 3, 0.07, 1.5),
     hazeColor: '#c9f0f2',
+    chromaticity: {
+      rgb: [0.767, 1.063, 1.061],
+      mix: 1,
+      source:
+        'Media del disco en la reconstrucción en color real de Irwin et al. (2024, MNRAS 527, 11521, https://doi.org/10.1093/mnras/stad3761), medida en su imagen',
+    },
     calibrateAlbedo: true,
-    note: 'Minnaert y neblina: ajuste visual con las fotos del Hubble y de Voyager 2.',
+    note: 'Minnaert y neblina: ajuste visual con las fotos del Hubble y de Voyager 2. Color: Irwin et al. (2024).',
   },
   neptuno: {
     kind: 'giant',
     photometry: giant(0.8),
-    haze: haze(0.12, 3, 0.07, 1.5),
+    haze: haze(0.06, 3, 0.07, 1.5),
     hazeColor: '#bfe0f5',
+    chromaticity: {
+      rgb: [0.65, 1.075, 1.288],
+      mix: 1,
+      source:
+        'Media del disco en la reconstrucción en color real de Irwin et al. (2024, MNRAS 527, 11521, https://doi.org/10.1093/mnras/stad3761), medida en su imagen: la textura (de las imágenes realzadas de Voyager 2) era demasiado azul',
+    },
     calibrateAlbedo: true,
-    note: 'Minnaert y neblina: ajuste visual con las fotos del Hubble y la reconstrucción del color de Irwin et al. (2024).',
+    note: 'Minnaert y neblina: ajuste visual con las fotos del Hubble. Color: Irwin et al. (2024), que corrigen el azul exagerado de las primeras imágenes de Voyager 2.',
   },
   luna: {
     ...airless(
@@ -190,6 +238,7 @@ export const BODY_PHOTOMETRY: Readonly<Record<Exclude<BodyId, 'sol'>, BodyPhotom
     photometry: giant(0.9),
     haze: haze(0.4, 2.5, 0.35, 3),
     hazeColor: '#e3a95c',
+    haloScaleHeight: 0.04,
     calibrateAlbedo: true,
     note: 'Neblina espesa y anaranjada: Minnaert y atmósfera, ajuste visual (la fase 7 añade su textura).',
   },

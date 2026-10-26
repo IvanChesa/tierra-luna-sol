@@ -168,6 +168,34 @@ async function checkAlignment(id, file) {
   return `${id}: oscuros ${show(aligned.dark)} · claros ${show(aligned.bright)} (girado 180°, fallaría)`;
 }
 
+/**
+ * Luminancia lineal media (Rec. 709) de un mapa equirrectangular de color, ponderada por el área de
+ * cada fila (cos φ). Con ella, la escena lleva cada cuerpo a su albedo geométrico (D29).
+ */
+async function meanLuminance(file) {
+  const { data, info } = await sharp(fileURLToPath(new URL(file.path, PUBLIC)))
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const linear = (c) => {
+    const v = c / 255;
+    return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  };
+  const table = Float64Array.from({ length: 256 }, (_, c) => linear(c));
+  let sum = 0;
+  let weights = 0;
+  for (let y = 0; y < info.height; y++) {
+    const weight = Math.cos((((y + 0.5) / info.height) * 2 - 1) * (Math.PI / 2));
+    for (let x = 0; x < info.width; x++) {
+      const k = (y * info.width + x) * info.channels;
+      sum +=
+        weight *
+        (0.2126 * table[data[k]] + 0.7152 * table[data[k + 1]] + 0.0722 * table[data[k + 2]]);
+      weights += weight;
+    }
+  }
+  return sum / weights;
+}
+
 /** Perfil radial (alfa medio por columna) de la tira de los anillos. */
 async function ringProfile(file) {
   const { data, info } = await sharp(fileURLToPath(new URL(file, SRC)))
@@ -280,6 +308,7 @@ for (const [level] of LEVELS) {
 }
 
 const files = {};
+const luminance = {};
 const reports = [];
 let ringStrip = null;
 for (const [id, spec] of Object.entries(TEXTURES)) {
@@ -320,6 +349,7 @@ for (const [id, spec] of Object.entries(TEXTURES)) {
     list.push(await emit(id, level, pipeline, spec.quality, { alpha: spec.kind === 'ring' }));
   }
   files[id] = list;
+  if (spec.kind === 'color') luminance[id] = Number((await meanLuminance(list[0])).toFixed(4));
   const report = await checkAlignment(id, list[0]);
   if (report) reports.push(report);
   console.log(
@@ -342,11 +372,17 @@ const entries = Object.entries(files)
 const ts = `// GENERADO por scripts/build-textures.mjs el ${today}. No se edita a mano.
 // WebP por niveles con hash (public/textures/), a partir de los originales de assets-src/textures/
 // (origen y licencia de cada uno en docs/FUENTES.md).
-import type { TextureFiles } from './textures';
+import type { TextureFiles, TextureId } from './textures';
 
 export const TEXTURE_FILES: TextureFiles = {
 ${entries}
 };
+
+/**
+ * Luminancia lineal media (Rec. 709) de cada mapa de color, ponderada por el área (cos φ), medida en
+ * el nivel 1k: con ella, la escena lleva cada cuerpo a su albedo geométrico (D29).
+ */
+export const TEXTURE_MEAN_LUMINANCE: Readonly<Partial<Record<TextureId, number>>> = ${JSON.stringify(luminance)};
 
 /**
  * Radios (km) que cubre la tira de los anillos de Saturno, calibrada con los bordes exteriores de los

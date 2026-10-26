@@ -181,6 +181,32 @@ export const twilightWidth = (radius: number, hazeHeight: number): number =>
   Math.sqrt(1 - (radius / (radius + hazeHeight)) ** 2);
 
 /**
+ * Anillos (fase 3b): una capa de partículas de profundidad óptica normal τ con dispersión simple
+ * (el modelo clásico de los anillos de Saturno, como en Cuzzi et al.). Con μ₀ y μ los senos de las
+ * elevaciones del Sol y de quien mira sobre el plano, y normalizado para que una capa opaca valga 1 en
+ * μ₀ = μ y fase 0 (el albedo y la fase se aplican aparte):
+ * - cara iluminada (los dos del mismo lado): 2μ₀/(μ₀ + μ) · (1 − e^(−τ(1/μ₀ + 1/μ)));
+ * - cara oscura (la luz que atraviesa): 2μ₀/(μ₀ − μ) · (e^(−τ/μ₀) − e^(−τ/μ)), con su límite
+ *   2τ/μ₀ · e^(−τ/μ₀) cuando μ = μ₀.
+ * Los anillos densos (el B) se ven oscuros por la cara no iluminada y los tenues (el C, la división
+ * de Cassini) brillan: lo que muestran las fotos de Cassini a contraluz.
+ */
+export function ringReflectance(mu0: number, mu: number, tau: number, litSide: boolean): number {
+  if (mu0 <= 0 || mu <= 0 || tau <= 0) return 0;
+  if (litSide) return ((2 * mu0) / (mu0 + mu)) * (1 - Math.exp(-tau * (1 / mu0 + 1 / mu)));
+  if (Math.abs(mu0 - mu) < 1e-6) return ((2 * tau) / mu0) * Math.exp(-tau / mu0);
+  return ((2 * mu0) / (mu0 - mu)) * (Math.exp(-tau / mu0) - Math.exp(-tau / mu));
+}
+
+/** Fracción de lo que hay detrás que tapan los anillos vistos con elevación μ: 1 − e^(−τ/μ). */
+export const ringCoverage = (mu: number, tau: number): number =>
+  mu <= 0 ? (tau > 0 ? 1 : 0) : 1 - Math.exp(-tau / mu);
+
+/** Profundidad óptica normal a partir de la opacidad vista de frente: τ = −ln(1 − opacidad). */
+export const opticalDepth = (opacity: number): number =>
+  Math.log(1 / (1 - Math.min(Math.max(opacity, 0), 0.995)));
+
+/**
  * Leyes de fase publicadas (magnitud visual frente al ángulo de fase), las que usa astronomy-engine
  * en `Illumination`: las de Mercurio y Venus son de Hilton (2005, AJ 129, 2902,
  * https://doi.org/10.1086/430212); la de Marte, lineal; la de la Luna, m = −12,717 + 1,49·|α| +

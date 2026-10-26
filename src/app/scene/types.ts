@@ -3,8 +3,12 @@
  * aquí para no depender del punto de entrada (que carga el motor).
  */
 import type { BodyId } from '../data/body.model';
+import type { ViewFrom } from './camera/view-from';
+import type { ToneMappingMode } from './visual-config';
 
 export type { BodyId } from '../data/body.model';
+export type { ViewFrom } from './camera/view-from';
+export type { ToneMappingMode } from './visual-config';
 
 /** Vistas del explorador (D10). El cielo desde España llega en la fase 8. */
 export type ExplorerView = 'system' | 'earth' | 'moon';
@@ -58,6 +62,13 @@ export interface SceneEngineOptions {
    * pruebas de profundidad de D13: «Neptuno con la Tierra en primer plano»).
    */
   readonly background?: BodyId;
+  /**
+   * Solo en captura: la geometría de una foto de referencia (fase 3b): desde la Tierra en la fecha
+   * (`?desde=tierra`) o con un ángulo de fase y una latitud (`?fase=30&latitud=-17`).
+   */
+  readonly viewFrom?: ViewFrom;
+  /** Solo en captura: el tone mapping, para compararlos (`?tonemapping=agx`). */
+  readonly toneMapping?: ToneMappingMode;
   /** Base de las URL de los recursos (por defecto, la raíz del sitio). */
   readonly assetsBaseUrl?: string;
 }

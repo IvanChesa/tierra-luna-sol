@@ -52,4 +52,8 @@ Ninguna nueva: el post-procesado es de `three/addons` (§1 del plan).
 4. **Las fotos de sondas no tienen una geometría «desde la Tierra»:** se comparan con `fase=`.
 
 ### Estado de las entregas (se actualiza al cerrar cada una)
-- 3b.a — en curso.
+- 3b.a — en curso (sesión cortada por el límite de uso el 26-10). Hecho y commiteado:
+  - albedo geométrico de los planetas y la Luna en el catálogo; `ephemeris/photometry.ts` con sus tests (Lommel–Seeliger, Minnaert, oposición, atmósfera, anillos de dispersión simple, leyes de fase); `data/photometry.ts` con los parámetros ajustados (Luna 0,013 mag RMS, Marte 0,022, Venus 0,096, Mercurio 0,117) y de la literatura (Minnaert de Júpiter y Saturno, NASA-CR-131891);
+  - chunks GLSL (`shading.ts`), material de los cuerpos por tipo con albedo calibrado, relleno y relieve (preparado), halo de las atmósferas, `visual-config.ts` (relleno y exposición por encuadre), órbitas desvanecidas sobre los discos, parámetros de captura `desde`, `fase`, `latitud` y `tonemapping`, `scripts/capture-realism.mjs` y `scripts/reference-geometry.mjs`;
+  - correcciones de color medidas: Urano y Neptuno con Irwin et al. (2024); Marte, Júpiter y Saturno con las fotos del Hubble (mezcla parcial).
+- **Siguiente paso:** anillos. La opacidad de la textura de Solar System Scope no es física (τ de la división de Cassini ≈ 0,56; la NASA da 0–0,1). Plan: añadir al catálogo la profundidad óptica y el albedo de cada anillo (ficha de la NASA, con `build-body-data.mjs`), recalibrar la tira por regiones en `build-textures.mjs` y rehacer `ring-material.ts` con `ringReflectance`/`ringCoverage`; sombra de los anillos con e^(−τ/μ₀). Después: `docs/realismo/referencias.md` (Horizons fallaba el 26-10: reintentar `scripts/reference-geometry.mjs`), 3b.b–3b.e.
