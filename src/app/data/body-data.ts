@@ -1,4 +1,4 @@
-// GENERADO por scripts/build-body-data.mjs el 2026-10-24. No se edita a mano.
+// GENERADO por scripts/build-body-data.mjs el 2026-10-26. No se edita a mano.
 // Datos físicos y orbitales copiados de las fichas de la NASA (NSSDCA) y del JPL; cada dato lleva
 // el id de su fuente (data/sources.ts). Solo hay cambios de unidad exactos y, en los planetas,
 // radio = diámetro / 2.
@@ -109,6 +109,11 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
         source: 'nssdc-mercury',
         note: 'Achatamiento f = (a − c) / a (radios ecuatorial y polar).',
       },
+      geometricAlbedo: {
+        value: 0.142,
+        source: 'nssdc-mercury',
+        note: 'Albedo geométrico (visual).',
+      },
     },
     orbit: {
       semiMajorAxisKm: {
@@ -197,6 +202,11 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
         value: 0,
         source: 'nssdc-venus',
         note: 'Achatamiento f = (a − c) / a (radios ecuatorial y polar).',
+      },
+      geometricAlbedo: {
+        value: 0.689,
+        source: 'nssdc-venus',
+        note: 'Albedo geométrico (visual).',
       },
     },
     orbit: {
@@ -287,6 +297,11 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
         source: 'nssdc-earth',
         note: 'Achatamiento f = (a − c) / a (radios ecuatorial y polar).',
       },
+      geometricAlbedo: {
+        value: 0.434,
+        source: 'nssdc-earth',
+        note: 'Albedo geométrico (visual).',
+      },
     },
     orbit: {
       semiMajorAxisKm: {
@@ -376,6 +391,11 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
         source: 'nssdc-mars',
         note: 'Achatamiento f = (a − c) / a (radios ecuatorial y polar).',
       },
+      geometricAlbedo: {
+        value: 0.17,
+        source: 'nssdc-mars',
+        note: 'Albedo geométrico (visual).',
+      },
     },
     orbit: {
       semiMajorAxisKm: {
@@ -461,6 +481,11 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
         source: 'nssdc-jupiter',
         note: 'Achatamiento f = (a − c) / a (radios ecuatorial y polar).',
       },
+      geometricAlbedo: {
+        value: 0.538,
+        source: 'nssdc-jupiter',
+        note: 'Albedo geométrico (visual).',
+      },
     },
     orbit: {
       semiMajorAxisKm: {
@@ -545,6 +570,11 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
         value: 0.09796,
         source: 'nssdc-saturn',
         note: 'Achatamiento f = (a − c) / a (radios ecuatorial y polar).',
+      },
+      geometricAlbedo: {
+        value: 0.499,
+        source: 'nssdc-saturn',
+        note: 'Albedo geométrico (visual).',
       },
     },
     orbit: {
@@ -653,6 +683,11 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
         source: 'nssdc-uranus',
         note: 'Achatamiento f = (a − c) / a (radios ecuatorial y polar).',
       },
+      geometricAlbedo: {
+        value: 0.488,
+        source: 'nssdc-uranus',
+        note: 'Albedo geométrico (visual).',
+      },
     },
     orbit: {
       semiMajorAxisKm: {
@@ -738,6 +773,11 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
         source: 'nssdc-neptune',
         note: 'Achatamiento f = (a − c) / a (radios ecuatorial y polar).',
       },
+      geometricAlbedo: {
+        value: 0.442,
+        source: 'nssdc-neptune',
+        note: 'Albedo geométrico (visual).',
+      },
     },
     orbit: {
       semiMajorAxisKm: {
@@ -817,6 +857,11 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
         value: 1737.4,
         source: 'jpl-satellite-physical-parameters',
         note: 'Radio medio.',
+      },
+      geometricAlbedo: {
+        value: 0.12,
+        source: 'nssdc-moon',
+        note: 'Albedo geométrico (visual).',
       },
     },
     orbit: {

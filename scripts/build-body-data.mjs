@@ -29,6 +29,8 @@ const PAGES = {
   'nssdc-uranus': 'https://nssdc.gsfc.nasa.gov/planetary/factsheet/uranusfact.html',
   'nssdc-neptune': 'https://nssdc.gsfc.nasa.gov/planetary/factsheet/neptunefact.html',
   'nssdc-saturn-rings': 'https://nssdc.gsfc.nasa.gov/planetary/factsheet/satringfact.html',
+  // Ficha de la Luna (albedo geométrico, fase 3b).
+  'nssdc-moon': 'https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html',
 };
 
 async function page(id) {
@@ -337,6 +339,28 @@ const MOON_NAMES = {
       S,
       'Achatamiento f = (a − c) / a (radios ecuatorial y polar).',
     );
+  }
+}
+
+// --- Albedo geométrico de los planetas y la Luna: ficha individual de cada uno (fase 3b) ---------
+// «Geometric albedo»: el primer número tras la etiqueta es el del cuerpo (los siguientes son la
+// Tierra y el cociente). Lo usa la escena para el brillo relativo de los cuerpos (D29).
+{
+  const sheets = {
+    mercurio: 'nssdc-mercury',
+    venus: 'nssdc-venus',
+    tierra: 'nssdc-earth',
+    marte: 'nssdc-mars',
+    jupiter: 'nssdc-jupiter',
+    saturno: 'nssdc-saturn',
+    urano: 'nssdc-uranus',
+    neptuno: 'nssdc-neptune',
+    luna: 'nssdc-moon',
+  };
+  for (const [id, S] of Object.entries(sheets)) {
+    const match = /Geometric albedo ([\d.]+)/.exec(clean(await page(S)));
+    if (!match) throw new Error(`Falta el albedo geométrico en ${S}`);
+    data[id].physical.geometricAlbedo = q(num(match[1]), S, 'Albedo geométrico (visual).');
   }
 }
 
