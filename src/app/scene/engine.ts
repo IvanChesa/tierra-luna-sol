@@ -93,8 +93,30 @@ export function framingDistanceRadii(fill: number, verticalFovDeg: number, aspec
   const halfMin = Math.min(halfVertical, halfHorizontal);
   return 1 / Math.sin(Math.atan(fill * Math.tan(halfMin)));
 }
+/**
+ * Distancia mínima de la cámara para que una circunferencia de radio `radius` en el plano de la
+ * eclíptica, centrada en el punto al que mira, quepa entera en una vista con esas tangentes de los
+ * semiángulos, vista desde esa elevación (rad). Con la perspectiva, el lado cercano se ve más
+ * grande que el lejano: el ancho máximo proyectado es R/√(d² − R²·cos²e) (en sen θ = R·cos e/d) y
+ * el borde de abajo, el del lado cercano, R·sen e/(d − R·cos e).
+ */
+export function circleFitDistance(
+  radius: number,
+  elevation: number,
+  tanHalfHorizontal: number,
+  tanHalfVertical: number,
+): number {
+  const cos = Math.cos(elevation);
+  const sin = Math.sin(elevation);
+  const width = radius * Math.sqrt(1 / tanHalfHorizontal ** 2 + cos * cos);
+  const depth = radius * (cos + sin / tanHalfVertical);
+  return Math.max(width, depth);
+}
+
 /** Elevación de la vista general (rad): una vista oblicua de la eclíptica. */
 const OVERVIEW_ELEVATION = 0.42;
+/** Margen de la vista general alrededor de la órbita de Neptuno. */
+const OVERVIEW_MARGIN = 1.05;
 const OVERVIEW_AZIMUTH = -0.55;
 const OVERVIEW_ANGLES = { azimuth: OVERVIEW_AZIMUTH, elevation: OVERVIEW_ELEVATION } as const;
 /** Exposición por vista (D21). */
@@ -102,8 +124,9 @@ const EXPOSURE: Readonly<Record<ExplorerView, number>> = { system: 1, earth: 1, 
 /** La cámara no entra en el cuerpo enfocado. */
 const MIN_DISTANCE_RADII = 1.12;
 /**
- * Paso máximo de tiempo entre frames: más que el intervalo del render a 4 Hz, para que el reloj no
- * se retrase; los saltos de una pestaña oculta los evita `visibilitychange`.
+ * Paso máximo de tiempo entre frames a las velocidades rápidas: un tirón no da un salto (a las
+ * lentas, el reloj sigue al de pared: `clockStep`). Los saltos de una pestaña oculta los evita
+ * `visibilitychange`.
  */
 const MAX_FRAME_DT_MS = 400;
 
@@ -235,6 +258,8 @@ export class SceneEngine implements SceneEngineApi {
   /** El frame pedido es uno del render lento (4 Hz): una orden con prisa lo adelanta. */
   private handleDelayed = false;
   private lastFrameMs: number | null = null;
+  /** Hasta qué instante del reloj de pared (`deps.now`) ha avanzado ya el reloj de la simulación. */
+  private wallMs: number | null = null;
   private lastTimeEventMs = -Infinity;
   private lastStatsMs = -Infinity;
   private frameTimes: number[] = [];
@@ -381,14 +406,17 @@ export class SceneEngine implements SceneEngineApi {
   setTime(time: Date): void {
     if (this.disposed) return;
     this.clock.setTime(time);
+    this.wallMs = this.deps.now();
     this.emitTime(true);
     this.invalidate();
   }
 
   setPlaying(playing: boolean): void {
     if (this.disposed) return;
+    this.catchUp();
     const limit = this.clock.setPlaying(playing);
     if (limit) this.emit('limitReached', { limit });
+    this.wallMs = this.deps.now();
     this.lastFrameMs = null;
     this.emitTime(true);
     this.invalidate();
@@ -396,7 +424,9 @@ export class SceneEngine implements SceneEngineApi {
 
   setSpeed(simSecondsPerSecond: number): void {
     if (this.disposed) return;
+    this.catchUp();
     this.clock.setSpeed(simSecondsPerSecond);
+    this.wallMs = this.deps.now();
     this.emitTime(true);
   }
 
@@ -620,7 +650,7 @@ export class SceneEngine implements SceneEngineApi {
     const continuous = this.lastFrameMs !== null && dt < SLOW_FRAME_MS * 0.8;
     this.lastFrameMs = timeMs;
     if (continuous) this.frameIntervalMs = 0.8 * this.frameIntervalMs + 0.2 * dt;
-    const limit = this.clock.advance(dt);
+    const limit = this.clock.advance(this.clockStep(dt));
     if (limit) {
       this.emit('limitReached', { limit });
       this.emitTime(true);
@@ -647,6 +677,29 @@ export class SceneEngine implements SceneEngineApi {
     } else {
       this.lastFrameMs = null;
     }
+  }
+
+  /**
+   * Cuánto tiempo real avanza el reloj en este frame. A las velocidades lentas (hasta `SLOW_SPEED`),
+   * el que ha pasado de verdad desde el último avance, sin tope y también con la pestaña oculta o
+   * sin contexto: «tiempo real» no se retrasa del reloj. A las rápidas, el del frame, con su tope:
+   * un tirón o una pestaña oculta no dan un salto de meses (el tiempo se detiene mientras tanto).
+   */
+  private clockStep(frameDtMs: number): number {
+    const now = this.deps.now();
+    const elapsed = this.wallMs === null ? frameDtMs : now - this.wallMs;
+    this.wallMs = now;
+    return Math.abs(this.clock.speed) <= SLOW_SPEED ? elapsed : frameDtMs;
+  }
+
+  /** Antes de pausar o de cambiar de velocidad, lo que ha pasado desde el último frame (lentas). */
+  private catchUp(): void {
+    if (!this.clock.playing || this.wallMs === null) return;
+    if (Math.abs(this.clock.speed) > SLOW_SPEED) return;
+    const now = this.deps.now();
+    const limit = this.clock.advance(now - this.wallMs);
+    this.wallMs = now;
+    if (limit) this.emit('limitReached', { limit });
   }
 
   /**
@@ -986,15 +1039,19 @@ export class SceneEngine implements SceneEngineApi {
   }
 
   /**
-   * Distancia a la que la órbita de Neptuno cabe en la parte visible (en la escala ilustrativa y la
-   * real).
+   * Distancia a la que la órbita de Neptuno cabe entera en la parte visible, con su margen y con la
+   * perspectiva de la vista oblicua (en la escala ilustrativa y la real, que conserva su extensión).
    */
   private overviewDistance(): number {
     const extent = illustrativeDistance(NEPTUNE_SEMI_MAJOR_AXIS_AU * 1.012);
-    const vertical = (this.projection.visibleFovDeg * Math.PI) / 360;
-    const horizontal = Math.atan(Math.tan(vertical) * this.projection.visibleAspect);
-    // Con la vista oblicua, la órbita se ve como una elipse: el ancho es lo que manda.
-    return (extent / Math.tan(Math.min(horizontal, vertical * 1.9))) * 1.06;
+    const tanVertical = Math.tan((this.projection.visibleFovDeg * Math.PI) / 360);
+    const tanHorizontal = tanVertical * this.projection.visibleAspect;
+    return circleFitDistance(
+      extent,
+      OVERVIEW_ELEVATION,
+      tanHorizontal / OVERVIEW_MARGIN,
+      tanVertical / OVERVIEW_MARGIN,
+    );
   }
 
   private frameSpec(focus: number | null) {

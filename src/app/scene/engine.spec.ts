@@ -7,6 +7,7 @@ import {
   FRAMING_FILL,
   FrameScheduler,
   SceneEngine,
+  circleFitDistance,
   framingDistanceRadii,
 } from './engine';
 import { hasDepthChunks } from './materials/depth';
@@ -659,6 +660,61 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     expect((h.engine.time.getTime() - start) / 1000).toBeGreaterThan(1.7);
     h.engine.setPlaying(false);
     h.engine.dispose();
+  });
+
+  it('a tiempo real el reloj sigue al de pared: también con la pestaña oculta y al pausar', async () => {
+    const h = await createHarness();
+    settle(h);
+    h.engine.setSpeed(1);
+    h.engine.setPlaying(true);
+    const start = h.engine.time.getTime();
+    const wall = h.clock.now;
+    h.frames(1000);
+    h.page.hidden = true;
+    h.page.notify();
+    h.clock.now += 10_000; // diez segundos con la pestaña oculta
+    h.page.hidden = false;
+    h.page.notify();
+    h.frames(600);
+    // Lo simulado es lo que ha pasado de verdad, salvo lo que va desde el último frame (4 Hz).
+    const behind = h.clock.now - wall - (h.engine.time.getTime() - start);
+    expect(behind).toBeGreaterThanOrEqual(-1);
+    expect(behind).toBeLessThan(300);
+    // Al pausar, se pone al día con lo que ha pasado desde ese frame.
+    h.clock.now += 200;
+    h.engine.setPlaying(false);
+    expect(Math.abs(h.clock.now - wall - (h.engine.time.getTime() - start))).toBeLessThanOrEqual(1);
+    // Hacia atrás, igual.
+    h.engine.setSpeed(-1);
+    h.engine.setPlaying(true);
+    const back = h.engine.time.getTime();
+    h.clock.now += 5000;
+    h.engine.setPlaying(false);
+    expect(back - h.engine.time.getTime()).toBeCloseTo(5000, -1);
+    h.engine.dispose();
+  });
+
+  it('la vista general encuadra la órbita entera, también el lado cercano (perspectiva)', () => {
+    const radius = 100;
+    for (const [elevation, tanH, tanV] of [
+      [0.42, 0.55, 0.33], // escritorio: manda el lado cercano, abajo
+      [0.42, 0.2, 0.45], // móvil vertical: manda el ancho
+      [0.9, 0.4, 0.4],
+    ] as const) {
+      const d = circleFitDistance(radius, elevation, tanH, tanV);
+      let x = 0;
+      let y = 0;
+      for (let k = 0; k < 3600; k++) {
+        const theta = (k / 3600) * 2 * Math.PI;
+        const depth = d - radius * Math.cos(elevation) * Math.sin(theta);
+        x = Math.max(x, Math.abs(radius * Math.cos(theta)) / depth);
+        y = Math.max(y, Math.abs(radius * Math.sin(elevation) * Math.sin(theta)) / depth);
+      }
+      expect(x).toBeLessThanOrEqual(tanH * (1 + 1e-9));
+      expect(y).toBeLessThanOrEqual(tanV * (1 + 1e-9));
+      // Ajustada: por un lado toca el borde.
+      expect(Math.max(x / tanH, y / tanV)).toBeGreaterThan(0.9999);
+    }
   });
 
   it('movimiento coherente: Mercurio da ~4 vueltas por cada vuelta de la Tierra, también hacia atrás', async () => {
