@@ -3,6 +3,9 @@ import { Component } from '@angular/core';
 /**
  * Portada: la vista del sistema solar y su texto introductorio (prerenderizado).
  * La vista la dice la ruta (`data.view`); el layout del explorador la pasa al motor.
+ *
+ * TODO(ivan): ¿«El sistema solar» como H1, en paralelo a «La Tierra» y «La Luna»? Hoy repite la
+ * marca de la cabecera (docs/PENDIENTES.md).
  */
 @Component({
   selector: 'tls-home-page',
