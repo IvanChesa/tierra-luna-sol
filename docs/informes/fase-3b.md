@@ -56,10 +56,10 @@ Ninguna nueva: el post-procesado es de `three/addons` (§1 del plan).
 - **3b.b — hecha.** `scripts/build-relief.mjs` (MOLA y MESSENGER), mapas de normales en los primeros planos y elevación en 16 bits empaquetados para la fase 6 (D15). Mosaicos de color de Viking y MESSENGER evaluados y descartados.
 - **3b.c — hecha.** Anillos con la profundidad óptica de la ficha de la NASA y la reflectividad medida por el Hubble, cara oscura con la luz que atraviesa, contraluz, sombra del planeta sobre los anillos y de los anillos sobre el planeta, y luz de los anillos. Mapas de OPAL y Cassini evaluados y descartados.
 - **3b.d — hecha.** Vía Láctea de ESO alineada con las coordenadas galácticas (y sin las estrellas del panorama); Sol procedural; tone mapping comparado (Neutral). Sin bloom (§4.1).
-- **3b.e — hecha.** Etiquetas fuera de los discos y de los anillos; arreglo de base de la Tierra; ángulo de fase de un observador lejano; mediciones por vista y nivel; capturas, informe, `npm run check` y e2e.
+- **3b.e — hecha.** Etiquetas fuera de los discos y de los anillos; arreglo de base de la Tierra; ángulo de fase de un observador lejano; mediciones por vista y nivel; capturas, informe, `npm run check` y e2e. Revisión por subagente aplicada (al final).
 
 ## 1. Resumen
-Los planetas dejan de ser bolas de plástico. Cada cuerpo tiene su modelo de luz (D29), con parámetros ajustados a leyes de fase publicadas (la Luna, Mercurio, Venus y Marte, a 0,013–0,117 mag RMS) o tomados de la literatura, el brillo de su albedo geométrico y una exposición por encuadre, como haría quien hace la foto. Mercurio y Marte tienen el relieve de sus modelos de elevación oficiales. Los anillos de Saturno llevan la profundidad óptica de la NASA y la reflectividad medida por el Hubble, se ven a contraluz y proyectan y reciben sombras. El Sol tiene el oscurecimiento del limbo medido y granulación, y el cielo, la Vía Láctea de ESO alineada con las coordenadas galácticas. La Tierra pierde el azul plano y saturado (el color de su océano se mide en fotos de EPIC). Sin dependencias nuevas y dentro de §5: 60 FPS en todas las vistas y niveles, VRAM de 150 MB como mucho en alta y 54 MB en baja, y 445 kB de texturas en la primera vista. Hay 30 capturas comparables con fotos reales.
+Los planetas dejan de ser bolas de plástico. Cada cuerpo tiene su modelo de luz (D29), con parámetros ajustados a leyes de fase publicadas (la Luna, Mercurio, Venus y Marte, a 0,013–0,117 mag RMS) o tomados de la literatura, el brillo de su albedo geométrico y una exposición por encuadre, como haría quien hace la foto. Mercurio y Marte tienen el relieve de sus modelos de elevación oficiales. Los anillos de Saturno llevan la profundidad óptica de la NASA y la reflectividad medida por el Hubble, se ven a contraluz y proyectan y reciben sombras. El Sol tiene el oscurecimiento del limbo medido y granulación, y el cielo, la Vía Láctea de ESO alineada con las coordenadas galácticas. La Tierra pierde el azul plano y saturado (el color de su océano se mide en fotos de EPIC) y Venus, el ocre (su color sale de la fotometría publicada). Todos los colores medidos se repiten con un script versionado. Sin dependencias nuevas y dentro de §5: 60 FPS en todas las vistas y niveles, VRAM de 118 MB como mucho en alta y 54 MB en baja, y 387 kB de texturas en la primera vista. Hay 30 capturas comparables con fotos reales.
 
 ## 2. Criterios de aceptación
 | Criterio | ✅/❌ | Evidencia |
@@ -69,9 +69,9 @@ Los planetas dejan de ser bolas de plástico. Cada cuerpo tiene su modelo de luz
 | Ninguna órbita se dibuja sobre el disco de un cuerpo (captura de Saturno y Júpiter como las de la fase 2) | ✅ | `escritorio-saturno.webp` y `escritorio-jupiter.webp`, y todas las comparativas: las líneas se desvanecen al llegar a cualquier disco (hasta 8, con un margen de un cuarto del radio, de 2 a 10 px) y la prueba de profundidad oculta lo que queda detrás. Limitación: la órbita del propio Saturno, tenue, cruza sus anillos (§4.12). |
 | Mercurio y Marte muestran relieve con luz rasante (capturas en el terminador) | ✅ | `marte-terminador.webp` (Olympus Mons y los volcanes de Tharsis en el terminador) y `mercurio-terminador.webp` (cráteres). Alineación comprobada en el build: el punto más alto del MOLA a 1,4° de Olympus Mons y el más bajo a 11,6° de Hellas; correlación relieve–color de 0,344 (Marte) y 0,214 (Mercurio) alineados, frente a ≤ 0,134 y ≤ 0,029 girados. |
 | Anillos de Saturno a contraluz (captura) y sombra del planeta sobre los anillos | ✅ | `saturno-cassini-2013.webp` (fase 176°, 17° por debajo de los anillos, como «The Day the Earth Smiled»: el anillo B, denso, se ve oscuro y el C y la división de Cassini brillan con la luz que atraviesan; la parte de los anillos que queda delante del planeta está en su sombra). `saturno-sombra.webp` (2017, fase 60°: la sombra del planeta cruza los anillos por detrás del globo). `saturno-hubble-2019.webp`: la sombra de los anillos sobre el globo. |
-| FPS, VRAM y peso por vista dentro de §5 en los tres niveles (tabla) | ✅ escritorio | §6.2 (`node scripts/measure-views.mjs`): 60 FPS de media (mínimo 59) en todas las vistas y niveles; VRAM de 150 MB como mucho en alta (≤ 300) y 54 MB en media y baja (≤ 120); primera vista 445 kB en alta (≤ 2,5 MB) y 388 kB en baja (≤ 1,2 MB); vista Tierra +414 / +127 kB (≤ 6 / 2 MB); Luna +965 / +234 kB (≤ 10 / 3 MB). Los 30 FPS en un móvil de gama media están pendientes de la prueba de Iván (`docs/PENDIENTES.md`; no bloquea). |
+| FPS, VRAM y peso por vista dentro de §5 en los tres niveles (tabla) | ✅ escritorio | §6.2 (`node scripts/measure-views.mjs`): 60 FPS de media (mínimo 59) en todas las vistas y niveles; VRAM de 118 MB como mucho en alta (≤ 300) y 54 MB en media y baja (≤ 120); primera vista 387 kB en todos los niveles (≤ 2,5 MB en alta y ≤ 1,2 MB en baja); vista Tierra +414 / +127 kB (≤ 6 / 2 MB); Luna +965 / +234 kB (≤ 10 / 3 MB). Los 30 FPS en un móvil de gama media están pendientes de la prueba de Iván (`docs/PENDIENTES.md`; no bloquea). |
 | Vía Láctea de ESO alineada (captura con el centro galáctico en Sagitario) | ✅ | `jupiter-hubble-2019.webp`: en junio de 2019, Júpiter estaba a 8° del centro galáctico y detrás se ven las nubes de estrellas de Sagitario. También `tierra-epic-2016.webp` (en el solsticio de junio, el punto antisolar está en Sagitario), `urano-voyager-1986.webp` y `neptuno-voyager-1989.webp` (los dos planetas estaban junto al centro galáctico esos años). La matriz galáctica tiene tests con el centro galáctico, el polo norte galáctico y Vega (SIMBAD), y el build comprueba la orientación del panorama: centro 149, anticentro 56, polos 6 y Gran Nube de Magallanes 29 frente a 8 en el punto simétrico. |
-| Todas las texturas y modelos de elevación nuevos en `FUENTES.md`, con una licencia compatible comprobada en la fuente | ✅ | ESO (CC BY 4.0, comprobada en su página el 26-10), MOLA (datos de la NASA en el PDS), modelo de elevación de MESSENGER (USGS, dominio público), medidas de EPIC (reutilización libre con crédito al NASA EPIC Team, comprobado en su página) y de Salo y French (2010), y la ficha de los anillos de la NASA. La fila del Sol desaparece (ya no tiene textura). También en `/creditos`. |
+| Todas las texturas y modelos de elevación nuevos en `FUENTES.md`, con una licencia compatible comprobada en la fuente | ✅ | ESO (CC BY 4.0, comprobada en su página el 26-10; `/creditos` dice cómo se ha modificado), MOLA (datos de la NASA en el PDS), modelo de elevación de MESSENGER (USGS, dominio público), medidas de EPIC (reutilización libre con crédito al NASA EPIC Team, comprobado en su página), de Salo y French (2010) y de Mallama et al. (2017), y la ficha de los anillos de la NASA. La fila del Sol desaparece (ya no tiene textura) y la de los pósters incluye ya la Vía Láctea. También en `/creditos`. |
 | Capturas de la vista general y de cada planeta en primer plano: al menos igual de atractivas que el original y más fieles a las fotos reales | ✅ (evaluación) | §7.2. |
 
 ## 3. Tareas del plan
@@ -82,13 +82,13 @@ Los planetas dejan de ser bolas de plástico. Cada cuerpo tiene su modelo de luz
 | 3. Relieve de Mercurio y Marte | hecha | `scripts/build-relief.mjs`: lee el GeoTIFF y la etiqueta del PDS, remuestrea por áreas, calcula las normales sobre la esfera con su exageración (Marte ×6, Mercurio ×2; §4.10) y empaqueta la elevación en 16 bits para la fase 6 (ida y vuelta comprobada). Solo se cargan en primer plano. Mosaicos de color descartados (§4.6). |
 | 4. Gigantes | hecha | OPAL y Cassini evaluados, no se usan (§4.6). Urano y Neptuno con el color de Irwin et al. (2024) y las bandas de la textura, sin inventar detalles. Júpiter y Saturno con su Minnaert de la literatura y el color medido en el Hubble. |
 | 5. Anillos de Saturno | hecha | Dispersión simple con la τ de cada anillo (ficha de la NASA), el albedo del A y el B a partir de la reflectividad medida por el Hubble (§4.3) y el matiz de cada anillo medido en la foto del Hubble de 2019; cara oscura, contraluz, sombras en los dos sentidos y luz de los anillos. Anillos tenues de Júpiter, Urano y Neptuno (opcionales): no. |
-| 5b. Vía Láctea | hecha | Panorama de ESO (CC BY 4.0) en coordenadas galácticas, girado con la matriz de `ephemeris/coordinates.ts`; sin las estrellas del panorama (§4.8); 4k en alta y 2k en media y baja. |
+| 5b. Vía Láctea | hecha | Panorama de ESO (CC BY 4.0) en coordenadas galácticas, girado con la matriz de `ephemeris/coordinates.ts`; sin las estrellas del panorama, con las zonas brillantes comprimidas y sin seguir la exposición del primer plano (§4.8); 2k en todos los niveles. |
 | 6. Sol | hecha | Oscurecimiento del limbo de Allen (Cox, 2000), color de un cuerpo negro de 5772 K, granulación procedural (quieta con movimiento reducido y en las capturas) y halo. Una sola ley de limbo para los tres canales (§4.4). |
 | 7. Post-procesado | parcial | Tone mapping comparado: **Neutral** (§5.4). Antialiasing: MSAA del lienzo. **Bloom: no** (§4.1). |
 | 8. Órbitas y etiquetas | hecha | Órbitas desvanecidas sobre los discos. Las etiquetas ya iban por fuera del disco; ahora también por fuera de los anillos de Saturno, y las demás no se colocan encima (test nuevo en `labels.spec.ts`). |
-| 9. Tierra, solo el arreglo de base | hecha | Océano con el color medido en EPIC (`build-textures.mjs`) y atmósfera con el perfil de su limbo (§4.7). Nubes, océano especular, luces y atmósfera completa, en la fase 5. |
-| 10. Calidad por niveles | hecha | Tabla en §6.2. Versiones ligeras: relieve y primeros planos en 2k (4k en alta), Vía Láctea en 2k (4k en alta), halos de atmósfera que no se dibujan por debajo de 2 px y granulación barata (tres octavas de ruido de valor, solo en primer plano). |
-| 11. Dirección de arte de la luz | hecha | `visual-config.ts`: relleno de 0,16 en la vista general y 0,004 en primer plano, con la mezcla según el tamaño del cuerpo enfocado en pantalla (8–90 px); exposición del primer plano según el brillo de la parte iluminada; tone mapping Neutral. Halos en la vista general: los de las atmósferas y el del Sol, sin halos aditivos por planeta. |
+| 9. Tierra, solo el arreglo de base | hecha | Océano con el color medido en EPIC (`build-textures.mjs`), atmósfera con el perfil de su limbo y exposición con el albedo efectivo de su textura (§4.7). Nubes, océano especular, luces y atmósfera completa, en la fase 5. |
+| 10. Calidad por niveles | hecha | Tabla en §6.2. Versiones ligeras: relieve y primeros planos en 2k (4k en alta), halos de atmósfera que no se dibujan por debajo de 2 px y granulación barata (tres octavas de ruido de valor, solo en primer plano). La Vía Láctea, en 2k en todos los niveles. |
+| 11. Dirección de arte de la luz | hecha | Todos los valores, con su motivo, en `visual-config.ts`: relleno de 0,16 en la vista general y 0,004 en primer plano, con la mezcla según el tamaño del cuerpo enfocado en pantalla (8–90 px); exposición del primer plano según el brillo de la parte iluminada; tone mapping Neutral; el Sol (intensidad, halo y granulación); la Vía Láctea y la ganancia del fondo; los umbrales de los halos y de las órbitas. Halos en la vista general: los de las atmósferas y el del Sol, sin halos aditivos por planeta. |
 
 ## 4. Desviaciones del plan y motivo
 
@@ -118,14 +118,23 @@ Detalle en `docs/FUENTES.md`.
 ### 4.7 Tierra: se corrige el color, no la relación de brillo entre océano y tierra
 El océano de la textura es un color plano y saturado (RGB lineal / luminancia 0,276 / 0,929 / 3,835 en todo el océano abierto). Se mide en tres fotos de EPIC del 21-06-2016 (Pacífico, Atlántico e Índico): cada píxel a menos de 0,6 radios del centro se lleva a su latitud y longitud, se quedan los de agua de la máscara especular y, de ellos, el 20 % más oscuro (sin nubes). La media da 0,683 / 1,029 / 1,651, y `build-textures.mjs` lleva el océano a ese color conservando la luminancia de cada píxel (comprobado: queda en 0,682 / 1,029 / 1,651). En EPIC, el océano es unas dos veces más claro respecto a los desiertos que en la textura (por la luz que dispersa la atmósfera). Eso no se corrige: la curva de brillo de las imágenes de EPIC no está documentada («color and brightness adjusted to represent what a conventional camera would produce»). Queda para la atmósfera de la fase 5 (§10).
 
+La Tierra no se calibra con su albedo geométrico (0,434 incluye las nubes, que aún no se dibujan). Sin compensar su exposición quedaba casi negra en primer plano (revisión, hallazgo 1). Ahora se expone con el albedo efectivo de su propia textura (luminancia media 0,1197 × 2/3 del disco de Lambert ≈ 0,08): la luminancia del centro del disco pasa de 0,016 a 0,106 en `escritorio-tierra` y de 0,022 a 0,131 en `tierra-epic-2016`. Se ve como una Tierra sin nubes fotografiada para ella.
+
 ### 4.8 Vía Láctea sin las estrellas del panorama
-Las estrellas del panorama de ESO salían como trazos en los primeros planos (la proyección equirrectangular galáctica las estira lejos del plano de la Galaxia) y repetían las del catálogo HYG. El build aplica una mediana de 5 × 5 px sobre el original, la técnica clásica para quitar estrellas puntuales: conserva la luz difusa, las nubes de estrellas, el polvo y objetos extensos como las Pléyades. De paso, la textura 4k pasa de 433 kB a 79 kB (y la 2k, de 181 a 21 kB).
+Las estrellas del panorama de ESO salían como trazos en los primeros planos (la proyección equirrectangular galáctica las estira lejos del plano de la Galaxia) y repetían las del catálogo HYG. El build aplica una mediana de 5 × 5 px sobre el original, la técnica clásica para quitar estrellas puntuales: conserva la luz difusa, las nubes de estrellas, el polvo y objetos extensos como las Pléyades. De paso, la textura pesa mucho menos (la 2k, 21 kB frente a 181).
+
+Tras la revisión (hallazgo 2 y sugerencia 12):
+- **Sutil de verdad.** Intensidad 0,25 y compresión de las zonas brillantes por su luminancia (L / (1 + L / 0,05)): junto al centro galáctico, la mediana del cielo pasa de 0,143 a 0,016 en `tierra-epic-2016` y de 0,128 a 0,013 en `jupiter-hubble-2019`; el cielo vacío, 0,007.
+- **El fondo no sigue la exposición del primer plano.** La Vía Láctea, las estrellas y las órbitas llevan una ganancia de exposición base / exposición actual (`backgroundGain`): con exposiciones de 0,6 a 6, el fondo sale igual en todas las vistas.
+- **2k en todos los niveles.** Sin las estrellas, la 4k no añadía detalle y costaba 43 MB de VRAM (frente a 11): la vista general en alta baja de 67 a 35 MB. Un desenfoque leve tras reducirla quita las manchas que se veían al ampliarla.
 
 ### 4.9 La granulación solo avanza cuando el motor pinta
 La regla del render bajo demanda manda: con el Sol enfocado y en pausa no se pinta (0 frames en reposo, medido). La granulación cambia con el reloj de pared en cada frame que se pinta (reproducción o movimiento de cámara) y se queda quieta con movimiento reducido y en las capturas.
 
 ### 4.10 Exageración del relieve
 Las pendientes reales a escala de un primer plano son de pocos grados: sin exagerar, el relieve no se vería ni con luz rasante. Marte ×6 y Mercurio ×2 (con ×6, Mercurio quedaba demasiado oscuro en el terminador). Documentado en `build-relief.mjs`.
+
+Los mapas de normales van en WebP con pérdidas (calidad 85, croma 4:2:0) y pierden pendiente: según la revisión (hallazgo 4), un 15–17 % de la pendiente media (en Marte 2k, de 4,36° a 3,61°) y un error angular con un p99 de 14°. La exageración se ajustó a la vista sobre esos mapas, así que el resultado visible es el de las capturas. Casi sin pérdidas pesarían unas siete veces más (en Marte 2k, 1489 kB frente a 222); se mantiene el compromiso y queda en el backlog guardar el relieve como un mapa de alturas en gris (sin croma) y calcular las normales en el shader. `build-relief.mjs` avisa de que la elevación en 16 bits de la fase 6 no puede ir con pérdidas.
 
 ### 4.11 Las comparativas desde la Tierra, a las 12:00 UT
 Cuando la página de la foto solo da el día, la captura usa las 12:00 UT: el ángulo de fase apenas cambia en unas horas, pero la cara que se ve sí. Por eso `marte-hubble-2016` muestra Valles Marineris en vez de Syrtis Major y `jupiter-hubble-2019`, el lado sin la Gran Mancha Roja. La comparación es de color, luz y limbo (`docs/realismo/referencias.md`).
@@ -135,12 +144,17 @@ Cuando la página de la foto solo da el día, la captura usa las 12:00 UT: el á
 - **La órbita del propio planeta enfocado cruza sus anillos** (tenue, con una opacidad de 0,3: indica hacia dónde se mueve). El desvanecimiento es circular y, extendido a los anillos, borraría tramos de las órbitas de las lunas.
 - **Urano no tiene el casquete polar brillante** de la foto de 2021: la textura no lo tiene y no se inventa.
 - **El globo de Saturno sale más brillante que el anillo B** a fase baja (en lineal, el anillo B vale un 53 % del centro del globo; con las medidas, debería rondar el 80 %). El albedo geométrico del globo (0,499, NASA) y la reflectividad de los anillos (Hubble) vienen de fuentes distintas; no se ajusta uno a ojo para cuadrar el otro.
+- **Los colores de las fotos de prensa son más saturados que los de la fotometría.** Con los albedos por banda de Mallama et al. (2017), Saturno sale 1,177 · 0,964 · 0,835, frente al 1,356 · 0,940 · 0,548 de su foto del Hubble. Se conservan los de las fotos, la referencia visual de la fase; Venus usa la fotometría porque no tiene foto en color real (§4.14).
 - **FPS medidos solo en escritorio** (RTX 3060). El móvil, cuando Iván pueda.
 
 ### 4.13 Archivos distintos de los previstos
 - `scripts/capture.mjs` y `scripts/measure.mjs` no se tocan. Las capturas de la fase salen de `scripts/capture-realism.mjs` y la tabla por vista, de `scripts/measure-views.mjs` (los dos, nuevos).
 - Nuevos que no estaban en la lista: `data/photometry.ts` (+ test), `scene/camera/view-from.ts` (+ test), `scene/materials/atmosphere-material.ts`, `scripts/fit-photometry.mjs` y `scripts/reference-geometry.mjs`.
 - `scene/texture-meta.spec.ts` se actualiza para el panorama de ESO y los mapas de relieve.
+- Tras la revisión: `scripts/measure-reference-colors.mjs` (repite las medidas de color) y `scripts/reference-colors.mjs` (los colores que usa el build), y `scene/orbits.spec.ts`.
+
+### 4.14 Venus, con su color fotométrico
+La única referencia de Venus estaba en grises y su textura era ocre (cromaticidad media 1,42 · 0,94 · 0,40), más amarilla que Saturno. En color real es al revés: B−V de 0,70, casi el del Sol (0,65), frente a 1,07 en Saturno (revisión, hallazgo 3). No hay una foto de Venus en color real con licencia compatible, así que su cromaticidad sale de los albedos geométricos por banda de Mallama, Krobusek y Pavlov (2017, tabla 7): g′ 0,664 (469 nm), V 0,689 (549 nm) y r′ 0,712 (616 nm), interpolados a las longitudes de onda dominantes de los primarios sRGB (611, 549 y 464 nm). Da 1,027 · 0,996 · 0,958, un blanco apenas cálido; en la captura, 1,02 · 1,00 · 0,95. Marte toma entero su color medido (antes, al 75 %): en la captura pasa de 2,08 · 0,76 · 0,23 a 1,84 · 0,83 · 0,23, cerca del 1,789 · 0,838 · 0,285 de la foto (el resto lo satura el tone mapping).
 
 ## 5. Decisiones técnicas nuevas
 
@@ -165,25 +179,31 @@ El color del océano (con la máscara de agua), la tira física de los anillos y
 ### 5.7 Etiquetas con el tamaño en pantalla de los anillos
 `layoutLabels` recibe, por cuerpo, cuánto ocupa en radios de su disco (Saturno: el borde exterior del anillo A, 2,27 radios). Su nombre va por fuera y los demás no se colocan encima.
 
+### 5.8 El fondo no sigue la exposición del primer plano
+La exposición del renderer se ajusta al cuerpo de cada primer plano (de 0,6 a 6). La Vía Láctea, las estrellas y las órbitas la compensan con una ganancia (exposición base / actual, `backgroundGain` en `visual-config.ts`), así que el producto es siempre el de la vista general y el tone mapping les da el mismo resultado. Alternativa descartada: pintar el fondo sin tone mapping (dos pasadas o un render target).
+
+### 5.9 Colores medidos, reproducibles
+`node scripts/measure-reference-colors.mjs` descarga las fotos a una carpeta temporal, mide cada región exacta (discos, ansa de los anillos, océano de EPIC con la máscara del agua), calcula el color de Venus desde la tabla de Mallama et al. y compara con los valores en uso: hoy, a ≤ 0,005. Los valores que usa el build están en `scripts/reference-colors.mjs`, y los de los cuerpos, en `data/photometry.ts` con la URL de cada foto.
+
 ## 6. Salida de los checks
-Repetidos el 26-10 sobre el código final.
+Repetidos el 26-10 sobre el código final, con las correcciones de la revisión.
 ```
 npm run check                                   (código 0)
 > ng lint && prettier --check .
 All files pass linting.
 All matched files use Prettier code style!
 > ng test --watch=false
- Test Files  51 passed (51)
-      Tests  415 passed (415)
+ Test Files  52 passed (52)
+      Tests  417 passed (417)
 All files (ephemeris/)  |   99.65 |    96.78 |     100 |     100
 > ng build
 Initial chunk files | Names    |  Raw size | Estimated transfer size
-main-…js            | main     | 289.29 kB |                79.67 kB
+main-…js            | main     | 289.29 kB |                79.77 kB
 styles-…css         | styles   |   6.57 kB |                 1.82 kB
-                    | Initial total | 296.32 kB |            81.96 kB
+                    | Initial total | 296.32 kB |            82.05 kB
 Lazy chunk files
-chunk-…js           | index        | 661.49 kB | 144.95 kB   (three + motor)
-chunk-…js           | explorer-ui  | 223.13 kB |  58.56 kB   (astronomy-engine, stores e interfaz)
+chunk-…js           | index        | 663.76 kB | 145.62 kB   (three + motor)
+chunk-…js           | explorer-ui  | 223.13 kB |  58.41 kB   (astronomy-engine, stores e interfaz)
 chunk-…js           | viewer-layout|   7.00 kB |   2.25 kB
 Prerendered 17 static routes.
 > node scripts/check-initial-bundle.mjs
@@ -191,40 +211,40 @@ Prerendered 17 static routes.
   ni de los stores ni de los controles del visor.
 ✔ Código propio en los chunks iniciales: 11.61 kB de 15.00.
 ```
-Sin avisos de presupuesto. El JS inicial no cambia (296,32 kB, aviso a 320). El chunk del visor sube de 636,67 a 661,49 kB (+24,8 kB: el sombreado, la fotometría y la configuración visual; aviso a 900 kB) y la interfaz diferida, de 220,07 a 223,13 kB.
+Sin avisos de presupuesto. El JS inicial no cambia (296,32 kB, aviso a 320). El chunk del visor sube de 636,67 a 663,76 kB (+27,1 kB: el sombreado, la fotometría y la configuración visual; aviso a 900 kB) y la interfaz diferida, de 220,07 a 223,13 kB.
 
 ```
 npm run e2e
-  45 passed (2.1m)
+  45 passed (2.2m)
 ```
 
-### 6.1 Mediciones generales (`node scripts/measure.mjs`, 26-10; Chromium con la GPU: RTX 3060, ANGLE D3D11)
+### 6.1 Mediciones generales (`node scripts/measure.mjs`, 26-10, tras la revisión; Chromium con la GPU: RTX 3060, ANGLE D3D11)
 | Medida | Resultado | Objetivo (§5) |
 |---|---|---|
-| Reproducción a 1 día/s (alta, media y baja) | 60 FPS de media y de mínimo en los tres · 1,68 / 1,45 / 1,18 ms de CPU por frame · 0,13–0,16 ms de efemérides · 43 llamadas | ≥ 55 ✅ · ≤ 2 ms ✅ |
+| Reproducción a 1 día/s (alta, media y baja) | 59,8 / 60 / 60 FPS de media (mínimo 59 / 60 / 60) · 1,75 / 1,62 / 1,23 ms de CPU por frame · 0,16–0,19 ms de efemérides · 43 llamadas | ≥ 55 ✅ · ≤ 2 ms ✅ |
 | Reposo (3 s en pausa) | 0 frames · 0 `requestAnimationFrame` | ✅ |
 | Store a 1 año/s | 4,8 actualizaciones por segundo | ≤ 5 ✅ |
 | URL durante 5 s de reproducción | 0 cambios | ✅ |
 | Memoria tras 10 idas y vueltas explorador ↔ `/planetas`, 10 cambios de vista y 6 de calidad | 7 geometrías · 11 texturas · 10 MB de heap · 1 contexto WebGL vivo · 1 lienzo, sin cambios | sin crecimiento ✅ |
 | Contexto WebGL perdido y recuperado | `contextLost` → `contextRestored`, 0 frames mientras está perdido y la fecha cambiada se conserva (`contexto-recuperado.webp`) | ✅ |
-| Primera vista (`/`, alta) | JS 1154 kB, texturas 375 kB, estrellas 70 kB, póster 27 kB, fuentes 52 kB · una tarea larga de 82 ms (ninguna en baja) · LCP: `img.poster` a 168 ms | texturas ≤ 2,5 MB ✅ · sin tareas > 200 ms ✅ · el LCP no es el lienzo ✅ |
+| Primera vista (`/`, alta) | JS 1157 kB, texturas 318 kB, estrellas 70 kB, póster 27 kB, fuentes 52 kB · una tarea larga de 80 ms (ninguna en baja) · LCP: `img.poster` a 160 ms | texturas ≤ 2,5 MB ✅ · sin tareas > 200 ms ✅ · el LCP no es el lienzo ✅ |
 
 ### 6.2 FPS, VRAM y peso por vista y nivel (`node scripts/measure-views.mjs`, 26-10, la misma GPU)
 Una página por nivel recorre las vistas sin recargar. El peso es lo que se descarga en cada paso (texturas y catálogo de estrellas; cada fichero cuenta una vez, porque al volver lo sirve la caché). Los FPS son la media y el mínimo de 4 s de reproducción a 1 día/s.
 
 | Vista | Alta: peso · VRAM · FPS (mín.) | Media | Baja | §5 |
 |---|---|---|---|---|
-| Sistema solar (primera vista) | 445 kB · 67 MB · 60 (60) | 388 kB · 35 MB · 60 (60) | 388 kB · 35 MB · 60 (60) | ≤ 2,5 MB alta / ≤ 1,2 MB baja ✅ |
-| Marte en primer plano (relieve) | +1588 kB · 150 MB · 60 (60) | +397 kB · 54 MB · 60 (59) | +397 kB · 53 MB · 60 (60) | VRAM ≤ 300 / ≤ 120 ✅ |
-| Saturno en primer plano (anillos) | +83 kB · 107 MB · 60 (60) | +28 kB · 43 MB · 60 (60) | +28 kB · 43 MB · 60 (59) | ✅ |
-| Sol en primer plano | +0 kB · 67 MB · 60 (60) | +0 kB · 35 MB · 60 (60) | +0 kB · 35 MB · 60 (60) | ✅ |
-| Vista Tierra | +414 kB · 107 MB · 60 (59) | +127 kB · 43 MB · 60 (60) | +127 kB · 43 MB · 60 (60) | ≤ 6 MB / ≤ 2 MB adicionales ✅ |
-| Vista Luna | +965 kB · 147 MB · 60 (59) | +234 kB · 51 MB · 60 (60) | +234 kB · 51 MB · 60 (59) | ≤ 10 MB / ≤ 3 MB adicionales ✅ |
+| Sistema solar (primera vista) | 387 kB · 35 MB · 60 (60) | 387 kB · 35 MB · 60 (60) | 387 kB · 35 MB · 60 (60) | ≤ 2,5 MB alta / ≤ 1,2 MB baja ✅ |
+| Marte en primer plano (relieve) | +1588 kB · 118 MB · 60 (59) | +397 kB · 54 MB · 60 (60) | +397 kB · 53 MB · 60 (60) | VRAM ≤ 300 / ≤ 120 ✅ |
+| Saturno en primer plano (anillos) | +83 kB · 75 MB · 60 (60) | +28 kB · 43 MB · 60 (60) | +28 kB · 43 MB · 60 (60) | ✅ |
+| Sol en primer plano | +0 kB · 35 MB · 60 (60) | +0 kB · 35 MB · 60 (60) | +0 kB · 35 MB · 60 (60) | ✅ |
+| Vista Tierra | +414 kB · 75 MB · 60 (60) | +127 kB · 43 MB · 60 (60) | +127 kB · 43 MB · 60 (60) | ≤ 6 MB / ≤ 2 MB adicionales ✅ |
+| Vista Luna | +965 kB · 115 MB · 60 (59) | +234 kB · 51 MB · 60 (60) | +234 kB · 51 MB · 60 (59) | ≤ 10 MB / ≤ 3 MB adicionales ✅ |
 
-- **Vía Láctea:** 79 kB en alta (4k) y 21 kB en media y baja (2k), frente a ≤ 1,5 MB / 400 kB. **Estrellas:** 70 kB (≤ 250 kB).
-- Al dejar un primer plano, la VRAM vuelve a la de la vista general (por ejemplo, de 150 a 107 MB al pasar de Marte a Saturno y a 67 MB con el Sol): las texturas de 4k y el relieve se liberan.
+- **Vía Láctea:** 21 kB (2k en todos los niveles), frente a ≤ 1,5 MB / 400 kB. **Estrellas:** 70 kB (≤ 250 kB).
+- Al dejar un primer plano, la VRAM vuelve a la de la vista general (por ejemplo, de 118 a 75 MB al pasar de Marte a Saturno y a 35 MB con el Sol): las texturas de 4k y el relieve se liberan.
 - Media y baja descargan lo mismo (1k en la vista general y 2k en primer plano). Cambian la densidad de píxeles (1,5 y 1), los segmentos de las esferas (72 y 48) y de las órbitas (256 y 180), la magnitud límite de las estrellas (6 y 5,5) y el filtrado anisótropo (4 y 1).
-- Frente a la fase 3, la VRAM sube 40 MB en alta (la Vía Láctea 4k con sus mipmaps) y 8 MB en media y baja (la 2k).
+- Frente a la fase 3, la VRAM sube 8 MB en todos los niveles (la Vía Láctea 2k).
 
 ## 7. Capturas
 En `docs/informes/img/fase-3b/`, deterministas (`?captura=1`), con `node scripts/capture-realism.mjs docs/informes/img/fase-3b`. Las comparativas son cuadradas (900 × 900, solo el lienzo); el resto, de escritorio (1600 × 900) y móvil (390 × 844 a 2×). Los pósters de `public/img/` se han regenerado con `node scripts/build-poster.mjs`.
@@ -235,10 +255,10 @@ En `docs/informes/img/fase-3b/`, deterministas (`?captura=1`), con `node scripts
 | `sol-sdo-2024` | SDO/HMI, 10-05-2024 | — | Disco blanco cálido con el limbo oscurecido (el borde al ~33 % del centro, como la ley de Allen) y un halo suave. Sin manchas: la granulación procedural no inventa regiones activas. |
 | `mercurio-messenger-2009` | PIA12371 (MESSENGER) | fase 110° | Fase creciente gris con cráteres y relieve en el terminador; el gris coincide con el de la foto. |
 | `mercurio-terminador` | — | fase 80° | Relieve con luz rasante. |
-| `venus-messenger-2007` | PIA10124 (MESSENGER) | fase 23° | Disco casi lleno, nubes con poco contraste (0,3 del de la textura) y limbo brillante, como en la foto en luz visible. El color es crema algo más saturado que el de la foto (en grises; la textura es amarillenta). |
+| `venus-messenger-2007` | PIA10124 (MESSENGER) | fase 23° | Disco casi lleno, blanco apenas cálido (el color de la fotometría, §4.14), nubes con poco contraste (0,3 del de la textura) y limbo brillante, como en la foto en luz visible. |
 | `venus-fase-150` | — | fase 150° | Creciente fina con el limbo iluminado por la dispersión hacia delante. |
-| `tierra-epic-2016` | EPIC (DSCOVR), 21-06-2016 22:58 UT | fase 9,4°, latitud 22,3° | La misma cara (Hawái en el centro, Norteamérica a la derecha) y el mismo tono del océano entre las nubes; limbo blanquecino sin halo de neón. Faltan las nubes, el brillo especular y la dispersión de la atmósfera (fase 5). |
-| `marte-hubble-2016` | heic1609 (Hubble) | fase 8,4°, latitud 8,6° | Naranja apagado (el color medido en la foto, al 75 %) y neblina blanquecina en el limbo. A las 12:00 UT se ve otra cara (§4.11). |
+| `tierra-epic-2016` | EPIC (DSCOVR), 21-06-2016 22:58 UT | fase 9,4°, latitud 22,3° | La misma cara (Hawái en el centro, Norteamérica a la derecha), el color del océano medido entre las nubes y el limbo blanquecino, sin halo de neón; expuesta para una Tierra sin nubes (§4.7). Faltan las nubes, el brillo especular y la dispersión de la atmósfera (fase 5). |
+| `marte-hubble-2016` | heic1609 (Hubble) | fase 8,4°, latitud 8,6° | Naranja (el color medido en la foto) y neblina blanquecina en el limbo. A las 12:00 UT se ve otra cara (§4.11). |
 | `marte-terminador` | — | fase 80° | Olympus Mons y Tharsis con luz rasante. |
 | `jupiter-hubble-2019` | OPAL 2019 (Hubble) | fase 3,4° | Bandas crema y ocres con el color medido y el limbo de Minnaert; la foto tiene más contraste y la Gran Mancha Roja (otra cara a las 12:00 UT). Detrás, el centro galáctico. |
 | `saturno-hubble-2019` | OPAL 2019 (Hubble) | fase 2,0°, anillos abiertos 24° | Globo con su color medido y anillos con su estructura: B claro, A más gris, división de Cassini oscura y C tenue y azulado (como en la foto). La sombra de los anillos sobre el globo. El globo sale algo más brillante que el anillo B (§4.12). |
@@ -253,7 +273,8 @@ En `docs/informes/img/fase-3b/`, deterministas (`?captura=1`), con `node scripts
 ### 7.2 Vista general y primeros planos: evaluación
 - **Vista general** (`escritorio-sistema`, `movil-sistema`): los planetas se leen bien con el relleno ilustrativo y el Sol deslumbra con su halo. El fondo tiene la Vía Láctea tenue alineada con el cielo real. Frente al original (relleno de 0,7, ACES y un halo por planeta), es más sobria y sin lado nocturno iluminado, pero igual de legible.
 - **Primeros planos:** cada planeta se parece a su foto en color (medido), limbo (Minnaert y neblinas) y luz (lado nocturno casi negro, terminador con relieve en Mercurio y Marte, anillos con contraluz). A juicio del autor, más fieles que las de la fase 3 y que el original, y al menos igual de atractivos. La evaluación final es de la revisión.
-- **Tierra** (`escritorio-tierra`, `movil-tierra`): azul apagado y limbo blanquecino, como una Tierra sin nubes vista desde el espacio. Hasta que lleguen las nubes de la fase 5 se ve más sobria que con el azul saturado de antes, pero es lo real.
+- **Tierra** (`escritorio-tierra`, `movil-tierra`): océano azul con el color medido en EPIC y limbo blanquecino, expuesta para una Tierra sin nubes (antes de la revisión quedaba casi negra). Las nubes llegan en la fase 5.
+- **Fondo:** la Vía Láctea, tenue, y las estrellas se ven igual en la vista general y en los primeros planos (antes, en los primeros planos de cuerpos oscuros brillaban hasta 10 veces más).
 - **Tone mapping:** `tonemapping-*` (§5.4).
 
 ## 8. Dependencias añadidas
@@ -266,7 +287,7 @@ Ninguna. Todo es de three, astronomy-engine, sharp y Playwright, que ya estaban.
 ## 10. Propuestas de cambio al plan
 1. **Tarea 7 de la fase 3b:** quitar el bloom (§4.1) o llevarlo al backlog (§9 del plan).
 2. **Fase 5 (Tierra):** que la atmósfera dé la relación de brillo océano / tierra de las fotos de EPIC (el océano unas dos veces más claro respecto a los desiertos que en la textura). Si la dispersión se integra, el color del océano de la textura debería volver al de la superficie para no contar dos veces la atmósfera (§4.7).
-3. **Backlog:** el anillo de luz del limbo de Saturno a contraluz dentro de la sombra de los anillos; el oscurecimiento del limbo del Sol por canal (§4.4); un desvanecimiento elíptico de las órbitas sobre los anillos (§4.12).
+3. **Backlog:** el anillo de luz del limbo de Saturno a contraluz dentro de la sombra de los anillos; el oscurecimiento del limbo del Sol por canal (§4.4); un desvanecimiento elíptico de las órbitas sobre los anillos (§4.12); el relieve como mapa de alturas en gris con las normales en el shader (§4.10); unificar los colores de los planetas con la fotometría de Mallama et al. (2017) y las funciones de color de la CIE (§4.12).
 
 ## 11. Cómo probarlo
 ```
@@ -274,6 +295,7 @@ npm run build
 node scripts/capture-realism.mjs docs/informes/img/fase-3b   # todas las capturas de la fase
 node scripts/capture-realism.mjs <carpeta> saturno           # solo las de un cuerpo
 node scripts/measure-views.mjs                               # la tabla de §6.2
+node scripts/measure-reference-colors.mjs                    # repite las medidas de color
 npm start
 ```
 En el navegador:
@@ -281,3 +303,27 @@ En el navegador:
 - `/?cuerpo=marte` y acerca la cámara al terminador: relieve con luz rasante.
 - `/?cuerpo=jupiter&fecha=2019-06-27T12:00Z`: detrás de Júpiter, el centro de la Vía Láctea.
 - Con el modo de captura se reproducen las fotos de `docs/realismo/referencias.md`, por ejemplo `/?captura=1&cuerpo=tierra&fecha=2016-06-21T22:58Z&fase=9.4&latitud=22.3`.
+
+---
+
+## Respuesta a la revisión
+Revisión automática: `docs/revisiones/fase-3b.md` (CAMBIOS NECESARIOS: 0 bloqueantes, 3 importantes, 8 menores y 3 sugerencias). Todo corregido o resuelto; no hace falta una segunda ronda (no había bloqueantes).
+
+| # | Hallazgo | Acción | Commit |
+|---|---|---|---|
+| 1 | La Tierra, casi negra en primer plano | Se expone con el albedo efectivo de su textura (≈ 0,08; ≈ 3,6 en primer plano): la luminancia del centro del disco pasa de 0,016 a 0,106 (`escritorio-tierra`) y de 0,022 a 0,131 (`tierra-epic-2016`). Test en `engine.spec.ts`. Capturas, pósters y §7.2 al día (§4.7) | 372ed79 |
+| 2 | La Vía Láctea no es sutil y el fondo sigue la exposición | Ganancia del fondo (exposición base / actual) en la Vía Láctea, las estrellas y las órbitas; intensidad 0,25 con las zonas brillantes comprimidas; 2k en todos los niveles con un desenfoque leve tras la mediana. Junto al centro galáctico, la mediana del cielo pasa de 0,143 a 0,016 (§4.8, §5.8) | 372ed79 · 6517fcb |
+| 3 | Venus, ocre | Cromaticidad de los albedos por banda de Mallama et al. (2017, tabla 7): 1,027 · 0,996 · 0,958 (en la captura, 1,02 · 1,00 · 0,95). Marte, con su color medido entero: 1,84 · 0,83 · 0,23 en la captura, frente a 1,789 · 0,838 · 0,285 en la foto (§4.14) | 6517fcb |
+| 4 | Mapas de normales con pérdidas | Documentado en §4.10 y en `build-relief.mjs` (con el aviso para la elevación de 16 bits de la fase 6). Se mantiene el compromiso (casi sin pérdidas pesarían unas siete veces más); al backlog, el relieve como mapa de alturas en gris | 17eff61 |
+| 5 | Medidas de color no reproducibles | `scripts/measure-reference-colors.mjs` repite todas (regiones exactas, fotos a una carpeta temporal) y compara con lo que se usa (≤ 0,005); los colores del build pasan a `scripts/reference-colors.mjs`; cada `source`, con la URL de su foto. El anillo C y la división de Cassini cambian a su medida reproducible (§5.9) | 6517fcb |
+| 6 | Fuentes sin URL | NASA-CR-131891 con su URL y su banda (0,6–2,0 µm); fuera «Lambert en las correcciones de Cassini ISS»; las leyes de Marte y de la Luna citan astronomy-engine 2.1.19 y lo que cita él | 6517fcb |
+| 7 | Pósters y panorama modificado | Fila de los pósters al día (con ESO/S. Brunier) y `/creditos` dice cómo se ha modificado el panorama | 17eff61 |
+| 8 | Valores visuales repartidos | Todos en `visual-config.ts`, con su motivo (el Sol, la Vía Láctea, la ganancia del fondo y los umbrales) | 372ed79 |
+| 9 | El halo de Titán desaparece al acercarse | Con la cámara dentro de su esfera se pintan las caras interiores, y el plano cercano cuenta el halo. Test en `engine.spec.ts` | 372ed79 |
+| 10 | Código muerto y comentario | Fuera `World.albedoScaleOf()`; comentario de `milkyWayTexture` corregido | 372ed79 |
+| 11 | El bloom, solo en el informe | Apuntado en `docs/PENDIENTES.md` (Decisiones) para que Iván elija | 17eff61 |
+| 12 | Vía Láctea en 4k | 2k en todos los niveles: la vista general en alta baja de 67 a 35 MB de VRAM | 372ed79 · 6517fcb |
+| 13 | El desvanecimiento depende de dos cadenas de three | `scene/orbits.spec.ts` lo aplica al shader real de `LineMaterial` | 372ed79 |
+| 14 | `MIN_MU` repetido a mano en GLSL | Se interpola desde `ephemeris/photometry.ts` | 372ed79 |
+
+Los umbrales numéricos de la cara oscura de los anillos (1e-4 en GLSL, 1e-6 en TS) se dejan distintos a propósito: el shader trabaja en float32.
