@@ -22,7 +22,7 @@ describe('rutas', () => {
   const title = () => TestBed.inject(Title).getTitle();
 
   it.each([
-    ['/', 'Tierra Luna Sol', 'Tierra Luna Sol'],
+    ['/', 'El sistema solar', 'Tierra Luna Sol'],
     ['/planetas', 'Planetas', 'Planetas · Tierra Luna Sol'],
     ['/planetas/marte', 'Marte', 'Marte · Tierra Luna Sol'],
     ['/planetas/jupiter', 'Júpiter', 'Júpiter · Tierra Luna Sol'],

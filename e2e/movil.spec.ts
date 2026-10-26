@@ -11,7 +11,7 @@ test.describe('Móvil', () => {
     // Con la ficha abierta, el texto de la vista se recoge a la vista (el H1 sigue para el lector).
     const intro = page.locator('.explorer__intro');
     await expect.poll(async () => (await intro.boundingBox())?.height ?? 0).toBeLessThanOrEqual(1);
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tierra Luna Sol');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('El sistema solar');
     await page.getByRole('button', { name: 'Cerrar la ficha' }).tap();
     await expect(panel).toBeHidden();
     await expect.poll(async () => (await intro.boundingBox())?.height ?? 0).toBeGreaterThan(40);

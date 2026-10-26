@@ -33,7 +33,7 @@ test.describe('Vistas y viajes', () => {
     };
     await cycle();
     await expect(page).toHaveURL(/\/\?captura=1$/);
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tierra Luna Sol');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('El sistema solar');
     // El primer ciclo sube las texturas de la Tierra y la Luna; los siguientes no añaden nada.
     const warm = await memory(page);
     await cycle();
