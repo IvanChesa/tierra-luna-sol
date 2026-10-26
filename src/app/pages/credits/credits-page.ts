@@ -19,8 +19,9 @@ import { Component } from '@angular/core';
         <a href="https://creativecommons.org/licenses/by/4.0/deed.es">CC BY 4.0</a>. Se han reducido
         y convertido a WebP; el color de algunos planetas se ha corregido con fotos del Hubble; el
         del océano de la Tierra, con fotos de
-        <a href="https://epic.gsfc.nasa.gov/">EPIC (DSCOVR), del NASA EPIC Team</a>, y la opacidad
-        de los anillos, con la ficha de los anillos de la NASA.
+        <a href="https://epic.gsfc.nasa.gov/">EPIC (DSCOVR), del NASA EPIC Team</a>; la opacidad de
+        los anillos, con la ficha de los anillos de la NASA, y su brillo, con las medidas del Hubble
+        de <a href="https://arxiv.org/abs/1007.0349">Salo y French (2010)</a>.
       </li>
       <li>
         Luna: CGI Moon Kit del
