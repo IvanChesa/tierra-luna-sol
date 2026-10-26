@@ -1,0 +1,40 @@
+# Referencias reales de la fase 3b
+
+La vara de medir del realismo (fase 3b, tarea 1): por cada cuerpo, una o dos fotos reales, **solo enlazadas** (no se copian al repo), con la misión, la fecha y el ángulo de fase. Cada captura comparable de `docs/informes/img/fase-3b/` reproduce su geometría con el modo de captura (`scripts/capture-realism.mjs`).
+
+## Cómo se obtiene la geometría
+- **Fotos desde la órbita de la Tierra (Hubble):** con la fecha de la foto, `?desde=tierra` coloca la cámara en la línea Tierra → cuerpo. El ángulo de fase y la latitud del observador sobre el ecuador del cuerpo los calcula `scripts/reference-geometry.mjs` con astronomy-engine (`Illumination` y `RotationAxis`). Si la página solo da el día, se usan las 12:00 UT: el ángulo de fase apenas cambia en unas horas, pero la cara que se ve sí (la comparación es de color, luz y limbo, no de qué meridiano mira a la cámara).
+- **Fotos de sondas:** el ángulo de fase lo da NASA/JPL Horizons con la sonda como observador (cantidad 24, Sol–cuerpo–observador; la consulta exacta sale en la salida del script). La captura usa `?fase=` (y `?latitud=` cuando la página da la elevación).
+- Ejecutado el 26-10-2026. Horizons falló por la mañana (error del servidor) y respondió por la tarde.
+
+## Fotos
+
+| Cuerpo | Foto | Misión e instrumento | Fecha | Ángulo de fase | Crédito y uso | Captura |
+|---|---|---|---|---|---|---|
+| Sol | [HMI Intensitygram, 2024-05-10 00:00 UT](https://sdo.gsfc.nasa.gov/assets/img/browse/2024/05/10/20240510_000000_1024_HMIIC.jpg) (el oscurecimiento del limbo en el continuo visible; la gran región activa 13664) | NASA SDO, HMI | 2024-05-10 | — (emite luz) | NASA/SDO y los equipos científicos de HMI; material de la NASA | `sol` |
+| Mercurio | [PIA12371, «Mercury in True and Enhanced Color»](https://science.nasa.gov/photojournal/mercury-in-true-and-enhanced-color) (la mitad izquierda, en color real con los filtros de 480, 560 y 630 nm) | MESSENGER, MDIS (WAC), tercer sobrevuelo, a 16 300 km de altitud | 2009-09-29 | **≈ 110°**: Horizons, MESSENGER a 18 740 km del centro antes del acercamiento (≈ 20:37 UTC); la foto es una fase creciente, así que es el tramo de llegada (en la salida, a esa distancia, la fase era de ≈ 46°) | NASA/Johns Hopkins University Applied Physics Laboratory/Carnegie Institution of Washington; material de la NASA | `mercurio-messenger-2009` |
+| Venus | [PIA10124, «Approaching Venus Image #2»](https://science.nasa.gov/photojournal/approaching-venus-image-2) (en grises: la capa de nubes en luz visible, sin rasgos) | MESSENGER, MDIS, segundo sobrevuelo de Venus | 2007-06-05 | **22–26°**: Horizons, MESSENGER durante el día del acercamiento (la página no da la hora) | NASA/Johns Hopkins University Applied Physics Laboratory/Carnegie Institution of Washington; material de la NASA | `venus-messenger-2007` |
+| Venus | [PIA23791, «Venus from Mariner 10»](https://www.jpl.nasa.gov/images/pia23791-venus-from-mariner-10/) (reprocesada en 2020; **color falso** con filtros naranja y ultravioleta: solo para la estructura de las nubes, no para el color) | Mariner 10 | 1974-02-07/08 | — | NASA/JPL-Caltech; material de la NASA | — |
+| Marte | [heic1609, «Close-up of the Red Planet»](https://esahubble.org/images/heic1609a/) (Syrtis Major, Arabia Terra y nubes en los limbos) | Hubble, WFC3 | 2016-05-12 | **8,4°** (se ve el hemisferio norte, latitud 8,6°): astronomy-engine | NASA, ESA, the Hubble Heritage Team (STScI/AURA), J. Bell (ASU) y M. Wolff (Space Science Institute) | `marte-hubble-2016` |
+| Júpiter | [Hubble's New Portrait of Jupiter (OPAL, STScI-2019-36)](https://hubblesite.org/contents/news-releases/2019/news-2019-36) | Hubble, WFC3/UVIS (OPAL) | 2019-06-27 | **3,4°** (latitud −2,7°): astronomy-engine | NASA, ESA, A. Simon (GSFC) y M. H. Wong (UC Berkeley) | `jupiter-hubble-2019` |
+| Saturno | [Saturn's Rings Shine in Hubble Portrait](https://science.nasa.gov/resource/saturns-rings-shine-in-hubble-portrait/) (OPAL) | Hubble, WFC3 | 2019-06-20 | **2,0°**, anillos abiertos 24,0° por la cara norte: astronomy-engine | NASA, ESA, A. Simon (GSFC), M. H. Wong (UC Berkeley) y el equipo OPAL | `saturno-hubble-2019` |
+| Saturno | [PIA17172, «The Day the Earth Smiled»](https://www.jpl.nasa.gov/images/pia17172-the-day-the-earth-smiled) (a contraluz, desde la sombra de Saturno, «unos 17 grados por debajo del plano de los anillos»; el anillo B se ve oscuro) | Cassini, ISS (mosaico de color natural) | 2013-07-19 | **≈ 176°**: Horizons, Cassini (174–177° entre las 19:00 y las 22:00 UTC) | NASA/JPL-Caltech/SSI; material de la NASA | `saturno-cassini-2013` |
+| Urano | [Hubble OPAL 2021](https://science.nasa.gov/missions/hubble-space-telescope/hubbles-grand-tour-of-the-outer-solar-system/) (el casquete polar norte brillante) | Hubble, WFC3 (OPAL) | 2021-10-25 | **0,5°** (latitud 54,6°: se ve casi el polo norte): astronomy-engine | NASA, ESA, A. Simon (NASA-GSFC) y M. H. Wong (UC Berkeley); procesado: A. Pagan (STScI) | `urano-hubble-2021` |
+| Urano | [PIA18182, «Uranus as seen by NASA's Voyager 2»](https://science.nasa.gov/photojournal/uranus-as-seen-by-nasas-voyager-2/) | Voyager 2 | 1986-01 (14 de enero, a unos 12,7 millones de km, según el registro de la NASA) | **13,8°**: Horizons, Voyager 2 (a 12,7 millones de km el 14 de enero hacia las 21:00 UTC, lo que cuadra con ese registro) | NASA/JPL-Caltech; material de la NASA | `urano-voyager-1986` |
+| Neptuno | [Hubble OPAL 2021](https://science.nasa.gov/missions/hubble-space-telescope/hubbles-grand-tour-of-the-outer-solar-system/) (la mancha oscura y el anillo oscuro alrededor del polo sur) | Hubble, WFC3 (OPAL) | 2021-09-07 | **0,2°** (latitud −22,6°): astronomy-engine | NASA, ESA, equipo OPAL, A. Simon (NASA-GSFC) y M. H. Wong (UC Berkeley) | `neptuno-hubble-2021` |
+| Neptuno | [PIA01492, «Neptune Full Disk View»](https://science.nasa.gov/photojournal/neptune-full-disk-view/) | Voyager 2, cámara de ángulo estrecho (filtros verde y naranja), a 4,4 millones de millas, 4 días y 20 horas antes del máximo acercamiento | 1989-08-20 | **15,0°**: Horizons, Voyager 2 (a 7,1 millones de km) | NASA/JPL-Caltech; material de la NASA | `neptuno-voyager-1989` |
+| Urano y Neptuno | [The true colors of Uranus and Neptune](https://www.planetary.org/space-images/the-true-colors-of-uranus-and-neptune): las imágenes de Voyager 2 reprocesadas con los espectros del Hubble (STIS) y del VLT (MUSE) | Irwin et al. (2024), MNRAS 527, 11521, https://doi.org/10.1093/mnras/stad3761 (acceso abierto) | 2024 | — | La figura se usa solo para **medir el color medio** de cada disco (`data/photometry.ts`); no se copia | — |
+
+## Colores medidos en estas fotos
+Para corregir el color de las texturas que no lo respetan (`data/photometry.ts`, `chromaticity`), se mide la cromaticidad media (RGB lineal / luminancia) del disco en la foto, lejos del limbo, con un script en una carpeta temporal (las fotos no entran en el repo):
+
+| Cuerpo | Medido en | Cromaticidad (R, G, B) | Se aplica |
+|---|---|---|---|
+| Urano | Irwin et al. (2024), disco reprocesado | 0,767 · 1,063 · 1,061 | entera (la textura ya era parecida) |
+| Neptuno | Irwin et al. (2024), disco reprocesado | 0,650 · 1,075 · 1,288 | entera: la textura venía de las imágenes realzadas de Voyager 2, demasiado azules |
+| Marte | Hubble 2016, 70 % del radio | 1,789 · 0,838 · 0,285 | al 75 %: la textura era más roja y saturada |
+| Júpiter | Hubble 2019, 60 % del radio | 1,202 · 0,972 · 0,679 | al 50 %: las zonas de la textura eran azuladas |
+| Saturno | Hubble 2019, 60 % del radio | 1,357 · 0,938 · 0,559 | al 50 % |
+| Anillos de Saturno | Hubble 2019, a lo largo del ansa derecha | C 0,97 · 0,97 · 1,35 · B 0,94 · 1,01 · 1,07 · Cassini 0,98 · 0,98 · 1,29 · A 1,00 · 0,99 · 1,08 | el matiz de cada anillo en la tira (`build-textures.mjs`) |
+
+La luminancia no cambia: el brillo lo sigue poniendo el albedo geométrico del catálogo.

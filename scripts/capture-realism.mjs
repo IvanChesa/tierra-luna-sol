@@ -60,15 +60,22 @@ const SHOTS = [
     '/?captura=1&cuerpo=neptuno&fecha=2021-09-07T12:00Z&desde=tierra',
     SQUARE,
   ],
-  ['mercurio-fase-60', '/?captura=1&cuerpo=mercurio&fase=60', SQUARE],
-  ['venus-fase-60', '/?captura=1&cuerpo=venus&fase=60', SQUARE],
-  ['venus-fase-150', '/?captura=1&cuerpo=venus&fase=150', SQUARE],
-  ['luna-fase-90', '/?captura=1&cuerpo=luna&fase=90', SQUARE],
-  ['sol', '/?captura=1&cuerpo=sol', SQUARE],
-  // Saturno a contraluz, como «The Day the Earth Smiled» (17° por debajo del plano de los anillos).
+  // Fotos de sondas: ángulo de fase de Horizons (docs/realismo/referencias.md).
   [
-    'saturno-contraluz',
-    '/?captura=1&cuerpo=saturno&fecha=2013-07-19T21:30Z&fase=165&latitud=-17',
+    'mercurio-messenger-2009',
+    '/?captura=1&cuerpo=mercurio&fecha=2009-09-29T20:37Z&fase=110',
+    SQUARE,
+  ],
+  ['venus-messenger-2007', '/?captura=1&cuerpo=venus&fecha=2007-06-05T12:00Z&fase=23', SQUARE],
+  ['venus-fase-150', '/?captura=1&cuerpo=venus&fase=150', SQUARE],
+  ['urano-voyager-1986', '/?captura=1&cuerpo=urano&fecha=1986-01-14T21:00Z&fase=13.8', SQUARE],
+  ['neptuno-voyager-1989', '/?captura=1&cuerpo=neptuno&fecha=1989-08-20T08:00Z&fase=15', SQUARE],
+  ['luna-fase-90', '/?captura=1&cuerpo=luna&fase=90', SQUARE],
+  ['sol-sdo-2024', '/?captura=1&cuerpo=sol&fecha=2024-05-10T00:00Z', SQUARE],
+  // Saturno a contraluz, como «The Day the Earth Smiled»: fase ≈ 176°, 17° por debajo de los anillos.
+  [
+    'saturno-cassini-2013',
+    '/?captura=1&cuerpo=saturno&fecha=2013-07-19T21:30Z&fase=176&latitud=-17',
     SQUARE,
   ],
   // Relieve con luz rasante (cerca del terminador).

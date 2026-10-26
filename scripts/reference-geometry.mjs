@@ -39,6 +39,19 @@ const SPACECRAFT_PHOTOS = [
   ['saturno-cassini-2013', '699', '-82', '2013-07-19 18:00', '2013-07-20 00:00', '1 h', 'PIA17172'],
   // Voyager 2: Neptuno, 4 días y 20 horas antes del máximo acercamiento (1989-08-25 03:56 UTC).
   ['neptuno-voyager-1989', '899', '-32', '1989-08-20 06:00', '1989-08-20 10:00', '1 h', 'PIA01492'],
+  // MESSENGER, segundo sobrevuelo de Venus (máximo acercamiento: 2007-06-05 23:08 UTC), «Approaching
+  // Venus Image #2» (PIA10124): la página no da la hora; tabla del día antes del acercamiento.
+  [
+    'venus-messenger-2007',
+    '299',
+    '-236',
+    '2007-06-05 00:00',
+    '2007-06-05 23:00',
+    '3 h',
+    'PIA10124',
+  ],
+  // Voyager 2: Urano a unos 12,7 millones de km (registro de la NASA de la imagen), enero de 1986.
+  ['urano-voyager-1986', '799', '-32', '1986-01-10 00:00', '1986-01-18 00:00', '1 d', 'PIA18182'],
 ];
 
 /**
