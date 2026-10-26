@@ -3,6 +3,7 @@
 > Documento maestro. Lo ejecuta Claude Code en el PC de Iván, por fases y en bloques autónomos. Otra sesión de Claude revisa cada bloque (`docs/revisiones/`).
 > Si este plan y el código no coinciden, manda el plan. Los cambios se proponen en el informe de fase y los aprueba Iván.
 > Revisión 2 del plan: 24-10-2026. Sustituye a la revisión 1. Incorpora la auditoría de las fases 2–10 (`docs/decisiones/auditoria-plan-v2.md`), lo aprendido en la fase 1 y la decisión de Iván de que el SEO sea secundario.
+> Actualizada el 26-10-2026 con la revisión del bloque B (`docs/revisiones/bloque-B.md`): las propuestas aprobadas de las fases 2 y 3, las fases nuevas **3b** (realismo de los planetas) y **3c** (interfaz inmersiva) en el bloque **R**, las decisiones D29–D31 y «El cielo desde España» (`docs/decisiones/`).
 
 ---
 
@@ -31,6 +32,8 @@ Un **explorador 3D interactivo** del Sol, los 8 planetas, 21 lunas, la Tierra y 
 | **Transiciones cinemáticas** Tierra ↔ Luna ↔ Sistema Solar | 3 |
 | Botones de zoom, **vista limpia** (ocultar la interfaz), encuadre que respeta los paneles en móvil | 3 |
 | Transiciones de los textos al cambiar de vista | 3 |
+| **Interfaz inmersiva**: lienzo a pantalla completa, fichas de cuerpos con miniatura, barra de tiempo con línea deslizante y «Controles +», y el sistema en movimiento al entrar (con nuestro estilo, D30 y D31) | 3c |
+| Planetas con buena **dirección de arte de la luz** (relleno, tone mapping y exposición por vista) | 3b |
 | Notas de fuentes y créditos | 9 |
 | Diseño para móvil, controles etiquetados, táctil y movimiento reducido | 3–10 |
 
@@ -44,9 +47,10 @@ Un **explorador 3D interactivo** del Sol, los 8 planetas, 21 lunas, la Tierra y 
 | **Una sola aplicación con un lienzo 3D persistente**: viajes de cámara continuos, sin recargar la página | 2, 3 |
 | **Eclipses en 3D**: la sombra de la Luna recorre la Tierra y la Luna se enrojece en la sombra terrestre en las fechas reales | 5, 6, 8 |
 | **Sombras de las lunas** sobre Júpiter (tránsitos) y eclipses de lunas | 7 |
-| **Fondo de Vía Láctea alineado** con el cielo real (si hay una fuente libre adecuada) | 2 |
+| **Planetas fieles a sus fotos reales**: sombreado físico por tipo de cuerpo (limbo, atmósferas y Lommel–Seeliger, D29), relieve de Mercurio y Marte con modelos de elevación oficiales y anillos de Saturno con fotometría | 3b |
+| **Fondo de Vía Láctea alineado** con el cielo real (panorama de ESO/S. Brunier si su licencia CC BY 4.0 se confirma; omitida en la fase 2 por la licencia CC BY-NC de Gaia) | 3b |
 | **Lunas principales con superficie fotográfica** (USGS); el original usa colores planos | 7 |
-| **El cielo desde el Bajo Cinca**: qué se ve esta noche desde Fraga/Lleida, crepúsculos, a qué hora y hacia dónde mirar | 8 |
+| **El cielo desde España**: qué se ve esta noche desde los grandes observatorios del país (el Montsec por defecto) o desde tu ubicación, crepúsculos, a qué hora y hacia dónde mirar | 8 |
 | **Próximos eclipses visibles desde España**, con «Ver en 3D» | 8 |
 | **Fichas HTML** de los 30 cuerpos, con imágenes renderizadas por el propio motor | 9 |
 | **Todo usable con teclado y sin 3D**: listas, tablas, fichas y control de cámara por teclado | 3–10 |
@@ -73,15 +77,15 @@ Un **explorador 3D interactivo** del Sol, los 8 planetas, 21 lunas, la Tierra y 
 | D10 | **Lienzo 3D único y persistente.** Las vistas del explorador son rutas hijas de un layout que conserva el canvas y el `SceneEngine` | Viajes de cámara continuos. |
 | D11 | **Lunas:** galileanas con `Astronomy.JupiterMoons`. Las otras 16, con **elementos medios** (elipse con precesión, más una aceleración secular y términos periódicos de la longitud cuando mejoran el ajuste) **ajustados por mínimos cuadrados a Horizons en 1900–2100**. La tabla del JPL solo aporta los planos de Laplace y los valores iniciales (Urano y Neptuno usan su ecuador con el polo IAU 2015; en Urano, el polo de su rotación); script y residuos en `docs/datos/elementos-lunas.md`. Kepler en el navegador | La tabla del JPL no sirve para fechar posiciones (comprobado en la fase 1). Error conseguido: ≤ 0,38° (TT) en 1900–2100, el máximo sobre las ~2000 muestras del ajuste de cada luna; ≤ 0,36° en los instantes de test. |
 | D12 | **Tres marcos de escala con origen flotante desde la fase 2**: vista general ilustrativa, sistema local físico (al enfocar un planeta y sus lunas) y escala real global. Posiciones en float64 en JS, relativas al foco antes de pasar a la GPU | La precisión float32 de la GPU no admite km y miles de millones de km a la vez. Diseñarlo al principio evita rehacer el motor. |
-| D13 | **Profundidad:** `reversedDepthBuffer` de three 0.186 donde el dispositivo lo soporte y `logarithmicDepthBuffer` como alternativa. Se decide con pruebas en la fase 2, y **todo `ShaderMaterial` incluye los chunks de profundidad de three** | Afecta a todos los shaders posteriores: hay que decidirlo antes de escribirlos. |
-| D14 | **Estrellas reales del catálogo HYG** (magnitud ≤ 6,5) como `Points` (tamaño por magnitud, color por B−V) | Paridad y base del cielo del Bajo Cinca. |
+| D13 | **Profundidad logarítmica** (`logarithmicDepthBuffer`) en todos los dispositivos. En la prueba de la fase 2, el buffer invertido de three falla (el halo del Sol tapa su disco desde Fobos) y el estándar empata con el logarítmico en las capturas; se elige el logarítmico por margen de precisión, a costa del early-Z (medido: 60 FPS). **Todo `ShaderMaterial` incluye los chunks de `scene/materials/depth.ts`** | Afecta a todos los shaders posteriores. Decidido con pruebas en la fase 2 (informe, §5.1; aprobado por Iván el 26-10). |
+| D14 | **Estrellas reales del catálogo HYG** (magnitud ≤ 6,5) como `Points` (tamaño por magnitud, color por B−V) | Paridad y base del cielo desde España. |
 | D15 | **Relieve lunar:** elevación del LOLA en **16 bits empaquetados en dos canales de 8** (los navegadores degradan los PNG de 16 bits a 8 al subirlos a WebGL), desplazamiento de vértices + mapa de normales derivado | Resolución vertical real sin trucos. |
 | D16 | **Recorridos y vistas guiadas como datos** (`data/tours.ts`) | Se revisan como contenido. |
 | D17 | **Texturas:** Solar System Scope (CC BY 4.0) para el Sol, los planetas, la Tierra y los anillos; NASA CGI Moon Kit para la Luna; USGS Astrogeology para las lunas principales | Licencias libres y documentadas. |
-| D18 | **Pipeline de texturas:** WebP por niveles, decodificadas fuera del hilo principal (`ImageBitmapLoader`), con tope a `maxTextureSize` y subida progresiva a la GPU. **KTX2 se evalúa en la fase 2** con una prueba medida | Cambiar de formato al final cuesta caro; la VRAM es el límite real en móvil. |
+| D18 | **Pipeline de texturas:** WebP por niveles, decodificadas fuera del hilo principal (`ImageBitmapLoader`), con tope a `maxTextureSize` y subida progresiva a la GPU. **KTX2 se descarta por ahora** (fase 2, §5.2 del informe: con UASTC pesa 4 veces más que WebP; ahorra unas 4 veces la VRAM); se reevalúa en la fase 6 para la Luna en 8K | Cambiar de formato al final cuesta caro; la VRAM es el límite real en móvil. Aprobado por Iván el 26-10. |
 | D19 | **Orientación con el modelo IAU** (`Astronomy.RotationAxis`) para el Sol, los planetas y la Luna; la Tierra con EQD + tiempo sidéreo (fase 1); las demás lunas, en rotación síncrona hacia su planeta | Realismo verificable (anillos, libración, hora del día). |
 | D20 | **Sombras analíticas** en los shaders (esferas y anillos oclusores), no mapas de sombras | Estables en cualquier escala, baratas y exactas. |
-| D21 | **Iluminación ilustrativa:** luz solar sin atenuación por distancia y exposición por vista | Los planetas exteriores serían invisibles con la caída física; se documenta en `/sobre-el-proyecto`. |
+| D21 | **Iluminación ilustrativa:** luz solar sin atenuación por distancia y exposición por vista (desde la fase 3b, en un único módulo de configuración visual con el motivo de cada valor) | Los planetas exteriores serían invisibles con la caída física; se documenta en `/sobre-el-proyecto`. |
 | D22 | **Calidad adaptativa** (`low` / `medium` / `high`): detección inicial, bajada automática si los FPS no llegan y selector manual recordado | Funciona bien en cualquier dispositivo. |
 | D23 | **Staging desde la fase 4** (`staging-tierra-luna-sol.ivanchesa.es`, protegido con contraseña y `noindex`); producción en la fase 11, con una etiqueta de versión | Detectar pronto los problemas del hosting y probar en móviles reales por URL. |
 | D24 | **Privacidad:** sin cookies, sin analítica y sin peticiones a terceros (todo autoalojado) | Cumplimiento sin banner de cookies y una garantía visible de calidad. |
@@ -89,6 +93,9 @@ Un **explorador 3D interactivo** del Sol, los 8 planetas, 21 lunas, la Tierra y 
 | D26 | **Despliegue:** GitHub Actions → FTPS a Banahosting (staging en cada push a `main`; producción con etiqueta `v*`) | El SSH está bloqueado. |
 | D27 | **Tests:** Vitest (unitarios) + Playwright (e2e y regresión visual) + axe (accesibilidad) | — |
 | D28 | **Solo español en la v1**; el inglés queda para después (`@angular/localize`) | — |
+| D29 | **Sombreado físico por tipo de cuerpo**, con chunks GLSL comunes en `scene/materials/`: **rocosos sin atmósfera** (Mercurio, la Luna y las lunas) con Lommel–Seeliger y un pico de oposición sencillo (Hapke simplificado); **gigantes** (Júpiter, Saturno, Urano y Neptuno) con el oscurecimiento del limbo de Minnaert, un parámetro por planeta documentado y el terminador suavizado; **con atmósfera** (Venus, Tierra, Marte y Titán; también los gigantes) con una dispersión aproximada en el limbo y en el terminador, con el tono de cada atmósfera; **brillo relativo** coherente con el albedo geométrico del catálogo y la exposición por vista. La luz ambiente plana desaparece: en la vista general puede quedar un relleno mínimo, documentado como ilustrativo | Los planetas parecían de plástico (Lambert + ambiente plano). Fase 3b (`docs/decisiones/FASE-3b-REALISMO.md`); la usan después la Tierra, la Luna y las lunas. |
+| D30 | **Interfaz inmersiva del explorador:** lienzo a pantalla completa, fichas de cuerpos abajo, barra de tiempo compacta con línea deslizante y controles desplegables. Se toma la **estructura** de la referencia del original, con **nuestra dirección visual A** («Carta celeste»): la disposición se inspira en ella; los estilos, las formas y los textos son propios | Petición de Iván (26-10). Fase 3c (`docs/decisiones/FASE-3c-INTERFAZ.md`). |
+| D31 | **Arranque en movimiento:** al entrar, el sistema solar se reproduce a **3 días/s** desde «ahora». Con `prefers-reduced-motion`, arranca en pausa; con un enlace que fija `?fecha=`, en pausa en ese instante. Cumple WCAG 2.2.2: el botón de pausa es lo primero y más visible de la barra, y `Espacio` también pausa | Petición de Iván (26-10). Fase 3c. |
 
 ### Dependencias permitidas (lista cerrada)
 Cualquier otro paquete → **preguntar a Iván antes de instalarlo**.
@@ -96,7 +103,7 @@ Cualquier otro paquete → **preguntar a Iván antes de instalarlo**.
 - **Producción:** `@angular/*` 22.x · `three` `^0.186.0` · `astronomy-engine` `^2.1.19` · `@fontsource/newsreader` · `@fontsource/public-sans`
 - **Desarrollo:** lo que genera `ng new` (incluidos Vitest y jsdom) · `@types/three` · `angular-eslint`, `eslint`, `@eslint/js` y `typescript-eslint` · `prettier` · `@playwright/test` · `@axe-core/playwright` · `sharp` · `@vitest/coverage-v8`
 - **Propuestas pendientes de Iván** (se piden en su fase): `@lhci/cli` (Lighthouse en el CI, fase 10); herramienta externa `toktx` (KTX-Software) si la prueba de KTX2 de la fase 2 lo justifica.
-- **Recursos de three que no son dependencias nuevas:** `three/addons/*` (controles, `KTX2Loader`) y el transcodificador Basis de `three/examples/jsm/libs/basis/`, copiado a `public/`.
+- **Recursos de three que no son dependencias nuevas:** `three/addons/*` (controles, `KTX2Loader`, post-procesado) y el transcodificador Basis de `three/examples/jsm/libs/basis/`, copiado a `public/`.
 
 ---
 
@@ -107,14 +114,14 @@ Cualquier otro paquete → **preguntar a Iván antes de instalarlo**.
 | **Explorador** (layout con lienzo persistente) | `/` | Vista del sistema solar + texto introductorio prerenderizado |
 | | `/explorar/tierra` | La Tierra en detalle y sus vistas guiadas |
 | | `/explorar/luna` | La Luna en detalle, sus vistas y el recorrido |
-| | `/cielo-bajo-cinca` | El cielo desde Fraga/Lleida |
+| | `/cielo` | El cielo desde España: el lugar con `?lugar=` (el Montsec por defecto) o tu ubicación |
 | **Fichas** (HTML, sin 3D) | `/planetas`, `/planetas/:id` | Índice y 8 fichas |
 | | `/lunas`, `/lunas/:id` | Índice y 20 fichas |
 | | `/sol`, `/luna` | Fichas del Sol y de la Luna |
 | | `/eclipses` | Próximos eclipses visibles desde España |
 | **Otras** | `/creditos`, `/sobre-el-proyecto`, `/404` | — |
 
-Parámetros del explorador: `?fecha=2030-01-01T00:00Z&cuerpo=titan&escala=real`. Modo de captura para pruebas: `?captura=1` (fecha, cámara y estado deterministas; sin interfaz animada).
+Parámetros del explorador: `?fecha=2030-01-01T00:00Z&cuerpo=titan&escala=real`; en `/cielo`, también `?lugar=teide`. Modo de captura para pruebas: `?captura=1` (fecha, cámara y estado deterministas; sin interfaz animada).
 
 ---
 
@@ -124,7 +131,7 @@ Parámetros del explorador: `?fecha=2030-01-01T00:00Z&cuerpo=titan&escala=real`.
 |---|---|---|
 | Node ≥ 22.22.3 o ≥ 24.15 | ✅ v24.22.1 | — |
 | Repo independiente | ✅ | — |
-| **GitHub CLI + repo privado en GitHub** | ❌ | Iván, **antes del bloque C (fase 4)**: `winget install --id GitHub.cli`, `gh auth login` y crear el repo |
+| **Repo en GitHub** (`https://github.com/IvanChesa/tierra-luna-sol`, público) | ❌ sin conectar | Iván, **antes del bloque C (fase 4)**: conectar el repo local y hacer el primer push. Lo hace Iván o lo autoriza explícitamente, porque publica el código (revisión del bloque B) |
 | **Staging en cPanel** | ❌ | Iván, antes de la fase 4: subdominio `staging-tierra-luna-sol.ivanchesa.es` con AutoSSL, protección con contraseña («Privacidad de directorios»), cuenta FTP limitada a esa carpeta y `gh secret set` de las credenciales |
 | Móvil real | Iván | Desde la fase 4, por la URL de staging (o por la red local si no hay staging) |
 | Un iPhone para probar (aunque sea prestado) | Iván | Fase 10: Safari en iOS tiene límites de memoria propios |
@@ -147,7 +154,7 @@ src/app/
 │  ├─ engine.ts           SceneEngine (API pública en index.ts)
 │  ├─ frames.ts           marcos de escala y origen flotante
 │  ├─ bodies/             sol, planeta, tierra, luna, luna genérica, anillos
-│  ├─ materials/          shaders y chunks comunes (profundidad, sombras analíticas, atmósfera)
+│  ├─ materials/          shaders y chunks comunes (profundidad, sombras analíticas, sombreado por tipo D29, atmósfera)
 │  ├─ camera/             rig, vuelos, encuadre con paneles, recorridos, viajes cinemáticos
 │  ├─ stars.ts · milky-way.ts · trails.ts · orbits.ts (Line2) · labels.ts (capa HTML de etiquetas)
 │  ├─ sky/                cúpula del cielo local (fase 8)
@@ -156,7 +163,7 @@ src/app/
 ├─ state/           simulation.store.ts, explorer.store.ts (signals)
 ├─ features/        viewer-layout, time-controls, body-picker, body-panel, camera-controls, tour-player, view-switcher, sky-panel
 └─ pages/           home, planets-index, moons-index, body-detail, eclipses, credits, about, not-found
-scripts/            fixtures (Horizons/USNO), fit-moon-elements, build-stars, build-body-data, build-body-texts (+ content/body-texts.json), check-initial-bundle, download-assets, build-textures, build-moon-relief, render-body-images
+scripts/            fixtures (Horizons/USNO), fit-moon-elements, build-stars, build-body-data, build-body-texts (+ content/body-texts.json), check-initial-bundle, download-assets, build-textures, build-relief (3b; la fase 6 lo reutiliza para la Luna), render-body-images
 ```
 
 ### 4.2 Capas (ESLint `no-restricted-imports`; ya configurado)
@@ -172,11 +179,11 @@ scripts/            fixtures (Horizons/USNO), fit-moon-elements, build-stars, bu
 - **Otras lunas:** rotación síncrona (la misma cara hacia su planeta).
 - **Lunas ajustadas:** plano de referencia de cada luna (Laplace o ecuador IAU; en Urano, el polo de su rotación) → ECL.
 - **Cielo local:** `Astronomy.Horizon` con refracción, para el observador de `data/places.ts`.
-- **Tiempo interno:** siempre en **UTC**. La UI del explorador muestra la **hora local del navegador con su zona** (con opción UTC); el cielo del Bajo Cinca usa `Europe/Madrid`.
+- **Tiempo interno:** siempre en **UTC**. La UI del explorador muestra la **hora local del navegador con su zona** (con opción UTC). El cielo desde España usa la **zona horaria IANA de cada lugar** (`Europe/Madrid` en la Península; `Atlantic/Canary` en el Teide y el Roque de los Muchachos, una hora menos), indicada junto a las horas.
 
 ### 4.4 Marcos de escala (D12)
 1. **Vista general ilustrativa** (por defecto): `r_vis = K · log10(1 + r_UA / 0,1)` (monótona y testada), conservando la dirección real; tamaños agrandados con mínimos y máximos; las lunas de cada planeta se ven como un sistema compacto alrededor de él.
-2. **Sistema local físico:** al enfocar un planeta, el planeta y sus lunas pasan a escala física real entre ellos (radios y distancias en km, relativos al planeta). Es lo que permite ver las órbitas reales de las lunas.
+2. **Sistema local físico:** al enfocar un planeta (o una de sus lunas), toda la escena pasa a geometría real alrededor de él, con la unidad que conserva su radio ilustrativo: el planeta y sus lunas quedan a escala física real entre ellos, y el resto del sistema a su distancia real (desde el planeta se ve el cielo verdadero). Es lo que permite ver las órbitas reales de las lunas (fase 2, §4.1 del informe; aprobado por Iván el 26-10).
 3. **Escala real global:** todo en km, con marcadores de visibilidad para los cuerpos diminutos.
 
 Las transiciones entre marcos son animadas (~1,5 s), interpolando posiciones y tamaños, y directas con `prefers-reduced-motion`. Las órbitas, estelas y sombras usan siempre la misma transformación que los cuerpos. El origen flotante (todo relativo al foco, en float64 en JS) funciona en los tres marcos.
@@ -206,7 +213,7 @@ Las transiciones entre marcos son animadas (~1,5 s), interpolando posiciones y t
 
 | Área | Objetivo |
 |---|---|
-| JS inicial | Aviso > 300 kB · error > 400 kB, en bruto (la base de Angular ocupa ~272 kB: todo lo nuevo va diferido) |
+| JS inicial | Aviso > 320 kB · error > 400 kB, en bruto, y **código propio** (`src/`) de los chunks iniciales ≤ 15 kB, medido en `browser-stats.json` por `check-initial-bundle.mjs`. La base de Angular (~285 kB) crece con cada versión; todo lo nuevo va diferido (revisión del bloque B, B4) |
 | Chunk del visor | Aviso > 900 kB en bruto; tamaño en cada informe |
 | Texturas, primera vista (`/`) | ≤ 2,5 MB (alto) · ≤ 1,2 MB (bajo) |
 | Vista Tierra | ≤ 6 MB adicionales (alto) · ≤ 2 MB (bajo) |
@@ -215,7 +222,7 @@ Las transiciones entre marcos son animadas (~1,5 s), interpolando posiciones y t
 | Estrellas + Vía Láctea | ≤ 250 kB las estrellas · ≤ 1,5 MB (alto) / 400 kB (bajo) la Vía Láctea |
 | **VRAM estimada** (texturas + geometría) | ≤ 300 MB (alto) · ≤ 120 MB (bajo). Ninguna textura supera `maxTextureSize` |
 | **Arranque** | Sin tareas largas > 200 ms; compatible con Lighthouse ≥ 90 |
-| **Efemérides por frame** | ≤ 2 ms en escritorio con los 30 cuerpos |
+| **Efemérides por frame** | ≤ 2 ms en escritorio con los 30 cuerpos, incluidas sus orientaciones (medido en la fase 2: 0,16 ms) |
 | Lighthouse móvil, fichas | ≥ 95 en rendimiento, accesibilidad y buenas prácticas (el SEO no es criterio) |
 | Lighthouse móvil, explorador | Rendimiento ≥ 90 · accesibilidad y buenas prácticas ≥ 95 |
 | LCP / CLS | ≤ 2,5 s · ≤ 0,05. El LCP nunca es el canvas |
@@ -235,10 +242,11 @@ Cada fase va en su rama `fase-N-nombre`. Se trabaja en **modo autónomo por bloq
 | Bloque | Fases | Esfuerzo | Por qué se para ahí |
 |---|---|---|---|
 | A | 1 | `max` | Cimientos astronómicos ✅ (revisado en `docs/revisiones/bloque-A.md`) |
-| B | 2–3 | `max` | Arquitectura del motor (marcos, profundidad, texturas) y de la interfaz |
+| B | 2–3 | `max` | Arquitectura del motor (marcos, profundidad, texturas) y de la interfaz ✅ (revisado en `docs/revisiones/bloque-B.md`) |
+| R | 3b–3c | `max` | Realismo de los planetas e interfaz inmersiva: la base de iluminación que usan después la Tierra, la Luna y las lunas, y la cara del explorador |
 | C | 4–5 | `max` | Staging + la Tierra, primera pieza «guau» probada en móviles reales |
 | D | 6–7 | `max` | La Luna, las lunas, las sombras y la escala real: lo más difícil |
-| E | 8–9 | `high` | Cielo del Bajo Cinca, eclipses y contenido |
+| E | 8–9 | `high` | El cielo desde España, los eclipses y el contenido |
 | F | 10 | `max` | Pulido y calidad final |
 | — | 11 | `high` | Lanzamiento, con Iván |
 
@@ -252,7 +260,9 @@ Angular 22, prerenderizado estático, lint por capas, CI, estructura, dirección
 ### Fase 1: Efemérides, catálogo y datos ✅
 Coordenadas (EQJ/EQD/ECL/Three/terrestre), efemérides de 30 cuerpos, lunas ajustadas a Horizons (≤ 0,38° en TT; validadas en instantes independientes con un fixture de control), escalas, órbitas, estrellas HYG, lugares del IGN, catálogo de 30 cuerpos con datos con fuente y 120 textos con citas verificadas por script, y comprobación del bundle inicial. Ver `docs/informes/fase-1.md`.
 
-### Fase 2: Motor 3D y escena base
+### Fase 2: Motor 3D y escena base ✅
+
+Hecha y revisada (`docs/informes/fase-2.md`, `docs/revisiones/fase-2.md` y `bloque-B.md`). Se conserva el texto como referencia de la arquitectura.
 
 **Objetivo:** el sistema solar real de hoy, con la **arquitectura definitiva del motor**: estado del sistema, orientación, marcos de escala, profundidad y texturas. Lo que se decida aquí no debe rehacerse después.
 
@@ -291,7 +301,7 @@ Entregas en este orden (cada una cierra con `npm run check` y el informe actuali
 12. **Sol** (oscurecimiento del limbo + halo) y **luz sin atenuación** (D21).
 13. **Planetas** orientados (D19), **anillos de Saturno** en su plano real con **sombras analíticas anillos ↔ planeta** (D20) y la **Luna básica**.
 14. **Órbitas** con `Line2` de `three/addons` (grosor en píxeles, nítidas en pantallas de alta densidad), desvanecidas hacia atrás desde el cuerpo.
-15. **Estrellas HYG** como `Points` (tamaño por magnitud, color por B−V, sin traslación de cámara). **Vía Láctea alineada** si hay fuente libre (candidata: NASA SVS Deep Star Maps, en TIFF/PNG/JPG, no EXR). **No es una condición de parada:** si no la hay, se omite y se apunta.
+15. **Estrellas HYG** como `Points` (tamaño por magnitud, color por B−V, sin traslación de cámara). **Vía Láctea alineada** si hay fuente libre (candidata: NASA SVS Deep Star Maps, en TIFF/PNG/JPG, no EXR). **No es una condición de parada:** si no la hay, se omite y se apunta. *(Omitida: la de NASA SVS deriva de Gaia DR2, con licencia CC BY-NC. Pasa a la fase 3b, tarea 5b, con el panorama de ESO.)*
 16. **Etiquetas de los cuerpos:**
     - capa HTML superpuesta que gestiona `scene/` (proyección por frame con transformaciones CSS, fuera de Angular);
     - se ocultan las que se solapan, priorizando la seleccionada y los planetas;
@@ -326,7 +336,9 @@ Criterios de aceptación:
 - [ ] Saturno y Júpiter con su achatamiento real (captura), con `flatteningRatio` con fuente.
 - [ ] La comprobación del bundle por `stats.json` detecta una importación pequeña de three (solo `Vector3`) en una página (demostrado y revertido).
 
-### Fase 3: Interfaz del explorador e interacción
+### Fase 3: Interfaz del explorador e interacción ✅
+
+Hecha y revisada (`docs/informes/fase-3.md`, `docs/revisiones/fase-3.md`, `fase-3-diseno.md` y `bloque-B.md`). La fase 3c rehace la disposición sobre esta base.
 
 **Objetivo:** una interfaz profesional, bonita y accesible sobre el 3D, diseñada para móvil desde el principio (la fase 10 pule, no rediseña).
 
@@ -369,7 +381,7 @@ Entregas en este orden:
 
 **3.d · URL, teclado, accesibilidad y e2e**
 9. **URL** (§4.5): parámetros validados; si alguno no es válido, se ignora y se muestra un aviso discreto.
-10. **Teclado completo** y **diálogo de atajos** (`?`). Los atajos no actúan con el foco en un campo de texto.
+10. **Teclado completo** y **diálogo de atajos** (`?`). Los atajos no actúan con el foco en un campo de texto **y los de una sola tecla se pueden desactivar en el diálogo (WCAG 2.1.4)** (propuesta de la fase 3, aprobada por Iván el 26-10).
 11. **`aria-live`** con una descripción textual al seleccionar o cambiar de vista («Saturno, a 1430 millones de km del Sol…»), sin anuncios por cada tic de la fecha. Transiciones de los textos (CSS, con movimiento reducido).
 12. **Playwright:**
     - instalación de Chromium y WebGL en modo sin interfaz con SwiftShader (`--use-angle=swiftshader`, `--enable-unsafe-swiftshader`);
@@ -383,6 +395,109 @@ Criterios de aceptación:
 - [ ] Store ≤ 5 actualizaciones/s; el viaje sistema → Tierra → Luna → sistema no recrea el motor ni deja fugas.
 - [ ] Con movimiento reducido no hay animaciones de cámara ni de texto.
 - [ ] e2e en verde en local (y en el CI cuando exista, fase 4).
+
+### Fase 3b: Realismo de los planetas
+
+Rama `fase-3b-realismo` (bloque R). Pedida por Iván el 26-10: «Tenemos que hacer que los modelos 3D de los planetas sean más realistas». Documento de origen, con el análisis completo: `docs/decisiones/FASE-3b-REALISMO.md`. Va antes del bloque C porque la base de iluminación que crea la usan después la Tierra (fase 5), la Luna (fase 6) y las lunas (fase 7).
+
+**Diagnóstico** (capturas de las fases 2 y 3 y `scene/materials/body-material.ts`):
+| Lo que se ve | Causa |
+|---|---|
+| Planetas «de plástico», todos con el mismo aspecto de bola mate | Lambert + luz ambiente plana (`BODY_AMBIENT`) igual para todos |
+| Júpiter y Saturno sin el oscurecimiento del limbo de las fotos; terminador duro en los planetas con atmósfera | Sin modelo de limbo ni de atmósfera |
+| Ningún planeta tiene atmósfera visible (ni halo ni tono en el terminador) | Sin dispersión atmosférica |
+| Marte y Mercurio sin relieve | Solo textura de color; no se usan modelos de elevación |
+| Anillos de Saturno planos y sin profundidad | Sin fotometría (contraluz, luz transmitida) |
+| Las órbitas cruzan por delante del disco de los planetas | Las líneas no se ocultan ni se desvanecen sobre los cuerpos |
+| La Tierra, de un azul uniforme y saturado | A comprobar: espacio de color o exposición de la textura de día |
+
+**Lo que hace atractivo al original** (analizado en su código fuente público, solo las técnicas): dirección de arte, no una física más avanzada: luz de relleno generosa (ambiente 0,7, con el lado nocturno iluminado), ACES, exposición por vista y halos aditivos en la vista general. Esta fase hace las dos cosas: **física correcta y un ajuste artístico de la luz**, para que se vea igual de bonito y además sea fiel.
+
+**Objetivo:** que cada planeta, a la misma fase y distancia, **se parezca a sus fotos reales** (NASA, ESA, Hubble, Cassini, Juno, Voyager, MESSENGER), con un modelo de luz físico por tipo de cuerpo (D29) y sin salirse de los presupuestos de §5.
+
+Tareas:
+1. **Referencias reales** (`docs/realismo/referencias.md`): por cada cuerpo, 1–2 fotos reales de dominio público o con licencia libre (URL, misión, fecha y ángulo de fase), solo enlazadas, sin copiarlas al repo. Son la vara de medir de toda la fase.
+2. **Chunks de sombreado** (D29), con sus parámetros en datos (`data/`, con fuente cuando sean medidos, como el albedo o el coeficiente de limbo; si no, «ajuste visual» documentado). Tests de la función de limbo y de la de Lommel–Seeliger en TS puro (`ephemeris/` o un módulo puro de `scene/`).
+3. **Relieve de Mercurio y Marte:**
+   - mapas de normales derivados de modelos de elevación oficiales (Mercurio: MESSENGER; Marte: MOLA; USGS Astrogeology, dominio público, comprobándolo);
+   - script común `build-relief.mjs`, que reutilizará la fase 6 para la Luna (16 bits empaquetados, D15);
+   - si mejora la fidelidad, mosaicos de color oficiales (Viking para Marte, MESSENGER para Mercurio) en vez de los de Solar System Scope.
+4. **Gigantes:** comprobar si existen mapas globales con licencia libre de más calidad que los actuales (Júpiter: Hubble OPAL; Saturno: Cassini). Solo si la licencia encaja con la política del proyecto (CC0, CC BY, MIT, BSD o dominio público; **nada no comercial**). Urano y Neptuno: bandas sutiles fieles a las fotos, sin inventar detalles.
+5. **Anillos de Saturno:**
+   - fotometría: más brillo a contraluz (dispersión hacia delante) y la cara no iluminada vista con luz transmitida;
+   - sombra del planeta sobre los anillos;
+   - perfil radial de opacidad y color fiel (división de Cassini, anillos A, B y C).
+   - Los anillos tenues de Júpiter, Urano y Neptuno son **opcionales**.
+   
+   5b. **Vía Láctea** (decisión de Iván, 26-10): panorama «The Milky Way panorama» de ESO/S. Brunier (https://www.eso.org/public/images/eso0932a/), si su página confirma **CC BY 4.0**. Está en coordenadas galácticas: se alinea con el cielo real girando la dirección de muestreo (galácticas → ecuatoriales J2000 → ECL, con la matriz en `ephemeris/coordinates.ts`, testada con 3 objetos de posición conocida, como el centro galáctico). Con brillo sutil, por debajo de las estrellas HYG, y niveles de calidad. Si la licencia no es CC BY 4.0, queda fuera y se apunta.
+6. **Sol:** granulación procedural animada (sujeta a `prefers-reduced-motion`), oscurecimiento del limbo físico y corona o halo.
+7. **Post-procesado:**
+   - tone mapping evaluado (Neutral frente a AgX frente a ACES), con capturas comparadas;
+   - bloom solo para el Sol y solo en el nivel alto (`three/addons`, sin dependencias nuevas);
+   - antialiasing (MSAA en WebGL2 o SMAA).
+   - Todo dentro de los FPS de §5; en el nivel bajo, versión ligera o desactivado.
+8. **Órbitas y etiquetas:** las órbitas se ocultan o se desvanecen sobre el disco de cualquier cuerpo y cerca de él (prueba de profundidad + desvanecimiento). Las etiquetas no tapan el planeta enfocado.
+9. **Tierra, solo el arreglo de base:** corregir el azul uniforme y saturado (espacio de color, exposición o mezcla de la textura). Nubes, océano, luces y atmósfera completa siguen en la fase 5.
+10. **Calidad por niveles:** cada mejora tiene su versión para el nivel bajo y respeta los presupuestos de VRAM, FPS y peso de §5.
+11. **Dirección de arte de la luz por vista:**
+    - en la **vista general**, un relleno ilustrativo moderado y documentado para que todos los planetas se lean bien, y halos sutiles opcionales;
+    - en **primer plano**, la luz física de D29 con un relleno mínimo (el lado nocturno casi negro, como en las fotos de Cassini o Juno);
+    - exposición y tone mapping ajustados por vista, con capturas comparadas con las referencias reales y con el aspecto general del original **como referencia visual, sin copiar su código**;
+    - los valores, en un único módulo de configuración visual, con el motivo de cada uno.
+
+Criterios de aceptación:
+- [ ] **Comparativas lado a lado** con las referencias reales, a un ángulo de fase parecido, para el Sol, Mercurio, Venus, Marte, Júpiter, Saturno, Urano y Neptuno (capturas `?captura=1` en `docs/informes/img/fase-3b/`). El subagente revisor y la sesión de revisión las evalúan.
+- [ ] Tests de las funciones de sombreado (limbo de Minnaert y Lommel–Seeliger) con valores esperados.
+- [ ] Ninguna órbita se dibuja sobre el disco de un cuerpo (captura de Saturno y Júpiter como las de la fase 2).
+- [ ] Mercurio y Marte muestran relieve con luz rasante (capturas en el terminador).
+- [ ] Anillos de Saturno a contraluz (captura) y sombra del planeta sobre los anillos.
+- [ ] FPS, VRAM y peso por vista dentro de §5 en los tres niveles (tabla).
+- [ ] Vía Láctea de ESO alineada (captura con el centro galáctico en Sagitario) o apuntada como omitida si la licencia no encaja.
+- [ ] Todas las texturas y modelos de elevación nuevos en `FUENTES.md`, con una licencia compatible comprobada en la fuente.
+- [ ] Capturas de la vista general y de cada planeta en primer plano: a la vista, al menos igual de atractivas que el original y más fieles a las fotos reales (la evaluación va en el informe, con las capturas).
+
+### Fase 3c: Interfaz inmersiva del sistema solar
+
+Rama `fase-3c-interfaz` (bloque R, después de la 3b). Pedida por Iván el 26-10, con una captura de la barra inferior del original como referencia: «Al sistema solar me gustaría añadirle una interfaz gráfica parecida a esta. También que, cuando entras en la página, el sistema solar se esté moviendo a unos 3 días por segundo». Documento de origen: `docs/decisiones/FASE-3c-INTERFAZ.md`.
+
+**Qué tiene la referencia:** una fila de fichas de cuerpos con su miniatura redonda; una barra de tiempo compacta (reproducir/pausar redondo, fecha con rótulo e icono de calendario, línea de tiempo deslizante a lo ancho, selector de velocidad y «Controls +», que despliega el resto); pistas discretas y la fuente de los datos en letra pequeña; el lienzo a pantalla completa con la interfaz flotando encima. Se toma esa **estructura** con **nuestro estilo** (D30) y el arranque en movimiento (D31).
+
+Tareas:
+1. **Fichas de cuerpos** (sustituyen la lista lateral como selector principal):
+   - el Sol y los 8 planetas, cada uno con su **miniatura redonda renderizada por nuestro propio motor** (script con `?captura=1`, WebP pequeño; las mismas texturas y licencias, nada nuevo que atribuir);
+   - al elegir un planeta con lunas aparece una **segunda fila con sus lunas**;
+   - semántica accesible de grupo de selección (`role="radiogroup"` o barra de herramientas con `aria-pressed`), navegación con flechas, foco visible y nombre accesible con la distancia actual;
+   - en móvil, fila desplazable horizontalmente, con zonas táctiles ≥ 44 px.
+2. **Barra de tiempo compacta:**
+   - botón redondo de reproducir/pausar en latón;
+   - fecha legible con su rótulo («Fecha») e icono de calendario que abre el selector nativo;
+   - **línea de tiempo deslizante** que abarca el **año de la fecha mostrada** (de enero a diciembre), con una marca de «hoy», el año a la vista y paso al año anterior o siguiente en los extremos; el rango total sigue siendo 1900–2100;
+   - accesible: `input type="range"` con `aria-valuetext` («17 de marzo de 2026»); flechas = 1 día, RePág/AvPág = 1 mes, Inicio/Fin = el año;
+   - selector de velocidad.
+3. **Velocidades:** añadir **3 días/s (por defecto)** y 10 días/s a las actuales (tiempo real, 1 h/s, 1 día/s, 1 semana/s, 1 mes/s, 1 año/s), en los dos sentidos.
+4. **«Controles +»** despliega un panel con lo menos usado: hora y zona, «Ahora», escala (ilustrativa o real, cuando llegue en la fase 7), calidad, vista limpia y atajos de teclado. En móvil es una hoja inferior.
+
+   4b. **La barra lateral pasa a ser un panel desplegable «Índice»** (decisión de Iván, 26-10):
+   - **cerrado al entrar**, para que el 3D ocupe toda la pantalla;
+   - se abre con un botón «Índice» siempre visible y se cierra con su botón o con `Esc`;
+   - contiene el árbol completo de los 30 cuerpos con sus distancias (la lista actual, con su teclado y su árbol plano, WCAG 2.5.3) y la nota de qué mide cada distancia;
+   - es la alternativa accesible completa a las fichas;
+   - en escritorio se superpone al lado del lienzo sin desplazar el 3D (con el encuadre ajustado mientras está abierto); en móvil es una hoja inferior;
+   - el resto de la barra actual: las pestañas «Sistema solar · Tierra · Luna», flotantes arriba; el título y la descripción, al texto de presentación (tarea 5); «Un proyecto de… · Créditos», al pie en letra pequeña (tarea 6).
+5. **Texto de presentación** flotando arriba a la izquierda (título + una frase, como el H1 actual), que se pliega al interactuar o al elegir un cuerpo. En los móviles bajos se muestra solo el H1 compacto y la descripción se pliega (resuelve la duda de la fase 3). La ficha resumida del cuerpo elegido aparece como tarjeta flotante.
+6. **Pistas de uso** en letra pequeña («Arrastra para girar · rueda o pellizca para acercarte · elige un cuerpo») y el pie de los datos («1900–2100 · NASA/JPL · astronomy-engine»). Se ocultan en la vista limpia.
+7. **Arranque en movimiento** (D31), con un test e2e para cada caso: normal → reproduciendo a 3 días/s; movimiento reducido → en pausa; `?fecha=` → en pausa en esa fecha.
+8. **Encuadre:** actualizar los márgenes de `setViewOffset` a la nueva disposición, para que el cuerpo enfocado no quede tapado por las fichas ni por la barra.
+9. **Rendimiento:** con la reproducción automática ya no hay render bajo demanda al llegar. Medir el coste (CPU y batería) y comprobar que Lighthouse y los FPS de §5 se siguen cumpliendo; con la pestaña oculta, se pausa (ya existe).
+
+Criterios de aceptación:
+- [ ] Capturas en escritorio, portátil y móvil, junto a la referencia, que muestren la misma **estructura** con **nuestro estilo** propio y coherente con `docs/DISENO.md`.
+- [ ] Al entrar, el sistema se mueve a 3 días/s; con movimiento reducido o con `?fecha=` arranca en pausa (e2e).
+- [ ] La línea de tiempo funciona con ratón, táctil y teclado, y anuncia la fecha (axe sin violaciones; prueba de teclado en el informe).
+- [ ] Las fichas permiten elegir los 30 cuerpos (planetas en la primera fila, lunas en la segunda).
+- [ ] El panel «Índice» está cerrado al entrar, se abre y se cierra con el ratón, el teclado y `Esc` (con el foco gestionado: entra al abrir y vuelve al botón al cerrar) y conserva el árbol con distancias y su accesibilidad (e2e + axe).
+- [ ] Ningún cuerpo enfocado queda tapado por la interfaz (capturas).
+- [ ] FPS, Lighthouse y CLS dentro de §5 con la reproducción automática.
 
 ### Fase 4: Staging y entrega continua
 
@@ -419,7 +534,7 @@ Tareas:
 2. **Orientación real** según la hora (EQD + sidéreo, fase 1).
 3. **Sombra de la Luna** sobre la Tierra (umbra y penumbra analíticas, D20), visible en los eclipses solares reales.
 4. **Control de la luz solar**: cambia la hora del día sin perder la fecha.
-5. **Vistas guiadas** (`data/tours.ts`): Tierra completa, Pacífico, Himalaya, luces nocturnas y **España / Bajo Cinca**. `TourPlayerComponent` con anterior/siguiente/reproducir y subtítulos accesibles. Marcador de Fraga/Lleida.
+5. **Vistas guiadas** (`data/tours.ts`): Tierra completa, Pacífico, Himalaya, luces nocturnas y **España**, con marcadores discretos en los lugares del cielo desde España (Fraga entre ellos; fase 8). `TourPlayerComponent` con anterior/siguiente/reproducir y subtítulos accesibles.
 6. Textura de día de 8K solo en el nivel alto y si cabe en `maxTextureSize`.
 7. Prueba en móviles reales (staging) y ajuste de niveles.
 
@@ -433,7 +548,7 @@ Criterios de aceptación:
 ### Fase 6: La Luna
 
 Tareas:
-1. **`build-moon-relief.mjs`**: el NASA CGI Moon Kit → color WebP 2k/4k/8k; elevación del LOLA en **16 bits empaquetados en RG** (D15), indicando la resolución vertical resultante; mapa de normales derivado a resolución completa.
+1. **Relieve lunar** con el script común `build-relief.mjs` de la fase 3b: el NASA CGI Moon Kit → color WebP 2k/4k/8k; elevación del LOLA en **16 bits empaquetados en RG** (D15), indicando la resolución vertical resultante; mapa de normales derivado a resolución completa.
 2. **Material lunar**: desplazamiento de vértices a escala física (exageración opcional y documentada) + normales. Malla sin costuras en el meridiano 180° ni en los polos (esfera cúbica o tratamiento específico de UV, justificado). Densidad por nivel.
 3. **Orientación** con `RotationAxis` (incluye la libración física); comprobación con `Libration` de astronomy-engine.
 4. **Sombra de la Tierra** sobre la Luna en los eclipses lunares (umbra rojiza y penumbra, D20).
@@ -459,7 +574,7 @@ Tareas:
 2. **Sistemas de lunas** en el marco local físico (§4.4), con sus órbitas y ficha resumida.
 3. **Sombras analíticas generalizadas** (D20): las galileanas sobre Júpiter (tránsitos) y los planetas sobre sus lunas (eclipses de lunas).
 4. **Interfaz de escala real** (el motor ya la soporta desde la fase 2): interruptor en los controles y en la URL (`escala=real`), con transición animada.
-5. **Atmósferas suaves** (borde) en Venus, Marte, Titán, Urano y Neptuno, si caben en el presupuesto.
+5. **Atmósferas suaves** (borde): la base llega con la fase 3b (D29: Venus, Marte, Titán y los gigantes); aquí se ajustan con las texturas fotográficas de las lunas (Titán), si caben en el presupuesto.
 6. Tests de precisión de las lunas (§5), de continuidad de las transiciones y de las sombras.
 
 Criterios de aceptación:
@@ -468,14 +583,17 @@ Criterios de aceptación:
 - [ ] FPS, VRAM y memoria con todos los sistemas cargados según §5.
 - [ ] Licencias del USGS registradas una a una en `FUENTES.md`.
 
-### Fase 8: El cielo desde el Bajo Cinca y los eclipses
+### Fase 8: El cielo desde España y los eclipses
+
+«El cielo desde España» sustituye a «El cielo desde el Bajo Cinca» (decisión de Iván, 26-10; `docs/decisiones/CAMBIO-CIELO-ESPANA.md`): qué se ve esta noche desde los grandes observatorios del país (el Montsec por defecto) o desde tu ubicación.
 
 Tareas:
-1. **Vista `/cielo-bajo-cinca`**:
-   - cúpula celeste desde Fraga (Lleida como alternativa; geolocalización **opcional**, tras una acción del usuario y solo en el navegador);
-   - horizonte, puntos cardinales, estrellas, Vía Láctea, planetas, Luna y Sol en coordenadas horizontales con refracción;
+1. **Vista `/cielo`** (`?lugar=teide`):
+   - **selector de lugares** con el Parque Astronómico del Montsec (Àger, Lleida) **por defecto**, el Observatorio del Roque de los Muchachos (La Palma), el Observatorio del Teide (Tenerife), el Observatorio de Calar Alto (Almería), el Observatori Fabra (Barcelona), la Puerta del Sol (km 0, Madrid) y Fraga (Bajo Cinca), más «usar mi ubicación» (geolocalización **opcional**, tras una acción del usuario y solo en el navegador). `lleida` se conserva en los datos, aunque no salga en el selector;
+   - **`data/places.ts`**: cada lugar con latitud, longitud y altitud de **fuentes oficiales citadas** (el IGN, con su Nomenclátor Geográfico o sus núcleos de población, o la web oficial de cada observatorio o del IAC), su `source` y su **zona horaria IANA** (§4.3);
+   - cúpula celeste desde el lugar elegido: horizonte, puntos cardinales, estrellas, Vía Láctea, planetas, Luna y Sol en coordenadas horizontales con refracción;
    - **color del cielo según la altura del Sol** (día, crepúsculos civil, náutico y astronómico, y noche);
-   - deslizador de la hora a lo largo de la noche, en hora de `Europe/Madrid`;
+   - deslizador de la hora a lo largo de la noche, en la **hora local del lugar** con la zona indicada (`Europe/Madrid` en la Península; `Atlantic/Canary` en el Teide y el Roque de los Muchachos);
    - **constelaciones** solo con una fuente de licencia permisiva (CC0, CC BY, MIT, BSD o dominio público; candidata a comprobar: d3-celestial).
 2. **«Esta noche»**:
    - qué planetas se ven;
@@ -484,13 +602,17 @@ Tareas:
    - «hacia dónde mirar» en lenguaje claro;
    - tabla accesible equivalente.
 3. **Eclipses** (`SearchLocalSolarEclipse`, `SearchLunarEclipse`): los próximos visibles desde España, con tipo y hora local. Página `/eclipses` (lista prerenderizada «calculado el…» + recálculo en el cliente) con **«Ver en 3D»**, que lleva a la vista Tierra o Luna en el instante del máximo, con la sombra.
-4. **Fixtures**: salidas y puestas del USNO para Fraga en 3 fechas; eclipses de la NASA con URL.
+4. **Fixtures**: salidas y puestas del USNO para **el Montsec y el Teide** (uno peninsular y uno canario, para probar las dos zonas horarias) en 3 fechas; eclipses de la NASA con URL.
+5. **Textos:** donde se nombre la vista del cielo, «España» o el nombre del lugar elegido.
 
 Criterios de aceptación:
 - [ ] Salidas, puestas y crepúsculos ±2 min frente al USNO; eclipses con fecha y tipo exactos.
 - [ ] La vista del cielo y la tabla dan la misma información.
 - [ ] La geolocalización solo se pide tras una acción del usuario y todo funciona si se rechaza.
 - [ ] «Ver en 3D» muestra la sombra del eclipse correspondiente.
+- [ ] Cambiar de lugar recalcula el cielo y el panel «Esta noche», y la URL lo refleja (`?lugar=`).
+- [ ] En el Teide y el Roque de los Muchachos, las horas salen en la hora canaria (test con un fixture del USNO).
+- [ ] Las coordenadas de cada lugar tienen fuente oficial (test de campos).
 
 ### Fase 9: Contenido y compartir
 
@@ -537,7 +659,7 @@ Criterios de aceptación:
 **Claude Code:**
 1. **`deploy-production.yml`**: despliegue al crear una etiqueta `v*` (o con lanzamiento manual), reutilizando el build verificado.
 2. **Verificación en producción** con `curl` y Lighthouse.
-3. **README de portfolio** (capturas, vídeo o GIF corto, stack, arquitectura, precisión y rendimiento medidos), **LICENSE**, **CHANGELOG** y etiqueta **`v1.0.0`**. El repo pasa a público.
+3. **README de portfolio** (capturas, vídeo o GIF corto, stack, arquitectura, precisión y rendimiento medidos), **LICENSE**, **CHANGELOG** y etiqueta **`v1.0.0`** (el repo de GitHub ya es público, §3).
 4. `indexable: true` con el OK de Iván.
 5. Lista para Iván: ficha del proyecto en ivanchesa.es (en su propio repo) y difusión.
 

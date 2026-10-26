@@ -6,7 +6,7 @@ import type { BodyId } from '../data/body.model';
 
 export type { BodyId } from '../data/body.model';
 
-/** Vistas del explorador (D10). El cielo del Bajo Cinca llega en la fase 8. */
+/** Vistas del explorador (D10). El cielo desde España llega en la fase 8. */
 export type ExplorerView = 'system' | 'earth' | 'moon';
 
 /** Escala base: la ilustrativa o la real global (D12). El sistema local físico es automático. */

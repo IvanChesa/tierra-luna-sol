@@ -69,7 +69,7 @@ Todo se formatea con las funciones de `src/app/core/format.ts`, que usan `Intl.N
 - **Formato largo:** 24 de octubre de 2026, 21:40. **Corto** (barras, tablas): 24 oct 2026, 21:40.
 - **Reloj de 24 horas**, con segundos solo donde hacen falta (el tiempo de la simulación).
 - **Rangos:** «entre 1900 y 2100», «de 1900 a 2100».
-- **Internamente, siempre UTC** (`CLAUDE.md`). El cielo del Bajo Cinca (fase 8) usa la hora peninsular (`Europe/Madrid`) y lo dice.
+- **Internamente, siempre UTC** (`CLAUDE.md`). El cielo desde España (fase 8) usa la hora local del lugar elegido (`Europe/Madrid` en la Península; `Atlantic/Canary` en el Teide y el Roque de los Muchachos) y lo dice.
 
 ## 5. Fuentes
 

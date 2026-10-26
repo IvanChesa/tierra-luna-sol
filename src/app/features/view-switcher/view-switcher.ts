@@ -8,7 +8,7 @@ interface ViewLink {
   readonly label: string;
 }
 
-/** Las vistas del explorador (el cielo del Bajo Cinca llega en la fase 8). */
+/** Las vistas del explorador (el cielo desde España llega en la fase 8). */
 export const VIEW_LINKS: readonly ViewLink[] = [
   { view: 'system', path: '/', label: 'Sistema solar' },
   { view: 'earth', path: '/explorar/tierra', label: 'Tierra' },

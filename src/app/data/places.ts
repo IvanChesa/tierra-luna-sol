@@ -1,5 +1,6 @@
 /**
- * Observadores del cielo del Bajo Cinca (fase 8) y marcador de la vista de la Tierra (fase 5).
+ * Observadores del cielo desde España (fase 8; por ahora, Fraga y Lleida) y marcadores de la vista
+ * de la Tierra (fase 5).
  *
  * Coordenadas y altitud del núcleo de población, del Instituto Geográfico Nacional (API OGC
  * «Núcleos de población», consultada el 2026-10-23). Latitud y longitud geográficas ETRS89
@@ -40,7 +41,10 @@ export const PLACES = [
 
 export type PlaceId = (typeof PLACES)[number]['id'];
 
-/** Observador por defecto del cielo del Bajo Cinca (PLAN, fase 8). */
+/**
+ * Observador por defecto hasta la fase 8, que añade los lugares del cielo desde España con el Montsec
+ * por defecto (docs/decisiones/CAMBIO-CIELO-ESPANA.md).
+ */
 export const DEFAULT_PLACE_ID: PlaceId = 'fraga';
 
 export const PLACES_ATTRIBUTION = '© Instituto Geográfico Nacional';
