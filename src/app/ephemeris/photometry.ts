@@ -268,18 +268,21 @@ export const PHASE_LAWS = {
   mercurio: {
     validDeg: [2.1, 169.5],
     magnitude: cubic(-0.6, 4.98, -4.88, 3.02),
-    source: 'Hilton (2005), AJ 129, 2902; astronomy-engine',
+    source:
+      'Hilton (2005), AJ 129, 2902 (https://iopscience.iop.org/article/10.1086/430212), como en astronomy-engine 2.1.19 (VisualMagnitude)',
   },
   venus: {
     validDeg: [2.2, 170.2],
     magnitude: (alphaDeg: number) =>
       alphaDeg < 163.6 ? cubic(-4.47, 1.03, 0.57, 0.13)(alphaDeg) : 0.98 - 1.02 * (alphaDeg / 100),
-    source: 'Hilton (2005), AJ 129, 2902; astronomy-engine',
+    source:
+      'Hilton (2005), AJ 129, 2902 (https://iopscience.iop.org/article/10.1086/430212), como en astronomy-engine 2.1.19 (VisualMagnitude)',
   },
   marte: {
     validDeg: [0, 50],
     magnitude: (alphaDeg: number) => -1.52 + 1.6 * (alphaDeg / 100),
-    source: 'astronomy-engine (ley lineal)',
+    source:
+      'astronomy-engine 2.1.19 (VisualMagnitude, https://github.com/cosinekitty/astronomy): −1,52 + 1,60 · α/100°; el fichero no cita su origen',
   },
   luna: {
     validDeg: [0, 150],
@@ -287,7 +290,8 @@ export const PHASE_LAWS = {
       const rad = (alphaDeg * Math.PI) / 180;
       return -12.717 + 1.49 * Math.abs(rad) + 0.0431 * rad ** 4;
     },
-    source: 'astronomy-engine (MoonMagnitude)',
+    source:
+      'astronomy-engine 2.1.19 (MoonMagnitude, https://github.com/cosinekitty/astronomy), que cita https://astronomy.stackexchange.com/questions/10246/is-there-a-simple-analytical-formula-for-the-lunar-phase-brightness-curve',
   },
 } as const satisfies Record<string, PhaseLaw>;
 

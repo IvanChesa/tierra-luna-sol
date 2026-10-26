@@ -157,12 +157,18 @@ export const BODY_PHOTOMETRY: Readonly<Record<Exclude<BodyId, 'sol'>, BodyPhotom
     haze: haze(0.35, 3, 0.18, 2.5),
     hazeColor: '#f4e6c8',
     haloScaleHeight: 0.012,
+    chromaticity: {
+      rgb: [1.027, 0.996, 0.958],
+      mix: 1,
+      source:
+        'Albedos geométricos por banda de Mallama, Krobusek y Pavlov (2017, Icarus 282, 19, tabla 7; https://arxiv.org/abs/1609.05048): g′ 0,664 (469 nm), V 0,689 (549 nm) y r′ 0,712 (616 nm), interpolados a las longitudes de onda dominantes de los primarios sRGB (611, 549 y 464 nm). No hay una foto de Venus en color real con licencia compatible, y la textura era ocre (1,42/0,94/0,40): en el visible, Venus es casi tan blanca como el Sol (B−V 0,70 frente a 0,65)',
+    },
     contrast: {
       value: 0.3,
       note: 'En luz visible, las nubes de Venus casi no tienen contraste (PIA10124, MESSENGER); la textura las realza como en las imágenes en ultravioleta.',
     },
     calibrateAlbedo: true,
-    note: 'Ajustada a la ley de fase de Hilton (2005); la neblina (tono, limbo y crepúsculo), ajuste visual.',
+    note: 'Ajustada a la ley de fase de Hilton (2005); la neblina (tono, limbo y crepúsculo), ajuste visual. Color: la fotometría de Mallama et al. (2017).',
   },
   tierra: {
     kind: 'atmosphere',
@@ -180,13 +186,13 @@ export const BODY_PHOTOMETRY: Readonly<Record<Exclude<BodyId, 'sol'>, BodyPhotom
     hazeColor: '#cfe0f2',
     chromaticity: {
       rgb: [1.789, 0.838, 0.285],
-      mix: 0.75,
+      mix: 1,
       source:
-        'Media del disco (70 % del radio) en la foto del Hubble de Marte del 12-05-2016 (heic1609, NASA/ESA), medida en su imagen: la textura era más roja y saturada',
+        'Media del 70 % del disco en la foto del Hubble de Marte del 12-05-2016 (heic1609, NASA/ESA; https://cdn.esahubble.org/archives/images/screen/heic1609a.jpg), con scripts/measure-reference-colors.mjs. Entera: con una parte del color de la textura (más roja y saturada), la captura salía más saturada que la foto',
     },
     haloScaleHeight: 0.006,
     calibrateAlbedo: true,
-    note: 'Ajustada a la ley de fase lineal de astronomy-engine. Neblina azulada y blanquecina en el limbo, como en las fotos del Hubble (ajuste visual). Color: Hubble 2016.',
+    note: 'Ajustada a la ley de fase lineal de astronomy-engine 2.1.19 (VisualMagnitude). Neblina azulada y blanquecina en el limbo, como en las fotos del Hubble (ajuste visual). Color: Hubble 2016.',
   },
   jupiter: {
     kind: 'giant',
@@ -195,13 +201,13 @@ export const BODY_PHOTOMETRY: Readonly<Record<Exclude<BodyId, 'sol'>, BodyPhotom
     haloScaleHeight: 0.005,
     hazeColor: '#f2e3cc',
     chromaticity: {
-      rgb: [1.202, 0.972, 0.679],
+      rgb: [1.196, 0.974, 0.684],
       mix: 0.5,
       source:
-        'Media del disco (60 % del radio) en la foto del Hubble de Júpiter del 27-06-2019 (OPAL, NASA/ESA), medida en su imagen: las zonas de la textura eran azuladas',
+        'Media del 60 % del disco en la foto del Hubble de Júpiter del 27-06-2019 (OPAL, NASA/ESA; https://cdn.esahubble.org/archives/images/screen/heic1914a.jpg), con scripts/measure-reference-colors.mjs: las zonas de la textura eran azuladas',
     },
     calibrateAlbedo: true,
-    note: 'Minnaert k = 1,0 en el visible (NASA-CR-131891, 1973; y Lambert en las correcciones de Cassini ISS). Neblina: ajuste visual.',
+    note: 'Minnaert k = 1,0 (NASA-CR-131891, 1973, https://ntrs.nasa.gov/citations/19730014045, medido entre 0,6 y 2,0 µm). Neblina: ajuste visual.',
   },
   saturno: {
     kind: 'giant',
@@ -210,13 +216,13 @@ export const BODY_PHOTOMETRY: Readonly<Record<Exclude<BodyId, 'sol'>, BodyPhotom
     haloScaleHeight: 0.005,
     hazeColor: '#f0e2c4',
     chromaticity: {
-      rgb: [1.357, 0.938, 0.559],
+      rgb: [1.356, 0.94, 0.548],
       mix: 0.5,
       source:
-        'Media del disco (60 % del radio) en la foto del Hubble de Saturno del 20-06-2019 (OPAL, NASA/ESA), medida en su imagen',
+        'Media del 50 % del globo, por encima de los anillos, en la foto del Hubble de Saturno del 20-06-2019 (OPAL, NASA/ESA; https://cdn.esahubble.org/archives/images/screen/heic1917a.jpg), con scripts/measure-reference-colors.mjs',
     },
     calibrateAlbedo: true,
-    note: 'Minnaert k = 0,85, en el intervalo 0,75–0,90 medido según la latitud (NASA-CR-131891, 1973). Neblina: ajuste visual.',
+    note: 'Minnaert k = 0,85, en el intervalo 0,75–0,90 medido según la latitud (NASA-CR-131891, 1973, https://ntrs.nasa.gov/citations/19730014045, entre 0,6 y 2,0 µm). Neblina: ajuste visual.',
   },
   urano: {
     kind: 'giant',
@@ -225,10 +231,10 @@ export const BODY_PHOTOMETRY: Readonly<Record<Exclude<BodyId, 'sol'>, BodyPhotom
     haloScaleHeight: 0.006,
     hazeColor: '#c9f0f2',
     chromaticity: {
-      rgb: [0.767, 1.063, 1.061],
+      rgb: [0.765, 1.063, 1.065],
       mix: 1,
       source:
-        'Media del disco en la reconstrucción en color real de Irwin et al. (2024, MNRAS 527, 11521, https://doi.org/10.1093/mnras/stad3761), medida en su imagen',
+        'Media del 60 % del disco en la reconstrucción en color real de Irwin et al. (2024, MNRAS 527, 11521, https://doi.org/10.1093/mnras/stad3761), en la figura de The Planetary Society (https://www.planetary.org/space-images/the-true-colors-of-uranus-and-neptune), con scripts/measure-reference-colors.mjs',
     },
     calibrateAlbedo: true,
     note: 'Minnaert y neblina: ajuste visual con las fotos del Hubble y de Voyager 2. Color: Irwin et al. (2024).',
@@ -240,17 +246,17 @@ export const BODY_PHOTOMETRY: Readonly<Record<Exclude<BodyId, 'sol'>, BodyPhotom
     haloScaleHeight: 0.006,
     hazeColor: '#bfe0f5',
     chromaticity: {
-      rgb: [0.65, 1.075, 1.288],
+      rgb: [0.654, 1.074, 1.281],
       mix: 1,
       source:
-        'Media del disco en la reconstrucción en color real de Irwin et al. (2024, MNRAS 527, 11521, https://doi.org/10.1093/mnras/stad3761), medida en su imagen: la textura (de las imágenes realzadas de Voyager 2) era demasiado azul',
+        'Media del 60 % del disco en la reconstrucción en color real de Irwin et al. (2024, MNRAS 527, 11521, https://doi.org/10.1093/mnras/stad3761), en la figura de The Planetary Society (https://www.planetary.org/space-images/the-true-colors-of-uranus-and-neptune), con scripts/measure-reference-colors.mjs: la textura (de las imágenes realzadas de Voyager 2) era demasiado azul',
     },
     calibrateAlbedo: true,
     note: 'Minnaert y neblina: ajuste visual con las fotos del Hubble. Color: Irwin et al. (2024), que corrigen el azul exagerado de las primeras imágenes de Voyager 2.',
   },
   luna: {
     ...airless(
-      'Ajustada a la ley de fase de la Luna de astronomy-engine, con el disco plano en fase llena.',
+      'Ajustada a la ley de fase de la Luna de astronomy-engine 2.1.19 (MoonMagnitude), con el disco plano en fase llena.',
     ),
   },
   fobos: airless(),

@@ -31,6 +31,7 @@ import sharp from 'sharp';
 import { BODY_DATA } from '../src/app/data/body-data.ts';
 import { RING_PHOTOMETRY } from '../src/app/data/photometry.ts';
 import { phaseFunction, ringReflectance } from '../src/app/ephemeris/photometry.ts';
+import { OCEAN_CHROMA, RING_TINTS } from './reference-colors.mjs';
 import {
   DEMS,
   checkAlignmentWithColor,
@@ -55,7 +56,7 @@ const RING_HEIGHT = 16;
  * ring (tira RGBA de los anillos), panorama (cielo en coordenadas galácticas), relief (mapa de normales
  * calculado con build-relief.mjs a partir de un modelo de elevación; `color`: la textura con la que
  * se comprueba la alineación). `ocean`: máscara del agua con la que se corrige el color del océano
- * (OCEAN_CHROMA).
+ * (OCEAN_CHROMA). `maxWidth`: el nivel más grande que se genera.
  */
 const TEXTURES = {
   mercury: { file: '8k_mercury.jpg', kind: 'color', quality: 80 },
@@ -79,7 +80,7 @@ const TEXTURES = {
   'mars-normal': { dem: 'mars', kind: 'relief', color: 'mars', quality: 85 },
   uranus: { file: '2k_uranus.jpg', kind: 'color', quality: 82 },
   neptune: { file: '2k_neptune.jpg', kind: 'color', quality: 82 },
-  'milky-way': { file: 'eso0932a.tif', kind: 'panorama', quality: 70 },
+  'milky-way': { file: 'eso0932a.tif', kind: 'panorama', quality: 80, maxWidth: 2048 },
 };
 
 /**
@@ -300,17 +301,6 @@ const smooth = (t) => {
   const x = Math.min(Math.max(t, 0), 1);
   return x * x * (3 - 2 * x);
 };
-/**
- * Matiz de cada anillo (RGB lineal / luminancia), medido en la foto del Hubble de Saturno del
- * 20-06-2019 (OPAL, NASA/ESA) a lo largo del ansa derecha: el color de la textura en los anillos
- * tenues no es fiable (salía morado en el C).
- */
-const RING_TINTS = {
-  C: [0.97, 0.97, 1.35],
-  B: [0.94, 1.01, 1.07],
-  Cassini: [0.98, 0.98, 1.29],
-  A: [1.0, 0.99, 1.08],
-};
 
 /** Valor típico de un intervalo de la ficha: la media geométrica (la aritmética si empieza en 0). */
 const typical = ([lo, hi]) => (lo > 0 ? Math.sqrt(lo * hi) : (lo + hi) / 2);
@@ -469,17 +459,6 @@ async function physicalRingStrip(file, calibration) {
 }
 
 /**
- * Color del océano de la Tierra visto desde el espacio (RGB lineal / luminancia). La textura de Solar
- * System Scope pinta todo el océano abierto de un azul plano y saturado (≈ 0,28/0,93/3,84). Medido en
- * tres fotos en color natural de EPIC (DSCOVR, NASA; https://epic.gsfc.nasa.gov/) del 21-06-2016,
- * centradas en el Pacífico, el Atlántico y el Índico (epic_1b_20160621230313, …152458 y …074644):
- * cada píxel a menos de 0,6 radios del centro del disco se lleva a su latitud y longitud, se quedan
- * los de agua de la máscara especular (a 2 px de la costa) y, de ellos, el 20 % más oscuro (sin
- * nubes). Incluye la luz que dispersa la atmósfera, que la escena aún no dibuja (fase 5).
- */
-const OCEAN_CHROMA = [0.683, 1.029, 1.651];
-
-/**
  * Lleva el océano de la textura de día a OCEAN_CHROMA (fase 3b, arreglo de base de la Tierra). En el
  * agua de la máscara, cada píxel se multiplica por la ganancia por canal que lleva el océano abierto
  * a ese color y conserva su luminancia: se mantienen el detalle y las diferencias de las aguas
@@ -635,7 +614,8 @@ for (const [id, spec] of Object.entries(TEXTURES)) {
   // El panorama, sin sus estrellas (las pone el catálogo HYG, nítidas y en su sitio): una mediana de
   // 5 × 5 px en el original las quita y conserva la luz difusa, las nubes de estrellas y el polvo. Con
   // ellas, en los primeros planos salían como trazos (la proyección equirrectangular galáctica las
-  // estira lejos del plano de la Galaxia) y el grano doblaba el peso.
+  // estira lejos del plano de la Galaxia) y el grano doblaba el peso. Sin el detalle de las estrellas,
+  // el nivel de 4k ya no aporta nada sobre el de 2k y costaría 43 MB de VRAM: se genera hasta 2k.
   if (spec.kind === 'panorama') {
     const filtered = await base().median(5).png({ compressionLevel: 1 }).toBuffer();
     base = () => sharp(filtered, { limitInputPixels: false });
@@ -649,7 +629,7 @@ for (const [id, spec] of Object.entries(TEXTURES)) {
   }
   const list = [];
   for (const [level, width] of LEVELS) {
-    if (width > sourceWidth) continue;
+    if (width > sourceWidth || width > (spec.maxWidth ?? Infinity)) continue;
     let pipeline = base();
     if (spec.kind === 'ring') {
       pipeline = pipeline.resize(width, RING_HEIGHT, { fit: 'fill', kernel: 'lanczos3' });
@@ -657,6 +637,9 @@ for (const [id, spec] of Object.entries(TEXTURES)) {
       pipeline = pipeline.resize(width, width / 2, { fit: 'fill', kernel: 'lanczos3' });
     }
     if (spec.kind === 'gray') pipeline = pipeline.toColourspace('b-w');
+    // El panorama sin estrellas se ve ampliado en los primeros planos (un píxel de 2k mide 0,18°): un
+    // desenfoque leve quita las manchas de la mediana y de la compresión.
+    if (spec.kind === 'panorama') pipeline = pipeline.blur(level === '1k' ? 0.6 : 1);
     list.push(await emit(id, level, pipeline, spec.quality, { alpha: spec.kind === 'ring' }));
   }
   files[id] = list;

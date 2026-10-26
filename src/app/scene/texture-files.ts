@@ -260,24 +260,24 @@ export const TEXTURE_FILES: TextureFiles = {
   'saturn-rings': [
     {
       level: '1k',
-      path: 'textures/1k/saturn-rings.c31a35198c.webp',
+      path: 'textures/1k/saturn-rings.a0982a6763.webp',
       width: 1024,
       height: 16,
-      bytes: 1416,
+      bytes: 1466,
     },
     {
       level: '2k',
-      path: 'textures/2k/saturn-rings.ee1499cdca.webp',
+      path: 'textures/2k/saturn-rings.49f49f099c.webp',
       width: 2048,
       height: 16,
-      bytes: 2392,
+      bytes: 2420,
     },
     {
       level: '4k',
-      path: 'textures/4k/saturn-rings.f654a4100a.webp',
+      path: 'textures/4k/saturn-rings.3b4bae59e7.webp',
       width: 4096,
       height: 16,
-      bytes: 3594,
+      bytes: 3742,
     },
   ],
   'mercury-normal': [
@@ -361,24 +361,17 @@ export const TEXTURE_FILES: TextureFiles = {
   'milky-way': [
     {
       level: '1k',
-      path: 'textures/1k/milky-way.3b3e2241fd.webp',
+      path: 'textures/1k/milky-way.78a1ac434c.webp',
       width: 1024,
       height: 512,
-      bytes: 5982,
+      bytes: 6394,
     },
     {
       level: '2k',
-      path: 'textures/2k/milky-way.83ac1d4a28.webp',
+      path: 'textures/2k/milky-way.b8a26e3a7a.webp',
       width: 2048,
       height: 1024,
-      bytes: 21758,
-    },
-    {
-      level: '4k',
-      path: 'textures/4k/milky-way.29f6a67589.webp',
-      width: 4096,
-      height: 2048,
-      bytes: 80506,
+      bytes: 21284,
     },
   ],
 };
