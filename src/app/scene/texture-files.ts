@@ -303,6 +303,52 @@ export const TEXTURE_FILES: TextureFiles = {
       bytes: 3570,
     },
   ],
+  'mercury-normal': [
+    {
+      level: '1k',
+      path: 'textures/1k/mercury-normal.ac577f9c68.webp',
+      width: 1024,
+      height: 512,
+      bytes: 71748,
+    },
+    {
+      level: '2k',
+      path: 'textures/2k/mercury-normal.19d72cebee.webp',
+      width: 2048,
+      height: 1024,
+      bytes: 319518,
+    },
+    {
+      level: '4k',
+      path: 'textures/4k/mercury-normal.53f1e9f47e.webp',
+      width: 4096,
+      height: 2048,
+      bytes: 1230728,
+    },
+  ],
+  'mars-normal': [
+    {
+      level: '1k',
+      path: 'textures/1k/mars-normal.b4b2c59fe1.webp',
+      width: 1024,
+      height: 512,
+      bytes: 44874,
+    },
+    {
+      level: '2k',
+      path: 'textures/2k/mars-normal.883675c9c9.webp',
+      width: 2048,
+      height: 1024,
+      bytes: 226930,
+    },
+    {
+      level: '4k',
+      path: 'textures/4k/mars-normal.338c36b536.webp',
+      width: 4096,
+      height: 2048,
+      bytes: 1002672,
+    },
+  ],
   uranus: [
     {
       level: '1k',

@@ -150,6 +150,33 @@ export function integratedPhase(alpha: number, p: Photometry): number {
   return discBrightness(alpha, p) / discBrightness(0, p);
 }
 
+/**
+ * Brillo medio de la parte iluminada del disco a la fase α, respecto a fase llena: la curva de fase
+ * dividida por la fracción iluminada, (1 + cos α) / 2. Es lo que mira quien expone una foto: una
+ * fase creciente tiene poca superficie iluminada, pero esa superficie no es tan oscura.
+ */
+export function litDiscBrightness(alpha: number, p: Photometry, steps = 32): number {
+  const fraction = (1 + Math.cos(alpha)) / 2;
+  if (fraction < 1e-4) return 0;
+  const full = discBrightness(0, p, steps, 2 * steps);
+  return discBrightness(alpha, p, steps, 2 * steps) / full / fraction;
+}
+
+/** Tabla de {@link litDiscBrightness} cada 10° (de 0° a 180°), para consultarla en cada frame. */
+export function litBrightnessTable(p: Photometry): Float64Array {
+  return Float64Array.from({ length: 19 }, (_, k) =>
+    litDiscBrightness((k * 10 * Math.PI) / 180, p),
+  );
+}
+
+/** Interpola la tabla de {@link litBrightnessTable} a la fase α (rad). */
+export function interpolateLitBrightness(table: Float64Array, alpha: number): number {
+  const x = Math.min(Math.max((alpha * 180) / Math.PI / 10, 0), 18);
+  const k = Math.min(Math.floor(x), 17);
+  const t = x - k;
+  return (table[k] as number) * (1 - t) + (table[k + 1] as number) * t;
+}
+
 /** Diferencia de magnitud respecto a fase llena: −2,5 · log10 de la curva de fase. */
 export const phaseMagnitude = (alpha: number, p: Photometry): number =>
   -2.5 * Math.log10(integratedPhase(alpha, p));

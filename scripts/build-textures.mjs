@@ -27,6 +27,13 @@ import sharp from 'sharp';
 import { FloatType } from 'three';
 import { EXRLoader } from 'three/addons/loaders/EXRLoader.js';
 import { BODY_DATA } from '../src/app/data/body-data.ts';
+import {
+  DEMS,
+  checkAlignmentWithColor,
+  checkElevation,
+  loadElevation,
+  normalMap,
+} from './build-relief.mjs';
 
 const ROOT = new URL('../', import.meta.url);
 const SRC = new URL('assets-src/textures/', ROOT);
@@ -41,7 +48,9 @@ const RING_HEIGHT = 16;
 
 /**
  * kind: color (sRGB), gray (datos en escala de grises, sin espacio de color), normal (datos RGB),
- * ring (tira RGBA de los anillos), sky (EXR del cielo, se tonemapea).
+ * ring (tira RGBA de los anillos), sky (EXR del cielo, se tonemapea), relief (mapa de normales
+ * calculado con build-relief.mjs a partir de un modelo de elevación; `color`: la textura con la que
+ * se comprueba la alineación).
  */
 const TEXTURES = {
   sun: { file: '8k_sun.jpg', kind: 'color', quality: 80 },
@@ -57,6 +66,8 @@ const TEXTURES = {
   jupiter: { file: '8k_jupiter.jpg', kind: 'color', quality: 80 },
   saturn: { file: '8k_saturn.jpg', kind: 'color', quality: 80 },
   'saturn-rings': { file: '8k_saturn_ring_alpha.png', kind: 'ring', quality: 90 },
+  'mercury-normal': { dem: 'mercury', kind: 'relief', color: 'mercury', quality: 85 },
+  'mars-normal': { dem: 'mars', kind: 'relief', color: 'mars', quality: 85 },
   uranus: { file: '2k_uranus.jpg', kind: 'color', quality: 82 },
   neptune: { file: '2k_neptune.jpg', kind: 'color', quality: 82 },
   'milky-way': { file: 'milkyway_2020_4k.exr', kind: 'sky', quality: 72 },
@@ -470,6 +481,40 @@ let ringStrip = null;
 for (const [id, spec] of Object.entries(TEXTURES)) {
   if (OMITTED[id]) {
     console.log(`${id}: omitida (${OMITTED[id]})`);
+    continue;
+  }
+  if (spec.kind === 'relief') {
+    // Mapas de normales: uno por nivel, calculado del modelo remuestreado a ese tamaño (las
+    // pendientes son las de esa resolución) y comprobado contra su textura de color.
+    const dem = DEMS[spec.dem];
+    const list = [];
+    for (const [level, width] of LEVELS) {
+      const elevation = await loadElevation(spec.dem, width);
+      if (level === '1k') {
+        reports.push(checkElevation(spec.dem, elevation, width));
+        const colorFile = files[spec.color]?.[0];
+        if (!colorFile)
+          throw new Error(`Falta la textura de color «${spec.color}» para comprobar el relieve`);
+        const color = await sharp(fileURLToPath(new URL(colorFile.path, PUBLIC)))
+          .raw()
+          .toBuffer({ resolveWithObject: true });
+        reports.push(
+          checkAlignmentWithColor(spec.dem, elevation, {
+            data: color.data,
+            width: color.info.width,
+            height: color.info.height,
+            channels: color.info.channels,
+          }),
+        );
+      }
+      const normals = normalMap(elevation, width, width / 2, dem.radiusM, dem.exaggeration);
+      const pipeline = sharp(normals, { raw: { width, height: width / 2, channels: 3 } });
+      list.push(await emit(id, level, pipeline, spec.quality));
+    }
+    files[id] = list;
+    console.log(
+      `${id}: ${list.map((f) => `${f.level} ${(f.bytes / 1024).toFixed(0)} kB`).join(' · ')}`,
+    );
     continue;
   }
   const input = fileURLToPath(new URL(spec.file, SRC));

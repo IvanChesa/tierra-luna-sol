@@ -12,8 +12,10 @@
  * - **Exposición del primer plano**: con el brillo calibrado con el albedo, Mercurio (0,142) o la
  *   Luna (0,12) salen oscuros al lado de Venus (0,689), que es lo real a la misma luz. En un primer
  *   plano, la exposición se ajusta al cuerpo que hay delante, como hace quien hace la foto:
- *   (referencia / albedo)^fuerza, entre un mínimo y un máximo. Así los claros (Júpiter, Venus) no se
- *   queman y los oscuros no se pierden; en la vista general, la exposición es la misma para todos.
+ *   (referencia / brillo)^fuerza, entre un mínimo y un máximo, con el brillo de la parte iluminada:
+ *   el albedo por lo que se oscurece esa parte con la fase (una fase creciente se expone más, como
+ *   en las fotos). Así los claros (Júpiter, Venus) no se queman y los oscuros no se pierden; en la
+ *   vista general, la exposición es la misma para todos.
  */
 export type ToneMappingMode = 'neutral' | 'agx' | 'aces';
 
@@ -35,9 +37,9 @@ export const VISUAL_CONFIG = {
     referenceAlbedo: 0.4,
     /** Cuánto se compensa (0: nada; 1: todo). */
     strength: 0.8,
-    /** Exposición mínima (cuerpos claros, como Venus) y máxima (oscuros, como la Luna). */
+    /** Exposición mínima (cuerpos claros, como Venus) y máxima (oscuros o en fase creciente). */
     min: 0.6,
-    max: 2.6,
+    max: 6,
   },
 } as const;
 
@@ -60,13 +62,20 @@ export function fillLight(closeUp: number): number {
 }
 
 /**
- * Exposición: la base y, en primer plano, la compensación del albedo del cuerpo enfocado (`null`:
- * sin compensación, como la Tierra hasta la fase 5).
+ * Exposición: la base y, en primer plano, la compensación del brillo del cuerpo enfocado: su albedo
+ * geométrico (`null`: sin compensación, como la Tierra hasta la fase 5) por el brillo medio de su
+ * parte iluminada a la fase con la que se ve, respecto a fase llena (`litBrightness`, de
+ * `litDiscBrightness`).
  */
-export function exposureFor(closeUp: number, focusAlbedo: number | null): number {
+export function exposureFor(
+  closeUp: number,
+  focusAlbedo: number | null,
+  litBrightness = 1,
+): number {
   const base = VISUAL_CONFIG.exposure;
   if (focusAlbedo === null || !(focusAlbedo > 0)) return base;
   const { referenceAlbedo, strength, min, max } = VISUAL_CONFIG.closeUpExposure;
-  const compensation = Math.min(Math.max((referenceAlbedo / focusAlbedo) ** strength, min), max);
+  const brightness = focusAlbedo * Math.max(litBrightness, 1e-3);
+  const compensation = Math.min(Math.max((referenceAlbedo / brightness) ** strength, min), max);
   return base * (1 + (compensation - 1) * closeUp);
 }

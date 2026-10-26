@@ -40,4 +40,12 @@ describe('configuración visual', () => {
     expect(exposureFor(1, 5)).toBe(min);
     expect(exposureFor(1, null)).toBe(VISUAL_CONFIG.exposure);
   });
+
+  it('una fase creciente se expone más que una llena, sin pasar del máximo', () => {
+    const { max } = VISUAL_CONFIG.closeUpExposure;
+    expect(exposureFor(1, 0.5, 0.3)).toBeGreaterThan(exposureFor(1, 0.5, 1));
+    expect(exposureFor(1, 0.142, 0.05)).toBe(max);
+    // En la vista general no cambia nada.
+    expect(exposureFor(0, 0.142, 0.05)).toBe(VISUAL_CONFIG.exposure);
+  });
 });

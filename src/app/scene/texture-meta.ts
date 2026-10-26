@@ -63,6 +63,22 @@ export const TEXTURE_META: Readonly<Record<TextureId, TextureMeta>> = {
   },
   uranus: clouds('Sin accidentes: color casi uniforme.'),
   neptune: clouds('Bandas de nubes: sin meridiano observable.'),
+  'mercury-normal': {
+    colorSpace: 'data',
+    alpha: false,
+    projection: 'equirectangular',
+    primeMeridianU: 0.5,
+    alignment:
+      'Normales del modelo de elevación global de MESSENGER (USGS, 665 m v2): longitud del borde izquierdo de su georreferencia (proyección centrada en 180°). build-textures.mjs comprueba que sus pendientes coinciden con los bordes de la textura de color de Mercurio solo sin girar.',
+  },
+  'mars-normal': {
+    colorSpace: 'data',
+    alpha: false,
+    projection: 'equirectangular',
+    primeMeridianU: 0.5,
+    alignment:
+      'Normales del MOLA MEGDR (16 px/°), de 0–360° E desplazado para centrar el meridiano 0. Sondas: el punto más alto cae en Olympus Mons y el más bajo en Hellas; además, sus pendientes coinciden con los bordes de la textura de color de Marte solo sin girar.',
+  },
   'milky-way': {
     colorSpace: 'srgb',
     alpha: false,

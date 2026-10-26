@@ -10,6 +10,9 @@ import {
   hazeGlow,
   henyeyGreenstein,
   integratedPhase,
+  interpolateLitBrightness,
+  litBrightnessTable,
+  litDiscBrightness,
   lawPhaseMagnitude,
   lommelWeight,
   opticalDepth,
@@ -138,6 +141,24 @@ describe('fotometría: fase, oposición y mezcla', () => {
     expect(lommelWeight(0, p)).toBe(1);
     expect(lommelWeight(0.5, p)).toBeCloseTo(0.5, 12);
     expect(lommelWeight(2, p)).toBe(0);
+  });
+});
+
+describe('fotometría: brillo de la parte iluminada', () => {
+  it('vale 1 en fase llena y es la curva de fase dividida por la fracción iluminada', () => {
+    expect(litDiscBrightness(0, LAMBERT)).toBeCloseTo(1, 6);
+    const a = 90 * DEG;
+    expect(litDiscBrightness(a, LAMBERT)).toBeCloseTo(integratedPhase(a, LAMBERT) / 0.5, 2);
+    expect(litDiscBrightness(Math.PI, LAMBERT)).toBe(0);
+  });
+
+  it('la tabla cada 10° se interpola sin saltos', () => {
+    const table = litBrightnessTable(LOMMEL_SEELIGER);
+    expect(table).toHaveLength(19);
+    expect(interpolateLitBrightness(table, 0)).toBeCloseTo(1, 6);
+    const between = interpolateLitBrightness(table, 45 * DEG);
+    expect(between).toBeCloseTo(((table[4] as number) + (table[5] as number)) / 2, 12);
+    expect(interpolateLitBrightness(table, 4)).toBe(table[18]);
   });
 });
 

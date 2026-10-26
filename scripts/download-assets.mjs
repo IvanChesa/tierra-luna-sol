@@ -7,6 +7,9 @@
 // - NASA SVS 4720 (CGI Moon Kit) y 4851 (Deep Star Maps 2020): material de la NASA; los datos de
 //   Gaia DR2 son de uso libre con crédito a ESA/Gaia/DPAC.
 // - three.js r186 (texturas KTX2 de ejemplo, solo para la prueba de KTX2): MIT.
+// - Modelos de elevación (fase 3b, relieve): MOLA MEGDR de 16 px/° (PDS Geosciences Node, datos de
+//   la NASA) y MESSENGER, modelo global de 665 m v2 (USGS Astrogeology: «USGS-authored or produced
+//   data and information are considered to be in the U.S. Public Domain»; uso: citar a los autores).
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 
@@ -20,6 +23,12 @@ const SSS_REFERER = 'https://www.solarsystemscope.com/textures/';
 const SVS_MOON = 'https://svs.gsfc.nasa.gov/vis/a000000/a004700/a004720/';
 const SVS_STARS = 'https://svs.gsfc.nasa.gov/vis/a000000/a004800/a004851/';
 const THREE_RAW = 'https://raw.githubusercontent.com/mrdoob/three.js/r186/examples/textures/';
+const MOLA = 'https://pds-geosciences.wustl.edu/mgs/mgs-m-mola-5-megdr-l3-v1/mgsl_300x/meg016/';
+const MOLA_PAGE = 'https://pds-geosciences.wustl.edu/missions/mgs/megdr.html';
+const MERCURY_DEM =
+  'https://planetarymaps.usgs.gov/mosaic/Mercury_Messenger_USGS_DEM_Global_665m_v2.tif';
+const MERCURY_DEM_PAGE =
+  'https://astrogeology.usgs.gov/search/map/mercury_messenger_global_dem_665m';
 
 /** [fichero local, URL, página de la fuente (para el Referer y FUENTES.md)] */
 const ASSETS = [
@@ -53,6 +62,14 @@ const ASSETS = [
     SVS_STARS + 'starmap_2020_4k_print.jpg',
     'https://svs.gsfc.nasa.gov/4851',
   ],
+];
+
+/** Modelos de elevación (fase 3b): a assets-src/elevation/, con su propio manifiesto. */
+const ELEVATION_OUT = new URL('assets-src/elevation/', ROOT);
+const ELEVATION = [
+  ['megt90n000eb.img', MOLA + 'megt90n000eb.img', MOLA_PAGE],
+  ['megt90n000eb.lbl', MOLA + 'megt90n000eb.lbl', MOLA_PAGE],
+  ['Mercury_Messenger_USGS_DEM_Global_665m_v2.tif', MERCURY_DEM, MERCURY_DEM_PAGE],
 ];
 
 const KTX2 = [
@@ -89,23 +106,36 @@ await mkdir(KTX2_OUT, { recursive: true });
 const manifestUrl = new URL('manifest.json', OUT);
 const manifest = (await exists(manifestUrl)) ? JSON.parse(await readFile(manifestUrl, 'utf8')) : {};
 
-for (const [file, url, page] of ASSETS) {
-  const target = new URL(file, OUT);
-  if (!FORCE && (await exists(target)) && manifest[file]) {
-    console.log(`= ${file} (ya estaba)`);
-    continue;
+/** Descarga los ficheros que falten de una lista y los apunta en el manifiesto. */
+async function downloadAll(list, dir, entries) {
+  for (const [file, url, page] of list) {
+    const target = new URL(file, dir);
+    if (!FORCE && (await exists(target)) && entries[file]) {
+      console.log(`= ${file} (ya estaba)`);
+      continue;
+    }
+    const bytes = await download(url, target, page);
+    entries[file] = {
+      url,
+      page,
+      downloaded: new Date().toISOString().slice(0, 10),
+      bytes: bytes.byteLength,
+      sha256: createHash('sha256').update(bytes).digest('hex'),
+    };
+    console.log(`↓ ${file} (${(bytes.byteLength / 1e6).toFixed(1)} MB)`);
   }
-  const bytes = await download(url, target, page);
-  manifest[file] = {
-    url,
-    page,
-    downloaded: new Date().toISOString().slice(0, 10),
-    bytes: bytes.byteLength,
-    sha256: createHash('sha256').update(bytes).digest('hex'),
-  };
-  console.log(`↓ ${file} (${(bytes.byteLength / 1e6).toFixed(1)} MB)`);
 }
+
+await downloadAll(ASSETS, OUT, manifest);
 await writeFile(manifestUrl, JSON.stringify(manifest, null, 2) + '\n');
+
+await mkdir(ELEVATION_OUT, { recursive: true });
+const elevationManifestUrl = new URL('manifest.json', ELEVATION_OUT);
+const elevationManifest = (await exists(elevationManifestUrl))
+  ? JSON.parse(await readFile(elevationManifestUrl, 'utf8'))
+  : {};
+await downloadAll(ELEVATION, ELEVATION_OUT, elevationManifest);
+await writeFile(elevationManifestUrl, JSON.stringify(elevationManifest, null, 2) + '\n');
 
 for (const [file, url] of KTX2) {
   const target = new URL(file, KTX2_OUT);
@@ -113,4 +143,4 @@ for (const [file, url] of KTX2) {
   const bytes = await download(url, target);
   console.log(`↓ ktx2/${file} (${bytes.byteLength} B)`);
 }
-console.log('Listo: assets-src/textures/ y assets-src/ktx2/');
+console.log('Listo: assets-src/textures/, assets-src/elevation/ y assets-src/ktx2/');

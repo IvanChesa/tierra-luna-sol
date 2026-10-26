@@ -242,6 +242,22 @@ describe('SceneEngine: arranque y render bajo demanda', () => {
     h.engine.dispose();
   });
 
+  it('expone la vista general con la base y un primer plano para el brillo del cuerpo', async () => {
+    const overview = await createHarness();
+    settle(overview);
+    expect(overview.renderer.exposure).toBe(1);
+    overview.engine.dispose();
+    // La Luna (albedo 0,12) en primer plano: más exposición. Venus (0,689): menos.
+    const moon = await createHarness({ focus: 'luna' });
+    settle(moon);
+    expect(moon.renderer.exposure).toBeGreaterThan(1.5);
+    moon.engine.dispose();
+    const venus = await createHarness({ focus: 'venus' });
+    settle(venus);
+    expect(venus.renderer.exposure).toBeLessThan(1);
+    venus.engine.dispose();
+  });
+
   it('todos los ShaderMaterial de la escena llevan los chunks de profundidad (D13)', async () => {
     const h = await createHarness();
     const world = (

@@ -71,6 +71,7 @@ import { VISUAL_CONFIG, closeUpAmount, exposureFor, fillLight } from './visual-c
 import { illustrativeDistance } from '../ephemeris/scale';
 import { BODY_DATA } from '../data/body-data';
 import { BODY_PHOTOMETRY } from '../data/photometry';
+import { interpolateLitBrightness, litBrightnessTable } from '../ephemeris/photometry';
 
 /** Profundidad elegida en la fase 2 (D13); ver docs/informes/fase-2.md. */
 export const DEFAULT_DEPTH: ResolvedDepthMode = 'logarithmic';
@@ -288,8 +289,8 @@ export class SceneEngine implements SceneEngineApi {
   private readonly background: number | null;
   /** Solo en captura: geometría de una foto de referencia (fase 3b). */
   private readonly viewFrom: ViewFrom | null;
-  /** Exposición que tiene ahora el renderer (configuración visual). */
-  private exposure = Number.NaN;
+  /** Exposición que tiene ahora el renderer (configuración visual; −1: aún ninguna). */
+  private exposure = -1;
   private ready = false;
   private disposed = false;
   private readonly startMs: number;
@@ -911,8 +912,13 @@ export class SceneEngine implements SceneEngineApi {
     const radiusPx = focus === null ? null : (this.screen[focus]?.radiusPx ?? null);
     const closeUp = closeUpAmount(radiusPx);
     this.world.setFill(fillLight(closeUp));
-    const exposure = exposureFor(closeUp, focus === null ? null : (FOCUS_ALBEDO[focus] ?? null));
-    if (Math.abs(exposure - this.exposure) > 1e-4) {
+    const albedo = focus === null ? null : (FOCUS_ALBEDO[focus] ?? null);
+    const lit =
+      focus === null || albedo === null
+        ? 1
+        : this.litBrightness(focus, this.world.phaseAngleOf(focus));
+    const exposure = exposureFor(closeUp, albedo, lit);
+    if (this.exposure < 0 || Math.abs(exposure - this.exposure) > 1e-4) {
       this.exposure = exposure;
       this.renderer.setExposure(exposure);
     }
@@ -934,6 +940,21 @@ export class SceneEngine implements SceneEngineApi {
       )
       .sort((a, b) => b.radiusPx - a.radiusPx);
     this.world.orbits.setDiscs(discs, this.viewport.height, this.pixelRatio());
+  }
+
+  /** Tablas del brillo de la parte iluminada de cada cuerpo según la fase (se calculan al enfocarlo). */
+  private readonly litTables = new Map<number, Float64Array>();
+
+  private litBrightness(index: number, phase: number): number {
+    const body = SCENE_BODIES[index];
+    const photometry = body && body.id !== 'sol' ? BODY_PHOTOMETRY[body.id] : null;
+    if (!photometry) return 1;
+    let table = this.litTables.get(index);
+    if (!table) {
+      table = litBrightnessTable(photometry.photometry);
+      this.litTables.set(index, table);
+    }
+    return interpolateLitBrightness(table, phase);
   }
 
   private readonly detailMask = new Uint8Array(SCENE_BODIES.length);

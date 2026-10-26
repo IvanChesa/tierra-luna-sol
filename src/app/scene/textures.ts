@@ -43,6 +43,8 @@ export type TextureId =
   | 'saturn-rings'
   | 'uranus'
   | 'neptune'
+  | 'mercury-normal'
+  | 'mars-normal'
   | 'milky-way';
 
 export interface TextureMeta {

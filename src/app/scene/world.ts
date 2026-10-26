@@ -73,6 +73,15 @@ export const BODY_TEXTURES: Readonly<Partial<Record<BodyId, TextureId>>> = {
   luna: 'moon',
 };
 
+/**
+ * Mapa de normales del relieve de cada cuerpo que lo tiene (fase 3b; la Luna, en la fase 6). Solo se
+ * carga con el cuerpo en primer plano: en la vista general no se vería.
+ */
+export const BODY_RELIEF_TEXTURES: Readonly<Partial<Record<BodyId, TextureId>>> = {
+  mercurio: 'mercury-normal',
+  marte: 'mars-normal',
+};
+
 /** Radios de los anillos (km), del catálogo; los sustituye la tira calibrada si hay textura. */
 export interface RingRadii {
   readonly innerKm: number;
@@ -121,6 +130,12 @@ interface BodyVisual {
   readonly photometry: BodyPhotometry | null;
   /** Halo de la atmósfera, si la tiene. */
   readonly atmosphere: { readonly mesh: Mesh; readonly uniforms: AtmosphereUniforms } | null;
+  /** Mapa de normales del relieve (solo en primer plano), si lo tiene. */
+  readonly relief: {
+    readonly id: TextureId;
+    loaded: LoadedTexture | null;
+    requested: TextureLevel | null;
+  } | null;
   readonly textureId: TextureId | null;
   loaded: LoadedTexture | null;
   requested: TextureLevel | null;
@@ -266,6 +281,9 @@ export class World {
             ? this.createAtmosphere(mesh, photometry, bodyMaterial.uniforms)
             : null,
         textureId: BODY_TEXTURES[body.id] ?? null,
+        relief: BODY_RELIEF_TEXTURES[body.id]
+          ? { id: BODY_RELIEF_TEXTURES[body.id] as TextureId, loaded: null, requested: null }
+          : null,
         loaded: null,
         requested: null,
         frozen: false,
@@ -372,6 +390,7 @@ export class World {
       if (!visual.textureId) continue;
       const near = visual.body.id === focusBody?.id || visual.body.id === focusPlanet;
       const level = near ? this.profile.focusTexture : this.profile.overviewTexture;
+      if (visual.relief) this.requestRelief(visual, near ? this.profile.focusTexture : null);
       if (visual.requested === level) continue;
       visual.requested = level;
       const id = visual.textureId;
@@ -395,6 +414,59 @@ export class World {
           });
       }
     }
+  }
+
+  /**
+   * Pide (o suelta, con `null`) el mapa de normales del relieve de un cuerpo, al nivel del primer
+   * plano. Fuera del primer plano se libera: en la vista general no se vería y ocupa memoria.
+   */
+  private requestRelief(visual: BodyVisual, level: TextureLevel | null): void {
+    const relief = visual.relief;
+    const source = this.options.textures;
+    if (!relief || !source || relief.requested === level) return;
+    relief.requested = level;
+    if (level === null) {
+      this.releaseRelief(visual);
+      return;
+    }
+    source
+      .load(relief.id, level)
+      .then((loaded) => this.assignRelief(visual, level, loaded))
+      .catch((error: unknown) => {
+        if (relief.requested === level) relief.requested = null;
+        textureFailed(relief.id, error);
+      });
+  }
+
+  private assignRelief(
+    visual: BodyVisual,
+    level: TextureLevel,
+    loaded: LoadedTexture | null,
+  ): void {
+    const relief = visual.relief;
+    if (!loaded || !relief) return;
+    if (this.disposed || relief.requested !== level || !visual.uniforms) {
+      releaseTexture(loaded.texture);
+      return;
+    }
+    const previous = relief.loaded;
+    relief.loaded = loaded;
+    visual.uniforms.uNormalMap.value = loaded.texture;
+    visual.uniforms.uNormalStrength.value = 1;
+    if (previous && previous.texture !== loaded.texture) releaseTexture(previous.texture);
+    this.options.invalidate();
+  }
+
+  private releaseRelief(visual: BodyVisual): void {
+    const relief = visual.relief;
+    if (!relief?.loaded) return;
+    if (visual.uniforms) {
+      visual.uniforms.uNormalMap.value = null;
+      visual.uniforms.uNormalStrength.value = 0;
+    }
+    releaseTexture(relief.loaded.texture);
+    relief.loaded = null;
+    this.options.invalidate();
   }
 
   /** Actualiza el grafo para un frame. Devuelve los planos de recorte que ha puesto. */
@@ -481,6 +553,20 @@ export class World {
     if (this.ringMaterial) this.ringMaterial.uniforms.uFill.value = fill;
   }
 
+  /**
+   * Ángulo de fase (rad) con el que la cámara ve un cuerpo: entre la dirección real hacia el Sol y
+   * la dirección hacia la cámara. 0 sin datos.
+   */
+  phaseAngleOf(index: number): number {
+    const visual = this.visuals[index];
+    if (!visual?.uniforms) return 0;
+    tmpVector.copy(this.camera.position).sub(visual.mesh.position);
+    const length = tmpVector.length();
+    if (!(length > 0)) return 0;
+    const cos = tmpVector.dot(visual.uniforms.uSunDirection.value) / length;
+    return Math.acos(Math.min(Math.max(cos, -1), 1));
+  }
+
   /** Factor de albedo de un cuerpo (para las pruebas y el informe). */
   albedoScaleOf(id: BodyId): number | null {
     return this.visuals.find((v) => v.body.id === id)?.uniforms?.uAlbedoScale.value ?? null;
@@ -493,7 +579,10 @@ export class World {
   /** Memoria de vídeo estimada (texturas + geometría), en bytes. */
   vramBytes(): number {
     const textures =
-      this.visuals.reduce((sum, v) => sum + (v.loaded?.vramBytes ?? 0), 0) +
+      this.visuals.reduce(
+        (sum, v) => sum + (v.loaded?.vramBytes ?? 0) + (v.relief?.loaded?.vramBytes ?? 0),
+        0,
+      ) +
       (this.ringTexture?.vramBytes ?? 0) +
       (this.milkyWayTexture?.vramBytes ?? 0);
     const geometryBytes = (geometry: BufferGeometry) =>
@@ -529,7 +618,10 @@ export class World {
     });
     this.sphere.dispose();
     this.coarseSphere.dispose();
-    for (const visual of this.visuals) if (visual.loaded) releaseTexture(visual.loaded.texture);
+    for (const visual of this.visuals) {
+      if (visual.loaded) releaseTexture(visual.loaded.texture);
+      if (visual.relief?.loaded) releaseTexture(visual.relief.loaded.texture);
+    }
     if (this.ringTexture) releaseTexture(this.ringTexture.texture);
     if (this.milkyWayTexture) releaseTexture(this.milkyWayTexture.texture);
     this.orbits.dispose();
