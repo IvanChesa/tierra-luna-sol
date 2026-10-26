@@ -6,8 +6,9 @@
 import { chromium } from '@playwright/test';
 import { startServer } from './serve-dist.mjs';
 
-export const PORT = 4321;
-export const BASE = `http://localhost:${PORT}`;
+// No el 4321: es el puerto por defecto de Astro (el de ivanchesa.es puede estar en marcha).
+export const PORT = 4340;
+export const BASE = `http://127.0.0.1:${PORT}`;
 
 export function launchArgs(argv = process.argv) {
   return argv.includes('--swiftshader')
