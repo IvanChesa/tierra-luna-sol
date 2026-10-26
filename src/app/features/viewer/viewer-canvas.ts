@@ -17,7 +17,7 @@ import type { ExplorerView, FrameStats, SceneEngineApi } from '../../scene';
 import { SimulationStore } from '../../state/simulation.store';
 import { ZOOM_STEP } from '../camera-controls/camera-controls';
 import { ExplorerSession } from '../explorer-ui/explorer-session';
-import { canvasCommand } from '../shortcuts/shortcuts';
+import { canvasCommand, repeats } from '../shortcuts/shortcuts';
 import { Icon } from './icon';
 import { viewerErrorText } from './viewer-errors';
 
@@ -86,6 +86,8 @@ export class ViewerCanvas {
     () => isDevMode() && !this.session.capture && this.stats() !== null,
   );
   protected readonly label = computed(() => VIEW_LABELS[this.view()]);
+  /** Sin 3D (cargando o con error), el lienzo no es una parada del tabulador ni una aplicación. */
+  protected readonly interactive = computed(() => this.status() === 'ready');
   protected readonly percent = computed(() => formatNumber(this.progress() * 100, 0));
 
   constructor() {
@@ -114,6 +116,8 @@ export class ViewerCanvas {
     if (!command) return;
     event.preventDefault();
     event.stopPropagation();
+    // Con la tecla pulsada, el giro y el zoom siguen; reproducir y la vista general, una vez.
+    if (event.repeat && !repeats(command)) return;
     const step = event.shiftKey ? 3 * ORBIT_STEP : ORBIT_STEP;
     switch (command) {
       case 'orbit-left':
@@ -194,6 +198,9 @@ export class ViewerCanvas {
   private fail(message: string): void {
     // El detalle técnico, para quien depura; a la interfaz, un mensaje en español (ESTILO §2).
     console.error(`[visor 3D] ${message}`);
+    // El motor que ha fallado se suelta: el store vuelve a llevar el tiempo con su propio reloj, así
+    // que «el tiempo sigue funcionando» también cuando el fallo llega con el motor ya creado.
+    this.stop();
     this.errorMessage.set(viewerErrorText(message));
     this.status.set('error');
   }

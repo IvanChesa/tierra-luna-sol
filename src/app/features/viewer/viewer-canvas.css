@@ -49,15 +49,21 @@
   visibility: hidden;
 }
 
+/*
+ * Carga y error, en la parte visible del lienzo. Mientras se ven, la cámara no (explorer-ui.css):
+ * pueden usar todo el ancho. Si no caben (una ficha abierta en un móvil pequeño), se desplazan.
+ */
 .viewer-status {
   position: absolute;
   bottom: calc(var(--view-bottom, 4.5rem) + var(--space-4));
   left: calc(var(--view-left, 0px) + var(--space-4));
-  /* Sin llegar a la columna de los controles de cámara (abajo a la derecha de la parte visible). */
   max-width: min(
     22rem,
-    calc(100% - var(--view-left, 0px) - var(--view-right, 0px) - var(--space-4) - 4.5rem)
+    calc(100% - var(--view-left, 0px) - var(--view-right, 0px) - 2 * var(--space-4))
   );
+  max-height: calc(100% - var(--view-top, 0px) - var(--view-bottom, 4.5rem) - 2 * var(--space-4));
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: var(--space-3) var(--space-4);
   background: var(--color-surface);
   border: var(--border-width) solid var(--color-line);

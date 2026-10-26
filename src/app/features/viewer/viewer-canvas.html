@@ -3,10 +3,11 @@
   <canvas
     #canvas
     class="viewer-canvas"
-    role="application"
-    tabindex="0"
-    [attr.aria-label]="label()"
-    aria-describedby="viewer-help"
+    [attr.role]="interactive() ? 'application' : null"
+    [attr.tabindex]="interactive() ? 0 : null"
+    [attr.aria-label]="interactive() ? label() : null"
+    [attr.aria-describedby]="interactive() ? 'viewer-help' : null"
+    [attr.aria-hidden]="interactive() ? null : 'true'"
     (keydown)="onKeydown($event)"
   ></canvas>
   <div #labels class="viewer-labels"></div>
