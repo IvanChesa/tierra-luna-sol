@@ -22,7 +22,7 @@ test.describe('Parámetros de la URL', () => {
       'La escala «gigante» no existe y se usa la ilustrativa.',
     );
     await expect(lines.nth(3)).toContainText('La calidad «maxima» no existe y se ha ignorado.');
-    // Sin fecha válida, el explorador abre en «ahora» y en tiempo real; sin ficha.
+    // Sin fecha válida, el explorador abre en «ahora», reproduciendo (D31); sin ficha.
     await expect(page.locator('.time__play')).toHaveAccessibleName(/Pausar/);
     await expect(page.locator('.panel')).toBeHidden();
     // Los parámetros que no valen salen de la URL (y `calidad`, aunque valga: es del dispositivo).

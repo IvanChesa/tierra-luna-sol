@@ -40,9 +40,12 @@ describe('TimeControls: barra de tiempo', () => {
     const { $, fixture, sim } = render();
     const raw = () => $<HTMLElement>('.time__zone').textContent?.trim() ?? '';
     const detail = () => raw().replaceAll('\u00a0', ' ');
-    expect(detail()).toMatch(/^Hora local, UTC(\S*)? · tiempo real$/);
-    // Solo se parte entre trozos: «tiempo real» y «Hora local, UTC+2» no se cortan por dentro.
-    expect(raw()).toMatch(/^Hora\u00a0local,\u00a0UTC\S*\u00a0· tiempo\u00a0real$/);
+    // Al entrar, 3 días por segundo (D31).
+    expect(detail()).toMatch(/^Hora local, UTC(\S*)? · 3 días por segundo$/);
+    // Solo se parte entre trozos: «3 días por segundo» y «Hora local, UTC+2» no se cortan por dentro.
+    expect(raw()).toMatch(
+      /^Hora\u00a0local,\u00a0UTC\S*\u00a0· 3\u00a0días\u00a0por\u00a0segundo$/,
+    );
     expect($<HTMLElement>('.time__readout time').textContent).toMatch(
       /^\d{1,2}\u00a0\S+\u00a0\d{4}, \d{2}:\d{2}:\d{2}$/,
     );
@@ -65,17 +68,20 @@ describe('TimeControls: barra de tiempo', () => {
     expect(play.textContent).toContain('Pausar');
   });
 
-  it('la velocidad tiene los seis escalones del plan y el botón de hacia atrás invierte el sentido', () => {
+  it('la velocidad tiene los ocho escalones del plan y el botón de hacia atrás invierte el sentido', () => {
     const { $, fixture, sim } = render();
     const speed = $<HTMLSelectElement>('#time-speed');
     expect([...speed.options].map((o) => o.textContent?.trim())).toEqual([
       'Tiempo real',
       '1 hora por segundo',
       '1 día por segundo',
+      '3 días por segundo',
       '1 semana por segundo',
+      '10 días por segundo',
       '1 mes por segundo',
       '1 año por segundo',
     ]);
+    expect(speed.value).toBe('days3');
     speed.value = 'day';
     speed.dispatchEvent(new Event('change'));
     expect(sim.speed()).toBe(86_400);

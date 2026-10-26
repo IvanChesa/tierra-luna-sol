@@ -58,7 +58,7 @@ Todo se formatea con las funciones de `src/app/core/format.ts`, que usan `Intl.N
 
 - **Periodos:** horas con un decimal hasta 48 h (10,7 h); después, días (27,3 días) o años (29,4 años).
 - **Temperaturas:** °C para los planetas y las lunas; K solo para la temperatura efectiva del Sol.
-- **Velocidad de la simulación:** «Tiempo real», «1 hora por segundo», «1 día por segundo», «1 semana por segundo», «1 mes por segundo», «1 año por segundo». El sentido se dice aparte («Hacia atrás»).
+- **Velocidad de la simulación:** «Tiempo real», «1 hora por segundo», «1 día por segundo», «3 días por segundo» (la de entrada, D31), «1 semana por segundo», «10 días por segundo», «1 mes por segundo», «1 año por segundo». El sentido se dice aparte («Hacia atrás»).
 
 ## 4. Fechas y horas
 

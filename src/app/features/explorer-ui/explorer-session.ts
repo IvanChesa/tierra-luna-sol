@@ -11,6 +11,7 @@ import type {
 import { ExplorerStore } from '../../state/explorer.store';
 import { SystemPositions } from '../../state/positions';
 import { SimulationEngine, SimulationStore } from '../../state/simulation.store';
+import { DEFAULT_SPEED } from '../../state/speeds';
 import { readSingleKeyShortcuts, writeSingleKeyShortcuts } from '../shortcuts/shortcut-preference';
 import { readQualityPreference, writeQualityPreference } from '../viewer/quality-preference';
 import {
@@ -85,12 +86,13 @@ export class ExplorerSession {
     this.capture = this.params.capture;
     this.reducedMotion = win?.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
     this._warnings.set(this.params.warnings);
-    // Sin fecha en la URL, «ahora» y en tiempo real; con fecha (o en captura), en pausa en ella.
+    // Arranque en movimiento (D31): sin fecha en la URL, «ahora» y reproduciendo a 3 días por
+    // segundo; con movimiento reducido, en pausa; con fecha (o en captura), en pausa en ella.
     const fixedTime = this.params.time !== null || this.capture;
     this.sim.init({
       time: this.params.time ?? (this.capture ? CAPTURE_DATE : new Date()),
-      playing: !fixedTime,
-      speed: 1,
+      playing: !fixedTime && !this.reducedMotion,
+      speed: DEFAULT_SPEED,
       selected: this.params.body,
       scale: this.params.scale ?? 'illustrative',
       quality: this.params.quality ?? (this.capture ? 'high' : readQualityPreference(this.storage)),

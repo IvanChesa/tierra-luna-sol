@@ -35,6 +35,7 @@ test.describe('Tiempo y URL', () => {
 
   test('a tiempo real el tiempo avanza y la URL no cambia mientras corre', async ({ page }) => {
     await openExplorer(page, '/?fecha=2030-06-01T12:00Z&cuerpo=marte');
+    await page.locator('#time-speed').selectOption('real');
     await page.locator('.time__play').click();
     await expect(page.locator('.time__play')).toHaveAccessibleName(/Pausar/);
     // Al reproducir, la fecha sale de la URL (una sola vez) y el cuerpo se queda.
