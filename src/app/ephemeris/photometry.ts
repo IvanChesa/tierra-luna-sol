@@ -1,0 +1,232 @@
+/**
+ * Fotometría de los cuerpos (D29): cuánta luz del Sol devuelve cada punto de un cuerpo hacia quien
+ * mira y cuánta devuelve el disco entero según la fase. TS puro: lo usan los tests, que comparan las
+ * curvas de fase con leyes publicadas, y `scene/materials/shading.ts` lleva LAS MISMAS fórmulas en
+ * GLSL.
+ *
+ * Convenciones: μ₀ = cos(incidencia) = normal · Sol; μ = cos(emergencia) = normal · observador;
+ * α = ángulo de fase (Sol–cuerpo–observador), en radianes. La reflectancia está normalizada a 1 en
+ * μ₀ = μ = 1 y α = 0 (el centro de un disco lleno): el brillo absoluto lo pone el albedo.
+ *
+ * Modelo: la función lunar–lambertiana de McEwen (1991, Icarus 92, 298), con Minnaert en el término
+ * difuso, por una función de fase con el pico de oposición de Hapke (1986) y Henyey–Greenstein doble:
+ *
+ *   r = [L(α) · 2μ₀/(μ₀ + μ) + (1 − L(α)) · μ₀^k · μ^(k − 1)] · Φ(α) / Φ(0)
+ *   L(α) = clamp(L₀ − s·α, 0, 1)
+ *   Φ(α) = (1 + B₀ / (1 + tan(α/2) / h)) · [(1 − f) · HG(α; g₁) + f · HG(α; g₂)]
+ *   HG(α; g) = (1 − g²) / (1 + 2g·cos α + g²)^(3/2)   (g < 0: hacia atrás; g > 0: hacia delante)
+ *
+ * - L₀ = 1: Lommel–Seeliger en fase llena, la ley de los rocosos sin atmósfera (disco casi uniforme,
+ *   como la Luna llena). McEwen encontró que el peso de Lommel–Seeliger baja con la fase: con s > 0,
+ *   el disco se vuelve más lambertiano y se oscurece hacia el terminador (la rugosidad).
+ * - L₀ = 0 y k < 1: Minnaert, oscurecimiento del limbo de los planetas con atmósfera densa (k = 1 es
+ *   Lambert).
+ */
+
+export interface Photometry {
+  /** Peso de Lommel–Seeliger en fase llena (L₀): 1 en los rocosos, 0 en los gigantes. */
+  readonly lommel: number;
+  /** Cuánto baja ese peso por radián de fase (s ≥ 0). */
+  readonly lommelSlope: number;
+  /** Exponente de Minnaert (k) del término difuso: 1 = Lambert; menor, más oscuro el limbo. */
+  readonly minnaertK: number;
+  /** Amplitud del pico de oposición de Hapke (B₀; 0 = sin pico). */
+  readonly oppositionAmplitude: number;
+  /** Anchura del pico de oposición (h, adimensional). */
+  readonly oppositionWidth: number;
+  /** Asimetría del lóbulo principal de Henyey–Greenstein (g₁; < 0, hacia atrás). */
+  readonly backAsymmetry: number;
+  /** Fracción del lóbulo hacia delante (f; 0 = ninguno). */
+  readonly forwardFraction: number;
+  /** Asimetría del lóbulo hacia delante (g₂ > 0). */
+  readonly forwardAsymmetry: number;
+}
+
+/**
+ * Atmósfera (D29): el brillo de la luz dispersada cerca del limbo y en el crepúsculo. Es una
+ * aproximación barata, sin integrar la dispersión: da el tono y suaviza el terminador.
+ */
+export interface Haze {
+  /** Intensidad del brillo en el limbo, respecto a la luz del Sol (0 = sin atmósfera). */
+  readonly strength: number;
+  /** Exponente del aumento hacia el limbo: (1 − μ)^p. */
+  readonly limbExponent: number;
+  /**
+   * Cuánto se adentra el crepúsculo en el lado nocturno, en μ₀: sen de la depresión del Sol bajo
+   * el horizonte a la que la alta atmósfera aún está iluminada, √(1 − (R / (R + H))²).
+   */
+  readonly twilight: number;
+  /** Refuerzo del brillo a contraluz (dispersión hacia delante), con la asimetría `forward`. */
+  readonly forwardBoost: number;
+  readonly forwardAsymmetry: number;
+}
+
+/** μ más pequeño que se usa (el término de Minnaert diverge en el limbo exacto si k < 1). */
+export const MIN_MU = 0.02;
+
+/** Henyey–Greenstein en función del ángulo de fase (rad). */
+export function henyeyGreenstein(alpha: number, g: number): number {
+  return (1 - g * g) / Math.pow(1 + 2 * g * Math.cos(alpha) + g * g, 1.5);
+}
+
+/** Función de fase Φ(α) sin normalizar (pico de oposición × lóbulos). */
+export function phaseFunction(alpha: number, p: Photometry): number {
+  const opposition =
+    p.oppositionAmplitude > 0
+      ? 1 + p.oppositionAmplitude / (1 + Math.tan(alpha / 2) / p.oppositionWidth)
+      : 1;
+  const lobes =
+    (1 - p.forwardFraction) * henyeyGreenstein(alpha, p.backAsymmetry) +
+    p.forwardFraction * henyeyGreenstein(alpha, p.forwardAsymmetry);
+  return opposition * lobes;
+}
+
+/** Peso de Lommel–Seeliger a la fase α: L(α) = clamp(L₀ − s·α, 0, 1). */
+export const lommelWeight = (alpha: number, p: Photometry): number =>
+  Math.min(Math.max(p.lommel - p.lommelSlope * alpha, 0), 1);
+
+/** La parte geométrica (sin la fase): Lommel–Seeliger y Minnaert, con el peso de la fase α. */
+export function geometricFactor(mu0: number, mu: number, alpha: number, p: Photometry): number {
+  if (mu0 <= 0) return 0;
+  const m = Math.max(mu, MIN_MU);
+  const lommelSeeliger = (2 * mu0) / (mu0 + m);
+  const minnaert = Math.pow(mu0, p.minnaertK) * Math.pow(m, p.minnaertK - 1);
+  const weight = lommelWeight(alpha, p);
+  return weight * lommelSeeliger + (1 - weight) * minnaert;
+}
+
+/** Reflectancia relativa de un punto (1 en μ₀ = μ = 1, α = 0). */
+export function reflectance(mu0: number, mu: number, alpha: number, p: Photometry): number {
+  return (geometricFactor(mu0, mu, alpha, p) * phaseFunction(alpha, p)) / phaseFunction(0, p);
+}
+
+/**
+ * Brillo medio del disco en fase llena (α = 0), en unidades de la reflectancia del centro:
+ * L + (1 − L) · 2 / (2k + 1). Con él, el albedo geométrico fija el brillo absoluto del cuerpo.
+ */
+export function discFactor(p: Photometry): number {
+  return p.lommel + ((1 - p.lommel) * 2) / (2 * p.minnaertK + 1);
+}
+
+/**
+ * Factor que lleva una textura al albedo geométrico del cuerpo: con él, el brillo medio del disco en
+ * fase llena (luminancia media de la textura × factor × `discFactor`) vale exactamente `albedo`.
+ * `meanLuminance` es la luminancia lineal media de la textura (o del color) ponderada por el área.
+ */
+export function albedoScale(albedo: number, meanLuminance: number, p: Photometry): number {
+  if (!(meanLuminance > 0)) return 1;
+  return albedo / (meanLuminance * discFactor(p));
+}
+
+/** Luminancia lineal (Rec. 709) de un color sRGB con componentes de 0 a 1. */
+export function srgbLuminance(r: number, g: number, b: number): number {
+  const linear = (c: number) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+  return 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b);
+}
+
+/**
+ * Brillo del disco entero a la fase α, integrado numéricamente sobre la cara visible, en unidades de
+ * π (un disco lambertiano blanco de frente vale 1). Se integra en (μ, φ): dA = μ dμ dφ.
+ */
+export function discBrightness(alpha: number, p: Photometry, muSteps = 96, phiSteps = 192): number {
+  const sinA = Math.sin(alpha);
+  const cosA = Math.cos(alpha);
+  let sum = 0;
+  for (let i = 0; i < muSteps; i++) {
+    const mu = (i + 0.5) / muSteps;
+    const rho = Math.sqrt(1 - mu * mu);
+    for (let j = 0; j < phiSteps; j++) {
+      const phi = ((j + 0.5) / phiSteps) * 2 * Math.PI;
+      // El Sol en el plano x–z: x hacia el Sol, z hacia el observador.
+      const mu0 = rho * Math.cos(phi) * sinA + mu * cosA;
+      if (mu0 > 0) sum += reflectance(mu0, mu, alpha, p) * mu;
+    }
+  }
+  return (sum * 2) / (muSteps * phiSteps); // ∫∫ μ dμ dφ / π
+}
+
+/** Curva de fase del disco: brillo a la fase α respecto a fase llena (1 en α = 0). */
+export function integratedPhase(alpha: number, p: Photometry): number {
+  return discBrightness(alpha, p) / discBrightness(0, p);
+}
+
+/** Diferencia de magnitud respecto a fase llena: −2,5 · log10 de la curva de fase. */
+export const phaseMagnitude = (alpha: number, p: Photometry): number =>
+  -2.5 * Math.log10(integratedPhase(alpha, p));
+
+/**
+ * Brillo de la atmósfera en un punto, respecto a la luz del Sol: crece hacia el limbo, sigue al
+ * Sol hasta `twilight` por detrás del terminador y se refuerza a contraluz.
+ */
+export function hazeGlow(mu0: number, mu: number, alpha: number, haze: Haze): number {
+  if (haze.strength <= 0) return 0;
+  const lit = smoothstep(-haze.twilight, haze.twilight, mu0);
+  if (lit <= 0) return 0;
+  const limb = Math.pow(1 - Math.min(Math.max(mu, 0), 1), haze.limbExponent);
+  const forward =
+    1 +
+    (haze.forwardBoost * henyeyGreenstein(alpha, haze.forwardAsymmetry)) /
+      henyeyGreenstein(Math.PI, haze.forwardAsymmetry);
+  return haze.strength * lit * limb * forward;
+}
+
+/** `smoothstep` de GLSL. */
+export function smoothstep(edge0: number, edge1: number, x: number): number {
+  const t = Math.min(Math.max((x - edge0) / (edge1 - edge0), 0), 1);
+  return t * t * (3 - 2 * t);
+}
+
+/** Ancho del crepúsculo en μ₀ para una capa de altura H sobre un cuerpo de radio R (mismas unidades). */
+export const twilightWidth = (radius: number, hazeHeight: number): number =>
+  Math.sqrt(1 - (radius / (radius + hazeHeight)) ** 2);
+
+/**
+ * Leyes de fase publicadas (magnitud visual frente al ángulo de fase), las que usa astronomy-engine
+ * en `Illumination`: las de Mercurio y Venus son de Hilton (2005, AJ 129, 2902,
+ * https://doi.org/10.1086/430212); la de Marte, lineal; la de la Luna, m = −12,717 + 1,49·|α| +
+ * 0,0431·α⁴ (α en radianes). Solo la parte que depende de la fase, sin la distancia.
+ */
+export interface PhaseLaw {
+  readonly validDeg: readonly [number, number];
+  /** Magnitud a la fase α (grados), sin el término de la distancia. */
+  readonly magnitude: (alphaDeg: number) => number;
+  readonly source: string;
+}
+
+const cubic = (c0: number, c1: number, c2: number, c3: number) => (alphaDeg: number) => {
+  const x = alphaDeg / 100;
+  return c0 + x * (c1 + x * (c2 + x * c3));
+};
+
+export const PHASE_LAWS = {
+  mercurio: {
+    validDeg: [2.1, 169.5],
+    magnitude: cubic(-0.6, 4.98, -4.88, 3.02),
+    source: 'Hilton (2005), AJ 129, 2902; astronomy-engine',
+  },
+  venus: {
+    validDeg: [2.2, 170.2],
+    magnitude: (alphaDeg: number) =>
+      alphaDeg < 163.6 ? cubic(-4.47, 1.03, 0.57, 0.13)(alphaDeg) : 0.98 - 1.02 * (alphaDeg / 100),
+    source: 'Hilton (2005), AJ 129, 2902; astronomy-engine',
+  },
+  marte: {
+    validDeg: [0, 50],
+    magnitude: (alphaDeg: number) => -1.52 + 1.6 * (alphaDeg / 100),
+    source: 'astronomy-engine (ley lineal)',
+  },
+  luna: {
+    validDeg: [0, 150],
+    magnitude: (alphaDeg: number) => {
+      const rad = (alphaDeg * Math.PI) / 180;
+      return -12.717 + 1.49 * Math.abs(rad) + 0.0431 * rad ** 4;
+    },
+    source: 'astronomy-engine (MoonMagnitude)',
+  },
+} as const satisfies Record<string, PhaseLaw>;
+
+export type PhaseLawId = keyof typeof PHASE_LAWS;
+
+/** Diferencia de magnitud de una ley respecto a fase llena (su valor extrapolado en α = 0). */
+export const lawPhaseMagnitude = (law: PhaseLaw, alphaDeg: number): number =>
+  law.magnitude(alphaDeg) - law.magnitude(0);
