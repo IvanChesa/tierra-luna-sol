@@ -632,6 +632,14 @@ for (const [id, spec] of Object.entries(TEXTURES)) {
     reports.push(ocean.report);
     base = ocean.image;
   }
+  // El panorama, sin sus estrellas (las pone el catálogo HYG, nítidas y en su sitio): una mediana de
+  // 5 × 5 px en el original las quita y conserva la luz difusa, las nubes de estrellas y el polvo. Con
+  // ellas, en los primeros planos salían como trazos (la proyección equirrectangular galáctica las
+  // estira lejos del plano de la Galaxia) y el grano doblaba el peso.
+  if (spec.kind === 'panorama') {
+    const filtered = await base().median(5).png({ compressionLevel: 1 }).toBuffer();
+    base = () => sharp(filtered, { limitInputPixels: false });
+  }
   if (spec.kind === 'ring') {
     ringStrip = await calibrateRings(spec.file);
     reports.push(ringStrip.report);
@@ -649,9 +657,6 @@ for (const [id, spec] of Object.entries(TEXTURES)) {
       pipeline = pipeline.resize(width, width / 2, { fit: 'fill', kernel: 'lanczos3' });
     }
     if (spec.kind === 'gray') pipeline = pipeline.toColourspace('b-w');
-    // El panorama lleva el grano de las estrellas débiles, que dobla el peso sin aportar nada como
-    // fondo (las estrellas las pone el catálogo HYG): un desenfoque leve lo deja dentro de §5.
-    if (spec.kind === 'panorama') pipeline = pipeline.blur(level === '4k' ? 0.8 : 0.5);
     list.push(await emit(id, level, pipeline, spec.quality, { alpha: spec.kind === 'ring' }));
   }
   files[id] = list;
