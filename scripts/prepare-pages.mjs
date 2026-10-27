@@ -6,13 +6,19 @@
 //    `ruta/index.html`, la URL que Pages da por buena sería `/ruta/`.
 // 2. `404.html` en la raíz (la página prerenderizada de `/404`): sin él, Pages trata el sitio como una
 //    aplicación de una sola página y responde 200, con `index.html`, a cualquier ruta.
-// 3. Fuera `index.csr.html`, la página sin prerenderizar de Angular: todas las rutas se prerenderizan.
-// 4. La CSP de `_headers` (en `public/`, con el marcador {{INLINE_SCRIPTS}}) lleva los hashes SHA-256
+// 3. Fuera `index.csr.html`, la página sin prerenderizar de Angular (todas las rutas se
+//    prerenderizan), y los ficheros ocultos que Angular copia de `public/` (`.gitkeep`): Pages no los
+//    sirve y el artefacto del CI no los lleva, así que en local tampoco.
+// 4. Rutas absolutas (`/chunk-….js`) para los ficheros con hash y el icono en el HTML. El `<base
+//    href="/">` ya las resuelve en la página, pero Pages copia los `<link rel="modulepreload">` a una
+//    cabecera `Link` (Early Hints), que el navegador resuelve contra la URL de la página: en
+//    `/planetas/marte`, `chunk-….js` sería `/planetas/chunk-….js`, un 404 (revisión de la fase 4).
+// 5. La CSP de `_headers` (en `public/`, con el marcador {{INLINE_SCRIPTS}}) lleva los hashes SHA-256
 //    de los scripts en línea de todas las páginas, que genera Angular: el contrato de eventos, su
 //    arranque y el que activa la hoja de estilos diferida. `security.autoCsp` no admite el
 //    prerenderizado («Cannot set both SSR and auto-CSP»). Si alguna página tuviera un manejador en
 //    línea (`onload="…"`), la CSP lo bloquearía: el script falla.
-// 5. Los límites de Pages (plan gratuito): ningún fichero de más de 25 MiB y menos de 20 000 ficheros.
+// 6. Los límites de Pages (plan gratuito): ningún fichero de más de 25 MiB y menos de 20 000 ficheros.
 //
 // Uso: ng build && node scripts/prepare-pages.mjs   (es idempotente)
 import { createHash } from 'node:crypto';
@@ -35,7 +41,7 @@ async function files() {
     .map((entry) => join(entry.parentPath, entry.name).slice(BROWSER.length).split(sep).join('/'));
 }
 
-// --- 1, 2 y 3: las rutas como `ruta.html`, con `404.html` y sin `index.csr.html` -----------------
+// --- 1, 2 y 3: las rutas como `ruta.html`, con `404.html`, sin `index.csr.html` ni ocultos -------
 const moved = [];
 for (const file of (await files()).filter((f) => f.endsWith('/index.html'))) {
   const route = file.slice(0, -'/index.html'.length);
@@ -49,12 +55,29 @@ for (const file of (await files()).filter((f) => f.endsWith('/index.html'))) {
   await rmdir(dirname(join(BROWSER, file))).catch(() => undefined);
 }
 await rm(join(BROWSER, 'index.csr.html'), { force: true });
+const hidden = (await files()).filter((file) =>
+  file.split('/').some((part) => part.startsWith('.')),
+);
+for (const file of hidden) await rm(join(BROWSER, file));
 const all = await files();
 if (!all.includes('404.html')) throw new Error('Falta 404.html (la ruta /404 prerenderizada)');
 if (!all.includes('_redirects')) throw new Error('Falta _redirects (public/_redirects)');
 
-// --- 4: la CSP con los hashes de los scripts en línea --------------------------------------------
+// --- 4: rutas absolutas para los ficheros con hash y el icono ------------------------------------
 const pages = all.filter((file) => file.endsWith('.html'));
+const ASSET =
+  /(\s(?:href|src)=")((?:main|chunk|styles|polyfills)-[\w-]+\.(?:js|css)|favicon\.ico)"/g;
+let absolute = 0;
+for (const page of pages) {
+  const html = await readFile(join(BROWSER, page), 'utf8');
+  const fixed = html.replace(ASSET, (_, attribute, file) => {
+    absolute++;
+    return `${attribute}/${file}"`;
+  });
+  if (fixed !== html) await writeFile(join(BROWSER, page), fixed);
+}
+
+// --- 5: la CSP con los hashes de los scripts en línea --------------------------------------------
 const hashes = new Set();
 for (const page of pages) {
   const html = await readFile(join(BROWSER, page), 'utf8');
@@ -74,7 +97,7 @@ if (template.split(PLACEHOLDER).length !== 2) {
 }
 await writeFile(join(BROWSER, '_headers'), template.replace(PLACEHOLDER, [...hashes].join(' ')));
 
-// --- 5: los límites de Pages --------------------------------------------------------------------
+// --- 6: los límites de Pages --------------------------------------------------------------------
 let largest = { file: '', bytes: 0 };
 for (const file of all) {
   const { size } = await stat(join(BROWSER, file));
@@ -87,5 +110,5 @@ if (all.length >= MAX_FILES)
   throw new Error(`${all.length} ficheros: Pages admite menos de 20 000`);
 
 console.log(
-  `Pages: ${moved.length} rutas como ruta.html, ${pages.length} páginas, ${hashes.size} scripts en línea en la CSP, ${all.length} ficheros (el mayor, ${largest.file}: ${(largest.bytes / 2 ** 20).toFixed(2)} MiB de 25)`,
+  `Pages: ${moved.length} rutas como ruta.html, ${pages.length} páginas, ${absolute} rutas de recursos absolutas, ${hashes.size} scripts en línea en la CSP, ${all.length} ficheros (${hidden.length} ocultos quitados; el mayor, ${largest.file}: ${(largest.bytes / 2 ** 20).toFixed(2)} MiB de 25)`,
 );

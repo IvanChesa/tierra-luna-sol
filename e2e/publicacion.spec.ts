@@ -1,11 +1,13 @@
 import { expect, test } from '@playwright/test';
+import { SITE_CONFIG } from '../src/app/core/site.config';
 import { openExplorer } from './support';
 
 /**
  * Lo que se publica en Cloudflare Pages (fase 4): el servidor de los e2e (`scripts/serve-dist.mjs`)
  * imita a Pages con el build ya preparado (`scripts/prepare-pages.mjs`), así que aquí se prueban las
- * rutas sin barra final (D9), las redirecciones, el 404, las cabeceras de `_headers` y que la CSP no
- * bloquea nada de la página. En la vista previa real se repite con `curl` (informe de la fase 4).
+ * rutas sin barra final (D9), las redirecciones, el 404, las cabeceras de `_headers` (y la `Link`
+ * de los Early Hints, que Pages copia del HTML) y que la CSP no bloquea nada de la página. En la vista
+ * previa real lo repite `scripts/verify-pages.mjs` (informe de la fase 4).
  */
 test.describe('Publicación (Cloudflare Pages)', () => {
   test('las rutas van sin barra final y lo demás redirige a ellas', async ({ request }) => {
@@ -14,7 +16,7 @@ test.describe('Publicación (Cloudflare Pages)', () => {
     const page = await get('/planetas/marte');
     expect(page.status()).toBe(200);
     expect(await page.text()).toContain(
-      '<link rel="canonical" href="https://tierra-luna-sol.ivanchesa.es/planetas/marte">',
+      `<link rel="canonical" href="${SITE_CONFIG.baseUrl}/planetas/marte">`,
     );
     for (const [from, to] of [
       ['/planetas/marte/', '/planetas/marte'],
@@ -26,10 +28,38 @@ test.describe('Publicación (Cloudflare Pages)', () => {
       expect(response.status(), from).toBe(308);
       expect(response.headers()['location'], from).toBe(to);
     }
-    // _redirects: /explorar no es una página.
-    const explorar = await get('/explorar');
-    expect(explorar.status()).toBe(301);
-    expect(explorar.headers()['location']).toBe('/');
+    // _redirects: /explorar no es una página (tampoco con barra).
+    for (const from of ['/explorar', '/explorar/']) {
+      const explorar = await get(from);
+      expect(explorar.status(), from).toBe(301);
+      expect(explorar.headers()['location'], from).toBe('/');
+    }
+    // Lo que Pages no sirve: su configuración y los ficheros ocultos.
+    for (const path of ['/_headers', '/_redirects', '/img/.gitkeep']) {
+      expect((await get(path)).status(), path).toBe(404);
+    }
+  });
+
+  test('los Early Hints de una página anidada llevan a módulos que existen', async ({
+    request,
+    baseURL,
+  }) => {
+    // Pages copia los `modulepreload` del HTML a la cabecera `Link`, que el navegador resuelve contra
+    // la URL de la página, no contra `<base href="/">`: con rutas relativas, en /planetas/marte
+    // pediría /planetas/chunk-….js (un 404). prepare-pages.mjs las hace absolutas.
+    for (const path of ['/planetas/marte', '/explorar/tierra']) {
+      const response = await request.get(path);
+      const link = response.headers()['link'] ?? '';
+      const targets = [...link.matchAll(/<([^>]+)>/g)].map(
+        ([, href]) => new URL(href ?? '', `${baseURL}${path}`).pathname,
+      );
+      expect(targets.length, path).toBeGreaterThan(0);
+      for (const target of targets) {
+        const module = await request.get(target);
+        expect(module.status(), `${path} → ${target}`).toBe(200);
+        expect(module.headers()['content-type'], target).toMatch(/javascript/);
+      }
+    }
   });
 
   test('lo que no existe responde 404 con la página de error, sin canonical', async ({
@@ -54,7 +84,7 @@ test.describe('Publicación (Cloudflare Pages)', () => {
     expect(headers['referrer-policy']).toBe('strict-origin-when-cross-origin');
     // El HTML no lleva caché larga; el JS con hash, un año.
     expect(headers['cache-control'] ?? '').not.toContain('immutable');
-    const main = /src="(main-[^"]+\.js)"/.exec(await home.text())?.[1];
+    const main = /src="\/(main-[^"]+\.js)"/.exec(await home.text())?.[1];
     expect(main).toBeTruthy();
     const script = await request.get(`/${main}`);
     expect(script.headers()['cache-control']).toBe('public, max-age=31536000, immutable');
