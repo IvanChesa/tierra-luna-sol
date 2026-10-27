@@ -93,4 +93,19 @@
   .earth__hint {
     display: none;
   }
+
+  /* Las vistas, en una sola fila que se desplaza: el panel no tapa media pantalla. */
+  .earth__views {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .earth__view {
+    flex: none;
+  }
+
+  .earth__caption {
+    font-size: var(--text-xs, 0.75rem);
+  }
 }
