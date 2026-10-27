@@ -109,6 +109,21 @@ export const SHORTCUT_HELP: readonly {
       { keys: ['?'], action: 'Mostrar estos atajos' },
     ],
   },
+  {
+    title: 'En la línea de tiempo y en las fichas',
+    items: [
+      {
+        keys: ['←', '→'],
+        action: 'Línea de tiempo: un día antes o después. Fichas: la anterior o la siguiente',
+      },
+      { keys: ['RePág', 'AvPág'], action: 'Línea de tiempo: un mes después o antes' },
+      {
+        keys: ['Inicio', 'Fin'],
+        action: 'Línea de tiempo: el principio o el final del año. Fichas: la primera o la última',
+      },
+      { keys: ['Intro'], action: 'Fichas: elegir el cuerpo' },
+    ],
+  },
 ];
 
 interface KeyLike {
