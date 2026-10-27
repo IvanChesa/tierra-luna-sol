@@ -33,17 +33,23 @@ export interface IllustrativeScale {
 }
 
 /**
- * Valores iniciales (presentación, sin significado físico): Neptuno queda a ~248 unidades, la
- * Tierra a ~104 y Mercurio a ~69. Se ajustarán con la escena (fases 2 y 7).
+ * Valores de presentación, sin significado físico: Neptuno queda a ~248 unidades, la Tierra a ~104 y
+ * Mercurio a ~69. Los radios (fase 4b, planetas más visibles en la vista general) son los mayores con
+ * los que, de 1900 a 2100, ningún disco toca el Sol ni otro planeta, Júpiter no entra en los anillos
+ * de Saturno y ninguna luna toca otro planeta (muestreo en `scene/illustrative-layout.spec.ts`): el
+ * límite lo ponen las conjunciones de Júpiter y Saturno (a ~24 unidades en 1921) y la Luna entre la
+ * Tierra y Venus (a ~12). Júpiter mide 7,7 unidades (5,2 antes), la Tierra 2,9 (2,0) y el Sol 13 (9).
+ * Las lunas se agrupan cerca de su planeta (`moonSpread` 0,5, antes 1,5): si no, al crecer los
+ * planetas, sus sistemas crecerían con ellos y chocarían con los vecinos.
  */
 export const DEFAULT_ILLUSTRATIVE_SCALE: IllustrativeScale = {
   unitsPerDecade: 100,
   referenceAu: 0.1,
-  radiusFactor: 0.06,
+  radiusFactor: 0.088,
   radiusExponent: 0.4,
   minRadius: 0.25,
-  maxRadius: 9,
-  moonSpread: 1.5,
+  maxRadius: 13,
+  moonSpread: 0.5,
 };
 
 export interface RealScale {

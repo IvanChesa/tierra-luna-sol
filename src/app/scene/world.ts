@@ -817,10 +817,16 @@ export class World {
 
   /**
    * Opacidad de cada órbita. Las de los planetas se ven siempre (más tenues fuera de la vista
-   * general); las de las lunas aparecen cuando su sistema se resuelve en pantalla (de 8 a 30 px).
+   * general); las de las lunas aparecen cuando su sistema se resuelve en pantalla: cuando la luna se
+   * separa del borde de su planeta de 8 a 30 px. La separación es la de su distancia real en el
+   * espacio (en radios del planeta) a la escala del disco en pantalla: no depende de por dónde pase
+   * la luna (delante del disco, la órbita no se apaga) y en los sistemas compactos de la vista
+   * general (fase 4b) deja las órbitas ocultas hasta que uno se acerca.
    */
   private orbitOpacity(frame: WorldFrame): number[] {
     const physical = frame.frames.targetSpec.kind === 'physical';
+    const positions = frame.frames.output.position;
+    const radii = frame.frames.output.radius;
     return this.orbitSources.map((source) => {
       // En un marco físico, la órbita del propio planeta enfocado es casi una recta que lo
       // atraviesa: se deja tenue (indica hacia dónde se mueve).
@@ -829,10 +835,18 @@ export class World {
         if (frame.detail) return 0.12;
         return source.bodyIndex === frame.focusIndex ? 0.3 : 0.5;
       }
-      const moon = frame.screen[source.bodyIndex];
       const parent = frame.screen[source.parentIndex];
-      if (!moon || !parent || !parent.onScreen) return 0;
-      const separation = Math.hypot(moon.x - parent.x, moon.y - parent.y);
+      const radius = radii[source.parentIndex] as number;
+      if (!parent || !parent.onScreen || !Number.isFinite(parent.radiusPx) || !(radius > 0))
+        return 0;
+      const m = 3 * source.bodyIndex;
+      const p = 3 * source.parentIndex;
+      const distance = Math.hypot(
+        (positions[m] as number) - (positions[p] as number),
+        (positions[m + 1] as number) - (positions[p + 1] as number),
+        (positions[m + 2] as number) - (positions[p + 2] as number),
+      );
+      const separation = (distance / radius - 1) * parent.radiusPx;
       const t = Math.min(Math.max((separation - 8) / 22, 0), 1);
       return t * t * (3 - 2 * t) * 0.7;
     });

@@ -44,13 +44,17 @@ export const VISUAL_CONFIG = {
   /** El Sol (tarea 6). */
   sun: {
     /**
-     * Intensidad de la fotosfera: muy por encima de 1 en la vista general (el Sol deslumbra) y cerca
-     * de 1 en primer plano, para que el tone mapping no aplane el oscurecimiento del limbo (el borde
-     * queda al ~33 % del centro, cerca del 30 % de la ley de Allen).
+     * Intensidad de la fotosfera: por encima de 1 en la vista general (el Sol deslumbra) y cerca de 1
+     * en primer plano, para que el tone mapping no aplane el oscurecimiento del limbo (el borde queda
+     * al ~33 % del centro, cerca del 30 % de la ley de Allen). En la vista general bajó de 2,6 a 1,9
+     * con el Sol más grande (fase 4b): así el disco no es un círculo blanco plano.
      */
-    intensity: { overview: 2.6, closeUp: 0.85 },
-    /** Halo, en radios solares, y su intensidad: hace de resplandor (no hay bloom). */
-    halo: { overview: { radii: 3.2, intensity: 1.1 }, closeUp: { radii: 1.7, intensity: 0.45 } },
+    intensity: { overview: 1.9, closeUp: 0.85 },
+    /**
+     * Halo, en radios solares, y su intensidad: hace de resplandor (no hay bloom). En la vista general,
+     * con el Sol de 13 unidades (fase 4b; antes 9), el halo mide algo más que antes (~31 unidades).
+     */
+    halo: { overview: { radii: 2.4, intensity: 1.3 }, closeUp: { radii: 1.7, intensity: 0.45 } },
     /** Granulación en primer plano: amplitud ilustrativa y ritmo (unidades de ruido por segundo). */
     granulation: { amplitude: 0.05, rate: 0.015 },
   },

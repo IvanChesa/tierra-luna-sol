@@ -6,6 +6,7 @@
  */
 import type { ScreenBody } from './picking';
 import type { ViewInsets } from './types';
+import { VISUAL_CONFIG } from './visual-config';
 
 export type LabelKind = 'star' | 'planet' | 'moon';
 
@@ -45,10 +46,10 @@ const PADDING_PX = 2;
 /** Radio mínimo de un cuerpo como obstáculo para los nombres (su marcador mide 8 px). */
 const OBSTACLE_MIN_RADIUS_PX = 4;
 /**
- * El halo del Sol (sun-material.ts: 3,2 radios y al menos 26 px de semilado) también tapa: se
- * reserva la parte brillante, unos dos tercios de su radio.
+ * El halo del Sol (el de la vista general en `VISUAL_CONFIG`, con al menos 26 px de semilado, como en
+ * sun-material.ts) también tapa: se reserva la parte brillante, unos dos tercios de su radio.
  */
-const SUN_HALO_RADII = 3.2;
+const SUN_HALO_RADII = VISUAL_CONFIG.sun.halo.overview.radii;
 const SUN_HALO_MIN_PX = 26;
 const SUN_HALO_VISIBLE = 0.65;
 
