@@ -30,17 +30,23 @@ const playBriefly = async (page) => {
   await page.keyboard.press('k');
 };
 
+/** Una fecha con los anillos de Saturno muy abiertos (en 2026 están casi de canto). */
+const OPEN_RINGS = '2032-03-01T00:00Z';
+
 /** [nombre, ruta, tamaño, acción tras cargar]. */
 const SHOTS = [
   ['escritorio-sistema', '/?captura=1', DESKTOP],
   ['escritorio-sistema-atras', '/?captura=1', DESKTOP, press('r')],
   ['escritorio-sistema-reproduciendo', '/?captura=1', DESKTOP, playBriefly],
+  // Con los anillos de Saturno abiertos y Venus por su cara nocturna.
+  ['escritorio-sistema-2032', `/?captura=1&fecha=${OPEN_RINGS}`, DESKTOP],
   ['escritorio-jupiter', '/?captura=1&cuerpo=jupiter', DESKTOP],
   ['escritorio-saturno', '/?captura=1&cuerpo=saturno', DESKTOP],
   ['escritorio-tierra', '/explorar/tierra?captura=1', DESKTOP],
   ['portatil-sistema', '/?captura=1', LAPTOP],
   ['movil-sistema', '/?captura=1', MOBILE],
   ['movil-sistema-atras', '/?captura=1', MOBILE, press('r')],
+  ['movil-sistema-2032', `/?captura=1&fecha=${OPEN_RINGS}`, MOBILE],
   ['movil-jupiter', '/?captura=1&cuerpo=jupiter', MOBILE],
 ];
 

@@ -25,8 +25,13 @@ export const VISUAL_CONFIG = {
   /** Exposición base (D21). */
   exposure: 1,
   fill: {
-    /** Relleno de la vista general, en fracción de la luz del Sol. */
-    overview: 0.16,
+    /**
+     * Relleno de la vista general, en fracción de la luz del Sol. Con los planetas más grandes (fase
+     * 4b), 0,3 en lugar de 0,16: un planeta visto por su cara nocturna (Venus o la Tierra en 2032) se
+     * lee como un disco sin perder la fase; con 0,45 la fase casi desaparece. Mercurio, de albedo
+     * 0,14 y unos 4 px, sigue oscuro con cualquier valor: se encuentra por su nombre y su estela.
+     */
+    overview: 0.3,
     /** Relleno del primer plano: deja intuir la forma del lado nocturno sin falsear el terminador. */
     closeUp: 0.004,
   },
