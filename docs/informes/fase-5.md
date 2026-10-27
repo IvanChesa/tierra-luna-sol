@@ -25,3 +25,13 @@ Escrito antes de empezar, a partir de `docs/PLAN.md` (§0–§5, §7, D13, D20, 
 
 ### Dependencias
 Ninguna nueva.
+
+### Estado de las entregas (se actualiza al cerrar cada una)
+| Entrega | Estado | Commits | Notas |
+|---|---|---|---|
+| 5.a | ✅ (falta la textura de 8K, en 5.e) | `2705fc6`, `296fbf5`, `5bb36a8` | Variante `TLS_EARTH` del material común: nubes con deriva (reloj de pared) y su sombra, reflejo del Sol en el océano, luces nocturnas en el crepúsculo, tono crepuscular y luz azulada dispersada sobre el lado diurno; la neblina del limbo, azulada y más tenue (R3). Las nubes, también en la vista general (allí la Tierra ya no se ve oscura); la noche, la máscara y las normales, solo en primer plano (test). Exposición con el albedo geométrico (0,434). Captura junto a EPIC: `scripts/capture-earth.mjs`. |
+| 5.b | ✅ | `3b13188`, `727d278` | Test del punto subsolar con lo que recibe el shader (a menos de 0,05° de `subsolarPoint`). Panel «Luz del Sol» en la vista Tierra (hora del día sin cambiar la fecha), con su spec. |
+| 5.c | pendiente | | Sombra de la Luna y eclipse del 12-08-2026. |
+| 5.d | pendiente | | Vistas guiadas y lugares del cielo desde España. |
+| 5.e | pendiente | | Textura de día de 8K. |
+| 5.f | pendiente | | Cierre. |
