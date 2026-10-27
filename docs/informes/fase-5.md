@@ -33,5 +33,5 @@ Ninguna nueva.
 | 5.b | ✅ | `3b13188`, `727d278` | Test del punto subsolar con lo que recibe el shader (a menos de 0,05° de `subsolarPoint`). Panel «Luz del Sol» en la vista Tierra (hora del día sin cambiar la fecha), con su spec. |
 | 5.c | ✅ | `072ee70`, `776e8c6` | `moonShadowCenter` (eje Sol–Luna contra el elipsoide WGS84) a menos de 1° del máximo del catálogo de la NASA (fixture generado con su URL), con el Sol a la altura de la ficha. En el shader, umbra y penumbra analíticas con las posiciones reales de la Luna y del Sol (no su dirección: su paralaje movía la sombra ~0,7°); test: el eje con lo que recibe el shader, a menos de 0,1° de `moonShadowCenter`. Captura `tierra-eclipse-2026`. |
 | 5.d | pendiente | | Vistas guiadas y lugares del cielo desde España. |
-| 5.e | pendiente | | Textura de día de 8K. |
+| 5.e | ✅ | `f87cdd9` | Nivel 8k solo para la textura de día (1,28 MB), en el nivel alto y si cabe en `maxTextureSize`. Para caber en los 300 MB de VRAM (§5), la noche, la máscara y las normales de la Tierra van en 2k (`earthMapsTexture`; con ellas en 4k, más de 370 MB). Texturas de la vista Tierra en alto: ~3,8 MB (≤ 6). Test del presupuesto con la Tierra enfocada como peor caso. |
 | 5.f | pendiente | | Cierre. |
