@@ -9,6 +9,7 @@ Una línea por cada fase cerrada en modo autónomo por bloques y, al terminar ca
 | 3 · Interfaz del explorador e interacción | 2026-10-26 | **Código:** CAMBIOS NECESARIOS: 0 bloqueantes, 3 importantes (el tiempo se congelaba si el motor fallaba ya creado, el foco se perdía al ocultar lo que lo tenía y la ficha de las lunas citaba una sola fuente), 7 menores y 4 sugerencias, todos atendidos. **Diseño, dos rondas:** en la primera, 1 bloqueante, 6 importantes, 10 menores y 6 sugerencias; en la segunda, el bloqueante resuelto y 1 importante (el foco bajo la ficha en móvil), 6 menores y 1 sugerencia nuevos. Atendido todo menos 2 textos que decide Iván. Fusionada con `--no-ff` (`8fbc389`) | 357 tests · cobertura de `ephemeris/` del 99,57 % · 45 e2e con SwiftShader (axe en todas las páginas, sin WebGL, 0 peticiones a terceros) · JS inicial de 296,32 kB (aviso a 300) · interfaz diferida de 220,07 kB · motor de 636,67 kB · 60 FPS a 1 día/s en alta (≥ 59 en media y baja) · store a 4,8 por segundo · 0 cambios de URL al reproducir · 0 frames en reposo · VRAM 27/67/107 MB · memoria estable tras 10 idas y vueltas |
 | Revisión del bloque B aplicada (en `main`) | 2026-10-26 | Bloque B **APROBADO** (`docs/revisiones/bloque-B.md`): 4 importantes y 2 menores. B1–B3 y B5 pasan a las fases nuevas 3b y 3c; B4 (presupuesto) y B6 (`.gitignore`), hechos. Plan con las fases 3b y 3c (bloque R), D29–D31, las propuestas aprobadas de las fases 2 y 3 y el cielo desde España; H1 «El sistema solar» | 357 tests · 45 e2e · JS inicial de 296,32 kB (aviso, ahora a 320) · código propio de los chunks iniciales: 11,61 kB de 15 (con un fallo provocado y revertido: 46,22 kB → ✖) |
 | 3b · Realismo de los planetas | 2026-10-26 | CAMBIOS NECESARIOS: 0 bloqueantes, 3 importantes (la Tierra casi negra en primer plano, la Vía Láctea demasiado brillante y siguiendo la exposición, Venus ocre), 8 menores y 3 sugerencias, todos atendidos (el bloom queda para Iván en `PENDIENTES.md`). Fusionada con `--no-ff` (`46f1dc3`) | 417 tests · cobertura de `ephemeris/` del 99,65 % · 45 e2e · JS inicial de 296,32 kB · motor de 663,76 kB · 60 FPS en todas las vistas y niveles (RTX 3060) · VRAM ≤ 118 MB en alta y ≤ 54 MB en baja · primera vista 387 kB · leyes de fase: Luna 0,013 mag RMS, Mercurio 0,117 · anillos A y B con la I/F del Hubble · colores medidos reproducibles a ≤ 0,005 · 30 capturas comparables con fotos reales |
+| 3c · Interfaz inmersiva del sistema solar | 2026-10-27 | **Código:** CAMBIOS NECESARIOS: 0 bloqueantes, 3 importantes (la línea de tiempo congelada tras un clic con el tiempo en marcha, la pista fuera de 1900–2100 en los extremos con la hora local y «Controles +» tapando controles que seguían en el orden del foco), 6 menores y 5 sugerencias. **Diseño:** CAMBIOS NECESARIOS: 0 bloqueantes, 7 importantes (pósters de la maquetación anterior, barra que cambiaba de tamaño al reproducir, cámara sobre el limbo en móvil, hoja de «Controles +» sin botón de cerrar, pausa fuera de la vista en las pantallas bajas, tarjeta e índice cortados sin pista e icono de «Controles» igual que «Acercar»), 6 menores y 8 sugerencias. Atendido todo menos 2 sugerencias, explicadas; quedan para Iván la comparación con su referencia y un texto. Fusionada con `--no-ff` (`a558e72`) | 450 tests · cobertura de `ephemeris/` del 99,65 % · 60 e2e · JS inicial de 298,00 kB (11,58 kB de código propio) · interfaz diferida de 251,61 kB · arranque a 3 h/s: 59,8–60 FPS en alta, media y baja con 1,3–1,9 ms de CPU por frame · CLS 0 en tres móviles y 0,0004 en escritorio · LCP del póster a 192 ms · pestaña oculta: 0 frames · 30 miniaturas en 25,9 kB · 36 capturas |
 ---
 
 ## Resumen del bloque «fases 1 a 1» (2026-10-24)
@@ -130,3 +131,64 @@ No se activó ninguna: no quedó ningún bloqueante, no hizo falta ninguna depen
 5. **Cuando puedas:** probar en tu móvil la hoja inferior, los gestos y los 30 FPS en baja (`npm start -- --host 0.0.0.0`).
 
 El bloque termina aquí. No se ha empezado el bloque C: antes lo revisa la sesión de revisión (`docs/revisiones/bloque-B.md`).
+
+## Resumen del bloque R, fases 3b y 3c (2026-10-27)
+
+### Sesiones
+1. **Sesión 1** (26-10): fase 3b entera (plan, entregas, revisión, correcciones y fusión). Fase 3c empezada: su plan y la 3c.a (arranque en movimiento); el resto quedó apuntado en su informe.
+2. **Sesión 2** (27-10): retomada desde el `DIARIO`, el informe y `git log`. Las dos decisiones de Iván (el bloom, a la fase 10; el arranque, a 3 horas por segundo). Fase 3c: entregas 3c.b–3c.e, dos revisiones en paralelo (código y diseño), correcciones, fusión y este resumen.
+
+### Qué se ha hecho
+- **Fase 3b, realismo de los planetas** (D29):
+  - fotometría por tipo de cuerpo ajustada a las leyes de fase publicadas, con exposición por encuadre;
+  - relieve de Mercurio y Marte con sus modelos de elevación, y el Sol con el oscurecimiento del limbo medido;
+  - anillos de Saturno con la profundidad óptica y el albedo de la NASA, calibrados con el Hubble;
+  - la Vía Láctea de ESO, alineada con el cielo real;
+  - colores medidos en fotos reales y reproducibles con un script.
+- **Fase 3c, interfaz inmersiva** (D30 y D31):
+  - el lienzo a pantalla completa, con la interfaz flotando encima y el encuadre apartándose de cada panel;
+  - fichas de los 30 cuerpos, con miniaturas renderizadas por el propio motor;
+  - barra de tiempo compacta, con la línea de tiempo del año y «Controles +»;
+  - la columna lateral pasa a un panel «Índice», cerrado al entrar;
+  - arranque en movimiento a 3 horas por segundo, en pausa con movimiento reducido o con `?fecha=`.
+
+### Métricas al cerrar el bloque
+- **Tests:** 450 unitarios (cobertura de `ephemeris/` del 99,65 %) y 60 e2e con SwiftShader, axe incluido, también con el sistema en marcha.
+- **Bundle:** JS inicial de 298,00 kB (sin three, astronomy-engine, stores ni controles), con 11,58 kB de código propio de los 15 permitidos. Interfaz diferida de 251,61 kB y motor de 664,29 kB.
+- **Rendimiento (RTX 3060):**
+  - al entrar, reproduciendo a 3 h/s: 59,8–60 FPS en alta, media y baja, con 1,3–1,9 ms de CPU por frame;
+  - CLS 0 en Pixel 7, a 390 × 844 y a 360 × 640, y 0,0004 en escritorio (el cambio de fuente);
+  - LCP: el póster, a 192 ms en escritorio;
+  - la pestaña oculta no pinta;
+  - VRAM ≤ 118 MB en alta y ≤ 54 MB en baja en todas las vistas (fase 3b).
+
+### Desviaciones importantes (detalle en los informes, §4)
+- **Fase 3b:**
+  - el bloom, sin hacer: pasa a la fase 10 como opcional (decisión de Iván del 27-10);
+  - lunar-Lambert en lugar de Lommel–Seeliger puro en los rocosos, más cerca de las leyes de fase publicadas;
+  - la opacidad y el brillo de los anillos, y la Vía Láctea, salen de medidas, no de las texturas (la Vía Láctea, sin las estrellas del panorama);
+  - relieve exagerado (Marte ×6 y Mercurio ×2) y mapas de normales con pérdidas.
+- **Fase 3c:**
+  - el arranque, a 3 horas por segundo (decisión de Iván del 27-10), con un escalón nuevo;
+  - el botón «Índice», en la franja de abajo, a la izquierda de las fichas;
+  - las fichas dicen la distancia como descripción, no en el nombre (como el índice);
+  - «Controles +» es un `popover` del navegador (Chrome y Edge 114, Safari 17 y Firefox 125);
+  - en móvil, la velocidad está en «Controles +» y no hay pie;
+  - Lighthouse, sin ejecutar: se miden sus métricas de arranque con las APIs de rendimiento.
+
+### Incidencias
+- **Dos errores encontrados mientras se corregía, antes de llegar a `main`:** un manejador de Angular que devolvía `false` (y así impedía abrir «Controles +») y una regla global que perdía contra la del componente.
+- **El e2e de la maquetación cazó un efecto de una corrección:** con la barra entera a la vista al llegar, a 640 × 360 solo quedaban 130 px de lienzo (pide 150). Ahora, al llegar, se ve solo la primera fila de la barra, con la pausa, y quedan 182 px.
+- **El contexto de la sesión 2 se resumió una vez.** El informe vivo y el `DIARIO` bastaron para seguir.
+
+### Condiciones de parada
+No se activó ninguna: no quedó ningún bloqueante, no hizo falta ninguna dependencia ni herramienta nueva y todos los criterios se cumplen o están explicados (Lighthouse y la comparación con la referencia, abajo).
+
+### Pendiente para Iván (`PENDIENTES.md`)
+1. **Comparar las capturas de la fase 3c con tu referencia** (`docs/informes/img/fase-3c/` y la tabla de §7.1 del informe): la referencia no está en el repositorio.
+2. **Un texto:** «rueda o pellizca para acercarte» (la revisión propone «usa la rueda o pellizca para acercarte»).
+3. **Aprobar las desviaciones y propuestas de la fase 3c** (§4 y §10 de su informe): la distancia de las fichas como descripción, Lighthouse con `@lhci/cli` en la fase 10, pintar a la frecuencia que pide el movimiento y regenerar las miniaturas de las lunas en la fase 7.
+4. **Antes del bloque C:** repo en GitHub, licencia del código, staging en cPanel y secrets (fase 4). Sin ellos, la fase 4 se aplaza.
+5. **Cuando puedas, en tu móvil** (`npm start -- --host 0.0.0.0`): las hojas, la fila de fichas, la línea de tiempo al tacto y el gasto de batería con la reproducción automática.
+
+El bloque termina aquí. No se ha empezado el bloque C: antes lo revisa la sesión de revisión.
