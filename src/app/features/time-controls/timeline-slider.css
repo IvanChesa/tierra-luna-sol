@@ -1,6 +1,7 @@
 /*
  * Línea de tiempo: pista fina en el color de los controles (≥ 3:1 sobre el fondo) y tirador redondo
- * en latón (docs/DISENO.md). La marca de «hoy», una raya corta sobre la pista.
+ * en latón (docs/DISENO.md). La marca de «hoy», bajo la pista (no choca con el tirador): una raya y
+ * su rótulo, que se calla cuando el tirador está encima.
  */
 :host {
   --thumb: 1rem;
@@ -104,13 +105,28 @@
 
 .today {
   position: absolute;
-  top: calc(50% - 10px);
+  top: calc(50% + var(--thumb) / 2 + 0.375rem);
+  color: var(--color-text-muted);
+  font-size: 0.625rem;
+  line-height: 1;
+  translate: -50% 0;
+  pointer-events: none;
+}
+
+.today::before {
+  position: absolute;
+  top: -0.375rem;
+  left: 50%;
   width: 2px;
-  height: 7px;
+  height: 0.3rem;
   background: var(--color-text);
   border-radius: 1px;
   translate: -50% 0;
-  pointer-events: none;
+  content: '';
+}
+
+.today.is-near {
+  color: transparent;
 }
 
 @media (pointer: coarse) {

@@ -89,6 +89,23 @@ export function dateAtDay(date: Date, day: number, zone: TimeZoneChoice): Date {
   return fromParts({ ...p, month: 0, day: 1 + index }, zone);
 }
 
+/**
+ * Los días del año `year` (en la zona) que caen dentro de [min, max]: el primero y el último. En los
+ * años de los extremos, parte de la pista no se puede alcanzar: en la hora de Madrid, el final de
+ * 2100 (UTC) es la primera hora del 1 de enero de 2101, y el principio de 1900, con la hora solar de
+ * entonces (−0:14:44), el 31 de diciembre de 1899 a las 23:45.
+ */
+export function reachableDays(
+  year: number,
+  zone: TimeZoneChoice,
+  min: Date,
+  max: Date,
+): { first: number; last: number } {
+  const first = yearOf(min, zone) === year ? dayOfYear(min, zone) : 0;
+  const last = yearOf(max, zone) === year ? dayOfYear(max, zone) : daysInYear(year) - 1;
+  return { first, last };
+}
+
 /** El mismo día y hora `years` años antes o después (el 29 de febrero pasa al 28). */
 export function shiftYears(date: Date, years: number, zone: TimeZoneChoice): Date {
   const p = partsOf(date, zone);

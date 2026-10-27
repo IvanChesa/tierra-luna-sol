@@ -1,8 +1,11 @@
+import { localZoneName } from '../../core/format';
+import { MAX_DATE, MIN_DATE } from '../../ephemeris/constants';
 import {
   dateAtDay,
   dayOfYear,
   daysInYear,
   isTimelineKey,
+  reachableDays,
   shiftYears,
   stepDate,
   yearOf,
@@ -85,15 +88,50 @@ describe('timeline: la línea de tiempo del año de la fecha mostrada', () => {
     );
   });
 
-  it('en la hora local se conserva la hora de reloj, también al cambiar de horario', () => {
-    // Del 28 de marzo al 29 de marzo de 2026 (en Madrid, la noche del cambio de hora).
-    const before = new Date(2026, 2, 28, 12, 0, 0);
+  it('en la hora local se conserva la hora de reloj', () => {
+    const before = new Date(2026, 5, 10, 12, 0, 0);
     const after = stepDate(before, 'ArrowRight', 'local');
-    expect(after.getDate()).toBe(29);
+    expect(after.getDate()).toBe(11);
     expect(after.getHours()).toBe(12);
     expect(dayOfYear(after, 'local')).toBe(dayOfYear(before, 'local') + 1);
     expect(yearOf(new Date(2026, 0, 1, 0, 30), 'local')).toBe(2026);
   });
+
+  // Solo donde la zona del proceso cambia de hora esa noche (Madrid, 29-03-2026); en el CI (UTC),
+  // no hay cambio que probar.
+  const dst =
+    new Date(2026, 2, 28, 12).getTimezoneOffset() !== new Date(2026, 2, 29, 12).getTimezoneOffset();
+  it.runIf(dst)('también al cambiar de horario, la misma hora de reloj', () => {
+    const after = stepDate(new Date(2026, 2, 28, 12, 0, 0), 'ArrowRight', 'local');
+    expect(after.getDate()).toBe(29);
+    expect(after.getHours()).toBe(12);
+    // Un día de reloj, que esa noche dura 23 horas.
+    expect(after.getTime() - new Date(2026, 2, 28, 12).getTime()).toBe(23 * 3_600_000);
+  });
+
+  it('en los años de los extremos, solo los días que caen entre 1900 y 2100', () => {
+    expect(reachableDays(1900, 'utc', MIN_DATE, MAX_DATE)).toEqual({ first: 0, last: 364 });
+    expect(reachableDays(2100, 'utc', MIN_DATE, MAX_DATE)).toEqual({ first: 0, last: 364 });
+    expect(reachableDays(2000, 'utc', MIN_DATE, MAX_DATE)).toEqual({ first: 0, last: 365 });
+    // Un rango que acaba a mitad de año.
+    expect(reachableDays(2026, 'utc', MIN_DATE, new Date('2026-03-17T12:00:00Z'))).toEqual({
+      first: 0,
+      last: 75,
+    });
+  });
+
+  it.runIf(localZoneName() === 'Europe/Madrid')(
+    'en la hora de Madrid, 1899 y 2101 tienen un solo día alcanzable',
+    () => {
+      // 1900-01-01T00:00Z son las 23:45 del 31 de diciembre de 1899 (hora solar, −0:14:44).
+      expect(yearOf(MIN_DATE, 'local')).toBe(1899);
+      expect(reachableDays(1899, 'local', MIN_DATE, MAX_DATE)).toEqual({ first: 364, last: 364 });
+      expect(reachableDays(1900, 'local', MIN_DATE, MAX_DATE)).toEqual({ first: 0, last: 364 });
+      // 2100-12-31T23:59:59Z son las 0:59 del 1 de enero de 2101.
+      expect(yearOf(MAX_DATE, 'local')).toBe(2101);
+      expect(reachableDays(2101, 'local', MIN_DATE, MAX_DATE)).toEqual({ first: 0, last: 0 });
+    },
+  );
 
   it('solo las teclas de la línea de tiempo', () => {
     for (const key of ['ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown', 'Home', 'End']) {
