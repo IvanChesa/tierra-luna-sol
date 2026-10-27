@@ -11,6 +11,9 @@ import {
   framingDistanceRadii,
 } from './engine';
 import { SCHEMATIC_COLORS } from './body-colors';
+import { TEXTURE_META } from './texture-meta';
+import type { TextureLevel } from './quality';
+import type { LoadedTexture, TextureId } from './textures';
 import { hasDepthChunks } from './materials/depth';
 import { ORBIT_WIDTH_PX, trailColor } from './orbits';
 import { VISUAL_CONFIG } from './visual-config';
@@ -124,7 +127,10 @@ interface Harness {
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
-async function createHarness(overrides: Partial<SceneEngineOptions> = {}): Promise<Harness> {
+async function createHarness(
+  overrides: Partial<SceneEngineOptions> = {},
+  depsOverrides: Partial<EngineDeps> = {},
+): Promise<Harness> {
   const renderer = new FakeRenderer();
   const clock = { now: 1000 };
   const scheduler = new ManualScheduler(() => clock.now);
@@ -153,6 +159,7 @@ async function createHarness(overrides: Partial<SceneEngineOptions> = {}): Promi
       },
     },
     yieldToMain: () => Promise.resolve(),
+    ...depsOverrides,
   };
   const engine = new SceneEngine(
     {
@@ -890,6 +897,41 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     expect(world.orbits.widths[0]).toBeCloseTo(widthPx / ORBIT_WIDTH_PX, 5);
     expect(world.orbits.widths[2 * Math.floor((mercury?.segments ?? 0) / 2)]).toBe(1);
     h.engine.dispose();
+  });
+
+  it('la Tierra pide sus nubes también en la vista general; la noche, la máscara y las normales, solo de cerca (fase 5)', async () => {
+    // Una fuente de texturas falsa que apunta qué se pide (y lo sirve al momento).
+    const withRequests = async (focus: SceneEngineOptions['focus']) => {
+      const requests: string[] = [];
+      const source = {
+        load: (id: TextureId, level: TextureLevel): Promise<LoadedTexture> => {
+          requests.push(id);
+          return Promise.resolve({
+            texture: new Texture(),
+            file: { level, path: `${id}.webp`, width: 4, height: 2, bytes: 1 },
+            vramBytes: 32,
+          });
+        },
+      };
+      const h = await createHarness(
+        { reducedMotion: true, focus },
+        { textures: () => ({ source, meta: TEXTURE_META }) },
+      );
+      settle(h);
+      for (let k = 0; k < 5; k++) await flush();
+      h.engine.dispose();
+      return requests;
+    };
+    const overview = await withRequests(null);
+    expect(overview).toContain('earth-day');
+    expect(overview).toContain('earth-clouds');
+    for (const id of ['earth-night', 'earth-specular', 'earth-normal']) {
+      expect(overview, id).not.toContain(id);
+    }
+    const earth = await withRequests('tierra');
+    for (const id of ['earth-clouds', 'earth-night', 'earth-specular', 'earth-normal']) {
+      expect(earth, id).toContain(id);
+    }
   });
 
   it('las lunas de un sistema que no se distingue no se dibujan; al enfocar su planeta, sí (fase 4b)', async () => {
