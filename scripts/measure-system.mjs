@@ -1,7 +1,8 @@
 // Mediciones de la fase 4b: la vista general con las estelas de color (D34) y los planetas más
 // grandes, a la velocidad de cada contexto (D33). Por calidad (alta, media y baja): FPS, coste por
 // frame en la CPU, llamadas de dibujo, triángulos y VRAM estimada, en la vista general a 3 días por
-// segundo y con Júpiter enfocado a 1 hora por segundo (modo de captura, sin interacción).
+// segundo, con Júpiter enfocado y en la vista Tierra (fase 5) a 1 hora por segundo (modo de captura,
+// sin interacción).
 //
 // También el radio en pantalla (px CSS) del Sol y de los planetas en la vista general, en escritorio,
 // portátil y móvil, el 24-10-2026 (anillos de Saturno casi de canto) y el 01-03-2032 (abiertos).
@@ -86,6 +87,10 @@ try {
     const jupiter = await openViewer(browser, `/?captura=1&calidad=${quality}&cuerpo=jupiter`);
     results[`jupiter-1-hora-${quality}`] = await sample(jupiter.page, HOUR_S);
     await jupiter.page.close();
+    // La vista Tierra (fase 5): el material completo, las nubes y, en alto, la textura de día de 8k.
+    const earth = await openViewer(browser, `/explorar/tierra?captura=1&calidad=${quality}`);
+    results[`tierra-1-hora-${quality}`] = await sample(earth.page, HOUR_S);
+    await earth.page.close();
   }
 } finally {
   await close();
