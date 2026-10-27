@@ -43,34 +43,46 @@
 }
 
 /*
- * Si la lista no cabe, su borde de abajo se funde mientras quede algo por ver: las barras de
- * desplazamiento superpuestas (macOS, pantallas táctiles) no se ven en reposo. Es una animación
- * ligada al desplazamiento, sin JS: sin desbordamiento, su línea de tiempo no está activa y no hay
- * fundido; donde no se admite, queda la barra.
+ * Si la lista no cabe, una sombra en su borde de abajo dice que hay más mientras quede algo por ver:
+ * las barras de desplazamiento superpuestas (macOS, pantallas táctiles) no se ven en reposo. Es un
+ * pseudoelemento pegado al borde, no una máscara: se ve aunque el corte caiga justo entre dos filas.
+ * La enciende una animación ligada al desplazamiento, sin JS: sin desbordamiento, su línea de tiempo
+ * no está activa y no hay sombra; donde no se admite, queda la barra.
  */
-@property --tree-fade {
-  syntax: '<length>';
-  inherits: false;
-  initial-value: 0px;
+@property --more-below {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
 }
 
-@keyframes tree-fade {
+@keyframes more-below {
   0%,
-  92% {
-    --tree-fade: 2rem;
+  94% {
+    --more-below: 1;
   }
 
   100% {
-    --tree-fade: 0px;
+    --more-below: 0;
   }
 }
 
+.tree::after {
+  position: sticky;
+  bottom: 0;
+  display: block;
+  height: 1.25rem;
+  margin: -1.25rem calc(-1 * var(--space-2)) 0;
+  background: linear-gradient(to top, color-mix(in srgb, #000 55%, transparent), transparent);
+  opacity: var(--more-below);
+  pointer-events: none;
+  content: '';
+}
+
 @supports (animation-timeline: scroll()) {
-  /* La fila elegida no queda bajo el fundido (body-picker.ts la desplaza con este margen). */
+  /* La fila elegida no queda bajo la sombra (body-picker.ts la desplaza con este margen). */
   .tree {
-    scroll-padding-block-end: 2rem;
-    mask-image: linear-gradient(to bottom, #000 calc(100% - var(--tree-fade)), transparent);
-    animation: tree-fade linear both;
+    scroll-padding-block-end: 1.25rem;
+    animation: more-below linear both;
     animation-timeline: scroll(self block);
   }
 }

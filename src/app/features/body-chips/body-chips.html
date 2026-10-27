@@ -47,6 +47,7 @@
     <button
       type="button"
       class="chip"
+      [class.is-system]="system() === body.id && selected() !== body.id"
       [attr.data-body]="body.id"
       [attr.aria-pressed]="selected() === body.id"
       [attr.aria-describedby]="body.kind === 'star' ? null : 'chip-desc-' + body.id"

@@ -13,7 +13,7 @@
   display: flex;
   justify-content: safe center;
   gap: var(--space-1);
-  padding: 2px var(--space-1);
+  padding: var(--space-1);
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scrollbar-width: thin;
@@ -77,7 +77,20 @@
   text-underline-offset: 3px;
 }
 
-.chip:focus-visible {
+/* El planeta cuya fila de lunas se ve, con una luna elegida: un anillo fino y el nombre claro. */
+.chip.is-system {
+  color: var(--color-text);
+}
+
+.chip.is-system .chip__thumb {
+  box-shadow:
+    0 0 0 2px var(--color-bg),
+    0 0 0 3px var(--color-control);
+}
+
+/* El anillo de foco, dentro del margen de la fila (que recorta lo que se sale al desplazarse). */
+.chip:focus-visible,
+.moon:focus-visible {
   outline-offset: 0;
 }
 
