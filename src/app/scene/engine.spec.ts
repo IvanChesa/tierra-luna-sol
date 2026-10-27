@@ -10,7 +10,10 @@ import {
   circleFitDistance,
   framingDistanceRadii,
 } from './engine';
+import { SCHEMATIC_COLORS } from './body-colors';
 import { hasDepthChunks } from './materials/depth';
+import { ORBIT_WIDTH_PX, trailColor } from './orbits';
+import { VISUAL_CONFIG } from './visual-config';
 import type { RendererCapabilities, RendererInfo, RendererPort } from './renderer';
 import { SCENE_BODIES, createSolarSystemModel, sceneBody } from './system';
 import type { SceneEngineEventName, SceneEngineEvents, SceneEngineOptions } from './types';
@@ -551,13 +554,14 @@ describe('SceneEngine: calidad adaptativa, contexto WebGL y limpieza', () => {
 
 describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas y aliasing)', () => {
   interface Internals {
-    screen: { index: number; x: number; y: number }[];
+    screen: { index: number; x: number; y: number; occluded: boolean }[];
     rig: { distance: number; azimuth: number; elevation: number };
     look: unknown;
     frames: { output: { position: Float64Array; radius: Float64Array } };
     world: {
       scene: { getObjectByName(name: string): { visible: boolean } | undefined };
-      orbits: { colors: Float32Array };
+      orbits: { colors: Float32Array; widths: Float32Array };
+      orbitSources: readonly { bodyIndex: number; segments: number }[];
     };
     labels: { visibleLayer: boolean };
   }
@@ -849,19 +853,74 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     h.engine.dispose();
   });
 
-  it('al reproducir, la estela del último segundo hace más brillante la órbita junto al cuerpo', async () => {
+  it('cada cuerpo lleva detrás una estela de su color, también en pausa; hacia atrás, delante (D34)', async () => {
     const h = await createHarness({ reducedMotion: true });
     settle(h);
-    // El primer segmento de las órbitas es el de Mercurio, justo detrás del cuerpo.
-    const head = () => internals(h).world.orbits.colors[0] as number;
-    const paused = head();
-    h.engine.setSpeed(86_400 * 7); // 1 semana/s: la estela cubre 7 días de los 88 de su año
-    h.engine.setPlaying(true);
-    h.frames(200);
-    expect(head()).toBeGreaterThan(paused * 1.1);
-    h.engine.setPlaying(false);
+    const world = internals(h).world;
+    // La primera órbita es la de Mercurio: su primer vértice está en el cuerpo y el último vuelve a
+    // él por delante (tras sus n segmentos hacia atrás).
+    const mercury = world.orbitSources[0];
+    expect(mercury?.bodyIndex).toBe(sceneBody('mercurio').index);
+    const last = 6 * (mercury?.segments ?? 0) + 3;
+    const rgb = (o: number) => Array.from(world.orbits.colors.subarray(o, o + 3));
+    const hue = ([r, , b]: number[]) => (r as number) / (b as number);
+    const tint = trailColor(SCHEMATIC_COLORS.mercurio);
+    // A media vuelta, solo la órbita (gris azulada: b > r).
+    const orbitHue = hue(rgb(6 * Math.floor((mercury?.segments ?? 0) / 2)));
+    expect(orbitHue).toBeLessThan(1);
+    // En pausa, la estela ya está: junto al cuerpo, el color de Mercurio (r > b).
+    expect(hue(rgb(0))).toBeCloseTo(tint.r / tint.b, 5);
+    const ahead = rgb(last);
+    expect(hue(ahead)).toBeLessThan(1);
+    // Hacia atrás en el tiempo (también en pausa), la estela pasa delante del cuerpo.
+    h.engine.setSpeed(-3600);
     settle(h);
-    expect(head()).toBeCloseTo(paused, 6);
+    expect(hue(rgb(last))).toBeCloseTo(tint.r / tint.b, 5);
+    expect(hue(rgb(0))).toBeCloseTo(orbitHue, 5);
+    // Y vuelve detrás al reproducir hacia delante.
+    h.engine.setSpeed(3 * 86_400);
+    h.engine.setPlaying(true);
+    h.frames(10);
+    expect(hue(rgb(0))).toBeCloseTo(tint.r / tint.b, 5);
+    h.engine.setPlaying(false);
+    // Junto al cuerpo, la estela engorda hasta su grosor completo (en múltiplos del de la órbita), y
+    // a media vuelta queda el de la órbita.
+    const { widthPx } = VISUAL_CONFIG.trails.planet;
+    expect(world.orbits.widths[0]).toBeCloseTo(widthPx / ORBIT_WIDTH_PX, 5);
+    expect(world.orbits.widths[2 * Math.floor((mercury?.segments ?? 0) / 2)]).toBe(1);
+    h.engine.dispose();
+  });
+
+  it('las lunas de un sistema que no se distingue no se dibujan; al enfocar su planeta, sí (fase 4b)', async () => {
+    const visible = (h: Harness, id: string) =>
+      internals(h).world.scene.getObjectByName(id)?.visible;
+    // En la vista general, los sistemas compactos miden unos píxeles: sus lunas no se ven, ni se
+    // nombran, ni tapan a su planeta.
+    const overview = await createHarness({ reducedMotion: true });
+    settle(overview);
+    expect(visible(overview, 'jupiter')).toBe(true);
+    for (const moon of ['luna', 'io', 'calisto', 'titan', 'triton']) {
+      expect(visible(overview, moon), moon).toBe(false);
+    }
+    expect(screenOf(overview, 'saturno')?.occluded).toBe(false);
+    overview.engine.dispose();
+    // Al enfocar Júpiter (su sistema local físico), sus lunas aparecen.
+    const jupiter = await createHarness({ reducedMotion: true, focus: 'jupiter' });
+    settle(jupiter);
+    for (const moon of ['io', 'europa', 'ganimedes', 'calisto']) {
+      expect(visible(jupiter, moon), moon).toBe(true);
+    }
+    jupiter.engine.dispose();
+  });
+
+  it('la estela de una órbita en segundo plano es más fina (D34)', async () => {
+    const h = await createHarness({ reducedMotion: true, focus: 'mercurio' });
+    settle(h);
+    // Con Mercurio enfocado, su órbita queda tenue (opacidad 0,3, `World.orbitOpacity`): su estela
+    // engorda en proporción a esa opacidad respecto a la de la vista general.
+    const head = internals(h).world.orbits.widths[0] as number;
+    const widen = VISUAL_CONFIG.trails.planet.widthPx / ORBIT_WIDTH_PX - 1;
+    expect(head).toBeCloseTo(1 + (widen * 0.3) / VISUAL_CONFIG.overviewOrbitOpacity, 5);
     h.engine.dispose();
   });
 });

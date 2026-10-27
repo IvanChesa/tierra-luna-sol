@@ -5,7 +5,7 @@ import type { ExplorerView, SceneEngineEventName, SceneEngineEvents } from '../.
 import { ExplorerStore } from '../../state/explorer.store';
 import { SystemPositions } from '../../state/positions';
 import { SimulationStore } from '../../state/simulation.store';
-import { DEFAULT_SPEED } from '../../state/speeds';
+import { CONTEXT_SPEED } from '../../state/speeds';
 import { ExplorerEngine, ExplorerSession } from './explorer-session';
 
 /**
@@ -69,7 +69,11 @@ class FakeEngine implements ExplorerEngine {
   }
 }
 
-async function setup(search: string, view: ExplorerView = 'system') {
+/**
+ * Monta la sesión. Con `sessionFirst`, como en `ExplorerUi`: la sesión se crea (con la vista por
+ * defecto) y después se conecta la vista de la ruta, que llega con el primer `applyView`.
+ */
+async function setup(search: string, view: ExplorerView = 'system', sessionFirst = false) {
   window.history.replaceState({}, '', `/${search}`);
   TestBed.configureTestingModule({
     providers: [
@@ -84,8 +88,9 @@ async function setup(search: string, view: ExplorerView = 'system') {
   await router.navigateByUrl(`/${search}`);
   const explorer = TestBed.inject(ExplorerStore);
   const viewSignal = signal<ExplorerView>(view);
-  explorer.connectView(viewSignal);
+  if (!sessionFirst) explorer.connectView(viewSignal);
   const session = TestBed.inject(ExplorerSession);
+  if (sessionFirst) explorer.connectView(viewSignal);
   const sim = TestBed.inject(SimulationStore);
   const navigations: string[] = [];
   router.events.subscribe((event) => {
@@ -107,10 +112,10 @@ describe('ExplorerSession: la URL, la selección y el motor', () => {
     window.history.replaceState({}, '', '/');
   });
 
-  it('sin fecha en la URL arranca en «ahora» a 3 horas por segundo (D31); con fecha, en pausa en ella', async () => {
+  it('sin fecha en la URL arranca en «ahora» a 3 días por segundo (D31, D33); con fecha, en pausa en ella', async () => {
     const live = await setup('');
     expect(live.sim.playing()).toBe(true);
-    expect(live.sim.speed()).toBe(DEFAULT_SPEED);
+    expect(live.sim.speed()).toBe(CONTEXT_SPEED.overview);
     expect(Math.abs(live.sim.time().getTime() - Date.now())).toBeLessThan(5000);
     TestBed.resetTestingModule();
 
@@ -119,13 +124,15 @@ describe('ExplorerSession: la URL, la selección y el motor', () => {
     expect(fixed.sim.time().toISOString()).toBe('2030-01-01T00:00:00.000Z');
     expect(fixed.sim.selectedBodyId()).toBe('titan');
     expect(fixed.explorer.panelOpen()).toBe(true);
+    // Con un cuerpo en el enlace, su contexto: 1 hora por segundo (D33).
+    expect(fixed.sim.speed()).toBe(CONTEXT_SPEED.body);
   });
 
-  it('sin fecha, al conectar el motor (que nace en pausa) sigue reproduciendo a 3 horas por segundo', async () => {
+  it('sin fecha, al conectar el motor (que nace en pausa) sigue reproduciendo a la velocidad del contexto', async () => {
     const { session, sim } = await setup('?cuerpo=marte');
     const engine = new FakeEngine();
     session.attachEngine(engine);
-    expect(engine.calls.slice(0, 2)).toEqual([`setSpeed ${DEFAULT_SPEED}`, 'setPlaying true']);
+    expect(engine.calls.slice(0, 2)).toEqual([`setSpeed ${CONTEXT_SPEED.body}`, 'setPlaying true']);
     expect(sim.playing()).toBe(true);
   });
 
@@ -140,7 +147,7 @@ describe('ExplorerSession: la URL, la selección y el motor', () => {
       const { sim, session } = await setup('');
       expect(session.reducedMotion).toBe(true);
       expect(sim.playing()).toBe(false);
-      expect(sim.speed()).toBe(DEFAULT_SPEED);
+      expect(sim.speed()).toBe(CONTEXT_SPEED.overview);
       expect(Math.abs(sim.time().getTime() - Date.now())).toBeLessThan(5000);
     } finally {
       window.matchMedia = original;
@@ -161,7 +168,7 @@ describe('ExplorerSession: la URL, la selección y el motor', () => {
     session.setInsets({ top: 0, right: 0, bottom: 72, left: 320 });
     session.attachEngine(engine);
     expect(engine.calls).toEqual([
-      `setSpeed ${DEFAULT_SPEED}`,
+      `setSpeed ${CONTEXT_SPEED.overview}`,
       'setPlaying false',
       'setViewInsets 320',
       'setLabelsVisible true',
@@ -170,14 +177,17 @@ describe('ExplorerSession: la URL, la selección y el motor', () => {
     expect(sim.selectedBodyId()).toBe('jupiter');
     expect(engine.calls).toContain('focus jupiter');
     expect(explorer.panelOpen()).toBe(true);
+    // Con el cuerpo, su velocidad (D33), en la misma frase.
     expect(session.announcement()).toMatch(
-      /^Júpiter, planeta\. A .* del Sol y a .* de la Tierra\.$/,
+      /^Júpiter, planeta\. A .* del Sol y a .* de la Tierra\. Velocidad: 1 hora por segundo\.$/,
     );
     // La vista general también se dice (cierra la ficha y aleja la cámara).
     session.overview();
     expect(engine.calls).toContain('focus null');
     expect(explorer.panelOpen()).toBe(false);
-    expect(session.announcement()).toBe('Vista general del sistema solar.');
+    expect(session.announcement()).toBe(
+      'Vista general del sistema solar. Velocidad: 3 días por segundo.',
+    );
     engine.emit('travel', { active: true, kind: 'view' });
     expect(explorer.travelling()).toBe('view');
     session.detachEngine(engine);
@@ -237,6 +247,74 @@ describe('ExplorerSession: la URL, la selección y el motor', () => {
     });
     await settle();
     expect(router.url).toContain('fecha=2030-01-01T00:00:30Z');
+  });
+
+  describe('la velocidad según el contexto (D33)', () => {
+    it('vista general → cuerpo → vista general: 3 días, 1 hora y 3 días por segundo', async () => {
+      const { session, sim } = await setup('');
+      session.attachEngine(new FakeEngine());
+      expect(sim.speed()).toBe(CONTEXT_SPEED.overview);
+      session.select('marte');
+      expect(sim.speed()).toBe(CONTEXT_SPEED.body);
+      session.overview();
+      expect(sim.speed()).toBe(CONTEXT_SPEED.overview);
+      // Sin tocar la reproducción.
+      expect(sim.playing()).toBe(true);
+    });
+
+    it('un cambio a mano se respeta en su contexto, también de un cuerpo a otro', async () => {
+      const { session, sim } = await setup('');
+      session.attachEngine(new FakeEngine());
+      session.select('marte');
+      sim.setSpeed(86_400);
+      session.select('jupiter');
+      expect(sim.speed()).toBe(86_400);
+      expect(session.announcement()).not.toContain('Velocidad');
+      // El siguiente cambio de contexto vuelve a poner la suya.
+      session.overview();
+      expect(sim.speed()).toBe(CONTEXT_SPEED.overview);
+      sim.setSpeed(365.25 * 86_400);
+      session.select('saturno');
+      expect(sim.speed()).toBe(CONTEXT_SPEED.body);
+    });
+
+    it('conserva el sentido y no arranca la reproducción en pausa', async () => {
+      const { session, sim } = await setup('?fecha=2030-01-01T00:00Z');
+      session.attachEngine(new FakeEngine());
+      expect(sim.playing()).toBe(false);
+      sim.setReverse(true);
+      session.select('venus');
+      expect(sim.speed()).toBe(-CONTEXT_SPEED.body);
+      expect(sim.playing()).toBe(false);
+      expect(session.announcement()).toContain('Velocidad: 1 hora por segundo, hacia atrás.');
+      session.overview();
+      expect(sim.speed()).toBe(-CONTEXT_SPEED.overview);
+    });
+
+    it('las vistas Tierra y Luna cuentan como cuerpo; al volver a la general, 3 días por segundo', async () => {
+      const { session, sim, viewSignal, settle } = await setup('');
+      session.attachEngine(new FakeEngine());
+      viewSignal.set('earth');
+      await settle();
+      expect(sim.speed()).toBe(CONTEXT_SPEED.body);
+      expect(session.announcement()).toContain('Velocidad: 1 hora por segundo.');
+      // De la Tierra a la Luna: el mismo contexto, la misma velocidad (aunque se cambie a mano).
+      sim.setSpeed(7 * 86_400);
+      viewSignal.set('moon');
+      await settle();
+      expect(sim.speed()).toBe(7 * 86_400);
+      viewSignal.set('system');
+      await settle();
+      expect(sim.speed()).toBe(CONTEXT_SPEED.overview);
+    });
+
+    it('al entrar en la vista Tierra, ya a 1 hora por segundo y sin aviso', async () => {
+      // Como en la aplicación: la sesión nace con la vista general y la de la ruta llega después.
+      const { sim, session } = await setup('', 'earth', true);
+      session.attachEngine(new FakeEngine());
+      expect(sim.speed()).toBe(CONTEXT_SPEED.body);
+      expect(session.announcement()).toBe('');
+    });
   });
 
   it('un anuncio repetido vuelve a sonar (la región viva no ignora el mismo texto)', async () => {

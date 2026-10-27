@@ -59,6 +59,7 @@ import type {
   ViewInsets,
 } from './types';
 import { OrbitSource } from './orbits';
+import { SCHEMATIC_COLORS } from './body-colors';
 import {
   NO_INSETS,
   ViewProjection,
@@ -74,6 +75,7 @@ import {
   closeUpAmount,
   exposureFor,
   fillLight,
+  moonPresence,
 } from './visual-config';
 import { illustrativeDistance } from '../ephemeris/scale';
 import { BODY_DATA } from '../data/body-data';
@@ -151,8 +153,6 @@ const INSETS_SMOOTHING_MS = 180;
  */
 export const SLOW_SPEED = 60;
 export const SLOW_FRAME_MS = 250;
-/** La estela de movimiento cubre el camino del último segundo real (PLAN 3.c.7). */
-export const TRAIL_SECONDS = 1;
 
 export interface FrameScheduler {
   /** Pide un frame; con `delayMs`, no antes de que pase ese tiempo (el render a 4 Hz). */
@@ -208,6 +208,10 @@ interface ActiveFlight extends Flight {
 type Listener<K extends SceneEngineEventName> = (event: SceneEngineEvents[K]) => void;
 
 const SUN_INDEX = SCENE_BODIES.findIndex((body) => body.kind === 'star');
+/** Índice del planeta de cada luna (−1 en el Sol y los planetas). */
+const MOON_PARENT = SCENE_BODIES.map((body) =>
+  body.kind === 'moon' && body.parent ? sceneBody(body.parent).index : -1,
+);
 const NEPTUNE_INDEX = SCENE_BODIES.findIndex((body) => body.id === 'neptuno');
 const EARTH_INDEX = SCENE_BODIES.findIndex((body) => body.id === 'tierra');
 
@@ -303,6 +307,10 @@ export class SceneEngine implements SceneEngineApi {
   private ephemerisMs = 0;
   private screen: ScreenBody[] = [];
   private screenThree = new Float64Array(3 * SCENE_BODIES.length);
+  /** Presencia de cada cuerpo (`moonPresence`): las lunas de un sistema que no se distingue, 0. */
+  private readonly presence = new Float64Array(SCENE_BODIES.length).fill(1);
+  /** Radios por la presencia: los que se proyectan (etiquetas, puntero y ocultación). */
+  private readonly visibleRadius = new Float64Array(SCENE_BODIES.length);
   private contextLost = false;
   private readonly background: number | null;
   /** Solo en captura: geometría de una foto de referencia (fase 3b). */
@@ -408,7 +416,11 @@ export class SceneEngine implements SceneEngineApi {
         },
         zoom: (factor) => this.zoomBy(factor),
         pick: (x, y) => {
-          const visible = this.screen.filter((body) => this.aliasing.orbit[body.index] !== 1);
+          // Ni los cuerpos sustituidos por su órbita ni las lunas de un sistema que no se distingue.
+          const visible = this.screen.filter(
+            (body) =>
+              this.aliasing.orbit[body.index] !== 1 && (this.presence[body.index] as number) >= 0.5,
+          );
           const index = pickBody(visible, x, y);
           const body = index === null ? undefined : SCENE_BODIES[index];
           if (body) this.emit('bodyPicked', { id: body.id });
@@ -470,9 +482,12 @@ export class SceneEngine implements SceneEngineApi {
   setSpeed(simSecondsPerSecond: number): void {
     if (this.disposed) return;
     this.catchUp();
+    const reversed = this.clock.speed < 0;
     this.clock.setSpeed(simSecondsPerSecond);
     this.wallMs = this.deps.now();
     this.emitTime(true);
+    // Las estelas siguen el sentido también en pausa (D34): si cambia, se repintan.
+    if (this.clock.speed < 0 !== reversed) this.invalidate();
   }
 
   focus(body: BodyId | null): void {
@@ -768,6 +783,7 @@ export class SceneEngine implements SceneEngineApi {
     const aliased = this.aliasing.any;
     const camera = this.world.camera;
     this.rig.applyTo(camera, this.look);
+    this.updatePresence();
     this.world.update({
       frames: this.frames,
       state,
@@ -779,7 +795,8 @@ export class SceneEngine implements SceneEngineApi {
       screen: this.screen,
       detail: this._view !== 'system',
       projection: this.projection,
-      trailDays: daysPerSecond * TRAIL_SECONDS,
+      trailDirection: this.clock.speed < 0 ? -1 : 1,
+      presence: this.presence,
       aliasedOrbit: aliased ? this.aliasing.orbit : null,
       frozenSpin: aliased ? this.aliasing.spin : null,
     });
@@ -899,6 +916,39 @@ export class SceneEngine implements SceneEngineApi {
     return now > 0 && illustrative > 0 ? now / illustrative : 1;
   }
 
+  /**
+   * Presencia de las lunas (fase 4b): la de un sistema que aún no se distingue en pantalla, 0
+   * (`moonPresence`). Se calcula en el mismo frame, con la cámara ya colocada: el radio en pantalla
+   * del planeta sale de su distancia a la cámara y de la focal en píxeles, que con los márgenes de la
+   * interfaz (`setViewOffset`) sigue siendo alto / (2 · tan(fov / 2)). El cuerpo enfocado se ve
+   * siempre.
+   */
+  private updatePresence(): void {
+    const { position, radius } = this.frames.output;
+    const camera = this.world.camera.position;
+    const focalPx = this.viewport.height / (2 * Math.tan((BASE_FOV_DEG * Math.PI) / 360));
+    for (let k = 0; k < SCENE_BODIES.length; k++) {
+      const p = MOON_PARENT[k] as number;
+      if (p < 0 || k === this.focusIndex) {
+        this.presence[k] = 1;
+        continue;
+      }
+      const px = position[3 * p] as number;
+      const py = position[3 * p + 1] as number;
+      const pz = position[3 * p + 2] as number;
+      const r = radius[p] as number;
+      // La cámara está en ejes de three: ECL (x, y, z) → (x, z, −y).
+      const depth = Math.hypot(px - camera.x, pz - camera.y, -py - camera.z);
+      const radiusPx = depth > r ? (focalPx * r) / Math.sqrt(depth * depth - r * r) : Infinity;
+      const distance = Math.hypot(
+        (position[3 * k] as number) - px,
+        (position[3 * k + 1] as number) - py,
+        (position[3 * k + 2] as number) - pz,
+      );
+      this.presence[k] = moonPresence(distance, r, radiusPx);
+    }
+  }
+
   /** Proyecta los cuerpos y coloca las etiquetas. */
   private updateScreen(): void {
     const output = this.frames.output;
@@ -910,7 +960,10 @@ export class SceneEngine implements SceneEngineApi {
       t[3 * k + 2] = -(p[3 * k + 1] as number);
     }
     const { width, height } = this.viewport;
-    this.screen = projectBodies(this.world.camera, t, output.radius, width, height);
+    for (let k = 0; k < SCENE_BODIES.length; k++) {
+      this.visibleRadius[k] = (output.radius[k] as number) * (this.presence[k] as number);
+    }
+    this.screen = projectBodies(this.world.camera, t, this.visibleRadius, width, height);
     if (!this.labels.visibleLayer) return;
     const focusBody = this.focusIndex === null ? null : SCENE_BODIES[this.focusIndex];
     const planet = focusBody ? systemPlanetOf(focusBody.id) : null;
@@ -989,20 +1042,22 @@ export class SceneEngine implements SceneEngineApi {
     return interpolateLitBrightness(table, phase);
   }
 
-  private readonly detailMask = new Uint8Array(SCENE_BODIES.length);
+  private readonly labelMask = new Uint8Array(SCENE_BODIES.length);
 
   /**
    * Cuerpos sin nombre en pantalla: los que se dibujan como su órbita (velocidades altas) y, en las
    * vistas Tierra y Luna, todos menos la Tierra, la Luna y el Sol (los planetas lejanos competirían
    * con el protagonista).
    */
-  private hiddenLabels(): Uint8Array | null {
+  private hiddenLabels(): Uint8Array {
     const aliased = this.aliasing.any ? this.aliasing.orbit : null;
-    if (this._view === 'system') return aliased;
-    const mask = this.detailMask;
+    const detail = this._view !== 'system';
+    const mask = this.labelMask;
     SCENE_BODIES.forEach((body, k) => {
-      const named = DETAIL_LABELS.includes(body.id);
-      mask[k] = !named || aliased?.[k] === 1 ? 1 : 0;
+      const named = !detail || DETAIL_LABELS.includes(body.id);
+      // Sin nombre: los que no se nombran en la vista, los sustituidos por su órbita y las lunas de
+      // un sistema que no se distingue.
+      mask[k] = !named || aliased?.[k] === 1 || (this.presence[k] as number) < 0.5 ? 1 : 0;
     });
     return mask;
   }
@@ -1330,6 +1385,7 @@ export function orbitSources(profile: QualityProfile): OrbitSource[] {
       validityDays: isPlanet ? 3650 : Math.min(Math.max(2 * periodDays, 1), 30),
       segments: isPlanet ? profile.orbitSegments : Math.max(64, profile.orbitSegments / 2),
       position: offsetFunction(body.id),
+      color: SCHEMATIC_COLORS[body.id],
     };
   });
 }

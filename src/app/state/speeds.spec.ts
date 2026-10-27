@@ -1,4 +1,12 @@
-import { DEFAULT_SPEED, SPEED_STEPS, nearestSpeedStep, shiftSpeed } from './speeds';
+import {
+  CONTEXT_SPEED,
+  SPEED_STEPS,
+  contextSpeed,
+  nearestSpeedStep,
+  shiftSpeed,
+  speedContext,
+  speedText,
+} from './speeds';
 
 describe('speeds: escalones de la reproducción', () => {
   it('son los nueve del plan, de tiempo real a 1 año por segundo (año juliano), en orden', () => {
@@ -20,12 +28,35 @@ describe('speeds: escalones de la reproducción', () => {
     }
   });
 
-  it('al entrar, 3 horas por segundo (D31), que es uno de los escalones', () => {
-    expect(DEFAULT_SPEED).toBe(3 * 3600);
-    expect(nearestSpeedStep(DEFAULT_SPEED).id).toBe('hours3');
-    expect(nearestSpeedStep(DEFAULT_SPEED).label).toBe('3 horas por segundo');
-    expect(nearestSpeedStep(3 * 86_400).label).toBe('3 días por segundo');
+  it('cada contexto tiene su velocidad, que es uno de los escalones (D33)', () => {
+    expect(nearestSpeedStep(CONTEXT_SPEED.overview).id).toBe('days3');
+    expect(nearestSpeedStep(CONTEXT_SPEED.overview).label).toBe('3 días por segundo');
+    expect(nearestSpeedStep(CONTEXT_SPEED.body).id).toBe('hour');
+    expect(nearestSpeedStep(CONTEXT_SPEED.body).label).toBe('1 hora por segundo');
     expect(nearestSpeedStep(10 * 86_400).label).toBe('10 días por segundo');
+  });
+
+  it('la vista general es la del sistema solar sin cuerpo; lo demás, un cuerpo (D33)', () => {
+    expect(speedContext('system', null)).toBe('overview');
+    expect(speedContext('system', 'marte')).toBe('body');
+    expect(speedContext('system', 'titan')).toBe('body');
+    // Las vistas Tierra y Luna cuentan como cuerpo enfocado, con o sin selección.
+    expect(speedContext('earth', 'tierra')).toBe('body');
+    expect(speedContext('earth', null)).toBe('body');
+    expect(speedContext('moon', 'luna')).toBe('body');
+  });
+
+  it('la velocidad del contexto conserva el sentido de la actual', () => {
+    expect(contextSpeed('body', 3 * 86_400)).toBe(3600);
+    expect(contextSpeed('overview', 3600)).toBe(3 * 86_400);
+    expect(contextSpeed('body', -3 * 86_400)).toBe(-3600);
+    expect(contextSpeed('overview', -86_400)).toBe(-3 * 86_400);
+    expect(contextSpeed('overview', 0)).toBe(3 * 86_400);
+  });
+
+  it('el texto de una velocidad dice el sentido si es hacia atrás (ESTILO §3)', () => {
+    expect(speedText(3600)).toBe('1 hora por segundo');
+    expect(speedText(-3 * 86_400)).toBe('3 días por segundo, hacia atrás');
   });
 
   it('el escalón más cercano ignora el sentido', () => {

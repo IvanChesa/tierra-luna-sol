@@ -1,4 +1,10 @@
-import { VISUAL_CONFIG, closeUpAmount, exposureFor, fillLight } from './visual-config';
+import {
+  VISUAL_CONFIG,
+  closeUpAmount,
+  exposureFor,
+  fillLight,
+  moonPresence,
+} from './visual-config';
 
 describe('configuración visual', () => {
   it('la vista general no es primer plano y un cuerpo grande en pantalla sí', () => {
@@ -46,5 +52,36 @@ describe('configuración visual', () => {
     expect(exposureFor(1, 0.142, 0.05)).toBe(max);
     // En la vista general no cambia nada.
     expect(exposureFor(0, 0.142, 0.05)).toBe(VISUAL_CONFIG.exposure);
+  });
+});
+
+describe('presencia de las lunas (fase 4b)', () => {
+  const { from, to } = VISUAL_CONFIG.moonResolutionPx;
+  // Un planeta de radio 2 (unidades) que mide 10 px en pantalla: cada unidad, 5 px.
+  const at = (separationPx: number) => moonPresence(2 * (1 + separationPx / 10), 2, 10);
+
+  it('0 mientras la luna no se separa del borde de su planeta; 1 cuando el sistema se distingue', () => {
+    expect(at(0)).toBe(0);
+    expect(at(from)).toBe(0);
+    expect(at(to)).toBe(1);
+    expect(at(10 * to)).toBe(1);
+    let previous = 0;
+    for (let px = from; px <= to; px += 0.5) {
+      const presence = at(px);
+      expect(presence).toBeGreaterThanOrEqual(previous);
+      expect(presence - previous).toBeLessThan(0.05);
+      previous = presence;
+    }
+  });
+
+  it('la separación es la distancia en el espacio a la escala del disco: crece al acercarse', () => {
+    // La misma luna, a 1,5 radios del centro: con el planeta de 10 px no se ve; con 100 px, sí.
+    expect(moonPresence(3, 2, 10)).toBe(0);
+    expect(moonPresence(3, 2, 100)).toBe(1);
+  });
+
+  it('sin radio o con la cámara dentro del planeta, no se dibuja', () => {
+    expect(moonPresence(3, 0, 10)).toBe(0);
+    expect(moonPresence(3, 2, Infinity)).toBe(0);
   });
 });

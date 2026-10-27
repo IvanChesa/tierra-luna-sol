@@ -59,6 +59,13 @@ Decisiones y tareas que dependen de Iván. Claude Code añade aquí cada `TODO(i
 - [ ] (Opcional) **Un entorno de GitHub para los secrets de Cloudflare**, que los limite al trabajo de despliegue (Settings → Environments). Hoy valen para todo el repositorio y solo los usan los pasos de wrangler.
 - [ ] (Fase 11) **¿Explorador incrustable en ivanchesa.es?** Hoy `frame-ancestors 'none'` y `X-Frame-Options: DENY` impiden incrustarlo en otra web. Si quieres una demo incrustada en el portfolio: `frame-ancestors https://ivanchesa.es` y sin `X-Frame-Options`.
 
+## Bloque C (fase 4b: la vista general del sistema solar)
+- [ ] **Mirar la vista general junto a tu captura de referencia** (no está en el repositorio): `docs/informes/img/fase-4b/escritorio-sistema.webp`, `escritorio-sistema-2032.webp` y `comparativa-antes-despues.webp`. Júpiter mide ~13–17 px de radio en escritorio, frente a ~30 px en la referencia (informe de la fase 4b, §4.3).
+- [ ] **Probar la vista general en tu móvil** (no bloquea). En 390 × 844, los planetas rocosos miden 1,2–1,8 px y se dibujan como marcadores; Júpiter y Saturno, 4–5 px (informe de la fase 4b, §6.3).
+- [ ] **Decidir si quieres los planetas aún más grandes** (informe de la fase 4b, §10): cambiar la ley de distancias, aceptar solapes breves en las conjunciones de Júpiter y Saturno u ocultar las lunas en la vista general. Hoy, ningún solape.
+- [ ] **Decidir qué hacer con la vista general en el móvil** (informe de la fase 4b, §10): un encuadre propio en vertical, un tamaño mínimo en pantalla para los planetas o aceptar los marcadores.
+- [ ] **Confirmar que pasar de un cuerpo a otro mantiene la velocidad elegida a mano** (D33): la fase entiende que los contextos son dos, la vista general y un cuerpo enfocado (informe de la fase 4b, riesgo 3).
+
 ## Decisiones
 - [ ] **(Fase 6) `toktx` (KTX-Software):** solo si la Luna en 8K no cabe en la VRAM de §5 con WebP (prueba de KTX2 de la fase 2, §5.2 del informe).
 - [ ] **Subdominio definitivo.** Propuesto: `tierra-luna-sol.ivanchesa.es`. Si cambia, se edita solo `src/app/core/site.config.ts`.

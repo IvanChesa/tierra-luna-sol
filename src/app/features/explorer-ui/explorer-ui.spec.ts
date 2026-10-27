@@ -50,11 +50,12 @@ describe('ExplorerUi: atajos de teclado del explorador', () => {
     expect(sim.playing()).toBe(true);
     press('K');
     expect(sim.playing()).toBe(false);
-    // Desde la velocidad de entrada (3 horas por segundo, D31), un escalón arriba y otro abajo.
+    // Desde la velocidad de entrada con Marte enfocado (1 hora por segundo, D33), un escalón arriba y
+    // otro abajo.
     press('.');
-    expect(sim.speed()).toBe(86_400);
-    press(',');
     expect(sim.speed()).toBe(3 * 3600);
+    press(',');
+    expect(sim.speed()).toBe(3600);
     press('r');
     expect(sim.reverse()).toBe(true);
     press('n');

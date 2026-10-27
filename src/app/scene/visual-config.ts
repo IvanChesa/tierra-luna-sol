@@ -25,8 +25,13 @@ export const VISUAL_CONFIG = {
   /** Exposición base (D21). */
   exposure: 1,
   fill: {
-    /** Relleno de la vista general, en fracción de la luz del Sol. */
-    overview: 0.16,
+    /**
+     * Relleno de la vista general, en fracción de la luz del Sol. Con los planetas más grandes (fase
+     * 4b), 0,3 en lugar de 0,16: un planeta visto por su cara nocturna (Venus o la Tierra en 2032) se
+     * lee como un disco sin perder la fase; con 0,45 la fase casi desaparece. Mercurio, de albedo
+     * 0,14 y unos 4 px, sigue oscuro con cualquier valor: se encuentra por su nombre y su estela.
+     */
+    overview: 0.3,
     /** Relleno del primer plano: deja intuir la forma del lado nocturno sin falsear el terminador. */
     closeUp: 0.004,
   },
@@ -44,13 +49,17 @@ export const VISUAL_CONFIG = {
   /** El Sol (tarea 6). */
   sun: {
     /**
-     * Intensidad de la fotosfera: muy por encima de 1 en la vista general (el Sol deslumbra) y cerca
-     * de 1 en primer plano, para que el tone mapping no aplane el oscurecimiento del limbo (el borde
-     * queda al ~33 % del centro, cerca del 30 % de la ley de Allen).
+     * Intensidad de la fotosfera: por encima de 1 en la vista general (el Sol deslumbra) y cerca de 1
+     * en primer plano, para que el tone mapping no aplane el oscurecimiento del limbo (el borde queda
+     * al ~33 % del centro, cerca del 30 % de la ley de Allen). En la vista general bajó de 2,6 a 1,9
+     * con el Sol más grande (fase 4b): así el disco no es un círculo blanco plano.
      */
-    intensity: { overview: 2.6, closeUp: 0.85 },
-    /** Halo, en radios solares, y su intensidad: hace de resplandor (no hay bloom). */
-    halo: { overview: { radii: 3.2, intensity: 1.1 }, closeUp: { radii: 1.7, intensity: 0.45 } },
+    intensity: { overview: 1.9, closeUp: 0.85 },
+    /**
+     * Halo, en radios solares, y su intensidad: hace de resplandor (no hay bloom). En la vista general,
+     * con el Sol de 13 unidades (fase 4b; antes 9), el halo mide algo más que antes (~31 unidades).
+     */
+    halo: { overview: { radii: 2.4, intensity: 1.3 }, closeUp: { radii: 1.7, intensity: 0.45 } },
     /** Granulación en primer plano: amplitud ilustrativa y ritmo (unidades de ruido por segundo). */
     granulation: { amplitude: 0.05, rate: 0.015 },
   },
@@ -58,6 +67,31 @@ export const VISUAL_CONFIG = {
   atmosphereMinRadiusPx: 2,
   /** Por debajo de este radio en pantalla (px CSS), un cuerpo no aparta las órbitas de su disco. */
   orbitDiscMinRadiusPx: 3,
+  /**
+   * Un sistema de lunas se resuelve en pantalla cuando cada luna se separa del borde de su planeta
+   * de `from` a `to` px (su distancia real en el espacio, en radios del planeta, a la escala de su
+   * disco en pantalla). Hasta entonces, ni su disco ni su órbita se dibujan, ni tapan, ni se pueden
+   * elegir con el puntero (fase 4b): en la vista general, los sistemas compactos no se ven como
+   * bultos pegados a cada planeta, y aparecen al acercarse o al enfocar el planeta.
+   */
+  moonResolutionPx: { from: 8, to: 30 },
+  /** Opacidad de las órbitas de los planetas en la vista general (la de las estelas completas). */
+  overviewOrbitOpacity: 0.85,
+  /**
+   * Estelas de los cuerpos (D34, fase 4b): un arco de su color sobre su órbita, detrás de él, que se
+   * desvanece hasta fundirse con ella. La longitud va en fracción de vuelta (no en tiempo: se ven
+   * igual a cualquier velocidad), la intensidad multiplica la opacidad de la órbita y el grosor (px
+   * CSS) es el de junto al cuerpo, que adelgaza hasta el de la órbita. En las lunas, más cortas y
+   * tenues. El desvanecimiento es (1 − s)^falloff, con s de 0 (el cuerpo) a 1 (el final). El grosor
+   * completo es el de una órbita con la opacidad de la vista general (`overviewOrbitOpacity`); una
+   * órbita más tenue (en segundo plano en las vistas Tierra y Luna, o la del planeta enfocado) lleva
+   * una estela más fina en proporción.
+   */
+  trails: {
+    planet: { fraction: 1 / 8, intensity: 0.9, widthPx: 3 },
+    moon: { fraction: 1 / 12, intensity: 0.5, widthPx: 2 },
+    falloff: 1.5,
+  },
   /**
    * Vía Láctea (tarea 5b): sutil, por debajo de las estrellas. Intensidad del panorama y codo de la
    * compresión de sus zonas brillantes (luminancia lineal, L / (1 + L / codo)): el centro galáctico
@@ -84,6 +118,23 @@ export function closeUpAmount(focusRadiusPx: number | null): number {
     Math.max((Math.log(focusRadiusPx) - Math.log(from)) / (Math.log(to) - Math.log(from)), 0),
     1,
   );
+  return t * t * (3 - 2 * t);
+}
+
+/**
+ * Presencia de una luna (0–1) según cuánto se separa en pantalla del borde de su planeta
+ * (`moonResolutionPx`): `distance` es la distancia entre los dos en el espacio y `parentRadius` el
+ * radio del planeta (unidades de escena), y `parentRadiusPx`, su radio en pantalla.
+ */
+export function moonPresence(
+  distance: number,
+  parentRadius: number,
+  parentRadiusPx: number,
+): number {
+  if (!(parentRadius > 0) || !Number.isFinite(parentRadiusPx)) return 0;
+  const separation = (distance / parentRadius - 1) * parentRadiusPx;
+  const { from, to } = VISUAL_CONFIG.moonResolutionPx;
+  const t = Math.min(Math.max((separation - from) / (to - from), 0), 1);
   return t * t * (3 - 2 * t);
 }
 
