@@ -1,4 +1,5 @@
 import { canonicalUrl, setCanonical } from './canonical';
+import { SITE_CONFIG } from './site.config';
 
 describe('canonicalUrl', () => {
   const base = 'https://tierra-luna-sol.ivanchesa.es';
@@ -20,8 +21,8 @@ describe('canonicalUrl', () => {
     expect(canonicalUrl('/?captura=1', base)).toBe(`${base}/`);
   });
 
-  it('usa la URL del sitio por defecto', () => {
-    expect(canonicalUrl('/sol')).toBe('https://tierra-luna-sol.ivanchesa.es/sol');
+  it('usa la URL del sitio por defecto (site.config.ts)', () => {
+    expect(canonicalUrl('/sol')).toBe(`${SITE_CONFIG.baseUrl}/sol`);
   });
 });
 

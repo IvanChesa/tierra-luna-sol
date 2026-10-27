@@ -78,17 +78,22 @@ test.describe('Tiempo y URL', () => {
     );
     await page.locator('#time-speed').selectOption('hour');
     await page.locator('.time__play').click();
-    // Hacia atrás: se espera a que retroceda diez minutos simulados. Con SwiftShader cada frame tarda
-    // más de lo que el motor deja avanzar el reloj de una vez (400 ms), así que corre algo menos que a
-    // 1 hora por segundo, pero nunca más deprisa (no a 1 día por segundo).
-    const wallStart = Date.now();
+    await expect(page.locator('#time-speed')).toHaveValue('hour');
+    // Hacia atrás: se espera a que retroceda diez minutos simulados y después se mide la velocidad en
+    // una ventana de 3 s. Con SwiftShader cada frame tarda más de lo que el motor deja avanzar el reloj
+    // de una vez (400 ms), así que corre algo menos que a 1 hora por segundo, pero nunca más deprisa:
+    // la cota (1,25 h/s, con el margen de las lecturas de la barra, 5 por segundo) separa 1 h/s de los
+    // 3 h/s de la entrada (D31).
     const start = await simTime(page);
     await expect
       .poll(async () => (await simTime(page)) - start, { timeout: 30_000 })
       .toBeLessThan(-10 * 60_000);
-    const elapsed = (await simTime(page)) - start;
-    const wallSeconds = (Date.now() - wallStart) / 1000;
-    expect(elapsed).toBeGreaterThan(-(wallSeconds + 1) * 3600_000);
+    const from = await simTime(page);
+    const wallFrom = Date.now();
+    await page.waitForTimeout(3000);
+    const rate = (from - (await simTime(page))) / (Date.now() - wallFrom);
+    expect(rate).toBeGreaterThan(0);
+    expect(rate).toBeLessThan(1.25 * 3600);
     await page.keyboard.press('k');
   });
 
