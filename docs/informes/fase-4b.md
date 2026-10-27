@@ -23,3 +23,13 @@ Escrito antes de empezar, a partir de `docs/decisiones/FASE-4b-SISTEMA-SOLAR.md`
 
 ### Dependencias
 Ninguna nueva.
+
+### Estado de las entregas (se actualiza al cerrar cada una)
+| Entrega | Estado | Commit | Notas |
+|---|---|---|---|
+| 4b.a | ✅ | `062d598` | Velocidad por contexto (D33), con unitarios, e2e y `ESTILO.md`. |
+| 4b.b | ✅ | `923f4f0` | Estelas (D34): color del cuerpo con su canal mayor a 1, 1/8 de vuelta (lunas: 1/12 y más tenues), grosor por vértice de 3 px a 1,25 px (con 1,25 px el color no se distinguía), detrás o delante según el sentido, también en pausa; mismo `LineSegments2`. Sin remates redondos: con la mezcla aditiva se sumaban en cada unión (líneas punteadas). |
+| 4b.c | ✅ | `702bc09` | `radiusFactor` 0,06 → 0,088, Sol 9 → 13, `moonSpread` 1,5 → 0,5. Muestreo 1900–2100 en `scene/illustrative-layout.spec.ts`: ni discos, ni lunas fuera de su sistema, ni Júpiter en los anillos. El límite lo ponen las conjunciones Júpiter–Saturno y la Luna entre la Tierra y Venus. Lunas de Saturno por fuera de los anillos, medido y descartado: chocarían con Júpiter en cada conjunción (48–87 días cada 20 años). Relleno 0,16 frente a 0,24: sin diferencia apreciable, se mantiene. |
+| 4b.d | en curso | — | Hecho: `scripts/capture-system.mjs` y `scripts/measure-system.mjs`, 474 unitarios en verde (cobertura de `ephemeris/` 99,65 %). Falta: e2e completos, **regenerar los pósters** (`build-poster.mjs`: la vista general ha cambiado y el 3D entra con un fundido sobre ellos), capturas finales, mediciones, `npm run check`, informe completo, revisión por subagente, fusión y `DIARIO.md`. |
+
+Observaciones para el informe final: la Tierra se ve oscura en la vista general por el albedo efectivo de su textura sin nubes (lo resuelve la fase 5); la estela del planeta enfocado, en su marco físico, es una recta tenue que cruza la pantalla.
