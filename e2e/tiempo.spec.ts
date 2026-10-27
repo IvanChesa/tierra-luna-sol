@@ -51,11 +51,16 @@ test.describe('Tiempo y URL', () => {
     await expect(page).not.toHaveURL(/fecha=/);
     await expect(page).toHaveURL(/cuerpo=marte/);
     await countUrlChanges(page);
+    // Con SwiftShader y la máquina cargada (el CI), los frames llegan tarde y el reloj avanza menos
+    // (el motor no lo deja avanzar más de 400 ms de una vez): se espera a que corra dos segundos, y
+    // nunca más deprisa que el reloj de pared.
+    const wallStart = Date.now();
     const start = await simTime(page);
-    await page.waitForTimeout(3000);
+    await expect
+      .poll(async () => (await simTime(page)) - start, { timeout: 30_000 })
+      .toBeGreaterThan(2000);
     const elapsed = (await simTime(page)) - start;
-    expect(elapsed).toBeGreaterThan(1500);
-    expect(elapsed).toBeLessThan(4500);
+    expect(elapsed).toBeLessThan(Date.now() - wallStart + 1000);
     expect(await urlChanges(page)).toBe(0);
 
     // Al pausar, la fecha vuelve a la URL con el instante en que se ha parado.
@@ -72,13 +77,17 @@ test.describe('Tiempo y URL', () => {
     );
     await page.locator('#time-speed').selectOption('hour');
     await page.locator('.time__play').click();
+    // Hacia atrás: se espera a que retroceda diez minutos simulados. Con SwiftShader cada frame tarda
+    // más de lo que el motor deja avanzar el reloj de una vez (400 ms), así que corre algo menos que a
+    // 1 hora por segundo, pero nunca más deprisa (no a 1 día por segundo).
+    const wallStart = Date.now();
     const start = await simTime(page);
-    await page.waitForTimeout(2000);
+    await expect
+      .poll(async () => (await simTime(page)) - start, { timeout: 30_000 })
+      .toBeLessThan(-10 * 60_000);
     const elapsed = (await simTime(page)) - start;
-    // Hacia atrás, hasta unas dos horas simuladas en dos segundos. Con SwiftShader cada frame tarda
-    // más de lo que el motor deja avanzar el reloj de una vez (400 ms), así que corre algo menos.
-    expect(elapsed).toBeLessThan(-10 * 60_000);
-    expect(elapsed).toBeGreaterThan(-3 * 3600_000);
+    const wallSeconds = (Date.now() - wallStart) / 1000;
+    expect(elapsed).toBeGreaterThan(-(wallSeconds + 1) * 3600_000);
     await page.keyboard.press('k');
   });
 

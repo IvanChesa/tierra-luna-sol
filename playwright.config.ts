@@ -13,7 +13,12 @@ import { defineConfig, devices } from '@playwright/test';
  */
 const PORT = 4391;
 const ORIGIN = `http://127.0.0.1:${PORT}`;
-const SWIFTSHADER = ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'];
+/**
+ * El idioma del navegador, también para los campos nativos: en Linux (el CI), sin `--lang`, el campo
+ * de fecha va en el orden inglés (mes/día) aunque el contexto sea `es-ES`.
+ */
+const LANG = '--lang=es-ES';
+const SWIFTSHADER = ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', LANG];
 
 export default defineConfig({
   testDir: 'e2e',
@@ -52,7 +57,7 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 1280, height: 800 },
-        launchOptions: { args: ['--disable-3d-apis'] },
+        launchOptions: { args: ['--disable-3d-apis', LANG] },
       },
     },
   ],
