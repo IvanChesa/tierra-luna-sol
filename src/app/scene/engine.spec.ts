@@ -1,7 +1,9 @@
 import starsBin from '../../../public/data/stars.bin' with { loader: 'binary' };
-import { BackSide, FrontSide, Quaternion, Texture, Vector3 } from 'three';
+import { BackSide, FrontSide, Quaternion, Texture, Vector3, Vector4 } from 'three';
 import { KM_PER_AU } from '../ephemeris/constants';
 import { subsolarPoint } from '../ephemeris/coordinates';
+import { moonShadowCenter } from '../ephemeris/eclipse';
+import { NASA_ECLIPSE_2026_08_12 } from '../ephemeris/fixtures/fixtures';
 import { MAX_DATE } from '../ephemeris/time';
 import {
   EngineDeps,
@@ -925,6 +927,51 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     const expected = subsolarPoint(date);
     expect(Math.abs(latDeg - expected.latDeg)).toBeLessThan(0.05);
     expect(Math.abs(lonDeg - expected.lonDeg)).toBeLessThan(0.05);
+    h.engine.dispose();
+  });
+
+  it('la sombra de la Luna que recibe el shader de la Tierra cae donde el catálogo de la NASA (fase 5)', async () => {
+    const eclipse = NASA_ECLIPSE_2026_08_12;
+    const date = new Date(eclipse.greatestEclipseUt);
+    const h = await createHarness({ reducedMotion: true, focus: 'tierra', time: date });
+    settle(h);
+    interface EarthVisual {
+      body: { id: string };
+      earth: { uMoonLocal: { value: Vector4 }; uSunLocal: { value: Vector4 } } | null;
+    }
+    const earth = (internals(h).world as unknown as { visuals: EarthVisual[] }).visuals.find(
+      (visual) => visual.body.id === 'tierra',
+    )?.earth;
+    if (!earth) throw new Error('Sin uniformes de la Tierra');
+    // El eje de la sombra con lo que recibe el shader (sistema propio de la malla, en radios
+    // ecuatoriales): desde la Luna, en la dirección del Sol a la Luna, hasta el elipsoide de la malla (el
+    // polo, en Y, achatado como la Tierra), que es donde el shader mira cada punto.
+    const squash = 1 - sceneBody('tierra').flattening;
+    const moon = new Vector3().copy(earth.uMoonLocal.value as unknown as Vector3);
+    const sun = new Vector3().copy(earth.uSunLocal.value as unknown as Vector3);
+    const from = new Vector3(moon.x, moon.y / squash, moon.z);
+    const direction = moon.clone().sub(sun);
+    const axis = new Vector3(direction.x, direction.y / squash, direction.z).normalize();
+    const b = from.dot(axis);
+    const t = -b - Math.sqrt(b * b - (from.lengthSq() - 1));
+    const hit = from.clone().addScaledVector(axis, t);
+    hit.y *= squash;
+    // Latitud geodésica (la de la normal del elipsoide) y longitud este (hacia −Z).
+    const e2 = 1 - squash * squash;
+    const latDeg = (Math.atan2(hit.y, (1 - e2) * Math.hypot(hit.x, hit.z)) * 180) / Math.PI;
+    const lonDeg = (Math.atan2(-hit.z, hit.x) * 180) / Math.PI;
+    expect(Math.abs(latDeg - eclipse.latitudeDeg)).toBeLessThan(1);
+    expect(Math.abs(lonDeg - eclipse.longitudeDeg)).toBeLessThan(1);
+    // Y con la función de efemérides (con el elipsoide WGS84: unas centésimas de grado).
+    const center = moonShadowCenter(date);
+    expect(Math.abs(latDeg - (center?.latDeg ?? 0))).toBeLessThan(0.1);
+    expect(Math.abs(lonDeg - (center?.lonDeg ?? 0))).toBeLessThan(0.1);
+    // El radio angular del Sol desde la Tierra (~0,26°) y el de la Luna en radios terrestres (~0,27).
+    expect((Math.atan(earth.uSunLocal.value.w / sun.length()) * 180) / Math.PI).toBeCloseTo(
+      0.263,
+      2,
+    );
+    expect(earth.uMoonLocal.value.w).toBeCloseTo(0.272, 2);
     h.engine.dispose();
   });
 

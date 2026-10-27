@@ -34,7 +34,8 @@ import { BODY_PHOTOMETRY, BodyPhotometry, RING_PHOTOMETRY } from '../data/photom
 import { eclRotationToThree } from '../ephemeris/coordinates';
 import { albedoScale } from '../ephemeris/photometry';
 import type { SystemState } from '../ephemeris/system-state';
-import { Mat3 } from '../ephemeris/vec3';
+import { KM_PER_AU } from '../ephemeris/constants';
+import { Mat3, Vec3, mulMat3Vec, transposeMat3 } from '../ephemeris/vec3';
 import { SCHEMATIC_COLORS } from './body-colors';
 import type { FrameController } from './frames';
 import {
@@ -50,7 +51,7 @@ import { OrbitLines, OrbitSource, TrailDirection } from './orbits';
 import type { ScreenBody } from './picking';
 import type { QualityProfile, TextureLevel } from './quality';
 import { StarField, temperatureToSrgb } from './stars';
-import type { SceneBody } from './system';
+import { SceneBody, sceneBody } from './system';
 import { TEXTURE_MEAN_LUMINANCE } from './texture-files';
 import { VISUAL_CONFIG } from './visual-config';
 import {
@@ -181,6 +182,10 @@ const tmpMatrix = new Matrix4();
 const tmpQuaternion = new Quaternion();
 const tmpVector = new Vector3();
 const { halo: HALO, granulation: GRANULATION, intensity: SUN_INTENSITY } = VISUAL_CONFIG.sun;
+/** La Luna y los radios de la Luna y del Sol, para la sombra de los eclipses en la Tierra. */
+const LUNA_INDEX = sceneBody('luna').index;
+const MOON_RADIUS_KM = BODY_DATA.luna.physical.radiusKm.value;
+const SUN_RADIUS_KM = BODY_DATA.sol.physical.radiusKm.value;
 /** Opacidad de la órbita de una luna con su sistema resuelto en pantalla. */
 const MOON_ORBIT_OPACITY = 0.7;
 /** Presencia mínima con la que se dibuja una luna (más pequeña, no llegaría a un píxel). */
@@ -583,6 +588,44 @@ export class World {
     this.options.invalidate();
   }
 
+  /**
+   * La Luna y el Sol en el sistema propio de la Tierra, para la sombra de los eclipses (fase 5, D20):
+   * con la geometría real del estado (float64), no con la de la escena, y en los ejes de la malla
+   * (sistema propio x, y, z → x, z, −y: Y, el polo; el meridiano 0 en +X).
+   */
+  private updateEclipse(visual: BodyVisual, frame: WorldFrame): void {
+    const earth = visual.earth;
+    const moon = LUNA_INDEX;
+    if (!earth || moon < 0) return;
+    const k = visual.body.index;
+    const toBody = transposeMat3(frame.orientations[k] as Mat3);
+    const toMesh = (v: Vec3): Vec3 => {
+      const b = mulMat3Vec(toBody, v);
+      return { x: b.x, y: b.z, z: -b.y };
+    };
+    const radiusAu = visual.body.radiusKm / KM_PER_AU;
+    const offset = frame.state.parentOffset;
+    const m = toMesh({
+      x: (offset[3 * moon] as number) / radiusAu,
+      y: (offset[3 * moon + 1] as number) / radiusAu,
+      z: (offset[3 * moon + 2] as number) / radiusAu,
+    });
+    earth.uMoonLocal.value.set(m.x, m.y, m.z, MOON_RADIUS_KM / visual.body.radiusKm);
+    const helio = frame.state.heliocentric;
+    const toSun = {
+      x: -(helio[3 * k] as number),
+      y: -(helio[3 * k + 1] as number),
+      z: -(helio[3 * k + 2] as number),
+    };
+    const s = toMesh(toSun);
+    earth.uSunLocal.value.set(
+      s.x / radiusAu,
+      s.y / radiusAu,
+      s.z / radiusAu,
+      SUN_RADIUS_KM / visual.body.radiusKm,
+    );
+  }
+
   /** Deriva de las nubes de la Tierra (fracción de vuelta; 0 con movimiento reducido o en captura). */
   setCloudDrift(turns: number): void {
     for (const visual of this.visuals) {
@@ -631,6 +674,7 @@ export class World {
         // Dirección REAL hacia el Sol: −(posición heliocéntrica verdadera), en ejes de Three.
         setFromEcl(visual.uniforms.uSunDirection.value, helio, k).negate().normalize();
       }
+      if (visual.earth) this.updateEclipse(visual, frame);
       if (visual.atmosphere) {
         const onScreen = frame.screen[k];
         visual.atmosphere.uniforms.uRadius.value = r;

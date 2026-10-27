@@ -47,6 +47,13 @@ const SHOTS = [
     SQUARE,
   ],
   ['movil-tierra', '/explorar/tierra?captura=1', MOBILE],
+  // El máximo del eclipse total del 12-08-2026 (17:45:51 UT, 65,2° N 25,2° O; catálogo de la NASA),
+  // con la cámara cerca de la dirección del Sol y sobre la latitud del eclipse.
+  [
+    'tierra-eclipse-2026',
+    '/?captura=1&cuerpo=tierra&fecha=2026-08-12T17:45:51Z&fase=25&latitud=50',
+    SQUARE,
+  ],
 ];
 
 const only = process.argv.find((arg) => arg.startsWith('--solo='))?.slice('--solo='.length);

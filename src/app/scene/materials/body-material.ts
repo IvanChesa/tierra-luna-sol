@@ -20,7 +20,9 @@
  *   ilustrativa y su sombra aproximada, brillo del Sol en los océanos (máscara especular), luces de
  *   las ciudades que se encienden en el crepúsculo, un tono crepuscular junto al terminador y la luz
  *   que dispersa la atmósfera sobre todo el lado diurno (azulada; aclara el océano respecto a la
- *   tierra, como en las fotos de EPIC, sin el velo blanquecino de la fase 3b).
+ *   tierra, como en las fotos de EPIC, sin el velo blanquecino de la fase 3b). Y la sombra de la
+ *   Luna en los eclipses (D20): desde cada punto, la fracción del disco del Sol que tapa la Luna,
+ *   con la Luna y el Sol en el sistema propio de la Tierra (geometría real, calculada en float64).
  *
  * La geometría es la esfera unidad (Y = polo, meridiano 0 en +X, longitud este hacia −Z, como
  * `SphereGeometry`); el elipsoide sale de la escala de la malla (radio ecuatorial, polar, ecuatorial).
@@ -110,6 +112,31 @@ uniform vec4 uEarth;
 // Luz dispersada por la atmósfera (color lineal × intensidad) y refuerzo hacia el limbo.
 uniform vec4 uScatter;
 uniform vec3 uTwilightColor;
+// Centros de la Luna y del Sol (radios ecuatoriales, sistema propio) y sus radios: desde cada punto,
+// las direcciones y los radios aparentes de los dos (el paralaje del Sol mueve la sombra decenas de
+// kilómetros si se toma su dirección desde el centro de la Tierra).
+uniform vec4 uMoonLocal;
+uniform vec4 uSunLocal;
+
+// Fracción del disco del Sol que se ve desde p (D20): la Luna es un disco de radio angular aM a una
+// separación d del centro del Sol (radio aS); se resta el área común de los dos círculos. Ángulos
+// pequeños: d es la cuerda entre las direcciones, que en float32 no pierde precisión como acos.
+float tlsSunVisible(vec3 p) {
+  vec3 toMoon = uMoonLocal.xyz - p;
+  vec3 toSun = uSunLocal.xyz - p;
+  float moonDistance = length(toMoon);
+  float sunDistance = length(toSun);
+  float aM = uMoonLocal.w / moonDistance;
+  float aS = uSunLocal.w / sunDistance;
+  float d = length(toMoon / moonDistance - toSun / sunDistance);
+  if (d >= aS + aM) return 1.0;
+  if (d <= aM - aS) return 0.0;
+  if (d <= aS - aM) return 1.0 - (aM * aM) / (aS * aS);
+  float a1 = aS * aS * acos(clamp((d * d + aS * aS - aM * aM) / (2.0 * d * aS), -1.0, 1.0));
+  float a2 = aM * aM * acos(clamp((d * d + aM * aM - aS * aS) / (2.0 * d * aM), -1.0, 1.0));
+  float a3 = 0.5 * sqrt(max((-d + aS + aM) * (d + aS - aM) * (d - aS + aM) * (d + aS + aM), 0.0));
+  return clamp(1.0 - (a1 + a2 - a3) / (3.14159265 * aS * aS), 0.0, 1.0);
+}
 #endif
 
 float ringShadow() {
@@ -177,6 +204,10 @@ void main() {
   }
 #ifdef TLS_EARTH
   float muSun = dot(geometric, toSun);
+  // La sombra de la Luna: lo que llega del Sol a este punto (1 fuera de los eclipses).
+  float sunVisible = muSun > 0.0 ? tlsSunVisible(vLocal * vec3(1.0, uPolarScale, 1.0)) : 1.0;
+  light *= sunVisible;
+  haze *= sunVisible;
   // Nubes: la cobertura de su capa, que deriva en longitud (ilustrativo).
   vec2 cloudUv = vec2(uv.x + uCloudOffset, uv.y);
   float cloud = uHasClouds > 0.5 ? texture2D(uCloudMap, cloudUv).r : 0.0;
@@ -192,16 +223,17 @@ void main() {
     float water = texture2D(uSpecularMap, uv).r;
     float facing = max(dot(geometric, normalize(toSun + toViewer)), 0.0);
     float glint = pow(facing, 400.0) + 0.12 * pow(facing, 40.0);
-    surface += vec3(uEarth.z * water * (1.0 - cloud) * glint * smoothstep(0.0, 0.1, muSun));
+    surface += vec3(uEarth.z * water * (1.0 - cloud) * glint * smoothstep(0.0, 0.1, muSun))
+      * sunVisible;
   }
   // Las nubes, blancas y difusas, con el mismo terminador que la superficie.
-  vec3 clouds = vec3(uEarth.x) * max(muSun, 0.0) * 1.15;
+  vec3 clouds = vec3(uEarth.x) * max(muSun, 0.0) * 1.15 * sunVisible;
   vec3 color = mix(surface, clouds, cloud);
   // Junto al terminador, la luz del Sol atraviesa más atmósfera y llega enrojecida.
   float twilight = (1.0 - smoothstep(0.0, 0.18, muSun)) * smoothstep(-0.08, 0.0, muSun);
   color *= mix(vec3(1.0), uTwilightColor, 0.7 * twilight);
   // La atmósfera: luz azulada dispersada sobre el lado diurno, más hacia el limbo.
-  float day = smoothstep(-0.1, 0.25, muSun);
+  float day = smoothstep(-0.1, 0.25, muSun) * sunVisible;
   color += uScatter.rgb * day * (1.0 + uScatter.w * pow(1.0 - clamp(muViewer, 0.0, 1.0), 2.0));
   // Luces de las ciudades: se encienden en el crepúsculo (del Sol en el horizonte a unos 9° bajo él).
   if (uHasNight > 0.5) {
@@ -264,6 +296,10 @@ export interface EarthUniforms {
   /** Luz dispersada por la atmósfera (rgb lineal) y su refuerzo hacia el limbo (w). */
   readonly uScatter: Uniform<Vector4>;
   readonly uTwilightColor: Uniform<Color>;
+  /** Centro de la Luna en el sistema propio de la Tierra (radios ecuatoriales) y su radio (w). */
+  readonly uMoonLocal: Uniform<Vector4>;
+  /** Centro del Sol en el sistema propio de la Tierra (radios ecuatoriales) y su radio (w). */
+  readonly uSunLocal: Uniform<Vector4>;
 }
 
 export interface BodyMaterialOptions {
@@ -310,6 +346,9 @@ export function createBodyMaterial(options: BodyMaterialOptions) {
         uEarth: new Uniform(new Vector4(0.8, 1, 1, 0.35)),
         uScatter: new Uniform(new Vector4(0, 0, 0, 0)),
         uTwilightColor: new Uniform(new Color(1, 0.6, 0.35)),
+        // Sin datos, la Luna lejísimos y del otro lado: no tapa nada.
+        uMoonLocal: new Uniform(new Vector4(0, 0, 1e6, 0)),
+        uSunLocal: new Uniform(new Vector4(23_455, 0, 0, 109)),
       }
     : null;
   const material = sceneShaderMaterial({
