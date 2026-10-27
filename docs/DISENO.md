@@ -115,45 +115,66 @@ La consola de un observatorio: grafito neutro, texto blanco roto y un único ace
 
 ### Visor · escritorio (≥ 1024 px)
 
-```
-┌──────────────────────────────────────────────────────────────────────────┐
-│ Tierra Luna Sol                 Planetas  Sol  Luna  Sobre el proyecto   │ ← cabecera fina
-├───────────────┬──────────────────────────────────────────┬───────────────┤
-│ CUERPOS       │                                          │ MARTE         │
-│ ○ Sol         │                                          │ Newsreader    │
-│ ○ Mercurio    │              canvas 3D                   │ Resumen 2–3   │
-│ ○ Venus       │      (hueco reservado: sin CLS)          │ frases        │
-│ ● Tierra      │                                          │ ─────────     │
-│ ○ Luna        │                                          │ Radio  0000 km│ ← cifras
-│ ○ Marte  ◄────┼── selección en la lista o en el canvas   │ Día   00,0 h  │   tabulares,
-│ …             │                                          │ Al Sol 0,00 UA│   a la derecha
-│ [Vista general]                                          │ Ficha completa→
-├───────────────┴──────────────────────────────────────────┴───────────────┤
-│ ◄◄ ▶ ►►  1 día/s ▾   23 oct 2026 · 21:40 (hora peninsular)   [Ahora]     │ ← barra de tiempo
-└──────────────────────────────────────────────────────────────────────────┘
-```
-Las cifras del boceto son marcadores (`0000`). Los datos reales llegan en la fase 1, con fuente.
-
-- La lista de cuerpos es HTML, así que funciona con teclado y sin WebGL. El panel de la ficha se cierra con `Esc`.
-- La barra de tiempo es la única franja fija; sus cifras usan `tabular-nums` para que la fecha no «baile» al reproducir.
-
-### Visor · móvil (< 640 px)
+Disposición inmersiva de D30 (fase 3c): el lienzo a sangre bajo la cabecera y la interfaz flotando encima. Los paneles que tapan el lienzo (`data-chrome`) apartan el encuadre, que se mide en cada maquetación (`features/viewer/insets.ts`).
 
 ```
-┌──────────────────────────┐
-│ Tierra Luna Sol      ☰   │
-├──────────────────────────┤
-│                          │
-│        canvas 3D         │
-│   (alto fijo: 60svh)     │
-│                          │
-├──────────────────────────┤
-│ ▶  1 día/s ▾     [Ahora] │ ← panel inferior plegable (zonas táctiles ≥ 44 px)
-│ 23 oct 2026 · 21:40      │
-│ Cuerpos: [Sol][Mer][Ven]…│ ← carrusel horizontal de botones
-└──────────────────────────┘
-  Ficha → hoja inferior que sube sobre el panel; se cierra con el botón «Cerrar» o deslizando.
+┌────────────────────────────────────────────────────────────────────────────────┐
+│ Tierra Luna Sol                  Planetas  Sol  Luna  Sobre el proyecto        │ ← cabecera fina
+├────────────────────────────────────────────────────────────────────────────────┤
+│ Sistema solar  Tierra  Luna                              ┌───────────────────┐ │ ← vistas y texto de presentación
+│ Título (H1, Newsreader)                                  │ SATURNO         × │ │ ← tarjeta flotante (al elegir
+│ Una frase; se pliega al usar el visor                    │ Resumen en 2–3    │ │     un cuerpo); se desplaza
+│ ┌──────────────┐                                         │ frases            │ │
+│ │ ÍNDICE     × │                                         │ Al Sol    0,00 UA │ │ ← panel «Índice» (cerrado al
+│ │ ○ Sol        │        canvas 3D a sangre               │ Datos y fuentes   │ │     entrar; botón «Índice» o I)
+│ │ ● Saturno    │   (el encuadre se aparta de             │ Ficha completa  → │ │
+│ │   ○ Titán    │    cada panel: nada tapa el             └───────────────────┘ │
+│ │ …            │    cuerpo elegido)                 [+]                        │ ← cámara, en la parte visible
+│ └──────────────┘                                    [−]                        │
+│                                                     [⌂]                        │
+│                                                     [▢]                        │
+│                   (·) Titán  (·) Rea  (·) Jápeto  …                            │ ← lunas del planeta elegido
+│ [≡ Índice]   (☉) Sol  (·) Mercurio  …  (♄) Saturno  …  (·) Neptuno             │ ← fichas con miniatura
+│ (▶)  Fecha                                            Velocidad                │ ← barra de tiempo: reproducir,
+│      24 oct 2026, 02:00 [▦]  ‹ 2026 › ───●───────  3 h/s ▾ [⇆]  [Controles +]  │     fecha y calendario, línea
+│      Hora local, UTC+1              hoy                                        │     del año, velocidad y más
+│ Arrastra para girar · …     1900–2100 · NASA/JPL · astronomy-engine · Créditos │ ← pie, en letra pequeña
+└────────────────────────────────────────────────────────────────────────────────┘
 ```
+Las cifras y las fechas del boceto son marcadores.
+
+- **El índice y las fichas son HTML:** funcionan con teclado y sin WebGL. `Esc` cierra lo que tiene el foco: «Controles +», el índice o la ficha.
+- **La franja de abajo** (fichas, barra y pie) es un velo del color del fondo, sin desenfoque. Los controles de encima son opacos.
+- **La barra no cambia de tamaño al reproducir:** las cifras usan `tabular-nums`, la fecha tiene un ancho mínimo y la lectura, siempre las mismas líneas, para que la fecha no «baile».
+- **Al entrar, el sistema se mueve** a 3 horas por segundo (D31): reproducir y pausar es lo primero y más visible de la barra.
+
+### Visor · móvil y tableta (< 1024 px)
+
+```
+┌────────────────────────────────┐
+│ Tierra Luna Sol            ☰   │
+├────────────────────────────────┤
+│ Sistema solar  Tierra  Luna    │ ← vistas
+│ Título (H1, compacto)          │ ← se pliega al tocar
+│ Arrastra · pellizca            │ ← solo en táctil
+│                                │
+│          canvas 3D             │
+│    (el encuadre, entre el      │
+│     texto y la franja)     [+] │ ← cámara: una columna a la
+│                            [−] │     derecha que cuenta en
+│                            [⌂] │     el encuadre
+│                            [▢] │
+│ (·) Titán  (·) Rea  …          │ ← lunas del planeta elegido
+│ [≡ Índice] (☉)(·)(·)(●)(·) →   │ ← fichas: fila desplazable
+│ (▶) 24 oct 2026, 02:00     [▦] │ ← barra de tiempo en dos filas;
+│     Hora local, UTC+1          │     la lectura, siempre de tres
+│     3 horas por segundo        │     líneas (no cambia de alto)
+│ ‹ 2026 › ────●─────        [⫶] │ ← «Controles»: su icono, y con
+│          hoy                   │     su nombre desde 480 px
+└────────────────────────────────┘
+```
+- **El índice, la ficha y «Controles +»** suben como hojas inferiores, con su título y su botón de cerrar. Lo que tapan sale del orden del foco.
+- **En los teléfonos bajos** (en horizontal o con el zoom al 200 %), la página se desplaza: al llegar se ven el lienzo y, justo debajo, la barra con su pausa.
 
 ### Ficha completa (`/planetas/marte`) · sin 3D
 

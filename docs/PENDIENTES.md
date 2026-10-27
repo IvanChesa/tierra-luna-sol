@@ -53,6 +53,8 @@ Decisiones y tareas que dependen de Iván. Claude Code añade aquí cada `TODO(i
 - [ ] Textos de las vistas guiadas y de los recorridos (fases 5 y 6; en el plan v1, 4 y 5).
 - [ ] Pruebas en el móvil real: por la URL de staging desde la fase 4 o, si no hay staging, por la red local (fases 4–10; en el plan v1, 4–9).
 - [ ] Visto bueno final en el móvil (fase 10; en el plan v1, la 9).
+- [ ] **(Fase 3c) Comparar las capturas con la referencia del original** (su barra inferior). La referencia no está en el repositorio: las capturas están en `docs/informes/img/fase-3c/` y la tabla que empareja su estructura con la nuestra, en §7.1 del informe. Si quieres que la revisión la tenga, déjala enlazada fuera del repositorio (hallazgo 9 de la revisión de código).
+- [ ] **(Fase 3c) Texto de las pistas del pie:** «rueda o pellizca para acercarte» puede leerse como el imperativo de *rodar*. Propuesta de la revisión de diseño (hallazgo 18): «usa la rueda o pellizca para acercarte». El texto viene del plan (fase 3c, tarea 6), así que no se ha cambiado.
 
 ## Fase 10
 - [ ] Conseguir un iPhone para probar (aunque sea prestado).
