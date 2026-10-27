@@ -116,7 +116,10 @@ test.describe('Tiempo y URL', () => {
     await page.locator('.time__play').click();
     await page.waitForTimeout(3000);
     const changes = await page.evaluate(() => window.__e2eTimeChanges ?? 0);
-    expect(changes).toBeGreaterThan(3);
+    // El criterio es el máximo (§4.5): 5 por segundo, 15 en 3 s más el del clic. El mínimo solo
+    // comprueba que el tiempo corre: con varias instancias de SwiftShader en paralelo, un frame
+    // puede tardar más de medio segundo y llegan menos cambios.
+    expect(changes).toBeGreaterThan(1);
     expect(changes).toBeLessThanOrEqual(16);
     await page.keyboard.press('k');
   });
