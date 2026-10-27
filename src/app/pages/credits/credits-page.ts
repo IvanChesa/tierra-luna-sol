@@ -20,8 +20,10 @@ import { Component } from '@angular/core';
         y convertido a WebP; el color de algunos planetas se ha corregido con fotos del Hubble; el
         del océano de la Tierra, con fotos de
         <a href="https://epic.gsfc.nasa.gov/">EPIC (DSCOVR), del NASA EPIC Team</a>; la opacidad de
-        los anillos, con la ficha de los anillos de la NASA, y su brillo, con las medidas del Hubble
-        de <a href="https://arxiv.org/abs/1007.0349">Salo y French (2010)</a>.
+        los anillos, con la ficha de los anillos de la NASA; su brillo, con las medidas del Hubble
+        de <a href="https://arxiv.org/abs/1007.0349">Salo y French (2010)</a>, y su color, con la
+        <a href="https://esahubble.org/images/heic1917a/">foto del Hubble de 2019</a> (NASA/ESA, A.
+        Simon y M. H. Wong).
       </li>
       <li>
         Luna: CGI Moon Kit del
@@ -89,6 +91,13 @@ import { Component } from '@angular/core';
       <li><a href="https://threejs.org">three.js</a> (MIT) y Angular (MIT).</li>
       <li>Tipografías Newsreader y Public Sans (SIL Open Font License 1.1).</li>
     </ul>
+
+    <h2>El código del explorador</h2>
+    <p>
+      El código propio tiene licencia MIT (© 2026 Iván Chesa Lapena). Las texturas, los datos y los
+      catálogos de terceros conservan sus propias licencias, las de esta página: en particular, el
+      catálogo de estrellas, CC BY-SA 4.0.
+    </p>
 
     <p>La NASA no respalda este proyecto ni participa en él.</p>
   `,
