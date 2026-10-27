@@ -5,9 +5,10 @@
 
 # Todo el sitio. La CSP solo admite lo propio: sin terceros (D24), sin `eval` y sin manejadores en
 # línea. Los estilos en línea son los de los componentes de Angular y el CSS crítico de la página.
-# La geolocalización, solo para «usar mi ubicación» de El cielo desde España (fase 8). Fuera las
-# cabeceras de Network Error Logging de Cloudflare: harían que el navegador enviara informes de errores
-# a un dominio de Cloudflare (D24: ninguna petición a terceros).
+# La geolocalización, solo para «usar mi ubicación» de El cielo desde España (fase 8). Se intentan
+# quitar las cabeceras de Network Error Logging de Cloudflare (harían que el navegador enviara informes
+# de errores a un dominio de Cloudflare, D24), pero las añade la red de Cloudflare después de Pages y
+# siguen saliendo (comprobado en la vista previa): lo decide Iván (PENDIENTES.md).
 /*
   Content-Security-Policy: default-src 'self'; script-src 'self' {{INLINE_SCRIPTS}}; style-src 'self' 'unsafe-inline'; img-src 'self'; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
   X-Content-Type-Options: nosniff

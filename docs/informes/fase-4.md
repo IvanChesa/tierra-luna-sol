@@ -2,7 +2,7 @@
 
 - **Rama:** `fase-4-staging`
 - **Fecha:** 2026-10-27
-- **Estado:** listo para revisión (modo autónomo por bloques, bloque C)
+- **Estado:** revisada y corregida; se fusiona en `main` (modo autónomo por bloques, bloque C)
 
 ## 0. Plan de la fase
 
@@ -37,6 +37,7 @@ Ninguna nueva en el proyecto. En el CI, `cloudflare/wrangler-action` (decisión 
 - **4.b — hecha:** el build preparado para Pages, `_headers`, `_redirects`, el canonical, el servidor local que imita a Pages y su e2e (`babd84d`, `98360c1` y `725df98`).
 - **4.c — hecha:** CI con e2e y despliegue, Dependabot y el verificador (`b03f671`), con tres arreglos para que los e2e pasen en el runner de Linux (`12cd179`, `a24bd4f` y `c35b0e6`).
 - **4.d — hecha:** la vista previa verificada (27 de 27) y este informe.
+- **Revisión:** aplicada (`65f0264` y anteriores); respuesta al final.
 
 ## 1. Resumen
 
@@ -49,14 +50,14 @@ El sitio se publica en **Cloudflare Pages** desde GitHub Actions (cambio de Ivá
   - `404.html` en la raíz;
   - la CSP con los hashes de los scripts en línea;
   - los límites de Pages, comprobados.
-- **Comprobado en la vista previa real:** 27 de 27 (`scripts/verify-pages.mjs`).
+- **Comprobado en la vista previa real:** el propio CI lo verifica tras cada despliegue (`scripts/verify-pages.mjs`): 31 de 32 y un aviso, el de Network Error Logging, que decide Iván.
 
 ## 2. Criterios de aceptación
 
 | Criterio | ✅/❌ | Evidencia |
 |---|---|---|
 | CI verde en GitHub y vista previa actualizada solo con el CI en verde | ✅ | Ejecución 40531264949 (https://github.com/IvanChesa/tierra-luna-sol/actions/runs/40531264949): «Lint, tests y build» en 1 min 3 s, «e2e» con **64 de 64** en 7,0 min, y «Vista previa en Cloudflare Pages» en 32 s. El despliegue depende de los otros dos trabajos (`needs: [check, e2e]`). En las tres ejecuciones anteriores, con los e2e en rojo, el despliegue **no corrió** («Vista previa… in 0s»: omitido) |
-| Comprobaciones con `curl` en el informe | ✅ | §6.2: `node scripts/verify-pages.mjs https://fase-4-staging.tierra-luna-sol.pages.dev` da 27 de 27, y las cabeceras en crudo con `curl -sI` |
+| Comprobaciones con `curl` en el informe | ✅ | §6.2: `verify-pages.mjs` sobre la vista previa da 31 de 32 y un aviso (NEL, §5.7), y las cabeceras en crudo con `curl -sI`. Desde la revisión, el CI lo pasa tras cada despliegue, con el HTML servido comparado con el del build (idéntico en las 17 páginas) |
 | Iván ha abierto la vista previa en su móvil (no bloquea) | ⏳ | Pendiente de Iván (`PENDIENTES.md`): https://fase-4-staging.tierra-luna-sol.pages.dev y, tras la fusión, https://staging.tierra-luna-sol.pages.dev |
 
 ## 3. Tareas del plan
@@ -105,6 +106,9 @@ Además, los e2e necesitan `prerendered-routes.json`, que está fuera de `browse
 
 ### 4.7 `check-initial-bundle` cuenta 17 páginas, no 18
 `index.csr.html` ya no se publica (todas las rutas se prerenderizan).
+
+### 4.8 126 ficheros en el build, 124 en Pages
+`prepare-pages.mjs` quita del build los ficheros ocultos que Angular copia de `public/` (los cuatro `.gitkeep`), que Pages no sirve. Así, lo que prueban los e2e en local es lo que se publica: 126 ficheros. Pages recibe 124 (`_headers` y `_redirects` son su configuración, no ficheros que sirva).
 
 ## 5. Decisiones técnicas nuevas
 
@@ -155,11 +159,15 @@ En `_headers`, cada cabecera sale de una sola regla: si dos reglas que coinciden
 - **Las ramas:** `main` se publica como `staging` (`staging.tierra-luna-sol.pages.dev`), porque `main` es la rama de producción del proyecto y la producción llega con la etiqueta de la fase 11. Cada rama, con su nombre.
 - **El proyecto:** lo crea el despliegue si no existe (`wrangler pages project create tierra-luna-sol --production-branch=main`). Lo hizo la primera vez. En la cuenta hay otro proyecto de Pages, `ivanchesa-es`, que no se ha tocado.
 
-### 5.7 Lo que pone Pages por su cuenta
+### 5.7 Lo que pone Cloudflare por su cuenta
 - **`Access-Control-Allow-Origin: *`** en los ficheros: en un sitio público y sin credenciales no expone nada.
-- **Las cabeceras `Link` de precarga**, a partir del HTML.
+- **Las cabeceras `Link` de los Early Hints**, copiadas de los `<link rel="modulepreload">` del HTML desde la segunda petición de cada página. El navegador las resuelve contra la URL de la página, no contra `<base href="/">`. Por eso `prepare-pages.mjs` pone rutas absolutas a los ficheros con hash (hallazgo 1 de la revisión). Ahora llevan a `/chunk-….js`, que existe.
 - **La compresión brotli.**
 - **`X-Robots-Tag: noindex`** en las vistas previas: sale una sola vez, aunque `_headers` también la pone.
+- **`Report-To` y `NEL` (Network Error Logging)** hacia `a.nel.cloudflare.com`: con ellas, Chrome y Edge envían a ese dominio un informe de cada petición que falla, y eso choca con D24. Las pone la red de Cloudflare después de Pages: `! Report-To` y `! NEL` en `_headers` no las quitan (comprobado en la vista previa). `verify-pages.mjs` las marca como aviso, y decide Iván (`PENDIENTES.md`): aceptarlo como telemetría del hosting (y decirlo en el texto de privacidad de la fase 9) o buscar el ajuste en el panel o en la zona del dominio propio (fase 11). Con el hallazgo 1 corregido, navegar por el sitio ya no provoca ningún 404.
+
+### 5.8 Tipos MIME
+Pages ya sirve `stars.bin` como `application/octet-stream` (comprobado), y no se publica ningún `.ktx2` (D18): `_headers` no fija ningún `Content-Type`. Si en la fase 6 vuelve KTX2, harán falta `Content-Type: image/ktx2` y, en la CSP, `'wasm-unsafe-eval'` y `worker-src blob:`, porque el `KTX2Loader` de three crea sus workers desde un `Blob`. Está apuntado en la fase 6 del plan.
 
 ## 6. Salida de los checks
 
@@ -189,28 +197,32 @@ El código propio inicial sube de 11,58 a 12,13 kB por el canonical. Hay 4 e2e n
 | 40527138931 | 1 fallo y 2 inestables | El campo de fecha en inglés (mes/día) y esperas fijas | `a24bd4f` |
 | 40529456181 | 1 fallo y 1 inestable | `--lang` no cambia el campo de fecha; el foco aún fuera del panel | `c35b0e6` |
 | 40531264949 | ✓ todo verde y desplegado | — | — |
+| 40540059395 | ✓ con las correcciones de la revisión: 65 de 65 e2e, desplegado y verificado por el propio CI (31 de 32 y un aviso) | — | — |
 
-### 6.2 La vista previa real (`node scripts/verify-pages.mjs https://fase-4-staging.tierra-luna-sol.pages.dev`)
+### 6.2 La vista previa real (el paso «Comprueba la publicación» del CI, ejecución 40540059395)
+`node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-pages.mjs https://5caa273b.tierra-luna-sol.pages.dev --build build/browser`:
 ```
-✔ / → 200
-✔ HTML con su tipo: text/html; charset=utf-8
-✔ HTML sin caché larga: public, max-age=0, must-revalidate
+✔ / → 200 · HTML con su tipo · HTML sin caché larga (public, max-age=0, must-revalidate)
 ✔ CSP con los hashes de los scripts en línea
-✔ X-Content-Type-Options: nosniff · X-Frame-Options: DENY · Referrer-Policy · Permissions-Policy
-✔ Cross-Origin-Opener-Policy: same-origin · Strict-Transport-Security: max-age=31536000
-✔ noindex en *.pages.dev
-✔ Sin Cloudflare Web Analytics: ningún script de cloudflareinsights.com
+✔ X-Content-Type-Options · X-Frame-Options · Referrer-Policy · Permissions-Policy
+✔ Cross-Origin-Opener-Policy · Strict-Transport-Security · noindex en *.pages.dev
+✔ Sin Cloudflare Web Analytics
+⚠ Sin Network Error Logging (Report-To, NEL): {"group":"cf-nel",…"url":"https://a.nel.cloudflare.com/report/v4?…"} · {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
 ✔ Canonical de la raíz y de /planetas/marte, sin barra
 ✔ /planetas/marte/ → 308 /planetas/marte · /planetas/marte.html → 308 · /planetas/ → 308 /planetas · /index.html → 308 /
-✔ /explorar → 301 /
-✔ /no-existe → 404 con la página de error, sin canonical
+✔ /explorar → 301 / · /explorar/ → 301 /
+✔ Link de /planetas/marte → ficheros que existen: 1 (/chunk-DJVAsKa_.js)
+✔ Link de /explorar/tierra → ficheros que existen: 2 (/chunk-DJVAsKa_.js, /chunk-Di3Jp0oV.js)
+✔ /no-existe → 404 con la página de error · 404 sin canonical
 ✔ /main-IFZJLCMN.js: application/javascript · public, max-age=31536000, immutable
 ✔ /img/cuerpos/saturno.webp: image/webp · public, max-age=86400
 ✔ /data/stars.bin: application/octet-stream · public, max-age=86400
 ✔ /textures/1k/saturn-rings.c893f34265.webp: image/webp · public, max-age=31536000, immutable
 ✔ http:// → https://: 301
-27 de 27 bien
+✔ HTML servido = build (17 páginas): idénticas byte a byte
+31 de 32 bien, 1 aviso
 ```
+Antes de la revisión, el mismo verificador sobre el despliegue anterior daba tres errores: las dos `Link` rotas y `/explorar/`, con un 404.
 
 En crudo (`curl -sI`):
 ```
@@ -248,7 +260,7 @@ Ninguna en el proyecto. En el CI, `cloudflare/wrangler-action` v4.1.3 (decisión
 Todo, en `PENDIENTES.md`.
 
 ## 10. Propuestas de cambio al plan
-Ninguna.
+Ninguna. La nota de KTX2 para la fase 6 (§5.8) ya está en el plan: no cambia el alcance.
 
 ## 11. Cómo probarlo
 ```
@@ -258,3 +270,30 @@ npx playwright test publicacion   # rutas, redirecciones, 404, cabeceras y CSP
 node scripts/verify-pages.mjs https://fase-4-staging.tierra-luna-sol.pages.dev
 ```
 En GitHub: https://github.com/IvanChesa/tierra-luna-sol/actions (cada push, con su vista previa en el resumen del trabajo «Vista previa en Cloudflare Pages»).
+
+## Respuesta a la revisión
+Revisión automática: `docs/revisiones/fase-4.md` (CAMBIOS NECESARIOS: 0 bloqueantes, 2 importantes, 5 menores y 8 sugerencias). Corregido todo lo que se puede corregir desde el repo. Lo que no, por falta de acceso o por ser decisión de Iván, queda en `PENDIENTES.md`. No había bloqueantes: no hace falta una segunda ronda.
+
+**Después de las correcciones:**
+- `npm run check` en verde: 461 tests y JS inicial de 298,23 kB.
+- En local, los e2e de arranque, privacidad, sin WebGL y publicación: 10 de 10.
+- El CI de GitHub, en verde (ejecución 40540059395): 65 de 65 e2e, y el despliegue con su verificación, 31 de 32 y un aviso.
+
+| # | Hallazgo | Acción | Commit |
+|---|---|---|---|
+| 1 | Los Early Hints de las páginas anidadas pedían módulos que no existen | `prepare-pages.mjs` pone rutas absolutas a los ficheros con hash y al icono (91 en 17 páginas). Se conservan los Early Hints. `serve-dist.mjs` imita la cabecera `Link`, y un e2e comprueba que en `/planetas/marte` y `/explorar/tierra` lleva a módulos que existen. Comprobado en la vista previa: `/chunk-DJVAsKa_.js` y `/chunk-Di3Jp0oV.js`, 200 | `0d9acd8` |
+| 2 | Cloudflare manda informes de errores a `a.nel.cloudflare.com` (D24) | `! Report-To` y `! NEL` en `_headers`: **no las quitan**, porque las pone la red de Cloudflare después de Pages (comprobado). Documentado en §5.7; el verificador lo marca como aviso; decide Iván (`PENDIENTES.md`). Sin el hallazgo 1, navegar ya no provoca ningún 404 | `175988d` |
+| 3 | La prueba «hacia atrás» no distinguía 1 h/s de 3 h/s | Comprueba el selector y mide la velocidad en una ventana de 3 s: ≤ 1,25 h/s | `cc50d3d` |
+| 4 | Los `.gitkeep`: lo de local no era lo que se publica | `prepare-pages.mjs` quita los ficheros ocultos; `include-hidden-files: false`, explícito y con su comentario; 126 frente a 124, explicado (§4.8) | `0d9acd8` · `7e2569a` |
+| 5 | La URL del sitio, escrita a mano | `SITE_CONFIG.baseUrl` en el verificador, en el e2e y en el test del canonical | `0d9acd8` · `cc50d3d` · `7e2569a` |
+| 6 | Los tipos MIME, sin explicar, y KTX2 en la fase 6 | §5.8; la nota, en la fase 6 del plan | `65f0264` |
+| 7 | `main` → `staging` y el proyecto ya creado, sin probar | Se comprueba tras la fusión (`DIARIO.md`) | — |
+| 8 | El verificador, a mano y sin mirar el HTML | El CI lo pasa tras cada despliegue, con reintentos, sobre la URL del despliegue y con `--build`: el HTML servido es el del build (idéntico en las 17 páginas). Sin el aviso de Node (`--disable-warning`) | `7e2569a` |
+| 9 | `serve-dist.mjs`: URL mal codificadas y diferencias con Pages | 400 con una URL mal codificada; 404 en `_headers`, `_redirects` y los ocultos; `/index` → `/` | `0d9acd8` |
+| 10 | `/explorar/` daba 404 | `/explorar/ / 301` | `175988d` |
+| 11 | La estrategia del título, sin test | Test con el router: la ruta más profunda, sin canonical en las páginas de error y de vuelta al salir. El canonical pasará al servicio de SEO en la fase 9 | `cc50d3d` |
+| 12 | Endurecer el despliegue | Permisos mínimos (`contents: read`, para el verificador); el nombre de la rama, validado (`^[a-z0-9-]+$`); wrangler, en una variable. El entorno de GitHub para los secrets es un paso de Iván (`PENDIENTES.md`, opcional) | `7e2569a` |
+| 13 | Un PR desde una rama pasaría el CI dos veces | Aceptado y dicho en el comentario del CI (las fases se fusionan en local, sin PR) | `7e2569a` |
+| 14 | Dependabot y las mayores de `angular-eslint` y `@schematics/angular` | Añadidas a `ignore` | `7e2569a` |
+| 15 | ¿Explorador incrustable en ivanchesa.es? | Decisión de Iván para la fase 11 (`PENDIENTES.md`) | `65f0264` |
+
