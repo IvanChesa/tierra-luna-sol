@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { indexToggle, openExplorer, simTime, treeRow } from './support';
+import { coveredFocus, indexToggle, openExplorer, simTime, treeRow } from './support';
 
 // Proyecto «movil» (Pixel 7, táctil): las hojas inferiores (índice y ficha) y el menú del sitio.
 test.describe('Móvil', () => {
@@ -41,14 +41,7 @@ test.describe('Móvil', () => {
     // El tabulador no se para en nada tapado (el botón «Índice», la barra de tiempo, la cámara).
     for (let k = 0; k < 6; k++) {
       await page.keyboard.press('Tab');
-      const covered = await page.evaluate(() => {
-        const element = document.activeElement;
-        if (!(element instanceof HTMLElement) || element === document.body) return null;
-        const box = element.getBoundingClientRect();
-        const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
-        return hit && !element.contains(hit) && !hit.contains(element) ? element.outerHTML : null;
-      });
-      expect(covered).toBeNull();
+      expect(await coveredFocus(page)).toBeNull();
     }
     // Al cerrarla desde dentro, el foco vuelve al botón «Índice»: la fila elegida estaba en la hoja
     // del índice, que se ha cerrado (con el foco fuera de la ficha, Esc la cierra sin moverlo).
@@ -67,15 +60,23 @@ test.describe('Móvil', () => {
     await treeRow(page, 'saturno').tap();
     await expect(page.getByRole('button', { name: /Saltar el viaje/ })).toBeVisible();
     await expect(page.locator('#card-title')).toHaveText('Saturno');
-    // Las dos cajas a la vez (el viaje dura unos segundos y, con varios SwiftShader en paralelo,
-    // podría acabar entre dos mediciones): el botón termina por encima de la ficha.
-    const gap = await page.evaluate(() => {
-      const skip = document.querySelector('.skip')?.getBoundingClientRect();
-      const panel = document.querySelector('.panel:not([hidden])')?.getBoundingClientRect();
-      return skip && panel ? panel.top - skip.bottom : null;
-    });
-    expect(gap).not.toBeNull();
-    expect(gap).toBeGreaterThanOrEqual(0);
+    // «Saltar el viaje» se coloca encima de la parte visible del lienzo (`--view-bottom`), que acaba
+    // donde empieza la hoja de la ficha. Con varios SwiftShader en paralelo, el viaje (unos 3 s)
+    // puede acabar antes de que llegue la ficha: se comprueba la regla y, si el botón sigue, su sitio.
+    const geometry = () =>
+      page.evaluate(() => {
+        const explorer = document.querySelector('.explorer') as HTMLElement;
+        const viewBottom = parseFloat(getComputedStyle(explorer).getPropertyValue('--view-bottom'));
+        const panel = document.querySelector('.panel:not([hidden])')?.getBoundingClientRect();
+        const skip = document.querySelector('.skip')?.getBoundingClientRect();
+        return {
+          overlap: panel ? explorer.getBoundingClientRect().bottom - viewBottom - panel.top : null,
+          skipGap: skip && panel ? panel.top - skip.bottom : null,
+        };
+      });
+    await expect.poll(async () => (await geometry()).overlap).toBeLessThanOrEqual(1);
+    const { skipGap } = await geometry();
+    if (skipGap !== null) expect(skipGap).toBeGreaterThanOrEqual(0);
   });
 
   test('las fichas: una fila que se desplaza, con zonas táctiles de al menos 44 px', async ({
@@ -141,6 +142,19 @@ test.describe('Móvil', () => {
     expect(box && viewport && Math.round(box.x + box.width)).toBe(viewport?.width);
     await page.mouse.click(20, 200);
     await expect(page.locator('#time-date')).toBeHidden();
+    // Su botón de cerrar (la hoja tapa el de «Controles»): el foco vuelve a «Controles».
+    await more.tap();
+    await page.getByRole('button', { name: 'Cerrar los controles' }).tap();
+    await expect(page.locator('#time-date')).toBeHidden();
+    await expect(more).toBeFocused();
+    // Con el teclado, el foco nunca se para en lo que tapa la hoja (la barra, las fichas).
+    await more.focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('#time-date')).toBeFocused();
+    for (let k = 0; k < 8; k++) {
+      await page.keyboard.press('Shift+Tab');
+      expect(await coveredFocus(page)).toBeNull();
+    }
   });
 
   test('el menú del sitio se abre y se cierra al navegar', async ({ page }) => {

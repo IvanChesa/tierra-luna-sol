@@ -106,6 +106,9 @@ for (const screen of LOW_SCREENS) {
     await page.goto('/?captura=1');
     await expect(page.locator('tls-viewer-canvas')).toHaveClass(/is-ready/, { timeout: 90_000 });
     await expect(page.locator('tls-camera-controls button').first()).toBeVisible();
+    // Al llegar, reproducir y pausar se ve sin desplazar la página (D31, WCAG 2.2.2).
+    const play = await page.locator('.time__play').boundingBox();
+    expect(play && play.y + play.height).toBeLessThanOrEqual(screen.height);
     if (screen.expand) await page.locator('.time__more').click();
     await page.waitForTimeout(300);
 

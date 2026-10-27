@@ -62,10 +62,20 @@ test.describe('Accesibilidad (axe)', () => {
     expect(await seriousViolations(page)).toEqual([]);
   });
 
+  test('el estado por defecto, con el sistema en marcha (D31), en las tres vistas', async ({
+    page,
+  }) => {
+    for (const path of ['/', '/explorar/tierra', '/explorar/luna']) {
+      await openExplorer(page, path);
+      await expect(page.locator('.time__play')).toHaveAccessibleName(/Pausar/);
+      expect(await seriousViolations(page), path).toEqual([]);
+    }
+  });
+
   test('todas las páginas del sitio', async ({ page }) => {
     // Con movimiento reducido, el explorador arranca en pausa (D31): sus tres rutas no tienen la CPU
-    // ocupada pintando con SwiftShader mientras axe las analiza. Con el sistema en marcha, ya lo
-    // mira la prueba de arriba.
+    // ocupada pintando con SwiftShader mientras axe las analiza. El explorador en marcha lo mira la
+    // prueba de arriba.
     await page.emulateMedia({ reducedMotion: 'reduce' });
     expect(ROUTES.length).toBeGreaterThan(10);
     for (const route of ROUTES) {

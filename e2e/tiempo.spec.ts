@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import {
   countUrlChanges,
+  coveredFocus,
   openControls,
   openExplorer,
   simTime,
@@ -175,6 +176,53 @@ test.describe('Tiempo y URL', () => {
     await expect(page.locator('tls-timeline .year__label')).toHaveText('2033');
   });
 
+  test('con el tiempo en marcha, la línea sigue a la fecha tras un clic y el teclado parte de lo anunciado', async ({
+    page,
+  }) => {
+    // Sin fecha en el enlace: reproduciendo (D31). A 1 mes por segundo, para que se note.
+    await openExplorer(page, '/');
+    await page.locator('#time-speed').selectOption('month');
+    const line = page.getByRole('slider', { name: 'Línea de tiempo' });
+    const box = await line.boundingBox();
+    if (!box) throw new Error('Sin línea de tiempo');
+    await page.mouse.click(box.x + box.width * 0.3, box.y + box.height / 2);
+    const first = Number(await line.inputValue());
+    // Con el foco del ratón, la línea sigue a la fecha (no se queda en el día del clic).
+    await expect
+      .poll(async () => Number(await line.inputValue()), { timeout: 20_000 })
+      .not.toBe(first);
+    // Con el teclado, lo anunciado se queda quieto y → es el día siguiente al anunciado (la
+    // interfaz se repinta un instante después de cada tecla).
+    await page.keyboard.press('ArrowLeft');
+    await page.waitForTimeout(300);
+    const announced = (await line.getAttribute('aria-valuetext')) ?? '';
+    const before = Number(await line.inputValue());
+    await page.waitForTimeout(1500);
+    await expect(line).toHaveAttribute('aria-valuetext', announced);
+    await expect(line).toHaveValue(String(before));
+    await page.keyboard.press('ArrowRight');
+    await expect(line).toHaveValue(String(before + 1));
+    await page.keyboard.press('k');
+  });
+
+  test('en el límite de 2100, con la hora de Madrid, la línea no pasa del rango', async ({
+    page,
+  }) => {
+    await openExplorer(page, '/?fecha=2100-12-31T23:59Z');
+    const line = page.getByRole('slider', { name: 'Línea de tiempo' });
+    // En Madrid ya es el 1 de enero de 2101 (de 0:00 a 0:59): un solo día en la pista.
+    await expect(page.locator('tls-timeline .year__label')).toHaveText('2101');
+    await expect(line).toHaveAttribute('min', '0');
+    await expect(line).toHaveAttribute('max', '0');
+    await expect(line).toHaveAttribute('aria-valuetext', '1 de enero de 2101');
+    await expect(page.getByRole('button', { name: 'Año siguiente' })).toBeDisabled();
+    const box = await line.boundingBox();
+    if (!box) throw new Error('Sin línea de tiempo');
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    await expect(line).toHaveValue('0');
+    expect(await simTime(page)).toBe(Date.parse('2100-12-31T23:59:00Z'));
+  });
+
   test('«Controles +» se abre con el foco dentro y se cierra con Esc, que no cierra la ficha', async ({
     page,
   }) => {
@@ -190,6 +238,18 @@ test.describe('Tiempo y URL', () => {
     await expect(button).toBeFocused();
     // La ficha sigue abierta: ese Esc era del panel.
     await expect(page.locator('#card-title')).toHaveText('Marte');
+    // Con su botón de cerrar, también vuelve el foco a «Controles».
+    await openControls(page);
+    await page.getByRole('button', { name: 'Cerrar los controles' }).click();
+    await expect(page.locator('#time-date')).toBeHidden();
+    await expect(button).toBeFocused();
+    // Si el foco sale del panel, se cierra: nunca se para en lo que tapa (la tarjeta, la cámara).
+    await openControls(page);
+    for (let k = 0; k < 10; k++) {
+      await page.keyboard.press('Shift+Tab');
+      expect(await coveredFocus(page)).toBeNull();
+    }
+    await expect(page.locator('#time-date')).toBeHidden();
     // «Ahora», dentro del panel: el instante actual, en tiempo real.
     await openControls(page);
     await page.getByRole('button', { name: 'Ahora', exact: true }).click();
