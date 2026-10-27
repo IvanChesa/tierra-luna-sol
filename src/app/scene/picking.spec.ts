@@ -1,5 +1,5 @@
 import { PerspectiveCamera } from 'three';
-import { MIN_HIT_RADIUS_PX, ScreenBody, pickBody, projectBodies } from './picking';
+import { MIN_HIT_RADIUS_PX, SMALL_OCCLUDER, ScreenBody, pickBody, projectBodies } from './picking';
 
 const WIDTH = 800;
 const HEIGHT = 600;
@@ -58,6 +58,24 @@ describe('picking: proyección a la pantalla', () => {
     expect(bodies[2]?.occluded).toBe(false);
     expect(bodies[0]?.occluded).toBe(false); // lo que está detrás no tapa lo de delante
   });
+
+  it('un cuerpo mucho más pequeño en pantalla no tapa al que tiene detrás (una luna ante Saturno)', () => {
+    // Un planeta de radio 1 a 10 de la cámara y, justo delante de su centro, una luna diminuta (y
+    // otra de radio 0, que no se dibuja).
+    const positions = new Float64Array([0, 0, 0, 0, 0, 2, 0, 0, 1]);
+    const small = 0.9 * SMALL_OCCLUDER * (8 / 10); // a 8 de la cámara, menos de la mitad aparente
+    const bodies = projectBodies(
+      camera(),
+      positions,
+      new Float64Array([1, small, 0]),
+      WIDTH,
+      HEIGHT,
+    );
+    expect(bodies[0]?.occluded).toBe(false);
+    // Una luna del tamaño aparente del planeta, en cambio, sí lo tapa.
+    const big = projectBodies(camera(), positions, new Float64Array([1, 0.9, 0]), WIDTH, HEIGHT);
+    expect(big[0]?.occluded).toBe(true);
+  });
 });
 
 describe('picking: selección con el puntero', () => {
@@ -93,6 +111,17 @@ describe('picking: selección con el puntero', () => {
     const a = body(4, 50, 50, 10, 30);
     const b = body(5, 50, 50, 10, 10);
     expect(pickBody([a, b], 50, 50)).toBe(5);
+  });
+
+  it('dentro del disco de un cuerpo, lo elige a él aunque otro tenga el centro más cerca', () => {
+    // Saturno, de 12 px, y una luna diminuta sobre su disco, más cerca de la cámara: un clic en el
+    // disco de Saturno, a 4 px de la luna, elige Saturno; uno en la luna, la luna.
+    const saturn = body(6, 300, 300, 12, 40);
+    const moon = body(7, 306, 300, 1.5, 38);
+    expect(pickBody([saturn, moon], 302, 300)).toBe(6);
+    expect(pickBody([saturn, moon], 306.5, 300)).toBe(7);
+    // Fuera de los discos, la zona agrandada de la luna sigue funcionando.
+    expect(pickBody([saturn, moon], 326, 300)).toBe(7);
   });
 
   it('ignora lo que está fuera de la pantalla o tapado', () => {

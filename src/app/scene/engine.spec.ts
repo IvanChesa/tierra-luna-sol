@@ -554,7 +554,7 @@ describe('SceneEngine: calidad adaptativa, contexto WebGL y limpieza', () => {
 
 describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas y aliasing)', () => {
   interface Internals {
-    screen: { index: number; x: number; y: number }[];
+    screen: { index: number; x: number; y: number; occluded: boolean }[];
     rig: { distance: number; azimuth: number; elevation: number };
     look: unknown;
     frames: { output: { position: Float64Array; radius: Float64Array } };
@@ -891,15 +891,36 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     h.engine.dispose();
   });
 
+  it('las lunas de un sistema que no se distingue no se dibujan; al enfocar su planeta, sí (fase 4b)', async () => {
+    const visible = (h: Harness, id: string) =>
+      internals(h).world.scene.getObjectByName(id)?.visible;
+    // En la vista general, los sistemas compactos miden unos píxeles: sus lunas no se ven, ni se
+    // nombran, ni tapan a su planeta.
+    const overview = await createHarness({ reducedMotion: true });
+    settle(overview);
+    expect(visible(overview, 'jupiter')).toBe(true);
+    for (const moon of ['luna', 'io', 'calisto', 'titan', 'triton']) {
+      expect(visible(overview, moon), moon).toBe(false);
+    }
+    expect(screenOf(overview, 'saturno')?.occluded).toBe(false);
+    overview.engine.dispose();
+    // Al enfocar Júpiter (su sistema local físico), sus lunas aparecen.
+    const jupiter = await createHarness({ reducedMotion: true, focus: 'jupiter' });
+    settle(jupiter);
+    for (const moon of ['io', 'europa', 'ganimedes', 'calisto']) {
+      expect(visible(jupiter, moon), moon).toBe(true);
+    }
+    jupiter.engine.dispose();
+  });
+
   it('la estela de una órbita en segundo plano es más fina (D34)', async () => {
     const h = await createHarness({ reducedMotion: true, focus: 'mercurio' });
     settle(h);
     // Con Mercurio enfocado, su órbita queda tenue (opacidad 0,3, `World.orbitOpacity`): su estela
     // engorda en proporción a esa opacidad respecto a la de la vista general.
     const head = internals(h).world.orbits.widths[0] as number;
-    const { planet, fullWidthOpacity } = VISUAL_CONFIG.trails;
-    const widen = planet.widthPx / ORBIT_WIDTH_PX - 1;
-    expect(head).toBeCloseTo(1 + (widen * 0.3) / fullWidthOpacity, 5);
+    const widen = VISUAL_CONFIG.trails.planet.widthPx / ORBIT_WIDTH_PX - 1;
+    expect(head).toBeCloseTo(1 + (widen * 0.3) / VISUAL_CONFIG.overviewOrbitOpacity, 5);
     h.engine.dispose();
   });
 });

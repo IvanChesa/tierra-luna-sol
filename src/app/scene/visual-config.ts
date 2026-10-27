@@ -63,20 +63,29 @@ export const VISUAL_CONFIG = {
   /** Por debajo de este radio en pantalla (px CSS), un cuerpo no aparta las órbitas de su disco. */
   orbitDiscMinRadiusPx: 3,
   /**
+   * Un sistema de lunas se resuelve en pantalla cuando cada luna se separa del borde de su planeta
+   * de `from` a `to` px (su distancia real en el espacio, en radios del planeta, a la escala de su
+   * disco en pantalla). Hasta entonces, ni su disco ni su órbita se dibujan, ni tapan, ni se pueden
+   * elegir con el puntero (fase 4b): en la vista general, los sistemas compactos no se ven como
+   * bultos pegados a cada planeta, y aparecen al acercarse o al enfocar el planeta.
+   */
+  moonResolutionPx: { from: 8, to: 30 },
+  /** Opacidad de las órbitas de los planetas en la vista general (la de las estelas completas). */
+  overviewOrbitOpacity: 0.85,
+  /**
    * Estelas de los cuerpos (D34, fase 4b): un arco de su color sobre su órbita, detrás de él, que se
    * desvanece hasta fundirse con ella. La longitud va en fracción de vuelta (no en tiempo: se ven
    * igual a cualquier velocidad), la intensidad multiplica la opacidad de la órbita y el grosor (px
    * CSS) es el de junto al cuerpo, que adelgaza hasta el de la órbita. En las lunas, más cortas y
    * tenues. El desvanecimiento es (1 − s)^falloff, con s de 0 (el cuerpo) a 1 (el final). El grosor
-   * completo es el de una órbita con opacidad `fullWidthOpacity` (la de los planetas en la vista
-   * general); una órbita más tenue (en segundo plano en las vistas Tierra y Luna, o la del planeta
-   * enfocado) lleva una estela más fina en proporción.
+   * completo es el de una órbita con la opacidad de la vista general (`overviewOrbitOpacity`); una
+   * órbita más tenue (en segundo plano en las vistas Tierra y Luna, o la del planeta enfocado) lleva
+   * una estela más fina en proporción.
    */
   trails: {
     planet: { fraction: 1 / 8, intensity: 0.9, widthPx: 3 },
     moon: { fraction: 1 / 12, intensity: 0.5, widthPx: 2 },
     falloff: 1.5,
-    fullWidthOpacity: 0.85,
   },
   /**
    * Vía Láctea (tarea 5b): sutil, por debajo de las estrellas. Intensidad del panorama y codo de la
@@ -104,6 +113,23 @@ export function closeUpAmount(focusRadiusPx: number | null): number {
     Math.max((Math.log(focusRadiusPx) - Math.log(from)) / (Math.log(to) - Math.log(from)), 0),
     1,
   );
+  return t * t * (3 - 2 * t);
+}
+
+/**
+ * Presencia de una luna (0–1) según cuánto se separa en pantalla del borde de su planeta
+ * (`moonResolutionPx`): `distance` es la distancia entre los dos en el espacio y `parentRadius` el
+ * radio del planeta (unidades de escena), y `parentRadiusPx`, su radio en pantalla.
+ */
+export function moonPresence(
+  distance: number,
+  parentRadius: number,
+  parentRadiusPx: number,
+): number {
+  if (!(parentRadius > 0) || !Number.isFinite(parentRadiusPx)) return 0;
+  const separation = (distance / parentRadius - 1) * parentRadiusPx;
+  const { from, to } = VISUAL_CONFIG.moonResolutionPx;
+  const t = Math.min(Math.max((separation - from) / (to - from), 0), 1);
   return t * t * (3 - 2 * t);
 }
 

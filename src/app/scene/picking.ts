@@ -23,6 +23,12 @@ export interface ScreenBody {
 /** Radio mínimo de la zona sensible al puntero (px CSS): 44 px de diámetro en táctil (WCAG 2.5.5). */
 export const MIN_HIT_RADIUS_PX = 22;
 
+/**
+ * Un cuerpo no tapa a otro si su tamaño aparente es menos de esta fracción del de él: una luna que
+ * pasa por delante del centro de Saturno no lo oculta (fase 4b).
+ */
+export const SMALL_OCCLUDER = 0.5;
+
 const tmpMatrix = new Matrix4();
 const tmpVector = new Vector4();
 
@@ -64,7 +70,10 @@ export function projectBodies(
   return raw.map((body) => ({ ...body, occluded: isOccluded(body.index, positions, radii, cam) }));
 }
 
-/** ¿Hay otro cuerpo entre la cámara y el centro de `index` que lo tape? */
+/**
+ * ¿Hay otro cuerpo entre la cámara y el centro de `index` que lo tape? Solo cuenta si no es mucho más
+ * pequeño en pantalla (`SMALL_OCCLUDER`); los de radio 0 (las lunas que no se dibujan), nunca.
+ */
 function isOccluded(
   index: number,
   positions: Float64Array,
@@ -88,6 +97,7 @@ function isOccluded(
     const along = cx * dx + cy * dy + cz * dz;
     if (along <= 0 || along >= reach) continue;
     const r = radii[k] as number;
+    if (r / along < SMALL_OCCLUDER * ((radii[index] as number) / distance)) continue;
     const perpendicular2 = cx * cx + cy * cy + cz * cz - along * along;
     if (perpendicular2 < r * r) return true;
   }
@@ -95,8 +105,10 @@ function isOccluded(
 }
 
 /**
- * Cuerpo bajo el puntero: el de menor distancia al centro relativa a su zona sensible (su disco
- * o, si es más pequeño, `minHitPx`), y a igualdad, el más cercano a la cámara.
+ * Cuerpo bajo el puntero. Si cae dentro del disco de algún cuerpo, el más cercano a la cámara de
+ * ellos: un clic en el disco de Saturno elige Saturno aunque una luna tenga el centro más cerca
+ * (fase 4b). Si no, el de menor distancia al centro relativa a su zona sensible (su disco o, si es
+ * más pequeño, `minHitPx`), y a igualdad, el más cercano a la cámara.
  */
 export function pickBody(
   bodies: readonly ScreenBody[],
@@ -104,6 +116,13 @@ export function pickBody(
   y: number,
   minHitPx = MIN_HIT_RADIUS_PX,
 ): number | null {
+  let inside: { index: number; depth: number } | null = null;
+  for (const body of bodies) {
+    if (!body.onScreen || body.occluded) continue;
+    if (Math.hypot(body.x - x, body.y - y) > body.radiusPx) continue;
+    if (!inside || body.depth < inside.depth) inside = { index: body.index, depth: body.depth };
+  }
+  if (inside) return inside.index;
   let best: { index: number; score: number; depth: number } | null = null;
   for (const body of bodies) {
     if (!body.onScreen || body.occluded) continue;

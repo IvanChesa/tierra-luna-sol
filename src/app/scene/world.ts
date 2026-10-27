@@ -122,6 +122,11 @@ export interface WorldFrame {
   readonly projection: ViewProjection;
   /** Sentido de las estelas (D34): el de la reproducción, también en pausa. */
   readonly trailDirection: TrailDirection;
+  /**
+   * Presencia de cada cuerpo, de 0 a 1 (`moonPresence`): las lunas de un sistema que aún no se
+   * distingue en pantalla, 0; lo demás, 1. Escala el disco y la órbita de cada luna.
+   */
+  readonly presence: Float64Array;
   /** Velocidades altas (§4.5): cuerpos que no se dibujan (su órbita los sustituye)… */
   readonly aliasedOrbit: Uint8Array | null;
   /** …y cuerpos cuya rotación propia se congela. */
@@ -153,6 +158,10 @@ const tmpMatrix = new Matrix4();
 const tmpQuaternion = new Quaternion();
 const tmpVector = new Vector3();
 const { halo: HALO, granulation: GRANULATION, intensity: SUN_INTENSITY } = VISUAL_CONFIG.sun;
+/** Opacidad de la órbita de una luna con su sistema resuelto en pantalla. */
+const MOON_ORBIT_OPACITY = 0.7;
+/** Presencia mínima con la que se dibuja una luna (más pequeña, no llegaría a un píxel). */
+const MIN_PRESENCE = 0.05;
 /** Segmentos de la esfera ligera de las lunas pequeñas (a lo ancho). */
 const COARSE_SEGMENTS = 32;
 
@@ -507,10 +516,15 @@ export class World {
       const k = visual.body.index;
       const mesh = visual.mesh;
       setFromEcl(mesh.position, positions, k);
-      const r = radii[k] as number;
+      // Una luna de un sistema que no se distingue (presencia) crece con él; por debajo de
+      // `MIN_PRESENCE` mediría una fracción de píxel y no se dibuja.
+      const presence = frame.presence[k] ?? 1;
+      const r = (radii[k] as number) * presence;
       mesh.scale.set(r, r * (1 - visual.body.flattening), r);
       mesh.visible =
-        (this.isolated === null || this.isolated === k) && frame.aliasedOrbit?.[k] !== 1;
+        presence >= MIN_PRESENCE &&
+        (this.isolated === null || this.isolated === k) &&
+        frame.aliasedOrbit?.[k] !== 1;
       // Con la rotación congelada se conserva la última orientación pintada (§4.5).
       const frozen = frame.frozenSpin?.[k] === 1;
       if (!frozen || !visual.frozen) {
@@ -817,38 +831,24 @@ export class World {
 
   /**
    * Opacidad de cada órbita. Las de los planetas se ven siempre (más tenues fuera de la vista
-   * general); las de las lunas aparecen cuando su sistema se resuelve en pantalla: cuando la luna se
-   * separa del borde de su planeta de 8 a 30 px. La separación es la de su distancia real en el
-   * espacio (en radios del planeta) a la escala del disco en pantalla: no depende de por dónde pase
-   * la luna (delante del disco, la órbita no se apaga) y en los sistemas compactos de la vista
-   * general (fase 4b) deja las órbitas ocultas hasta que uno se acerca.
+   * general); las de las lunas, con su luna: aparecen cuando su sistema se resuelve en pantalla
+   * (`moonPresence`). La separación es la de su distancia real en el espacio a la escala del disco
+   * en pantalla: no depende de por dónde pase la luna (delante del disco, la órbita no se apaga) y en
+   * los sistemas compactos de la vista general (fase 4b) deja las órbitas ocultas hasta acercarse.
    */
   private orbitOpacity(frame: WorldFrame): number[] {
     const physical = frame.frames.targetSpec.kind === 'physical';
-    const positions = frame.frames.output.position;
-    const radii = frame.frames.output.radius;
     return this.orbitSources.map((source) => {
       // En un marco físico, la órbita del propio planeta enfocado es casi una recta que lo
       // atraviesa: se deja tenue (indica hacia dónde se mueve).
       if (source.parentIndex < 0) {
-        if (!physical) return 0.85;
+        if (!physical) return VISUAL_CONFIG.overviewOrbitOpacity;
         if (frame.detail) return 0.12;
         return source.bodyIndex === frame.focusIndex ? 0.3 : 0.5;
       }
       const parent = frame.screen[source.parentIndex];
-      const radius = radii[source.parentIndex] as number;
-      if (!parent || !parent.onScreen || !Number.isFinite(parent.radiusPx) || !(radius > 0))
-        return 0;
-      const m = 3 * source.bodyIndex;
-      const p = 3 * source.parentIndex;
-      const distance = Math.hypot(
-        (positions[m] as number) - (positions[p] as number),
-        (positions[m + 1] as number) - (positions[p + 1] as number),
-        (positions[m + 2] as number) - (positions[p + 2] as number),
-      );
-      const separation = (distance / radius - 1) * parent.radiusPx;
-      const t = Math.min(Math.max((separation - 8) / 22, 0), 1);
-      return t * t * (3 - 2 * t) * 0.7;
+      if (!parent?.onScreen) return 0;
+      return (frame.presence[source.bodyIndex] ?? 0) * MOON_ORBIT_OPACITY;
     });
   }
 }
