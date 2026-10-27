@@ -49,6 +49,7 @@ Decisiones y tareas que dependen de Iván. Claude Code añade aquí cada `TODO(i
 - [x] Primer push a `https://github.com/IvanChesa/tierra-luna-sol` (público): **autorizado** por Iván (revisión del bloque R). Si Git pide credenciales, Iván inicia sesión en la ventana que se abra.
 - [x] Licencia del código propio: **MIT** (D32).
 - [x] Secrets de Cloudflare en el repo: `CLOUDFLARE_API_TOKEN` (solo con permiso de Pages) y `CLOUDFLARE_ACCOUNT_ID` (27-10).
+- [ ] **Abrir la vista previa en tu móvil** (fase 4, no bloquea): https://fase-4-staging.tierra-luna-sol.pages.dev y, cuando la fase 4 esté en `main`, https://staging.tierra-luna-sol.pages.dev. Se recogen FPS y observaciones.
 - [ ] (Opcional) **Vistas previas privadas:** son públicas (con `noindex`). Si las quieres con acceso restringido, en el panel de Cloudflare: Pages → `tierra-luna-sol` → Settings → «Access policy» (Cloudflare Access, gratis hasta 50 usuarios).
 - [ ] Comprobar en el panel de Cloudflare que **Web Analytics** sigue desactivado en el proyecto (D24): el token del CI solo tiene permiso de Pages y no lo puede ver.
 
