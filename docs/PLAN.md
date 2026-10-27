@@ -433,7 +433,7 @@ Tareas:
 6. **Sol:** granulación procedural animada (sujeta a `prefers-reduced-motion`), oscurecimiento del limbo físico y corona o halo.
 7. **Post-procesado:**
    - tone mapping evaluado (Neutral frente a AgX frente a ACES), con capturas comparadas;
-   - bloom solo para el Sol y solo en el nivel alto (`three/addons`, sin dependencias nuevas);
+   - bloom solo para el Sol y solo en el nivel alto (`three/addons`, sin dependencias nuevas): **pasa a la fase 10 como opcional** (decisión de Iván, 27-10; informe de la fase 3b, §4.1);
    - antialiasing (MSAA en WebGL2 o SMAA).
    - Todo dentro de los FPS de §5; en el nivel bajo, versión ligera o desactivado.
 8. **Órbitas y etiquetas:** las órbitas se ocultan o se desvanecen sobre el disco de cualquier cuerpo y cerca de él (prueba de profundidad + desvanecimiento). Las etiquetas no tapan el planeta enfocado.
@@ -646,6 +646,11 @@ Tareas:
 6. **Regresión visual**: Playwright `toHaveScreenshot` con `?captura=1` en las vistas clave. Referencias generadas en el CI (Linux), no en Windows.
 7. **Lighthouse en el CI** (si Iván aprueba `@lhci/cli`) con los presupuestos de §5.
 8. **Revisión final de diseño** con `impeccable` y `web-design-guidelines`, y ajustes con capturas antes/después.
+9. **Bloom del Sol (opcional)**, que viene de la tarea 7 de la fase 3b (decisión de Iván, 27-10):
+   - solo en el nivel alto, con `three/addons` y sin dependencias nuevas;
+   - con el fondo pintado dentro de la escena, no como color de borrado: si no, el `OutputPass` lo aclara (informe de la fase 3b, §4.1);
+   - dentro de los FPS y la VRAM de §5.
+   - Si no mejora lo que ya da el halo del Sol, se descarta y se anota.
 
 Criterios de aceptación:
 - [ ] Tabla con **todos** los presupuestos de §5 medidos y cumplidos.

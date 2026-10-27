@@ -32,6 +32,9 @@ Decisiones y tareas que dependen de Iván. Claude Code añade aquí cada `TODO(i
 - [x] **«El cielo desde España»** en lugar de «El cielo desde el Bajo Cinca» (`docs/decisiones/CAMBIO-CIELO-ESPANA.md`): selector con el Montsec por defecto, el Observatori Fabra, el Roque de los Muchachos, el Teide, Calar Alto, Madrid y Fraga, más «usar mi ubicación», en la ruta `/cielo` y con la zona horaria de cada lugar. La vista guiada de la Tierra pasa a «España».
 - [x] `.codex/` y `AGENTS.md` (configuración local de Codex) en `.gitignore`.
 
+### Decisiones del 27-10
+- [x] **Bloom de la fase 3b (tarea 7):** pasa a la **fase 10 como opcional** (tarea 9 de la fase 10 en el plan). Solo en el nivel alto y con el fondo pintado dentro de la escena (informe de la fase 3b, §4.1). Antes estaba pendiente de decidir entre quitarlo, llevarlo al backlog o retomarlo.
+
 ## Antes del bloque C (fase 4: staging)
 - [ ] Conectar el repo local con `https://github.com/IvanChesa/tierra-luna-sol` (público) y hacer el primer push. **Lo hace Iván o lo autoriza explícitamente**, porque publica el código. Si se hace con GitHub CLI: `winget install --id GitHub.cli` y `gh auth login`.
 - [ ] Como el repo es público, conviene decidir antes del primer push la **licencia del código propio** (ver «Decisiones»): sin `LICENSE`, el código queda con todos los derechos reservados. Las texturas y los datos de terceros ya llevan sus licencias en `FUENTES.md` y en `/creditos`.
@@ -43,7 +46,6 @@ Decisiones y tareas que dependen de Iván. Claude Code añade aquí cada `TODO(i
 - [ ] **(Fase 6) `toktx` (KTX-Software):** solo si la Luna en 8K no cabe en la VRAM de §5 con WebP (prueba de KTX2 de la fase 2, §5.2 del informe).
 - [ ] **Subdominio definitivo.** Propuesto: `tierra-luna-sol.ivanchesa.es`. Si cambia, se edita solo `src/app/core/site.config.ts`.
 - [ ] **Licencia del código propio** (MIT u otra). El plan la dejaba para la fase 11, cuando el repo pasara a público; el repo de GitHub ya es público, así que conviene tenerla antes del primer push.
-- [ ] **Bloom de la fase 3b (tarea 7):** no se ha hecho. El halo del Sol ya da el resplandor y el bloom costaba dos render targets a resolución completa; además, el fondo salía aclarado (el borrado pasaba por el tone mapping del `OutputPass`; tiene arreglo, pintando el fondo dentro de la escena). Decide: quitarlo de la tarea, llevarlo al backlog o retomarlo (informe de la fase 3b, §4.1).
 
 ## Revisiones y pruebas de Iván
 - [ ] Textos de los 30 cuerpos (120 textos con `reviewed: false`): lista de revisión con las citas que los respaldan en `docs/datos/textos-cuerpos.md`. En la **fase 9** (decisión del 24-10; antes «al final de las fases 1 y 8»).

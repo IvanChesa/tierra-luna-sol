@@ -285,7 +285,7 @@ Ninguna. Todo es de three, astronomy-engine, sharp y Playwright, que ya estaban.
 - Ningún `TODO(ivan)` nuevo.
 
 ## 10. Propuestas de cambio al plan
-1. **Tarea 7 de la fase 3b:** quitar el bloom (§4.1) o llevarlo al backlog (§9 del plan).
+1. **Tarea 7 de la fase 3b:** quitar el bloom (§4.1) o llevarlo al backlog (§9 del plan). **Decisión de Iván (27-10): pasa a la fase 10 como opcional** (tarea 9 de la fase 10).
 2. **Fase 5 (Tierra):** que la atmósfera dé la relación de brillo océano / tierra de las fotos de EPIC (el océano unas dos veces más claro respecto a los desiertos que en la textura). Si la dispersión se integra, el color del océano de la textura debería volver al de la superficie para no contar dos veces la atmósfera (§4.7).
 3. **Backlog:** el anillo de luz del limbo de Saturno a contraluz dentro de la sombra de los anillos; el oscurecimiento del limbo del Sol por canal (§4.4); un desvanecimiento elíptico de las órbitas sobre los anillos (§4.12); el relieve como mapa de alturas en gris con las normales en el shader (§4.10); unificar los colores de los planetas con la fotometría de Mallama et al. (2017) y las funciones de color de la CIE (§4.12).
 
