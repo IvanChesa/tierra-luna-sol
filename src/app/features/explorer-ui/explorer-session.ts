@@ -128,6 +128,7 @@ export class ExplorerSession {
       background: this.params.background ?? undefined,
       viewFrom: this.params.viewFrom ?? undefined,
       toneMapping: this.params.toneMapping ?? undefined,
+      isolate: this.params.isolate || undefined,
     };
   }
 

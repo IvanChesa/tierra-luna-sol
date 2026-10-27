@@ -307,6 +307,8 @@ export class SceneEngine implements SceneEngineApi {
   private readonly background: number | null;
   /** Solo en captura: geometría de una foto de referencia (fase 3b). */
   private readonly viewFrom: ViewFrom | null;
+  /** Solo en captura: el cuerpo enfocado, solo y centrado (las miniaturas de las fichas). */
+  private readonly isolated: boolean;
   /** Exposición que tiene ahora el renderer (configuración visual; −1: aún ninguna). */
   private exposure = -1;
   private ready = false;
@@ -366,6 +368,8 @@ export class SceneEngine implements SceneEngineApi {
     this.focusIndex = initial.focus;
     this.background = options.background ? sceneBody(options.background).index : null;
     this.viewFrom = this.captureMode ? (options.viewFrom ?? null) : null;
+    this.isolated = this.captureMode && (options.isolate ?? false) && initial.focus !== null;
+    if (this.isolated) this.world.setIsolated(initial.focus);
     this.frames = new FrameController(
       this.frameSpec(initial.focus),
       initial.focus ?? SUN_INDEX,
@@ -388,6 +392,7 @@ export class SceneEngine implements SceneEngineApi {
     this.labels = new LabelLayer(options.labelLayer, infos, (id) =>
       this.emit('bodyPicked', { id: id as BodyId }),
     );
+    if (this.isolated) this.labels.setVisible(false);
 
     this.unsubscribe.push(
       attachPointerControls(options.canvas, {
@@ -526,7 +531,8 @@ export class SceneEngine implements SceneEngineApi {
   }
 
   setViewInsets(insets: ViewInsets): void {
-    if (this.disposed) return;
+    // Aislado (miniaturas), el cuerpo va en el centro del lienzo, sin la interfaz.
+    if (this.disposed || this.isolated) return;
     this.insetsRequested = insets;
     this.insetsTarget = sanitizeInsets(insets, this.viewport.width, this.viewport.height);
     if (this.instant()) this.insets = this.insetsTarget;
@@ -560,7 +566,7 @@ export class SceneEngine implements SceneEngineApi {
 
   setLabelsVisible(visible: boolean): void {
     if (this.disposed) return;
-    this.labels.setVisible(visible);
+    this.labels.setVisible(visible && !this.isolated);
     this.invalidate();
   }
 

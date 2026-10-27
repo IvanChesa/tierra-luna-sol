@@ -78,6 +78,38 @@ test.describe('Móvil', () => {
     expect(gap).toBeGreaterThanOrEqual(0);
   });
 
+  test('las fichas: una fila que se desplaza, con zonas táctiles de al menos 44 px', async ({
+    page,
+  }) => {
+    await openExplorer(page, '/?captura=1');
+    const row = page.getByRole('toolbar', { name: 'Sol y planetas' });
+    const sizes = await row.getByRole('button').evaluateAll((buttons) =>
+      buttons.map((button) => {
+        const box = button.getBoundingClientRect();
+        return [box.width, box.height] as const;
+      }),
+    );
+    expect(sizes).toHaveLength(9);
+    for (const [width, height] of sizes) {
+      expect(width).toBeGreaterThanOrEqual(44);
+      expect(height).toBeGreaterThanOrEqual(44);
+    }
+    // No caben todas: la fila se desplaza (la página, no).
+    expect(await row.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(true);
+    await row.getByRole('button', { name: 'Neptuno', exact: true }).tap();
+    await expect(page.locator('#card-title')).toHaveText('Neptuno');
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+    // Sus lunas, en una segunda fila con las mismas zonas táctiles.
+    await page.getByRole('button', { name: 'Cerrar la ficha' }).tap();
+    const moons = page.getByRole('toolbar', { name: 'Lunas de Neptuno' });
+    await expect(moons.getByRole('button')).toHaveCount(2);
+    for (const height of await moons
+      .getByRole('button')
+      .evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().height))) {
+      expect(height).toBeGreaterThanOrEqual(44);
+    }
+  });
+
   test('la barra de tiempo se despliega para la fecha, la velocidad y los ajustes', async ({
     page,
   }) => {

@@ -5,6 +5,8 @@
  * los márgenes que mide explorer-ui.ts (`--view-*`).
  */
 :host {
+  /* Ancho fijo del botón «Índice»: las fichas, a su lado, se centran sin pisarlo. */
+  --index-toggle-width: 6.25rem;
   display: contents;
 }
 
@@ -15,6 +17,7 @@
 }
 
 .index-toggle,
+.chips,
 .dock,
 .camera,
 .notices,
@@ -39,9 +42,11 @@
   grid-area: 1 / 3 / 3 / 4;
   align-self: start;
   width: var(--explorer-panel);
-  max-height: calc(100% - 2 * var(--space-4));
+  /* Hueco de abajo: más alto con la fila de lunas, que flota encima de la franja. */
+  --panel-bottom: var(--space-4);
+  max-height: calc(100% - var(--space-4) - var(--panel-bottom));
   min-height: 0;
-  margin: var(--space-4) var(--space-4) var(--space-4) 0;
+  margin: var(--space-4) var(--space-4) var(--panel-bottom) 0;
   background: var(--color-surface);
   border: var(--border-width) solid var(--color-line);
   border-radius: var(--radius-md);
@@ -77,14 +82,35 @@
   grid-area: chips;
   align-self: center;
   justify-self: start;
+  width: var(--index-toggle-width);
   margin-left: var(--space-4);
-  padding: 0 var(--space-4) 0 var(--space-3);
+}
+
+/* Las fichas, en la misma fila, centradas en el ancho y con sitio para el botón a cada lado. */
+.chips {
+  grid-area: chips;
+  align-self: center;
+  margin-inline: calc(var(--index-toggle-width) + 2 * var(--space-4));
 }
 
 .index-toggle[aria-expanded='true'] {
   background: var(--color-surface-raised);
   color: var(--color-accent);
   border-color: var(--color-accent);
+}
+
+/*
+ * Con la fila de lunas de las fichas (flota sobre la franja de abajo), la tarjeta y el índice acaban
+ * por encima de ella: en un escritorio estrecho, si no, se pisarían.
+ */
+@media (min-width: 64rem) {
+  :host(.has-moons) .panel {
+    --panel-bottom: calc(var(--space-4) + 2.75rem);
+  }
+
+  :host(.has-moons) .index-panel {
+    margin-bottom: calc(var(--space-4) + 2.75rem);
+  }
 }
 
 /* --- Controles sobre el lienzo, en su parte visible. --- */
@@ -133,7 +159,7 @@ kbd {
 }
 
 /* Vista limpia: solo el 3D y el botón para volver. */
-:host(.is-clean) :is(.index-toggle, .index-panel, .panel, .dock, .camera) {
+:host(.is-clean) :is(.index-toggle, .index-panel, .chips, .panel, .dock, .camera) {
   display: none;
 }
 
@@ -185,6 +211,11 @@ kbd {
     margin-left: var(--space-3);
   }
 
+  /* En móvil, las fichas ocupan el resto de la fila y se desplazan. */
+  .chips {
+    margin-inline: calc(var(--index-toggle-width) + var(--space-3) + var(--space-2)) 0;
+  }
+
   .camera {
     right: calc(var(--view-right, 0px) + var(--space-3));
     bottom: calc(var(--view-bottom, 0px) + var(--space-3));
@@ -201,8 +232,8 @@ kbd {
    * Las hojas tapan la franja de abajo y la cámara: mientras están abiertas, lo que tapan sale del
    * orden del foco y del árbol accesible (el foco pasa a la hoja, explorer-ui.ts).
    */
-  :host(.has-panel) :is(.camera, .index-toggle, .dock),
-  :host(.has-index) :is(.camera, .index-toggle, .dock, .panel) {
+  :host(.has-panel) :is(.camera, .index-toggle, .chips, .dock),
+  :host(.has-index) :is(.camera, .index-toggle, .chips, .dock, .panel) {
     visibility: hidden;
   }
 

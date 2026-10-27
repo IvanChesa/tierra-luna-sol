@@ -160,19 +160,22 @@ for (const screen of LOW_SCREENS) {
         })
         .filter((c) => c.right - c.left > 1 && c.bottom - c.top > 1);
       const toggle = document.querySelector('.index-toggle') as HTMLElement;
+      const chips = document.querySelector('tls-body-chips [aria-label="Sol y planetas"]');
       return {
         view,
         header: header.bottom,
         controls,
         pageScrolls,
         toggleHeight: toggle.getBoundingClientRect().height,
+        chipsHeight: chips?.getBoundingClientRect().height ?? 0,
         pageHeight: document.documentElement.scrollHeight,
       };
     });
 
     // El lienzo se ve: al menos 150 px de alto entre el texto de la vista y la hoja inferior.
     expect(layout.view.bottom - layout.view.top).toBeGreaterThanOrEqual(150);
-    // El botón «Índice» (la alternativa completa a las fichas) no desaparece.
+    // Las fichas de cuerpos y el botón «Índice» (su alternativa completa) no desaparecen.
+    expect(layout.chipsHeight).toBeGreaterThanOrEqual(44);
     expect(layout.toggleHeight).toBeGreaterThanOrEqual(36);
     for (const control of layout.controls) {
       // Cada control se ve en la ventana o se alcanza desplazando la página o su contenedor.

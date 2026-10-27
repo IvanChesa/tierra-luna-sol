@@ -2,7 +2,7 @@
  * Textos de la interfaz sobre los cuerpos y las vistas (ESTILO §2 y §6): el tipo de cada cuerpo, la
  * ruta de su ficha y la frase que se anuncia al elegirlo. Funciones puras, con tests.
  */
-import { formatDistanceKm } from '../../core/format';
+import { formatAu, formatDistanceKm, formatNumber } from '../../core/format';
 import { findBody } from '../../data/body-index';
 import type { BodyId } from '../../data/body.model';
 import type { BodyDistances } from '../../data/solar-system';
@@ -41,6 +41,33 @@ export function toBodyLabel(id: BodyId): string {
   if (id === 'tierra') return 'A la Tierra';
   if (id === 'luna') return 'A la Luna';
   return `A ${findBody(id)?.name ?? id}`;
+}
+
+/** Espacio duro entre la cifra y la unidad (ESTILO §3). */
+const NBSP = '\u00a0';
+
+/**
+ * La distancia de un cuerpo como columna de una tabla de efemérides (el índice y las fichas): los
+ * planetas, al Sol en UA; las lunas, a su planeta en km enteros (ESTILO §3, la excepción del índice).
+ * El Sol no tiene: es el origen. `null` si no hay dato.
+ */
+export function distanceValue(id: BodyId, distances: BodyDistances): string | null {
+  const entry = findBody(id);
+  if (!entry || entry.kind === 'star') return null;
+  if (entry.kind === 'planet')
+    return distances.toSunKm === null ? null : formatAu(distances.toSunKm);
+  return distances.toParentKm === null ? null : `${formatNumber(distances.toParentKm, 0)}${NBSP}km`;
+}
+
+/**
+ * La distancia para el lector de pantalla, como descripción de una fila del índice o de una ficha:
+ * «A 9,54 UA del Sol», «A 1.221.870 km de Saturno». Vacía para el Sol.
+ */
+export function distanceText(id: BodyId, distances: BodyDistances): string {
+  const value = distanceValue(id, distances);
+  const entry = findBody(id);
+  if (!value || !entry) return '';
+  return `A ${value} ${entry.kind === 'moon' && entry.parent ? ofBody(entry.parent) : 'del Sol'}`;
 }
 
 /**

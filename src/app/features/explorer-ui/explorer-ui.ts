@@ -18,6 +18,8 @@ import type { ExplorerView, ViewInsets } from '../../scene';
 import { ExplorerStore } from '../../state/explorer.store';
 import { SystemPositions } from '../../state/positions';
 import { SimulationStore } from '../../state/simulation.store';
+import { BodyChips } from '../body-chips/body-chips';
+import { systemOf } from '../body-picker/body-tree';
 import { BodyPanel } from '../body-panel/body-panel';
 import { CameraControls, ZOOM_STEP } from '../camera-controls/camera-controls';
 import { ShortcutCommand, globalCommand, isTextField, repeats } from '../shortcuts/shortcuts';
@@ -89,6 +91,7 @@ function offsetWithin(element: HTMLElement, root: HTMLElement): { left: number; 
   imports: [
     ViewerCanvas,
     IndexPanel,
+    BodyChips,
     BodyPanel,
     TimeControls,
     CameraControls,
@@ -104,6 +107,7 @@ function offsetWithin(element: HTMLElement, root: HTMLElement): { left: number; 
     '[class.is-scene-ready]': 'ready3d()',
     '[class.has-panel]': 'panelBody() !== null',
     '[class.has-index]': 'explorer.indexOpen()',
+    '[class.has-moons]': 'hasMoons()',
     '[class.is-interacted]': 'interacted()',
     '(document:keydown)': 'onKeydown($event)',
     '(pointerdown)': 'acted.set(true)',
@@ -131,6 +135,8 @@ export class ExplorerUi {
     const id = this.panelBody();
     return id ? [id] : [];
   });
+  /** Se ve la fila de lunas de las fichas (el cuerpo elegido es un planeta con lunas o una luna). */
+  protected readonly hasMoons = computed(() => systemOf(this.sim.selectedBodyId()) !== null);
   /** El 3D se ve: los controles de cámara aparecen (antes, y si falla, no harían nada). */
   protected readonly ready3d = signal(false);
   /** Ya se ha usado el explorador (un clic, un toque o una tecla dentro de él). */

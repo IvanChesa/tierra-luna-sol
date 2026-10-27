@@ -1,0 +1,75 @@
+<!--
+  Las lunas del planeta elegido flotan encima de la fila de planetas. Siempre en el DOM (oculta si no
+  hay lunas): tapa el lienzo por abajo cuando se ve (data-chrome), y el encuadre se aparta.
+-->
+<div class="moons" data-chrome [hidden]="moons().length === 0">
+  <div
+    class="row row--moons"
+    role="toolbar"
+    tabindex="-1"
+    [attr.aria-label]="moonsLabel()"
+    (keydown)="onKeydown($event)"
+  >
+    @for (moon of moons(); track moon.id) {
+      <button
+        type="button"
+        class="moon"
+        [attr.data-body]="moon.id"
+        [attr.aria-pressed]="selected() === moon.id"
+        [attr.aria-describedby]="'chip-desc-' + moon.id"
+        [attr.tabindex]="moonStop() === moon.id ? 0 : -1"
+        (focus)="onFocus(moon.id)"
+        (click)="choose(moon.id)"
+      >
+        <img
+          class="moon__thumb"
+          [src]="thumbnail(moon.id)"
+          width="24"
+          height="24"
+          alt=""
+          loading="lazy"
+          decoding="async"
+        />
+        {{ moon.name }}
+      </button>
+    }
+  </div>
+</div>
+
+<div
+  class="row"
+  role="toolbar"
+  tabindex="-1"
+  aria-label="Sol y planetas"
+  (keydown)="onKeydown($event)"
+>
+  @for (body of planets; track body.id) {
+    <button
+      type="button"
+      class="chip"
+      [attr.data-body]="body.id"
+      [attr.aria-pressed]="selected() === body.id"
+      [attr.aria-describedby]="body.kind === 'star' ? null : 'chip-desc-' + body.id"
+      [attr.tabindex]="planetStop() === body.id ? 0 : -1"
+      (focus)="onFocus(body.id)"
+      (click)="choose(body.id)"
+    >
+      <img
+        class="chip__thumb"
+        [src]="thumbnail(body.id)"
+        width="40"
+        height="40"
+        alt=""
+        decoding="async"
+      />
+      <span class="chip__name">{{ body.name }}</span>
+    </button>
+  }
+</div>
+
+<!-- Las descripciones de las fichas (aria-describedby): ocultas, no se leen sueltas. -->
+<div hidden>
+  @for (entry of descriptions(); track entry.id) {
+    <span [id]="'chip-desc-' + entry.id">{{ entry.text }}</span>
+  }
+</div>

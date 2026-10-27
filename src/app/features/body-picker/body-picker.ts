@@ -12,12 +12,11 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import { formatAu, formatNumber } from '../../core/format';
 import type { BodyId } from '../../data/body.model';
 import { ExplorerStore } from '../../state/explorer.store';
 import { SystemPositions } from '../../state/positions';
 import { SimulationStore } from '../../state/simulation.store';
-import { ofBody } from '../explorer-ui/describe';
+import { distanceText, distanceValue } from '../explorer-ui/describe';
 import { ExplorerSession } from '../explorer-ui/explorer-session';
 import { Icon } from '../viewer/icon';
 import {
@@ -40,8 +39,6 @@ const TREE_KEYS: readonly string[] = [
   'Home',
   'End',
 ];
-/** Espacio duro entre la cifra y la unidad (ESTILO §3). */
-const NBSP = ' ';
 
 /**
  * Índice de cuerpos (PLAN 3.b.5): un árbol accesible (WAI-ARIA Tree View, una sola parada de
@@ -86,20 +83,16 @@ export class BodyPicker {
     const rows = visibleRows(this.expanded());
     return rows.includes(cursor) ? cursor : (treeNode(cursor).parent ?? 'sol');
   });
-  /** Distancias de cada cuerpo, ya formateadas (ESTILO §3). */
-  protected readonly values = computed(() => {
-    // El Sol no tiene distancia en esta columna (es el origen de las de los planetas).
-    const values = new Map<BodyId, string>([['sol', '—']]);
-    for (const root of ROOT_NODES) {
-      const toSun = this.positions.distances(root.id).toSunKm;
-      if (root.kind === 'planet' && toSun !== null) values.set(root.id, formatAu(toSun));
-      for (const child of root.children) {
-        const km = this.positions.distances(child).toParentKm;
-        if (km !== null) values.set(child, `${formatNumber(km, 0)}${NBSP}km`);
-      }
-    }
-    return values;
-  });
+  /** Distancias de cada cuerpo, ya formateadas (ESTILO §3). El Sol, el origen, lleva una raya. */
+  protected readonly values = computed(
+    () =>
+      new Map<BodyId, string>(
+        BODY_TREE.map((node) => [
+          node.id,
+          distanceValue(node.id, this.positions.distances(node.id)) ?? '—',
+        ]),
+      ),
+  );
   /** La fila con el foco: al llegar a otra, su descripción se pone al día. */
   private readonly focusedRow = signal<BodyId | null>(null);
   /**
@@ -110,12 +103,12 @@ export class BodyPicker {
    */
   protected readonly descriptions = computed(() => {
     this.focusedRow();
-    const values = this.sim.playing() ? untracked(this.values) : this.values();
-    return BODY_TREE.map((node) => {
-      const value = values.get(node.id);
-      const of = node.parent ? ofBody(node.parent) : 'del Sol';
-      return { id: node.id, text: node.kind === 'star' || !value ? '' : `A ${value} ${of}` };
-    });
+    const texts = () =>
+      BODY_TREE.map((node) => ({
+        id: node.id,
+        text: distanceText(node.id, this.positions.distances(node.id)),
+      }));
+    return this.sim.playing() ? untracked(texts) : texts();
   });
 
   constructor() {

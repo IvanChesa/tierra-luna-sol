@@ -47,6 +47,10 @@ import { Component } from '@angular/core';
         ha reducido, suavizado y convertido a WebP.
       </li>
     </ul>
+    <p>
+      Los pósters del explorador y las miniaturas de las fichas de cuerpos son capturas del propio
+      motor con estas texturas: mantienen sus licencias y sus atribuciones.
+    </p>
 
     <h2>Estrellas</h2>
     <p>

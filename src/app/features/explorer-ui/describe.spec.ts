@@ -2,6 +2,8 @@ import {
   bodyKindLabel,
   bodyPagePath,
   describeBody,
+  distanceText,
+  distanceValue,
   ofBody,
   toBodyLabel,
   viewName,
@@ -32,6 +34,22 @@ describe('describe: textos de la interfaz sobre los cuerpos y las vistas', () =>
     expect(toBodyLabel('sol')).toBe('Al Sol');
     expect(toBodyLabel('tierra')).toBe('A la Tierra');
     expect(toBodyLabel('saturno')).toBe('A Saturno');
+  });
+
+  it('la distancia como en una tabla de efemérides: UA al Sol los planetas, km a su planeta las lunas', () => {
+    const saturn = { toSunKm: 9.54 * 149_597_870.7, toEarthKm: 1.32e9, toParentKm: null };
+    const titan = { toSunKm: 1.43e9, toEarthKm: 1.32e9, toParentKm: 1_221_870 };
+    expect(plain(distanceValue('saturno', saturn) ?? '')).toBe('9,54 UA');
+    expect(plain(distanceText('saturno', saturn))).toBe('A 9,54 UA del Sol');
+    expect(plain(distanceValue('titan', titan) ?? '')).toBe('1.221.870 km');
+    expect(plain(distanceText('titan', titan))).toBe('A 1.221.870 km de Saturno');
+    expect(plain(distanceText('luna', { ...titan, toParentKm: 384_400 }))).toBe(
+      'A 384.400 km de la Tierra',
+    );
+    // El Sol es el origen; sin dato, nada.
+    expect(distanceValue('sol', saturn)).toBeNull();
+    expect(distanceText('sol', saturn)).toBe('');
+    expect(distanceText('marte', { toSunKm: null, toEarthKm: null, toParentKm: null })).toBe('');
   });
 
   it('la frase que se anuncia al elegir un cuerpo (ESTILO §6)', () => {
