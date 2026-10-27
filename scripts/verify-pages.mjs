@@ -6,7 +6,9 @@
 // Uso: node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-pages.mjs <url> [--build <carpeta>]
 //   <url>: https://<rama>.tierra-luna-sol.pages.dev (o la de producción)
 //   --build: el build publicado (dist/tierra-luna-sol/browser); compara el HTML servido de cada
-//            página con el suyo, byte a byte (Cloudflare no debe inyectar nada).
+//            página con el suyo, byte a byte (Cloudflare no debe inyectar nada). Tiene que ser el
+//            mismo build que se desplegó (el artefacto del CI): dos builds distintos pueden numerar
+//            de otra forma las plantillas en los datos de hidratación de Angular (`ng-state`).
 // Sale con un error si alguna comprobación falla (✖); los avisos (⚠) no la hacen fallar. Las
 // texturas se buscan con el manifiesto del repo: hay que comprobar la publicación del mismo commit.
 import { readFile, readdir } from 'node:fs/promises';

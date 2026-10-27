@@ -224,6 +224,8 @@ El código propio inicial sube de 11,58 a 12,13 kB por el canonical. Hay 4 e2e n
 ```
 Antes de la revisión, el mismo verificador sobre el despliegue anterior daba tres errores: las dos `Link` rotas y `/explorar/`, con un 404.
 
+**Tras la fusión** (ejecución 40542347947 de `main`), también en verde: el paso que crea el proyecto se saltó (ya existía) y `main` se publicó como `staging`, en https://staging.tierra-luna-sol.pages.dev. La verificación de ese despliegue dio 31 de 32 y el aviso de NEL. `tierra-luna-sol.pages.dev`, la producción, sigue en 404, porque no hay ningún despliegue de producción hasta la fase 11. Con `--build`, el HTML se compara con el mismo build que se desplegó: un build local distinto puede numerar de otra forma las plantillas en los datos de hidratación de Angular (`ng-state`), sin que cambie nada más.
+
 En crudo (`curl -sI`):
 ```
 $ curl -sI https://fase-4-staging.tierra-luna-sol.pages.dev/planetas/marte
