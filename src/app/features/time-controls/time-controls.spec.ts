@@ -6,7 +6,8 @@ import { SystemPositions } from '../../state/positions';
 import { SimulationStore } from '../../state/simulation.store';
 import { MAX_DATE, MIN_DATE } from '../../ephemeris/constants';
 import { ExplorerSession } from '../explorer-ui/explorer-session';
-import { TYPING_PAUSE_MS, TimeControls } from './time-controls';
+import { TimeControls } from './time-controls';
+import { TYPING_PAUSE_MS } from './time-menu';
 import { toDateInputValue } from './time-input';
 
 function render() {
@@ -46,8 +47,9 @@ describe('TimeControls: barra de tiempo', () => {
     expect(raw()).toMatch(
       /^Hora\u00a0local,\u00a0UTC\S*\u00a0· 3\u00a0horas\u00a0por\u00a0segundo$/,
     );
+    // La barra compacta da la hora sin segundos (los tiene el campo de \u00abControles +\u00bb).
     expect($<HTMLElement>('.time__readout time').textContent).toMatch(
-      /^\d{1,2}\u00a0\S+\u00a0\d{4}, \d{2}:\d{2}:\d{2}$/,
+      /^\d{1,2}\u00a0\S+\u00a0\d{4}, \d{2}:\d{2}$/,
     );
     sim.setSpeed(-365.25 * 86_400);
     fixture.detectChanges();

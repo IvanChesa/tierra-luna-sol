@@ -301,9 +301,11 @@ export class ExplorerUi {
 
   /**
    * `Esc`: saltar el viaje, salir de la vista limpia o cerrar lo abierto (el índice si tiene el
-   * foco; si no, la ficha y después el índice), en ese orden.
+   * foco; si no, la ficha y después el índice), en ese orden. «Controles +», antes que nada.
    */
   private escape(): boolean {
+    // «Controles +» es un `popover`: lo cierra el propio navegador (y devuelve el foco a su botón).
+    if (this.host.nativeElement.querySelector('#time-menu:popover-open')) return false;
     if (this.explorer.travelling() === 'view') {
       this.session.skipTravel();
       return true;

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { canvasImage, indexToggle, openExplorer } from './support';
+import { canvasImage, indexToggle, openControls, openExplorer } from './support';
 
 test.describe('Cámara, vista limpia y atajos', () => {
   test('acercar y alejar con los botones y con + y −', async ({ page }) => {
@@ -80,7 +80,9 @@ test.describe('Cámara, vista limpia y atajos', () => {
     await page.keyboard.press('Escape');
     await expect(dialog).toBeHidden();
 
-    // Desactivados (WCAG 2.1.4), las letras ya no hacen nada; el botón de ayuda sigue abriéndolo.
+    // Desactivados (WCAG 2.1.4), las letras ya no hacen nada; el botón de ayuda (en «Controles +»)
+    // sigue abriéndolo.
+    await openControls(page);
     await page.getByRole('button', { name: 'Atajos de teclado' }).click();
     await dialog.getByRole('checkbox', { name: 'Atajos de una sola tecla' }).uncheck();
     await page.keyboard.press('Escape');

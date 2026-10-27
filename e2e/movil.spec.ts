@@ -110,16 +110,26 @@ test.describe('Móvil', () => {
     }
   });
 
-  test('la barra de tiempo se despliega para la fecha, la velocidad y los ajustes', async ({
+  test('«Controles +» sube como hoja con la fecha, la velocidad y los ajustes', async ({
     page,
   }) => {
     await openExplorer(page, '/?captura=1');
-    const more = page.getByRole('button', { name: 'Fecha, velocidad y ajustes' });
+    const more = page.getByRole('button', { name: 'Controles', exact: true });
     await expect(page.locator('#time-date')).toBeHidden();
+    // En móvil, la velocidad no está en la barra (no cabe): está en el panel.
+    await expect(page.locator('#time-speed')).toBeHidden();
     await more.tap();
     await expect(more).toHaveAttribute('aria-expanded', 'true');
     await expect(page.locator('#time-date')).toBeVisible();
-    await expect(page.locator('#time-speed')).toBeVisible();
+    await expect(page.locator('#time-speed-menu')).toBeVisible();
+    await page.locator('#time-speed-menu').selectOption('day');
+    await expect(page.locator('.time__speedtext')).toContainText('1 día por segundo');
+    // Ocupa el ancho de abajo, por encima de todo, y se cierra al pulsar fuera.
+    const box = await page.locator('#time-menu').boundingBox();
+    const viewport = page.viewportSize();
+    expect(box && viewport && Math.round(box.x + box.width)).toBe(viewport?.width);
+    await page.mouse.click(20, 200);
+    await expect(page.locator('#time-date')).toBeHidden();
   });
 
   test('el menú del sitio se abre y se cierra al navegar', async ({ page }) => {

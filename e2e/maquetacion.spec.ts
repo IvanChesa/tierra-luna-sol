@@ -18,7 +18,9 @@ for (const width of [1024, 1100, 1280, 1600]) {
     await page.goto('/?captura=1&cuerpo=saturno');
     await expect(page.locator('tls-time-controls .time__play')).toBeVisible();
     const boxes = await page.evaluate(() => {
-      const visible = (el: Element) => getComputedStyle(el).display !== 'none';
+      // Lo que se ve: ni el campo del calendario (opaco a 0, bajo su botón) ni «Controles +» cerrado.
+      const visible = (el: Element) =>
+        el.checkVisibility({ opacityProperty: true, visibilityProperty: true });
       const box = (el: Element) => {
         const r = el.getBoundingClientRect();
         return {

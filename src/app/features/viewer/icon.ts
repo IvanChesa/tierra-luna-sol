@@ -15,6 +15,7 @@ export type IconName =
   | 'skip'
   | 'menu'
   | 'list'
+  | 'calendar'
   | 'alert';
 
 /**
@@ -88,6 +89,10 @@ export type IconName =
           <circle class="fill" cx="5" cy="7" r="1.25" />
           <circle class="fill" cx="5" cy="12" r="1.25" />
           <circle class="fill" cx="5" cy="17" r="1.25" />
+        }
+        @case ('calendar') {
+          <rect x="4" y="5.5" width="16" height="14.5" rx="2" />
+          <path d="M4 10.5h16M8.5 3.5v4M15.5 3.5v4" />
         }
         @case ('alert') {
           <path

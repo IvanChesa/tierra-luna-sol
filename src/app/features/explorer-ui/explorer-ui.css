@@ -233,7 +233,8 @@ kbd {
    * orden del foco y del árbol accesible (el foco pasa a la hoja, explorer-ui.ts).
    */
   :host(.has-panel) :is(.camera, .index-toggle, .chips, .dock),
-  :host(.has-index) :is(.camera, .index-toggle, .chips, .dock, .panel) {
+  :host(.has-index) :is(.camera, .index-toggle, .chips, .dock, .panel),
+  :host:has(#time-menu:popover-open) .camera {
     visibility: hidden;
   }
 

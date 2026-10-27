@@ -1,33 +1,33 @@
-/* Barra de tiempo: la única franja fija del explorador (docs/DISENO.md). Los controles, en styles.css. */
+/*
+ * Barra de tiempo compacta (fase 3c, D30): en la franja de abajo del explorador, sobre su velo
+ * (docs/DISENO.md). Los controles comunes (`.control`, `.field`), en styles.css.
+ */
 :host {
   display: block;
   min-width: 0;
 }
 
 .time {
-  position: relative;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: var(--space-4);
   height: 100%;
-  padding: var(--space-3) var(--space-4);
+  padding: 0 var(--space-4);
 }
 
+/* Reproducir y pausar: redondo y en latón, lo más visible de la barra. */
 .time__play {
   display: inline-flex;
   flex: none;
   align-items: center;
-  gap: var(--space-2);
-  /* Cabe «Reproducir»: al cambiar a «Pausar», la barra no se mueve. */
-  min-width: 9rem;
-  height: 2.5rem;
-  padding: 0 var(--space-4) 0 var(--space-3);
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  padding: 0;
   background: var(--color-accent);
   color: var(--color-bg);
   border: 0;
-  border-radius: var(--radius-md);
-  font: inherit;
-  font-weight: var(--font-weight-strong);
+  border-radius: 50%;
   cursor: pointer;
 }
 
@@ -35,210 +35,124 @@
   background: var(--color-focus);
 }
 
-.time__readout,
-.time__more {
+.time__date {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.time__readout {
+  display: grid;
+  margin: 0;
+  line-height: 1.25;
+}
+
+.time__label,
+.time__zone {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+.time__readout time {
+  font-weight: var(--font-weight-strong);
+  white-space: nowrap;
+}
+
+/* En escritorio, la velocidad la dice su selector. */
+.time__speedtext {
   display: none;
 }
 
-.time__fields,
-.time__settings {
-  display: flex;
-  align-items: flex-end;
-  gap: var(--space-3);
-  min-width: 0;
-}
-
-.time__settings {
-  margin-left: auto;
-}
-
-.time__now {
+.time__calendar {
+  position: relative;
   flex: none;
 }
 
-.time__error {
+/* El campo del calendario nativo, bajo su botón: no se ve ni recibe el ratón (lo abre el botón). */
+.time__picker {
   position: absolute;
-  bottom: calc(100% + var(--space-2));
-  left: var(--space-4);
-  margin: 0;
-  padding: var(--space-2) var(--space-3);
-  background: var(--color-surface-raised);
-  border: var(--border-width) solid var(--color-control);
-  border-radius: var(--radius-md);
-  font-size: var(--text-sm);
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  pointer-events: none;
 }
 
-input[type='date'] {
-  width: 9.25rem;
+.time__line {
+  flex: 1;
+  min-width: 12rem;
 }
 
-input[type='time'] {
-  width: 7.25rem;
+.time__speed,
+.time__more {
+  flex: none;
 }
 
-/*
- * Escritorio por debajo de 80 rem: la fila completa no cabe con holgura. «Reproducir» se queda en su
- * icono, con el mismo ancho en los dos estados (el nombre accesible y el título siguen). Por debajo
- * de 72 rem, la fila pierde además algo de aire.
- */
-@media (min-width: 64rem) and (max-width: 79.99rem) {
-  .time__play {
-    width: 2.5rem;
-    min-width: 0;
-    padding: 0;
-    justify-content: center;
-  }
-
-  .time__play-label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-}
-
-@media (min-width: 64rem) and (max-width: 71.99rem) {
-  .time {
-    gap: var(--space-3);
-    padding-inline: var(--space-3);
-  }
-}
-
-/* Móvil: una fila compacta (reproducir, la fecha, «Ahora» y desplegar) y el resto, desplegable. */
+/* Móvil: en dos filas (reproducir, la fecha y «Controles +»; la línea de tiempo debajo). */
 @media (max-width: 63.99rem) {
-  /*
-   * Sin alto fijo: si la barra desplegada no cabe, la hoja se desplaza (explorer-ui.css) y la
-   * última fila conserva su margen.
-   */
   .time {
     display: grid;
     grid-template-areas:
-      'play readout now more'
-      'fields fields fields fields'
-      'settings settings settings settings'
-      'error error error error';
-    grid-template-columns: auto minmax(0, 1fr) auto auto;
+      'play date more'
+      'line line line';
+    grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
-    gap: var(--space-2);
+    gap: var(--space-1) var(--space-3);
     height: auto;
-    min-height: 100%;
-    padding: var(--space-2) var(--space-4) var(--space-3);
+    padding: var(--space-2) var(--space-3);
   }
 
   .time__play {
     grid-area: play;
+    width: var(--tap-target);
+    height: var(--tap-target);
   }
 
-  .time__readout {
-    grid-area: readout;
+  .time__date {
+    grid-area: date;
+    justify-content: space-between;
+    min-width: 0;
   }
 
-  .time__now {
-    grid-area: now;
+  .time__label,
+  .time__speed {
+    display: none;
+  }
+
+  /* Si no cabe en una línea, la hora baja (la fecha no se parte por dentro). */
+  .time__readout time {
+    font-size: var(--text-sm);
+    white-space: normal;
+  }
+
+  .time__speedtext {
+    display: inline;
+  }
+
+  .time__line {
+    grid-area: line;
+    min-width: 0;
   }
 
   .time__more {
     grid-area: more;
   }
+}
 
-  .time__play {
+/* Teléfonos estrechos (360 px): «Controles» se queda en su icono; el nombre sigue para el lector. */
+@media (max-width: 23.99rem) {
+  .time__more {
     width: var(--tap-target);
-    min-width: 0;
-    height: var(--tap-target);
     padding: 0;
-    justify-content: center;
   }
 
-  .time__play-label {
+  .time__more-label {
     position: absolute;
     width: 1px;
     height: 1px;
     overflow: hidden;
     clip-path: inset(50%);
     white-space: nowrap;
-  }
-
-  .time__readout {
-    display: grid;
-    margin: 0;
-    font-size: var(--text-sm);
-    line-height: 1.3;
-  }
-
-  .time__zone {
-    color: var(--color-text-muted);
-    font-size: 0.75rem;
-  }
-
-  .time__more {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: var(--tap-target);
-    height: var(--tap-target);
-    padding: 0;
-    background: transparent;
-    color: var(--color-text);
-    border: var(--border-width) solid var(--color-control);
-    border-radius: var(--radius-md);
-    cursor: pointer;
-  }
-
-  .time__more tls-icon {
-    transform: rotate(-90deg);
-    transition: transform var(--duration-fast) var(--ease-standard);
-  }
-
-  .time.is-expanded .time__more tls-icon {
-    transform: rotate(90deg);
-  }
-
-  .time__fields,
-  .time__settings {
-    display: none;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: end;
-    gap: var(--space-3);
-  }
-
-  .time__fields {
-    grid-area: fields;
-  }
-
-  .time__fields .field:first-child {
-    grid-column: 1 / -1;
-  }
-
-  .time.is-expanded .time__fields,
-  .time.is-expanded .time__settings {
-    display: grid;
-  }
-
-  .time__settings {
-    grid-area: settings;
-    grid-template-columns: minmax(0, 1fr) auto;
-    margin-left: 0;
-  }
-
-  .time__fields .control:not(.control--icon) {
-    width: 100%;
-  }
-
-  .time__settings .field__label {
-    display: block;
-  }
-
-  .time__error {
-    position: static;
-    grid-area: error;
-  }
-}
-
-/* Muy estrecho (320 px, o el zoom al 400 %): la fecha y la hora no caben una al lado de la otra. */
-@media (max-width: 22rem) {
-  .time__fields {
-    grid-template-columns: minmax(0, 1fr);
   }
 }

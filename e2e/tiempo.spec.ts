@@ -1,5 +1,12 @@
 import { expect, test } from '@playwright/test';
-import { countUrlChanges, openExplorer, simTime, trackProblems, urlChanges } from './support';
+import {
+  countUrlChanges,
+  openControls,
+  openExplorer,
+  simTime,
+  trackProblems,
+  urlChanges,
+} from './support';
 
 test.describe('Tiempo y URL', () => {
   test('un enlace con fecha y cuerpo abre ese estado exacto, en pausa', async ({ page }) => {
@@ -21,6 +28,7 @@ test.describe('Tiempo y URL', () => {
 
   test('cambiar la fecha en el campo salta a ese día y lo lleva a la URL', async ({ page }) => {
     await openExplorer(page, '/?fecha=2030-06-01T12:00Z');
+    await openControls(page);
     await page.locator('#time-date').fill('2031-03-15');
     // 14:00 en Madrid el 15 de marzo (invierno: UTC+1) son las 13:00 UTC.
     await expect.poll(() => simTime(page)).toBe(Date.parse('2031-03-15T13:00:00Z'));
@@ -89,6 +97,7 @@ test.describe('Tiempo y URL', () => {
       }).observe(document.body, { childList: true, subtree: true });
     });
     // El campo empieza en el día; a medio escribir, el año pasa por 0002, 0020 y 0203.
+    await openControls(page);
     const date = page.locator('#time-date');
     await date.focus();
     await page.keyboard.type('15032031');
@@ -113,15 +122,79 @@ test.describe('Tiempo y URL', () => {
         window.__e2eTimeChanges = (window.__e2eTimeChanges ?? 0) + records.length;
       }).observe(time as Node, { attributes: true, attributeFilter: ['datetime'] });
     });
+    const changes = () => page.evaluate(() => window.__e2eTimeChanges ?? 0);
+    const start = Date.now();
     await page.locator('.time__play').click();
-    await page.waitForTimeout(3000);
-    const changes = await page.evaluate(() => window.__e2eTimeChanges ?? 0);
-    // El criterio es el máximo (§4.5): 5 por segundo, 15 en 3 s más el del clic. El mínimo solo
-    // comprueba que el tiempo corre: con varias instancias de SwiftShader en paralelo, un frame
-    // puede tardar más de medio segundo y llegan menos cambios.
-    expect(changes).toBeGreaterThan(1);
-    expect(changes).toBeLessThanOrEqual(16);
+    // El criterio es el máximo (§4.5): como mucho 5 por segundo (más el del clic). Primero, que el
+    // tiempo corra: con varias instancias de SwiftShader en paralelo, un frame puede tardar más de
+    // un segundo, así que se espera a unos cuantos cambios en vez de fijar un mínimo por segundo.
+    await expect.poll(changes, { timeout: 30_000 }).toBeGreaterThanOrEqual(4);
+    await page.waitForTimeout(2000);
+    const counted = await changes();
+    const seconds = (Date.now() - start) / 1000;
+    expect(counted).toBeLessThanOrEqual(Math.ceil(5 * seconds) + 1);
     await page.keyboard.press('k');
+  });
+
+  test('la línea de tiempo: el año de la fecha, con el teclado y el ratón, y anuncia la fecha', async ({
+    page,
+  }) => {
+    await openExplorer(page, '/?fecha=2031-03-15T13:00Z');
+    const line = page.getByRole('slider', { name: 'Línea de tiempo' });
+    await expect(line).toHaveAttribute('aria-valuetext', '15 de marzo de 2031');
+    await expect(line).toHaveAttribute('max', '364');
+    await expect(line).toHaveValue('73');
+    await expect(page.locator('tls-timeline .year__label')).toHaveText('2031');
+    // Flechas, un día (a la misma hora); RePág, un mes; Inicio y Fin, el año.
+    await line.focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(line).toHaveAttribute('aria-valuetext', '16 de marzo de 2031');
+    expect(await simTime(page)).toBe(Date.parse('2031-03-16T13:00:00Z'));
+    await page.keyboard.press('PageUp');
+    await expect(line).toHaveAttribute('aria-valuetext', '16 de abril de 2031');
+    await page.keyboard.press('End');
+    await expect(line).toHaveAttribute('aria-valuetext', '31 de diciembre de 2031');
+    // En el extremo, al año siguiente.
+    await page.keyboard.press('ArrowRight');
+    await expect(line).toHaveAttribute('aria-valuetext', '1 de enero de 2032');
+    await expect(page.locator('tls-timeline .year__label')).toHaveText('2032');
+    await expect(line).toHaveAttribute('max', '365');
+    await page.keyboard.press('Home');
+    await expect(line).toHaveValue('0');
+    await expect(page).toHaveURL(/fecha=2032-01-01T/);
+    // Con el ratón: un clic hacia la mitad de la pista lleva a mediados de año.
+    const box = await line.boundingBox();
+    if (!box) throw new Error('Sin línea de tiempo');
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    await expect
+      .poll(async () => new Date(await simTime(page)).getUTCMonth())
+      .toBeGreaterThanOrEqual(5);
+    expect(new Date(await simTime(page)).getUTCMonth()).toBeLessThanOrEqual(6);
+    // Y los botones del año.
+    await page.getByRole('button', { name: 'Año siguiente' }).click();
+    await expect(page.locator('tls-timeline .year__label')).toHaveText('2033');
+  });
+
+  test('«Controles +» se abre con el foco dentro y se cierra con Esc, que no cierra la ficha', async ({
+    page,
+  }) => {
+    await openExplorer(page, '/?fecha=2030-06-01T12:00Z&cuerpo=marte');
+    const button = page.getByRole('button', { name: 'Controles', exact: true });
+    await expect(button).toHaveAttribute('aria-expanded', 'false');
+    await button.click();
+    await expect(button).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.locator('#time-date')).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#time-date')).toBeHidden();
+    await expect(button).toHaveAttribute('aria-expanded', 'false');
+    await expect(button).toBeFocused();
+    // La ficha sigue abierta: ese Esc era del panel.
+    await expect(page.locator('#card-title')).toHaveText('Marte');
+    // «Ahora», dentro del panel: el instante actual, en tiempo real.
+    await openControls(page);
+    await page.getByRole('button', { name: 'Ahora', exact: true }).click();
+    await expect(page.locator('#time-speed')).toHaveValue('real');
+    expect(Math.abs((await simTime(page)) - Date.now())).toBeLessThan(60_000);
   });
 
   test('al llegar a 2100 la simulación se para y lo avisa', async ({ page }) => {

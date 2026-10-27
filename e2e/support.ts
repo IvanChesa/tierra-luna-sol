@@ -116,6 +116,13 @@ export const urlChanges = (page: Page): Promise<number> =>
 /** Una fila del índice de cuerpos (el elemento que se pulsa). */
 export const treeRow = (page: Page, id: string) => page.locator(`#tree-${id} > .row`);
 
+/** Abre «Controles +» (la fecha, la hora, la zona, «Ahora», la calidad y los atajos). */
+export async function openControls(page: Page): Promise<void> {
+  const button = page.getByRole('button', { name: 'Controles', exact: true });
+  if ((await button.getAttribute('aria-expanded')) !== 'true') await button.click();
+  await expect(page.locator('#time-date')).toBeVisible();
+}
+
 /** El botón «Índice» (exacto: el panel abierto tiene también «Cerrar el índice»). */
 export const indexToggle = (page: Page) =>
   page.getByRole('button', { name: 'Índice', exact: true });

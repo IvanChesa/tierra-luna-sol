@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
-import { openExplorer, openIndex } from './support';
+import { openControls, openExplorer, openIndex } from './support';
 
 /** Las rutas prerenderizadas del build (todas las páginas del sitio). */
 const ROUTES = Object.keys(
@@ -49,10 +49,10 @@ test.describe('Accesibilidad (axe)', () => {
     await expect(page.locator('tls-viewer-canvas')).toHaveClass(/is-ready/, { timeout: 90_000 });
     expect(await seriousViolations(page)).toEqual([]);
 
-    // En móvil, el botón de los atajos está en la parte plegada de la barra de tiempo.
-    const help = page.getByRole('button', { name: 'Atajos de teclado' });
-    if (!(await help.isVisible())) await page.locator('.time__more').click();
-    await help.click();
+    // «Controles +» abierto y, dentro, el botón de los atajos.
+    await openControls(page);
+    expect(await seriousViolations(page)).toEqual([]);
+    await page.getByRole('button', { name: 'Atajos de teclado' }).click();
     await expect(page.getByRole('dialog', { name: 'Atajos de teclado' })).toBeVisible();
     expect(await seriousViolations(page)).toEqual([]);
     await page.keyboard.press('Escape');

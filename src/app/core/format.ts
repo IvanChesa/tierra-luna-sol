@@ -96,6 +96,11 @@ export function formatDateTime(date: Date, zone: TimeZoneChoice, seconds = true)
   }).format(date);
 }
 
+/** Fecha larga, sin la hora (ESTILO §4): «17 de marzo de 2026», en esa zona. */
+export function formatLongDate(date: Date, zone: TimeZoneChoice): string {
+  return dateFormat(zone, { dateStyle: 'long' }).format(date);
+}
+
 /** Formato largo de los textos (ESTILO §4): «24 de octubre de 2026 a las 21:40», en esa zona. */
 export function formatLongDateTime(date: Date, zone: TimeZoneChoice): string {
   return dateFormat(zone, { dateStyle: 'long', timeStyle: 'short' }).format(date);

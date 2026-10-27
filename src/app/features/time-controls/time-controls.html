@@ -1,123 +1,85 @@
-<section class="time" [class.is-expanded]="expanded()" aria-label="Tiempo de la simulación">
+<section class="time" aria-label="Tiempo de la simulación">
+  <!-- Lo primero y más visible de la barra (WCAG 2.2.2): el sistema arranca en movimiento (D31). -->
   <button type="button" class="time__play" [title]="playLabel() + ' (K)'" (click)="togglePlaying()">
     <tls-icon [name]="sim.playing() ? 'pause' : 'play'" />
-    <span class="time__play-label">{{ playLabel() }}</span>
+    <span class="visually-hidden">{{ playLabel() }}</span>
   </button>
 
-  <p class="time__readout">
-    <time [attr.datetime]="sim.time().toISOString()">{{ readout() }}</time>
-    <span class="time__zone">{{ readoutDetail() }}</span>
-  </p>
+  <div class="time__date">
+    <p class="time__readout">
+      <span class="time__label">Fecha</span>
+      <time [attr.datetime]="sim.time().toISOString()">{{ readout() }}</time>
+      <span class="time__zone"
+        >{{ zoneText() }}<span class="time__speedtext">{{ speedText() }}</span></span
+      >
+    </p>
+    <!--
+      El calendario nativo: el botón lo abre sobre un campo de fecha que no se ve ni recibe el foco
+      (para escribir la fecha está el de «Controles +»).
+    -->
+    <span class="time__calendar">
+      <button
+        type="button"
+        class="control control--icon"
+        title="Elegir la fecha en el calendario"
+        (click)="openCalendar(picker)"
+      >
+        <tls-icon name="calendar" />
+        <span class="visually-hidden">Elegir la fecha en el calendario</span>
+      </button>
+      <input
+        #picker
+        class="time__picker"
+        type="date"
+        tabindex="-1"
+        aria-hidden="true"
+        [min]="minDate()"
+        [max]="maxDate()"
+        [value]="dateValue()"
+        (change)="pickDate(picker)"
+      />
+    </span>
+  </div>
 
-  <!-- Antes que el botón de desplegar: el DOM sigue la fila del móvil (y la del escritorio). -->
-  <button type="button" class="control time__now" title="Volver a ahora (N)" (click)="now()">
-    Ahora
-  </button>
+  <tls-timeline class="time__line" [zone]="zone()" />
+
+  <div class="field time__speed">
+    <label class="field__label" for="time-speed">Velocidad</label>
+    <div class="field__group">
+      <select id="time-speed" class="control" (change)="changeSpeed($event)">
+        @for (step of speeds; track step.id) {
+          <option [value]="step.id" [selected]="speedId() === step.id">{{ step.label }}</option>
+        }
+      </select>
+      <button
+        type="button"
+        class="control control--icon"
+        [attr.aria-pressed]="sim.reverse()"
+        title="Hacia atrás (R)"
+        (click)="toggleReverse()"
+      >
+        <tls-icon name="reverse" />
+        <span class="visually-hidden">Hacia atrás</span>
+      </button>
+    </div>
+  </div>
 
   <button
     type="button"
-    class="time__more"
-    [attr.aria-expanded]="expanded()"
-    aria-controls="time-fields"
-    (click)="expanded.set(!expanded())"
+    class="control time__more"
+    popovertarget="time-menu"
+    [attr.aria-expanded]="menuOpen()"
   >
-    <tls-icon name="chevron" />
-    <span class="visually-hidden">Fecha, velocidad y ajustes</span>
+    <span class="time__more-label">Controles</span>
+    <tls-icon [name]="menuOpen() ? 'minus' : 'plus'" />
   </button>
-
-  <div class="time__fields" id="time-fields">
-    <div class="field">
-      <label class="field__label" for="time-speed">Velocidad</label>
-      <div class="field__group">
-        <select id="time-speed" class="control" (change)="changeSpeed($event)">
-          @for (step of speeds; track step.id) {
-            <option [value]="step.id" [selected]="speedId() === step.id">{{ step.label }}</option>
-          }
-        </select>
-        <button
-          type="button"
-          class="control control--icon"
-          [attr.aria-pressed]="sim.reverse()"
-          title="Hacia atrás (R)"
-          (click)="toggleReverse()"
-        >
-          <tls-icon name="reverse" />
-          <span class="visually-hidden">Hacia atrás</span>
-        </button>
-      </div>
-    </div>
-
-    <div class="field">
-      <label class="field__label" for="time-date">Fecha</label>
-      <input
-        #date
-        id="time-date"
-        class="control"
-        type="date"
-        [min]="minDate()"
-        [max]="maxDate()"
-        required
-        [value]="dateValue()"
-        [attr.aria-invalid]="invalid()"
-        [attr.aria-describedby]="invalid() ? 'time-error' : null"
-        (focus)="startEditing(date, clock)"
-        (blur)="stopEditing(date, clock)"
-        (change)="changed(date, clock)"
-        (keydown.enter)="confirm(date, clock)"
-      />
-    </div>
-
-    <div class="field">
-      <label class="field__label" for="time-clock">Hora</label>
-      <input
-        #clock
-        id="time-clock"
-        class="control"
-        type="time"
-        step="1"
-        [value]="timeValue()"
-        (focus)="startEditing(date, clock)"
-        (blur)="stopEditing(date, clock)"
-        (change)="changed(date, clock)"
-        (keydown.enter)="confirm(date, clock)"
-      />
-    </div>
-
-    <div class="field">
-      <label class="field__label" for="time-zone">Zona</label>
-      <select id="time-zone" class="control" (change)="changeZone($event)">
-        <option value="local" [selected]="zone() === 'local'">{{ localZoneLabel() }}</option>
-        <option value="utc" [selected]="zone() === 'utc'">UTC</option>
-      </select>
-    </div>
-  </div>
-
-  <div class="time__settings">
-    <div class="field">
-      <label class="field__label" for="time-quality">Calidad</label>
-      <select id="time-quality" class="control" (change)="changeQuality($event)">
-        @for (option of qualities; track option.value) {
-          <option [value]="option.value" [selected]="sim.quality() === option.value">
-            {{ option.label }}
-          </option>
-        }
-      </select>
-    </div>
-    <button
-      type="button"
-      class="control control--icon"
-      aria-haspopup="dialog"
-      title="Atajos de teclado (?)"
-      (click)="openHelp()"
-    >
-      <tls-icon name="help" />
-      <span class="visually-hidden">Atajos de teclado</span>
-    </button>
-  </div>
-
-  @if (invalid()) {
-    <p class="time__error" id="time-error" role="alert">
-      Esa fecha no existe o se sale del rango: elige una entre 1900 y 2100.
-    </p>
-  }
+  <tls-time-menu
+    id="time-menu"
+    popover
+    role="group"
+    aria-label="Controles"
+    [(zone)]="zone"
+    (done)="closeMenu()"
+    (toggle)="onMenuToggle($event)"
+  />
 </section>

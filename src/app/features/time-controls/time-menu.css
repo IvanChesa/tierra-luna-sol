@@ -1,0 +1,82 @@
+/*
+ * «Controles +»: un panel opaco (docs/DISENO.md) en la capa superior del navegador (`popover`). En
+ * escritorio, encima de la barra de tiempo, a la derecha; en móvil, una hoja inferior. Cerrado, el
+ * navegador lo oculta (`display: none`): aquí solo se da caja al abierto.
+ */
+:host {
+  inset: auto var(--space-4) calc(var(--explorer-bar, 4.5rem) + var(--space-8)) auto;
+  width: min(25rem, calc(100vw - 2 * var(--space-4)));
+  max-height: calc(100svh - var(--explorer-bar, 4.5rem) - 7rem);
+  margin: 0;
+  padding: var(--space-4);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: var(--border-width) solid var(--color-control);
+  border-radius: var(--radius-md);
+  box-shadow: 0 16px 48px rgb(0 0 0 / 0.5);
+}
+
+.menu {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: end;
+  gap: var(--space-3);
+}
+
+.menu .control:not(.control--icon) {
+  width: 100%;
+}
+
+.menu__wide {
+  grid-column: 1 / -1;
+}
+
+.menu__error {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface-raised);
+  border: var(--border-width) solid var(--color-control);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+}
+
+.menu__speed .field__group .control:not(.control--icon) {
+  flex: 1;
+}
+
+.menu__source {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+/* En escritorio, la velocidad está en la barra y la fuente de los datos en el pie. */
+@media (min-width: 64rem) {
+  .menu__speed,
+  .menu__source {
+    display: none;
+  }
+}
+
+/* Móvil: una hoja inferior, como el índice y la ficha. */
+@media (max-width: 63.99rem) {
+  :host {
+    inset: auto 0 0;
+    width: auto;
+    max-height: 75svh;
+    padding: var(--space-4) var(--space-4) var(--space-6);
+    border: 0;
+    border-top: var(--border-width) solid var(--color-control);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    box-shadow: 0 -12px 32px rgb(0 0 0 / 0.4);
+  }
+}
+
+/* Muy estrecho (320 px, o el zoom al 400 %): un campo por fila. */
+@media (max-width: 22rem) {
+  .menu {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
