@@ -59,6 +59,18 @@ export const VISUAL_CONFIG = {
   /** Por debajo de este radio en pantalla (px CSS), un cuerpo no aparta las órbitas de su disco. */
   orbitDiscMinRadiusPx: 3,
   /**
+   * Estelas de los cuerpos (D34, fase 4b): un arco de su color sobre su órbita, detrás de él, que se
+   * desvanece hasta fundirse con ella. La longitud va en fracción de vuelta (no en tiempo: se ven
+   * igual a cualquier velocidad), la intensidad multiplica la opacidad de la órbita y el grosor (px
+   * CSS) es el de junto al cuerpo, que adelgaza hasta el de la órbita. En las lunas, más cortas y
+   * tenues. El desvanecimiento es (1 − s)^falloff, con s de 0 (el cuerpo) a 1 (el final).
+   */
+  trails: {
+    planet: { fraction: 1 / 8, intensity: 0.9, widthPx: 3 },
+    moon: { fraction: 1 / 12, intensity: 0.5, widthPx: 2 },
+    falloff: 1.5,
+  },
+  /**
    * Vía Láctea (tarea 5b): sutil, por debajo de las estrellas. Intensidad del panorama y codo de la
    * compresión de sus zonas brillantes (luminancia lineal, L / (1 + L / codo)): el centro galáctico
    * queda en ~0,03 y la banda tenue apenas cambia. Como las estrellas y las órbitas, no sigue la

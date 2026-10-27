@@ -59,6 +59,7 @@ import type {
   ViewInsets,
 } from './types';
 import { OrbitSource } from './orbits';
+import { SCHEMATIC_COLORS } from './body-colors';
 import {
   NO_INSETS,
   ViewProjection,
@@ -151,8 +152,6 @@ const INSETS_SMOOTHING_MS = 180;
  */
 export const SLOW_SPEED = 60;
 export const SLOW_FRAME_MS = 250;
-/** La estela de movimiento cubre el camino del último segundo real (PLAN 3.c.7). */
-export const TRAIL_SECONDS = 1;
 
 export interface FrameScheduler {
   /** Pide un frame; con `delayMs`, no antes de que pase ese tiempo (el render a 4 Hz). */
@@ -470,9 +469,12 @@ export class SceneEngine implements SceneEngineApi {
   setSpeed(simSecondsPerSecond: number): void {
     if (this.disposed) return;
     this.catchUp();
+    const reversed = this.clock.speed < 0;
     this.clock.setSpeed(simSecondsPerSecond);
     this.wallMs = this.deps.now();
     this.emitTime(true);
+    // Las estelas siguen el sentido también en pausa (D34): si cambia, se repintan.
+    if (this.clock.speed < 0 !== reversed) this.invalidate();
   }
 
   focus(body: BodyId | null): void {
@@ -779,7 +781,7 @@ export class SceneEngine implements SceneEngineApi {
       screen: this.screen,
       detail: this._view !== 'system',
       projection: this.projection,
-      trailDays: daysPerSecond * TRAIL_SECONDS,
+      trailDirection: this.clock.speed < 0 ? -1 : 1,
       aliasedOrbit: aliased ? this.aliasing.orbit : null,
       frozenSpin: aliased ? this.aliasing.spin : null,
     });
@@ -1330,6 +1332,7 @@ export function orbitSources(profile: QualityProfile): OrbitSource[] {
       validityDays: isPlanet ? 3650 : Math.min(Math.max(2 * periodDays, 1), 30),
       segments: isPlanet ? profile.orbitSegments : Math.max(64, profile.orbitSegments / 2),
       position: offsetFunction(body.id),
+      color: SCHEMATIC_COLORS[body.id],
     };
   });
 }

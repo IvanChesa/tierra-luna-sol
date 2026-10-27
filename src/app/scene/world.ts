@@ -46,7 +46,7 @@ import { BodyMaterialUniforms, createBodyMaterial } from './materials/body-mater
 import { createMilkyWayMaterial } from './materials/milky-way-material';
 import { createRingMaterial } from './materials/ring-material';
 import { createHaloMaterial, createSunMaterial } from './materials/sun-material';
-import { OrbitLines, OrbitSource } from './orbits';
+import { OrbitLines, OrbitSource, TrailDirection } from './orbits';
 import type { ScreenBody } from './picking';
 import type { QualityProfile, TextureLevel } from './quality';
 import { StarField, temperatureToSrgb } from './stars';
@@ -120,8 +120,8 @@ export interface WorldFrame {
   readonly detail: boolean;
   /** Proyección de la cámara con los márgenes de la interfaz (`setViewOffset`, PLAN 3.c.6). */
   readonly projection: ViewProjection;
-  /** Días simulados que cubre la estela de movimiento (0 en pausa; negativo hacia atrás). */
-  readonly trailDays: number;
+  /** Sentido de las estelas (D34): el de la reproducción, también en pausa. */
+  readonly trailDirection: TrailDirection;
   /** Velocidades altas (§4.5): cuerpos que no se dibujan (su órbita los sustituye)… */
   readonly aliasedOrbit: Uint8Array | null;
   /** …y cuerpos cuya rotación propia se congela. */
@@ -578,7 +578,7 @@ export class World {
       this.orbitOpacity(frame),
       frame.highlighted,
       frame.speedDaysPerSecond,
-      frame.trailDays,
+      frame.trailDirection,
       frame.aliasedOrbit,
     );
     return { near, far };
