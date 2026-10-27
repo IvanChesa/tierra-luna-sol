@@ -84,5 +84,7 @@ Todo se formatea con las funciones de `src/app/core/format.ts`, que usan `Intl.N
 - **Nombres accesibles** con el mismo registro que la interfaz («Acercar», «Alejar», «Vista general»). Los iconos solos siempre llevan `aria-label` y su texto en un `title` o una etiqueta visible.
 - **Anuncios (`aria-live`):** una frase completa al elegir un cuerpo o cambiar de vista («Saturno, planeta. A 1430 millones de km del Sol y a 1320 millones de km de la Tierra.»). Nunca se anuncia cada cambio de la fecha.
   - Si con el cuerpo o la vista cambia la velocidad (D33), se añade al final de esa misma frase, una vez: «Velocidad: 1 hora por segundo.» o «Velocidad: 3 días por segundo, hacia atrás.» («Saturno, planeta. A … de la Tierra. Velocidad: 1 hora por segundo.»).
+  - Al elegir una vista guiada de la Tierra (fase 5), su título y su subtítulo en una frase: «España. España y los lugares del cielo desde España: …». El subtítulo se queda escrito en el panel; no se anuncia cada paso del recorrido más que con esa misma frase.
+- **El panel de la Tierra (fase 5):** «Vistas guiadas» con los títulos de las vistas («La Tierra completa», «El Pacífico», «El Himalaya», «Las luces de la noche», «España»), «Vista anterior», «Vista siguiente» y «Recorrer las vistas» / «Pausar el recorrido»; «Luz del Sol» con «Hora del día» (texto accesible del control: «18:00, hora local») y la nota «Hora local, sin cambiar la fecha».
 - **Textos alternativos:** qué muestra la imagen, no «imagen de».
 - **Enlaces:** el texto dice adónde llevan («Ficha completa de Saturno»), no «aquí».
