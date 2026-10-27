@@ -4,6 +4,7 @@ import { MAX_DATE, MIN_DATE } from '../../ephemeris/constants';
 import { SimulationStore } from '../../state/simulation.store';
 import { SPEED_STEPS } from '../../state/speeds';
 import { Icon } from '../viewer/icon';
+import { closePopover } from './popover';
 import { fromInputValues, toDateInputValue, toTimeInputValue } from './time-input';
 import { TimeMenu } from './time-menu';
 import { TimelineSlider } from './timeline-slider';
@@ -16,7 +17,8 @@ const unbreakable = (text: string): string => text.replaceAll(' ', NBSP);
  * Barra de tiempo compacta (fase 3c, tarea 2; D31): reproducir y pausar (lo primero de la barra,
  * WCAG 2.2.2), la fecha legible con su calendario, la línea de tiempo del año, la velocidad (9
  * escalones, también hacia atrás) y «Controles +», que despliega lo menos usado (`TimeMenu`). En
- * móvil, en dos filas, y la velocidad dentro de «Controles +».
+ * móvil, en dos filas (el DOM sigue su orden: reproducir, la fecha y el calendario; la línea de
+ * tiempo y «Controles +»), y la velocidad dentro de «Controles +».
  */
 @Component({
   selector: 'tls-time-controls',
@@ -34,6 +36,8 @@ export class TimeControls {
   protected readonly maxDate = computed(() => toDateInputValue(MAX_DATE, this.zone()));
   /** «Controles +» desplegado (lo dice el propio panel con su evento `toggle`). */
   protected readonly menuOpen = signal(false);
+  /** Se está pulsando «Controles»: su clic cerrará el panel (el foco que sale de él, no). */
+  private pressingMore = false;
   private readonly menu = viewChild.required<TimeMenu, ElementRef<HTMLElement>>(TimeMenu, {
     read: ElementRef,
   });
@@ -51,8 +55,8 @@ export class TimeControls {
   protected readonly speedText = computed(() => {
     const step = this.sim.speedStep();
     if (!step) return '';
-    const direction = this.sim.reverse() ? `, ${unbreakable('hacia atrás')}` : '';
-    return `${NBSP}· ${unbreakable(step.label.toLowerCase())}${direction}`;
+    const label = step.label.charAt(0).toUpperCase() + step.label.slice(1);
+    return this.sim.reverse() ? `${label}, hacia atrás` : label;
   });
   protected readonly dateValue = computed(() => toDateInputValue(this.sim.time(), this.zone()));
   protected readonly speedId = computed(() => this.sim.speedStep()?.id ?? 'real');
@@ -80,7 +84,8 @@ export class TimeControls {
     try {
       picker.showPicker();
     } catch {
-      this.menu().nativeElement.showPopover?.();
+      const menu = this.menu().nativeElement;
+      if (typeof menu.showPopover === 'function') menu.showPopover();
     }
   }
 
@@ -92,18 +97,36 @@ export class TimeControls {
   }
 
   /**
+   * Del `pointerdown` al `click` de «Controles». Un método y no una asignación en la plantilla: si la
+   * expresión de un evento da `false`, Angular cancela su acción por defecto (y el panel no se abre).
+   */
+  protected pressMore(pressing: boolean): void {
+    this.pressingMore = pressing;
+  }
+
+  /**
    * El panel se abre o se cierra. Al abrirse, el foco entra en su primer campo; al cerrarse (con su
    * botón, `Esc` o un clic fuera), el navegador lo devuelve al botón «Controles».
    */
   protected onMenuToggle(event: Event): void {
     const open = (event as ToggleEvent).newState === 'open';
     this.menuOpen.set(open);
-    if (open)
-      this.menu().nativeElement.querySelector<HTMLElement>('input, select, button')?.focus();
+    if (open) this.menu().nativeElement.querySelector<HTMLElement>('.menu input')?.focus();
+  }
+
+  /**
+   * El foco sale del panel hacia otra cosa de la página: el panel se cierra, como un desplegable, y
+   * así el foco nunca acaba en lo que tapa (la barra en móvil; la tarjeta y la cámara en escritorio).
+   * Salvo si se está pulsando «Controles», cuyo clic ya lo cierra.
+   */
+  protected onMenuFocusOut(event: FocusEvent): void {
+    const next = event.relatedTarget;
+    const menu = this.menu().nativeElement;
+    if (!(next instanceof Node) || menu.contains(next) || this.pressingMore) return;
+    closePopover(menu);
   }
 
   protected closeMenu(): void {
-    const menu = this.menu().nativeElement;
-    if (menu.matches?.(':popover-open')) menu.hidePopover();
+    closePopover(this.menu().nativeElement);
   }
 }

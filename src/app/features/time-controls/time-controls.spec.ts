@@ -37,27 +37,25 @@ describe('TimeControls: barra de tiempo', () => {
     window.history.replaceState({}, '', '/');
   });
 
-  it('la lectura plegada del móvil dice la zona, la velocidad y el sentido', () => {
+  it('la lectura dice la fecha, la zona y, en móvil, la velocidad y el sentido', () => {
     const { $, fixture, sim } = render();
-    const raw = () => $<HTMLElement>('.time__zone').textContent?.trim() ?? '';
-    const detail = () => raw().replaceAll('\u00a0', ' ');
-    // Al entrar, 3 horas por segundo (D31).
-    expect(detail()).toMatch(/^Hora local, UTC(\S*)? · 3 horas por segundo$/);
-    // Solo se parte entre trozos: «3 horas por segundo» y «Hora local, UTC+2» no se cortan por dentro.
-    expect(raw()).toMatch(
-      /^Hora\u00a0local,\u00a0UTC\S*\u00a0· 3\u00a0horas\u00a0por\u00a0segundo$/,
-    );
-    // La barra compacta da la hora sin segundos (los tiene el campo de \u00abControles +\u00bb).
+    const zone = () => ($<HTMLElement>('.time__zone').textContent ?? '').trim();
+    const speed = () => ($<HTMLElement>('.time__speedtext').textContent ?? '').trim();
+    // Al entrar, 3 horas por segundo (D31). La zona no se parte por dentro (espacios duros).
+    expect(zone().replaceAll('\u00a0', ' ')).toMatch(/^Hora local, UTC(\S*)?$/);
+    expect(zone()).toMatch(/^Hora\u00a0local,\u00a0UTC\S*$/);
+    expect(speed()).toBe('3 horas por segundo');
+    // La barra compacta da la hora sin segundos (los tiene el campo de «Controles +»).
     expect($<HTMLElement>('.time__readout time').textContent).toMatch(
       /^\d{1,2}\u00a0\S+\u00a0\d{4}, \d{2}:\d{2}$/,
     );
     sim.setSpeed(-365.25 * 86_400);
     fixture.detectChanges();
-    expect(detail()).toMatch(/· 1 año por segundo, hacia atrás$/);
+    expect(speed()).toBe('1 año por segundo, hacia atrás');
     $<HTMLSelectElement>('#time-zone').value = 'utc';
     $<HTMLSelectElement>('#time-zone').dispatchEvent(new Event('change'));
     fixture.detectChanges();
-    expect(detail()).toBe('UTC · 1 año por segundo, hacia atrás');
+    expect(zone()).toBe('UTC');
   });
 
   it('reproducir y pausar cambian el texto del botón (no solo el icono)', () => {

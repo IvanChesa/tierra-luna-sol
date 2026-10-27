@@ -1,3 +1,17 @@
+<!-- Como las hojas del índice y de la ficha: su título y un botón para cerrarlo. -->
+<header class="menu__head">
+  <h2 class="menu__title" id="time-menu-title">Controles</h2>
+  <button
+    type="button"
+    class="menu__close"
+    aria-label="Cerrar los controles"
+    title="Cerrar los controles (Esc)"
+    (click)="done.emit()"
+  >
+    <tls-icon name="close" />
+  </button>
+</header>
+
 <div class="menu">
   <div class="field">
     <label class="field__label" for="time-date">Fecha</label>

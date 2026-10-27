@@ -5,13 +5,15 @@
     <span class="visually-hidden">{{ playLabel() }}</span>
   </button>
 
+  <!-- En móvil, sin caja: la lectura y el calendario van a la primera fila de la barra. -->
   <div class="time__date">
+    <!-- Siempre tres líneas (no cambia de alto al reproducir): en escritorio, el rótulo, la fecha y
+         la zona; en móvil, la fecha, la zona y la velocidad (su selector está en «Controles +»). -->
     <p class="time__readout">
       <span class="time__label">Fecha</span>
       <time [attr.datetime]="sim.time().toISOString()">{{ readout() }}</time>
-      <span class="time__zone"
-        >{{ zoneText() }}<span class="time__speedtext">{{ speedText() }}</span></span
-      >
+      <span class="time__zone">{{ zoneText() }}</span>
+      <span class="time__speedtext">{{ speedText() }}</span>
     </p>
     <!--
       El calendario nativo: el botón lo abre sobre un campo de fecha que no se ve ni recibe el foco
@@ -64,22 +66,29 @@
     </div>
   </div>
 
+  <!-- «Controles +»; en los teléfonos estrechos, solo su icono (distinto del «+» de la cámara). -->
   <button
+    #more
     type="button"
     class="control time__more"
     popovertarget="time-menu"
+    title="Controles: fecha, hora, calidad y atajos"
     [attr.aria-expanded]="menuOpen()"
+    (pointerdown)="pressMore(true)"
+    (click)="pressMore(false)"
   >
     <span class="time__more-label">Controles</span>
-    <tls-icon [name]="menuOpen() ? 'minus' : 'plus'" />
+    <tls-icon class="time__more-sign" [name]="menuOpen() ? 'minus' : 'plus'" />
+    <tls-icon class="time__more-icon" name="sliders" />
   </button>
   <tls-time-menu
     id="time-menu"
     popover
     role="group"
-    aria-label="Controles"
+    aria-labelledby="time-menu-title"
     [(zone)]="zone"
     (done)="closeMenu()"
     (toggle)="onMenuToggle($event)"
+    (focusout)="onMenuFocusOut($event)"
   />
 </section>

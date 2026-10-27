@@ -1,6 +1,7 @@
 /*
  * Barra de tiempo compacta (fase 3c, D30): en la franja de abajo del explorador, sobre su velo
- * (docs/DISENO.md). Los controles comunes (`.control`, `.field`), en styles.css.
+ * (docs/DISENO.md). Los controles comunes (`.control`, `.field`), en styles.css. Nada cambia de
+ * tamaño al reproducir: la fecha tiene el ancho de la más larga y la lectura, siempre tres líneas.
  */
 :host {
   display: block;
@@ -49,12 +50,18 @@
 }
 
 .time__label,
-.time__zone {
+.time__zone,
+.time__speedtext {
+  overflow: hidden;
   color: var(--color-text-muted);
   font-size: 0.75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
+/* El ancho de la fecha más larga («30 sept 2026, 23:59», cifras tabulares): no baila al reproducir. */
 .time__readout time {
+  min-width: 9.9em;
   font-weight: var(--font-weight-strong);
   white-space: nowrap;
 }
@@ -84,18 +91,50 @@
   min-width: 12rem;
 }
 
-.time__speed,
+/* La etiqueta, encima, fuera del flujo: el selector queda en la línea de los demás controles. */
+.time__speed {
+  position: relative;
+  flex: none;
+}
+
+.time__speed .field__label {
+  position: absolute;
+  bottom: calc(100% + var(--space-1));
+  left: 0;
+}
+
 .time__more {
   flex: none;
 }
 
-/* Móvil: en dos filas (reproducir, la fecha y «Controles +»; la línea de tiempo debajo). */
+/* Abierto, como «Índice» y «Menú»: borde y texto en latón. */
+.time__more[aria-expanded='true'] {
+  background: var(--color-surface-raised);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.time__more-icon {
+  display: none;
+}
+
+/* Sin `popover` en el navegador (Firefox anterior al 125), el botón no abriría nada (popover.ts). */
+@supports not selector(:popover-open) {
+  .time__more {
+    display: none;
+  }
+}
+
+/*
+ * Móvil: dos filas que siguen el orden del DOM (y del foco). Arriba, reproducir, la lectura y el
+ * calendario; abajo, la línea de tiempo y «Controles +».
+ */
 @media (max-width: 63.99rem) {
   .time {
     display: grid;
     grid-template-areas:
-      'play date more'
-      'line line line';
+      'play date calendar'
+      'line line more';
     grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
     gap: var(--space-1) var(--space-3);
@@ -110,9 +149,16 @@
   }
 
   .time__date {
+    display: contents;
+  }
+
+  .time__readout {
     grid-area: date;
-    justify-content: space-between;
     min-width: 0;
+  }
+
+  .time__calendar {
+    grid-area: calendar;
   }
 
   .time__label,
@@ -120,14 +166,13 @@
     display: none;
   }
 
-  /* Si no cabe en una línea, la hora baja (la fecha no se parte por dentro). */
   .time__readout time {
+    min-width: 0;
     font-size: var(--text-sm);
-    white-space: normal;
   }
 
   .time__speedtext {
-    display: inline;
+    display: block;
   }
 
   .time__line {
@@ -140,8 +185,8 @@
   }
 }
 
-/* Teléfonos estrechos (360 px): «Controles» se queda en su icono; el nombre sigue para el lector. */
-@media (max-width: 23.99rem) {
+/* Teléfonos: «Controles» se queda en su icono; el nombre sigue para el lector (y en `title`). */
+@media (max-width: 29.99rem) {
   .time__more {
     width: var(--tap-target);
     padding: 0;
@@ -154,5 +199,13 @@
     overflow: hidden;
     clip-path: inset(50%);
     white-space: nowrap;
+  }
+
+  .time__more-sign {
+    display: none;
+  }
+
+  .time__more-icon {
+    display: inline-flex;
   }
 }

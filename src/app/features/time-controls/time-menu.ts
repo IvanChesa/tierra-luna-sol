@@ -42,7 +42,7 @@ const QUALITY_OPTIONS: readonly { readonly value: QualitySetting; readonly label
 export class TimeMenu {
   /** La zona de las fechas y las horas: la comparte con la barra. */
   readonly zone = model.required<TimeZoneChoice>();
-  /** Un control que termina con el panel (la vista limpia, los atajos): la barra lo cierra. */
+  /** Se cierra el panel (su botón de cerrar, la vista limpia o los atajos): lo cierra la barra. */
   readonly done = output<void>();
 
   protected readonly sim = inject(SimulationStore);
