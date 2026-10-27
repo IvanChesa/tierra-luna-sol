@@ -63,6 +63,28 @@ export const VISUAL_CONFIG = {
     /** Granulación en primer plano: amplitud ilustrativa y ritmo (unidades de ruido por segundo). */
     granulation: { amplitude: 0.05, rate: 0.015 },
   },
+  /**
+   * La Tierra (fase 5). Valores de presentación, ajustados con las capturas frente a las fotos de EPIC
+   * (DSCOVR; `docs/realismo/referencias.md`) y no medidas:
+   * - `cloudAlbedo`: el de las nubes, el de la superficie lo pone su textura;
+   * - `nightLights`: la intensidad de las luces de las ciudades (lineal);
+   * - `glint`: el brillo del Sol reflejado en el océano;
+   * - `cloudShadow`: cuánto oscurece la sombra de las nubes (0–1);
+   * - `scatter`: la luz que dispersa la atmósfera sobre el lado diurno (color sRGB, intensidad en
+   *   albedo y refuerzo hacia el limbo); azulada, aclara el océano respecto a la tierra como en EPIC;
+   * - `twilight`: el tono de la luz junto al terminador (sRGB);
+   * - `cloudDrift`: la deriva ilustrativa de las nubes (fracción de vuelta por segundo de reloj; se
+   *   para con movimiento reducido y en las capturas).
+   */
+  earth: {
+    cloudAlbedo: 0.75,
+    nightLights: 1.2,
+    glint: 0.12,
+    cloudShadow: 0.35,
+    scatter: { color: '#5b8fe6', intensity: 0.035, limb: 1.5 },
+    twilight: '#ffb488',
+    cloudDrift: 0.0004,
+  },
   /** Por debajo de este radio en pantalla (px CSS), el halo de una atmósfera no se dibuja: no se vería. */
   atmosphereMinRadiusPx: 2,
   /** Por debajo de este radio en pantalla (px CSS), un cuerpo no aparta las órbitas de su disco. */

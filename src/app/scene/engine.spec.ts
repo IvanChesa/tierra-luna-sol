@@ -259,11 +259,12 @@ describe('SceneEngine: arranque y render bajo demanda', () => {
     settle(venus);
     expect(venus.renderer.exposure).toBeLessThan(1);
     venus.engine.dispose();
-    // La Tierra (sin calibrar hasta la fase 5) se compensa con el albedo efectivo de su textura
-    // (≈ 0,08): sin eso quedaba casi negra.
+    // La Tierra (fase 5), con sus nubes, se compensa con su albedo geométrico (0,434, que las
+    // incluye): casi como la referencia (0,4). Hasta la fase 5, sin nubes, con el de su textura.
     const earth = await createHarness({ focus: 'tierra' });
     settle(earth);
-    expect(earth.renderer.exposure).toBeGreaterThan(2.5);
+    expect(earth.renderer.exposure).toBeGreaterThan(0.8);
+    expect(earth.renderer.exposure).toBeLessThan(1.3);
     earth.engine.dispose();
   });
 

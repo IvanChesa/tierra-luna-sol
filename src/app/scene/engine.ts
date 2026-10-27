@@ -217,15 +217,17 @@ const EARTH_INDEX = SCENE_BODIES.findIndex((body) => body.id === 'tierra');
 
 /**
  * Albedo con el que se compensa la exposición del primer plano de cada cuerpo (configuración visual),
- * o `null` (el Sol, que emite luz). Los que se calibran, el geométrico del catálogo. La Tierra, hasta
- * la fase 5, el efectivo de su propia textura (su luminancia media por el factor del disco de su
- * modelo, ≈ 0,08): el del catálogo (0,434) incluye las nubes, que aún no se dibujan, y sin compensar
- * quedaba casi negra (revisión de la fase 3b).
+ * o `null` (el Sol, que emite luz). Los que se calibran, el geométrico del catálogo. La Tierra, desde
+ * la fase 5, también el geométrico del catálogo (0,434), que incluye las nubes: ya se dibujan (hasta
+ * entonces, el efectivo de su textura, ≈ 0,08, porque sin nubes quedaba casi negra). Los demás, el
+ * efectivo de su propia textura.
  */
 const FOCUS_ALBEDO: readonly (number | null)[] = SCENE_BODIES.map((body) => {
   if (body.id === 'sol') return null;
   const photometry = BODY_PHOTOMETRY[body.id];
-  if (photometry.calibrateAlbedo) return BODY_DATA[body.id].physical.geometricAlbedo?.value ?? null;
+  if (photometry.calibrateAlbedo || body.id === 'tierra') {
+    return BODY_DATA[body.id].physical.geometricAlbedo?.value ?? null;
+  }
   const texture = BODY_TEXTURES[body.id];
   const luminance = texture ? TEXTURE_MEAN_LUMINANCE[texture] : undefined;
   return luminance ? luminance * discFactor(photometry.photometry) : null;
@@ -1000,6 +1002,11 @@ export class SceneEngine implements SceneEngineApi {
     this.world.setSunAppearance(
       focus === SUN_INDEX ? closeUp : 0,
       this.instant() ? 0 : this.deps.now() / 1000,
+    );
+    // Las nubes de la Tierra derivan con el reloj de pared (quietas con movimiento reducido y en las
+    // capturas), no con el simulado: a 3 días por segundo darían vueltas a toda velocidad.
+    this.world.setCloudDrift(
+      this.instant() ? 0 : (this.deps.now() / 1000) * VISUAL_CONFIG.earth.cloudDrift,
     );
     if (this.exposure < 0 || Math.abs(exposure - this.exposure) > 1e-4) {
       this.exposure = exposure;
