@@ -263,7 +263,8 @@ if ( abs( vUv.y ) > 1.0 ) discard;`,
       const trail = source.parentIndex < 0 ? TRAILS.planet : TRAILS.moon;
       const tint = this.trailColors[k] as Color;
       const tintStrength = alpha * trail.intensity;
-      const widen = trail.widthPx / ORBIT_WIDTH_PX - 1;
+      const widen =
+        (trail.widthPx / ORBIT_WIDTH_PX - 1) * Math.min(alpha / TRAILS.fullWidthOpacity, 1);
       // Color y grosor de un extremo (`end`, 0 o 1) de un segmento a `u` de vuelta detrás del cuerpo
       // (0 en el cuerpo; 1, de vuelta a él por delante): la órbita, que se funde con la estela junto
       // al cuerpo.

@@ -67,12 +67,16 @@ export const VISUAL_CONFIG = {
    * desvanece hasta fundirse con ella. La longitud va en fracción de vuelta (no en tiempo: se ven
    * igual a cualquier velocidad), la intensidad multiplica la opacidad de la órbita y el grosor (px
    * CSS) es el de junto al cuerpo, que adelgaza hasta el de la órbita. En las lunas, más cortas y
-   * tenues. El desvanecimiento es (1 − s)^falloff, con s de 0 (el cuerpo) a 1 (el final).
+   * tenues. El desvanecimiento es (1 − s)^falloff, con s de 0 (el cuerpo) a 1 (el final). El grosor
+   * completo es el de una órbita con opacidad `fullWidthOpacity` (la de los planetas en la vista
+   * general); una órbita más tenue (en segundo plano en las vistas Tierra y Luna, o la del planeta
+   * enfocado) lleva una estela más fina en proporción.
    */
   trails: {
     planet: { fraction: 1 / 8, intensity: 0.9, widthPx: 3 },
     moon: { fraction: 1 / 12, intensity: 0.5, widthPx: 2 },
     falloff: 1.5,
+    fullWidthOpacity: 0.85,
   },
   /**
    * Vía Láctea (tarea 5b): sutil, por debajo de las estrellas. Intensidad del panorama y codo de la

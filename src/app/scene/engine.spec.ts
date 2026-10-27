@@ -12,7 +12,8 @@ import {
 } from './engine';
 import { SCHEMATIC_COLORS } from './body-colors';
 import { hasDepthChunks } from './materials/depth';
-import { trailColor } from './orbits';
+import { ORBIT_WIDTH_PX, trailColor } from './orbits';
+import { VISUAL_CONFIG } from './visual-config';
 import type { RendererCapabilities, RendererInfo, RendererPort } from './renderer';
 import { SCENE_BODIES, createSolarSystemModel, sceneBody } from './system';
 import type { SceneEngineEventName, SceneEngineEvents, SceneEngineOptions } from './types';
@@ -559,7 +560,7 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     frames: { output: { position: Float64Array; radius: Float64Array } };
     world: {
       scene: { getObjectByName(name: string): { visible: boolean } | undefined };
-      orbits: { colors: Float32Array };
+      orbits: { colors: Float32Array; widths: Float32Array };
       orbitSources: readonly { bodyIndex: number; segments: number }[];
     };
     labels: { visibleLayer: boolean };
@@ -882,6 +883,23 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     h.frames(10);
     expect(hue(rgb(0))).toBeCloseTo(tint.r / tint.b, 5);
     h.engine.setPlaying(false);
+    // Junto al cuerpo, la estela engorda hasta su grosor completo (en múltiplos del de la órbita), y
+    // a media vuelta queda el de la órbita.
+    const { widthPx } = VISUAL_CONFIG.trails.planet;
+    expect(world.orbits.widths[0]).toBeCloseTo(widthPx / ORBIT_WIDTH_PX, 5);
+    expect(world.orbits.widths[2 * Math.floor((mercury?.segments ?? 0) / 2)]).toBe(1);
+    h.engine.dispose();
+  });
+
+  it('la estela de una órbita en segundo plano es más fina (D34)', async () => {
+    const h = await createHarness({ reducedMotion: true, focus: 'mercurio' });
+    settle(h);
+    // Con Mercurio enfocado, su órbita queda tenue (opacidad 0,3, `World.orbitOpacity`): su estela
+    // engorda en proporción a esa opacidad respecto a la de la vista general.
+    const head = internals(h).world.orbits.widths[0] as number;
+    const { planet, fullWidthOpacity } = VISUAL_CONFIG.trails;
+    const widen = planet.widthPx / ORBIT_WIDTH_PX - 1;
+    expect(head).toBeCloseTo(1 + (widen * 0.3) / fullWidthOpacity, 5);
     h.engine.dispose();
   });
 });
