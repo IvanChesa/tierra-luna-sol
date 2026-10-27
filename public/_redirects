@@ -1,0 +1,7 @@
+# Redirecciones de Cloudflare Pages (fase 4, D26). Pages ya hace lo demás: quita `.html` y la barra
+# final de las rutas (`/ruta.html` y `/ruta/` → `/ruta`, D9) y sirve `404.html`, con un 404, en lo que
+# no existe. Aquí, solo lo que no hace él. Formato: origen destino código.
+
+# /explorar no es una página: el explorador del sistema solar está en la raíz (también con barra).
+/explorar / 301
+/explorar/ / 301

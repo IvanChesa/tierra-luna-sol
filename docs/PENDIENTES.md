@@ -49,8 +49,12 @@ Decisiones y tareas que dependen de Iván. Claude Code añade aquí cada `TODO(i
 - [x] Primer push a `https://github.com/IvanChesa/tierra-luna-sol` (público): **autorizado** por Iván (revisión del bloque R). Si Git pide credenciales, Iván inicia sesión en la ventana que se abra.
 - [x] Licencia del código propio: **MIT** (D32).
 - [x] Secrets de Cloudflare en el repo: `CLOUDFLARE_API_TOKEN` (solo con permiso de Pages) y `CLOUDFLARE_ACCOUNT_ID` (27-10).
+- [ ] **Abrir la vista previa en tu móvil** (fase 4, no bloquea): https://fase-4-staging.tierra-luna-sol.pages.dev y, cuando la fase 4 esté en `main`, https://staging.tierra-luna-sol.pages.dev. Se recogen FPS y observaciones.
 - [ ] (Opcional) **Vistas previas privadas:** son públicas (con `noindex`). Si las quieres con acceso restringido, en el panel de Cloudflare: Pages → `tierra-luna-sol` → Settings → «Access policy» (Cloudflare Access, gratis hasta 50 usuarios).
 - [ ] Comprobar en el panel de Cloudflare que **Web Analytics** sigue desactivado en el proyecto (D24): el token del CI solo tiene permiso de Pages y no lo puede ver.
+- [ ] **Network Error Logging de Cloudflare (D24).** Cloudflare añade a las respuestas `Report-To` y `NEL` hacia `a.nel.cloudflare.com`: con ellas, Chrome y Edge envían a ese dominio un informe de cada petición que falla. `_headers` intenta quitarlas (`! Report-To`, `! NEL`); si la red de Cloudflare las pone después, el verificador lo marca como aviso y decides tú: aceptarlo como telemetría del hosting (y decirlo en el texto de privacidad de la fase 9) o buscar el ajuste en el panel o en la zona del dominio propio (fase 11). Informe de la fase 4, §5.7.
+- [ ] (Opcional) **Un entorno de GitHub para los secrets de Cloudflare**, que los limite al trabajo de despliegue (Settings → Environments). Hoy valen para todo el repositorio y solo los usan los pasos de wrangler.
+- [ ] (Fase 11) **¿Explorador incrustable en ivanchesa.es?** Hoy `frame-ancestors 'none'` y `X-Frame-Options: DENY` impiden incrustarlo en otra web. Si quieres una demo incrustada en el portfolio: `frame-ancestors https://ivanchesa.es` y sin `X-Frame-Options`.
 
 ## Decisiones
 - [ ] **(Fase 6) `toktx` (KTX-Software):** solo si la Luna en 8K no cabe en la VRAM de §5 con WebP (prueba de KTX2 de la fase 2, §5.2 del informe).

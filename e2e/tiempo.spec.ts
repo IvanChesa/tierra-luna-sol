@@ -6,6 +6,7 @@ import {
   openExplorer,
   simTime,
   trackProblems,
+  typedDate,
   urlChanges,
 } from './support';
 
@@ -51,11 +52,16 @@ test.describe('Tiempo y URL', () => {
     await expect(page).not.toHaveURL(/fecha=/);
     await expect(page).toHaveURL(/cuerpo=marte/);
     await countUrlChanges(page);
+    // Con SwiftShader y la máquina cargada (el CI), los frames llegan tarde y el reloj avanza menos
+    // (el motor no lo deja avanzar más de 400 ms de una vez): se espera a que corra dos segundos, y
+    // nunca más deprisa que el reloj de pared.
+    const wallStart = Date.now();
     const start = await simTime(page);
-    await page.waitForTimeout(3000);
+    await expect
+      .poll(async () => (await simTime(page)) - start, { timeout: 30_000 })
+      .toBeGreaterThan(2000);
     const elapsed = (await simTime(page)) - start;
-    expect(elapsed).toBeGreaterThan(1500);
-    expect(elapsed).toBeLessThan(4500);
+    expect(elapsed).toBeLessThan(Date.now() - wallStart + 1000);
     expect(await urlChanges(page)).toBe(0);
 
     // Al pausar, la fecha vuelve a la URL con el instante en que se ha parado.
@@ -72,13 +78,22 @@ test.describe('Tiempo y URL', () => {
     );
     await page.locator('#time-speed').selectOption('hour');
     await page.locator('.time__play').click();
+    await expect(page.locator('#time-speed')).toHaveValue('hour');
+    // Hacia atrás: se espera a que retroceda diez minutos simulados y después se mide la velocidad en
+    // una ventana de 3 s. Con SwiftShader cada frame tarda más de lo que el motor deja avanzar el reloj
+    // de una vez (400 ms), así que corre algo menos que a 1 hora por segundo, pero nunca más deprisa:
+    // la cota (1,25 h/s, con el margen de las lecturas de la barra, 5 por segundo) separa 1 h/s de los
+    // 3 h/s de la entrada (D31).
     const start = await simTime(page);
-    await page.waitForTimeout(2000);
-    const elapsed = (await simTime(page)) - start;
-    // Hacia atrás, hasta unas dos horas simuladas en dos segundos. Con SwiftShader cada frame tarda
-    // más de lo que el motor deja avanzar el reloj de una vez (400 ms), así que corre algo menos.
-    expect(elapsed).toBeLessThan(-10 * 60_000);
-    expect(elapsed).toBeGreaterThan(-3 * 3600_000);
+    await expect
+      .poll(async () => (await simTime(page)) - start, { timeout: 30_000 })
+      .toBeLessThan(-10 * 60_000);
+    const from = await simTime(page);
+    const wallFrom = Date.now();
+    await page.waitForTimeout(3000);
+    const rate = (from - (await simTime(page))) / (Date.now() - wallFrom);
+    expect(rate).toBeGreaterThan(0);
+    expect(rate).toBeLessThan(1.25 * 3600);
     await page.keyboard.press('k');
   });
 
@@ -97,11 +112,13 @@ test.describe('Tiempo y URL', () => {
         if (document.querySelector('#time-error')) document.body.dataset['e2eAlert'] = 'sí';
       }).observe(document.body, { childList: true, subtree: true });
     });
-    // El campo empieza en el día; a medio escribir, el año pasa por 0002, 0020 y 0203.
+    // El campo empieza en el día (o en el mes, según el idioma del sistema); a medio escribir, el año
+    // pasa por 0002, 0020 y 0203.
+    const keys = await typedDate(page, '15', '03', '2031');
     await openControls(page);
     const date = page.locator('#time-date');
     await date.focus();
-    await page.keyboard.type('15032031');
+    await page.keyboard.type(keys);
     await page.waitForTimeout(1500);
     // Las 14:00 de Madrid del 15 de marzo de 2031 (UTC+1): un solo salto y una sola URL.
     expect(await simTime(page)).toBe(Date.parse('2031-03-15T13:00:00Z'));
@@ -243,8 +260,10 @@ test.describe('Tiempo y URL', () => {
     await page.getByRole('button', { name: 'Cerrar los controles' }).click();
     await expect(page.locator('#time-date')).toBeHidden();
     await expect(button).toBeFocused();
-    // Si el foco sale del panel, se cierra: nunca se para en lo que tapa (la tarjeta, la cámara).
+    // Si el foco sale del panel, se cierra: nunca se para en lo que tapa (la tarjeta, la cámara). Desde
+    // dentro del panel: el foco entra en él un instante después de abrirse.
     await openControls(page);
+    await expect(page.locator('#time-date')).toBeFocused();
     for (let k = 0; k < 10; k++) {
       await page.keyboard.press('Shift+Tab');
       expect(await coveredFocus(page)).toBeNull();

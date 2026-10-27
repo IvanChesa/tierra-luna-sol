@@ -140,6 +140,21 @@ export async function openControls(page: Page): Promise<void> {
   await expect(page.locator('#time-date')).toBeVisible();
 }
 
+/**
+ * Lo que hay que teclear en un `<input type="date">` para una fecha: el orden de sus campos es el del
+ * idioma del sistema, no el del contexto (en Linux, el CI, va en inglés: mes/día). Se averigua con una
+ * sonda en otra página del mismo navegador, para no tocar la que se prueba.
+ */
+export async function typedDate(page: Page, day: string, month: string, year: string) {
+  const probe = await page.context().newPage();
+  await probe.setContent('<input type="date">');
+  await probe.locator('input').focus();
+  await probe.keyboard.type('01022000');
+  const dayFirst = (await probe.locator('input').inputValue()) === '2000-02-01';
+  await probe.close();
+  return dayFirst ? `${day}${month}${year}` : `${month}${day}${year}`;
+}
+
 /** El botón «Índice» (exacto: el panel abierto tiene también «Cerrar el índice»). */
 export const indexToggle = (page: Page) =>
   page.getByRole('button', { name: 'Índice', exact: true });

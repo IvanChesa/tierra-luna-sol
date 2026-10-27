@@ -557,7 +557,7 @@ Criterios de aceptación:
 ### Fase 6: La Luna
 
 Tareas:
-1. **Relieve lunar** con el script común `build-relief.mjs` de la fase 3b: el NASA CGI Moon Kit → color WebP 2k/4k/8k; elevación del LOLA en **16 bits empaquetados en RG** (D15), indicando la resolución vertical resultante; mapa de normales derivado a resolución completa.
+1. **Relieve lunar** con el script común `build-relief.mjs` de la fase 3b: el NASA CGI Moon Kit → color WebP 2k/4k/8k; elevación del LOLA en **16 bits empaquetados en RG** (D15), indicando la resolución vertical resultante; mapa de normales derivado a resolución completa. Si se reevalúa KTX2 (D18) y se adopta, `public/_headers` necesita en la CSP `'wasm-unsafe-eval'` y `worker-src blob:` (el `KTX2Loader` de three crea sus workers desde un `Blob`) y `Content-Type: image/ktx2` para los `.ktx2` (revisión de la fase 4).
 2. **Material lunar**: desplazamiento de vértices a escala física (exageración opcional y documentada) + normales. Malla sin costuras en el meridiano 180° ni en los polos (esfera cúbica o tratamiento específico de UV, justificado). Densidad por nivel.
 3. **Orientación** con `RotationAxis` (incluye la libración física); comprobación con `Libration` de astronomy-engine.
 4. **Sombra de la Tierra** sobre la Luna en los eclipses lunares (umbra rojiza y penumbra, D20).

@@ -1,0 +1,56 @@
+# Dependabot (fase 4): actualizaciones semanales de las dependencias que ya están en la lista cerrada
+# (PLAN §1) y de las acciones del CI, fijadas por SHA. No añade dependencias nuevas. El stack es fijo
+# (CLAUDE.md): Angular 22 y three 0.186 no cambian de versión mayor (ni de menor, en three, donde la
+# menor rompe) sin decisión de Iván.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: 'chore'
+    groups:
+      angular:
+        patterns:
+          - '@angular/*'
+          - '@angular-devkit/*'
+          - '@schematics/angular'
+          - 'angular-eslint'
+      herramientas:
+        patterns:
+          - 'eslint'
+          - '@eslint/*'
+          - 'typescript-eslint'
+          - 'prettier'
+          - '@playwright/test'
+          - '@axe-core/playwright'
+          - 'vitest'
+          - '@vitest/*'
+          - 'jsdom'
+          - 'sharp'
+    ignore:
+      - dependency-name: '@angular/*'
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@angular-devkit/*'
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@schematics/angular'
+        update-types: ['version-update:semver-major']
+      - dependency-name: 'angular-eslint'
+        update-types: ['version-update:semver-major']
+      - dependency-name: 'three'
+        update-types: ['version-update:semver-major', 'version-update:semver-minor']
+      - dependency-name: '@types/three'
+        update-types: ['version-update:semver-major', 'version-update:semver-minor']
+      - dependency-name: 'typescript'
+        update-types: ['version-update:semver-major', 'version-update:semver-minor']
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: 'chore'
