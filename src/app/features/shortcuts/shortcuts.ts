@@ -17,6 +17,7 @@ export type ShortcutCommand =
   | 'view-earth'
   | 'view-moon'
   | 'clean-view'
+  | 'index'
   | 'escape';
 
 export type CanvasCommand =
@@ -50,6 +51,7 @@ const GLOBAL_KEYS: Readonly<Record<string, ShortcutCommand>> = {
   '2': 'view-earth',
   '3': 'view-moon',
   v: 'clean-view',
+  i: 'index',
   Escape: 'escape',
 };
 
@@ -98,9 +100,28 @@ export const SHORTCUT_HELP: readonly {
     title: 'Vistas e interfaz',
     items: [
       { keys: ['1', '2', '3'], action: 'Sistema solar, Tierra o Luna' },
+      { keys: ['I'], action: 'Abrir o cerrar el índice de cuerpos' },
       { keys: ['V'], action: 'Vista limpia: ocultar la interfaz' },
-      { keys: ['Esc'], action: 'Saltar el viaje, salir de la vista limpia o cerrar la ficha' },
+      {
+        keys: ['Esc'],
+        action: 'Saltar el viaje, salir de la vista limpia o cerrar la ficha o el índice',
+      },
       { keys: ['?'], action: 'Mostrar estos atajos' },
+    ],
+  },
+  {
+    title: 'En la línea de tiempo y en las fichas',
+    items: [
+      {
+        keys: ['←', '→'],
+        action: 'Línea de tiempo: un día antes o después. Fichas: la anterior o la siguiente',
+      },
+      { keys: ['RePág', 'AvPág'], action: 'Línea de tiempo: un mes después o antes' },
+      {
+        keys: ['Inicio', 'Fin'],
+        action: 'Línea de tiempo: el principio o el final del año. Fichas: la primera o la última',
+      },
+      { keys: ['Intro'], action: 'Fichas: elegir el cuerpo' },
     ],
   },
 ];

@@ -2,10 +2,12 @@
   <tls-viewer-canvas [view]="view()" (ready)="sceneReady()" />
 </div>
 
-<!-- Orden del foco: el lienzo, su cámara, el índice, la ficha y la barra de tiempo. -->
-<tls-camera-controls class="camera" />
-
-<tls-body-picker class="index" />
+<!--
+  Orden del foco: el lienzo, su cámara, la tarjeta del cuerpo elegido, el botón «Índice» y su panel,
+  las fichas de cuerpos y la barra de tiempo (con reproducir y pausar en primer lugar).
+-->
+<!-- En móvil, la cámara es una columna a la derecha que cuenta en el encuadre (data-chrome). -->
+<tls-camera-controls class="camera" data-chrome />
 
 <!-- tabindex="-1": el foco llega aquí cuando la ficha tapa lo que lo tenía (la hoja del móvil). -->
 <aside
@@ -30,6 +32,29 @@
     <tls-body-panel [bodyId]="id" (closed)="closePanel()" />
   }
 </aside>
+
+<!-- El índice: un botón que lo abre y lo cierra (patrón de divulgación) y el panel, justo detrás. -->
+<button
+  #indexToggle
+  type="button"
+  class="control index-toggle"
+  [attr.aria-expanded]="explorer.indexOpen()"
+  aria-controls="explorer-index"
+  title="Índice de cuerpos (I)"
+  (click)="toggleIndex()"
+>
+  <tls-icon name="list" />
+  Índice
+</button>
+
+<tls-index-panel
+  class="index-panel"
+  [hidden]="!explorer.indexOpen()"
+  (closed)="closeIndex()"
+  (chosen)="chosenInIndex()"
+/>
+
+<tls-body-chips class="chips" />
 
 <tls-time-controls class="dock" />
 

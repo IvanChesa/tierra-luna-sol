@@ -30,7 +30,7 @@ Los bloques y sus fases están en `docs/PLAN.md` §6 y las ramas, en `docs/promp
 **Decisiones ya tomadas por Iván** (no preguntes por ellas):
 - Vistas guiadas de la Tierra: Tierra completa, Pacífico, Himalaya, luces nocturnas y España (con marcadores en los lugares del cielo desde España).
 - El cielo desde España (`/cielo`, fase 8): selector con el **Montsec por defecto**, el Observatori Fabra, el Roque de los Muchachos, el Teide, Calar Alto, Madrid y Fraga, más «usar mi ubicación»; cada lugar con su zona horaria (`docs/decisiones/CAMBIO-CIELO-ESPANA.md`).
-- El explorador arranca reproduciendo a **3 días/s**, salvo con movimiento reducido o con `?fecha=` (D31).
+- El explorador arranca reproduciendo a **3 horas/s** (cambio del 27-10; antes, 3 días/s), salvo con movimiento reducido o con `?fecha=` (D31).
 - Constelaciones: solo con licencia CC0, CC BY, MIT, BSD o de dominio público; si no, se omiten y se apuntan.
 - Subdominio: el provisional de `site.config.ts`.
 - Textos: con fuente y `reviewed: false`; Iván los revisa en la fase 9.

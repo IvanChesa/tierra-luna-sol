@@ -5,6 +5,7 @@ import type { ExplorerView, SceneEngineEventName, SceneEngineEvents } from '../.
 import { ExplorerStore } from '../../state/explorer.store';
 import { SystemPositions } from '../../state/positions';
 import { SimulationStore } from '../../state/simulation.store';
+import { DEFAULT_SPEED } from '../../state/speeds';
 import { ExplorerEngine, ExplorerSession } from './explorer-session';
 
 /**
@@ -106,10 +107,10 @@ describe('ExplorerSession: la URL, la selección y el motor', () => {
     window.history.replaceState({}, '', '/');
   });
 
-  it('sin fecha en la URL arranca en «ahora» y en tiempo real; con fecha, en pausa en ella', async () => {
+  it('sin fecha en la URL arranca en «ahora» a 3 horas por segundo (D31); con fecha, en pausa en ella', async () => {
     const live = await setup('');
     expect(live.sim.playing()).toBe(true);
-    expect(live.sim.speed()).toBe(1);
+    expect(live.sim.speed()).toBe(DEFAULT_SPEED);
     expect(Math.abs(live.sim.time().getTime() - Date.now())).toBeLessThan(5000);
     TestBed.resetTestingModule();
 
@@ -120,12 +121,30 @@ describe('ExplorerSession: la URL, la selección y el motor', () => {
     expect(fixed.explorer.panelOpen()).toBe(true);
   });
 
-  it('sin fecha, al conectar el motor (que nace en pausa) sigue en tiempo real', async () => {
+  it('sin fecha, al conectar el motor (que nace en pausa) sigue reproduciendo a 3 horas por segundo', async () => {
     const { session, sim } = await setup('?cuerpo=marte');
     const engine = new FakeEngine();
     session.attachEngine(engine);
-    expect(engine.calls.slice(0, 2)).toEqual(['setSpeed 1', 'setPlaying true']);
+    expect(engine.calls.slice(0, 2)).toEqual([`setSpeed ${DEFAULT_SPEED}`, 'setPlaying true']);
     expect(sim.playing()).toBe(true);
+  });
+
+  it('con movimiento reducido arranca en pausa, a la misma velocidad (D31)', async () => {
+    const original = window.matchMedia;
+    window.matchMedia = ((query: string) =>
+      ({
+        matches: query.includes('reduce'),
+        media: query,
+      }) as MediaQueryList) as typeof window.matchMedia;
+    try {
+      const { sim, session } = await setup('');
+      expect(session.reducedMotion).toBe(true);
+      expect(sim.playing()).toBe(false);
+      expect(sim.speed()).toBe(DEFAULT_SPEED);
+      expect(Math.abs(sim.time().getTime() - Date.now())).toBeLessThan(5000);
+    } finally {
+      window.matchMedia = original;
+    }
   });
 
   it('un parámetro no válido se ignora y se avisa; el aviso se puede cerrar', async () => {
@@ -142,7 +161,7 @@ describe('ExplorerSession: la URL, la selección y el motor', () => {
     session.setInsets({ top: 0, right: 0, bottom: 72, left: 320 });
     session.attachEngine(engine);
     expect(engine.calls).toEqual([
-      'setSpeed 1',
+      `setSpeed ${DEFAULT_SPEED}`,
       'setPlaying false',
       'setViewInsets 320',
       'setLabelsVisible true',

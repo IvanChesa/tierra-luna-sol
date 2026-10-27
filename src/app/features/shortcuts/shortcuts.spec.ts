@@ -19,6 +19,7 @@ describe('shortcuts: atajos de teclado', () => {
     expect(globalCommand(key('+'))).toBe('zoom-in');
     expect(globalCommand(key('-'))).toBe('zoom-out');
     expect(globalCommand(key('2'))).toBe('view-earth');
+    expect(globalCommand(key('I'))).toBe('index');
     expect(globalCommand(key('Escape'))).toBe('escape');
     expect(globalCommand(key('x'))).toBeNull();
   });
@@ -74,6 +75,7 @@ describe('shortcuts: atajos de teclado', () => {
       'escape',
       'help',
       'overview',
+      'index',
     ] as const) {
       expect(repeats(command)).toBe(false);
     }
@@ -81,7 +83,9 @@ describe('shortcuts: atajos de teclado', () => {
 
   it('la ayuda documenta todas las órdenes globales', () => {
     const documented = SHORTCUT_HELP.flatMap((group) => group.items.flatMap((item) => item.keys));
-    for (const k of ['K', ',', '.', 'R', 'N', 'G', '+', '−', '1', '2', '3', 'V', 'Esc', '?']) {
+    // También las de la línea de tiempo y las fichas (fase 3c).
+    for (const k of ['RePág', 'AvPág', 'Inicio', 'Fin', 'Intro']) expect(documented).toContain(k);
+    for (const k of ['K', ',', '.', 'R', 'N', 'G', '+', '−', '1', '2', '3', 'V', 'I', 'Esc', '?']) {
       expect(documented).toContain(k);
     }
   });

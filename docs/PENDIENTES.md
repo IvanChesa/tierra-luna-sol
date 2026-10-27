@@ -32,6 +32,10 @@ Decisiones y tareas que dependen de Iván. Claude Code añade aquí cada `TODO(i
 - [x] **«El cielo desde España»** en lugar de «El cielo desde el Bajo Cinca» (`docs/decisiones/CAMBIO-CIELO-ESPANA.md`): selector con el Montsec por defecto, el Observatori Fabra, el Roque de los Muchachos, el Teide, Calar Alto, Madrid y Fraga, más «usar mi ubicación», en la ruta `/cielo` y con la zona horaria de cada lugar. La vista guiada de la Tierra pasa a «España».
 - [x] `.codex/` y `AGENTS.md` (configuración local de Codex) en `.gitignore`.
 
+### Decisiones del 27-10
+- [x] **Velocidad de entrada (D31):** el explorador arranca reproduciendo a **3 horas por segundo**, no a 3 días; se añade el escalón de 3 h/s (quedan nueve). Con movimiento reducido o con `?fecha=`, sigue arrancando en pausa. En el plan (D31 y fase 3c), en `CLAUDE.md`, en `ESTILO.md` §3, en los tests y en los e2e.
+- [x] **Bloom de la fase 3b (tarea 7):** pasa a la **fase 10 como opcional** (tarea 9 de la fase 10 en el plan). Solo en el nivel alto y con el fondo pintado dentro de la escena (informe de la fase 3b, §4.1). Antes estaba pendiente de decidir entre quitarlo, llevarlo al backlog o retomarlo.
+
 ## Antes del bloque C (fase 4: staging)
 - [ ] Conectar el repo local con `https://github.com/IvanChesa/tierra-luna-sol` (público) y hacer el primer push. **Lo hace Iván o lo autoriza explícitamente**, porque publica el código. Si se hace con GitHub CLI: `winget install --id GitHub.cli` y `gh auth login`.
 - [ ] Como el repo es público, conviene decidir antes del primer push la **licencia del código propio** (ver «Decisiones»): sin `LICENSE`, el código queda con todos los derechos reservados. Las texturas y los datos de terceros ya llevan sus licencias en `FUENTES.md` y en `/creditos`.
@@ -43,13 +47,14 @@ Decisiones y tareas que dependen de Iván. Claude Code añade aquí cada `TODO(i
 - [ ] **(Fase 6) `toktx` (KTX-Software):** solo si la Luna en 8K no cabe en la VRAM de §5 con WebP (prueba de KTX2 de la fase 2, §5.2 del informe).
 - [ ] **Subdominio definitivo.** Propuesto: `tierra-luna-sol.ivanchesa.es`. Si cambia, se edita solo `src/app/core/site.config.ts`.
 - [ ] **Licencia del código propio** (MIT u otra). El plan la dejaba para la fase 11, cuando el repo pasara a público; el repo de GitHub ya es público, así que conviene tenerla antes del primer push.
-- [ ] **Bloom de la fase 3b (tarea 7):** no se ha hecho. El halo del Sol ya da el resplandor y el bloom costaba dos render targets a resolución completa; además, el fondo salía aclarado (el borrado pasaba por el tone mapping del `OutputPass`; tiene arreglo, pintando el fondo dentro de la escena). Decide: quitarlo de la tarea, llevarlo al backlog o retomarlo (informe de la fase 3b, §4.1).
 
 ## Revisiones y pruebas de Iván
 - [ ] Textos de los 30 cuerpos (120 textos con `reviewed: false`): lista de revisión con las citas que los respaldan en `docs/datos/textos-cuerpos.md`. En la **fase 9** (decisión del 24-10; antes «al final de las fases 1 y 8»).
 - [ ] Textos de las vistas guiadas y de los recorridos (fases 5 y 6; en el plan v1, 4 y 5).
 - [ ] Pruebas en el móvil real: por la URL de staging desde la fase 4 o, si no hay staging, por la red local (fases 4–10; en el plan v1, 4–9).
 - [ ] Visto bueno final en el móvil (fase 10; en el plan v1, la 9).
+- [ ] **(Fase 3c) Comparar las capturas con la referencia del original** (su barra inferior). La referencia no está en el repositorio: las capturas están en `docs/informes/img/fase-3c/` y la tabla que empareja su estructura con la nuestra, en §7.1 del informe. Si quieres que la revisión la tenga, déjala enlazada fuera del repositorio (hallazgo 9 de la revisión de código).
+- [ ] **(Fase 3c) Texto de las pistas del pie:** «rueda o pellizca para acercarte» puede leerse como el imperativo de *rodar*. Propuesta de la revisión de diseño (hallazgo 18): «usa la rueda o pellizca para acercarte». El texto viene del plan (fase 3c, tarea 6), así que no se ha cambiado.
 
 ## Fase 10
 - [ ] Conseguir un iPhone para probar (aunque sea prestado).

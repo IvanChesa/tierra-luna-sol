@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { openExplorer, trackProblems, treeRow } from './support';
+import { indexToggle, openExplorer, openIndex, trackProblems, treeRow } from './support';
 
 const focusedBody = (page: import('@playwright/test').Page) =>
   page.evaluate(() => window.__tlsViewer?.engine?.focusedBody ?? null);
@@ -8,6 +8,7 @@ test.describe('Índice de cuerpos y ficha resumida', () => {
   test('elegir un cuerpo en el índice abre su ficha, lo enfoca y lo anuncia', async ({ page }) => {
     const problems = trackProblems(page);
     await openExplorer(page, '/?captura=1');
+    await openIndex(page);
     await treeRow(page, 'saturno').click();
 
     await expect(page.locator('#tree-saturno')).toHaveAttribute('aria-selected', 'true');
@@ -27,13 +28,16 @@ test.describe('Índice de cuerpos y ficha resumida', () => {
     page,
   }) => {
     await openExplorer(page, '/?captura=1');
-    // Tabulador desde el principio de la página hasta el índice (sin ratón).
-    let id: string | null = null;
-    for (let k = 0; k < 40 && !id?.startsWith('tree-'); k++) {
+    // Tabulador desde el principio de la página hasta el botón «Índice» (sin ratón); al abrirlo,
+    // el foco entra en el árbol.
+    const toggle = indexToggle(page);
+    for (let k = 0; k < 40; k++) {
       await page.keyboard.press('Tab');
-      id = await page.evaluate(() => document.activeElement?.id ?? null);
+      if (await toggle.evaluate((node) => node === document.activeElement)) break;
     }
-    expect(id).toBe('tree-sol');
+    await expect(toggle).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('#tree-sol')).toBeFocused();
     // Sol → Mercurio → Venus → Tierra → Marte → Júpiter.
     for (let k = 0; k < 5; k++) await page.keyboard.press('ArrowDown');
     await expect(page.locator('#tree-jupiter')).toBeFocused();
@@ -50,9 +54,7 @@ test.describe('Índice de cuerpos y ficha resumida', () => {
     await expect(page.locator('[role="treeitem"]:focus')).toHaveCount(0);
   });
 
-  test('la ficha se cierra con su botón y con Esc, y el foco vuelve a la fila', async ({
-    page,
-  }) => {
+  test('la ficha se cierra con su botón y con Esc, y el foco no se pierde', async ({ page }) => {
     await openExplorer(page, '/?captura=1&cuerpo=marte');
     const panel = page.locator('.panel');
     await expect(panel.locator('#card-title')).toHaveText('Marte');
@@ -60,6 +62,7 @@ test.describe('Índice de cuerpos y ficha resumida', () => {
     await expect(panel).toBeHidden();
 
     // Elegir en el índice, ir a la ficha y cerrarla con su botón: el foco no se queda en <body>.
+    await openIndex(page);
     await treeRow(page, 'venus').click();
     await expect(panel.locator('#card-title')).toHaveText('Venus');
     await page.getByRole('button', { name: 'Cerrar la ficha' }).focus();
@@ -69,9 +72,61 @@ test.describe('Índice de cuerpos y ficha resumida', () => {
 
     await page.keyboard.press('Enter');
     await expect(panel.locator('#card-title')).toHaveText('Venus');
+    // Esc cierra lo que tiene el foco: primero el índice (el foco vuelve a su botón) y después la
+    // ficha (el foco se queda en el botón).
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('tree', { name: 'Cuerpos del sistema solar' })).toBeHidden();
+    await expect(indexToggle(page)).toBeFocused();
+    await expect(panel).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(panel).toBeHidden();
-    await expect(page.locator('#tree-venus')).toBeFocused();
+    await expect(indexToggle(page)).toBeFocused();
+  });
+
+  test('el índice está cerrado al entrar; se abre y se cierra con el ratón, el teclado y Esc', async ({
+    page,
+  }) => {
+    await openExplorer(page, '/?captura=1');
+    const toggle = indexToggle(page);
+    const tree = page.getByRole('tree', { name: 'Cuerpos del sistema solar' });
+    const region = page.getByRole('region', { name: 'Índice' });
+    const viewLeft = () =>
+      page.evaluate(() =>
+        parseFloat(
+          getComputedStyle(document.querySelector('.explorer') as HTMLElement).getPropertyValue(
+            '--view-left',
+          ),
+        ),
+      );
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await expect(tree).toBeHidden();
+    expect(await viewLeft()).toBe(0);
+
+    // Con el ratón: se abre (el foco entra en el árbol), el encuadre se aparta y se cierra.
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    await expect(region).toBeVisible();
+    await expect(page.locator('#tree-sol')).toBeFocused();
+    await expect.poll(viewLeft).toBeGreaterThan(200);
+    // Con las distancias de cada fila (la de Saturno, en UA).
+    await expect(page.locator('#tree-saturno .row__value')).toHaveText(/^\d+,\d\d\sUA$/);
+    await toggle.click();
+    await expect(tree).toBeHidden();
+    await expect.poll(viewLeft).toBe(0);
+
+    // Con el teclado: I lo abre; Esc lo cierra y el foco vuelve al botón.
+    await page.keyboard.press('i');
+    await expect(page.locator('#tree-sol')).toBeFocused();
+    await page.keyboard.press('ArrowDown');
+    await expect(page.locator('#tree-mercurio')).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(tree).toBeHidden();
+    await expect(toggle).toBeFocused();
+    // Su botón de cerrar, también con el foco de vuelta en «Índice».
+    await page.keyboard.press('Enter');
+    await region.getByRole('button', { name: 'Cerrar el índice' }).click();
+    await expect(tree).toBeHidden();
+    await expect(toggle).toBeFocused();
   });
 
   test('un clic en la etiqueta de un cuerpo en el lienzo lo elige', async ({ page }) => {

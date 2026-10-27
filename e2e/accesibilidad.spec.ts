@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
-import { openExplorer } from './support';
+import { openControls, openExplorer, openIndex } from './support';
 
 /** Las rutas prerenderizadas del build (todas las páginas del sitio). */
 const ROUTES = Object.keys(
@@ -28,10 +28,13 @@ async function seriousViolations(page: Page): Promise<string[]> {
 }
 
 test.describe('Accesibilidad (axe)', () => {
-  test('el explorador en sus estados: vista, ficha, Tierra, Luna, atajos y vista limpia', async ({
+  test('el explorador en sus estados: vista, índice, ficha, Tierra, Luna, atajos y vista limpia', async ({
     page,
   }) => {
     await openExplorer(page, '/?captura=1');
+    expect(await seriousViolations(page)).toEqual([]);
+
+    await openIndex(page);
     expect(await seriousViolations(page)).toEqual([]);
 
     await page.locator('#tree-saturno > .row').click();
@@ -46,10 +49,10 @@ test.describe('Accesibilidad (axe)', () => {
     await expect(page.locator('tls-viewer-canvas')).toHaveClass(/is-ready/, { timeout: 90_000 });
     expect(await seriousViolations(page)).toEqual([]);
 
-    // En móvil, el botón de los atajos está en la parte plegada de la barra de tiempo.
-    const help = page.getByRole('button', { name: 'Atajos de teclado' });
-    if (!(await help.isVisible())) await page.locator('.time__more').click();
-    await help.click();
+    // «Controles +» abierto y, dentro, el botón de los atajos.
+    await openControls(page);
+    expect(await seriousViolations(page)).toEqual([]);
+    await page.getByRole('button', { name: 'Atajos de teclado' }).click();
     await expect(page.getByRole('dialog', { name: 'Atajos de teclado' })).toBeVisible();
     expect(await seriousViolations(page)).toEqual([]);
     await page.keyboard.press('Escape');
@@ -59,7 +62,21 @@ test.describe('Accesibilidad (axe)', () => {
     expect(await seriousViolations(page)).toEqual([]);
   });
 
+  test('el estado por defecto, con el sistema en marcha (D31), en las tres vistas', async ({
+    page,
+  }) => {
+    for (const path of ['/', '/explorar/tierra', '/explorar/luna']) {
+      await openExplorer(page, path);
+      await expect(page.locator('.time__play')).toHaveAccessibleName(/Pausar/);
+      expect(await seriousViolations(page), path).toEqual([]);
+    }
+  });
+
   test('todas las páginas del sitio', async ({ page }) => {
+    // Con movimiento reducido, el explorador arranca en pausa (D31): sus tres rutas no tienen la CPU
+    // ocupada pintando con SwiftShader mientras axe las analiza. El explorador en marcha lo mira la
+    // prueba de arriba.
+    await page.emulateMedia({ reducedMotion: 'reduce' });
     expect(ROUTES.length).toBeGreaterThan(10);
     for (const route of ROUTES) {
       await page.goto(route);

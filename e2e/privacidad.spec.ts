@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { openExplorer } from './support';
+import { openExplorer, openIndex } from './support';
 
 test('0 peticiones a otros dominios y 0 cookies en un recorrido por el sitio', async ({
   page,
@@ -16,6 +16,7 @@ test('0 peticiones a otros dominios y 0 cookies en un recorrido por el sitio', a
   });
 
   await openExplorer(page, '/');
+  await openIndex(page);
   await page.locator('#tree-marte > .row').click();
   await expect(page.locator('#card-title')).toHaveText('Marte');
   await page.getByRole('link', { name: 'Ficha completa de Marte' }).click();

@@ -668,6 +668,40 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     h.engine.dispose();
   });
 
+  it('aislado (solo en captura): el cuerpo enfocado, solo y centrado, sin etiquetas ni márgenes', async () => {
+    interface WorldView {
+      world: {
+        scene: { getObjectByName(name: string): { visible: boolean } | undefined };
+        orbits: { object: { visible: boolean } };
+      };
+    }
+    const visible = (h: Harness, name: string) =>
+      (h.engine as unknown as WorldView).world.scene.getObjectByName(name)?.visible;
+    const h = await createHarness({ capture: true, isolate: true, focus: 'saturno' });
+    settle(h);
+    // Lo que hace la sesión al conectar el motor: no cambia nada.
+    h.engine.setLabelsVisible(true);
+    h.engine.setViewInsets({ top: 0, right: 320, bottom: 100, left: 0 });
+    settle(h);
+    expect(internals(h).labels.visibleLayer).toBe(false);
+    expect(screenOf(h, 'saturno')?.x).toBeCloseTo(WIDTH / 2, 3);
+    expect(screenOf(h, 'saturno')?.y).toBeCloseTo(HEIGHT / 2, 3);
+    expect(visible(h, 'saturno')).toBe(true);
+    expect(visible(h, 'saturn-rings')).toBe(true);
+    for (const name of ['sol', 'jupiter', 'titan', 'sun-halo', 'milky-way']) {
+      expect(visible(h, name), name).toBe(false);
+    }
+    expect((h.engine as unknown as WorldView).world.orbits.object.visible).toBe(false);
+    h.engine.dispose();
+
+    // Fuera del modo de captura no existe.
+    const normal = await createHarness({ isolate: true, focus: 'saturno' });
+    settle(normal);
+    expect(visible(normal, 'jupiter')).toBe(true);
+    expect(internals(normal).labels.visibleLayer).toBe(true);
+    normal.engine.dispose();
+  });
+
   it('la vista limpia oculta las etiquetas', async () => {
     const h = await createHarness();
     settle(h);

@@ -13,7 +13,7 @@ export type TravelKind = 'focus' | 'view';
 
 /**
  * Estado del explorador (PLAN §4.5): la vista, la vista limpia, el viaje de cámara en curso, si la
- * ficha resumida está abierta y el recorrido (fase 6). La vista no se guarda aquí: sale de la ruta
+ * ficha resumida y el índice están abiertos y el recorrido (fase 6). La vista no se guarda aquí: sale de la ruta
  * (`connectView`), así que no puede desincronizarse de la URL.
  *
  * Como `SimulationStore`, lo provee la interfaz diferida del explorador.
@@ -29,6 +29,8 @@ export class ExplorerStore {
   readonly travelling = signal<TravelKind | null>(null);
   /** Ficha resumida abierta (se abre al elegir un cuerpo; se cierra con «Cerrar» o `Esc`). */
   readonly panelOpen = signal(false);
+  /** Panel «Índice» abierto (fase 3c, 4b): cerrado al entrar, para que el 3D ocupe la pantalla. */
+  readonly indexOpen = signal(false);
   /** Diálogo de atajos de teclado abierto. */
   readonly helpOpen = signal(false);
   /** Atajos de una sola tecla activos (WCAG 2.1.4: se pueden desactivar en el diálogo de atajos). */

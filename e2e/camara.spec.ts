@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { canvasImage, openExplorer } from './support';
+import { canvasImage, indexToggle, openControls, openExplorer } from './support';
 
 test.describe('Cámara, vista limpia y atajos', () => {
   test('acercar y alejar con los botones y con + y −', async ({ page }) => {
@@ -35,7 +35,7 @@ test.describe('Cámara, vista limpia y atajos', () => {
     page,
   }) => {
     await openExplorer(page, '/?captura=1');
-    const index = page.getByRole('tree', { name: 'Cuerpos del sistema solar' });
+    const index = indexToggle(page);
     await expect(index).toBeVisible();
     await page.keyboard.press('v');
     await expect(index).toBeHidden();
@@ -59,11 +59,11 @@ test.describe('Cámara, vista limpia y atajos', () => {
     await expect(restore).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(clean).toBeFocused();
-    await page.locator('#tree-sol').focus();
+    await index.focus();
     await page.keyboard.press('v');
     await expect(restore).toBeFocused();
     await page.keyboard.press('Escape');
-    await expect(page.locator('#tree-sol')).toBeFocused();
+    await expect(index).toBeFocused();
   });
 
   test('el diálogo de atajos: ? lo abre, Esc lo cierra y se pueden desactivar', async ({
@@ -80,7 +80,9 @@ test.describe('Cámara, vista limpia y atajos', () => {
     await page.keyboard.press('Escape');
     await expect(dialog).toBeHidden();
 
-    // Desactivados (WCAG 2.1.4), las letras ya no hacen nada; el botón de ayuda sigue abriéndolo.
+    // Desactivados (WCAG 2.1.4), las letras ya no hacen nada; el botón de ayuda (en «Controles +»)
+    // sigue abriéndolo.
+    await openControls(page);
     await page.getByRole('button', { name: 'Atajos de teclado' }).click();
     await dialog.getByRole('checkbox', { name: 'Atajos de una sola tecla' }).uncheck();
     await page.keyboard.press('Escape');

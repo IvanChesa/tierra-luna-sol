@@ -37,7 +37,7 @@ describe('BodyPicker: índice de cuerpos como árbol accesible', () => {
   it('un árbol con el Sol y los planetas, una sola parada de tabulación y las distancias de hoy', () => {
     const { root, item } = render();
     const tree = root.querySelector('[role="tree"]');
-    expect(tree?.getAttribute('aria-labelledby')).toBe('index-title');
+    expect(tree?.getAttribute('aria-label')).toBe('Cuerpos del sistema solar');
     const top = root.querySelectorAll('[role="tree"] > [role="treeitem"]');
     expect(top).toHaveLength(9);
     expect(
@@ -75,11 +75,14 @@ describe('BodyPicker: índice de cuerpos como árbol accesible', () => {
     expect(item('jupiter')?.getAttribute('aria-expanded')).toBe('false');
   });
 
-  it('Intro elige el cuerpo: queda seleccionado y su sistema se abre solo', () => {
-    const { item, key, sim } = render();
+  it('Intro elige el cuerpo: queda seleccionado, su sistema se abre solo y se avisa', () => {
+    const { item, key, sim, fixture } = render();
+    const chosen: string[] = [];
+    fixture.componentInstance.chosen.subscribe((id) => chosen.push(id));
     item('saturno')?.focus();
     key('saturno', 'Enter');
     expect(sim.selectedBodyId()).toBe('saturno');
+    expect(chosen).toEqual(['saturno']);
     expect(item('saturno')?.getAttribute('aria-selected')).toBe('true');
     expect(item('saturno')?.getAttribute('aria-expanded')).toBe('true');
     // Árbol plano: las lunas van detrás de su planeta, en el nivel 2.
@@ -90,12 +93,16 @@ describe('BodyPicker: índice de cuerpos como árbol accesible', () => {
 
   it('un clic en el triángulo abre o cierra las lunas sin elegir el planeta', () => {
     const { root, item, fixture, sim } = render();
+    const chosen: string[] = [];
+    fixture.componentInstance.chosen.subscribe((id) => chosen.push(id));
     root.querySelector<HTMLElement>('#tree-marte .row__toggle')?.click();
     fixture.detectChanges();
     expect(item('marte')?.getAttribute('aria-expanded')).toBe('true');
     expect(sim.selectedBodyId()).toBeNull();
+    expect(chosen).toEqual([]);
     root.querySelector<HTMLElement>('#tree-fobos .row')?.click();
     fixture.detectChanges();
     expect(sim.selectedBodyId()).toBe('fobos');
+    expect(chosen).toEqual(['fobos']);
   });
 });

@@ -18,7 +18,9 @@ for (const width of [1024, 1100, 1280, 1600]) {
     await page.goto('/?captura=1&cuerpo=saturno');
     await expect(page.locator('tls-time-controls .time__play')).toBeVisible();
     const boxes = await page.evaluate(() => {
-      const visible = (el: Element) => getComputedStyle(el).display !== 'none';
+      // Lo que se ve: ni el campo del calendario (opaco a 0, bajo su botón) ni «Controles +» cerrado.
+      const visible = (el: Element) =>
+        el.checkVisibility({ opacityProperty: true, visibilityProperty: true });
       const box = (el: Element) => {
         const r = el.getBoundingClientRect();
         return {
@@ -104,6 +106,9 @@ for (const screen of LOW_SCREENS) {
     await page.goto('/?captura=1');
     await expect(page.locator('tls-viewer-canvas')).toHaveClass(/is-ready/, { timeout: 90_000 });
     await expect(page.locator('tls-camera-controls button').first()).toBeVisible();
+    // Al llegar, reproducir y pausar se ve sin desplazar la página (D31, WCAG 2.2.2).
+    const play = await page.locator('.time__play').boundingBox();
+    expect(play && play.y + play.height).toBeLessThanOrEqual(screen.height);
     if (screen.expand) await page.locator('.time__more').click();
     await page.waitForTimeout(300);
 
@@ -159,21 +164,24 @@ for (const screen of LOW_SCREENS) {
           };
         })
         .filter((c) => c.right - c.left > 1 && c.bottom - c.top > 1);
-      const strip = document.querySelector('.tree') as HTMLElement;
+      const toggle = document.querySelector('.index-toggle') as HTMLElement;
+      const chips = document.querySelector('tls-body-chips [aria-label="Sol y planetas"]');
       return {
         view,
         header: header.bottom,
         controls,
         pageScrolls,
-        stripHeight: strip.clientHeight,
+        toggleHeight: toggle.getBoundingClientRect().height,
+        chipsHeight: chips?.getBoundingClientRect().height ?? 0,
         pageHeight: document.documentElement.scrollHeight,
       };
     });
 
     // El lienzo se ve: al menos 150 px de alto entre el texto de la vista y la hoja inferior.
     expect(layout.view.bottom - layout.view.top).toBeGreaterThanOrEqual(150);
-    // La tira de cuerpos no desaparece.
-    expect(layout.stripHeight).toBeGreaterThanOrEqual(40);
+    // Las fichas de cuerpos y el botón «Índice» (su alternativa completa) no desaparecen.
+    expect(layout.chipsHeight).toBeGreaterThanOrEqual(44);
+    expect(layout.toggleHeight).toBeGreaterThanOrEqual(36);
     for (const control of layout.controls) {
       // Cada control se ve en la ventana o se alcanza desplazando la página o su contenedor.
       if (!control.scroller) {
@@ -201,7 +209,7 @@ for (const screen of LOW_SCREENS) {
 
 /**
  * La ficha abierta en pantallas bajas (segunda ronda de la revisión de diseño, 25 y 26): elegir un
- * cuerpo solo desplaza la tira, no la página, y la cámara no asoma cortada por encima de la ficha.
+ * cuerpo no desplaza la página y la cámara no asoma cortada por encima de la ficha.
  */
 for (const screen of [
   { name: 'táctil 844 × 390 (horizontal)', width: 844, height: 390, touch: true },

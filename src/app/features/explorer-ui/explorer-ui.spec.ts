@@ -14,8 +14,8 @@ class FakeCanvas {
   readonly ready = output<void>();
 }
 
-async function render() {
-  window.history.replaceState({}, '', '/?fecha=2030-01-01T00:00Z&cuerpo=marte');
+async function render(search = '?fecha=2030-01-01T00:00Z&cuerpo=marte') {
+  window.history.replaceState({}, '', `/${search}`);
   TestBed.configureTestingModule({
     imports: [ExplorerUi],
     providers: [provideRouter([{ path: '**', children: [] }])],
@@ -50,10 +50,11 @@ describe('ExplorerUi: atajos de teclado del explorador', () => {
     expect(sim.playing()).toBe(true);
     press('K');
     expect(sim.playing()).toBe(false);
+    // Desde la velocidad de entrada (3 horas por segundo, D31), un escalón arriba y otro abajo.
     press('.');
-    expect(sim.speed()).toBe(3600);
+    expect(sim.speed()).toBe(86_400);
     press(',');
-    expect(sim.speed()).toBe(1);
+    expect(sim.speed()).toBe(3 * 3600);
     press('r');
     expect(sim.reverse()).toBe(true);
     press('n');
@@ -125,5 +126,108 @@ describe('ExplorerUi: atajos de teclado del explorador', () => {
     host.querySelector<HTMLElement>('#tree-saturno .row')?.click();
     fixture.detectChanges();
     expect(live?.textContent).toContain('Saturno, planeta.');
+  });
+});
+
+describe('ExplorerUi: panel «Índice» y texto de presentación (fase 3c)', () => {
+  afterEach(() => window.history.replaceState({}, '', '/'));
+
+  it('el índice está cerrado al entrar; su botón lo abre con el foco en el árbol y lo cierra', async () => {
+    const { explorer, host, fixture } = await render();
+    const toggle = host.querySelector<HTMLButtonElement>('.index-toggle');
+    const panel = host.querySelector<HTMLElement>('#explorer-index');
+    expect(explorer.indexOpen()).toBe(false);
+    expect(panel?.hidden).toBe(true);
+    expect(toggle?.getAttribute('aria-expanded')).toBe('false');
+    expect(toggle?.getAttribute('aria-controls')).toBe('explorer-index');
+
+    toggle?.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(panel?.hidden).toBe(false);
+    expect(toggle?.getAttribute('aria-expanded')).toBe('true');
+    // El foco entra en la fila que es la parada del árbol (la del cuerpo elegido: Marte).
+    expect(document.activeElement?.id).toBe('tree-marte');
+
+    toggle?.click();
+    fixture.detectChanges();
+    expect(explorer.indexOpen()).toBe(false);
+    expect(panel?.hidden).toBe(true);
+  });
+
+  it('I lo abre y lo cierra; Esc con el foco dentro cierra el índice antes que la ficha', async () => {
+    const { explorer, press, host, fixture } = await render();
+    press('i');
+    await fixture.whenStable();
+    expect(explorer.indexOpen()).toBe(true);
+    press('i');
+    expect(explorer.indexOpen()).toBe(false);
+
+    press('i');
+    await fixture.whenStable();
+    const row = host.querySelector<HTMLElement>('#tree-marte');
+    press('Escape', {}, row as HTMLElement);
+    expect(explorer.indexOpen()).toBe(false);
+    expect(explorer.panelOpen()).toBe(true); // la ficha de Marte, de la URL, sigue
+    // Con el foco fuera (en el botón «Índice»), Esc cierra antes la ficha y después el índice.
+    explorer.indexOpen.set(true);
+    host.querySelector<HTMLElement>('.index-toggle')?.focus();
+    press('Escape');
+    expect(explorer.panelOpen()).toBe(false);
+    expect(explorer.indexOpen()).toBe(true);
+    press('Escape');
+    expect(explorer.indexOpen()).toBe(false);
+    // Su botón de cerrar también.
+    explorer.indexOpen.set(true);
+    fixture.detectChanges();
+    host.querySelector<HTMLButtonElement>('[aria-label="Cerrar el índice"]')?.click();
+    expect(explorer.indexOpen()).toBe(false);
+  });
+
+  it('en móvil (hoja inferior), elegir en el índice lo cierra y abre la ficha', async () => {
+    const original = window.matchMedia;
+    window.matchMedia = ((query: string) =>
+      ({
+        matches: query.includes('max-width'),
+        media: query,
+      }) as MediaQueryList) as typeof window.matchMedia;
+    try {
+      const { explorer, host, fixture, sim } = await render('?fecha=2030-01-01T00:00Z');
+      explorer.indexOpen.set(true);
+      fixture.detectChanges();
+      host.querySelector<HTMLElement>('#tree-venus .row')?.click();
+      fixture.detectChanges();
+      expect(sim.selectedBodyId()).toBe('venus');
+      expect(explorer.panelOpen()).toBe(true);
+      expect(explorer.indexOpen()).toBe(false);
+    } finally {
+      window.matchMedia = original;
+    }
+  });
+
+  it('en escritorio, elegir en el índice lo deja abierto (la ficha va a la derecha)', async () => {
+    const { explorer, host, fixture, sim } = await render('?fecha=2030-01-01T00:00Z');
+    explorer.indexOpen.set(true);
+    fixture.detectChanges();
+    host.querySelector<HTMLElement>('#tree-venus .row')?.click();
+    fixture.detectChanges();
+    expect(sim.selectedBodyId()).toBe('venus');
+    expect(explorer.indexOpen()).toBe(true);
+  });
+
+  it('el texto de presentación se pliega al usar el explorador o al elegir un cuerpo', async () => {
+    const plain = await render('?fecha=2030-01-01T00:00Z');
+    expect(plain.host.classList.contains('is-interacted')).toBe(false);
+    // Moverse con el tabulador no cuenta; una tecla o un clic, sí.
+    plain.press('Tab');
+    expect(plain.host.classList.contains('is-interacted')).toBe(false);
+    plain.host.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+    plain.fixture.detectChanges();
+    expect(plain.host.classList.contains('is-interacted')).toBe(true);
+    TestBed.resetTestingModule();
+
+    // Con un cuerpo en el enlace, la ficha está abierta: plegado desde el principio.
+    const chosen = await render();
+    expect(chosen.host.classList.contains('is-interacted')).toBe(true);
   });
 });

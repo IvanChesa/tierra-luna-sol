@@ -8,15 +8,15 @@ import {
   effect,
   inject,
   linkedSignal,
+  output,
   signal,
   untracked,
 } from '@angular/core';
-import { formatAu, formatNumber } from '../../core/format';
 import type { BodyId } from '../../data/body.model';
 import { ExplorerStore } from '../../state/explorer.store';
 import { SystemPositions } from '../../state/positions';
 import { SimulationStore } from '../../state/simulation.store';
-import { ofBody } from '../explorer-ui/describe';
+import { distanceText, distanceValue } from '../explorer-ui/describe';
 import { ExplorerSession } from '../explorer-ui/explorer-session';
 import { Icon } from '../viewer/icon';
 import {
@@ -39,15 +39,14 @@ const TREE_KEYS: readonly string[] = [
   'Home',
   'End',
 ];
-/** Espacio duro entre la cifra y la unidad (ESTILO §3). */
-const NBSP = ' ';
 
 /**
  * Índice de cuerpos (PLAN 3.b.5): un árbol accesible (WAI-ARIA Tree View, una sola parada de
  * tabulación) con el Sol, los planetas y sus lunas. Se lee como una tabla de efemérides: cada cuerpo
  * lleva su distancia actual, al Sol los planetas y a su planeta las lunas, en cifras tabulares que
- * cambian al reproducir (como mucho 5 veces por segundo). En móvil es la tira horizontal de la hoja
- * inferior. Funciona sin WebGL: las distancias salen de `SystemPositions`, no del motor.
+ * cambian al reproducir (como mucho 5 veces por segundo). Vive en el panel «Índice» (fase 3c), que
+ * en móvil es una hoja inferior. Funciona sin WebGL: las distancias salen de `SystemPositions`, no
+ * del motor.
  */
 @Component({
   selector: 'tls-body-picker',
@@ -56,6 +55,9 @@ const NBSP = ' ';
   styleUrl: './body-picker.css',
 })
 export class BodyPicker {
+  /** Se ha elegido un cuerpo (Intro, Espacio o clic en una fila). */
+  readonly chosen = output<BodyId>();
+
   private readonly sim = inject(SimulationStore);
   private readonly explorer = inject(ExplorerStore);
   private readonly session = inject(ExplorerSession);
@@ -81,20 +83,16 @@ export class BodyPicker {
     const rows = visibleRows(this.expanded());
     return rows.includes(cursor) ? cursor : (treeNode(cursor).parent ?? 'sol');
   });
-  /** Distancias de cada cuerpo, ya formateadas (ESTILO §3). */
-  protected readonly values = computed(() => {
-    // El Sol no tiene distancia en esta columna (es el origen de las de los planetas).
-    const values = new Map<BodyId, string>([['sol', '—']]);
-    for (const root of ROOT_NODES) {
-      const toSun = this.positions.distances(root.id).toSunKm;
-      if (root.kind === 'planet' && toSun !== null) values.set(root.id, formatAu(toSun));
-      for (const child of root.children) {
-        const km = this.positions.distances(child).toParentKm;
-        if (km !== null) values.set(child, `${formatNumber(km, 0)}${NBSP}km`);
-      }
-    }
-    return values;
-  });
+  /** Distancias de cada cuerpo, ya formateadas (ESTILO §3). El Sol, el origen, lleva una raya. */
+  protected readonly values = computed(
+    () =>
+      new Map<BodyId, string>(
+        BODY_TREE.map((node) => [
+          node.id,
+          distanceValue(node.id, this.positions.distances(node.id)) ?? '—',
+        ]),
+      ),
+  );
   /** La fila con el foco: al llegar a otra, su descripción se pone al día. */
   private readonly focusedRow = signal<BodyId | null>(null);
   /**
@@ -105,17 +103,17 @@ export class BodyPicker {
    */
   protected readonly descriptions = computed(() => {
     this.focusedRow();
-    const values = this.sim.playing() ? untracked(this.values) : this.values();
-    return BODY_TREE.map((node) => {
-      const value = values.get(node.id);
-      const of = node.parent ? ofBody(node.parent) : 'del Sol';
-      return { id: node.id, text: node.kind === 'star' || !value ? '' : `A ${value} ${of}` };
-    });
+    const texts = () =>
+      BODY_TREE.map((node) => ({
+        id: node.id,
+        text: distanceText(node.id, this.positions.distances(node.id)),
+      }));
+    return this.sim.playing() ? untracked(texts) : texts();
   });
 
   constructor() {
-    // En la tira horizontal del móvil, el cuerpo elegido se desplaza a la vista (DOM: sistema
-    // externo), cuando ya está pintado.
+    // El cuerpo elegido se desplaza a la vista dentro de la lista (DOM: sistema externo), cuando ya
+    // está pintado.
     const injector = inject(Injector);
     effect(() => {
       const id = this.selected();
@@ -125,32 +123,24 @@ export class BodyPicker {
   }
 
   /**
-   * Desplaza solo la lista (la tira del móvil o la columna del escritorio) hasta la fila: con
-   * `scrollIntoView` se moverían también los contenedores de fuera, y en las pantallas bajas, donde
-   * se desplaza la página, la página entera.
+   * Desplaza solo la lista hasta la fila: con `scrollIntoView` se moverían también los contenedores
+   * de fuera, y en las pantallas bajas, donde se desplaza la página, la página entera.
    */
   private revealRow(id: BodyId): void {
     const tree = this.host.nativeElement.querySelector<HTMLElement>('.tree');
     const row = tree?.querySelector<HTMLElement>(`#tree-${id} > .row`);
     if (!tree || !row) return;
-    const box = tree.getBoundingClientRect();
     const target = row.getBoundingClientRect();
-    // La parte visible de la lista, sin su borde ni sus márgenes de desplazamiento (el de los lados
-    // en la tira del móvil; el de abajo, el del fundido del escritorio).
+    // La parte visible de la lista, sin su borde ni el margen de desplazamiento de abajo (el del
+    // fundido).
     const style = tree.ownerDocument.defaultView?.getComputedStyle(tree);
-    const pad = Number.parseFloat(style?.scrollPaddingInlineStart ?? '') || 0;
     const padEnd = Number.parseFloat(style?.scrollPaddingBlockEnd ?? '') || 0;
-    const left = box.left + tree.clientLeft + pad;
-    const right = box.left + tree.clientLeft + tree.clientWidth - pad;
-    const top = box.top + tree.clientTop;
+    const top = tree.getBoundingClientRect().top + tree.clientTop;
     const bottom = top + tree.clientHeight - padEnd;
-    let dx = 0;
-    if (target.left < left) dx = target.left - left;
-    else if (target.right > right) dx = target.right - right;
     let dy = 0;
     if (target.top < top) dy = target.top - top;
     else if (target.bottom > bottom) dy = target.bottom - bottom;
-    if (dx !== 0 || dy !== 0) tree.scrollBy?.({ left: dx, top: dy });
+    if (dy !== 0) tree.scrollBy?.({ top: dy });
   }
 
   protected children(node: TreeNode): readonly TreeNode[] {
@@ -164,6 +154,7 @@ export class BodyPicker {
   protected choose(id: BodyId): void {
     this.cursor.set(id);
     this.session.select(id);
+    this.chosen.emit(id);
   }
 
   /** Un clic en una fila la elige; en el triángulo de un planeta, abre o cierra sus lunas. */

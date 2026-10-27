@@ -13,6 +13,8 @@
  * - Solo en captura, para comparar con fotos reales (fase 3b): `desde=tierra` (la geometría de una
  *   foto del Hubble en esa fecha), `fase=30` y `latitud=-17` (ángulo de fase y latitud de la cámara
  *   sobre el ecuador del cuerpo, en grados) y `tonemapping=neutral|agx|aces`.
+ * - Solo en captura, para las miniaturas de las fichas (fase 3c): `aislado=1`, el cuerpo de
+ *   `cuerpo=` solo y centrado.
  */
 import { findBody, isBodyId } from '../../data/body-index';
 import { MAX_DATE, MIN_DATE } from '../../ephemeris/constants';
@@ -40,6 +42,8 @@ export interface ViewerParams {
   readonly background: BodyId | null;
   readonly viewFrom: ViewFrom | null;
   readonly toneMapping: ToneMappingMode | null;
+  /** Solo en captura: el cuerpo, solo y centrado (miniaturas). */
+  readonly isolate: boolean;
   /** Avisos de los parámetros que se han ignorado, ya redactados para la interfaz. */
   readonly warnings: readonly string[];
 }
@@ -151,6 +155,7 @@ export function parseViewerParams(search: string): ViewerParams {
     background: background !== null && isBodyId(background) ? background : null,
     viewFrom: capture ? parseViewFrom(params) : null,
     toneMapping: capture ? (TONE_MAPPING[params.get('tonemapping') ?? ''] ?? null) : null,
+    isolate: capture && params.get('aislado') === '1',
     warnings,
   };
 }

@@ -69,6 +69,12 @@ export interface SceneEngineOptions {
   readonly viewFrom?: ViewFrom;
   /** Solo en captura: el tone mapping, para compararlos (`?tonemapping=agx`). */
   readonly toneMapping?: ToneMappingMode;
+  /**
+   * Solo en captura: el cuerpo enfocado, solo y centrado en el lienzo (sin estrellas, órbitas,
+   * etiquetas ni los demás cuerpos, y sin los márgenes de la interfaz). Las miniaturas de las fichas
+   * de cuerpos (`?aislado=1`, `scripts/build-body-thumbnails.mjs`).
+   */
+  readonly isolate?: boolean;
   /** Base de las URL de los recursos (por defecto, la raíz del sitio). */
   readonly assetsBaseUrl?: string;
 }

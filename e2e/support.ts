@@ -115,3 +115,38 @@ export const urlChanges = (page: Page): Promise<number> =>
 
 /** Una fila del índice de cuerpos (el elemento que se pulsa). */
 export const treeRow = (page: Page, id: string) => page.locator(`#tree-${id} > .row`);
+
+/**
+ * Si el elemento con el foco está tapado por otro (el punto de su centro es de otro elemento),
+ * devuelve su HTML; si no, `null`. Para comprobar que el tabulador no se para en lo que tapa una hoja.
+ */
+export function coveredFocus(page: Page): Promise<string | null> {
+  return page.evaluate(() => {
+    const element = document.activeElement;
+    if (!(element instanceof HTMLElement) || element === document.body) return null;
+    const box = element.getBoundingClientRect();
+    const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+    return hit && !element.contains(hit) && !hit.contains(element) ? element.outerHTML : null;
+  });
+}
+
+/** Abre «Controles +» (la fecha, la hora, la zona, «Ahora», la calidad y los atajos). */
+export async function openControls(page: Page): Promise<void> {
+  // Por el estado del panel, no por `aria-expanded`, que se repinta un instante después.
+  const menu = page.locator('#time-menu');
+  if (!(await menu.evaluate((element) => element.matches(':popover-open')))) {
+    await page.getByRole('button', { name: 'Controles', exact: true }).click();
+  }
+  await expect(page.locator('#time-date')).toBeVisible();
+}
+
+/** El botón «Índice» (exacto: el panel abierto tiene también «Cerrar el índice»). */
+export const indexToggle = (page: Page) =>
+  page.getByRole('button', { name: 'Índice', exact: true });
+
+/** Abre el panel «Índice» (cerrado al entrar desde la fase 3c) si no está abierto. */
+export async function openIndex(page: Page): Promise<void> {
+  const tree = page.getByRole('tree', { name: 'Cuerpos del sistema solar' });
+  if (!(await tree.isVisible())) await indexToggle(page).click();
+  await expect(tree).toBeVisible();
+}

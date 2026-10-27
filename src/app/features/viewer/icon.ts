@@ -14,6 +14,9 @@ export type IconName =
   | 'help'
   | 'skip'
   | 'menu'
+  | 'list'
+  | 'calendar'
+  | 'sliders'
   | 'alert';
 
 /**
@@ -80,6 +83,24 @@ export type IconName =
         }
         @case ('menu') {
           <path d="M4 7h16M4 12h16M4 17h16" />
+        }
+        @case ('list') {
+          <!-- El índice: una lista con sus viñetas. -->
+          <path d="M9.5 7h10.5M9.5 12h10.5M9.5 17h10.5" />
+          <circle class="fill" cx="5" cy="7" r="1.25" />
+          <circle class="fill" cx="5" cy="12" r="1.25" />
+          <circle class="fill" cx="5" cy="17" r="1.25" />
+        }
+        @case ('calendar') {
+          <rect x="4" y="5.5" width="16" height="14.5" rx="2" />
+          <path d="M4 10.5h16M8.5 3.5v4M15.5 3.5v4" />
+        }
+        @case ('sliders') {
+          <!-- Ajustes: tres reguladores. -->
+          <path d="M4 6.5h7.5M16.5 6.5H20M4 12h2.5M11.5 12H20M4 17.5h10.5M19.5 17.5h.5" />
+          <circle cx="14" cy="6.5" r="2.25" />
+          <circle cx="9" cy="12" r="2.25" />
+          <circle cx="17" cy="17.5" r="2.25" />
         }
         @case ('alert') {
           <path

@@ -231,6 +231,8 @@ export class World {
   private milkyWayTexture: LoadedTexture | null = null;
   private milkyWayRequested: TextureLevel | null = null;
   private orbitSources: readonly OrbitSource[];
+  /** Solo en captura: el único cuerpo que se dibuja (las miniaturas de las fichas, fase 3c). */
+  private isolated: number | null = null;
   private disposed = false;
 
   constructor(private readonly options: WorldOptions) {
@@ -345,7 +347,21 @@ export class World {
     this.stars = stars;
     stars.setMagnitudeLimit(this.profile.starMagnitudeLimit);
     stars.setBrightness(this.backgroundGain);
+    stars.object.visible = this.isolated === null;
     this.scene.add(stars.object);
+  }
+
+  /**
+   * Solo en captura: dibuja un único cuerpo, sin estrellas, Vía Láctea ni órbitas (las miniaturas
+   * de las fichas de cuerpos, fase 3c). Los anillos de Saturno van con Saturno y el halo, con el Sol.
+   */
+  setIsolated(index: number | null): void {
+    this.isolated = index;
+    const all = index === null;
+    if (this.stars) this.stars.object.visible = all;
+    this.milkyWay.visible = all && this.milkyWayTexture !== null;
+    this.orbits.object.visible = all;
+    this.halo.visible = all || this.visuals[index]?.body.kind === 'star';
   }
 
   /** Cambia de calidad: esferas, estrellas, órbitas y texturas (las anteriores se liberan). */
@@ -493,7 +509,8 @@ export class World {
       setFromEcl(mesh.position, positions, k);
       const r = radii[k] as number;
       mesh.scale.set(r, r * (1 - visual.body.flattening), r);
-      mesh.visible = frame.aliasedOrbit?.[k] !== 1;
+      mesh.visible =
+        (this.isolated === null || this.isolated === k) && frame.aliasedOrbit?.[k] !== 1;
       // Con la rotación congelada se conserva la última orientación pintada (§4.5).
       const frozen = frame.frozenSpin?.[k] === 1;
       if (!frozen || !visual.frozen) {
@@ -765,7 +782,7 @@ export class World {
     this.milkyWayTexture = loaded;
     this.milkyWayMaterial.uniforms.uMap.value = loaded.texture;
     this.milkyWayMaterial.uniforms.uHasMap.value = 1;
-    this.milkyWay.visible = true;
+    this.milkyWay.visible = this.isolated === null;
     if (previous) releaseTexture(previous.texture);
     this.options.invalidate();
   }

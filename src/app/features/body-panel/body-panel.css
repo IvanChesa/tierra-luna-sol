@@ -56,12 +56,54 @@
 }
 
 .card__body {
+  --card-pad: var(--space-6);
   flex: 1;
   min-height: 0;
-  padding: 0 var(--space-6) var(--space-6);
+  padding: 0 var(--card-pad) var(--card-pad);
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--color-control) transparent;
+}
+
+/*
+ * Si los datos no caben (portátil, tarjeta baja), una sombra en el borde de abajo dice que hay más
+ * mientras quede algo por ver, aunque el corte caiga entre dos filas (como en el índice:
+ * body-picker.css). La enciende una animación ligada al desplazamiento; sin desbordamiento, no hay.
+ */
+@property --more-below {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+@keyframes more-below {
+  0%,
+  94% {
+    --more-below: 1;
+  }
+
+  100% {
+    --more-below: 0;
+  }
+}
+
+.card__body::after {
+  position: sticky;
+  bottom: calc(-1 * var(--card-pad));
+  display: block;
+  height: 1.5rem;
+  margin: -1.5rem calc(-1 * var(--card-pad)) 0;
+  background: linear-gradient(to top, color-mix(in srgb, #000 55%, transparent), transparent);
+  opacity: var(--more-below);
+  pointer-events: none;
+  content: '';
+}
+
+@supports (animation-timeline: scroll()) {
+  .card__body {
+    animation: more-below linear both;
+    animation-timeline: scroll(self block);
+  }
 }
 
 .card__summary {
@@ -152,7 +194,7 @@
   }
 
   .card__body {
-    padding: 0 var(--space-4) var(--space-4);
+    --card-pad: var(--space-4);
   }
 
   .card__foot {

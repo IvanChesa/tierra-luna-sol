@@ -229,13 +229,47 @@ tls-root:has(tls-explorer-ui.is-clean) .site-header {
 }
 
 /*
- * El texto de la vista se recoge donde falta sitio (queda el selector de vista). Se oculta solo a la
- * vista: el H1 y el párrafo siguen para los lectores de pantalla.
- * - Móvil: con la ficha abierta, con la barra de tiempo desplegada y en pantallas bajas.
- * - Escritorio bajo: solo el párrafo, para que el índice gane alto.
+ * El texto de presentación (fase 3c, tarea 5) se pliega al empezar a usar el explorador o al elegir
+ * un cuerpo: queda el H1 (la interfaz diferida pone la clase en su anfitrión). La descripción solo se
+ * oculta a la vista: sigue para los lectores de pantalla. Con movimiento reducido, sin animación (las
+ * duraciones son 0); donde no se puede animar la altura, se pliega de golpe.
+ */
+.explorer__lead {
+  interpolate-size: allow-keywords;
+}
+
+.explorer__intro p {
+  overflow: hidden;
+  transition:
+    height var(--duration-base) var(--ease-standard),
+    opacity var(--duration-base) var(--ease-standard);
+}
+
+.explorer:has(> tls-explorer-ui.is-interacted) :is(.explorer__intro p, .explorer__touch) {
+  height: 0;
+  opacity: 0;
+}
+
+.explorer__touch {
+  overflow: hidden;
+  transition:
+    height var(--duration-base) var(--ease-standard),
+    opacity var(--duration-base) var(--ease-standard);
+}
+
+.explorer:has(> tls-explorer-ui.is-interacted) .explorer__intro h1 {
+  margin-bottom: 0;
+}
+
+/*
+ * Donde falta sitio, el texto se recoge más (queda el selector de vista). También solo a la vista.
+ * - Móvil: con la ficha o el índice abiertos (son hojas que suben), todo el texto.
+ * - Móviles bajos: la descripción, y el H1 se queda compacto (resuelve la duda de la fase 3); muy
+ *   bajos (en horizontal), también el H1: las pestañas ya dicen dónde estás.
+ * - Escritorio, con el índice abierto: todo el texto, para que el índice gane alto.
  */
 @media (max-width: 63.99rem) {
-  .explorer:has(.panel:not([hidden]), .time.is-expanded) .explorer__intro {
+  .explorer:has(.panel:not([hidden]), .index-panel:not([hidden])) .explorer__intro {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -246,7 +280,7 @@ tls-root:has(tls-explorer-ui.is-clean) .site-header {
 }
 
 @media (max-width: 63.99rem) and (max-height: 45rem) {
-  .explorer__intro {
+  .explorer__intro p {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -255,17 +289,25 @@ tls-root:has(tls-explorer-ui.is-clean) .site-header {
     white-space: nowrap;
   }
 
-  /*
-   * Con la barra de tiempo desplegada, el lienzo de un móvil bajo mide unos 190 px: la cámara se
-   * queda en acercar y alejar para no tapar las etiquetas (G y V siguen valiendo).
-   */
-  .explorer:has(.time.is-expanded) .camera__extra {
-    display: none;
+  .explorer .explorer__intro h1 {
+    margin-bottom: 0;
+    font-size: 1.25rem;
   }
 }
 
-@media (min-width: 64rem) and (max-height: 50rem) {
-  .explorer__intro p {
+@media (max-width: 63.99rem) and (max-height: 30rem) {
+  .explorer__intro {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+@media (min-width: 64rem) {
+  .explorer:has(.index-panel:not([hidden])) .explorer__intro {
     position: absolute;
     width: 1px;
     height: 1px;
