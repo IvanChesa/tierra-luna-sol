@@ -5,12 +5,12 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "ng build",
+    "build": "ng build && node scripts/prepare-pages.mjs",
     "watch": "ng build --watch --configuration development",
     "test": "ng test --watch=false",
     "lint": "ng lint && prettier --check .",
     "format": "prettier --write .",
-    "e2e": "tsc -p tsconfig.e2e.json && ng build && playwright test",
+    "e2e": "tsc -p tsconfig.e2e.json && npm run build && playwright test",
     "check": "npm run lint && npm test && npm run build && node scripts/check-initial-bundle.mjs"
   },
   "private": true,

@@ -1,0 +1,48 @@
+# Cabeceras de Cloudflare Pages (fase 4, D24 y D26). `scripts/prepare-pages.mjs` pone en la CSP, en
+# lugar del marcador de `script-src`, los hashes de los scripts en línea que genera Angular.
+# Un patrón por línea, sin sangría, y sus cabeceras debajo, con sangría. Si dos reglas que coinciden
+# dan la misma cabecera, Pages une sus valores con una coma: cada cabecera sale de una sola regla.
+
+# Todo el sitio. La CSP solo admite lo propio: sin terceros (D24), sin `eval` y sin manejadores en
+# línea. Los estilos en línea son los de los componentes de Angular y el CSS crítico de la página.
+# La geolocalización, solo para «usar mi ubicación» de El cielo desde España (fase 8).
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' {{INLINE_SCRIPTS}}; style-src 'self' 'unsafe-inline'; img-src 'self'; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(self), camera=(), microphone=(), payment=(), usb=(), browsing-topics=()
+  Cross-Origin-Opener-Policy: same-origin
+  Strict-Transport-Security: max-age=31536000
+
+# La dirección de Pages y las vistas previas, fuera de los buscadores: el dominio propio llega en la
+# fase 11 (las vistas previas ya llevan `noindex` de Pages; aquí, también la de producción).
+https://:project.pages.dev/*
+  X-Robots-Tag: noindex
+
+https://:version.:project.pages.dev/*
+  X-Robots-Tag: noindex
+
+# Con hash en el nombre (JS, CSS, las fuentes de `media/` y las texturas): un año, inmutables.
+/main-*
+  Cache-Control: public, max-age=31536000, immutable
+
+/chunk-*
+  Cache-Control: public, max-age=31536000, immutable
+
+/styles-*
+  Cache-Control: public, max-age=31536000, immutable
+
+/media/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/textures/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Sin hash (los pósters, las miniaturas y el catálogo de estrellas): un día, para que una versión nueva
+# llegue sin esperar. El HTML lleva el valor de Pages (se revalida siempre).
+/img/*
+  Cache-Control: public, max-age=86400
+
+/data/*
+  Cache-Control: public, max-age=86400
