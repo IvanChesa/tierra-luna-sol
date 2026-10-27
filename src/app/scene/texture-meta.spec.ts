@@ -15,7 +15,7 @@ import {
   meridianOffset,
   textureVramBytes,
 } from './textures';
-import { QUALITY_PROFILES } from './quality';
+import { QUALITY_PROFILES, TextureLevel } from './quality';
 import { BODY_RELIEF_TEXTURES, BODY_TEXTURES } from './world';
 
 const ids = Object.keys(TEXTURE_META) as TextureId[];
@@ -52,8 +52,8 @@ describe('texturas: manifiesto y alineación del meridiano 0', () => {
     for (const id of Object.values(BODY_RELIEF_TEXTURES)) expect(ids).toContain(id);
   });
 
-  it('los niveles son 1k/2k/4k, en proporción 2:1 los mapas y con hash en el nombre', () => {
-    const widths: Record<string, number> = { '1k': 1024, '2k': 2048, '4k': 4096 };
+  it('los niveles son 1k/2k/4k (y 8k), en proporción 2:1 los mapas y con hash en el nombre', () => {
+    const widths: Record<string, number> = { '1k': 1024, '2k': 2048, '4k': 4096, '8k': 8192 };
     for (const id of ids) {
       for (const file of TEXTURE_FILES[id] ?? []) {
         expect(file.width).toBe(widths[file.level]);
@@ -121,19 +121,35 @@ describe('texturas: nivel elegido y VRAM', () => {
     expect(chooseTextureFile(undefined, '1k', 4096)).toBeNull();
   });
 
+  it('la textura de día de la Tierra llega a 8k, que solo se elige si cabe en maxTextureSize (fase 5)', () => {
+    const day = TEXTURE_FILES['earth-day'];
+    expect(chooseTextureFile(day, '8k', 16_384)?.level).toBe('8k');
+    expect(chooseTextureFile(day, '8k', 8192)?.level).toBe('8k');
+    expect(chooseTextureFile(day, '8k', 4096)?.level).toBe('4k');
+    // Las demás, como mucho 4k: pedir 8k da 4k.
+    expect(chooseTextureFile(TEXTURE_FILES['earth-clouds'], '8k', 16_384)?.level).toBe('4k');
+    expect(QUALITY_PROFILES.high.earthDayTexture).toBe('8k');
+  });
+
   it('estima la VRAM con mipmaps (4/3) y deja las vistas dentro del presupuesto de §5', () => {
     expect(textureVramBytes(1024, 512)).toBeCloseTo(1024 * 512 * 4 * (4 / 3), 6);
     expect(textureVramBytes(1024, 512, false)).toBe(1024 * 512 * 4);
-    // Vista general en alto: todos los cuerpos en su nivel general, la Vía Láctea en 2k y, como
-    // peor caso, un cuerpo enfocado en 4k.
-    const level = (id: TextureId, wanted: '1k' | '2k' | '4k') =>
+    // Todos los cuerpos en su nivel general, la Vía Láctea en 2k y, como peor caso, la Tierra enfocada
+    // (fase 5): su textura de día (8k en alto) y sus nubes, noche, normales y máscara del océano.
+    const level = (id: TextureId, wanted: TextureLevel) =>
       chooseTextureFile(TEXTURE_FILES[id], wanted, 16_384);
     for (const quality of ['high', 'medium', 'low'] as const) {
       const profile = QUALITY_PROFILES[quality];
       const bodies = Object.values(BODY_TEXTURES).map((id) => level(id, profile.overviewTexture));
       const sky = profile.milkyWayTexture ? level('milky-way', profile.milkyWayTexture) : null;
-      const focus = level('earth-day', profile.focusTexture);
-      const bytes = [...bodies, sky, focus].reduce(
+      const earth = [
+        level('earth-day', profile.earthDayTexture),
+        level('earth-clouds', profile.focusTexture),
+        ...(['earth-night', 'earth-normal', 'earth-specular'] as const).map((id) =>
+          level(id, profile.earthMapsTexture),
+        ),
+      ];
+      const bytes = [...bodies, sky, ...earth].reduce(
         (sum, file) => sum + (file ? textureVramBytes(file.width, file.height) : 0),
         0,
       );

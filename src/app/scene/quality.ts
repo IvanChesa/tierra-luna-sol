@@ -7,7 +7,7 @@
  */
 import type { QualityLevel } from './types';
 
-export type TextureLevel = '1k' | '2k' | '4k';
+export type TextureLevel = '1k' | '2k' | '4k' | '8k';
 
 export interface QualityProfile {
   readonly level: QualityLevel;
@@ -22,6 +22,17 @@ export interface QualityProfile {
   /** Nivel de textura de los cuerpos en la vista general y del cuerpo enfocado. */
   readonly overviewTexture: TextureLevel;
   readonly focusTexture: TextureLevel;
+  /**
+   * Nivel de la textura de día de la Tierra en primer plano (fase 5): 8k solo en el nivel alto, si
+   * cabe en `maxTextureSize` (si no, el cargador baja al mayor que quepa). Las demás llegan a 4k.
+   */
+  readonly earthDayTexture: TextureLevel;
+  /**
+   * Nivel de las luces nocturnas, la máscara del océano y las normales de la Tierra en primer plano:
+   * 2k. Con el día en 8k (179 MB con sus mipmaps) y las nubes en 4k, la vista Tierra cabe en los
+   * 300 MB de VRAM del nivel alto (§5); con esos tres mapas en 4k, pasaría de 370.
+   */
+  readonly earthMapsTexture: TextureLevel;
   /**
    * Vía Láctea (el panorama de ESO, fase 3b), o `null` para no cargarla. §5: ≤ 1,5 MB en alta y
    * ≤ 400 kB en baja. Sin las estrellas del panorama, 2k en todos los niveles: 4k no aportaba detalle
@@ -45,6 +56,8 @@ export const QUALITY_PROFILES: Readonly<Record<QualityLevel, QualityProfile>> = 
     anisotropy: 8,
     overviewTexture: '1k',
     focusTexture: '4k',
+    earthDayTexture: '8k',
+    earthMapsTexture: '2k',
     milkyWayTexture: '2k',
     orbitSegments: 360,
     vramBudgetMB: 300,
@@ -59,6 +72,8 @@ export const QUALITY_PROFILES: Readonly<Record<QualityLevel, QualityProfile>> = 
     anisotropy: 4,
     overviewTexture: '1k',
     focusTexture: '2k',
+    earthDayTexture: '2k',
+    earthMapsTexture: '2k',
     milkyWayTexture: '2k',
     orbitSegments: 256,
     vramBudgetMB: 200,
@@ -73,6 +88,8 @@ export const QUALITY_PROFILES: Readonly<Record<QualityLevel, QualityProfile>> = 
     anisotropy: 1,
     overviewTexture: '1k',
     focusTexture: '2k',
+    earthDayTexture: '2k',
+    earthMapsTexture: '2k',
     milkyWayTexture: '2k',
     orbitSegments: 180,
     vramBudgetMB: 120,

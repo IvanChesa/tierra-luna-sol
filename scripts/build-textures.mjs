@@ -49,7 +49,10 @@ const LEVELS = [
   ['1k', 1024],
   ['2k', 2048],
   ['4k', 4096],
+  ['8k', 8192],
 ];
+/** El nivel más grande que se genera si la textura no pide otro (`maxWidth`): 4k. */
+const DEFAULT_MAX_WIDTH = 4096;
 /** Alto de la tira de los anillos (la escena solo lee una fila: basta con unos píxeles). */
 const RING_HEIGHT = 16;
 
@@ -58,7 +61,8 @@ const RING_HEIGHT = 16;
  * ring (tira RGBA de los anillos), panorama (cielo en coordenadas galácticas), relief (mapa de normales
  * calculado con build-relief.mjs a partir de un modelo de elevación; `color`: la textura con la que
  * se comprueba la alineación). `ocean`: máscara del agua con la que se corrige el color del océano
- * (OCEAN_CHROMA). `maxWidth`: el nivel más grande que se genera.
+ * (OCEAN_CHROMA). `maxWidth`: el nivel más grande que se genera (4k si no se dice; 8k solo la
+ * textura de día de la Tierra, en el nivel alto, fase 5).
  */
 const TEXTURES = {
   mercury: { file: '8k_mercury.jpg', kind: 'color', quality: 80 },
@@ -68,6 +72,7 @@ const TEXTURES = {
     kind: 'color',
     quality: 82,
     ocean: '8k_earth_specular_map.tif',
+    maxWidth: 8192,
   },
   'earth-night': { file: '8k_earth_nightmap.jpg', kind: 'color', quality: 80 },
   'earth-clouds': { file: '8k_earth_clouds.jpg', kind: 'gray', quality: 80 },
@@ -615,6 +620,7 @@ for (const [id, spec] of Object.entries(TEXTURES)) {
     const dem = DEMS[spec.dem];
     const list = [];
     for (const [level, width] of LEVELS) {
+      if (width > (spec.maxWidth ?? DEFAULT_MAX_WIDTH)) continue;
       const elevation = await loadElevation(spec.dem, width);
       if (level === '1k') {
         reports.push(checkElevation(spec.dem, elevation, width));
@@ -674,7 +680,7 @@ for (const [id, spec] of Object.entries(TEXTURES)) {
   }
   const list = [];
   for (const [level, width] of LEVELS) {
-    if (width > sourceWidth || width > (spec.maxWidth ?? Infinity)) continue;
+    if (width > sourceWidth || width > (spec.maxWidth ?? DEFAULT_MAX_WIDTH)) continue;
     let pipeline = base();
     if (spec.kind === 'ring') {
       pipeline = pipeline.resize(width, RING_HEIGHT, { fit: 'fill', kernel: 'lanczos3' });

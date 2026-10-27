@@ -80,7 +80,7 @@ export interface TextureFile {
 
 export type TextureFiles = Readonly<Partial<Record<TextureId, readonly TextureFile[]>>>;
 
-const LEVEL_ORDER: readonly TextureLevel[] = ['1k', '2k', '4k'];
+const LEVEL_ORDER: readonly TextureLevel[] = ['1k', '2k', '4k', '8k'];
 
 /**
  * El fichero que se carga: el nivel pedido o, si no existe o no cabe en `maxTextureSize`, el mayor

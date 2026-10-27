@@ -99,6 +99,7 @@ const EARTH_MAPS = [
   { id: 'earth-night', uniform: 'uNightMap', flag: 'uHasNight', nearOnly: true },
   { id: 'earth-specular', uniform: 'uSpecularMap', flag: 'uHasSpecular', nearOnly: true },
 ] as const;
+/** Los mapas de la Tierra que solo se ven de cerca van a su propio nivel (`earthMapsTexture`). */
 
 interface BodyMap {
   readonly id: TextureId;
@@ -457,10 +458,18 @@ export class World {
     for (const visual of this.visuals) {
       if (!visual.textureId) continue;
       const near = visual.body.id === focusBody?.id || visual.body.id === focusPlanet;
-      const level = near ? this.profile.focusTexture : this.profile.overviewTexture;
-      if (visual.relief) this.requestRelief(visual, near ? this.profile.focusTexture : null);
+      const focusLevel =
+        visual.textureId === 'earth-day' ? this.profile.earthDayTexture : this.profile.focusTexture;
+      const level = near ? focusLevel : this.profile.overviewTexture;
+      const earth = visual.maps.length > 0;
+      if (visual.relief) {
+        const reliefLevel = earth ? this.profile.earthMapsTexture : this.profile.focusTexture;
+        this.requestRelief(visual, near ? reliefLevel : null);
+      }
       for (const map of visual.maps) {
-        this.requestMap(visual, map, near ? level : map.nearOnly ? null : level);
+        const nearLevel = map.nearOnly ? this.profile.earthMapsTexture : this.profile.focusTexture;
+        const mapLevel = near ? nearLevel : this.profile.overviewTexture;
+        this.requestMap(visual, map, near || !map.nearOnly ? mapLevel : null);
       }
       if (visual.requested === level) continue;
       visual.requested = level;
