@@ -11,6 +11,11 @@ Proyecto en desarrollo. El plan está en [`docs/PLAN.md`](docs/PLAN.md).
 - `npm run lint`: ESLint y Prettier
 - `npm run build`: build con prerenderizado
 - `npm run check`: lint + test (con cobertura) + build + comprobación de que el JS inicial no lleva librerías pesadas
+- `npm run e2e`: e2e con Playwright (Chromium con WebGL por SwiftShader) sobre el build
+
+## Despliegue
+
+En [Cloudflare Pages](https://pages.cloudflare.com/), desde GitHub Actions (`.github/workflows/ci.yml`): cada push con el CI en verde (lint, tests, build y e2e) publica el build verificado como vista previa de su rama, en `<rama>.tierra-luna-sol.pages.dev`; la de `main`, en `staging.tierra-luna-sol.pages.dev`. `npm run build` deja el build listo para Pages (`scripts/prepare-pages.mjs`: rutas sin barra final, `404.html` y la CSP de `public/_headers`), y `node scripts/verify-pages.mjs <url>` comprueba una publicación.
 
 ## Licencia
 
