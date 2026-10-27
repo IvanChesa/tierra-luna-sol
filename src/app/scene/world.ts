@@ -42,11 +42,7 @@ import {
   AtmosphereUniforms,
   createAtmosphereMaterial,
 } from './materials/atmosphere-material';
-import {
-  BodyMaterialUniforms,
-  EarthUniforms,
-  createBodyMaterial,
-} from './materials/body-material';
+import { BodyMaterialUniforms, EarthUniforms, createBodyMaterial } from './materials/body-material';
 import { createMilkyWayMaterial } from './materials/milky-way-material';
 import { createRingMaterial } from './materials/ring-material';
 import { createHaloMaterial, createSunMaterial } from './materials/sun-material';

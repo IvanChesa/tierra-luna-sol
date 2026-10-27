@@ -65,7 +65,9 @@ try {
     }
     await page.mouse.move(0, 0);
     const png = clean ? await canvasPng(page) : await page.screenshot();
-    await sharp(png).webp({ quality: 90 }).toFile(file(`${name}.webp`));
+    await sharp(png)
+      .webp({ quality: 90 })
+      .toFile(file(`${name}.webp`));
     // Junto a la foto de EPIC: el lienzo de la captura (sin la interfaz) y la foto, a la misma altura.
     if (name === 'tierra-epic-2016' && (await stat(EPIC).catch(() => null))) {
       const ours = await sharp(png).resize({ height: 900 }).png().toBuffer();
