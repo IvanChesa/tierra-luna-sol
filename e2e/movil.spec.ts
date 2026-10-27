@@ -1,33 +1,44 @@
 import { expect, test } from '@playwright/test';
-import { openExplorer, treeRow } from './support';
+import { indexToggle, openExplorer, treeRow } from './support';
 
-// Proyecto «movil» (Pixel 7, táctil): la hoja inferior, la tira de cuerpos y el menú del sitio.
+// Proyecto «movil» (Pixel 7, táctil): las hojas inferiores (índice y ficha) y el menú del sitio.
 test.describe('Móvil', () => {
-  test('la tira de cuerpos abre la ficha en una hoja que se cierra', async ({ page }) => {
+  test('el índice sube como hoja; al elegir, la ficha sube en su lugar y se cierra', async ({
+    page,
+  }) => {
     await openExplorer(page, '/?captura=1');
+    await indexToggle(page).tap();
+    const sheet = page.getByRole('region', { name: 'Índice' });
+    await expect(sheet).toBeVisible();
+    // Con una hoja abierta, el texto de la vista se recoge a la vista (el H1 sigue para el lector).
+    const intro = page.locator('.explorer__intro');
+    await expect.poll(async () => (await intro.boundingBox())?.height ?? 0).toBeLessThanOrEqual(1);
     await treeRow(page, 'marte').tap();
     const panel = page.locator('.panel');
     await expect(panel.locator('#card-title')).toHaveText('Marte');
-    // Con la ficha abierta, el texto de la vista se recoge a la vista (el H1 sigue para el lector).
-    const intro = page.locator('.explorer__intro');
-    await expect.poll(async () => (await intro.boundingBox())?.height ?? 0).toBeLessThanOrEqual(1);
+    await expect(sheet).toBeHidden();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('El sistema solar');
     await page.getByRole('button', { name: 'Cerrar la ficha' }).tap();
     await expect(panel).toBeHidden();
-    await expect.poll(async () => (await intro.boundingBox())?.height ?? 0).toBeGreaterThan(40);
+    // Vuelve el H1 (la descripción ya se ha plegado al usar el explorador).
+    await expect.poll(async () => (await intro.boundingBox())?.height ?? 0).toBeGreaterThan(20);
   });
 
   test('con la ficha abierta, el foco va a la ficha y no pasa por lo que tapa la hoja', async ({
     page,
   }) => {
     await openExplorer(page, '/?captura=1');
-    // Con el teclado (o un lector de pantalla): elegir en la tira lleva el foco a la ficha.
-    await page.locator('#tree-marte').focus();
+    // Con el teclado (o un lector de pantalla): abrir el índice y elegir lleva el foco a la ficha.
+    await indexToggle(page).focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('#tree-sol')).toBeFocused();
+    for (let k = 0; k < 4; k++) await page.keyboard.press('ArrowDown');
+    await expect(page.locator('#tree-marte')).toBeFocused();
     await page.keyboard.press('Enter');
     const panel = page.locator('.panel');
     await expect(panel.locator('#card-title')).toHaveText('Marte');
     await expect(panel).toBeFocused();
-    // El tabulador no se para en nada tapado (la tira, la barra de tiempo, la cámara).
+    // El tabulador no se para en nada tapado (el botón «Índice», la barra de tiempo, la cámara).
     for (let k = 0; k < 6; k++) {
       await page.keyboard.press('Tab');
       const covered = await page.evaluate(() => {
@@ -39,12 +50,12 @@ test.describe('Móvil', () => {
       });
       expect(covered).toBeNull();
     }
-    // Al cerrarla desde dentro, el foco vuelve a la fila de la tira (con el foco fuera de la ficha,
-    // por ejemplo ya en la cabecera, Esc la cierra sin moverlo).
+    // Al cerrarla desde dentro, el foco vuelve al botón «Índice»: la fila elegida estaba en la hoja
+    // del índice, que se ha cerrado (con el foco fuera de la ficha, Esc la cierra sin moverlo).
     await panel.getByRole('button', { name: 'Cerrar la ficha' }).focus();
     await page.keyboard.press('Escape');
     await expect(panel).toBeHidden();
-    await expect(page.locator('#tree-marte')).toBeFocused();
+    await expect(indexToggle(page)).toBeFocused();
   });
 
   test('durante un viaje con la ficha abierta, «Saltar el viaje» queda encima de la ficha', async ({
@@ -52,15 +63,19 @@ test.describe('Móvil', () => {
   }) => {
     // Sin captura: el viaje de la vista de la Tierra al sistema solar es animado.
     await openExplorer(page, '/explorar/tierra?fecha=2030-06-01T12:00Z');
+    await indexToggle(page).tap();
     await treeRow(page, 'saturno').tap();
-    const skip = page.getByRole('button', { name: /Saltar el viaje/ });
-    await expect(skip).toBeVisible();
+    await expect(page.getByRole('button', { name: /Saltar el viaje/ })).toBeVisible();
     await expect(page.locator('#card-title')).toHaveText('Saturno');
-    const [button, panel] = await Promise.all([
-      skip.boundingBox(),
-      page.locator('.panel').boundingBox(),
-    ]);
-    expect(button && panel && button.y + button.height).toBeLessThanOrEqual(panel?.y ?? 0);
+    // Las dos cajas a la vez (el viaje dura unos segundos y, con varios SwiftShader en paralelo,
+    // podría acabar entre dos mediciones): el botón termina por encima de la ficha.
+    const gap = await page.evaluate(() => {
+      const skip = document.querySelector('.skip')?.getBoundingClientRect();
+      const panel = document.querySelector('.panel:not([hidden])')?.getBoundingClientRect();
+      return skip && panel ? panel.top - skip.bottom : null;
+    });
+    expect(gap).not.toBeNull();
+    expect(gap).toBeGreaterThanOrEqual(0);
   });
 
   test('la barra de tiempo se despliega para la fecha, la velocidad y los ajustes', async ({

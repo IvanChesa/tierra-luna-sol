@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { openExplorer, trackProblems } from './support';
+import { openExplorer, openIndex, trackProblems } from './support';
 
 test.describe('Parámetros de la URL', () => {
   test('un parámetro no válido se ignora, se avisa y no rompe nada', async ({ page }) => {
@@ -31,6 +31,7 @@ test.describe('Parámetros de la URL', () => {
     await notices.getByRole('button', { name: 'Cerrar el aviso' }).click();
     await expect(notices).toHaveCount(0);
     // Lo demás sigue funcionando.
+    await openIndex(page);
     await page.locator('#tree-saturno > .row').click();
     await expect(page.locator('#card-title')).toHaveText('Saturno');
     expect(problems).toEqual([]);

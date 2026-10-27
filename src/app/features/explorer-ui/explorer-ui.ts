@@ -19,28 +19,35 @@ import { ExplorerStore } from '../../state/explorer.store';
 import { SystemPositions } from '../../state/positions';
 import { SimulationStore } from '../../state/simulation.store';
 import { BodyPanel } from '../body-panel/body-panel';
-import { BodyPicker } from '../body-picker/body-picker';
 import { CameraControls, ZOOM_STEP } from '../camera-controls/camera-controls';
 import { ShortcutCommand, globalCommand, isTextField, repeats } from '../shortcuts/shortcuts';
 import { ShortcutsDialog } from '../shortcuts/shortcuts-dialog';
 import { TimeControls } from '../time-controls/time-controls';
 import { VIEW_LINKS } from '../view-switcher/view-switcher';
-import { insetsFromRects } from '../viewer/insets';
+import { insetsFromRects, parseChromeEdge } from '../viewer/insets';
 import { Icon } from '../viewer/icon';
 import { ViewerCanvas } from '../viewer/viewer-canvas';
 import { ExplorerSession } from './explorer-session';
+import { IndexPanel } from './index-panel';
 import { Notices } from './notices';
 
 /** Deslizar la ficha hacia abajo más que esto la cierra (móvil). */
 const SWIPE_CLOSE_PX = 72;
 
+/** Por debajo de este ancho, el índice y la ficha son hojas inferiores (viewer-layout.css). */
+const SHEETS_MEDIA = '(max-width: 63.99rem)';
+
 /** Lo que la interfaz no recuerda como «el último foco»: lo que aparece y desaparece. */
 const TRANSIENT = '.panel, .restore, .skip';
 
-/** Lo que decide adónde va el foco: la vista limpia y el cuerpo de la ficha abierta. */
+/** Teclas que no cuentan como empezar a usar el explorador: moverse con el tabulador no lo es. */
+const PASSIVE_KEYS: ReadonlySet<string> = new Set(['Tab', 'Shift', 'Control', 'Alt', 'Meta']);
+
+/** Lo que decide adónde va el foco: la vista limpia, el cuerpo de la ficha abierta y el índice. */
 interface FocusState {
   readonly clean: boolean;
   readonly panel: string | null;
+  readonly index: boolean;
 }
 
 /** ¿Se ve el elemento? Sin `checkVisibility` (jsdom, navegadores antiguos), se supone que sí. */
@@ -49,6 +56,24 @@ function isShown(element: Element | null | undefined): element is HTMLElement {
   return typeof element.checkVisibility === 'function'
     ? element.checkVisibility({ checkVisibilityCSS: true, visibilityProperty: true })
     : true;
+}
+
+/**
+ * La posición de un elemento dentro de `root`, con su caja de maquetación (sin las transformaciones
+ * de las animaciones): se suman los desplazamientos de sus contenedores posicionados hasta `root`.
+ */
+function offsetWithin(element: HTMLElement, root: HTMLElement): { left: number; top: number } {
+  let left = 0;
+  let top = 0;
+  for (
+    let node: HTMLElement | null = element;
+    node && node !== root;
+    node = node.offsetParent as HTMLElement | null
+  ) {
+    left += node.offsetLeft;
+    top += node.offsetTop;
+  }
+  return { left, top };
 }
 
 /**
@@ -63,7 +88,7 @@ function isShown(element: Element | null | undefined): element is HTMLElement {
   selector: 'tls-explorer-ui',
   imports: [
     ViewerCanvas,
-    BodyPicker,
+    IndexPanel,
     BodyPanel,
     TimeControls,
     CameraControls,
@@ -78,7 +103,10 @@ function isShown(element: Element | null | undefined): element is HTMLElement {
     '[class.is-clean]': 'explorer.cleanView()',
     '[class.is-scene-ready]': 'ready3d()',
     '[class.has-panel]': 'panelBody() !== null',
+    '[class.has-index]': 'explorer.indexOpen()',
+    '[class.is-interacted]': 'interacted()',
     '(document:keydown)': 'onKeydown($event)',
+    '(pointerdown)': 'acted.set(true)',
     '(focusin)': 'rememberFocus($event)',
   },
 })
@@ -93,6 +121,7 @@ export class ExplorerUi {
   private readonly router = inject(Router);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
   /** Cuerpo de la ficha resumida, si está abierta. */
   protected readonly panelBody = computed(() =>
@@ -104,8 +133,23 @@ export class ExplorerUi {
   });
   /** El 3D se ve: los controles de cámara aparecen (antes, y si falla, no harían nada). */
   protected readonly ready3d = signal(false);
+  /** Ya se ha usado el explorador (un clic, un toque o una tecla dentro de él). */
+  protected readonly acted = signal(false);
+  /**
+   * El texto de presentación se pliega al empezar a usar el explorador o al elegir un cuerpo (fase
+   * 3c, tarea 5); el layout lo pliega por CSS con la clase del anfitrión.
+   */
+  protected readonly interacted = computed(() => this.acted() || this.panelBody() !== null);
   private swipeStart: number | null = null;
   private readonly panel = viewChild.required<ElementRef<HTMLElement>>('panel');
+  private readonly indexToggle = viewChild.required<ElementRef<HTMLElement>>('indexToggle');
+  /** El anfitrión del panel «Índice» (es el panel). */
+  private readonly indexPanel = viewChild.required<IndexPanel, ElementRef<HTMLElement>>(
+    IndexPanel,
+    {
+      read: ElementRef,
+    },
+  );
   private readonly restoreButton = viewChild<ElementRef<HTMLElement>>('restore');
   /** El último elemento con el foco que no es de quita y pon (la ficha, «Mostrar la interfaz»). */
   private lastFocus: HTMLElement | null = null;
@@ -115,16 +159,21 @@ export class ExplorerUi {
     afterNextRender(() => this.trackInsets());
 
     // Gestión del foco (WCAG 2.4.3): si la interfaz oculta o quita el elemento que tiene el foco
-    // (la vista limpia, la ficha que se cierra o, en móvil, la hoja que tapa la tira, la barra y la
-    // cámara), el foco pasa a donde se puede seguir. El DOM es un sistema externo: se mira cuando
-    // ya está pintado.
-    const injector = inject(Injector);
-    let previous: FocusState = { clean: false, panel: null };
+    // (la vista limpia, la ficha o el índice que se cierran o, en móvil, la hoja que tapa la franja
+    // de abajo y la cámara), el foco pasa a donde se puede seguir. El DOM es un sistema externo: se
+    // mira cuando ya está pintado.
+    let previous: FocusState = { clean: false, panel: null, index: false };
     effect(() => {
-      const next: FocusState = { clean: this.explorer.cleanView(), panel: this.panelBody() };
+      const next: FocusState = {
+        clean: this.explorer.cleanView(),
+        panel: this.panelBody(),
+        index: this.explorer.indexOpen(),
+      };
       const before = previous;
       previous = next;
-      untracked(() => afterNextRender(() => this.keepFocus(before, next), { injector }));
+      untracked(() =>
+        afterNextRender(() => this.keepFocus(before, next), { injector: this.injector }),
+      );
     });
   }
 
@@ -142,13 +191,57 @@ export class ExplorerUi {
     this.session.closePanel();
   }
 
+  // --- Índice (fase 3c, tarea 4b) ----------------------------------------------------------------
+
+  /** El botón «Índice» (y la tecla I): al abrirlo, el foco entra en el árbol. */
+  protected toggleIndex(): void {
+    if (this.explorer.indexOpen()) {
+      this.explorer.indexOpen.set(false);
+      return;
+    }
+    this.explorer.indexOpen.set(true);
+    afterNextRender(() => this.focusTree(), { injector: this.injector });
+  }
+
+  /** Cierra el índice (su botón de cerrar o `Esc`): el foco vuelve al botón «Índice». */
+  protected closeIndex(): void {
+    this.explorer.indexOpen.set(false);
+  }
+
+  /**
+   * Se ha elegido un cuerpo en el índice. En móvil el índice es una hoja que lo tapa casi todo: se
+   * cierra y sube la ficha del cuerpo (el foco va a ella).
+   */
+  protected chosenInIndex(): void {
+    const win = this.host.nativeElement.ownerDocument.defaultView;
+    if (win?.matchMedia?.(SHEETS_MEDIA).matches) this.explorer.indexOpen.set(false);
+  }
+
+  private focusTree(): void {
+    const panel = this.indexPanel().nativeElement;
+    const row = panel.querySelector<HTMLElement>('[role="treeitem"][tabindex="0"]');
+    (isShown(row) ? row : panel).focus();
+  }
+
+  // --- Teclado ----------------------------------------------------------------------------------
+
   protected onKeydown(event: KeyboardEvent): void {
+    const target = event.target instanceof Element ? event.target : null;
+    const doc = this.host.nativeElement.ownerDocument;
+    if (!PASSIVE_KEYS.has(event.key) && (target === doc.body || this.insideExplorer(target))) {
+      this.acted.set(true);
+    }
     if (event.defaultPrevented || this.explorer.helpOpen()) return;
     // Los atajos no actúan mientras se escribe (PLAN 3.d.10).
-    if (isTextField(event.target instanceof Element ? event.target : null)) return;
+    if (isTextField(target)) return;
     const command = globalCommand(event, this.explorer.singleKeyShortcuts());
     if (!command || (event.repeat && !repeats(command)) || !this.run(command)) return;
     event.preventDefault();
+  }
+
+  private insideExplorer(target: Element | null): boolean {
+    const explorer = this.host.nativeElement.parentElement;
+    return target !== null && explorer !== null && explorer.contains(target);
   }
 
   /** Ejecuta un atajo. Devuelve `false` si no había nada que hacer (`Esc` sin nada abierto). */
@@ -191,12 +284,19 @@ export class ExplorerUi {
       case 'clean-view':
         this.session.setCleanView(!this.explorer.cleanView());
         return true;
+      case 'index':
+        if (this.explorer.cleanView()) this.session.setCleanView(false);
+        this.toggleIndex();
+        return true;
       case 'escape':
         return this.escape();
     }
   }
 
-  /** `Esc`: saltar el viaje, salir de la vista limpia o cerrar la ficha, en ese orden. */
+  /**
+   * `Esc`: saltar el viaje, salir de la vista limpia o cerrar lo abierto (el índice si tiene el
+   * foco; si no, la ficha y después el índice), en ese orden.
+   */
   private escape(): boolean {
     if (this.explorer.travelling() === 'view') {
       this.session.skipTravel();
@@ -206,8 +306,17 @@ export class ExplorerUi {
       this.session.setCleanView(false);
       return true;
     }
+    const active = this.host.nativeElement.ownerDocument.activeElement;
+    if (this.explorer.indexOpen() && this.indexPanel().nativeElement.contains(active)) {
+      this.closeIndex();
+      return true;
+    }
     if (this.explorer.panelOpen()) {
       this.session.closePanel();
+      return true;
+    }
+    if (this.explorer.indexOpen()) {
+      this.closeIndex();
       return true;
     }
     if (this.explorer.travelling()) {
@@ -240,11 +349,11 @@ export class ExplorerUi {
   // --- Foco -----------------------------------------------------------------------------------------
 
   /**
-   * Tras un cambio de la vista limpia o de la ficha, si el foco se ha perdido (en `<body>` o en algo
-   * que ya no se ve): al entrar en la vista limpia, a «Mostrar la interfaz»; al abrir la ficha (en
-   * móvil tapa lo que tenía el foco), a la ficha; y al cerrar una u otra, a donde estaba antes (o a
-   * la ficha, a la fila del índice o al lienzo). Si nunca ha habido foco en el explorador (al cargar
-   * con `?cuerpo=`), no se mueve.
+   * Tras un cambio de la vista limpia, de la ficha o del índice, si el foco se ha perdido (en
+   * `<body>` o en algo que ya no se ve): al entrar en la vista limpia, a «Mostrar la interfaz»; al
+   * abrir la ficha (en móvil tapa lo que tenía el foco), a la ficha; al cerrar el índice, a su botón;
+   * y al cerrar lo demás, a donde estaba antes (o a la ficha, al índice, a su botón o al lienzo). Si
+   * nunca ha habido foco en el explorador (al cargar con `?cuerpo=`), no se mueve.
    */
   private keepFocus(before: FocusState, now: FocusState): void {
     const doc = this.host.nativeElement.ownerDocument;
@@ -254,41 +363,50 @@ export class ExplorerUi {
     if (!entering && this.lastFocus === null) return;
     const root = this.host.nativeElement.parentElement;
     const panel = this.panel().nativeElement;
+    const toggle = this.indexToggle().nativeElement;
+    const indexClosed = before.index && !now.index;
     const candidates = entering
       ? [this.restoreButton()?.nativeElement]
       : now.panel !== null && now.panel !== before.panel
         ? [panel]
         : [
+            indexClosed ? toggle : this.lastFocus,
             this.lastFocus,
             panel,
             root?.querySelector('[role="treeitem"][tabindex="0"]'),
+            toggle,
             root?.querySelector('canvas[tabindex="0"]'),
           ];
     candidates.find(isShown)?.focus();
   }
 
-  // --- Márgenes del encuadre (PLAN 3.c.6) -------------------------------------------------------
+  // --- Márgenes del encuadre (PLAN 3.c.6 y fase 3c, tarea 8) --------------------------------------
 
   /**
    * Mide los paneles que tapan el lienzo (`[data-chrome]`, con su caja de maquetación, sin las
-   * transformaciones de las animaciones) y se los pasa al motor; también como variables CSS, para
-   * colocar los avisos del lienzo en la parte visible.
+   * transformaciones de las animaciones, y el borde que declaran en `--chrome-edge`) y se los pasa
+   * al motor; también como variables CSS, para colocar la cámara y los avisos en la parte visible.
    */
   private trackInsets(): void {
     const explorer = this.host.nativeElement.parentElement;
-    if (!explorer || typeof ResizeObserver === 'undefined') return;
+    const win = explorer?.ownerDocument.defaultView;
+    if (!explorer || !win || typeof ResizeObserver === 'undefined') return;
     let last = '';
+    const chrome = [...explorer.querySelectorAll<HTMLElement>('[data-chrome]')];
     const measure = () => {
-      const chrome = [...explorer.querySelectorAll<HTMLElement>('[data-chrome]')];
       const stage = { left: 0, top: 0, right: explorer.clientWidth, bottom: explorer.clientHeight };
       const rects = chrome
         .filter((element) => element.offsetWidth > 0 && element.offsetHeight > 0)
-        .map((element) => ({
-          left: element.offsetLeft,
-          top: element.offsetTop,
-          right: element.offsetLeft + element.offsetWidth,
-          bottom: element.offsetTop + element.offsetHeight,
-        }));
+        .map((element) => {
+          const { left, top } = offsetWithin(element, explorer);
+          return {
+            left,
+            top,
+            right: left + element.offsetWidth,
+            bottom: top + element.offsetHeight,
+            edge: parseChromeEdge(win.getComputedStyle(element).getPropertyValue('--chrome-edge')),
+          };
+        });
       const insets: ViewInsets = insetsFromRects(stage, rects);
       const key = `${insets.top},${insets.right},${insets.bottom},${insets.left}`;
       if (key === last) return;
@@ -300,7 +418,7 @@ export class ExplorerUi {
     };
     const observer = new ResizeObserver(measure);
     observer.observe(explorer);
-    explorer.querySelectorAll('[data-chrome]').forEach((element) => observer.observe(element));
+    chrome.forEach((element) => observer.observe(element));
     measure();
     this.destroyRef.onDestroy(() => observer.disconnect());
   }

@@ -115,3 +115,14 @@ export const urlChanges = (page: Page): Promise<number> =>
 
 /** Una fila del índice de cuerpos (el elemento que se pulsa). */
 export const treeRow = (page: Page, id: string) => page.locator(`#tree-${id} > .row`);
+
+/** El botón «Índice» (exacto: el panel abierto tiene también «Cerrar el índice»). */
+export const indexToggle = (page: Page) =>
+  page.getByRole('button', { name: 'Índice', exact: true });
+
+/** Abre el panel «Índice» (cerrado al entrar desde la fase 3c) si no está abierto. */
+export async function openIndex(page: Page): Promise<void> {
+  const toggle = indexToggle(page);
+  if ((await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click();
+  await expect(page.getByRole('tree', { name: 'Cuerpos del sistema solar' })).toBeVisible();
+}

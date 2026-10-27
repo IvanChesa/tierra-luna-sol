@@ -1,6 +1,8 @@
 /*
  * Cada pieza en su área de la rejilla del layout (viewer-layout.css): el anfitrión no tiene caja.
- * Capas: el lienzo (0), los fondos de los paneles (1, en el layout), los paneles (2-3), los avisos (4).
+ * Capas: el lienzo (0), el velo de la franja de abajo (1, en el layout), los paneles y los controles
+ * (2-3) y los avisos (4). La cámara y «Saltar el viaje» se colocan en la parte visible del lienzo con
+ * los márgenes que mide explorer-ui.ts (`--view-*`).
  */
 :host {
   display: contents;
@@ -12,7 +14,7 @@
   grid-area: 1 / 1 / -1 / -1;
 }
 
-.index,
+.index-toggle,
 .dock,
 .camera,
 .notices,
@@ -23,23 +25,27 @@
   z-index: 2;
 }
 
-.index {
-  grid-area: index;
+.dock {
+  grid-area: bar;
 }
 
-.dock {
-  grid-area: dock;
-}
+/* --- Tarjeta del cuerpo elegido: flotando a la derecha, a la altura que pida su contenido. --- */
 
 .panel {
+  --chrome-edge: right;
   z-index: 3;
   display: flex;
   flex-direction: column;
-  grid-area: panel;
+  grid-area: 1 / 3 / 3 / 4;
+  align-self: start;
   width: var(--explorer-panel);
+  max-height: calc(100% - 2 * var(--space-4));
   min-height: 0;
+  margin: var(--space-4) var(--space-4) var(--space-4) 0;
   background: var(--color-surface);
-  border-left: var(--border-width) solid var(--color-line);
+  border: var(--border-width) solid var(--color-line);
+  border-radius: var(--radius-md);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.35);
   transition:
     opacity var(--duration-base) var(--ease-standard),
     translate var(--duration-base) var(--ease-standard);
@@ -65,17 +71,34 @@
   display: none;
 }
 
+/* --- Índice: el botón, en la franja de abajo (el panel, encima de él: index-panel.ts). --- */
+
+.index-toggle {
+  grid-area: chips;
+  align-self: center;
+  justify-self: start;
+  margin-left: var(--space-4);
+  padding: 0 var(--space-4) 0 var(--space-3);
+}
+
+.index-toggle[aria-expanded='true'] {
+  background: var(--color-surface-raised);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+/* --- Controles sobre el lienzo, en su parte visible. --- */
+
 .camera {
-  grid-area: view;
-  align-self: end;
-  justify-self: end;
-  margin: var(--space-4);
+  position: absolute;
+  right: calc(var(--view-right, 0px) + var(--space-4));
+  bottom: calc(var(--view-bottom, 0px) + var(--space-4));
 }
 
 /* Los avisos no salen de la parte visible del lienzo: si no caben, se desplazan. */
 .notices {
   z-index: 4;
-  grid-area: view;
+  grid-area: 1 / 2 / 3 / 3;
   align-self: start;
   justify-self: center;
   max-height: calc(100% - 2 * var(--space-3));
@@ -85,11 +108,11 @@
 }
 
 .skip {
+  position: absolute;
   z-index: 4;
-  grid-area: view;
-  align-self: end;
-  justify-self: center;
-  margin-bottom: var(--space-4);
+  bottom: calc(var(--view-bottom, 0px) + var(--space-4));
+  left: calc(var(--view-left, 0px) + (100% - var(--view-left, 0px) - var(--view-right, 0px)) / 2);
+  translate: -50% 0;
 }
 
 .restore {
@@ -110,7 +133,7 @@ kbd {
 }
 
 /* Vista limpia: solo el 3D y el botón para volver. */
-:host(.is-clean) :is(.index, .panel, .dock, .camera) {
+:host(.is-clean) :is(.index-toggle, .index-panel, .panel, .dock, .camera) {
   display: none;
 }
 
@@ -120,13 +143,16 @@ kbd {
 }
 
 @media (max-width: 63.99rem) {
+  /* La ficha sube como una hoja inferior sobre el lienzo y la franja de abajo. */
   .panel {
+    --chrome-edge: bottom;
     grid-area: view / 1 / -1 / -1;
     align-self: end;
     width: auto;
     max-height: 72%;
+    margin: 0;
+    border: 0;
     border-top: var(--border-width) solid var(--color-control);
-    border-left: 0;
     border-radius: var(--radius-md) var(--radius-md) 0 0;
     box-shadow: 0 -12px 32px rgb(0 0 0 / 0.4);
   }
@@ -155,11 +181,16 @@ kbd {
     content: '';
   }
 
-  .camera {
-    margin: var(--space-3);
+  .index-toggle {
+    margin-left: var(--space-3);
   }
 
-  /* La barra de tiempo desplegada que no cabe se desplaza dentro de la hoja (viewer-layout.css). */
+  .camera {
+    right: calc(var(--view-right, 0px) + var(--space-3));
+    bottom: calc(var(--view-bottom, 0px) + var(--space-3));
+  }
+
+  /* La barra de tiempo desplegada que no cabe se desplaza (viewer-layout.css). */
   .dock {
     min-height: 0;
     overflow-y: auto;
@@ -167,10 +198,11 @@ kbd {
   }
 
   /*
-   * La hoja de la ficha tapa la tira de cuerpos, la barra de tiempo y la cámara: mientras está
-   * abierta, salen del orden del foco y del árbol accesible (el foco pasa a la ficha, explorer-ui.ts).
+   * Las hojas tapan la franja de abajo y la cámara: mientras están abiertas, lo que tapan sale del
+   * orden del foco y del árbol accesible (el foco pasa a la hoja, explorer-ui.ts).
    */
-  :host(.has-panel) :is(.camera, .index, .dock) {
+  :host(.has-panel) :is(.camera, .index-toggle, .dock),
+  :host(.has-index) :is(.camera, .index-toggle, .dock, .panel) {
     visibility: hidden;
   }
 
@@ -179,15 +211,16 @@ kbd {
    * abajo a la derecha); si no caben, se desplazan.
    */
   .notices {
+    grid-area: view;
     justify-self: stretch;
     max-height: calc(100% - 3 * var(--space-3) - 2 * var(--tap-target) - var(--space-1));
     margin: var(--space-3) var(--space-3) 0;
   }
 
-  /* «Saltar el viaje», en la parte visible: encima de la hoja inferior o de la ficha abierta. */
+  /* «Saltar el viaje», en la parte visible: encima de la franja de abajo o de la ficha abierta. */
   .skip {
-    grid-area: 1 / 1 / -1 / -1;
-    justify-self: start;
-    margin: 0 0 calc(var(--view-bottom, 0px) + var(--space-3)) var(--space-3);
+    left: var(--space-3);
+    bottom: calc(var(--view-bottom, 0px) + var(--space-3));
+    translate: none;
   }
 }

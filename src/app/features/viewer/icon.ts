@@ -14,6 +14,7 @@ export type IconName =
   | 'help'
   | 'skip'
   | 'menu'
+  | 'list'
   | 'alert';
 
 /**
@@ -80,6 +81,13 @@ export type IconName =
         }
         @case ('menu') {
           <path d="M4 7h16M4 12h16M4 17h16" />
+        }
+        @case ('list') {
+          <!-- El índice: una lista con sus viñetas. -->
+          <path d="M9.5 7h10.5M9.5 12h10.5M9.5 17h10.5" />
+          <circle class="fill" cx="5" cy="7" r="1.25" />
+          <circle class="fill" cx="5" cy="12" r="1.25" />
+          <circle class="fill" cx="5" cy="17" r="1.25" />
         }
         @case ('alert') {
           <path

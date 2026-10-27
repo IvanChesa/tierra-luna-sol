@@ -19,6 +19,7 @@ describe('shortcuts: atajos de teclado', () => {
     expect(globalCommand(key('+'))).toBe('zoom-in');
     expect(globalCommand(key('-'))).toBe('zoom-out');
     expect(globalCommand(key('2'))).toBe('view-earth');
+    expect(globalCommand(key('I'))).toBe('index');
     expect(globalCommand(key('Escape'))).toBe('escape');
     expect(globalCommand(key('x'))).toBeNull();
   });
@@ -74,6 +75,7 @@ describe('shortcuts: atajos de teclado', () => {
       'escape',
       'help',
       'overview',
+      'index',
     ] as const) {
       expect(repeats(command)).toBe(false);
     }

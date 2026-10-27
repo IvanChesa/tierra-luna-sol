@@ -3,11 +3,15 @@
     <tls-viewer-poster class="explorer__poster" [view]="view()" />
   }
 
-  <!-- Fondos de los paneles: su tamaño es el encuadre que respeta la interfaz (data-chrome). -->
-  <div class="explorer__column" data-chrome></div>
-  <div class="explorer__sheet" data-chrome></div>
+  <!--
+    Fondo de la franja de abajo (fichas de cuerpos, barra de tiempo y pie). Reserva su sitio desde el
+    HTML prerenderizado: cuando llega la interfaz, nada se mueve. Su alto es el margen de abajo del
+    encuadre (data-chrome).
+  -->
+  <div class="explorer__dock" data-chrome></div>
 
-  <div class="explorer__lead">
+  <!-- Arriba a la izquierda, flotando sobre el 3D: las vistas y el texto de presentación. -->
+  <div class="explorer__lead" data-chrome>
     <tls-view-switcher [view]="view()" />
     <div class="explorer__intro">
       <router-outlet (activate)="onActivate()" />
@@ -18,9 +22,17 @@
     <tls-explorer-ui [view]="view()" (ready)="onReady()" />
   }
 
-  <!-- Al final del DOM (el foco llega después de la interfaz), al pie de la columna en pantalla. -->
-  <p class="explorer__credits">
-    Un proyecto de <a [href]="site.author.url">{{ site.author.name }}</a> ·
-    <a routerLink="/creditos">Créditos</a>
-  </p>
+  <!-- Al final del DOM (el foco llega después de la interfaz), en letra pequeña al pie. -->
+  <footer class="explorer__foot">
+    <p class="explorer__hints">
+      Arrastra para girar · rueda o pellizca para acercarte · elige un cuerpo
+    </p>
+    <p class="explorer__credits">
+      <span>1900–2100 · NASA/JPL · astronomy-engine</span>
+      <span>
+        Un proyecto de <a [href]="site.author.url">{{ site.author.name }}</a> ·
+        <a routerLink="/creditos">Créditos</a>
+      </span>
+    </p>
+  </footer>
 </section>

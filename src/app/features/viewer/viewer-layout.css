@@ -1,9 +1,15 @@
 /*
- * Marco del explorador (PLAN 3.a.1, docs/DISENO.md). Una rejilla con el lienzo a sangre detrás y los
- * paneles encima, planos y opacos. Las áreas las usa también la interfaz diferida (explorer-ui):
- * - escritorio (≥ 64rem): «lead/index/foot» en la columna izquierda, «view» el lienzo visible,
- *   «panel» la ficha a la derecha y «dock» la barra de tiempo abajo;
- * - móvil: «lead» arriba, «view», y la hoja inferior con «index» (la tira de cuerpos) y «dock».
+ * Marco del explorador (fase 3c, D30): el lienzo a pantalla completa y la interfaz flotando encima.
+ * Una rejilla con el lienzo a sangre detrás (todas las áreas) y estas áreas, que usa también la
+ * interfaz diferida (explorer-ui):
+ * - escritorio (≥ 64rem): «lead» (vistas y texto de presentación) arriba a la izquierda, «index» (el
+ *   panel «Índice», abierto) debajo, «view» el lienzo visible, «panel» la tarjeta del cuerpo elegido
+ *   a la derecha y, abajo, la franja con «chips» (fichas de cuerpos), «bar» (barra de tiempo) y
+ *   «foot» (pistas, fuente de los datos y créditos);
+ * - móvil: «lead» arriba, «view» y la franja de abajo; el índice y la tarjeta son hojas inferiores.
+ *
+ * Los paneles que tapan el lienzo llevan `data-chrome` y dicen qué borde tapan con `--chrome-edge`
+ * (features/viewer/insets.ts): el motor encuadra en la parte que queda visible.
  */
 :host {
   display: flex;
@@ -12,9 +18,12 @@
 }
 
 .explorer {
+  /* Columna del texto de presentación y del índice; tarjeta de la derecha. */
   --explorer-start: 20rem;
   --explorer-panel: 22rem;
-  --explorer-dock: 4.5rem;
+  /* Filas de la franja de abajo, reservadas desde el HTML prerenderizado (sin saltos al cargar). */
+  --explorer-chips: 4.5rem;
+  --explorer-bar: 4.5rem;
   position: relative;
   display: grid;
   flex: 1;
@@ -22,115 +31,149 @@
   overflow: hidden;
   background: var(--color-bg);
   grid-template-areas:
-    'lead  view panel'
-    'index view panel'
-    'foot  view panel'
-    'dock  dock dock';
+    'lead  .     panel'
+    'index view  panel'
+    'chips chips chips'
+    'bar   bar   bar'
+    'foot  foot  foot';
   grid-template-columns: var(--explorer-start) minmax(0, 1fr) auto;
-  grid-template-rows: auto minmax(0, 1fr) auto var(--explorer-dock);
+  grid-template-rows: auto minmax(0, 1fr) var(--explorer-chips) var(--explorer-bar) auto;
 }
 
 .explorer__poster {
   grid-area: 1 / 1 / -1 / -1;
 }
 
-.explorer__column,
-.explorer__sheet {
+/*
+ * La franja de abajo: un velo del color del fondo que se funde hacia arriba (sin desenfoques ni
+ * transparencias en los paneles: los controles van encima, opacos). El 3D se ve a través de su borde
+ * de arriba, pero el motor encuadra por encima de ella.
+ */
+.explorer__dock {
+  --chrome-edge: bottom;
   position: relative;
   z-index: 1;
-  background: var(--color-surface);
+  grid-area: chips / 1 / -1 / -1;
+  background: linear-gradient(
+    to top,
+    var(--color-bg) calc(100% - var(--explorer-chips)),
+    rgb(13 19 33 / 0.72) calc(100% - 0.55 * var(--explorer-chips)),
+    rgb(13 19 33 / 0)
+  );
+  pointer-events: none;
 }
 
-.explorer__column {
-  grid-area: 1 / 1 / 4 / 2;
-  border-right: var(--border-width) solid var(--color-line);
-}
-
-.explorer__sheet {
-  grid-area: dock;
-  border-top: var(--border-width) solid var(--color-line);
-}
-
-.explorer__lead,
-.explorer__credits {
+/*
+ * Texto de presentación, arriba a la izquierda sobre el 3D. En escritorio no tapa un borde entero
+ * (`none`): el encuadre no se aparta por él. Un velo suave detrás lo hace legible sobre las estrellas
+ * y las órbitas.
+ */
+.explorer__lead {
+  --chrome-edge: none;
   position: relative;
   z-index: 2;
-}
-
-.explorer__lead {
   grid-area: lead;
   display: grid;
+  align-content: start;
   gap: var(--space-4);
   padding: var(--space-4) var(--space-4) var(--space-3);
+}
+
+.explorer__lead::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0 -6rem -3rem 0;
+  background: radial-gradient(
+    farthest-side at 0 0,
+    rgb(13 19 33 / 0.88),
+    rgb(13 19 33 / 0.6) 55%,
+    rgb(13 19 33 / 0)
+  );
+  content: '';
+  pointer-events: none;
 }
 
 .explorer__intro {
   min-width: 0;
 }
 
-.explorer__credits {
+.explorer__foot {
+  position: relative;
+  z-index: 2;
   grid-area: foot;
-  margin: 0;
-  padding: var(--space-3) var(--space-4);
-  border-top: var(--border-width) solid var(--color-line);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0 var(--space-6);
+  padding: 0 var(--space-4) var(--space-2);
   color: var(--color-text-muted);
   font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.explorer__foot p {
+  max-width: none;
+  margin: 0;
+}
+
+.explorer__credits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-4);
 }
 
 /* La vista limpia oculta el marco (la interfaz diferida pone la clase en su anfitrión). */
-.explorer:has(> tls-explorer-ui.is-clean)
-  > :is(.explorer__column, .explorer__sheet, .explorer__lead, .explorer__credits) {
+.explorer:has(> tls-explorer-ui.is-clean) > :is(.explorer__lead, .explorer__dock, .explorer__foot) {
   display: none;
 }
 
 @media (max-width: 63.99rem) {
   /*
-   * El lienzo nunca baja de su suelo; si la hoja inferior no cabe (la barra de tiempo desplegada en
-   * un móvil bajo), es ella la que se desplaza por dentro (explorer-ui.css), no la página.
+   * El lienzo nunca baja de su suelo. Arriba, el texto de presentación tapa el lienzo por arriba
+   * (`top`); abajo, la franja. El índice y la tarjeta suben como hojas inferiores (explorer-ui.css).
    */
   .explorer {
+    --explorer-chips: 4.25rem;
     min-height: 0;
     grid-template-areas:
       'lead'
       'view'
-      'index'
-      'dock';
+      'chips'
+      'bar'
+      'foot';
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto minmax(min(12rem, 35svh), 1fr) auto minmax(0, auto);
-  }
-
-  .explorer__column {
-    grid-area: lead;
-    border-right: 0;
-    border-bottom: var(--border-width) solid var(--color-line);
-  }
-
-  /*
-   * Sin alto mínimo: abarca la fila del índice y la de la barra, y un mínimo se repartiría entero en
-   * la del índice (la otra no tiene mínimo intrínseco) y estiraría la tira de cuerpos.
-   */
-  .explorer__sheet {
-    grid-area: index / 1 / -1 / -1;
+    grid-template-rows: auto minmax(min(12rem, 35svh), 1fr) var(--explorer-chips) auto auto;
   }
 
   .explorer__lead {
+    --chrome-edge: top;
     gap: var(--space-3);
-    padding: var(--space-3) var(--space-4);
+    padding: var(--space-3) var(--space-4) var(--space-2);
   }
 
-  .explorer__credits {
+  .explorer__lead::before {
+    inset: 0 0 -2rem;
+    background: linear-gradient(to bottom, rgb(13 19 33 / 0.85) 40%, rgb(13 19 33 / 0));
+  }
+
+  /* Los créditos están en el menú del sitio; las pistas no caben. */
+  .explorer__foot {
     display: none;
   }
 }
 
 /*
  * Muy bajo (móvil en horizontal, zoom al 200 %): no cabe todo en la ventana. La página se desplaza:
- * el lienzo ocupa el 70 % de la altura y la hoja inferior va debajo, entera (styles.css suelta la
+ * el lienzo ocupa el 70 % de la altura y la franja va debajo, entera y opaca (styles.css suelta la
  * altura fija del explorador).
  */
 @media (max-width: 63.99rem) and (max-height: 30rem) {
   .explorer {
     overflow: visible;
-    grid-template-rows: auto 70svh auto auto;
+    grid-template-rows: auto 70svh var(--explorer-chips) auto auto;
+  }
+
+  .explorer__dock {
+    background: var(--color-bg);
   }
 }

@@ -1,21 +1,36 @@
 /**
- * Márgenes que la interfaz tapa del lienzo (PLAN 3.c.6): se miden los paneles (`[data-chrome]`)
- * dentro del explorador y se clasifican por el borde que tocan. Un panel alto pegado a la izquierda
- * tapa por la izquierda; uno ancho pegado abajo, por abajo… Así sirve igual para la columna de
- * escritorio que para la hoja inferior del móvil, sin decirle a cada panel qué es.
+ * Márgenes que la interfaz tapa del lienzo (PLAN 3.c.6 y 3c.8): se miden los paneles
+ * (`[data-chrome]`) dentro del explorador y cada uno cuenta por el borde que tapa.
+ *
+ * - Con un borde declarado (la propiedad CSS `--chrome-edge`, que cada maquetación pone en sus
+ *   paneles), cuenta por ese borde: la tarjeta flotante de la derecha tapa por la derecha aunque sea
+ *   baja, y la fila de lunas que flota sobre la franja de abajo, por abajo. `none`: no tapa nada.
+ * - Sin borde declarado, se clasifica por la geometría: un panel alto pegado a la izquierda tapa por
+ *   la izquierda; uno ancho pegado abajo, por abajo…
  */
 import type { ViewInsets } from '../../scene';
+
+export type ChromeEdge = 'top' | 'right' | 'bottom' | 'left' | 'none';
 
 export interface Rect {
   readonly left: number;
   readonly top: number;
   readonly right: number;
   readonly bottom: number;
+  /** El borde que tapa, si el panel lo declara. */
+  readonly edge?: ChromeEdge | null;
 }
 
 /** Un panel cuenta si toca el borde (con esta tolerancia, en px) y ocupa al menos la mitad del lado. */
 const EDGE_TOLERANCE_PX = 24;
 const MIN_SPAN = 0.5;
+const EDGES: readonly string[] = ['top', 'right', 'bottom', 'left', 'none'];
+
+/** El valor de `--chrome-edge` leído del CSS, o `null` si no es uno de los bordes. */
+export function parseChromeEdge(value: string | null | undefined): ChromeEdge | null {
+  const edge = value?.trim() ?? '';
+  return EDGES.includes(edge) ? (edge as ChromeEdge) : null;
+}
 
 export function insetsFromRects(stage: Rect, panels: readonly Rect[]): ViewInsets {
   const width = stage.right - stage.left;
@@ -29,6 +44,22 @@ export function insetsFromRects(stage: Rect, panels: readonly Rect[]): ViewInset
     const w = Math.min(panel.right, stage.right) - Math.max(panel.left, stage.left);
     const h = Math.min(panel.bottom, stage.bottom) - Math.max(panel.top, stage.top);
     if (w <= 0 || h <= 0) continue;
+    switch (panel.edge ?? null) {
+      case 'none':
+        continue;
+      case 'top':
+        top = Math.max(top, panel.bottom - stage.top);
+        continue;
+      case 'right':
+        right = Math.max(right, stage.right - panel.left);
+        continue;
+      case 'bottom':
+        bottom = Math.max(bottom, stage.bottom - panel.top);
+        continue;
+      case 'left':
+        left = Math.max(left, panel.right - stage.left);
+        continue;
+    }
     const tall = h >= height * MIN_SPAN;
     const wide = w >= width * MIN_SPAN;
     if (tall && panel.left - stage.left <= EDGE_TOLERANCE_PX && !wide)

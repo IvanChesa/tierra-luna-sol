@@ -159,21 +159,21 @@ for (const screen of LOW_SCREENS) {
           };
         })
         .filter((c) => c.right - c.left > 1 && c.bottom - c.top > 1);
-      const strip = document.querySelector('.tree') as HTMLElement;
+      const toggle = document.querySelector('.index-toggle') as HTMLElement;
       return {
         view,
         header: header.bottom,
         controls,
         pageScrolls,
-        stripHeight: strip.clientHeight,
+        toggleHeight: toggle.getBoundingClientRect().height,
         pageHeight: document.documentElement.scrollHeight,
       };
     });
 
     // El lienzo se ve: al menos 150 px de alto entre el texto de la vista y la hoja inferior.
     expect(layout.view.bottom - layout.view.top).toBeGreaterThanOrEqual(150);
-    // La tira de cuerpos no desaparece.
-    expect(layout.stripHeight).toBeGreaterThanOrEqual(40);
+    // El botón «Índice» (la alternativa completa a las fichas) no desaparece.
+    expect(layout.toggleHeight).toBeGreaterThanOrEqual(36);
     for (const control of layout.controls) {
       // Cada control se ve en la ventana o se alcanza desplazando la página o su contenedor.
       if (!control.scroller) {
@@ -201,7 +201,7 @@ for (const screen of LOW_SCREENS) {
 
 /**
  * La ficha abierta en pantallas bajas (segunda ronda de la revisión de diseño, 25 y 26): elegir un
- * cuerpo solo desplaza la tira, no la página, y la cámara no asoma cortada por encima de la ficha.
+ * cuerpo no desplaza la página y la cámara no asoma cortada por encima de la ficha.
  */
 for (const screen of [
   { name: 'táctil 844 × 390 (horizontal)', width: 844, height: 390, touch: true },

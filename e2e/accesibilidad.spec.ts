@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
-import { openExplorer } from './support';
+import { openExplorer, openIndex } from './support';
 
 /** Las rutas prerenderizadas del build (todas las páginas del sitio). */
 const ROUTES = Object.keys(
@@ -28,10 +28,13 @@ async function seriousViolations(page: Page): Promise<string[]> {
 }
 
 test.describe('Accesibilidad (axe)', () => {
-  test('el explorador en sus estados: vista, ficha, Tierra, Luna, atajos y vista limpia', async ({
+  test('el explorador en sus estados: vista, índice, ficha, Tierra, Luna, atajos y vista limpia', async ({
     page,
   }) => {
     await openExplorer(page, '/?captura=1');
+    expect(await seriousViolations(page)).toEqual([]);
+
+    await openIndex(page);
     expect(await seriousViolations(page)).toEqual([]);
 
     await page.locator('#tree-saturno > .row').click();

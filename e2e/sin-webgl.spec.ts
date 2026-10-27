@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { simTime, treeRow } from './support';
+import { openIndex, simTime, treeRow } from './support';
 
 // Proyecto «sin-webgl» (Chromium con --disable-3d-apis): el lienzo no puede arrancar.
 test('sin WebGL, el índice, la ficha y el tiempo siguen funcionando', async ({ page }) => {
@@ -12,6 +12,7 @@ test('sin WebGL, el índice, la ficha y el tiempo siguen funcionando', async ({ 
   // El póster sigue debajo del aviso.
   await expect(page.locator('tls-viewer-poster')).toBeVisible();
 
+  await openIndex(page);
   await treeRow(page, 'marte').click();
   await expect(page.locator('#card-title')).toHaveText('Marte');
   await expect(page.locator('.panel')).toContainText(/millones de km/);
