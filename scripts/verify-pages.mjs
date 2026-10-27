@@ -1,19 +1,34 @@
 // Comprueba una publicación de Cloudflare Pages (fase 4; en la fase 11, la de producción), como con
 // `curl`: las rutas sin barra final (D9), las redirecciones, el 404, las cabeceras de `_headers`, los
-// tipos MIME, la caché y que Pages no inyecta Cloudflare Web Analytics (D24).
-// Uso: node scripts/verify-pages.mjs https://staging.tierra-luna-sol.pages.dev
-// Sale con un error si alguna comprobación falla. Las texturas se buscan con el manifiesto del repo:
-// hay que comprobar la publicación del mismo commit.
+// tipos MIME, la caché, las cabeceras `Link` de los Early Hints y que no se cuela nada de terceros
+// (D24): ni Cloudflare Web Analytics ni, si se puede, Network Error Logging.
+//
+// Uso: node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-pages.mjs <url> [--build <carpeta>]
+//   <url>: https://<rama>.tierra-luna-sol.pages.dev (o la de producción)
+//   --build: el build publicado (dist/tierra-luna-sol/browser); compara el HTML servido de cada
+//            página con el suyo, byte a byte (Cloudflare no debe inyectar nada).
+// Sale con un error si alguna comprobación falla (✖); los avisos (⚠) no la hacen fallar. Las
+// texturas se buscan con el manifiesto del repo: hay que comprobar la publicación del mismo commit.
+import { readFile, readdir } from 'node:fs/promises';
+import { join, sep } from 'node:path';
+import { SITE_CONFIG } from '../src/app/core/site.config.ts';
 import { TEXTURE_FILES } from '../src/app/scene/texture-files.ts';
 
-const base = (process.argv[2] ?? '').replace(/\/$/, '');
-if (!/^https:\/\//.test(base)) {
-  throw new Error('Uso: node scripts/verify-pages.mjs https://<rama>.tierra-luna-sol.pages.dev');
+const args = process.argv.slice(2);
+const base = (args.find((arg) => /^https:\/\//.test(arg)) ?? '').replace(/\/$/, '');
+const buildIndex = args.indexOf('--build');
+const build = buildIndex >= 0 ? args[buildIndex + 1] : null;
+if (!base) {
+  throw new Error(
+    'Uso: node scripts/verify-pages.mjs https://<rama>.tierra-luna-sol.pages.dev [--build <carpeta>]',
+  );
 }
 const pagesDev = new URL(base).hostname.endsWith('.pages.dev');
+const site = SITE_CONFIG.baseUrl;
 
 const results = [];
-const check = (name, ok, detail) => results.push({ name, ok: Boolean(ok), detail });
+const check = (name, ok, detail) => results.push({ name, state: ok ? 'ok' : 'error', detail });
+const warn = (name, ok, detail) => results.push({ name, state: ok ? 'ok' : 'warning', detail });
 const get = (path, init = {}) => fetch(`${base}${path}`, { redirect: 'manual', ...init });
 
 // --- La página principal: estado, cabeceras y que no hay scripts de terceros ---------------------
@@ -65,21 +80,20 @@ check(
   !/cloudflareinsights|beacon\.min\.js|data-cf-beacon/.test(html),
   'ningún script de cloudflareinsights.com',
 );
-check(
-  'Canonical de la raíz',
-  html.includes('<link rel="canonical" href="https://tierra-luna-sol.ivanchesa.es/">'),
-  'https://tierra-luna-sol.ivanchesa.es/',
-);
+// Network Error Logging: con estas cabeceras, Chrome y Edge envían a un dominio de Cloudflare un
+// informe de cada petición que falla. `_headers` intenta quitarlas; si las pone la red de Cloudflare
+// después, es un aviso para Iván (PENDIENTES.md), no un error de la publicación.
+const nel = [h('report-to'), h('nel')].filter(Boolean).join(' · ');
+warn('Sin Network Error Logging (Report-To, NEL)', !nel, nel || 'sin esas cabeceras');
+check('Canonical de la raíz', html.includes(`<link rel="canonical" href="${site}/">`), `${site}/`);
 
 // --- Rutas sin barra final y redirecciones ------------------------------------------------------
 const page = await get('/planetas/marte');
 check('/planetas/marte → 200', page.status === 200, page.status);
 check(
   'Canonical sin barra',
-  (await page.text()).includes(
-    '<link rel="canonical" href="https://tierra-luna-sol.ivanchesa.es/planetas/marte">',
-  ),
-  '…/planetas/marte',
+  (await page.text()).includes(`<link rel="canonical" href="${site}/planetas/marte">`),
+  `${site}/planetas/marte`,
 );
 for (const [from, to] of [
   ['/planetas/marte/', '/planetas/marte'],
@@ -87,6 +101,7 @@ for (const [from, to] of [
   ['/planetas/', '/planetas'],
   ['/index.html', '/'],
   ['/explorar', '/'],
+  ['/explorar/', '/'],
 ]) {
   const response = await get(from);
   const location = response.headers.get('location') ?? '';
@@ -95,6 +110,36 @@ for (const [from, to] of [
     `${from} → ${to}`,
     [301, 302, 307, 308].includes(response.status) && target === to,
     `${response.status} → ${location}`,
+  );
+}
+
+// --- Early Hints: la cabecera `Link` de una página anidada lleva a ficheros que existen ------------
+// Pages la genera con los `modulepreload` del HTML desde la segunda petición; el navegador la resuelve
+// contra la URL de la página (no contra `<base href="/">`): las rutas del HTML tienen que ser absolutas.
+for (const path of ['/planetas/marte', '/explorar/tierra']) {
+  let link = '';
+  for (let attempt = 0; attempt < 3 && !link; attempt++) {
+    const response = await get(path);
+    link = response.headers.get('link') ?? '';
+    await response.body?.cancel();
+  }
+  const targets = [...link.matchAll(/<([^>]+)>/g)].map(
+    ([, href]) => new URL(href, `${base}${path}`),
+  );
+  const broken = [];
+  for (const url of targets) {
+    const response = await fetch(url, { redirect: 'manual' });
+    if (response.status !== 200 || !/javascript/.test(response.headers.get('content-type') ?? '')) {
+      broken.push(`${url.pathname} (${response.status})`);
+    }
+    await response.body?.cancel();
+  }
+  check(
+    `Link de ${path} → ficheros que existen`,
+    broken.length === 0,
+    targets.length
+      ? `${targets.length} (${targets.map((u) => u.pathname).join(', ')})${broken.length ? `; rotos: ${broken.join(', ')}` : ''}`
+      : 'sin cabecera Link',
   );
 }
 
@@ -109,7 +154,7 @@ check(
 check('404 sin canonical', !missingHtml.includes('rel="canonical"'), '');
 
 // --- Recursos: tipos MIME y caché -----------------------------------------------------------------
-const main = /src="(main-[^"]+\.js)"/.exec(html)?.[1];
+const main = /src="\/?(main-[^"]+\.js)"/.exec(html)?.[1];
 const texture = TEXTURE_FILES['saturn-rings']?.[0]?.path;
 const assets = [
   [`/${main}`, /javascript/, 'public, max-age=31536000, immutable'],
@@ -141,11 +186,37 @@ check(
   http ? `${http.status} → ${http.headers.get('location')}` : 'sin respuesta',
 );
 
-// --- Informe ---------------------------------------------------------------------------------------
-console.log(`Comprobaciones de ${base}\n`);
-for (const { name, ok, detail } of results) {
-  console.log(`${ok ? '✔' : '✖'} ${name}${detail === '' ? '' : `: ${detail}`}`);
+// --- El HTML servido es el del build (Cloudflare no inyecta nada) ----------------------------------
+if (build) {
+  const list = await readdir(build, { recursive: true, withFileTypes: true });
+  const pages = list
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.html'))
+    .map((entry) => join(entry.parentPath, entry.name).slice(build.length).split(sep).join('/'))
+    .map((file) => file.replace(/^\/?/, ''));
+  const different = [];
+  for (const file of pages) {
+    // 404.html se sirve en lo que no existe; las demás, en su ruta sin `.html`.
+    const route =
+      file === 'index.html' ? '/' : file === '404.html' ? '/no-existe' : `/${file.slice(0, -5)}`;
+    const served = await (await get(route)).text();
+    if (served !== (await readFile(join(build, file), 'utf8'))) different.push(route);
+  }
+  check(
+    `HTML servido = build (${pages.length} páginas)`,
+    different.length === 0,
+    different.length ? `distintas: ${different.join(', ')}` : 'idénticas byte a byte',
+  );
 }
-const failed = results.filter((r) => !r.ok).length;
-console.log(`\n${results.length - failed} de ${results.length} bien`);
+
+// --- Informe ---------------------------------------------------------------------------------------
+const MARK = { ok: '✔', error: '✖', warning: '⚠' };
+console.log(`Comprobaciones de ${base}\n`);
+for (const { name, state, detail } of results) {
+  console.log(`${MARK[state]} ${name}${detail === '' ? '' : `: ${detail}`}`);
+}
+const failed = results.filter((r) => r.state === 'error').length;
+const warnings = results.filter((r) => r.state === 'warning').length;
+console.log(
+  `\n${results.length - failed - warnings} de ${results.length} bien${warnings ? `, ${warnings} aviso${warnings > 1 ? 's' : ''}` : ''}${failed ? `, ${failed} mal` : ''}`,
+);
 if (failed) process.exitCode = 1;

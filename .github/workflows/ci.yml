@@ -1,7 +1,9 @@
 name: CI
 
 # En cada push (todas las ramas: cada una tiene su vista previa en Cloudflare Pages) y en los pull
-# requests. Las ramas de Dependabot pasan solo por su pull request: no se despliegan.
+# requests. Las ramas de Dependabot pasan solo por su pull request: no se despliegan. Un PR desde una
+# rama de este repositorio pasa el CI dos veces (el push y el PR): hoy las fases se fusionan en local,
+# sin PR, y se acepta.
 on:
   push:
     branches-ignore: ['dependabot/**']
@@ -42,11 +44,13 @@ jobs:
       - run: node scripts/check-initial-bundle.mjs
 
       # El build verificado: lo prueban los e2e (con la lista de rutas prerenderizadas, fuera de
-      # browser/) y su browser/ es lo que se despliega.
+      # browser/) y su browser/ es lo que se despliega. Sin ficheros ocultos: prepare-pages.mjs ya los
+      # quita (Pages no los sirve), así que el artefacto es el build entero.
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: build
           path: dist/tierra-luna-sol
+          include-hidden-files: false
           retention-days: 7
           if-no-files-found: error
 
@@ -89,12 +93,33 @@ jobs:
     needs: [check, e2e]
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    # Solo para leer el repositorio (el verificador); los secrets de Cloudflare, solo en los pasos de
+    # wrangler.
+    permissions:
+      contents: read
     env:
       # `main` se publica como «staging»: la producción (la rama `main` del proyecto) llega con la
       # etiqueta de la fase 11. Cada rama de fase, con su nombre.
       PAGES_BRANCH: ${{ github.ref_name == 'main' && 'staging' || github.ref_name }}
+      WRANGLER_VERSION: '4.149.0'
     steps:
+      # El nombre llega a wrangler como argumento: solo minúsculas, cifras y guiones (los alias de Pages).
+      - name: Nombre de la rama
+        run: |
+          if [[ ! "$PAGES_BRANCH" =~ ^[a-z0-9-]+$ ]]; then
+            echo "::error::La rama «$PAGES_BRANCH» no vale como alias de Pages (solo [a-z0-9-])"
+            exit 1
+          fi
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: build
@@ -106,7 +131,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          wranglerVersion: '4.149.0'
+          wranglerVersion: ${{ env.WRANGLER_VERSION }}
           command: pages project list
 
       - name: Crea el proyecto (solo la primera vez)
@@ -115,7 +140,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          wranglerVersion: '4.149.0'
+          wranglerVersion: ${{ env.WRANGLER_VERSION }}
           command: pages project create tierra-luna-sol --production-branch=main
 
       # El build del CI tal cual: sin builds de Cloudflare (D26).
@@ -125,7 +150,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          wranglerVersion: '4.149.0'
+          wranglerVersion: ${{ env.WRANGLER_VERSION }}
           command: pages deploy build/browser --project-name=tierra-luna-sol --branch=${{ env.PAGES_BRANCH }} --commit-hash=${{ github.sha }}
 
       - name: Direcciones
@@ -140,3 +165,19 @@ jobs:
             echo "- Vista previa: $ALIAS"
             echo "- Este despliegue: $URL"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      # La publicación, comprobada: rutas, redirecciones, 404, cabeceras, Early Hints, caché y que el
+      # HTML servido es el del build (Cloudflare no inyecta nada). Con reintentos: el certificado de
+      # un subdominio nuevo de pages.dev tarda unos minutos.
+      - name: Comprueba la publicación
+        env:
+          URL: ${{ steps.deploy.outputs.deployment-url }}
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-pages.mjs "$URL" --build build/browser; then
+              exit 0
+            fi
+            echo "Intento $attempt sin éxito; otro en 30 s"
+            sleep 30
+          done
+          exit 1
