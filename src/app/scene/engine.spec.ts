@@ -1,6 +1,7 @@
 import starsBin from '../../../public/data/stars.bin' with { loader: 'binary' };
-import { BackSide, FrontSide, Texture } from 'three';
+import { BackSide, FrontSide, Quaternion, Texture, Vector3 } from 'three';
 import { KM_PER_AU } from '../ephemeris/constants';
+import { subsolarPoint } from '../ephemeris/coordinates';
 import { MAX_DATE } from '../ephemeris/time';
 import {
   EngineDeps,
@@ -896,6 +897,34 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     const { widthPx } = VISUAL_CONFIG.trails.planet;
     expect(world.orbits.widths[0]).toBeCloseTo(widthPx / ORBIT_WIDTH_PX, 5);
     expect(world.orbits.widths[2 * Math.floor((mercury?.segments ?? 0) / 2)]).toBe(1);
+    h.engine.dispose();
+  });
+
+  it('el punto subsolar que recibe el shader de la Tierra: +23,4° y 0° el 21-06-2026 a las 12:00 UTC (fase 5)', async () => {
+    const date = new Date('2026-06-21T12:00:00Z');
+    const h = await createHarness({ reducedMotion: true, focus: 'tierra', time: date });
+    settle(h);
+    interface EarthVisual {
+      body: { id: string };
+      mesh: { quaternion: Quaternion };
+      uniforms: { uSunDirection: { value: Vector3 } };
+    }
+    const earth = (internals(h).world as unknown as { visuals: EarthVisual[] }).visuals.find(
+      (visual) => visual.body.id === 'tierra',
+    );
+    // La dirección del Sol del material (mundo), en el sistema propio de la Tierra (Y, el polo;
+    // el meridiano 0 en +X y la longitud este hacia −Z, como la esfera de three).
+    const local = (earth?.uniforms.uSunDirection.value.clone() ?? new Vector3()).applyQuaternion(
+      (earth?.mesh.quaternion.clone() ?? new Quaternion()).invert(),
+    );
+    const latDeg = (Math.asin(local.y) * 180) / Math.PI;
+    const lonDeg = (Math.atan2(-local.z, local.x) * 180) / Math.PI;
+    expect(Math.abs(latDeg - 23.4)).toBeLessThan(2);
+    expect(Math.abs(lonDeg)).toBeLessThan(2);
+    // Y coincide con el de `subsolarPoint` (la misma orientación de la Tierra), a menos de 0,05°.
+    const expected = subsolarPoint(date);
+    expect(Math.abs(latDeg - expected.latDeg)).toBeLessThan(0.05);
+    expect(Math.abs(lonDeg - expected.lonDeg)).toBeLessThan(0.05);
     h.engine.dispose();
   });
 
