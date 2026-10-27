@@ -1,7 +1,27 @@
 /* Panel de la vista Tierra: dos bloques opacos sobre el lienzo, como la tarjeta y el índice. */
+/*
+ * Su sitio en la rejilla del explorador (el anfitrión de la interfaz es `display: contents`): en
+ * escritorio, en la columna de la presentación, debajo de ella, sin apartar el encuadre; en móvil,
+ * al pie del lienzo, encima de las fichas, y el encuadre sube por encima de él.
+ */
 :host {
+  --chrome-edge: none;
+  position: relative;
+  z-index: 2;
   display: grid;
+  grid-area: index;
+  align-self: start;
   gap: var(--space-2);
+  margin: var(--space-2) var(--space-4) 0;
+}
+
+@media (max-width: 63.99rem) {
+  :host {
+    --chrome-edge: bottom;
+    grid-area: view;
+    align-self: end;
+    margin: 0 var(--space-4) var(--space-2);
+  }
 }
 
 .earth {
