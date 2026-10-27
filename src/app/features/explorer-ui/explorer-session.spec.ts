@@ -69,7 +69,11 @@ class FakeEngine implements ExplorerEngine {
   }
 }
 
-async function setup(search: string, view: ExplorerView = 'system') {
+/**
+ * Monta la sesión. Con `sessionFirst`, como en `ExplorerUi`: la sesión se crea (con la vista por
+ * defecto) y después se conecta la vista de la ruta, que llega con el primer `applyView`.
+ */
+async function setup(search: string, view: ExplorerView = 'system', sessionFirst = false) {
   window.history.replaceState({}, '', `/${search}`);
   TestBed.configureTestingModule({
     providers: [
@@ -84,8 +88,9 @@ async function setup(search: string, view: ExplorerView = 'system') {
   await router.navigateByUrl(`/${search}`);
   const explorer = TestBed.inject(ExplorerStore);
   const viewSignal = signal<ExplorerView>(view);
-  explorer.connectView(viewSignal);
+  if (!sessionFirst) explorer.connectView(viewSignal);
   const session = TestBed.inject(ExplorerSession);
+  if (sessionFirst) explorer.connectView(viewSignal);
   const sim = TestBed.inject(SimulationStore);
   const navigations: string[] = [];
   router.events.subscribe((event) => {
@@ -304,7 +309,9 @@ describe('ExplorerSession: la URL, la selección y el motor', () => {
     });
 
     it('al entrar en la vista Tierra, ya a 1 hora por segundo y sin aviso', async () => {
-      const { sim, session } = await setup('', 'earth');
+      // Como en la aplicación: la sesión nace con la vista general y la de la ruta llega después.
+      const { sim, session } = await setup('', 'earth', true);
+      session.attachEngine(new FakeEngine());
       expect(sim.speed()).toBe(CONTEXT_SPEED.body);
       expect(session.announcement()).toBe('');
     });

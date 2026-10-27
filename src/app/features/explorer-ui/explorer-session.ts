@@ -96,7 +96,9 @@ export class ExplorerSession {
     this._warnings.set(this.params.warnings);
     // Arranque en movimiento (D31): sin fecha en la URL, «ahora» y reproduciendo a la velocidad de
     // su contexto (D33: 3 días por segundo en la vista general, 1 hora con un cuerpo); con movimiento
-    // reducido, en pausa; con fecha (o en captura), en pausa en ella.
+    // reducido, en pausa; con fecha (o en captura), en pausa en ella. `ExplorerUi` conecta la vista
+    // después de crear la sesión: en las vistas Tierra y Luna, su contexto lo pone el primer
+    // `applyView`.
     const fixedTime = this.params.time !== null || this.capture;
     this.speedContextNow = speedContext(this.explorer.view(), this.params.body);
     this.sim.init({
