@@ -1,6 +1,6 @@
 // Colores medidos en fotos reales (fase 3b): repite las medidas que usan `data/photometry.ts`
-// (`chromaticity`) y `scripts/reference-colors.mjs` (el océano de la Tierra y el matiz de cada anillo
-// de Saturno), con las regiones exactas de cada foto, y las compara con los valores en uso.
+// (`chromaticity` de los planetas y de cada anillo de Saturno) y `scripts/reference-colors.mjs` (el
+// océano de la Tierra), con las regiones exactas de cada foto, y las compara con los valores en uso.
 // Uso: node scripts/measure-reference-colors.mjs
 //
 // Las fotos se descargan a una carpeta temporal del sistema (no entran en el repo; docs/realismo/
@@ -11,8 +11,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
-import { BODY_PHOTOMETRY } from '../src/app/data/photometry.ts';
-import { OCEAN_CHROMA, RING_TINTS } from './reference-colors.mjs';
+import { BODY_PHOTOMETRY, RING_PHOTOMETRY } from '../src/app/data/photometry.ts';
+import { OCEAN_CHROMA } from './reference-colors.mjs';
 
 const CACHE = join(tmpdir(), 'tls-referencias');
 const ROOT = new URL('../', import.meta.url);
@@ -177,7 +177,7 @@ for (const disc of DISCS) {
     report(
       `anillo ${name}`,
       chroma(mean(samples)),
-      RING_TINTS[name],
+      RING_PHOTOMETRY.chromaticity[name],
       `heic1917a, ansa derecha, ${RINGS.bands[name].map((km) => km / 1000).join('–')} mil km (${samples.length} px)`,
     );
   }

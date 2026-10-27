@@ -1,6 +1,8 @@
 // Colores medidos en fotos reales que usa `build-textures.mjs` (fase 3b). Los mide y los compara
 // `scripts/measure-reference-colors.mjs`, que dice la región exacta de cada foto; las fotos, en
-// `docs/realismo/referencias.md`. Cromaticidad: RGB lineal / luminancia (Rec. 709).
+// `docs/realismo/referencias.md`. Cromaticidad: RGB lineal / luminancia (Rec. 709). El color de cada
+// anillo de Saturno está en `src/app/data/photometry.ts` (`RING_PHOTOMETRY.chromaticity`), con el de
+// los planetas.
 
 /**
  * Color del océano de la Tierra visto desde el espacio. La textura de Solar System Scope pinta todo
@@ -12,15 +14,3 @@
  * no dibuja (fase 5).
  */
 export const OCEAN_CHROMA = [0.683, 1.029, 1.651];
-
-/**
- * Matiz de cada anillo de Saturno, medido en la foto del Hubble del 20-06-2019 (OPAL, NASA/ESA;
- * heic1917a) a lo largo del ansa derecha: el color de la textura en los anillos tenues no es fiable
- * (salía morado en el C).
- */
-export const RING_TINTS = {
-  C: [1.04, 0.96, 1.24],
-  B: [0.94, 1.01, 1.07],
-  Cassini: [0.92, 1.0, 1.24],
-  A: [0.99, 1.0, 1.09],
-};

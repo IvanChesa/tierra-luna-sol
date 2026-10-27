@@ -247,6 +247,22 @@ export const opticalDepth = (opacity: number): number =>
   Math.log(1 / (1 - Math.min(Math.max(opacity, 0), 0.995)));
 
 /**
+ * Detalle relativo de un perfil (la luminancia de la tira de los anillos, columna a columna): cada
+ * valor dividido por la media de los índices `[from, to)`. Con él se modula el albedo de un anillo:
+ * recupera la estructura radial fina de la textura sin cambiar su brillo medio en esa ventana, que es
+ * donde se calibra con una medida (revisión del bloque R, R1).
+ */
+export function relativeDetail(values: ArrayLike<number>, from: number, to: number): Float64Array {
+  let sum = 0;
+  for (let i = from; i < to; i++) sum += values[i] as number;
+  const mean = sum / (to - from);
+  if (!(to > from) || !(mean > 0)) {
+    throw new Error(`Ventana sin brillo para el detalle relativo: [${from}, ${to})`);
+  }
+  return Float64Array.from({ length: values.length }, (_, i) => (values[i] as number) / mean);
+}
+
+/**
  * Leyes de fase publicadas (magnitud visual frente al ángulo de fase), las que usa astronomy-engine
  * en `Illumination`: las de Mercurio y Venus son de Hilton (2005, AJ 129, 2902,
  * https://doi.org/10.1086/430212); la de Marte, lineal; la de la Luna, m = −12,717 + 1,49·|α| +

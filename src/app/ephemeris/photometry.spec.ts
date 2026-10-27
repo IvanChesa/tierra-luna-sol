@@ -18,6 +18,7 @@ import {
   opticalDepth,
   phaseFunction,
   reflectance,
+  relativeDetail,
   ringCoverage,
   ringReflectance,
   smoothstep,
@@ -276,6 +277,21 @@ describe('fotometría: anillos (dispersión simple)', () => {
     expect(opticalDepth(1 - Math.exp(-1.2))).toBeCloseTo(1.2, 9);
     expect(opticalDepth(0)).toBe(0);
     expect(opticalDepth(1)).toBeCloseTo(-Math.log(0.005), 9);
+  });
+
+  it('el detalle relativo vale 1 de media en su ventana y conserva los contrastes', () => {
+    const profile = [0.1, 0.2, 0.3, 0.6, 0.9, 0.3];
+    const [first, , third, fourth, fifth] = relativeDetail(profile, 2, 5);
+    // Media de la ventana [2, 5): (0,3 + 0,6 + 0,9) / 3 = 0,6.
+    expect(((third ?? 0) + (fourth ?? 0) + (fifth ?? 0)) / 3).toBeCloseTo(1, 12);
+    expect(first).toBeCloseTo(0.1 / 0.6, 12);
+    expect((fifth ?? 0) / (third ?? 1)).toBeCloseTo(3, 12);
+    expect(relativeDetail(profile, 2, 5).length).toBe(profile.length);
+  });
+
+  it('el detalle relativo no acepta una ventana vacía ni sin brillo', () => {
+    expect(() => relativeDetail([0.5, 0.5], 1, 1)).toThrow();
+    expect(() => relativeDetail([0, 0, 1], 0, 2)).toThrow();
   });
 });
 

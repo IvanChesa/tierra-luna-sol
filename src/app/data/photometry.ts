@@ -123,10 +123,31 @@ export const RING_PHOTOMETRY: {
   readonly photometry: Photometry;
   /** Luz de los anillos sobre el planeta (fracción de la del Sol): se ve en su lado nocturno. */
   readonly ringShine: number;
+  /**
+   * Color de cada anillo (RGB lineal / luminancia), medido en una foto en color real. La tira de los
+   * anillos (`scripts/build-textures.mjs`) conserva el brillo de la textura (su estructura radial, que
+   * modula el albedo de la ficha) y toma este color: el de la textura sale morado en los anillos
+   * tenues.
+   */
+  readonly chromaticity: {
+    readonly C: readonly [number, number, number];
+    readonly B: readonly [number, number, number];
+    readonly Cassini: readonly [number, number, number];
+    readonly A: readonly [number, number, number];
+    readonly source: string;
+  };
   readonly note: string;
 } = {
   photometry: { ...MOON, forwardFraction: 0.08, forwardAsymmetry: 0.75 },
   ringShine: 0.05,
+  chromaticity: {
+    C: [1.04, 0.96, 1.24],
+    B: [0.94, 1.01, 1.07],
+    Cassini: [0.92, 1.0, 1.24],
+    A: [0.99, 1.0, 1.09],
+    source:
+      'Media de cada anillo en el ansa derecha (a menos de 0,3 semiejes menores del eje mayor; C 80–90, B 95–115, Cassini 118,5–121,5 y A 124–135 mil km) de la foto del Hubble del 20-06-2019 (OPAL, NASA/ESA, A. Simon y M. H. Wong; https://esahubble.org/images/heic1917a/), con scripts/measure-reference-colors.mjs. El anillo B es blanco algo azulado (el balance de color de esa foto), no tostado.',
+  },
   note: 'Fase de la Luna y un lóbulo hacia delante (8 %, g = 0,75) para el polvo fino; luz de los anillos sobre el planeta, 0,05 de la del Sol por el seno de su elevación: aproximación y ajuste visual.',
 };
 

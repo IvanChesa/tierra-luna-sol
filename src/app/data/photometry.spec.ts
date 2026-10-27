@@ -7,7 +7,7 @@ import {
 } from '../ephemeris/photometry';
 import { BODY_DATA } from './body-data';
 import { BODY_INDEX } from './body-index';
-import { BODY_PHOTOMETRY } from './photometry';
+import { BODY_PHOTOMETRY, RING_PHOTOMETRY } from './photometry';
 
 const DEG = Math.PI / 180;
 
@@ -54,5 +54,21 @@ describe('fotometría de los cuerpos', () => {
     ['marte', 0.03],
   ] as const)('la curva de fase de %s sigue su ley publicada (RMS ≤ %s mag)', (id, tolerance) => {
     expect(rms(PHASE_LAWS[id], BODY_PHOTOMETRY[id].photometry)).toBeLessThan(tolerance);
+  });
+
+  it('el color medido de cada cuerpo y de cada anillo es una cromaticidad (luminancia 1), con fuente', () => {
+    const luminance = ([r, g, b]: readonly [number, number, number]) =>
+      0.2126 * r + 0.7152 * g + 0.0722 * b;
+    for (const [id, entry] of Object.entries(BODY_PHOTOMETRY)) {
+      if (!entry.chromaticity) continue;
+      expect(luminance(entry.chromaticity.rgb), id).toBeCloseTo(1, 2);
+      expect(entry.chromaticity.source, id).toMatch(/https:\/\//);
+    }
+    const { source, ...rings } = RING_PHOTOMETRY.chromaticity;
+    expect(Object.keys(rings)).toEqual(['C', 'B', 'Cassini', 'A']);
+    for (const [name, rgb] of Object.entries(rings)) {
+      expect(luminance(rgb), name).toBeCloseTo(1, 2);
+    }
+    expect(source).toMatch(/https:\/\/esahubble\.org\/images\/heic1917a/);
   });
 });

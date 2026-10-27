@@ -1,4 +1,4 @@
-// GENERADO por scripts/build-textures.mjs el 2026-10-26. No se edita a mano.
+// GENERADO por scripts/build-textures.mjs el 2026-10-27. No se edita a mano.
 // WebP por niveles con hash (public/textures/), a partir de los originales de assets-src/textures/
 // (origen y licencia de cada uno en docs/FUENTES.md).
 import type { TextureFiles, TextureId } from './textures';
@@ -260,24 +260,24 @@ export const TEXTURE_FILES: TextureFiles = {
   'saturn-rings': [
     {
       level: '1k',
-      path: 'textures/1k/saturn-rings.a0982a6763.webp',
+      path: 'textures/1k/saturn-rings.c893f34265.webp',
       width: 1024,
       height: 16,
-      bytes: 1466,
+      bytes: 1780,
     },
     {
       level: '2k',
-      path: 'textures/2k/saturn-rings.49f49f099c.webp',
+      path: 'textures/2k/saturn-rings.36e322029c.webp',
       width: 2048,
       height: 16,
-      bytes: 2420,
+      bytes: 3050,
     },
     {
       level: '4k',
-      path: 'textures/4k/saturn-rings.3b4bae59e7.webp',
+      path: 'textures/4k/saturn-rings.5b91fcc87f.webp',
       width: 4096,
       height: 16,
-      bytes: 3742,
+      bytes: 5024,
     },
   ],
   'mercury-normal': [
