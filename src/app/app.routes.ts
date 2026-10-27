@@ -73,10 +73,21 @@ export const routes: Routes = [
     title: 'Sobre el proyecto',
     loadComponent: () => import('./pages/about/about-page').then((m) => m.AboutPage),
   },
-  // /404 existe para prerenderizar la página de error (la usará el ErrorDocument de Apache);
-  // ** muestra la misma página en el cliente para cualquier otra URL.
+  // /404 existe para prerenderizar la página de error: es el `404.html` que Cloudflare Pages sirve, con
+  // un 404, en lo que no existe (fase 4); ** muestra la misma página en el cliente para cualquier otra
+  // URL. Sin canonical: no es la página de ninguna URL.
   // TODO(fase-9): /404 se sirve con un 200 si se pide directamente, así que debe llevar
   // SIEMPRE `noindex`, aunque `indexable` sea true (revisión de la fase 0, hallazgo 5; D25).
-  { path: '404', title: 'Página no encontrada', loadComponent: loadNotFound },
-  { path: '**', title: 'Página no encontrada', loadComponent: loadNotFound },
+  {
+    path: '404',
+    title: 'Página no encontrada',
+    data: { canonical: false },
+    loadComponent: loadNotFound,
+  },
+  {
+    path: '**',
+    title: 'Página no encontrada',
+    data: { canonical: false },
+    loadComponent: loadNotFound,
+  },
 ];
