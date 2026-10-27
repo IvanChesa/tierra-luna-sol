@@ -1,7 +1,8 @@
-// Capturas de la interfaz del explorador para el informe de la fase 3 (?captura=1): escritorio y
-// móvil, con los estados que pide el plan (ficha, vistas, hoja desplegada, atajos, vista limpia,
-// avisos, límite de fechas, carga, error y velocidades altas).
-// Uso: npm run build && node scripts/capture-ui.mjs docs/informes/img/fase-3 [--swiftshader]
+// Capturas de la interfaz del explorador para los informes (?captura=1): escritorio, portátil y
+// móvil, con los estados que piden las fases 3 y 3c (fichas de cuerpos y su fila de lunas, tarjeta,
+// índice abierto, «Controles +», vistas, atajos, vista limpia, avisos, límite de fechas, carga, error
+// y velocidades altas).
+// Uso: npm run build && node scripts/capture-ui.mjs docs/informes/img/fase-3c [--swiftshader]
 import { mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
@@ -23,7 +24,10 @@ const MOBILE = { width: 390, height: 844, scale: 2, mobile: true };
 const SMALL = { width: 360, height: 640, scale: 2, mobile: true };
 const LANDSCAPE = { width: 844, height: 390, scale: 2, mobile: true };
 const ZOOM_200 = { width: 640, height: 360, scale: 2 };
-const expand = async (page) => page.click('.time__more');
+/** «Controles +» abierto (en móvil, una hoja). */
+const controls = async (page) => page.click('.time__more');
+/** El panel «Índice» abierto. */
+const index = async (page) => page.click('.index-toggle');
 
 const press =
   (...keys) =>
@@ -45,22 +49,29 @@ const failStars = async (page) =>
  */
 const SHOTS = [
   ['escritorio-sistema', '/?captura=1', DESKTOP],
-  ['movil-sistema', '/?captura=1', MOBILE],
   ['escritorio-ficha-saturno', '/?captura=1&cuerpo=saturno', DESKTOP],
-  ['movil-ficha-saturno', '/?captura=1&cuerpo=saturno', MOBILE],
-  ['portatil-ficha-jupiter', '/?captura=1&cuerpo=jupiter', LAPTOP],
-  ['estrecho-ficha-saturno', '/?captura=1&cuerpo=saturno', NARROW],
+  ['escritorio-indice-saturno', '/?captura=1&cuerpo=saturno', DESKTOP, index],
   ['escritorio-luna-de-saturno', '/?captura=1&cuerpo=titan', DESKTOP],
+  ['escritorio-controles', '/?captura=1&cuerpo=jupiter', DESKTOP, controls],
+  ['portatil-ficha-jupiter', '/?captura=1&cuerpo=jupiter', LAPTOP],
+  ['portatil-indice', '/?captura=1', LAPTOP, index],
+  ['estrecho-ficha-saturno', '/?captura=1&cuerpo=saturno', NARROW],
+  ['estrecho-controles', '/?captura=1', NARROW, controls],
   ['escritorio-tierra', '/explorar/tierra?captura=1', DESKTOP],
-  ['movil-tierra', '/explorar/tierra?captura=1', MOBILE],
   ['escritorio-luna', '/explorar/luna?captura=1', DESKTOP],
+  ['movil-sistema', '/?captura=1', MOBILE],
+  ['movil-ficha-saturno', '/?captura=1&cuerpo=saturno', MOBILE],
+  ['movil-indice', '/?captura=1', MOBILE, index],
+  ['movil-controles', '/?captura=1', MOBILE, controls],
+  ['movil-tierra', '/explorar/tierra?captura=1', MOBILE],
   ['movil-luna', '/explorar/luna?captura=1', MOBILE],
-  ['movil-tiempo-desplegado', '/?captura=1', MOBILE, expand],
-  ['movil-pequeno-desplegado', '/?captura=1', SMALL, expand],
+  ['movil-pequeno', '/?captura=1', SMALL],
   ['movil-pequeno-ficha', '/?captura=1&cuerpo=saturno', SMALL],
+  ['movil-pequeno-controles', '/?captura=1', SMALL, controls],
   ['movil-horizontal', '/?captura=1', LANDSCAPE],
   ['movil-horizontal-ficha', '/?captura=1&cuerpo=saturno', LANDSCAPE],
-  ['zoom-200-desplegado', '/?captura=1', ZOOM_200, expand],
+  ['zoom-200', '/?captura=1', ZOOM_200],
+  ['zoom-200-controles', '/?captura=1', ZOOM_200, controls],
   ['escritorio-atajos', '/?captura=1', DESKTOP, press('?')],
   ['movil-menu', '/?captura=1', MOBILE, async (page) => page.click('.site-menu-button')],
   ['escritorio-vista-limpia', '/?captura=1', DESKTOP, press('v')],

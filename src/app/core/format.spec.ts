@@ -2,6 +2,7 @@ import {
   formatAu,
   formatDateTime,
   formatDistanceKm,
+  formatLongDate,
   formatLongDateTime,
   localZoneName,
   formatNumber,
@@ -52,6 +53,10 @@ describe('format: fechas', () => {
     expect(plain(formatDateTime(instant, 'utc'))).toBe('24 oct 2026, 19:40:05');
     expect(plain(formatDateTime(instant, 'utc', false))).toBe('24 oct 2026, 19:40');
     expect(plain(formatLongDateTime(instant, 'utc'))).toBe('24 de octubre de 2026 a las 19:40');
+    // La de la línea de tiempo (aria-valuetext): sin la hora.
+    expect(plain(formatLongDate(new Date('2031-03-17T10:00:00Z'), 'utc'))).toBe(
+      '17 de marzo de 2031',
+    );
   });
 
   it('el desfase de la zona local se escribe como UTC±h (o UTC si no hay)', () => {

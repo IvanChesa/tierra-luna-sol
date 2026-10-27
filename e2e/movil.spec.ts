@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { indexToggle, openExplorer, treeRow } from './support';
+import { indexToggle, openExplorer, simTime, treeRow } from './support';
 
 // Proyecto «movil» (Pixel 7, táctil): las hojas inferiores (índice y ficha) y el menú del sitio.
 test.describe('Móvil', () => {
@@ -108,6 +108,17 @@ test.describe('Móvil', () => {
       .evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().height))) {
       expect(height).toBeGreaterThanOrEqual(44);
     }
+  });
+
+  test('la línea de tiempo responde al tacto', async ({ page }) => {
+    await openExplorer(page, '/?fecha=2031-03-15T13:00Z');
+    const line = page.getByRole('slider', { name: 'Línea de tiempo' });
+    const box = await line.boundingBox();
+    if (!box) throw new Error('Sin línea de tiempo');
+    // Un toque hacia el final de la pista: el último trimestre de 2031.
+    await page.touchscreen.tap(box.x + box.width * 0.9, box.y + box.height / 2);
+    await expect.poll(async () => new Date(await simTime(page)).getUTCMonth()).toBeGreaterThan(8);
+    await expect(line).toHaveAttribute('aria-valuetext', /de 2031$/);
   });
 
   test('«Controles +» sube como hoja con la fecha, la velocidad y los ajustes', async ({
