@@ -86,7 +86,7 @@ export class ExplorerSession {
     this.capture = this.params.capture;
     this.reducedMotion = win?.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
     this._warnings.set(this.params.warnings);
-    // Arranque en movimiento (D31): sin fecha en la URL, «ahora» y reproduciendo a 3 días por
+    // Arranque en movimiento (D31): sin fecha en la URL, «ahora» y reproduciendo a 3 horas por
     // segundo; con movimiento reducido, en pausa; con fecha (o en captura), en pausa en ella.
     const fixedTime = this.params.time !== null || this.capture;
     this.sim.init({

@@ -33,6 +33,7 @@ Decisiones y tareas que dependen de Iván. Claude Code añade aquí cada `TODO(i
 - [x] `.codex/` y `AGENTS.md` (configuración local de Codex) en `.gitignore`.
 
 ### Decisiones del 27-10
+- [x] **Velocidad de entrada (D31):** el explorador arranca reproduciendo a **3 horas por segundo**, no a 3 días; se añade el escalón de 3 h/s (quedan nueve). Con movimiento reducido o con `?fecha=`, sigue arrancando en pausa. En el plan (D31 y fase 3c), en `CLAUDE.md`, en `ESTILO.md` §3, en los tests y en los e2e.
 - [x] **Bloom de la fase 3b (tarea 7):** pasa a la **fase 10 como opcional** (tarea 9 de la fase 10 en el plan). Solo en el nivel alto y con el fondo pintado dentro de la escena (informe de la fase 3b, §4.1). Antes estaba pendiente de decidir entre quitarlo, llevarlo al backlog o retomarlo.
 
 ## Antes del bloque C (fase 4: staging)

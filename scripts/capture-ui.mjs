@@ -30,8 +30,8 @@ const press =
   async (page) => {
     for (const key of keys) await page.keyboard.press(key);
   };
-/** A 1 año/s (cinco escalones por encima del tiempo real) y reproduciendo. */
-const yearPerSecond = press('.', '.', '.', '.', '.', 'k');
+/** A 1 año/s (el último escalón: «.» no pasa de él) y reproduciendo. */
+const yearPerSecond = press(...Array(8).fill('.'), 'k');
 
 /** Las estrellas no llegan nunca: la escena se queda en «Preparando la escena 3D…». */
 const holdStars = async (page) => page.route('**/data/stars.bin', () => undefined);

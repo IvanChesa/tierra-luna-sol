@@ -3,6 +3,7 @@
 > Documento maestro. Lo ejecuta Claude Code en el PC de Iván, por fases y en bloques autónomos. Otra sesión de Claude revisa cada bloque (`docs/revisiones/`).
 > Si este plan y el código no coinciden, manda el plan. Los cambios se proponen en el informe de fase y los aprueba Iván.
 > Revisión 2 del plan: 24-10-2026. Sustituye a la revisión 1. Incorpora la auditoría de las fases 2–10 (`docs/decisiones/auditoria-plan-v2.md`), lo aprendido en la fase 1 y la decisión de Iván de que el SEO sea secundario.
+> Actualizada el 27-10-2026 con dos decisiones de Iván: el arranque a 3 horas/s (D31) y el bloom de la fase 3b, opcional en la fase 10.
 > Actualizada el 26-10-2026 con la revisión del bloque B (`docs/revisiones/bloque-B.md`): las propuestas aprobadas de las fases 2 y 3, las fases nuevas **3b** (realismo de los planetas) y **3c** (interfaz inmersiva) en el bloque **R**, las decisiones D29–D31 y «El cielo desde España» (`docs/decisiones/`).
 
 ---
@@ -95,7 +96,7 @@ Un **explorador 3D interactivo** del Sol, los 8 planetas, 21 lunas, la Tierra y 
 | D28 | **Solo español en la v1**; el inglés queda para después (`@angular/localize`) | — |
 | D29 | **Sombreado físico por tipo de cuerpo**, con chunks GLSL comunes en `scene/materials/`: **rocosos sin atmósfera** (Mercurio, la Luna y las lunas) con Lommel–Seeliger y un pico de oposición sencillo (Hapke simplificado); **gigantes** (Júpiter, Saturno, Urano y Neptuno) con el oscurecimiento del limbo de Minnaert, un parámetro por planeta documentado y el terminador suavizado; **con atmósfera** (Venus, Tierra, Marte y Titán; también los gigantes) con una dispersión aproximada en el limbo y en el terminador, con el tono de cada atmósfera; **brillo relativo** coherente con el albedo geométrico del catálogo y la exposición por vista. La luz ambiente plana desaparece: en la vista general puede quedar un relleno mínimo, documentado como ilustrativo | Los planetas parecían de plástico (Lambert + ambiente plano). Fase 3b (`docs/decisiones/FASE-3b-REALISMO.md`); la usan después la Tierra, la Luna y las lunas. |
 | D30 | **Interfaz inmersiva del explorador:** lienzo a pantalla completa, fichas de cuerpos abajo, barra de tiempo compacta con línea deslizante y controles desplegables. Se toma la **estructura** de la referencia del original, con **nuestra dirección visual A** («Carta celeste»): la disposición se inspira en ella; los estilos, las formas y los textos son propios | Petición de Iván (26-10). Fase 3c (`docs/decisiones/FASE-3c-INTERFAZ.md`). |
-| D31 | **Arranque en movimiento:** al entrar, el sistema solar se reproduce a **3 días/s** desde «ahora». Con `prefers-reduced-motion`, arranca en pausa; con un enlace que fija `?fecha=`, en pausa en ese instante. Cumple WCAG 2.2.2: el botón de pausa es lo primero y más visible de la barra, y `Espacio` también pausa | Petición de Iván (26-10). Fase 3c. |
+| D31 | **Arranque en movimiento:** al entrar, el sistema solar se reproduce a **3 horas/s** desde «ahora» (cambio de Iván del 27-10; antes, 3 días/s). Con `prefers-reduced-motion`, arranca en pausa; con un enlace que fija `?fecha=`, en pausa en ese instante. Cumple WCAG 2.2.2: el botón de pausa es lo primero y más visible de la barra, y `Espacio` también pausa | Petición de Iván (26-10; velocidad cambiada el 27-10). Fase 3c. |
 
 ### Dependencias permitidas (lista cerrada)
 Cualquier otro paquete → **preguntar a Iván antes de instalarlo**.
@@ -458,7 +459,7 @@ Criterios de aceptación:
 
 ### Fase 3c: Interfaz inmersiva del sistema solar
 
-Rama `fase-3c-interfaz` (bloque R, después de la 3b). Pedida por Iván el 26-10, con una captura de la barra inferior del original como referencia: «Al sistema solar me gustaría añadirle una interfaz gráfica parecida a esta. También que, cuando entras en la página, el sistema solar se esté moviendo a unos 3 días por segundo». Documento de origen: `docs/decisiones/FASE-3c-INTERFAZ.md`.
+Rama `fase-3c-interfaz` (bloque R, después de la 3b). Pedida por Iván el 26-10, con una captura de la barra inferior del original como referencia: «Al sistema solar me gustaría añadirle una interfaz gráfica parecida a esta. También que, cuando entras en la página, el sistema solar se esté moviendo a unos 3 días por segundo». El 27-10, Iván cambió la velocidad de entrada a **3 horas por segundo** (D31). Documento de origen: `docs/decisiones/FASE-3c-INTERFAZ.md`.
 
 **Qué tiene la referencia:** una fila de fichas de cuerpos con su miniatura redonda; una barra de tiempo compacta (reproducir/pausar redondo, fecha con rótulo e icono de calendario, línea de tiempo deslizante a lo ancho, selector de velocidad y «Controls +», que despliega el resto); pistas discretas y la fuente de los datos en letra pequeña; el lienzo a pantalla completa con la interfaz flotando encima. Se toma esa **estructura** con **nuestro estilo** (D30) y el arranque en movimiento (D31).
 
@@ -474,7 +475,7 @@ Tareas:
    - **línea de tiempo deslizante** que abarca el **año de la fecha mostrada** (de enero a diciembre), con una marca de «hoy», el año a la vista y paso al año anterior o siguiente en los extremos; el rango total sigue siendo 1900–2100;
    - accesible: `input type="range"` con `aria-valuetext` («17 de marzo de 2026»); flechas = 1 día, RePág/AvPág = 1 mes, Inicio/Fin = el año;
    - selector de velocidad.
-3. **Velocidades:** añadir **3 días/s (por defecto)** y 10 días/s a las actuales (tiempo real, 1 h/s, 1 día/s, 1 semana/s, 1 mes/s, 1 año/s), en los dos sentidos.
+3. **Velocidades:** añadir **3 horas/s (por defecto, desde el 27-10)**, 3 días/s y 10 días/s a las actuales (tiempo real, 1 h/s, 1 día/s, 1 semana/s, 1 mes/s, 1 año/s), en los dos sentidos.
 4. **«Controles +»** despliega un panel con lo menos usado: hora y zona, «Ahora», escala (ilustrativa o real, cuando llegue en la fase 7), calidad, vista limpia y atajos de teclado. En móvil es una hoja inferior.
 
    4b. **La barra lateral pasa a ser un panel desplegable «Índice»** (decisión de Iván, 26-10):
@@ -486,13 +487,13 @@ Tareas:
    - el resto de la barra actual: las pestañas «Sistema solar · Tierra · Luna», flotantes arriba; el título y la descripción, al texto de presentación (tarea 5); «Un proyecto de… · Créditos», al pie en letra pequeña (tarea 6).
 5. **Texto de presentación** flotando arriba a la izquierda (título + una frase, como el H1 actual), que se pliega al interactuar o al elegir un cuerpo. En los móviles bajos se muestra solo el H1 compacto y la descripción se pliega (resuelve la duda de la fase 3). La ficha resumida del cuerpo elegido aparece como tarjeta flotante.
 6. **Pistas de uso** en letra pequeña («Arrastra para girar · rueda o pellizca para acercarte · elige un cuerpo») y el pie de los datos («1900–2100 · NASA/JPL · astronomy-engine»). Se ocultan en la vista limpia.
-7. **Arranque en movimiento** (D31), con un test e2e para cada caso: normal → reproduciendo a 3 días/s; movimiento reducido → en pausa; `?fecha=` → en pausa en esa fecha.
+7. **Arranque en movimiento** (D31), con un test e2e para cada caso: normal → reproduciendo a 3 horas/s; movimiento reducido → en pausa; `?fecha=` → en pausa en esa fecha.
 8. **Encuadre:** actualizar los márgenes de `setViewOffset` a la nueva disposición, para que el cuerpo enfocado no quede tapado por las fichas ni por la barra.
 9. **Rendimiento:** con la reproducción automática ya no hay render bajo demanda al llegar. Medir el coste (CPU y batería) y comprobar que Lighthouse y los FPS de §5 se siguen cumpliendo; con la pestaña oculta, se pausa (ya existe).
 
 Criterios de aceptación:
 - [ ] Capturas en escritorio, portátil y móvil, junto a la referencia, que muestren la misma **estructura** con **nuestro estilo** propio y coherente con `docs/DISENO.md`.
-- [ ] Al entrar, el sistema se mueve a 3 días/s; con movimiento reducido o con `?fecha=` arranca en pausa (e2e).
+- [ ] Al entrar, el sistema se mueve a 3 horas/s; con movimiento reducido o con `?fecha=` arranca en pausa (e2e).
 - [ ] La línea de tiempo funciona con ratón, táctil y teclado, y anuncia la fecha (axe sin violaciones; prueba de teclado en el informe).
 - [ ] Las fichas permiten elegir los 30 cuerpos (planetas en la primera fila, lunas en la segunda).
 - [ ] El panel «Índice» está cerrado al entrar, se abre y se cierra con el ratón, el teclado y `Esc` (con el foco gestionado: entra al abrir y vuelve al botón al cerrar) y conserva el árbol con distancias y su accesibilidad (e2e + axe).

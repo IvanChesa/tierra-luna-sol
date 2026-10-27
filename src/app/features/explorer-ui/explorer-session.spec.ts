@@ -107,7 +107,7 @@ describe('ExplorerSession: la URL, la selección y el motor', () => {
     window.history.replaceState({}, '', '/');
   });
 
-  it('sin fecha en la URL arranca en «ahora» a 3 días por segundo (D31); con fecha, en pausa en ella', async () => {
+  it('sin fecha en la URL arranca en «ahora» a 3 horas por segundo (D31); con fecha, en pausa en ella', async () => {
     const live = await setup('');
     expect(live.sim.playing()).toBe(true);
     expect(live.sim.speed()).toBe(DEFAULT_SPEED);
@@ -121,7 +121,7 @@ describe('ExplorerSession: la URL, la selección y el motor', () => {
     expect(fixed.explorer.panelOpen()).toBe(true);
   });
 
-  it('sin fecha, al conectar el motor (que nace en pausa) sigue reproduciendo a 3 días por segundo', async () => {
+  it('sin fecha, al conectar el motor (que nace en pausa) sigue reproduciendo a 3 horas por segundo', async () => {
     const { session, sim } = await setup('?cuerpo=marte');
     const engine = new FakeEngine();
     session.attachEngine(engine);
