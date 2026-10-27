@@ -11,6 +11,7 @@ import type {
 import { ExplorerStore } from '../../state/explorer.store';
 import { SystemPositions } from '../../state/positions';
 import { SimulationEngine, SimulationStore } from '../../state/simulation.store';
+import { GuidedView, atSolarHour } from '../../data/tours';
 import {
   CONTEXT_SPEED,
   SpeedContext,
@@ -32,7 +33,14 @@ import { describeBody, viewName } from './describe';
 export type ExplorerEngine = SimulationEngine &
   Pick<
     SceneEngineApi,
-    'setView' | 'setViewInsets' | 'orbitBy' | 'zoomBy' | 'skipTransition' | 'setLabelsVisible'
+    | 'setView'
+    | 'setViewInsets'
+    | 'orbitBy'
+    | 'zoomBy'
+    | 'skipTransition'
+    | 'setLabelsVisible'
+    | 'lookAtSurface'
+    | 'setSurfaceMarkers'
   >;
 
 /** El cuerpo de cada vista de detalle y la vista propia de cada cuerpo que la tiene. */
@@ -255,10 +263,25 @@ export class ExplorerSession {
 
   // --- Sincronización ---------------------------------------------------------------------------
 
+  /**
+   * Una vista guiada de la Tierra (fase 5): pausa la reproducción, lleva el reloj a la hora del día
+   * a la que se ve el punto (sin cambiar la fecha), mueve la cámara sobre él, pone o quita los
+   * marcadores de los lugares del cielo desde España y anuncia su subtítulo.
+   */
+  showGuidedView(view: GuidedView): void {
+    this.sim.setPlaying(false);
+    this.sim.setTime(atSolarHour(this.sim.time(), view.lonDeg, view.solarHour));
+    this.engine?.lookAtSurface(view.latDeg, view.lonDeg, view.distanceRadii);
+    this.engine?.setSurfaceMarkers(view.markers);
+    this.announce(`${view.title}. ${view.text}`);
+  }
+
   private applyView(view: ExplorerView): void {
     const first = this.lastView === null;
     if (view === this.lastView) return;
     this.lastView = view;
+    // Los marcadores de la vista guiada «España» solo tienen sentido en la vista Tierra.
+    if (view !== 'earth') this.engine?.setSurfaceMarkers(false);
     const viewBody = VIEW_BODY[view];
     if (viewBody) {
       this.sim.reflectSelection(viewBody);

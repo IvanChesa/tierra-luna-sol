@@ -1,0 +1,100 @@
+/**
+ * Vistas guiadas de la Tierra (fase 5; decisión de Iván: Tierra completa, Pacífico, Himalaya, luces
+ * nocturnas y España, con marcadores en los lugares del cielo desde España).
+ *
+ * Cada vista mira un punto de la superficie desde una distancia (en radios terrestres) y lleva la hora
+ * del día, sin cambiar la fecha, a la que ese punto se ve como se quiere: de día (hora solar media 12)
+ * o, las luces, de noche (0). Los textos son subtítulos breves, con su fuente y `reviewed: false`
+ * (Iván los revisa en la fase 9).
+ */
+export interface GuidedView {
+  readonly id: string;
+  readonly title: string;
+  /** Subtítulo de la vista (se muestra y se anuncia). */
+  readonly text: string;
+  readonly source: string;
+  readonly reviewed: boolean;
+  readonly latDeg: number;
+  readonly lonDeg: number;
+  /** Distancia de la cámara al centro de la Tierra, en radios terrestres. */
+  readonly distanceRadii: number;
+  /** Hora solar media en el punto (0–24) a la que se lleva el reloj sin cambiar la fecha. */
+  readonly solarHour: number;
+  /** Con los marcadores de los lugares del cielo desde España. */
+  readonly markers: boolean;
+}
+
+export const GUIDED_VIEWS: readonly GuidedView[] = [
+  {
+    id: 'tierra-completa',
+    title: 'La Tierra completa',
+    text: 'La Tierra entera, de día: océanos, continentes y nubes, como la fotografía la cámara EPIC de la NASA desde el espacio, entre la Tierra y el Sol.',
+    source: 'https://epic.gsfc.nasa.gov/about',
+    reviewed: false,
+    latDeg: 15,
+    lonDeg: 10,
+    distanceRadii: 4.2,
+    solarHour: 12,
+    markers: false,
+  },
+  {
+    id: 'pacifico',
+    title: 'El Pacífico',
+    text: 'El océano Pacífico, el mayor y más profundo de la Tierra: guarda más de la mitad de su agua libre.',
+    source: 'https://oceanservice.noaa.gov/facts/biggestocean.html',
+    reviewed: false,
+    latDeg: 0,
+    lonDeg: -160,
+    distanceRadii: 3.6,
+    solarHour: 12,
+    markers: false,
+  },
+  {
+    id: 'himalaya',
+    title: 'El Himalaya',
+    text: 'El Himalaya, la cordillera del Everest, la montaña más alta de la Tierra.',
+    source: 'https://science.nasa.gov/earth/earth-observatory/the-worlds-tallest-mountain-82578/',
+    reviewed: false,
+    latDeg: 28,
+    lonDeg: 86,
+    distanceRadii: 1.9,
+    solarHour: 10,
+    markers: false,
+  },
+  {
+    id: 'luces-nocturnas',
+    title: 'Las luces de la noche',
+    text: 'De noche, las luces de las ciudades y los pueblos dibujan dónde vive la gente.',
+    source: 'https://www.nasa.gov/image-article/black-marble/',
+    reviewed: false,
+    latDeg: 45,
+    lonDeg: 10,
+    distanceRadii: 2.4,
+    solarHour: 0,
+    markers: false,
+  },
+  {
+    id: 'espana',
+    title: 'España',
+    text: 'España y los lugares del cielo desde España: el Montsec, el Observatori Fabra, Calar Alto, la Puerta del Sol y Fraga, en la Península, y el Teide y el Roque de los Muchachos, en Canarias.',
+    source: 'https://www.iac.es/en/observatorios-de-canarias/roque-de-los-muchachos-observatory',
+    reviewed: false,
+    latDeg: 36,
+    lonDeg: -7,
+    distanceRadii: 2,
+    solarHour: 12,
+    markers: true,
+  },
+];
+
+/**
+ * La misma fecha (UTC) a la hora UTC en la que la hora solar media en `lonDeg` es `solarHour`: la
+ * longitud adelanta la hora solar 1 h cada 15° hacia el este. Sin la ecuación del tiempo (unos
+ * minutos): basta para ver el punto de día o de noche.
+ */
+export function atSolarHour(date: Date, lonDeg: number, solarHour: number): Date {
+  const utcHours = (((solarHour - lonDeg / 15) % 24) + 24) % 24;
+  const result = new Date(date.getTime());
+  result.setUTCHours(0, 0, 0, 0);
+  return new Date(result.getTime() + utcHours * 3_600_000);
+}

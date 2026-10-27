@@ -1,4 +1,9 @@
-/* Panel de la vista Tierra: opaco sobre el lienzo, como la tarjeta y el índice. */
+/* Panel de la vista Tierra: dos bloques opacos sobre el lienzo, como la tarjeta y el índice. */
+:host {
+  display: grid;
+  gap: var(--space-2);
+}
+
 .earth {
   display: grid;
   gap: var(--space-2);
@@ -41,6 +46,41 @@
   margin: 0;
   color: var(--color-text-muted);
   font-size: var(--text-xs, 0.75rem);
+}
+
+/* Las vistas guiadas: botones compactos que se reparten en filas. */
+.earth__views {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.earth__view {
+  min-height: 2rem;
+  padding-inline: var(--space-2);
+}
+
+.earth__player {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.earth__tour {
+  flex: 1;
+  gap: var(--space-1);
+  padding-inline: var(--space-2);
+  white-space: nowrap;
+}
+
+.earth__back {
+  rotate: 180deg;
+}
+
+.earth__caption {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  line-height: 1.45;
 }
 
 /* En móvil, compacto: sin la nota (la hora local la dice el propio control a los lectores). */

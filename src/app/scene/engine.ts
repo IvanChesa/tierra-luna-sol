@@ -13,7 +13,7 @@ import type { Texture } from 'three';
 import { decodeStarCatalog } from '../ephemeris/stars';
 import type { SystemState } from '../ephemeris/system-state';
 import type { PlacementInput } from '../ephemeris/scale';
-import { Mat3, Vec3, columnOf, normalize, vec3 } from '../ephemeris/vec3';
+import { Mat3, Vec3, columnOf, mulMat3Vec, normalize, vec3 } from '../ephemeris/vec3';
 import { AliasingState, MotionBody } from './aliasing';
 import { FOCUS_FLIGHT_MS, FRAME_START, Flight, VIEW_TRIP_MS, flightFrame } from './camera/flight';
 import { ViewFrom, anglesFromEcl, phaseViewDirection } from './camera/view-from';
@@ -560,6 +560,35 @@ export class SceneEngine implements SceneEngineApi {
     if (this.disposed) return;
     this.takeControl();
     this.rig.nudge(deltaAzimuth, deltaElevation, this.instant());
+    this.invalidate();
+  }
+
+  lookAtSurface(latDeg: number, lonDeg: number, distanceRadii: number): void {
+    const focus = this.focusIndex;
+    if (this.disposed || focus === null) return;
+    this.takeControl();
+    const state = this.system.at(this.clock.timeMsValue);
+    // El punto, del sistema propio del cuerpo a la eclíptica con su orientación de este instante.
+    const lat = (latDeg * Math.PI) / 180;
+    const lon = (lonDeg * Math.PI) / 180;
+    const local = vec3(Math.cos(lat) * Math.cos(lon), Math.cos(lat) * Math.sin(lon), Math.sin(lat));
+    const direction = mulMat3Vec(this.orientations.at(state)[focus] as Mat3, local);
+    // La distancia la pone el encuadre en cada frame: se fija su zoom para que sea la pedida.
+    if (this.framing.kind === 'body') {
+      const base = framingDistanceRadii(
+        this.framing.fill,
+        this.projection.visibleFovDeg,
+        this.projection.visibleAspect,
+      );
+      this.framing.zoom = Math.min(Math.max(distanceRadii / base, 0.05), 2e5);
+    }
+    this.rig.setTarget(anglesFromEcl(direction), this.instant());
+    this.invalidate();
+  }
+
+  setSurfaceMarkers(visible: boolean): void {
+    if (this.disposed) return;
+    this.world.setSurfaceMarkers(visible);
     this.invalidate();
   }
 

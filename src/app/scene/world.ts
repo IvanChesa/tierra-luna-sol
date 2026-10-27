@@ -20,6 +20,7 @@ import {
   Mesh,
   PerspectiveCamera,
   PlaneGeometry,
+  Points,
   Quaternion,
   Scene,
   ShaderMaterial,
@@ -31,6 +32,7 @@ import {
 import { BODY_DATA } from '../data/body-data';
 import type { BodyId } from '../data/body.model';
 import { BODY_PHOTOMETRY, BodyPhotometry, RING_PHOTOMETRY } from '../data/photometry';
+import { SKY_PLACES } from '../data/places';
 import { eclRotationToThree } from '../ephemeris/coordinates';
 import { albedoScale } from '../ephemeris/photometry';
 import type { SystemState } from '../ephemeris/system-state';
@@ -44,6 +46,7 @@ import {
   createAtmosphereMaterial,
 } from './materials/atmosphere-material';
 import { BodyMaterialUniforms, EarthUniforms, createBodyMaterial } from './materials/body-material';
+import { createMarkerMaterial } from './materials/marker-material';
 import { createMilkyWayMaterial } from './materials/milky-way-material';
 import { createRingMaterial } from './materials/ring-material';
 import { createHaloMaterial, createSunMaterial } from './materials/sun-material';
@@ -266,6 +269,9 @@ export class World {
   private backgroundGain = 1;
   private readonly milkyWay: Mesh;
   private readonly milkyWayMaterial = createMilkyWayMaterial();
+  /** Marcadores de los lugares del cielo desde España, en la Tierra (fase 5). */
+  private readonly markerMaterial = createMarkerMaterial('#e8c46f');
+  private markers: Points | null = null;
   private milkyWayTexture: LoadedTexture | null = null;
   private milkyWayRequested: TextureLevel | null = null;
   private orbitSources: readonly OrbitSource[];
@@ -368,6 +374,28 @@ export class World {
           ringRadii.outerKm / radiusKm,
         );
       }
+    }
+
+    // Marcadores de los lugares del cielo desde España (fase 5): hijos de la Tierra, giran con ella.
+    const earthVisual = this.visuals.find((visual) => visual.earth);
+    if (earthVisual) {
+      const positions = new Float32Array(3 * SKY_PLACES.length);
+      SKY_PLACES.forEach((place, k) => {
+        const lat = (place.latitudeDeg * Math.PI) / 180;
+        const lon = (place.longitudeDeg * Math.PI) / 180;
+        // Sistema propio en los ejes de la malla (Y, el polo; la longitud este hacia −Z), un poco
+        // por encima de la superficie para no hundirse en ella.
+        positions[3 * k] = 1.004 * Math.cos(lat) * Math.cos(lon);
+        positions[3 * k + 1] = 1.004 * Math.sin(lat);
+        positions[3 * k + 2] = -1.004 * Math.cos(lat) * Math.sin(lon);
+      });
+      const geometry = new BufferGeometry();
+      geometry.setAttribute('position', new BufferAttribute(positions, 3));
+      this.markers = new Points(geometry, this.markerMaterial.material);
+      this.markers.name = 'earth-markers';
+      this.markers.visible = false;
+      this.markers.renderOrder = 4;
+      earthVisual.mesh.add(this.markers);
     }
 
     this.orbitSources = options.orbitSources(options.profile);
@@ -635,6 +663,11 @@ export class World {
     );
   }
 
+  /** Marcadores de los lugares del cielo desde España (la vista guiada «España»). */
+  setSurfaceMarkers(visible: boolean): void {
+    if (this.markers) this.markers.visible = visible;
+  }
+
   /** Deriva de las nubes de la Tierra (fracción de vuelta; 0 con movimiento reducido o en captura). */
   setCloudDrift(turns: number): void {
     for (const visual of this.visuals) {
@@ -786,6 +819,7 @@ export class World {
 
   setPixelRatio(pixelRatio: number): void {
     this.stars?.setPixelRatio(pixelRatio);
+    this.markerMaterial.uniforms.uPixelRatio.value = pixelRatio;
   }
 
   /** Memoria de vídeo estimada (texturas + geometría), en bytes. */
@@ -830,6 +864,8 @@ export class World {
     });
     this.sphere.dispose();
     this.coarseSphere.dispose();
+    // Los puntos no son mallas: su geometría no la libera el recorrido de arriba.
+    this.markers?.geometry.dispose();
     for (const visual of this.visuals) {
       if (visual.loaded) releaseTexture(visual.loaded.texture);
       if (visual.relief?.loaded) releaseTexture(visual.relief.loaded.texture);

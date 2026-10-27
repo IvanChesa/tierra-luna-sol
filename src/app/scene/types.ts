@@ -164,6 +164,15 @@ export interface SceneEngineApi {
   orbitBy(deltaAzimuth: number, deltaElevation: number): void;
   /** Acerca (`factor` < 1) o aleja (> 1) la cámara: los botones y las teclas de zoom. */
   zoomBy(factor: number): void;
+  /**
+   * Coloca la cámara sobre un punto de la superficie del cuerpo enfocado (latitud y longitud
+   * geográficas, en grados) a `distanceRadii` radios de su centro, con la orientación real del
+   * cuerpo en ese instante: las vistas guiadas de la Tierra (fase 5). Viaje suave, o directo con
+   * movimiento reducido.
+   */
+  lookAtSurface(latDeg: number, lonDeg: number, distanceRadii: number): void;
+  /** Muestra u oculta los marcadores de los lugares del cielo desde España sobre la Tierra. */
+  setSurfaceMarkers(visible: boolean): void;
   /** Termina ya el viaje de cámara o la transición de marco en curso («Saltar», `Esc`). */
   skipTransition(): void;
   /** Muestra u oculta las etiquetas de los cuerpos (la vista limpia las oculta). */

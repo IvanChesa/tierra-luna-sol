@@ -35,7 +35,12 @@ const SQUARE = { width: 900, height: 900, scale: 1 };
 /** La foto de EPIC del Pacífico (2016-06-21 22:58:24 UT; docs/realismo/referencias.md). */
 const EPIC = join(tmpdir(), 'tls-referencias', 'epic_1b_20160621230313.jpg');
 
-/** [nombre, ruta, tamaño]. */
+/** Una vista guiada: su botón en el panel de la Tierra. */
+const guided = (title) => async (page) => {
+  await page.getByRole('button', { name: title, exact: true }).click();
+};
+
+/** [nombre, ruta, tamaño, acción tras cargar]. */
 const SHOTS = [
   ['escritorio-tierra', '/explorar/tierra?captura=1', DESKTOP],
   ['tierra-mediodia-utc', '/explorar/tierra?captura=1&fecha=2026-06-21T12:00Z', DESKTOP],
@@ -47,6 +52,13 @@ const SHOTS = [
     SQUARE,
   ],
   ['movil-tierra', '/explorar/tierra?captura=1', MOBILE],
+  // Las vistas guiadas (cada una pone su hora del día sobre la fecha de la captura).
+  ['vista-tierra-completa', '/explorar/tierra?captura=1', DESKTOP, guided('La Tierra completa')],
+  ['vista-pacifico', '/explorar/tierra?captura=1', DESKTOP, guided('El Pacífico')],
+  ['vista-himalaya', '/explorar/tierra?captura=1', DESKTOP, guided('El Himalaya')],
+  ['vista-luces', '/explorar/tierra?captura=1', DESKTOP, guided('Las luces de la noche')],
+  ['vista-espana', '/explorar/tierra?captura=1', DESKTOP, guided('España')],
+  ['movil-vista-espana', '/explorar/tierra?captura=1', MOBILE, guided('España')],
   // El máximo del eclipse total del 12-08-2026 (17:45:51 UT, 65,2° N 25,2° O; catálogo de la NASA),
   // con la cámara cerca de la dirección del Sol y sobre la latitud del eclipse.
   [
@@ -61,9 +73,13 @@ const wanted = only ? new Set(only.split(',')) : null;
 
 const { browser, close } = await openBrowser();
 try {
-  for (const [name, path, size] of SHOTS) {
+  for (const [name, path, size, action] of SHOTS) {
     if (wanted && !wanted.has(name)) continue;
     const { page, problems } = await openViewer(browser, path, size);
+    if (action) {
+      await action(page);
+      await waitForIdle(page);
+    }
     // Las comparativas cuadradas, sin interfaz: la vista limpia (`V`) centra la escena en el lienzo.
     const clean = size === SQUARE;
     if (clean) {
