@@ -1,9 +1,14 @@
 // Servidor estático mínimo del build (dist/…/browser) para las capturas, las mediciones y los e2e.
-// Imita lo que hará Apache en la fase 4: URL sin barra final servidas desde /ruta/index.html y la
-// página 404 para lo que no existe. Solo para uso local.
+// Imita a Cloudflare Pages (fase 4), con el build ya preparado por `scripts/prepare-pages.mjs`:
+// - sirve `ruta.html` en `/ruta` y redirige (308) `/ruta/` y `/ruta.html` a `/ruta` (D9);
+// - responde `404.html`, con un 404, en lo que no existe;
+// - aplica `_redirects` (reglas exactas) y `_headers` (patrones de ruta con `*` y `:nombre`; los de
+//   otros dominios, como los de `*.pages.dev`, no cuentan aquí). Si dos reglas dan la misma
+//   cabecera, se unen con una coma, como en Pages.
+// Lo que `_headers` no dice, sin caché (`no-store`). Solo para uso local.
 // Uso: node scripts/serve-dist.mjs [puerto]   (por defecto, 4340; el 4321 es el de Astro)
 import { createReadStream } from 'node:fs';
-import { stat } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -35,20 +40,98 @@ async function isFile(path) {
   }
 }
 
-export function startServer(port = 4340) {
+/** Las reglas de `_headers`: [{ test(path), headers: [[nombre, valor]] }], en orden. */
+export function parseHeaders(text) {
+  const rules = [];
+  let current = null;
+  for (const raw of text.split(/\r?\n/)) {
+    if (!raw.trim() || raw.trimStart().startsWith('#')) continue;
+    if (!/^\s/.test(raw)) {
+      const pattern = raw.trim();
+      // Los patrones con dominio (https://…) no se aplican en local.
+      const local = pattern.startsWith('/');
+      const source = pattern
+        .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+        .replace(/\*/g, '.*')
+        .replace(/:[A-Za-z]\w*/g, '[^/]+');
+      current = { local, regex: new RegExp(`^${source}$`), headers: [] };
+      rules.push(current);
+    } else if (current) {
+      const line = raw.trim();
+      const colon = line.indexOf(':');
+      current.headers.push([line.slice(0, colon).trim(), line.slice(colon + 1).trim()]);
+    }
+  }
+  return rules.filter((rule) => rule.local);
+}
+
+/** Las reglas de `_redirects`: origen exacto → [destino, código]. */
+export function parseRedirects(text) {
+  const rules = new Map();
+  for (const raw of text.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line || line.startsWith('#')) continue;
+    const [from, to, code = '302'] = line.split(/\s+/);
+    rules.set(from, [to, Number(code)]);
+  }
+  return rules;
+}
+
+/** Las cabeceras de `_headers` para una ruta (las repetidas, unidas con una coma). */
+function headersFor(rules, path) {
+  const out = {};
+  for (const rule of rules) {
+    if (!rule.regex.test(path)) continue;
+    for (const [name, value] of rule.headers) {
+      const key = name.toLowerCase();
+      out[key] = out[key] ? `${out[key]}, ${value}` : value;
+    }
+  }
+  return out;
+}
+
+export async function startServer(port = 4340) {
+  const headerRules = parseHeaders(await readFile(join(ROOT, '_headers'), 'utf8').catch(() => ''));
+  const redirects = parseRedirects(
+    await readFile(join(ROOT, '_redirects'), 'utf8').catch(() => ''),
+  );
   const server = createServer(async (request, response) => {
     const url = new URL(request.url ?? '/', 'http://localhost');
-    const path = normalize(decodeURIComponent(url.pathname)).replace(/^(\.\.[/\\])+/, '');
-    let file = join(ROOT, path);
+    const path = normalize(decodeURIComponent(url.pathname))
+      .replace(/\\/g, '/')
+      .replace(/^(\.\.\/)+/, '');
+    const redirect = (to, code = 308) => {
+      response.writeHead(code, { Location: `${to}${url.search}` });
+      response.end();
+    };
+    if (redirects.has(path)) {
+      const [to, code] = redirects.get(path);
+      return redirect(to, code);
+    }
+    // `/ruta.html` → `/ruta` y `/index.html` → `/`.
+    if (path.endsWith('.html') && (await isFile(join(ROOT, path)))) {
+      return redirect(path === '/index.html' ? '/' : path.slice(0, -'.html'.length));
+    }
+    // `/ruta/` → `/ruta` si existe `ruta.html`.
+    if (
+      path.length > 1 &&
+      path.endsWith('/') &&
+      (await isFile(join(ROOT, `${path.slice(0, -1)}.html`)))
+    ) {
+      return redirect(path.slice(0, -1));
+    }
+    let file = join(ROOT, path === '/' ? 'index.html' : path);
     let status = 200;
-    if (!(await isFile(file))) file = join(ROOT, path, 'index.html');
+    if (!(await isFile(file))) file = join(ROOT, `${path}.html`);
     if (!(await isFile(file))) {
-      file = join(ROOT, '404', 'index.html');
+      file = join(ROOT, '404.html');
       status = 404;
     }
+    // En minúsculas, para que las de `_headers` sustituyan a estas (no se dupliquen).
     response.writeHead(status, {
-      'Content-Type': TYPES[extname(file)] ?? 'application/octet-stream',
-      'Cache-Control': 'no-store',
+      'content-type': TYPES[extname(file)] ?? 'application/octet-stream',
+      'cache-control': 'no-store',
+      ...headersFor(headerRules, path),
     });
     createReadStream(file).pipe(response);
   });
