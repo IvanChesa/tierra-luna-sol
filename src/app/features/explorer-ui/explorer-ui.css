@@ -166,8 +166,25 @@ kbd {
   font-size: 0.75rem;
 }
 
+/*
+ * Panel de la vista Tierra (fase 5): en la columna de la presentación, debajo de ella, sin apartar el
+ * encuadre (como la presentación). El índice usa la misma área: con él abierto, se oculta.
+ */
+.earth-panel {
+  --chrome-edge: none;
+  position: relative;
+  z-index: 2;
+  grid-area: index;
+  align-self: start;
+  margin: var(--space-2) var(--space-4) 0;
+}
+
+:host(.has-index) .earth-panel {
+  visibility: hidden;
+}
+
 /* Vista limpia: solo el 3D y el botón para volver. */
-:host(.is-clean) :is(.index-toggle, .index-panel, .chips, .panel, .dock, .camera) {
+:host(.is-clean) :is(.index-toggle, .index-panel, .chips, .panel, .dock, .camera, .earth-panel) {
   display: none;
 }
 
@@ -246,9 +263,24 @@ kbd {
    * Las hojas tapan la franja de abajo y la cámara: mientras están abiertas, lo que tapan sale del
    * orden del foco y del árbol accesible (el foco pasa a la hoja, explorer-ui.ts).
    */
-  :host(.has-panel) :is(.camera, .index-toggle, .chips, .dock),
+  :host(.has-panel) :is(.camera, .index-toggle, .chips, .dock, .earth-panel),
   :host(.has-index) :is(.camera, .index-toggle, .chips, .dock, .panel) {
     visibility: hidden;
+  }
+
+  /*
+   * En móvil, al pie del lienzo, encima de las fichas (y de la fila de lunas, que flota sobre ellas):
+   * el encuadre sube por encima de él.
+   */
+  .earth-panel {
+    --chrome-edge: bottom;
+    grid-area: view;
+    align-self: end;
+    margin: 0 var(--space-4) var(--space-2);
+  }
+
+  :host(.has-moons) .earth-panel {
+    margin-bottom: calc(var(--space-2) + 3rem);
   }
 
   /*
