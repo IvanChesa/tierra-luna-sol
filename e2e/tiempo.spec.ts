@@ -6,6 +6,7 @@ import {
   openExplorer,
   simTime,
   trackProblems,
+  typedDate,
   urlChanges,
 } from './support';
 
@@ -106,11 +107,13 @@ test.describe('Tiempo y URL', () => {
         if (document.querySelector('#time-error')) document.body.dataset['e2eAlert'] = 'sí';
       }).observe(document.body, { childList: true, subtree: true });
     });
-    // El campo empieza en el día; a medio escribir, el año pasa por 0002, 0020 y 0203.
+    // El campo empieza en el día (o en el mes, según el idioma del sistema); a medio escribir, el año
+    // pasa por 0002, 0020 y 0203.
+    const keys = await typedDate(page, '15', '03', '2031');
     await openControls(page);
     const date = page.locator('#time-date');
     await date.focus();
-    await page.keyboard.type('15032031');
+    await page.keyboard.type(keys);
     await page.waitForTimeout(1500);
     // Las 14:00 de Madrid del 15 de marzo de 2031 (UTC+1): un solo salto y una sola URL.
     expect(await simTime(page)).toBe(Date.parse('2031-03-15T13:00:00Z'));
@@ -252,8 +255,10 @@ test.describe('Tiempo y URL', () => {
     await page.getByRole('button', { name: 'Cerrar los controles' }).click();
     await expect(page.locator('#time-date')).toBeHidden();
     await expect(button).toBeFocused();
-    // Si el foco sale del panel, se cierra: nunca se para en lo que tapa (la tarjeta, la cámara).
+    // Si el foco sale del panel, se cierra: nunca se para en lo que tapa (la tarjeta, la cámara). Desde
+    // dentro del panel: el foco entra en él un instante después de abrirse.
     await openControls(page);
+    await expect(page.locator('#time-date')).toBeFocused();
     for (let k = 0; k < 10; k++) {
       await page.keyboard.press('Shift+Tab');
       expect(await coveredFocus(page)).toBeNull();
