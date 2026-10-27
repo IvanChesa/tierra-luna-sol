@@ -41,10 +41,11 @@ describe('TimeControls: barra de tiempo', () => {
     const { $, fixture, sim } = render();
     const zone = () => ($<HTMLElement>('.time__zone').textContent ?? '').trim();
     const speed = () => ($<HTMLElement>('.time__speedtext').textContent ?? '').trim();
-    // Al entrar, 3 horas por segundo (D31). La zona no se parte por dentro (espacios duros).
+    // Al entrar, 3 días por segundo (la vista general, D33). La zona no se parte por dentro
+    // (espacios duros).
     expect(zone().replaceAll('\u00a0', ' ')).toMatch(/^Hora local, UTC(\S*)?$/);
     expect(zone()).toMatch(/^Hora\u00a0local,\u00a0UTC\S*$/);
-    expect(speed()).toBe('3 horas por segundo');
+    expect(speed()).toBe('3 días por segundo');
     // La barra compacta da la hora sin segundos (los tiene el campo de «Controles +»).
     expect($<HTMLElement>('.time__readout time').textContent).toMatch(
       /^\d{1,2}\u00a0\S+\u00a0\d{4}, \d{2}:\d{2}$/,
@@ -82,7 +83,7 @@ describe('TimeControls: barra de tiempo', () => {
       '1 mes por segundo',
       '1 año por segundo',
     ]);
-    expect(speed.value).toBe('hours3');
+    expect(speed.value).toBe('days3');
     speed.value = 'day';
     speed.dispatchEvent(new Event('change'));
     expect(sim.speed()).toBe(86_400);

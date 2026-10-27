@@ -2,7 +2,13 @@
  * Velocidades de la simulación (PLAN, fase 3, 3.b.4; fase 3c, tarea 3: 3 horas, 3 días y 10 días por
  * segundo): segundos simulados por segundo real. El sentido (hacia atrás) va aparte, en el signo de
  * `speed`. El mes y el año son julianos (365,25 días), el año de la astronomía.
+ *
+ * La velocidad depende del contexto (D33, fase 4b): la vista general del sistema solar va a 3 días por
+ * segundo y un cuerpo enfocado (también en las vistas Tierra y Luna), a 1 hora por segundo.
  */
+import type { BodyId } from '../data/body.model';
+import type { ExplorerView } from '../scene';
+
 const HOUR_S = 3600;
 const DAY_S = 24 * HOUR_S;
 const JULIAN_YEAR_S = 365.25 * DAY_S;
@@ -27,8 +33,33 @@ export const SPEED_STEPS: readonly SpeedStep[] = [
   { id: 'year', seconds: JULIAN_YEAR_S, label: '1 año por segundo' },
 ];
 
-/** Velocidad al entrar en el explorador (D31; decisión de Iván del 27-10): 3 horas por segundo. */
-export const DEFAULT_SPEED = 3 * HOUR_S;
+/** El contexto de la velocidad (D33): la vista general del sistema solar o un cuerpo. */
+export type SpeedContext = 'overview' | 'body';
+
+/** Velocidad de cada contexto (D33): 3 días por segundo en la vista general y 1 hora con un cuerpo. */
+export const CONTEXT_SPEED: Readonly<Record<SpeedContext, number>> = {
+  overview: 3 * DAY_S,
+  body: HOUR_S,
+};
+
+/**
+ * El contexto de una vista y su cuerpo elegido: la vista general es la del sistema solar sin cuerpo
+ * enfocado; un cuerpo enfocado, o las vistas Tierra y Luna, son «cuerpo». Pasar de un cuerpo a otro
+ * no cambia el contexto (respeta una velocidad elegida a mano).
+ */
+export function speedContext(view: ExplorerView, selected: BodyId | null): SpeedContext {
+  return view === 'system' && selected === null ? 'overview' : 'body';
+}
+
+/** La velocidad de un contexto, con el sentido de la actual (D33: el sentido se conserva). */
+export const contextSpeed = (context: SpeedContext, current: number): number =>
+  Math.sign(current || 1) * CONTEXT_SPEED[context];
+
+/** «1 hora por segundo», o «1 hora por segundo, hacia atrás» (ESTILO §3). */
+export function speedText(speed: number): string {
+  const label = nearestSpeedStep(speed).label;
+  return speed < 0 ? `${label}, hacia atrás` : label;
+}
 
 /** El escalón más cercano a una velocidad (en valor absoluto, en escala logarítmica). */
 export function nearestSpeedStep(speed: number): SpeedStep {

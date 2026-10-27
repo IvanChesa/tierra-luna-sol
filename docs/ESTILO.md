@@ -58,7 +58,7 @@ Todo se formatea con las funciones de `src/app/core/format.ts`, que usan `Intl.N
 
 - **Periodos:** horas con un decimal hasta 48 h (10,7 h); después, días (27,3 días) o años (29,4 años).
 - **Temperaturas:** °C para los planetas y las lunas; K solo para la temperatura efectiva del Sol.
-- **Velocidad de la simulación:** «Tiempo real», «1 hora por segundo», «3 horas por segundo» (la de entrada, D31), «1 día por segundo», «3 días por segundo», «1 semana por segundo», «10 días por segundo», «1 mes por segundo», «1 año por segundo». El sentido se dice aparte («Hacia atrás»).
+- **Velocidad de la simulación:** «Tiempo real», «1 hora por segundo», «3 horas por segundo», «1 día por segundo», «3 días por segundo» (la de la vista general, D33), «1 semana por segundo», «10 días por segundo», «1 mes por segundo», «1 año por segundo». Con un cuerpo enfocado, «1 hora por segundo» (D33). El sentido se dice aparte («Hacia atrás»).
 
 ## 4. Fechas y horas
 
@@ -83,5 +83,6 @@ Todo se formatea con las funciones de `src/app/core/format.ts`, que usan `Intl.N
 
 - **Nombres accesibles** con el mismo registro que la interfaz («Acercar», «Alejar», «Vista general»). Los iconos solos siempre llevan `aria-label` y su texto en un `title` o una etiqueta visible.
 - **Anuncios (`aria-live`):** una frase completa al elegir un cuerpo o cambiar de vista («Saturno, planeta. A 1430 millones de km del Sol y a 1320 millones de km de la Tierra.»). Nunca se anuncia cada cambio de la fecha.
+  - Si con el cuerpo o la vista cambia la velocidad (D33), se añade al final de esa misma frase, una vez: «Velocidad: 1 hora por segundo.» o «Velocidad: 3 días por segundo, hacia atrás.» («Saturno, planeta. A … de la Tierra. Velocidad: 1 hora por segundo.»).
 - **Textos alternativos:** qué muestra la imagen, no «imagen de».
 - **Enlaces:** el texto dice adónde llevan («Ficha completa de Saturno»), no «aquí».

@@ -11,7 +11,13 @@ import type {
 import { ExplorerStore } from '../../state/explorer.store';
 import { SystemPositions } from '../../state/positions';
 import { SimulationEngine, SimulationStore } from '../../state/simulation.store';
-import { DEFAULT_SPEED } from '../../state/speeds';
+import {
+  CONTEXT_SPEED,
+  SpeedContext,
+  contextSpeed,
+  speedContext,
+  speedText,
+} from '../../state/speeds';
 import { readSingleKeyShortcuts, writeSingleKeyShortcuts } from '../shortcuts/shortcut-preference';
 import { readQualityPreference, writeQualityPreference } from '../viewer/quality-preference';
 import {
@@ -79,6 +85,8 @@ export class ExplorerSession {
   /** Cuerpo elegido desde una vista de detalle: se enfoca al llegar a la del sistema solar. */
   private pendingFocus: BodyId | null = null;
   private lastView: ExplorerView | null = null;
+  /** El contexto de la velocidad (D33): la vista general o un cuerpo. */
+  private speedContextNow: SpeedContext = 'overview';
 
   constructor() {
     const win = this.doc.defaultView;
@@ -86,13 +94,15 @@ export class ExplorerSession {
     this.capture = this.params.capture;
     this.reducedMotion = win?.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
     this._warnings.set(this.params.warnings);
-    // Arranque en movimiento (D31): sin fecha en la URL, «ahora» y reproduciendo a 3 horas por
-    // segundo; con movimiento reducido, en pausa; con fecha (o en captura), en pausa en ella.
+    // Arranque en movimiento (D31): sin fecha en la URL, «ahora» y reproduciendo a la velocidad de
+    // su contexto (D33: 3 días por segundo en la vista general, 1 hora con un cuerpo); con movimiento
+    // reducido, en pausa; con fecha (o en captura), en pausa en ella.
     const fixedTime = this.params.time !== null || this.capture;
+    this.speedContextNow = speedContext(this.explorer.view(), this.params.body);
     this.sim.init({
       time: this.params.time ?? (this.capture ? CAPTURE_DATE : new Date()),
       playing: !fixedTime && !this.reducedMotion,
-      speed: DEFAULT_SPEED,
+      speed: CONTEXT_SPEED[this.speedContextNow],
       selected: this.params.body,
       scale: this.params.scale ?? 'illustrative',
       quality: this.params.quality ?? (this.capture ? 'high' : readQualityPreference(this.storage)),
@@ -169,8 +179,9 @@ export class ExplorerSession {
     if (view === 'system') {
       this.sim.select(id);
       this.explorer.panelOpen.set(id !== null);
-      if (id) this.announceBody(id);
-      else this.announce('Vista general del sistema solar.');
+      const speed = this.applySpeedContext();
+      if (id) this.announceBody(id, speed);
+      else this.announce(`Vista general del sistema solar.${speed}`);
       return;
     }
     if (id !== null && id === VIEW_BODY[view]) {
@@ -257,11 +268,29 @@ export class ExplorerSession {
     this.engine?.setView(view);
     const pending = this.pendingFocus;
     this.pendingFocus = null;
+    // Con un cuerpo pendiente, el contexto lo decide él (`select`): de la vista Tierra a Marte, de un
+    // cuerpo a otro, no cambia la velocidad.
     if (view === 'system' && pending) {
       this.select(pending);
       return;
     }
-    if (!first) this.announce(`${viewName(view)}.`);
+    const speed = this.applySpeedContext();
+    if (!first) this.announce(`${viewName(view)}.${speed}`);
+  }
+
+  /**
+   * Velocidad según el contexto (D33): si ha cambiado (de la vista general a un cuerpo, o al revés),
+   * pone la suya, con el sentido de la actual y sin tocar la reproducción. Devuelve el aviso, con un
+   * espacio delante (« Velocidad: 1 hora por segundo.»), o '' si la velocidad no cambia.
+   */
+  private applySpeedContext(): string {
+    const context = speedContext(this.explorer.view(), this.sim.selectedBodyId());
+    if (context === this.speedContextNow) return '';
+    this.speedContextNow = context;
+    const speed = contextSpeed(context, this.sim.speed());
+    if (speed === this.sim.speed()) return '';
+    this.sim.setSpeed(speed);
+    return ` Velocidad: ${speedText(speed)}.`;
   }
 
   private syncUrl(): void {
@@ -287,9 +316,9 @@ export class ExplorerSession {
     });
   }
 
-  private announceBody(id: BodyId): void {
+  private announceBody(id: BodyId, suffix = ''): void {
     if (!findBody(id)) return;
-    this.announce(describeBody(id, this.positions.distances(id)));
+    this.announce(`${describeBody(id, this.positions.distances(id))}${suffix}`);
   }
 }
 
