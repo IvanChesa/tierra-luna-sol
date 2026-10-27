@@ -241,6 +241,42 @@ async function usnoSeasons(year) {
   };
 }
 
+/**
+ * Máximo de un eclipse solar del catálogo de eclipses de la NASA (Fred Espenak, GSFC): el instante
+ * (UT y TDT), ΔT y el lugar del máximo, de la ficha del eclipse (`id`: AAAAMMDD).
+ */
+async function nasaSolarEclipse(id) {
+  const query = `https://eclipse.gsfc.nasa.gov/SEsearch/SEdata.php?Ecl=+${id}`;
+  const text = (await fetchText(query))
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&deg;/g, '°')
+    .replace(/&Delta;/g, 'Δ');
+  const ut = text.match(/Circumstances at Greatest Eclipse:\s*(\d{2}:\d{2}:\d{2}) UT/);
+  const tdt = text.match(/Instant of\s+(\d{2}:\d{2}:\d{2}) TDT/);
+  const deltaT = text.match(/ΔT = ([\d.]+) s/);
+  const gamma = text.match(/Gamma = (-?[\d.]+)/);
+  const latitude = text.match(/Latitude:\s*([\d.]+)° ([NS])/);
+  const longitude = text.match(/Longitude:\s*([\d.]+)° ([EW])/);
+  if (!ut || !tdt || !deltaT || !latitude || !longitude) {
+    throw new Error(`No se entiende la ficha del eclipse ${id}`);
+  }
+  const date = `${id.slice(0, 4)}-${id.slice(4, 6)}-${id.slice(6, 8)}`;
+  return {
+    description:
+      'Máximo de un eclipse solar: instante (UT y TDT), ΔT y lugar del máximo (latitud norte y longitud este, en grados; al 0,1° de la ficha).',
+    source:
+      "NASA Eclipse Web Site, «Eclipse Predictions by Fred Espenak, NASA's GSFC», https://eclipse.gsfc.nasa.gov/",
+    retrieved: new Date().toISOString().slice(0, 10),
+    query,
+    greatestEclipseUt: `${date}T${ut[1]}Z`,
+    greatestEclipseTdt: `${date}T${tdt[1]}Z`,
+    deltaTSeconds: Number(deltaT[1]),
+    gamma: gamma ? Number(gamma[1]) : null,
+    latitudeDeg: Number(latitude[1]) * (latitude[2] === 'S' ? -1 : 1),
+    longitudeDeg: Number(longitude[1]) * (longitude[2] === 'W' ? -1 : 1),
+  };
+}
+
 async function save(name, data) {
   // Una fila por línea: los arrays sin anidar se escriben en una sola línea.
   const json = JSON.stringify(data, null, 1).replace(
@@ -340,6 +376,7 @@ const JOBS = [
       ]),
   ],
   ['usno-seasons-2026.json', () => usnoSeasons(2026)],
+  ['nasa-eclipse-2026-08-12.json', () => nasaSolarEclipse('20260812')],
 ];
 
 const wanted = process.argv.slice(2);
