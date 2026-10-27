@@ -62,6 +62,21 @@ const INIT = () => {
 const FORMATS = {
   escritorio: { ...PAGE_OPTIONS, viewport: { width: 1600, height: 900 } },
   movil: { ...PAGE_OPTIONS, ...devices['Pixel 7'] },
+  // Los anchos donde la lectura de la barra más aprieta (iPhone 12–15 y Android pequeño).
+  'movil-390': {
+    ...PAGE_OPTIONS,
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 3,
+    isMobile: true,
+    hasTouch: true,
+  },
+  'movil-360': {
+    ...PAGE_OPTIONS,
+    viewport: { width: 360, height: 640 },
+    deviceScaleFactor: 2,
+    isMobile: true,
+    hasTouch: true,
+  },
 };
 
 const results = {};
@@ -93,12 +108,28 @@ try {
       longTasks: window.__longTasks,
       lcp: window.__lcp,
       playing: document.querySelector('.time__play')?.textContent?.trim(),
-      speed: document.querySelector('.time__zone')?.textContent?.replace(/\s+/g, ' ').trim(),
+      // La lectura entera: el rótulo o la fecha, la zona y la velocidad (la de móvil, oculta en escritorio).
+      speed: [...document.querySelectorAll('.time__readout > *')]
+        .map((part) => part.textContent?.replace(/\s+/g, ' ').trim())
+        .join(' · '),
+      // La barra frente al alto que le reserva el marco prerenderizado (--explorer-bar).
+      bar: (() => {
+        const bar = document.querySelector('.time');
+        const explorer = document.querySelector('.explorer');
+        if (!bar || !explorer) return null;
+        const probe = document.createElement('div');
+        probe.style.height = 'var(--explorer-bar)';
+        explorer.append(probe);
+        const reserved = probe.getBoundingClientRect().height;
+        probe.remove();
+        return { alto: Math.round(bar.getBoundingClientRect().height), reservado: reserved };
+      })(),
     }));
     const cls = measured.shifts.reduce((sum, shift) => sum + shift.value, 0);
     results[`entrar-${name}`] = {
       reproduciendo: measured.playing,
       lectura: measured.speed,
+      barra: measured.bar,
       cls: Number(cls.toFixed(4)),
       desplazamientos: measured.shifts,
       lcp: measured.lcp,

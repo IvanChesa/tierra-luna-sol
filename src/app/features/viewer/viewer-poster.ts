@@ -3,19 +3,20 @@ import type { ExplorerView } from '../../scene';
 
 /**
  * Póster del explorador: lo que se ve antes de que llegue el 3D (y si no llega). Es una captura del
- * propio motor en modo de captura (`scripts/build-poster.mjs`); la fase 9 lo sustituye por el
- * definitivo. Con anchura y altura fijadas: no mueve nada al cargar (CLS).
+ * propio motor en modo de captura (`scripts/build-poster.mjs`), del tamaño del lienzo en su ventana
+ * de referencia; la fase 9 lo sustituye por el definitivo. Con anchura y altura fijadas: no mueve
+ * nada al cargar (CLS).
  */
 @Component({
   selector: 'tls-viewer-poster',
   template: `
     <picture>
-      <source media="(max-width: 640px)" [srcset]="mobile()" width="720" height="1280" />
+      <source media="(max-width: 640px)" [srcset]="mobile()" width="720" height="1408" />
       <img
         class="poster"
         [src]="desktop()"
         width="1600"
-        height="900"
+        height="844"
         alt=""
         fetchpriority="high"
         decoding="async"

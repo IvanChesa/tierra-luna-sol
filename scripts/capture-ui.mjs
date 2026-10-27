@@ -52,7 +52,15 @@ const SHOTS = [
   ['escritorio-ficha-saturno', '/?captura=1&cuerpo=saturno', DESKTOP],
   ['escritorio-indice-saturno', '/?captura=1&cuerpo=saturno', DESKTOP, index],
   ['escritorio-luna-de-saturno', '/?captura=1&cuerpo=titan', DESKTOP],
+  // El foco del teclado en una ficha de luna (su anillo, entero dentro de la fila).
+  [
+    'escritorio-foco-luna',
+    '/?captura=1&cuerpo=saturno',
+    DESKTOP,
+    async (page) => page.locator('button[data-body="titan"]').focus(),
+  ],
   ['escritorio-controles', '/?captura=1&cuerpo=jupiter', DESKTOP, controls],
+  ['portatil-sistema', '/?captura=1', LAPTOP],
   ['portatil-ficha-jupiter', '/?captura=1&cuerpo=jupiter', LAPTOP],
   ['portatil-indice', '/?captura=1', LAPTOP, index],
   ['estrecho-ficha-saturno', '/?captura=1&cuerpo=saturno', NARROW],
@@ -120,6 +128,8 @@ try {
       await page.waitForTimeout(1500);
       if (name !== 'escritorio-aliasing-marte') await waitForIdle(page).catch(() => undefined);
     }
+    // El puntero, fuera: si no, su resaltado (`:hover`) parece un estado.
+    await page.mouse.move(0, 0);
     await webp(await page.screenshot(), `${name}.webp`);
     console.log(name);
     if (problems.length) console.log(problems.map((p) => `  ${p}`).join('\n'));
