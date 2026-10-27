@@ -59,8 +59,8 @@
   background: linear-gradient(
     to top,
     var(--color-bg) calc(100% - var(--explorer-chips)),
-    rgb(13 19 33 / 0.72) calc(100% - 0.55 * var(--explorer-chips)),
-    rgb(13 19 33 / 0)
+    color-mix(in srgb, var(--color-bg) 72%, transparent) calc(100% - 0.55 * var(--explorer-chips)),
+    transparent
   );
   pointer-events: none;
 }
@@ -87,9 +87,9 @@
   inset: 0 -6rem -3rem 0;
   background: radial-gradient(
     farthest-side at 0 0,
-    rgb(13 19 33 / 0.88),
-    rgb(13 19 33 / 0.6) 55%,
-    rgb(13 19 33 / 0)
+    color-mix(in srgb, var(--color-bg) 88%, transparent),
+    color-mix(in srgb, var(--color-bg) 60%, transparent) 55%,
+    transparent
   );
   content: '';
   pointer-events: none;
@@ -97,6 +97,14 @@
 
 .explorer__intro {
   min-width: 0;
+}
+
+/* Cómo se usa, para quien llega con el dedo (en el escritorio lo dice el pie). */
+.explorer__touch {
+  display: none;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
 }
 
 .explorer__foot {
@@ -136,8 +144,8 @@
    */
   .explorer {
     --explorer-chips: 4.25rem;
-    /* La barra de tiempo, en dos filas. */
-    --explorer-bar: 6.75rem;
+    /* La barra de tiempo, en dos filas (la lectura, siempre de tres líneas: no cambia al reproducir). */
+    --explorer-bar: 7rem;
     min-height: 0;
     grid-template-areas:
       'lead'
@@ -159,7 +167,11 @@
 
   .explorer__lead::before {
     inset: 0 0 -2rem;
-    background: linear-gradient(to bottom, rgb(13 19 33 / 0.85) 40%, rgb(13 19 33 / 0));
+    background: linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--color-bg) 85%, transparent) 40%,
+      transparent
+    );
   }
 
   /* Los créditos están en el menú del sitio; las pistas no caben. */
@@ -168,18 +180,47 @@
   }
 }
 
+@media (max-width: 63.99rem) and (pointer: coarse) {
+  .explorer__touch {
+    display: block;
+  }
+}
+
+/* En los móviles bajos, con el H1 compacto, no cabe. */
+@media (max-width: 63.99rem) and (max-height: 45rem) {
+  .explorer__touch {
+    display: none;
+  }
+}
+
 /*
- * Muy bajo (móvil en horizontal, zoom al 200 %): no cabe todo en la ventana. La página se desplaza:
- * el lienzo ocupa el 70 % de la altura y la franja va debajo, entera y opaca (styles.css suelta la
- * altura fija del explorador).
+ * Muy bajo (móvil en horizontal, zoom al 200 %): no cabe todo en la ventana y la página se desplaza
+ * (styles.css suelta la altura fija del explorador). Al llegar se ven el lienzo y, justo debajo, la
+ * primera fila de la barra de tiempo, con la pausa (D31, WCAG 2.2.2); las vistas flotan sobre el
+ * lienzo. La segunda fila de la barra y las fichas, al desplazarse.
  */
 @media (max-width: 63.99rem) and (max-height: 30rem) {
   .explorer {
+    /* La cabecera (3,5 rem) y la primera fila de la barra: su relleno, reproducir y la fecha. */
+    --explorer-arrival: calc(3.5rem + 3.75rem);
     overflow: visible;
-    grid-template-rows: auto 70svh var(--explorer-chips) minmax(var(--explorer-bar), auto) auto;
+    grid-template-areas:
+      'view'
+      'bar'
+      'chips'
+      'foot';
+    grid-template-rows:
+      calc(100svh - var(--explorer-arrival)) minmax(var(--explorer-bar), auto)
+      var(--explorer-chips) auto;
+  }
+
+  .explorer__lead {
+    grid-area: view;
+    align-self: start;
   }
 
   .explorer__dock {
+    grid-area: bar / 1 / -1 / -1;
     background: var(--color-bg);
   }
 }

@@ -234,7 +234,7 @@ tls-root:has(tls-explorer-ui.is-clean) .site-header {
  * oculta a la vista: sigue para los lectores de pantalla. Con movimiento reducido, sin animación (las
  * duraciones son 0); donde no se puede animar la altura, se pliega de golpe.
  */
-.explorer__intro {
+.explorer__lead {
   interpolate-size: allow-keywords;
 }
 
@@ -245,9 +245,16 @@ tls-root:has(tls-explorer-ui.is-clean) .site-header {
     opacity var(--duration-base) var(--ease-standard);
 }
 
-.explorer:has(> tls-explorer-ui.is-interacted) .explorer__intro p {
+.explorer:has(> tls-explorer-ui.is-interacted) :is(.explorer__intro p, .explorer__touch) {
   height: 0;
   opacity: 0;
+}
+
+.explorer__touch {
+  overflow: hidden;
+  transition:
+    height var(--duration-base) var(--ease-standard),
+    opacity var(--duration-base) var(--ease-standard);
 }
 
 .explorer:has(> tls-explorer-ui.is-interacted) .explorer__intro h1 {
@@ -257,8 +264,9 @@ tls-root:has(tls-explorer-ui.is-clean) .site-header {
 /*
  * Donde falta sitio, el texto se recoge más (queda el selector de vista). También solo a la vista.
  * - Móvil: con la ficha o el índice abiertos (son hojas que suben), todo el texto.
- * - Móviles bajos: la descripción, y el H1 se queda compacto (resuelve la duda de la fase 3).
- * - Escritorio bajo: la descripción, para que el índice gane alto.
+ * - Móviles bajos: la descripción, y el H1 se queda compacto (resuelve la duda de la fase 3); muy
+ *   bajos (en horizontal), también el H1: las pestañas ya dicen dónde estás.
+ * - Escritorio, con el índice abierto: todo el texto, para que el índice gane alto.
  */
 @media (max-width: 63.99rem) {
   .explorer:has(.panel:not([hidden]), .index-panel:not([hidden])) .explorer__intro {
@@ -287,8 +295,19 @@ tls-root:has(tls-explorer-ui.is-clean) .site-header {
   }
 }
 
-@media (min-width: 64rem) and (max-height: 50rem) {
-  .explorer__intro p {
+@media (max-width: 63.99rem) and (max-height: 30rem) {
+  .explorer__intro {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+@media (min-width: 64rem) {
+  .explorer:has(.index-panel:not([hidden])) .explorer__intro {
     position: absolute;
     width: 1px;
     height: 1px;

@@ -115,10 +115,18 @@
 
 /* --- Controles sobre el lienzo, en su parte visible. --- */
 
+/* En escritorio no aparta el encuadre: va en una esquina de la parte visible. */
 .camera {
+  --chrome-edge: none;
   position: absolute;
   right: calc(var(--view-right, 0px) + var(--space-4));
   bottom: calc(var(--view-bottom, 0px) + var(--space-4));
+}
+
+/* Con «Controles +» abierto, el panel tapa la cámara: fuera de la vista y del foco. En su propia regla:
+   sin `:popover-open` en el navegador, se descartaría con todo lo que la acompañara. */
+:host:has(#time-menu:popover-open) .camera {
+  visibility: hidden;
 }
 
 /* Los avisos no salen de la parte visible del lienzo: si no caben, se desplazan. */
@@ -216,8 +224,14 @@ kbd {
     margin-inline: calc(var(--index-toggle-width) + var(--space-3) + var(--space-2)) 0;
   }
 
+  /*
+   * Una columna pegada a la derecha que tapa el lienzo por ese lado (`right`): el encuadre se aparta
+   * y no pisa el borde de la Tierra o de la Luna en sus vistas. Su sitio no depende de `--view-right`
+   * (que ya la incluye): en móvil no hay paneles a la derecha.
+   */
   .camera {
-    right: calc(var(--view-right, 0px) + var(--space-3));
+    --chrome-edge: right;
+    right: var(--space-3);
     bottom: calc(var(--view-bottom, 0px) + var(--space-3));
   }
 
@@ -233,8 +247,7 @@ kbd {
    * orden del foco y del árbol accesible (el foco pasa a la hoja, explorer-ui.ts).
    */
   :host(.has-panel) :is(.camera, .index-toggle, .chips, .dock),
-  :host(.has-index) :is(.camera, .index-toggle, .chips, .dock, .panel),
-  :host:has(#time-menu:popover-open) .camera {
+  :host(.has-index) :is(.camera, .index-toggle, .chips, .dock, .panel) {
     visibility: hidden;
   }
 

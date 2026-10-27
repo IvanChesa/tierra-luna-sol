@@ -27,7 +27,7 @@ export const ZOOM_STEP = 1.4;
         <tls-icon name="minus" />
         <span class="visually-hidden">Alejar</span>
       </button>
-      <!-- camera__extra: en un lienzo muy bajo se ocultan (styles.css); G y V siguen valiendo. -->
+      <!-- camera__extra: en un lienzo muy bajo se ocultan; G, V y «Controles +» siguen valiendo. -->
       <button
         type="button"
         class="control control--icon camera__extra"
@@ -49,6 +49,7 @@ export const ZOOM_STEP = 1.4;
     </div>
   `,
   styles: `
+    /* Una columna; en móvil, pegada a la derecha, y el encuadre se aparta de ella (explorer-ui.css). */
     .camera {
       display: grid;
       gap: var(--space-1);
@@ -58,10 +59,10 @@ export const ZOOM_STEP = 1.4;
       background: var(--color-surface);
     }
 
-    /* Móvil: en dos columnas, para que quepa en un lienzo bajo. */
-    @media (max-width: 63.99rem) {
-      .camera {
-        grid-template-columns: repeat(2, auto);
+    /* Muy bajo (móvil en horizontal, zoom al 200 %): solo acercar y alejar caben en la columna. */
+    @media (max-width: 63.99rem) and (max-height: 30rem) {
+      .camera__extra {
+        display: none;
       }
     }
   `,

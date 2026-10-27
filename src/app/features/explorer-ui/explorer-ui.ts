@@ -8,6 +8,7 @@ import {
   effect,
   inject,
   input,
+  linkedSignal,
   output,
   signal,
   untracked,
@@ -24,6 +25,7 @@ import { BodyPanel } from '../body-panel/body-panel';
 import { CameraControls, ZOOM_STEP } from '../camera-controls/camera-controls';
 import { ShortcutCommand, globalCommand, isTextField, repeats } from '../shortcuts/shortcuts';
 import { ShortcutsDialog } from '../shortcuts/shortcuts-dialog';
+import { closePopover, isPopoverOpen } from '../time-controls/popover';
 import { TimeControls } from '../time-controls/time-controls';
 import { VIEW_LINKS } from '../view-switcher/view-switcher';
 import { insetsFromRects, parseChromeEdge } from '../viewer/insets';
@@ -139,8 +141,11 @@ export class ExplorerUi {
   protected readonly hasMoons = computed(() => systemOf(this.sim.selectedBodyId()) !== null);
   /** El 3D se ve: los controles de cámara aparecen (antes, y si falla, no harían nada). */
   protected readonly ready3d = signal(false);
-  /** Ya se ha usado el explorador (un clic, un toque o una tecla dentro de él). */
-  protected readonly acted = signal(false);
+  /**
+   * Ya se ha usado el explorador (un clic, un toque o una tecla dentro de él). Al cambiar de vista
+   * vuelve a `false`: se ve el texto de la vista nueva hasta la siguiente interacción.
+   */
+  protected readonly acted = linkedSignal({ source: this.view, computation: () => false });
   /**
    * El texto de presentación se pliega al empezar a usar el explorador o al elegir un cuerpo (fase
    * 3c, tarea 5); el layout lo pliega por CSS con la clase del anfitrión.
@@ -241,8 +246,15 @@ export class ExplorerUi {
     // Los atajos no actúan mientras se escribe (PLAN 3.d.10).
     if (isTextField(target)) return;
     const command = globalCommand(event, this.explorer.singleKeyShortcuts());
-    if (!command || (event.repeat && !repeats(command)) || !this.run(command)) return;
-    event.preventDefault();
+    if (!command || (event.repeat && !repeats(command))) return;
+    // Un atajo con «Controles +» abierto lo cierra antes (si no, lo que abre quedaría debajo).
+    if (command !== 'escape') closePopover(this.timeMenu());
+    if (this.run(command)) event.preventDefault();
+  }
+
+  /** El panel de «Controles +» (dentro de la barra de tiempo). */
+  private timeMenu(): Element | null {
+    return this.host.nativeElement.querySelector('#time-menu');
   }
 
   private insideExplorer(target: Element | null): boolean {
@@ -305,7 +317,7 @@ export class ExplorerUi {
    */
   private escape(): boolean {
     // «Controles +» es un `popover`: lo cierra el propio navegador (y devuelve el foco a su botón).
-    if (this.host.nativeElement.querySelector('#time-menu:popover-open')) return false;
+    if (isPopoverOpen(this.timeMenu())) return false;
     if (this.explorer.travelling() === 'view') {
       this.session.skipTravel();
       return true;
