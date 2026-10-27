@@ -41,6 +41,9 @@ Decisiones y tareas que dependen de Iván. Claude Code añade aquí cada `TODO(i
 - [x] **El texto de las pistas:** «usa la rueda o pellizca para acercarte» (R4).
 - [x] **Las capturas de la fase 3c, comparadas con la referencia** en la revisión del bloque R: misma estructura, con nuestro estilo.
 
+### Decisiones del 27-10 (fase 4b, `docs/decisiones/FASE-4b-SISTEMA-SOLAR.md`)
+- [x] **Fase 4b, antes de la 5:** la velocidad según el contexto (**D33**: 3 días/s en la vista general y 1 h/s al enfocar un cuerpo; sustituye a la de entrada de D31), las estelas de color de los planetas (**D34**) y planetas más visibles en la vista general.
+
 ### Decisiones del 27-10 (antes de la revisión)
 - [x] **Velocidad de entrada (D31):** el explorador arranca reproduciendo a **3 horas por segundo**, no a 3 días; se añade el escalón de 3 h/s (quedan nueve). Con movimiento reducido o con `?fecha=`, sigue arrancando en pausa. En el plan (D31 y fase 3c), en `CLAUDE.md`, en `ESTILO.md` §3, en los tests y en los e2e.
 - [x] **Bloom de la fase 3b (tarea 7):** pasa a la **fase 10 como opcional** (tarea 9 de la fase 10 en el plan). Solo en el nivel alto y con el fondo pintado dentro de la escena (informe de la fase 3b, §4.1). Antes estaba pendiente de decidir entre quitarlo, llevarlo al backlog o retomarlo.

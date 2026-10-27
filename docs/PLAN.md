@@ -3,6 +3,7 @@
 > Documento maestro. Lo ejecuta Claude Code en el PC de Iván, por fases y en bloques autónomos. Otra sesión de Claude revisa cada bloque (`docs/revisiones/`).
 > Si este plan y el código no coinciden, manda el plan. Los cambios se proponen en el informe de fase y los aprueba Iván.
 > Revisión 2 del plan: 24-10-2026. Sustituye a la revisión 1. Incorpora la auditoría de las fases 2–10 (`docs/decisiones/auditoria-plan-v2.md`), lo aprendido en la fase 1 y la decisión de Iván de que el SEO sea secundario.
+> Actualizada el 27-10-2026 con la fase nueva **4b** (pulido de la vista del sistema solar, `docs/decisiones/FASE-4b-SISTEMA-SOLAR.md`): la velocidad según el contexto (D33, sustituye a la de entrada de D31), las estelas de color (D34) y planetas más visibles en la vista general, en el bloque **C**, antes de la fase 5.
 > Actualizada el 27-10-2026 con la revisión del bloque R (`docs/revisiones/bloque-R.md`): las propuestas aprobadas de las fases 3b y 3c (fases 5, 7 y 10, §5 y el backlog), la licencia MIT (D32) y el primer push autorizado; y con el cambio de hosting de Iván: **Cloudflare Pages** (plan gratuito) en lugar de Banahosting por FTPS (D9, D17, D23, D24, D26 y fases 4 y 11).
 > Actualizada el 27-10-2026 con dos decisiones de Iván: el arranque a 3 horas/s (D31) y el bloom de la fase 3b, opcional en la fase 10.
 > Actualizada el 26-10-2026 con la revisión del bloque B (`docs/revisiones/bloque-B.md`): las propuestas aprobadas de las fases 2 y 3, las fases nuevas **3b** (realismo de los planetas) y **3c** (interfaz inmersiva) en el bloque **R**, las decisiones D29–D31 y «El cielo desde España» (`docs/decisiones/`).
@@ -35,6 +36,7 @@ Un **explorador 3D interactivo** del Sol, los 8 planetas, 21 lunas, la Tierra y 
 | Botones de zoom, **vista limpia** (ocultar la interfaz), encuadre que respeta los paneles en móvil | 3 |
 | Transiciones de los textos al cambiar de vista | 3 |
 | **Interfaz inmersiva**: lienzo a pantalla completa, fichas de cuerpos con miniatura, barra de tiempo con línea deslizante y «Controles +», y el sistema en movimiento al entrar (con nuestro estilo, D30 y D31) | 3c |
+| **Vista general del sistema solar como la del original**: planetas que se reconocen, estelas de color sobre las órbitas y una velocidad que cambia con el contexto (3 días/s en la vista general, 1 h/s al enfocar un cuerpo) (D33 y D34) | 4b |
 | Planetas con buena **dirección de arte de la luz** (relleno, tone mapping y exposición por vista) | 3b |
 | Notas de fuentes y créditos | 9 |
 | Diseño para móvil, controles etiquetados, táctil y movimiento reducido | 3–10 |
@@ -97,8 +99,10 @@ Un **explorador 3D interactivo** del Sol, los 8 planetas, 21 lunas, la Tierra y 
 | D28 | **Solo español en la v1**; el inglés queda para después (`@angular/localize`) | — |
 | D29 | **Sombreado físico por tipo de cuerpo**, con chunks GLSL comunes en `scene/materials/`: **rocosos sin atmósfera** (Mercurio, la Luna y las lunas) con Lommel–Seeliger y un pico de oposición sencillo (Hapke simplificado); **gigantes** (Júpiter, Saturno, Urano y Neptuno) con el oscurecimiento del limbo de Minnaert, un parámetro por planeta documentado y el terminador suavizado; **con atmósfera** (Venus, Tierra, Marte y Titán; también los gigantes) con una dispersión aproximada en el limbo y en el terminador, con el tono de cada atmósfera; **brillo relativo** coherente con el albedo geométrico del catálogo y la exposición por vista. La luz ambiente plana desaparece: en la vista general puede quedar un relleno mínimo, documentado como ilustrativo | Los planetas parecían de plástico (Lambert + ambiente plano). Fase 3b (`docs/decisiones/FASE-3b-REALISMO.md`); la usan después la Tierra, la Luna y las lunas. |
 | D30 | **Interfaz inmersiva del explorador:** lienzo a pantalla completa, fichas de cuerpos abajo, barra de tiempo compacta con línea deslizante y controles desplegables. Se toma la **estructura** de la referencia del original, con **nuestra dirección visual A** («Carta celeste»): la disposición se inspira en ella; los estilos, las formas y los textos son propios | Petición de Iván (26-10). Fase 3c (`docs/decisiones/FASE-3c-INTERFAZ.md`). |
-| D31 | **Arranque en movimiento:** al entrar, el sistema solar se reproduce a **3 horas/s** desde «ahora» (cambio de Iván del 27-10; antes, 3 días/s). Con `prefers-reduced-motion`, arranca en pausa; con un enlace que fija `?fecha=`, en pausa en ese instante. Cumple WCAG 2.2.2: el botón de pausa es lo primero y más visible de la barra, y `Espacio` también pausa | Petición de Iván (26-10; velocidad cambiada el 27-10). Fase 3c. |
+| D31 | **Arranque en movimiento:** al entrar, el sistema solar se reproduce desde «ahora», a la velocidad de su contexto (**D33**: 3 días/s en la vista general). Con `prefers-reduced-motion`, arranca en pausa; con un enlace que fija `?fecha=`, en pausa en ese instante. Cumple WCAG 2.2.2: el botón de pausa es lo primero y más visible de la barra, y `Espacio` también pausa | Petición de Iván (26-10). La velocidad de entrada fue 3 días/s, después 3 horas/s (27-10) y ahora la fija D33 (27-10, fase 4b). Fase 3c. |
 | D32 | **Licencia del código propio: MIT** (`LICENSE`, «Copyright (c) 2026 Iván Chesa Lapena»). Las texturas, los datos y los catálogos de terceros conservan sus propias licencias (`docs/FUENTES.md`), en particular el fichero de estrellas (CC BY-SA 4.0); lo dicen el README y `/creditos` | Decisión de Iván (27-10, revisión del bloque R): el repo de GitHub es público. |
+| D33 | **Velocidad según el contexto** (sustituye a la velocidad de entrada de D31; sus excepciones siguen): en la **vista general del sistema solar, 3 días/s**, con la que se entra; al **enfocar cualquier cuerpo** (en el lienzo, en una ficha o en el índice) y en las vistas Tierra y Luna, **1 hora/s**; al volver a la vista general, otra vez 3 días/s. Un cambio manual de la velocidad se respeta mientras siga ese contexto, y el siguiente cambio de contexto aplica la del nuevo. El sentido (hacia atrás) se conserva; con movimiento reducido o con `?fecha=` se entra en pausa, y un cambio de contexto no arranca la reproducción. El cambio se anuncia de forma discreta (`aria-live` educado), una vez | Petición de Iván (27-10). Fase 4b (`docs/decisiones/FASE-4b-SISTEMA-SOLAR.md`). |
+| D34 | **Estelas de los planetas:** un arco **del color de cada cuerpo** (`scene/body-colors.ts`) sobre su órbita, **detrás** del cuerpo (delante, si la reproducción va hacia atrás), que se desvanece hasta desaparecer. Su longitud es una **fracción de la órbita** (~1/8 de vuelta, en `scene/visual-config.ts`), no un tiempo, para que se vea igual a cualquier velocidad; **visibles también en pausa**; más cortas y tenues en los sistemas de lunas; mezcla aditiva sutil | Petición de Iván (27-10), como en el original. Fase 4b. |
 
 ### Dependencias permitidas (lista cerrada)
 Cualquier otro paquete → **preguntar a Iván antes de instalarlo**.
@@ -248,7 +252,7 @@ Cada fase va en su rama `fase-N-nombre`. Se trabaja en **modo autónomo por bloq
 | A | 1 | `max` | Cimientos astronómicos ✅ (revisado en `docs/revisiones/bloque-A.md`) |
 | B | 2–3 | `max` | Arquitectura del motor (marcos, profundidad, texturas) y de la interfaz ✅ (revisado en `docs/revisiones/bloque-B.md`) |
 | R | 3b–3c | `max` | Realismo de los planetas e interfaz inmersiva: la base de iluminación que usan después la Tierra, la Luna y las lunas, y la cara del explorador |
-| C | 4–5 | `max` | Vista previa en Cloudflare Pages + la Tierra, primera pieza «guau» probada en móviles reales |
+| C | 4, 4b y 5 | `max` | Vista previa en Cloudflare Pages, la vista general del sistema solar pulida (4b) y la Tierra, primera pieza «guau» probada en móviles reales |
 | D | 6–7 | `max` | La Luna, las lunas, las sombras y la escala real: lo más difícil |
 | E | 8–9 | `high` | El cielo desde España, los eclipses y el contenido |
 | F | 10 | `max` | Pulido y calidad final |
@@ -528,6 +532,26 @@ Criterios de aceptación:
 - [ ] CI verde en GitHub y vista previa actualizada solo con el CI en verde.
 - [ ] Comprobaciones con `curl` en el informe.
 - [ ] Iván ha abierto la vista previa en su móvil (no bloquea).
+
+### Fase 4b: Pulido de la vista del sistema solar
+
+Rama `fase-4b-sistema-solar` (bloque C, antes de la fase 5). Pedida por Iván el 27-10, con una captura de la vista general del original como referencia: «Cuando esté en la vista del sistema solar, quiero que vaya a 3 días por segundo, pero cuando pinche en cualquier planeta, que cambie a 1 hora», «Hemos de seguir mejorando los modelos de los planetas visualmente» y «En el sistema solar podríamos poner una estela a los planetas como hace la web» del original. Documento de origen, con el diagnóstico: `docs/decisiones/FASE-4b-SISTEMA-SOLAR.md`.
+
+Tareas:
+1. **Velocidad por contexto** (D33): la lógica en el store (TS puro y con tests) y tests unitarios de cada transición (vista general → cuerpo → vista general, cambio manual, hacia atrás, pausa, movimiento reducido y `?fecha=`). E2E: al entrar, 3 días/s; al pinchar un planeta, 1 h/s; al volver, 3 días/s.
+2. **Estelas** (D34) con `Line2` y color por vértice (alfa degradado), sin coste apreciable: se miden los draw calls y los FPS.
+3. **Planetas más visibles en la vista general:**
+   - subir los radios ilustrativos (`radiusFactor`, `minRadius` y `maxRadius` en `ephemeris/scale.ts`) para que Júpiter y Saturno se reconozcan, con sus anillos, y los rocosos sean discos con textura, no puntos;
+   - sin solapes con el Sol ni entre ellos, y con las etiquetas recolocadas;
+   - el relleno y la exposición de la vista general (tarea 11 de la fase 3b), ajustados para que tenga el atractivo de la referencia **con nuestro estilo**.
+4. **Comparativa** de la vista general junto a la captura de referencia de Iván (legibilidad de los planetas, estelas y lectura general), con capturas en `docs/informes/img/fase-4b/`, en escritorio y móvil.
+5. `ESTILO.md` (los textos del aviso de velocidad) y `PROMPTS.md`.
+
+Criterios de aceptación:
+- [ ] Al entrar, 3 días/s; al pinchar un planeta (lienzo, ficha o índice), 1 h/s; al volver a la vista general, 3 días/s. Un cambio manual se respeta en su contexto (unitarios + e2e).
+- [ ] Estelas de color visibles a 3 días/s y en pausa, que se desvanecen y siguen el sentido de la reproducción (capturas).
+- [ ] En la vista general, Júpiter y Saturno se reconocen a simple vista (con anillos) y los rocosos son discos con textura, sin solapes (capturas en escritorio y móvil, junto a la referencia).
+- [ ] FPS, VRAM y draw calls dentro de §5; `npm run check` y los e2e en verde.
 
 ### Fase 5: La Tierra
 
