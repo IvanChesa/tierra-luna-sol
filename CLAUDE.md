@@ -35,7 +35,9 @@ Los bloques y sus fases están en `docs/PLAN.md` §6 y las ramas, en `docs/promp
 - Subdominio: el provisional de `site.config.ts`.
 - Textos: con fuente y `reviewed: false`; Iván los revisa en la fase 9.
 - Pruebas en el móvil: se recogen cuando Iván pueda; no bloquean.
-- Si una fase depende de pasos manuales de Iván que no están hechos (fase 4: GitHub y staging), aplázala, apúntalo en `DIARIO.md` y sigue con la siguiente.
+- Hosting: **Cloudflare Pages** (plan gratuito; cambio del 27-10, antes Banahosting): despliegue desde GitHub Actions con `wrangler pages deploy` del build del CI (D26), vista previa por rama (D23) y sin Cloudflare Web Analytics. Los secrets de Cloudflare ya están en el repo.
+- Licencia del código propio: **MIT** (D32). El primer push a GitHub está autorizado (revisión del bloque R), sin `--force`.
+- Si una fase depende de pasos manuales de Iván que no están hechos (por ejemplo, abrir la vista previa en su móvil), haz lo demás, apúntalo en `PENDIENTES.md` y en `DIARIO.md` y sigue con la siguiente.
 - Cuando el plan marque algo como opcional (Vía Láctea, KTX2, atmósferas), no es una condición de parada: decide, documenta y sigue.
 
 **Condiciones de parada** (para, explícalo en `DIARIO.md` y en el chat, y espera a Iván):

@@ -3,6 +3,7 @@
 > Documento maestro. Lo ejecuta Claude Code en el PC de Iván, por fases y en bloques autónomos. Otra sesión de Claude revisa cada bloque (`docs/revisiones/`).
 > Si este plan y el código no coinciden, manda el plan. Los cambios se proponen en el informe de fase y los aprueba Iván.
 > Revisión 2 del plan: 24-10-2026. Sustituye a la revisión 1. Incorpora la auditoría de las fases 2–10 (`docs/decisiones/auditoria-plan-v2.md`), lo aprendido en la fase 1 y la decisión de Iván de que el SEO sea secundario.
+> Actualizada el 27-10-2026 con la revisión del bloque R (`docs/revisiones/bloque-R.md`): las propuestas aprobadas de las fases 3b y 3c (fases 5, 7 y 10, §5 y el backlog), la licencia MIT (D32) y el primer push autorizado; y con el cambio de hosting de Iván: **Cloudflare Pages** (plan gratuito) en lugar de Banahosting por FTPS (D9, D17, D23, D24, D26 y fases 4 y 11).
 > Actualizada el 27-10-2026 con dos decisiones de Iván: el arranque a 3 horas/s (D31) y el bloom de la fase 3b, opcional en la fase 10.
 > Actualizada el 26-10-2026 con la revisión del bloque B (`docs/revisiones/bloque-B.md`): las propuestas aprobadas de las fases 2 y 3, las fases nuevas **3b** (realismo de los planetas) y **3c** (interfaz inmersiva) en el bloque **R**, las decisiones D29–D31 y «El cielo desde España» (`docs/decisiones/`).
 
@@ -14,7 +15,7 @@ Un **explorador 3D interactivo** del Sol, los 8 planetas, 21 lunas, la Tierra y 
 
 **Objetivo:** pieza de portfolio de Iván Chesa Lapena (desarrollador web freelance, ivanchesa.es). Tiene que demostrar Angular moderno, 3D web de calidad profesional, rigor científico, rendimiento y accesibilidad. **El SEO es secundario**: se publica como subdominio de ivanchesa.es y lo que importa es que impresione al abrirla y se comparta bien.
 
-**Dónde vive:** subdominio de ivanchesa.es en Banahosting (propuesto: `tierra-luna-sol.ivanchesa.es`; staging: `staging-tierra-luna-sol.ivanchesa.es`). Proyecto y repositorio independientes.
+**Dónde vive:** en **Cloudflare Pages** (plan gratuito; decisión de Iván del 27-10, antes Banahosting), con un subdominio de ivanchesa.es como dominio propio en la fase 11 (propuesto: `tierra-luna-sol.ivanchesa.es`). Desde la fase 4, una vista previa por rama en `*.tierra-luna-sol.pages.dev` (la de `main`, en `staging.tierra-luna-sol.pages.dev`). Proyecto y repositorio independientes.
 
 ### 0.1 Paridad con el original (todo esto entra en la v1)
 
@@ -74,7 +75,7 @@ Un **explorador 3D interactivo** del Sol, los 8 planetas, 21 lunas, la Tierra y 
 | D6 | **`SceneEngine`: clase TS sin Angular** | Testable, sin detección de cambios por frame, seguro en el prerenderizado. |
 | D7 | **CSS propio con custom properties.** Dirección visual **A, «Carta celeste»** | `docs/DISENO.md`. |
 | D8 | Idiomas: UI, textos, comentarios, commits y docs en **español de España**; identificadores y archivos en **inglés**; URLs en **español** | — |
-| D9 | **URLs sin barra final** | Lo que genera el router de Angular; se configura en Apache (fase 4). |
+| D9 | **URLs sin barra final** | Lo que genera el router de Angular. En Cloudflare Pages, cada ruta prerenderizada se publica como `ruta.html`: Pages la sirve en `/ruta` y redirige `/ruta/` a `/ruta`; el canonical, sin barra (fase 4). |
 | D10 | **Lienzo 3D único y persistente.** Las vistas del explorador son rutas hijas de un layout que conserva el canvas y el `SceneEngine` | Viajes de cámara continuos. |
 | D11 | **Lunas:** galileanas con `Astronomy.JupiterMoons`. Las otras 16, con **elementos medios** (elipse con precesión, más una aceleración secular y términos periódicos de la longitud cuando mejoran el ajuste) **ajustados por mínimos cuadrados a Horizons en 1900–2100**. La tabla del JPL solo aporta los planos de Laplace y los valores iniciales (Urano y Neptuno usan su ecuador con el polo IAU 2015; en Urano, el polo de su rotación); script y residuos en `docs/datos/elementos-lunas.md`. Kepler en el navegador | La tabla del JPL no sirve para fechar posiciones (comprobado en la fase 1). Error conseguido: ≤ 0,38° (TT) en 1900–2100, el máximo sobre las ~2000 muestras del ajuste de cada luna; ≤ 0,36° en los instantes de test. |
 | D12 | **Tres marcos de escala con origen flotante desde la fase 2**: vista general ilustrativa, sistema local físico (al enfocar un planeta y sus lunas) y escala real global. Posiciones en float64 en JS, relativas al foco antes de pasar a la GPU | La precisión float32 de la GPU no admite km y miles de millones de km a la vez. Diseñarlo al principio evita rehacer el motor. |
@@ -82,21 +83,22 @@ Un **explorador 3D interactivo** del Sol, los 8 planetas, 21 lunas, la Tierra y 
 | D14 | **Estrellas reales del catálogo HYG** (magnitud ≤ 6,5) como `Points` (tamaño por magnitud, color por B−V) | Paridad y base del cielo desde España. |
 | D15 | **Relieve lunar:** elevación del LOLA en **16 bits empaquetados en dos canales de 8** (los navegadores degradan los PNG de 16 bits a 8 al subirlos a WebGL), desplazamiento de vértices + mapa de normales derivado | Resolución vertical real sin trucos. |
 | D16 | **Recorridos y vistas guiadas como datos** (`data/tours.ts`) | Se revisan como contenido. |
-| D17 | **Texturas:** Solar System Scope (CC BY 4.0) para el Sol, los planetas, la Tierra y los anillos; NASA CGI Moon Kit para la Luna; USGS Astrogeology para las lunas principales | Licencias libres y documentadas. |
+| D17 | **Texturas:** Solar System Scope (CC BY 4.0) para el Sol, los planetas, la Tierra y los anillos; NASA CGI Moon Kit para la Luna; USGS Astrogeology para las lunas principales. **Ningún fichero publicado pasa de 25 MiB** (el límite por fichero de Cloudflare Pages; lo comprueba `npm run check`) | Licencias libres y documentadas. El límite, por el hosting (D26). |
 | D18 | **Pipeline de texturas:** WebP por niveles, decodificadas fuera del hilo principal (`ImageBitmapLoader`), con tope a `maxTextureSize` y subida progresiva a la GPU. **KTX2 se descarta por ahora** (fase 2, §5.2 del informe: con UASTC pesa 4 veces más que WebP; ahorra unas 4 veces la VRAM); se reevalúa en la fase 6 para la Luna en 8K | Cambiar de formato al final cuesta caro; la VRAM es el límite real en móvil. Aprobado por Iván el 26-10. |
 | D19 | **Orientación con el modelo IAU** (`Astronomy.RotationAxis`) para el Sol, los planetas y la Luna; la Tierra con EQD + tiempo sidéreo (fase 1); las demás lunas, en rotación síncrona hacia su planeta | Realismo verificable (anillos, libración, hora del día). |
 | D20 | **Sombras analíticas** en los shaders (esferas y anillos oclusores), no mapas de sombras | Estables en cualquier escala, baratas y exactas. |
 | D21 | **Iluminación ilustrativa:** luz solar sin atenuación por distancia y exposición por vista (desde la fase 3b, en un único módulo de configuración visual con el motivo de cada valor) | Los planetas exteriores serían invisibles con la caída física; se documenta en `/sobre-el-proyecto`. |
 | D22 | **Calidad adaptativa** (`low` / `medium` / `high`): detección inicial, bajada automática si los FPS no llegan y selector manual recordado | Funciona bien en cualquier dispositivo. |
-| D23 | **Staging desde la fase 4** (`staging-tierra-luna-sol.ivanchesa.es`, protegido con contraseña y `noindex`); producción en la fase 11, con una etiqueta de versión | Detectar pronto los problemas del hosting y probar en móviles reales por URL. |
-| D24 | **Privacidad:** sin cookies, sin analítica y sin peticiones a terceros (todo autoalojado) | Cumplimiento sin banner de cookies y una garantía visible de calidad. |
+| D23 | **Vista previa por rama desde la fase 4** en Cloudflare Pages: cada rama, en `<rama>.tierra-luna-sol.pages.dev`, y `main`, en `staging.tierra-luna-sol.pages.dev`, todas con `X-Robots-Tag: noindex`. Producción en la fase 11, con una etiqueta de versión | Detectar pronto los problemas del hosting y probar en móviles reales por URL. Sustituye al staging de cPanel (cambio de Iván del 27-10). |
+| D24 | **Privacidad:** sin cookies, sin analítica (tampoco Cloudflare Web Analytics) y sin peticiones a terceros (todo autoalojado) | Cumplimiento sin banner de cookies y una garantía visible de calidad. |
 | D25 | **SEO secundario** (decisión de Iván): title y description simples, una imagen Open Graph global y `robots.txt` básico. Sin JSON-LD ni sitemap trabajado | Es una pieza de portfolio dentro de ivanchesa.es. |
-| D26 | **Despliegue:** GitHub Actions → FTPS a Banahosting (staging en cada push a `main`; producción con etiqueta `v*`) | El SSH está bloqueado. |
+| D26 | **Despliegue:** GitHub Actions → **Cloudflare Pages** con `cloudflare/wrangler-action` fijado por SHA: `wrangler pages deploy` del build ya verificado en el CI, sin builds de Cloudflare, en el proyecto `tierra-luna-sol`. Cada push con el CI en verde publica la vista previa de su rama; la etiqueta `v*`, producción (fase 11). `_headers` y `_redirects` en lugar de `.htaccess` | Cambio de Iván del 27-10 (antes, FTPS a Banahosting, porque el SSH estaba bloqueado). Los secrets `CLOUDFLARE_API_TOKEN` (solo con permiso de Pages) y `CLOUDFLARE_ACCOUNT_ID` ya están en el repo. |
 | D27 | **Tests:** Vitest (unitarios) + Playwright (e2e y regresión visual) + axe (accesibilidad) | — |
 | D28 | **Solo español en la v1**; el inglés queda para después (`@angular/localize`) | — |
 | D29 | **Sombreado físico por tipo de cuerpo**, con chunks GLSL comunes en `scene/materials/`: **rocosos sin atmósfera** (Mercurio, la Luna y las lunas) con Lommel–Seeliger y un pico de oposición sencillo (Hapke simplificado); **gigantes** (Júpiter, Saturno, Urano y Neptuno) con el oscurecimiento del limbo de Minnaert, un parámetro por planeta documentado y el terminador suavizado; **con atmósfera** (Venus, Tierra, Marte y Titán; también los gigantes) con una dispersión aproximada en el limbo y en el terminador, con el tono de cada atmósfera; **brillo relativo** coherente con el albedo geométrico del catálogo y la exposición por vista. La luz ambiente plana desaparece: en la vista general puede quedar un relleno mínimo, documentado como ilustrativo | Los planetas parecían de plástico (Lambert + ambiente plano). Fase 3b (`docs/decisiones/FASE-3b-REALISMO.md`); la usan después la Tierra, la Luna y las lunas. |
 | D30 | **Interfaz inmersiva del explorador:** lienzo a pantalla completa, fichas de cuerpos abajo, barra de tiempo compacta con línea deslizante y controles desplegables. Se toma la **estructura** de la referencia del original, con **nuestra dirección visual A** («Carta celeste»): la disposición se inspira en ella; los estilos, las formas y los textos son propios | Petición de Iván (26-10). Fase 3c (`docs/decisiones/FASE-3c-INTERFAZ.md`). |
 | D31 | **Arranque en movimiento:** al entrar, el sistema solar se reproduce a **3 horas/s** desde «ahora» (cambio de Iván del 27-10; antes, 3 días/s). Con `prefers-reduced-motion`, arranca en pausa; con un enlace que fija `?fecha=`, en pausa en ese instante. Cumple WCAG 2.2.2: el botón de pausa es lo primero y más visible de la barra, y `Espacio` también pausa | Petición de Iván (26-10; velocidad cambiada el 27-10). Fase 3c. |
+| D32 | **Licencia del código propio: MIT** (`LICENSE`, «Copyright (c) 2026 Iván Chesa Lapena»). Las texturas, los datos y los catálogos de terceros conservan sus propias licencias (`docs/FUENTES.md`), en particular el fichero de estrellas (CC BY-SA 4.0); lo dicen el README y `/creditos` | Decisión de Iván (27-10, revisión del bloque R): el repo de GitHub es público. |
 
 ### Dependencias permitidas (lista cerrada)
 Cualquier otro paquete → **preguntar a Iván antes de instalarlo**.
@@ -104,6 +106,7 @@ Cualquier otro paquete → **preguntar a Iván antes de instalarlo**.
 - **Producción:** `@angular/*` 22.x · `three` `^0.186.0` · `astronomy-engine` `^2.1.19` · `@fontsource/newsreader` · `@fontsource/public-sans`
 - **Desarrollo:** lo que genera `ng new` (incluidos Vitest y jsdom) · `@types/three` · `angular-eslint`, `eslint`, `@eslint/js` y `typescript-eslint` · `prettier` · `@playwright/test` · `@axe-core/playwright` · `sharp` · `@vitest/coverage-v8`
 - **Propuestas pendientes de Iván** (se piden en su fase): `@lhci/cli` (Lighthouse en el CI, fase 10); herramienta externa `toktx` (KTX-Software) si la prueba de KTX2 de la fase 2 lo justifica.
+- **Herramientas del CI que no son dependencias del proyecto:** `cloudflare/wrangler-action` (instala `wrangler` en el CI para desplegar en Cloudflare Pages), fijada por SHA (decisión de Iván, 27-10, D26).
 - **Recursos de three que no son dependencias nuevas:** `three/addons/*` (controles, `KTX2Loader`, post-procesado) y el transcodificador Basis de `three/examples/jsm/libs/basis/`, copiado a `public/`.
 
 ---
@@ -132,12 +135,12 @@ Parámetros del explorador: `?fecha=2030-01-01T00:00Z&cuerpo=titan&escala=real`;
 |---|---|---|
 | Node ≥ 22.22.3 o ≥ 24.15 | ✅ v24.22.1 | — |
 | Repo independiente | ✅ | — |
-| **Repo en GitHub** (`https://github.com/IvanChesa/tierra-luna-sol`, público) | ❌ sin conectar | Iván, **antes del bloque C (fase 4)**: conectar el repo local y hacer el primer push. Lo hace Iván o lo autoriza explícitamente, porque publica el código (revisión del bloque B) |
-| **Staging en cPanel** | ❌ | Iván, antes de la fase 4: subdominio `staging-tierra-luna-sol.ivanchesa.es` con AutoSSL, protección con contraseña («Privacidad de directorios»), cuenta FTP limitada a esa carpeta y `gh secret set` de las credenciales |
-| Móvil real | Iván | Desde la fase 4, por la URL de staging (o por la red local si no hay staging) |
+| **Repo en GitHub** (`https://github.com/IvanChesa/tierra-luna-sol`, público) | ✅ primer push autorizado por Iván (revisión del bloque R) | Claude Code, al empezar la fase 4: comprobaciones previas (`.gitignore`, sin secretos ni ficheros de más de 50 MB, `LICENSE`) y push de `main` y de las ramas de fase, sin `--force` |
+| **Cloudflare Pages** | ✅ secrets `CLOUDFLARE_API_TOKEN` (solo con permiso de Pages) y `CLOUDFLARE_ACCOUNT_ID` en el repo (27-10) | — (sustituye al staging de cPanel) |
+| Móvil real | Iván | Desde la fase 4, por la vista previa de Cloudflare Pages (o por la red local) |
 | Un iPhone para probar (aunque sea prestado) | Iván | Fase 10: Safari en iOS tiene límites de memoria propios |
 
-Si los requisitos de la fase 4 no están cuando llegue el bloque C, **la fase 4 se aplaza** (no bloquea): se hace la 5 y la 4 se retoma en cuanto Iván los tenga.
+Si algún paso de la fase 4 depende de Iván y no está hecho, se hace todo lo demás, se apunta en `PENDIENTES.md` y el bloque sigue con la fase 5.
 
 ---
 
@@ -225,7 +228,7 @@ Las transiciones entre marcos son animadas (~1,5 s), interpolando posiciones y t
 | **Arranque** | Sin tareas largas > 200 ms; compatible con Lighthouse ≥ 90 |
 | **Efemérides por frame** | ≤ 2 ms en escritorio con los 30 cuerpos, incluidas sus orientaciones (medido en la fase 2: 0,16 ms) |
 | Lighthouse móvil, fichas | ≥ 95 en rendimiento, accesibilidad y buenas prácticas (el SEO no es criterio) |
-| Lighthouse móvil, explorador | Rendimiento ≥ 90 · accesibilidad y buenas prácticas ≥ 95 |
+| Lighthouse móvil, explorador | Rendimiento ≥ 90 · accesibilidad y buenas prácticas ≥ 95. Se mide con `@lhci/cli` desde la fase 10, si Iván aprueba la dependencia; hasta entonces, con las métricas de arranque de cada informe (LCP, CLS y tareas largas con su tiempo de bloqueo, §6.2 de la fase 3c) |
 | LCP / CLS | ≤ 2,5 s · ≤ 0,05. El LCP nunca es el canvas |
 | FPS | ≥ 55 en escritorio (alto) · ≥ 30 en móvil de gama media (bajo), **en todas las vistas** |
 | Memoria | 10 idas y vueltas explorador ↔ ficha y 10 cambios de vista sin crecimiento de `renderer.info.memory` |
@@ -245,7 +248,7 @@ Cada fase va en su rama `fase-N-nombre`. Se trabaja en **modo autónomo por bloq
 | A | 1 | `max` | Cimientos astronómicos ✅ (revisado en `docs/revisiones/bloque-A.md`) |
 | B | 2–3 | `max` | Arquitectura del motor (marcos, profundidad, texturas) y de la interfaz ✅ (revisado en `docs/revisiones/bloque-B.md`) |
 | R | 3b–3c | `max` | Realismo de los planetas e interfaz inmersiva: la base de iluminación que usan después la Tierra, la Luna y las lunas, y la cara del explorador |
-| C | 4–5 | `max` | Staging + la Tierra, primera pieza «guau» probada en móviles reales |
+| C | 4–5 | `max` | Vista previa en Cloudflare Pages + la Tierra, primera pieza «guau» probada en móviles reales |
 | D | 6–7 | `max` | La Luna, las lunas, las sombras y la escala real: lo más difícil |
 | E | 8–9 | `high` | El cielo desde España, los eclipses y el contenido |
 | F | 10 | `max` | Pulido y calidad final |
@@ -486,7 +489,7 @@ Tareas:
    - en escritorio se superpone al lado del lienzo sin desplazar el 3D (con el encuadre ajustado mientras está abierto); en móvil es una hoja inferior;
    - el resto de la barra actual: las pestañas «Sistema solar · Tierra · Luna», flotantes arriba; el título y la descripción, al texto de presentación (tarea 5); «Un proyecto de… · Créditos», al pie en letra pequeña (tarea 6).
 5. **Texto de presentación** flotando arriba a la izquierda (título + una frase, como el H1 actual), que se pliega al interactuar o al elegir un cuerpo. En los móviles bajos se muestra solo el H1 compacto y la descripción se pliega (resuelve la duda de la fase 3). La ficha resumida del cuerpo elegido aparece como tarjeta flotante.
-6. **Pistas de uso** en letra pequeña («Arrastra para girar · rueda o pellizca para acercarte · elige un cuerpo») y el pie de los datos («1900–2100 · NASA/JPL · astronomy-engine»). Se ocultan en la vista limpia.
+6. **Pistas de uso** en letra pequeña («Arrastra para girar · usa la rueda o pellizca para acercarte · elige un cuerpo»; «usa la rueda», desde la revisión del bloque R, R4) y el pie de los datos («1900–2100 · NASA/JPL · astronomy-engine»). Se ocultan en la vista limpia.
 7. **Arranque en movimiento** (D31), con un test e2e para cada caso: normal → reproduciendo a 3 horas/s; movimiento reducido → en pausa; `?fecha=` → en pausa en esa fecha.
 8. **Encuadre:** actualizar los márgenes de `setViewOffset` a la nueva disposición, para que el cuerpo enfocado no quede tapado por las fichas ni por la barra.
 9. **Rendimiento:** con la reproducción automática ya no hay render bajo demanda al llegar. Medir el coste (CPU y batería) y comprobar que Lighthouse y los FPS de §5 se siguen cumpliendo; con la pestaña oculta, se pausa (ya existe).
@@ -500,28 +503,31 @@ Criterios de aceptación:
 - [ ] Ningún cuerpo enfocado queda tapado por la interfaz (capturas).
 - [ ] FPS, Lighthouse y CLS dentro de §5 con la reproducción automática.
 
-### Fase 4: Staging y entrega continua
+### Fase 4: Despliegue continuo en Cloudflare Pages
 
-**Requisitos de Iván** (§3): repo en GitHub, subdominio de staging protegido, cuenta FTP y secrets. **Si no están, se aplaza.**
+Rama `fase-4-staging`. **Cambio de Iván del 27-10:** el hosting pasa a **Cloudflare Pages** (plan gratuito), en lugar de Banahosting por FTPS; la vista previa por rama sustituye al staging de cPanel (D23 y D26). Los secrets `CLOUDFLARE_API_TOKEN` (solo con permiso de Pages) y `CLOUDFLARE_ACCOUNT_ID` ya están en el repo de GitHub.
 
 Tareas:
-1. Primer push y **CI verde en GitHub** (lint, test, build y e2e con Chromium y WebGL por SwiftShader).
-2. **`public/.htaccess`**:
-   - HTTPS;
-   - `DirectorySlash Off` + `Options -Indexes` + reescritura interna `/ruta` → `/ruta/index.html` y 301 `/ruta/` → `/ruta`;
-   - `ErrorDocument 404`;
-   - caché larga e `immutable` para los archivos con hash, las texturas y los datos; corta para el HTML;
-   - tipos MIME (`.wasm`, `.ktx2`, `.bin`, `.webp`) y compresión;
-   - cabeceras de seguridad y una CSP compatible con el CSS crítico de Angular (valorar `security.autoCsp`) y con `'wasm-unsafe-eval'` si se usa KTX2.
-3. **`deploy-staging.yml`**: push a `main` + CI en verde → build → FTPS (`SamKirkland/FTP-Deploy-Action` fijado por SHA) a staging, con `X-Robots-Tag: noindex`.
-4. **Verificación con `curl`**: 200, 301, 404, cabeceras, MIME y caché. Comprobación de que Imunify360 no bloquea el despliegue (si lo hace, se documenta el plan B).
-5. **Dependabot** (configuración en `.github/`, sin dependencias nuevas).
-6. Iván abre el staging en su móvil; se recogen FPS y observaciones.
+1. **Primer push** (autorizado por Iván en la revisión del bloque R). Antes: `.gitignore` (`node_modules`, `dist`, `.angular`, `assets-src`, `.claude/skills`, `.codex`, `AGENTS.md` y `.claude/settings.local.json`), sin secretos ni ficheros de más de 50 MB en el historial y `LICENSE` (D32). Después, `git remote add origin`, push de `main` y de las ramas de fase, **sin `--force`**, y push tras cada fusión. Si Git pide credenciales, Iván inicia sesión en la ventana que se abra: nunca se escriben ni se guardan en el repo.
+2. **CI verde en GitHub** (lint, test, build y e2e con Chromium y WebGL por SwiftShader), que guarda el build verificado.
+3. **Despliegue** con `cloudflare/wrangler-action` fijado por SHA: `wrangler pages deploy` del build del CI, sin builds de Cloudflare, en el proyecto `tierra-luna-sol`. Cada push con el CI en verde publica la **vista previa de su rama** (`<rama>.tierra-luna-sol.pages.dev`; `main`, en `staging.tierra-luna-sol.pages.dev`). Las ramas de Dependabot no se despliegan. La producción llega en la fase 11.
+4. **`public/_headers` y `public/_redirects`** (en lugar de `.htaccess`):
+   - CSP compatible con el CSS crítico de Angular (valorar `security.autoCsp`) y con `'wasm-unsafe-eval'` solo si se usa KTX2;
+   - cabeceras de seguridad;
+   - caché larga e `immutable` para los archivos con hash y las texturas, y corta para el HTML y para los datos sin hash;
+   - tipos MIME que Pages no conozca (`.bin`, `.ktx2`);
+   - `X-Robots-Tag: noindex` en todo `*.pages.dev`;
+   - 404 con un `404.html` en la raíz (sin él, Pages trata el sitio como una SPA y responde 200 a cualquier ruta).
+5. **URLs sin barra final** (D9) con el comportamiento de Pages: las rutas prerenderizadas se publican como `ruta.html`, que Pages sirve en `/ruta` (y redirige `/ruta/` a `/ruta`); el canonical, sin barra.
+6. **Límites de Pages:** ningún fichero de más de 25 MiB (D17) y menos de 20 000 ficheros, comprobado en `npm run check`.
+7. **Verificación con `curl`** en la vista previa: 200, redirecciones, 404, cabeceras, MIME y caché, y que no hay scripts de Cloudflare Web Analytics (D24).
+8. **Dependabot** (configuración en `.github/`, sin dependencias nuevas).
+9. Iván abre la vista previa en su móvil; se recogen FPS y observaciones.
 
 Criterios de aceptación:
-- [ ] CI verde en GitHub y staging actualizado solo al hacer push a `main`.
+- [ ] CI verde en GitHub y vista previa actualizada solo con el CI en verde.
 - [ ] Comprobaciones con `curl` en el informe.
-- [ ] Iván ha abierto el staging en su móvil.
+- [ ] Iván ha abierto la vista previa en su móvil (no bloquea).
 
 ### Fase 5: La Tierra
 
@@ -537,7 +543,8 @@ Tareas:
 4. **Control de la luz solar**: cambia la hora del día sin perder la fecha.
 5. **Vistas guiadas** (`data/tours.ts`): Tierra completa, Pacífico, Himalaya, luces nocturnas y **España**, con marcadores discretos en los lugares del cielo desde España (Fraga entre ellos; fase 8). `TourPlayerComponent` con anterior/siguiente/reproducir y subtítulos accesibles.
 6. Textura de día de 8K solo en el nivel alto y si cabe en `maxTextureSize`.
-7. Prueba en móviles reales (staging) y ajuste de niveles.
+7. Prueba en móviles reales (vista previa de Cloudflare Pages) y ajuste de niveles.
+8. **Color y brillo frente a EPIC** (revisión del bloque R, R3; propuesta 2 de la fase 3b): sin el velo atmosférico lechoso y con la relación de brillo océano / tierra de las fotos de EPIC. Si la dispersión se integra, el color del océano de la textura vuelve al de la superficie, para no contar dos veces la atmósfera (informe de la fase 3b, §4.7 y §10). Con las nubes.
 
 Criterios de aceptación:
 - [ ] Test: el punto subsolar del 21-06-2026 a las 12:00 UTC está a ≈ +23,4° de latitud y 0° de longitud (±2°), con la misma función que alimenta el shader.
@@ -545,6 +552,7 @@ Criterios de aceptación:
 - [ ] Capturas de mediodía y medianoche UTC y de cada vista guiada.
 - [ ] FPS y VRAM de la vista Tierra según §5, en escritorio y en el móvil de Iván.
 - [ ] Textos de las vistas con fuente y `reviewed: false`.
+- [ ] `tierra-epic-2016` otra vez junto a la foto de EPIC: sin velo lechoso y con el océano a la relación de brillo medida (R3).
 
 ### Fase 6: La Luna
 
@@ -577,12 +585,15 @@ Tareas:
 4. **Interfaz de escala real** (el motor ya la soporta desde la fase 2): interruptor en los controles y en la URL (`escala=real`), con transición animada.
 5. **Atmósferas suaves** (borde): la base llega con la fase 3b (D29: Venus, Marte, Titán y los gigantes); aquí se ajustan con las texturas fotográficas de las lunas (Titán), si caben en el presupuesto.
 6. Tests de precisión de las lunas (§5), de continuidad de las transiciones y de las sombras.
+7. **Anillo de luz del limbo de Saturno a contraluz** (revisión del bloque R, R2; estaba en el backlog de la fase 3b): la dispersión hacia delante en su atmósfera, lo más reconocible de las fotos de Cassini.
+8. **Miniaturas de las lunas** regeneradas con sus texturas (`node scripts/build-body-thumbnails.mjs`), con la latitud medida sobre la eclíptica: las de Urano salían con un tercio del disco en sombra y Tritón, con la sombra al otro lado (informe de la fase 3c, §10.3).
 
 Criterios de aceptación:
 - [ ] Sin parpadeos ni temblores en escala real (Fobos y Neptuno; capturas o vídeo corto).
 - [ ] Captura de una sombra de luna galileana sobre Júpiter en una fecha de tránsito real (fuente citada).
 - [ ] FPS, VRAM y memoria con todos los sistemas cargados según §5.
 - [ ] Licencias del USGS registradas una a una en `FUENTES.md`.
+- [ ] Captura `saturno-cassini-2013` (la geometría de Cassini de 2013) con el limbo iluminado a contraluz (R2).
 
 ### Fase 8: El cielo desde España y los eclipses
 
@@ -642,7 +653,7 @@ Tareas:
 1. **Móvil**: panel inferior plegable, ficha como hoja inferior, carrusel de cuerpos, gestos y zonas táctiles ≥ 44 px, en todas las vistas.
 2. **Sin WebGL o con el contexto perdido**: póster + listas + fichas + mensaje (y recargar). `prefers-reduced-motion` en todas las vistas, recorridos y transiciones.
 3. **Accesibilidad**: axe en todas las rutas, contraste, foco, zoom al 200 % y lector de pantalla (prueba manual básica con NVDA o Narrador, con notas en el informe).
-4. **Rendimiento**: medición por vista y nivel (tabla); ajustes finales; precarga de la fuente del H1.
+4. **Rendimiento**: medición por vista y nivel (tabla); ajustes finales; precarga de la fuente del H1; **pintar a la frecuencia que pide el movimiento en pantalla** (informe de la fase 3c, §10.1: a 3 h/s, la vista general se mueve una fracción de píxel por frame; generalizar el render lento a 4 Hz ahorraría GPU y batería en móvil).
 5. **iOS Safari**: prueba en un iPhone real (Iván): memoria, pérdida de contexto y gestos.
 6. **Regresión visual**: Playwright `toHaveScreenshot` con `?captura=1` en las vistas clave. Referencias generadas en el CI (Linux), no en Windows.
 7. **Lighthouse en el CI** (si Iván aprueba `@lhci/cli`) con los presupuestos de §5.
@@ -660,12 +671,12 @@ Criterios de aceptación:
 
 ### Fase 11: Lanzamiento
 
-**Iván (manual):** subdominio de producción con AutoSSL, cuenta FTP limitada a esa carpeta, secrets de producción y decisión de licencia del código.
+**Iván (manual):** el dominio propio en Cloudflare Pages (`tierra-luna-sol.ivanchesa.es` como dominio personalizado del proyecto, con su registro CNAME en el DNS de ivanchesa.es). Los secrets de Cloudflare ya están (fase 4) y la licencia, decidida (D32).
 
 **Claude Code:**
-1. **`deploy-production.yml`**: despliegue al crear una etiqueta `v*` (o con lanzamiento manual), reutilizando el build verificado.
+1. **`deploy-production.yml`**: despliegue a producción de Cloudflare Pages al crear una etiqueta `v*` (o con lanzamiento manual), reutilizando el build verificado.
 2. **Verificación en producción** con `curl` y Lighthouse.
-3. **README de portfolio** (capturas, vídeo o GIF corto, stack, arquitectura, precisión y rendimiento medidos), **LICENSE**, **CHANGELOG** y etiqueta **`v1.0.0`** (el repo de GitHub ya es público, §3).
+3. **README de portfolio** (capturas, vídeo o GIF corto, stack, arquitectura, precisión y rendimiento medidos), **CHANGELOG** y etiqueta **`v1.0.0`** (el repo de GitHub ya es público y `LICENSE` existe desde la fase 4, D32).
 4. `indexable: true` con el OK de Iván.
 5. Lista para Iván: ficha del proyecto en ivanchesa.es (en su propio repo) y difusión.
 
@@ -681,7 +692,7 @@ Criterios de aceptación:
 |---|---|
 | **Claude Code (terminal)** | Ejecuta los bloques en modo autónomo: por fase, plan en el informe → trabajo → `npm run check` → revisión por subagente → correcciones → fusión → `DIARIO.md`. Para al final del bloque o ante una condición de parada. |
 | **Claude (sesión de revisión)** | Revisa cada bloque completo: diff, checks propios, criterios, capturas y estrategia. Escribe `docs/revisiones/bloque-X.md` y ajusta el plan si hace falta. |
-| **Iván** | Decide, hace los pasos manuales (GitHub, cPanel, secrets), revisa los textos, prueba en sus móviles y da el OK a cada bloque. |
+| **Iván** | Decide, hace los pasos manuales (GitHub, Cloudflare, el dominio y los secrets), revisa los textos, prueba en sus móviles y da el OK a cada bloque. |
 
 Reglas:
 - Una sesión de Claude Code por bloque (o por fase, si la sesión se alarga). Al empezar, lee `CLAUDE.md`, §0–§5 del plan, la sección de su fase y el informe y la revisión anteriores.
@@ -702,12 +713,12 @@ Reglas:
 | Aliasing a velocidades altas | Regla de §4.5 con test |
 | Texturas mal alineadas (meridiano 0) | Alineación en el manifiesto + tests de orientación |
 | Relieve lunar con 8 bits (escalones) | D15: 16 bits empaquetados en RG |
-| Problemas del hosting descubiertos tarde | Staging en la fase 4 |
+| Problemas del hosting descubiertos tarde | Vista previa en Cloudflare Pages desde la fase 4 |
 | La IA se inventa cifras o textos | `source` obligatorio, citas verificadas, tests de campos y revisión de Iván |
 | Fugas de memoria al cambiar de vista o de nivel | `dispose()` por vista y por nivel; prueba de 10 ciclos |
 | Contexto de sesión lleno | Entregas, informe vivo y prompt «Retomar» |
 | Licencias mezcladas | `FUENTES.md` archivo a archivo + `/creditos`; el BY-SA solo afecta al fichero de estrellas |
-| Imunify360 bloquea el FTP desde GitHub | Detección en la fase 4; plan B: subida manual del build |
+| Límites del plan gratuito de Cloudflare Pages (25 MiB por fichero, 20 000 ficheros) | Comprobados en `npm run check` (fase 4); las texturas, por niveles (D18) |
 
 ---
 
@@ -719,3 +730,7 @@ Reglas:
 4. Planetas enanos (Plutón, Ceres), cinturón de asteroides y cometas.
 5. Satélites artificiales / Estación Espacial (requiere datos en vivo).
 6. Ficha del proyecto en ivanchesa.es (en su propio repo).
+7. El oscurecimiento del limbo del Sol por canal (informe de la fase 3b, §4.4).
+8. Un desvanecimiento elíptico de las órbitas sobre los anillos de Saturno (informe de la fase 3b, §4.12).
+9. El relieve como mapa de alturas en gris, con las normales calculadas en el shader (informe de la fase 3b, §4.10).
+10. Unificar los colores de los planetas con la fotometría de Mallama et al. (2017) y las funciones de color de la CIE (informe de la fase 3b, §4.12).

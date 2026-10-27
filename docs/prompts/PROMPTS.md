@@ -9,11 +9,11 @@ Abre la terminal en la carpeta del proyecto y lanza **`claude`**, sin nada detr�
 | A ✅ | 1 | `fase-1-efemerides` | `max` | — |
 | B ✅ | 2–3 | `fase-2-motor`, `fase-3-interfaz` | `max` | — |
 | R | 3b–3c | `fase-3b-realismo`, `fase-3c-interfaz` | `max` | — |
-| C | 4–5 | `fase-4-staging`, `fase-5-tierra` | `max` | Repo de GitHub conectado (`https://github.com/IvanChesa/tierra-luna-sol`, primer push hecho o autorizado) + staging en cPanel + secrets (si no, la fase 4 se aplaza) |
+| C | 4–5 | `fase-4-staging`, `fase-5-tierra` | `max` | ✅ Primer push autorizado (revisión del bloque R) y secrets de Cloudflare Pages en el repo (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`) |
 | D | 6–7 | `fase-6-luna`, `fase-7-lunas-escala-real` | `max` | — |
 | E | 8–9 | `fase-8-cielo-eclipses`, `fase-9-contenido` | `high` | — |
 | F | 10 | `fase-10-pulido` | `max` | Un iPhone para probar; decisión sobre `@lhci/cli` |
-| — | 11 | `fase-11-lanzamiento` | `high` | Subdominio de producción, FTP, secrets y licencia |
+| — | 11 | `fase-11-lanzamiento` | `high` | El dominio propio en Cloudflare Pages (el CNAME en el DNS de ivanchesa.es) |
 
 ## Prompts
 
