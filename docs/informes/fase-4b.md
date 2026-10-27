@@ -123,8 +123,13 @@ Pages: 126 ficheros; el mayor, 1,76 MiB de 25
 ✔ Código propio en los chunks iniciales: 12.13 kB de 15.00
 ```
 ```
-npm run e2e: 67 passed (3.7m)
+npm run e2e (antes de 99289ef, que solo cambia el grosor de las estelas): 67 passed (3.7m)
+npm run e2e (código final): 66 passed (3.9m) · 1 failed: «Accesibilidad (axe) › todas las páginas del sitio»
+  (escritorio): en /planetas/neptuno, page.waitForLoadState('networkidle') no llegó en 86 s
+npx playwright test e2e/accesibilidad.spec.ts -g "todas las páginas" --project=escritorio --repeat-each=4:
+  4 passed (31.5s; ~30 s cada una)
 ```
+El fallo es intermitente y no depende de la fase: la ficha de Neptuno no usa el 3D, la traza muestra todas sus peticiones terminadas (la última, un chunk de 468 bytes en 248 ms) y el mismo test pasa en la batería anterior (51 s) y cuatro veces seguidas aislado. Con cuatro workers y la GPU ocupada, alguna conexión no se cerró. La batería completa se repite tras la revisión.
 
 ### 6.1 Mediciones (`node scripts/measure-system.mjs`, 27-10; Chromium con la GPU: RTX 3060, ANGLE D3D11)
 | Escena | Nivel | FPS (mín. / medio) | CPU por frame | Llamadas de dibujo | Triángulos | VRAM |
