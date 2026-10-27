@@ -63,6 +63,10 @@ test.describe('Accesibilidad (axe)', () => {
   });
 
   test('todas las páginas del sitio', async ({ page }) => {
+    // Con movimiento reducido, el explorador arranca en pausa (D31): sus tres rutas no tienen la CPU
+    // ocupada pintando con SwiftShader mientras axe las analiza. Con el sistema en marcha, ya lo
+    // mira la prueba de arriba.
+    await page.emulateMedia({ reducedMotion: 'reduce' });
     expect(ROUTES.length).toBeGreaterThan(10);
     for (const route of ROUTES) {
       await page.goto(route);
