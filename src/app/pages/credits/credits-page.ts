@@ -75,7 +75,17 @@ import { Component } from '@angular/core';
         <a href="https://ssd.jpl.nasa.gov/horizons/">JPL Horizons</a> y el
         <a href="https://aa.usno.navy.mil/">USNO</a>.
       </li>
-      <li>Fraga y Lleida: © Instituto Geográfico Nacional.</li>
+      <li>
+        Lugares del cielo desde España: Fraga, Lleida, el Observatori Fabra y la Puerta del Sol, ©
+        <a href="https://www.ign.es/web/politica-datos">Instituto Geográfico Nacional</a>; el Roque
+        de los Muchachos y el Teide, del
+        <a href="https://www.iac.es/en/observatorios-de-canarias"
+          >Instituto de Astrofísica de Canarias</a
+        >; Calar Alto, del <a href="https://www.caha.es/">Observatorio de Calar Alto</a>; el
+        Montsec, del <a href="https://parcastronomic.cat/">Parc Astronòmic Montsec</a>, y la altitud
+        del Observatori Fabra, del
+        <a href="https://www.meteo.cat/">Servei Meteorològic de Catalunya</a>.
+      </li>
       <li>
         Brillo y color de los planetas: leyes de fase de Hilton (2005) y de astronomy-engine,
         colores medidos en fotos del Hubble (NASA/ESA) y en la reconstrucción de Urano y Neptuno de

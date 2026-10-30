@@ -94,6 +94,8 @@ export const PLACES = [
     source: 'https://www.caha.es/WDXI/oldwdxi.php',
   },
   {
+    // El punto del lugar «Sol» del Nomenclátor del IGN (tipo «Barrio»), que cae en la plaza: no es el
+    // del kilómetro 0 (el Nomenclátor no lo tiene como lugar), pero a esta escala es el mismo sitio.
     id: 'madrid',
     name: 'Puerta del Sol',
     province: 'Madrid',
