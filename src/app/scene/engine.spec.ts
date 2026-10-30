@@ -616,6 +616,7 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
       orbitSources: readonly { bodyIndex: number; segments: number }[];
     };
     labels: { visibleLayer: boolean };
+    markerRadius: Float64Array;
   }
   const internals = (h: Harness) => h.engine as unknown as Internals;
   const screenOf = (h: Harness, id: string) => internals(h).screen[sceneBody(id as never).index];
@@ -859,6 +860,12 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     for (const id of planets) {
       expect(screenOf(h, id)?.radiusPx, id).toBeGreaterThanOrEqual(2 - 1e-6);
     }
+    // Se ven como discos: sin el anillo de marcador (revisión, hallazgo 1).
+    const marked = () =>
+      [...h.labels.querySelectorAll<HTMLElement>('.scene-label--marker')]
+        .filter((label) => !label.hidden)
+        .map((label) => label.dataset['body']);
+    for (const id of planets) expect(marked(), id).not.toContain(id);
     // Los rocosos medirían menos sin el mínimo: Mercurio, en el móvil, ~1,5 px (fase 4b: 1,2).
     const mercury = internals(h).frames.output.radius[sceneBody('mercurio').index] as number;
     expect(mercury).toBeGreaterThan(illustrativeRadius(sceneBody('mercurio').radiusKm) * 1.1);
@@ -867,6 +874,8 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     h.engine.focus('jupiter');
     settle(h);
     expect(screenOf(h, 'mercurio')?.radiusPx).toBeLessThan(1);
+    // Ahí, los diminutos vuelven a llevar su marcador (si se nombran).
+    expect(internals(h).markerRadius[sceneBody('mercurio').index]).toBe(3);
     h.engine.dispose();
   });
 

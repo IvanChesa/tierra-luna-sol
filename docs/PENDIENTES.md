@@ -81,7 +81,7 @@ Decisiones y tareas que dependen de Iván. Claude Code añade aquí cada `TODO(i
 - [x] **Los anillos de Saturno** (`docs/decisiones/ANILLOS-SATURNO.md`, D36): en la fase 7, junto a R2, con el realce moderado del brillo ya decidido.
 
 ## Decisiones
-- [ ] **(Fase 6) `toktx` (KTX-Software):** solo si la Luna en 8K no cabe en la VRAM de §5 con WebP (prueba de KTX2 de la fase 2, §5.2 del informe).
+- [ ] **(Fase 6) `toktx` (KTX-Software):** solo si la VRAM de §5 no se cumple con WebP en el peor caso de las vistas Tierra y Luna (C4: la reevaluación de KTX2 empieza por la 8K de la Tierra y los mapas de la Luna; prueba de KTX2 de la fase 2, §5.2 del informe).
 - [ ] **Subdominio definitivo.** Propuesto: `tierra-luna-sol.ivanchesa.es`. Si cambia, se edita solo `src/app/core/site.config.ts`.
 
 ## Revisiones y pruebas de Iván

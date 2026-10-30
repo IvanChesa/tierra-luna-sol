@@ -21,7 +21,7 @@ import { CameraRig, RigPose } from './camera/rig';
 import { attachPointerControls } from './camera/pointer';
 import { SimClock } from './clock';
 import { FRAME_TRANSITION_MS, FrameController, frameFor } from './frames';
-import { LabelInfo, LabelLayer, layoutLabels } from './labels';
+import { LabelInfo, LabelLayer, MARKER_RADIUS_PX, layoutLabels } from './labels';
 import { ScreenBody, pickBody, projectBodies } from './picking';
 import {
   AdaptiveQuality,
@@ -352,6 +352,11 @@ export class SceneEngine implements SceneEngineApi {
    * sin que los planetas cambien de tamaño de golpe.
    */
   private overviewScreen: OverviewScreen | null = null;
+  /**
+   * Radio en pantalla por debajo del cual cada cuerpo lleva su marcador (un anillo). Los planetas de
+   * la vista general, con su tamaño mínimo (D35, C3), se ven como discos de 4 px o más: sin anillo.
+   */
+  private readonly markerRadius = new Float64Array(SCENE_BODIES.length).fill(MARKER_RADIUS_PX);
   private contextLost = false;
   private readonly background: number | null;
   /** Solo en captura: geometría de una foto de referencia (fase 3b). */
@@ -996,6 +1001,26 @@ export class SceneEngine implements SceneEngineApi {
   }
 
   /**
+   * El umbral del marcador de cada cuerpo: con el tamaño mínimo de la vista general en marcha (la
+   * escala ilustrativa, sin transición ni cuerpo enfocado), los planetas no lo llevan si miden su
+   * mínimo; si no, el de siempre.
+   */
+  private markerRadii(): Float64Array {
+    const minimum =
+      this.overviewScreen !== null &&
+      this.framing.kind === 'overview' &&
+      !this.frames.animating &&
+      this.frames.targetSpec.kind === 'illustrative';
+    for (let k = 0; k < SCENE_BODIES.length; k++) {
+      this.markerRadius[k] =
+        minimum && SCENE_BODIES[k]?.kind === 'planet'
+          ? VISUAL_CONFIG.overviewMinRadiusPx * 0.99
+          : MARKER_RADIUS_PX;
+    }
+    return this.markerRadius;
+  }
+
+  /**
    * La cámara de la vista general para el tamaño mínimo de los planetas (C3): su posición respecto al
    * Sol, en unidades ilustrativas (en una transición de marco, el sistema mide `extentScale` veces lo
    * ilustrativo), y la focal en píxeles, que con los márgenes de la interfaz sigue siendo
@@ -1008,13 +1033,16 @@ export class SceneEngine implements SceneEngineApi {
     // Ejes de three → ECL: (x, y, z) → (x, −z, y).
     const camera = vec3(p.x * toIllustrative, -p.z * toIllustrative, p.y * toIllustrative);
     const focalPx = this.viewport.height / (2 * Math.tan((BASE_FOV_DEG * Math.PI) / 360));
+    // Con tolerancia: `extentScale` baila en el último bit aunque la cámara no se mueva.
+    const same = (a: number, b: number) =>
+      Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(a), Math.abs(b));
     const last = this.overviewScreen;
     if (
       last &&
-      last.focalPx === focalPx &&
-      last.camera.x === camera.x &&
-      last.camera.y === camera.y &&
-      last.camera.z === camera.z
+      same(last.focalPx, focalPx) &&
+      same(last.camera.x, camera.x) &&
+      same(last.camera.y, camera.y) &&
+      same(last.camera.z, camera.z)
     ) {
       return false;
     }
@@ -1080,7 +1108,12 @@ export class SceneEngine implements SceneEngineApi {
       { width, height },
       this.focusIndex ?? -1,
       planet ? sceneBody(planet).index : -1,
-      { insets: this.insets, hidden: this.hiddenLabels(), extents: LABEL_EXTENTS },
+      {
+        insets: this.insets,
+        hidden: this.hiddenLabels(),
+        extents: LABEL_EXTENTS,
+        markerRadiusPx: this.markerRadii(),
+      },
     );
     this.labels.update(boxes, this.focusIndex ?? -1);
   }

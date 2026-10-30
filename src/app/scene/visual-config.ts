@@ -123,7 +123,8 @@ export const VISUAL_CONFIG = {
    * elegir con el puntero (fase 4b): en la vista general, los sistemas compactos no se ven como
    * bultos pegados a cada planeta, y aparecen al acercarse o al enfocar el planeta. Con los planetas
    * un 25 % más grandes (revisión del bloque C, C2), sus sistemas también lo son en pantalla: los
-   * umbrales crecen igual (antes, 8 y 30 px), y las lunas aparecen exactamente cuando antes.
+   * umbrales crecen igual (antes, 8 y 30 px), y en la vista general las lunas aparecen cuando antes
+   * (en un sistema local físico, el planeta no ha crecido, y sus lunas aparecen algo más tarde).
    */
   moonResolutionPx: { from: 10, to: 37.5 },
   /** Opacidad de las órbitas de los planetas en la vista general (la de las estelas completas). */

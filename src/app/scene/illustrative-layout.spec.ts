@@ -8,7 +8,7 @@ import {
   illustrativeRadius,
   placeBodies,
 } from '../ephemeris/scale';
-import { length, sub, vec3 } from '../ephemeris/vec3';
+import { length, scale, sub, vec3 } from '../ephemeris/vec3';
 import { RADII_KM, SCENE_BODIES, createSolarSystemModel, sceneBody } from './system';
 
 /** Distancia de Júpiter a Saturno (unidades) por debajo de la cual sus sistemas pueden tocarse. */
@@ -40,6 +40,8 @@ interface Sweep {
   readonly outsideConjunctions: string[];
   /** Por cuerpo: en cuántas muestras encoge (C2) y su menor factor. */
   readonly shrunk: Map<string, { samples: number; min: number }>;
+  /** Muestras en las que algún planeta mide menos de su mínimo en pantalla (C3; tiene que ser 0). */
+  readonly belowMinimum: number;
   readonly samples: number;
   readonly summary: string;
 }
@@ -72,6 +74,7 @@ function sweep(screen: OverviewScreen | null): Sweep {
   };
   const outsideConjunctions: string[] = [];
   const shrunk = new Map<string, { samples: number; min: number }>();
+  let belowMinimum = 0;
   let samples = 0;
   const start = Date.UTC(1900, 0, 1);
   const end = Date.UTC(2100, 11, 31);
@@ -105,6 +108,7 @@ function sweep(screen: OverviewScreen | null): Sweep {
       if (screen && body.kind === 'planet') {
         const depth = length(sub(position(k), screen.camera));
         desired = Math.max(desired, (screen.minRadiusPx * depth) / screen.focalPx);
+        if ((r(k) * screen.focalPx) / depth < screen.minRadiusPx - 1e-9) belowMinimum++;
       }
       const factor = r(k) / desired;
       if (factor < 1 - 1e-9) {
@@ -163,7 +167,7 @@ function sweep(screen: OverviewScreen | null): Sweep {
         `${id} encoge en ${((100 * n) / samples).toFixed(1)} % de las muestras (hasta ×${min.toFixed(2)})`,
     ),
   ].join('; ');
-  return { worst, outsideConjunctions, shrunk, samples, summary };
+  return { worst, outsideConjunctions, shrunk, belowMinimum, samples, summary };
 }
 
 /**
@@ -172,9 +176,10 @@ function sweep(screen: OverviewScreen | null): Sweep {
  * de unos 2 px, ningún sistema de lunas se distingue y sus lunas no se dibujan (`moonPresence`).
  */
 function expectNoOverlaps(
-  { worst, outsideConjunctions, shrunk, samples, summary }: Sweep,
+  { worst, outsideConjunctions, shrunk, belowMinimum, samples, summary }: Sweep,
   moons: boolean,
 ): void {
+  expect(belowMinimum, summary).toBe(0);
   // Los discos y los anillos, con al menos una unidad de aire (unos 2 px en la vista general).
   expect(worst.get('discos')?.margin, summary).toBeGreaterThan(1);
   expect(worst.get('anillos de Saturno')?.margin, summary).toBeGreaterThan(1);
@@ -206,6 +211,16 @@ describe('vista general: radios ilustrativos sin solapes (fase 4b; revisión del
     const result = sweep(MOBILE);
     console.log(`[vista general, móvil] ${result.summary}`);
     expectNoOverlaps(result, false);
+  }, 120_000);
+
+  it('en el móvil, con la cámara 4 veces más lejos, el mínimo no se deshace: los discos de 4 px de los planetas interiores pueden tocarse', () => {
+    const far: OverviewScreen = { ...MOBILE, camera: scale(MOBILE.camera, 4) };
+    const result = sweep(far);
+    console.log(`[vista general, móvil alejada] ${result.summary}`);
+    expect(result.belowMinimum, result.summary).toBe(0);
+    // Ahí todos los planetas miden su mínimo (Júpiter, 16 unidades frente a 9 propias), y los de
+    // dentro, a unos píxeles unos de otros, se tocan: es lo que se acepta al alejarse tanto (D35).
+    expect(result.worst.get('discos')?.margin ?? 0, result.summary).toBeLessThan(0);
   }, 120_000);
 
   it('Júpiter, un 25 % mayor que en la fase 4b; el Sol, el mayor; los rocosos, discos de varias unidades', () => {

@@ -14,7 +14,7 @@
  * unidad). Las transiciones entre marcos se hacen relativas al foco ({@link blendPlacements}).
  */
 import { KM_PER_AU } from './constants';
-import { Vec3, dot, length, lerp, scale, sub, vec3 } from './vec3';
+import { Vec3, length, lerp, scale, vec3 } from './vec3';
 
 export type ScaleMode = 'illustrative' | 'real';
 
@@ -190,7 +190,9 @@ export const illustrativeFrame = (
 /**
  * Unidad del sistema local físico de un planeta: la que deja su radio igual que en la escala
  * ilustrativa. Así, al enfocarlo, el planeta no cambia de tamaño y lo que se reorganiza es lo demás:
- * sus lunas se colocan a su distancia real respecto a él y el resto del sistema, a la suya.
+ * sus lunas se colocan a su distancia real respecto a él y el resto del sistema, a la suya. (Salvo
+ * si en la vista general estaba encogido junto a otro cuerpo o agrandado hasta su tamaño mínimo en
+ * pantalla, D35: entonces la transición lo lleva con suavidad a este tamaño.)
  */
 export const localPhysicalKmPerUnit = (
   planetRadiusKm: number,
@@ -324,16 +326,18 @@ function isPrimary(parentIndex: Int16Array, k: number): boolean {
   return parent < 0 || item(parentIndex, parent) < 0;
 }
 
-/** Búferes de trabajo de {@link placeBodies}: sin reservar memoria en cada frame. */
+/** Búferes de trabajo de {@link placeBodies}: no crecen en cada frame. */
 const primaries: number[] = [];
 let relief = new Float64Array(0);
 
 /**
  * Coloca todos los cuerpos en un marco, en coordenadas absolutas de escena (el Sol en el origen).
- * Primero el Sol y los planetas, en la escala ilustrativa con su tamaño mínimo en pantalla (C3) y
- * sin solapes (C2), y después las lunas alrededor de su planeta, con el tamaño final de este. Un
- * sistema de lunas encoge con su planeta, y sus órbitas (`placeMoonPoint`, con el radio colocado
- * del planeta) siguen pasando por ellas.
+ * Primero el Sol y los planetas; en la escala ilustrativa, sin solapes con sus radios propios (C2) y
+ * después con su tamaño mínimo en pantalla (C3), que así nunca se deshace: con la cámara muy lejos,
+ * los discos mínimos de los planetas interiores, de unos píxeles, pueden tocarse. Y después las
+ * lunas, alrededor de su planeta con el tamaño final de este: un sistema de lunas encoge con su
+ * planeta, y sus órbitas (`placeMoonPoint`, con el radio colocado del planeta) siguen pasando por
+ * ellas.
  */
 export function placeBodies(
   frame: FrameSpec,
@@ -351,18 +355,24 @@ export function placeBodies(
   if (relief.length < n) relief = new Float64Array(n);
   relief.fill(1, 0, n);
   if (frame.kind === 'illustrative') {
+    relieveOverlaps(out.position, out.radius, primaries, frame.params.minGap, input.rings, relief);
+    for (const k of primaries) out.radius[k] = item(out.radius, k) * item(relief, k);
     const screen = input.screen;
     if (screen) {
       // C3: ningún planeta mide menos de `minRadiusPx` en pantalla (el Sol no lo necesita).
+      const p = out.position;
+      const c = screen.camera;
       for (const k of primaries) {
         if (item(input.parentIndex, k) < 0) continue;
-        const depth = length(sub(at(out.position, k), screen.camera));
+        const depth = Math.hypot(
+          (p[3 * k] as number) - c.x,
+          (p[3 * k + 1] as number) - c.y,
+          (p[3 * k + 2] as number) - c.z,
+        );
         const minRadius = (screen.minRadiusPx * depth) / screen.focalPx;
         out.radius[k] = Math.max(item(out.radius, k), minRadius);
       }
     }
-    relieveOverlaps(out.position, out.radius, primaries, frame.params.minGap, input.rings, relief);
-    for (const k of primaries) out.radius[k] = item(out.radius, k) * item(relief, k);
   }
   for (let k = 0; k < n; k++) {
     if (isPrimary(input.parentIndex, k)) continue;
@@ -397,23 +407,21 @@ export function reliefFactor(needed: number, softness = RELIEF_SOFTNESS): number
 
 /**
  * El mayor factor f (hasta 1 + `RELIEF_SOFTNESS`) con el que un cuerpo de radio `radius`·f, en
- * `offset` respecto al centro de un planeta con anillos de radio exterior `outer`·f, queda a
+ * (dx, dy, dz) respecto al centro de un planeta con anillos de radio exterior `outer`·f, queda a
  * `margin` del disco de los anillos. El disco se toma lleno (la parte de dentro la ocupa el planeta):
  * así la distancia baja al crecer f y basta una bisección.
  */
 function ringFactor(
-  offset: Vec3,
+  dx: number,
+  dy: number,
+  dz: number,
   radius: number,
   outer: number,
   pole: Vec3,
   margin: number,
 ): number {
-  const height = dot(offset, pole);
-  const inPlane = Math.hypot(
-    offset.x - height * pole.x,
-    offset.y - height * pole.y,
-    offset.z - height * pole.z,
-  );
+  const height = dx * pole.x + dy * pole.y + dz * pole.z;
+  const inPlane = Math.hypot(dx - height * pole.x, dy - height * pole.y, dz - height * pole.z);
   const gap = (f: number): number =>
     (inPlane > outer * f ? Math.hypot(height, inPlane - outer * f) : Math.abs(height)) -
     radius * f -
@@ -437,7 +445,8 @@ function ringFactor(
  * `ring`, también entre el otro disco y sus anillos (que crecen con él). Los dos encogen por igual,
  * con {@link reliefFactor}, y cada cuerpo se queda con el menor de sus pares: solo encogen los que se
  * acercan, y recuperan el tamaño al separarse. Como las posiciones cambian de forma continua con el
- * tiempo, los tamaños también. Escribe el factor de cada miembro en `out`.
+ * tiempo, los tamaños también. Escribe el factor de cada miembro en `out` (sin reservar memoria:
+ * se llama en cada frame).
  */
 export function relieveOverlaps(
   position: Float64Array,
@@ -452,18 +461,28 @@ export function relieveOverlaps(
     const i = members[a] as number;
     for (let b = a + 1; b < members.length; b++) {
       const j = members[b] as number;
-      const offset = sub(at(position, j), at(position, i));
+      if (3 * Math.max(i, j) + 2 >= position.length) {
+        throw new RangeError('Índice de cuerpo fuera de rango.');
+      }
+      const dx = (position[3 * j] as number) - (position[3 * i] as number);
+      const dy = (position[3 * j + 1] as number) - (position[3 * i + 1] as number);
+      const dz = (position[3 * j + 2] as number) - (position[3 * i + 2] as number);
       const ri = item(radius, i);
       const rj = item(radius, j);
-      let needed = (length(offset) - margin) / (ri + rj);
+      let needed = (Math.hypot(dx, dy, dz) - margin) / (ri + rj);
       if (ring && (ring.index === i || ring.index === j)) {
-        const ringed = ring.index === i;
+        // Del planeta con anillos al otro cuerpo.
+        const sign = ring.index === i ? 1 : -1;
+        const ringed = ring.index === i ? ri : rj;
+        const other = ring.index === i ? rj : ri;
         needed = Math.min(
           needed,
           ringFactor(
-            ringed ? offset : scale(offset, -1),
-            ringed ? rj : ri,
-            ring.outer * (ringed ? ri : rj),
+            sign * dx,
+            sign * dy,
+            sign * dz,
+            other,
+            ring.outer * ringed,
             ring.pole,
             margin,
           ),

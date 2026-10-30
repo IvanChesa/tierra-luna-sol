@@ -73,6 +73,12 @@ export interface LabelLayoutOptions {
    * Saturno. Su nombre va por fuera y los demás no se colocan encima (fase 3b, tarea 8).
    */
   readonly extents?: readonly number[];
+  /**
+   * Radio en pantalla (px) por debajo del cual cada cuerpo lleva su marcador; `MARKER_RADIUS_PX` si
+   * falta. Los planetas de la vista general, a los que el tamaño mínimo (D35) ya deja en 2 px o más,
+   * se ven como discos y no lo necesitan.
+   */
+  readonly markerRadiusPx?: ArrayLike<number>;
 }
 
 interface Obstacle {
@@ -109,6 +115,7 @@ export function layoutLabels(
   const insets = options.insets ?? { top: 0, right: 0, bottom: 0, left: 0 };
   const hidden = options.hidden;
   const extent = (index: number) => options.extents?.[index] ?? 1;
+  const markerRadius = (index: number) => options.markerRadiusPx?.[index] ?? MARKER_RADIUS_PX;
   const minX = insets.left;
   const minY = insets.top;
   const maxX = viewport.width - insets.right;
@@ -165,7 +172,7 @@ export function layoutLabels(
           y: body.y + dy,
           width: w,
           height: h,
-          marker: body.radiusPx < MARKER_RADIUS_PX,
+          marker: body.radiusPx < markerRadius(body.index),
         };
         const inside = box.x >= minX && box.x + w <= maxX && box.y >= minY && box.y + h <= maxY;
         if (!inside || placed.some((other) => overlaps(box, other))) continue;
