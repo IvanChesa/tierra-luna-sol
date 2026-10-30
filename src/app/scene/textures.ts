@@ -22,6 +22,7 @@ import {
   LinearMipmapLinearFilter,
   LinearFilter,
   NoColorSpace,
+  RepeatWrapping,
   SRGBColorSpace,
   Texture,
 } from 'three';
@@ -80,7 +81,7 @@ export interface TextureFile {
 
 export type TextureFiles = Readonly<Partial<Record<TextureId, readonly TextureFile[]>>>;
 
-const LEVEL_ORDER: readonly TextureLevel[] = ['1k', '2k', '4k'];
+const LEVEL_ORDER: readonly TextureLevel[] = ['1k', '2k', '4k', '8k'];
 
 /**
  * El fichero que se carga: el nivel pedido o, si no existe o no cabe en `maxTextureSize`, el mayor
@@ -142,6 +143,9 @@ export class ManifestTextureSource implements TextureSource {
     texture.name = `${id}@${file.level}`;
     texture.flipY = false; // ya viene girada del decodificador
     texture.colorSpace = info.colorSpace === 'srgb' ? SRGBColorSpace : NoColorSpace;
+    // Los mapas de superficie dan la vuelta en longitud: un desplazamiento de u (el meridiano 0, la
+    // deriva de las nubes) sigue por el otro lado, no estira el borde (`ClampToEdge`, el de three).
+    if (info.projection === 'equirectangular') texture.wrapS = RepeatWrapping;
     texture.generateMipmaps = true;
     texture.minFilter = LinearMipmapLinearFilter;
     texture.magFilter = LinearFilter;

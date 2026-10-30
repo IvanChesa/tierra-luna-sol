@@ -54,6 +54,11 @@
   (chosen)="chosenInIndex()"
 />
 
+<!-- La vista Tierra (fase 5): las vistas guiadas y la luz del Sol. -->
+@if (view() === 'earth') {
+  <tls-earth-panel class="earth-panel" data-chrome />
+}
+
 <tls-body-chips class="chips" />
 
 <tls-time-controls class="dock" />

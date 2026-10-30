@@ -1,16 +1,23 @@
 import starsBin from '../../../public/data/stars.bin' with { loader: 'binary' };
-import { BackSide, FrontSide, Texture } from 'three';
+import { BackSide, FrontSide, Quaternion, Texture, Vector3, Vector4 } from 'three';
 import { KM_PER_AU } from '../ephemeris/constants';
+import { subsolarPoint } from '../ephemeris/coordinates';
+import { moonShadowCenter } from '../ephemeris/eclipse';
+import { NASA_ECLIPSE_2026_08_12 } from '../ephemeris/fixtures/fixtures';
 import { MAX_DATE } from '../ephemeris/time';
 import {
   EngineDeps,
   FRAMING_FILL,
   FrameScheduler,
   SceneEngine,
+  capFitDistance,
   circleFitDistance,
   framingDistanceRadii,
 } from './engine';
 import { SCHEMATIC_COLORS } from './body-colors';
+import { TEXTURE_META } from './texture-meta';
+import type { TextureLevel } from './quality';
+import type { LoadedTexture, TextureId } from './textures';
 import { hasDepthChunks } from './materials/depth';
 import { ORBIT_WIDTH_PX, trailColor } from './orbits';
 import { VISUAL_CONFIG } from './visual-config';
@@ -124,7 +131,10 @@ interface Harness {
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
-async function createHarness(overrides: Partial<SceneEngineOptions> = {}): Promise<Harness> {
+async function createHarness(
+  overrides: Partial<SceneEngineOptions> = {},
+  depsOverrides: Partial<EngineDeps> = {},
+): Promise<Harness> {
   const renderer = new FakeRenderer();
   const clock = { now: 1000 };
   const scheduler = new ManualScheduler(() => clock.now);
@@ -153,6 +163,7 @@ async function createHarness(overrides: Partial<SceneEngineOptions> = {}): Promi
       },
     },
     yieldToMain: () => Promise.resolve(),
+    ...depsOverrides,
   };
   const engine = new SceneEngine(
     {
@@ -259,11 +270,12 @@ describe('SceneEngine: arranque y render bajo demanda', () => {
     settle(venus);
     expect(venus.renderer.exposure).toBeLessThan(1);
     venus.engine.dispose();
-    // La Tierra (sin calibrar hasta la fase 5) se compensa con el albedo efectivo de su textura
-    // (≈ 0,08): sin eso quedaba casi negra.
+    // La Tierra (fase 5), con sus nubes, se compensa con su albedo geométrico (0,434, que las
+    // incluye): casi como la referencia (0,4). Hasta la fase 5, sin nubes, con el de su textura.
     const earth = await createHarness({ focus: 'tierra' });
     settle(earth);
-    expect(earth.renderer.exposure).toBeGreaterThan(2.5);
+    expect(earth.renderer.exposure).toBeGreaterThan(0.8);
+    expect(earth.renderer.exposure).toBeLessThan(1.3);
     earth.engine.dispose();
   });
 
@@ -487,6 +499,45 @@ describe('SceneEngine: foco, marcos y selección', () => {
     expect(framingDistanceRadii(0.82, 40, 1)).toBeCloseTo(DETAIL_RADII, 9);
   });
 
+  it('el casquete de una vista guiada cabe en la parte visible: su borde, al semiángulo con margen (fase 5)', () => {
+    const fov = 40;
+    const alpha = (0.9 * ((fov / 2) * Math.PI)) / 180;
+    // Un casquete pequeño: su borde se ve justo a α del eje.
+    for (const extent of [5, 14, 30]) {
+      const d = capFitDistance(extent, fov, 1.5);
+      const theta = (extent * Math.PI) / 180;
+      expect(Math.atan(Math.sin(theta) / (d - Math.cos(theta)))).toBeCloseTo(alpha, 9);
+    }
+    // El disco entero (o un casquete que llega al horizonte): su radio aparente, α.
+    expect(Math.asin(1 / capFitDistance(90, fov, 1.5))).toBeCloseTo(alpha, 9);
+    expect(capFitDistance(80, fov, 1.5)).toBeCloseTo(capFitDistance(90, fov, 1.5), 9);
+    // Crece con el casquete, en vertical manda el ancho, y 0 no exige nada.
+    expect(capFitDistance(20, fov, 1.5)).toBeGreaterThan(capFitDistance(10, fov, 1.5));
+    expect(capFitDistance(14, fov, 390 / 844)).toBeGreaterThan(capFitDistance(14, fov, 1.5));
+    expect(capFitDistance(0, fov, 1.5)).toBe(0);
+  });
+
+  it('una vista guiada se aleja lo justo si la parte visible no deja ver su región (fase 5)', async () => {
+    const h = await createHarness({ view: 'earth', reducedMotion: true });
+    settle(h);
+    const radii = () =>
+      (h.engine as unknown as { rig: { distance: number } }).rig.distance / position(h, 'tierra').r;
+    // En el lienzo entero (1200 × 800), «España» se queda a 2 radios: su región (14°) ya se ve.
+    h.engine.lookAtSurface(36, -7, 2, 14);
+    settle(h);
+    expect(radii()).toBeCloseTo(2, 3);
+    // Con un panel que tapa los dos tercios de abajo, la cámara se aleja hasta que cabe.
+    h.engine.setViewInsets({ top: 0, right: 0, bottom: (2 * HEIGHT) / 3, left: 0 });
+    settle(h);
+    h.engine.lookAtSurface(36, -7, 2, 14);
+    settle(h);
+    const visibleFov = (2 * Math.atan(Math.tan((20 * Math.PI) / 180) / 3) * 180) / Math.PI;
+    const expected = capFitDistance(14, visibleFov, WIDTH / (HEIGHT / 3));
+    expect(expected).toBeGreaterThan(2);
+    expect(radii()).toBeCloseTo(expected, 3);
+    h.engine.dispose();
+  });
+
   it('las vistas Tierra y Luna encuadran su cuerpo de cerca', async () => {
     const h = await createHarness({ view: 'earth' });
     settle(h);
@@ -601,6 +652,27 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     expect(elapsed).toBeGreaterThanOrEqual(1900);
     expect(h.events.travel.at(-1)).toEqual({ active: false, kind: 'focus' });
     expect(internals(h).look).toBeNull();
+    h.engine.dispose();
+  });
+
+  it('las texturas enormes (la 8K) esperan a que acabe el viaje de cámara para subir (fase 5)', async () => {
+    const h = await createHarness();
+    settle(h);
+    const engine = h.engine as unknown as { queueUpload(texture: Texture): Promise<void> };
+    const image = (width: number) => ({ width, height: width / 2 }) as unknown as HTMLImageElement;
+    const huge = new Texture(image(8192));
+    const small = new Texture(image(4096));
+    h.engine.setView('earth');
+    void engine.queueUpload(huge);
+    void engine.queueUpload(small);
+    h.frames(500);
+    // A mitad del viaje sube la de 4K, no la de 8K.
+    expect(h.events.travel).toHaveLength(1);
+    expect(h.renderer.uploads).toContain(small);
+    expect(h.renderer.uploads).not.toContain(huge);
+    settle(h);
+    expect(h.events.travel.at(-1)).toEqual({ active: false, kind: 'view' });
+    expect(h.renderer.uploads).toContain(huge);
     h.engine.dispose();
   });
 
@@ -888,6 +960,161 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     const { widthPx } = VISUAL_CONFIG.trails.planet;
     expect(world.orbits.widths[0]).toBeCloseTo(widthPx / ORBIT_WIDTH_PX, 5);
     expect(world.orbits.widths[2 * Math.floor((mercury?.segments ?? 0) / 2)]).toBe(1);
+    h.engine.dispose();
+  });
+
+  it('el punto subsolar que recibe el shader de la Tierra: +23,4° y 0° el 21-06-2026 a las 12:00 UTC (fase 5)', async () => {
+    const date = new Date('2026-06-21T12:00:00Z');
+    const h = await createHarness({ reducedMotion: true, focus: 'tierra', time: date });
+    settle(h);
+    interface EarthVisual {
+      body: { id: string };
+      mesh: { quaternion: Quaternion };
+      uniforms: { uSunDirection: { value: Vector3 } };
+    }
+    const earth = (internals(h).world as unknown as { visuals: EarthVisual[] }).visuals.find(
+      (visual) => visual.body.id === 'tierra',
+    );
+    // La dirección del Sol del material (mundo), en el sistema propio de la Tierra (Y, el polo;
+    // el meridiano 0 en +X y la longitud este hacia −Z, como la esfera de three).
+    const local = (earth?.uniforms.uSunDirection.value.clone() ?? new Vector3()).applyQuaternion(
+      (earth?.mesh.quaternion.clone() ?? new Quaternion()).invert(),
+    );
+    const latDeg = (Math.asin(local.y) * 180) / Math.PI;
+    const lonDeg = (Math.atan2(-local.z, local.x) * 180) / Math.PI;
+    expect(Math.abs(latDeg - 23.4)).toBeLessThan(2);
+    expect(Math.abs(lonDeg)).toBeLessThan(2);
+    // Y coincide con el de `subsolarPoint` (la misma orientación de la Tierra), a menos de 0,05°.
+    const expected = subsolarPoint(date);
+    expect(Math.abs(latDeg - expected.latDeg)).toBeLessThan(0.05);
+    expect(Math.abs(lonDeg - expected.lonDeg)).toBeLessThan(0.05);
+    h.engine.dispose();
+  });
+
+  it('la sombra de la Luna que recibe el shader de la Tierra cae donde el catálogo de la NASA (fase 5)', async () => {
+    const eclipse = NASA_ECLIPSE_2026_08_12;
+    const date = new Date(eclipse.greatestEclipseUt);
+    const h = await createHarness({ reducedMotion: true, focus: 'tierra', time: date });
+    settle(h);
+    interface EarthVisual {
+      body: { id: string };
+      earth: {
+        uMoonLocal: { value: Vector4 };
+        uSunLocal: { value: Vector4 };
+        uArid: { value: Vector3 };
+      } | null;
+    }
+    const earth = (internals(h).world as unknown as { visuals: EarthVisual[] }).visuals.find(
+      (visual) => visual.body.id === 'tierra',
+    )?.earth;
+    if (!earth) throw new Error('Sin uniformes de la Tierra');
+    // El eje de la sombra con lo que recibe el shader (sistema propio de la malla, en radios
+    // ecuatoriales): desde la Luna, en la dirección del Sol a la Luna, hasta el elipsoide de la malla (el
+    // polo, en Y, achatado como la Tierra), que es donde el shader mira cada punto.
+    const squash = 1 - sceneBody('tierra').flattening;
+    const moon = new Vector3().copy(earth.uMoonLocal.value as unknown as Vector3);
+    const sun = new Vector3().copy(earth.uSunLocal.value as unknown as Vector3);
+    const from = new Vector3(moon.x, moon.y / squash, moon.z);
+    const direction = moon.clone().sub(sun);
+    const axis = new Vector3(direction.x, direction.y / squash, direction.z).normalize();
+    const b = from.dot(axis);
+    const t = -b - Math.sqrt(b * b - (from.lengthSq() - 1));
+    const hit = from.clone().addScaledVector(axis, t);
+    hit.y *= squash;
+    // Latitud geodésica (la de la normal del elipsoide) y longitud este (hacia −Z).
+    const e2 = 1 - squash * squash;
+    const latDeg = (Math.atan2(hit.y, (1 - e2) * Math.hypot(hit.x, hit.z)) * 180) / Math.PI;
+    const lonDeg = (Math.atan2(-hit.z, hit.x) * 180) / Math.PI;
+    // A ±0,1° de la ficha (el plan pide ±1°): el Sol que recibe, el aparente (con la aberración).
+    expect(Math.abs(latDeg - eclipse.latitudeDeg)).toBeLessThan(0.1);
+    expect(Math.abs(lonDeg - eclipse.longitudeDeg)).toBeLessThan(0.1);
+    // Y con la función de efemérides (con el elipsoide WGS84: unas centésimas de grado).
+    const center = moonShadowCenter(date);
+    expect(Math.abs(latDeg - (center?.latDeg ?? 0))).toBeLessThan(0.1);
+    expect(Math.abs(lonDeg - (center?.lonDeg ?? 0))).toBeLessThan(0.1);
+    // El radio angular del Sol desde la Tierra (~0,26°) y el de la Luna en radios terrestres (~0,27).
+    expect((Math.atan(earth.uSunLocal.value.w / sun.length()) * 180) / Math.PI).toBeCloseTo(
+      0.263,
+      2,
+    );
+    expect(earth.uMoonLocal.value.w).toBeCloseTo(0.272, 2);
+    // Y las tierras áridas, con su compresión de la configuración visual (calibrada con EPIC).
+    const { knee, warmFrom, warmTo } = VISUAL_CONFIG.earth.arid;
+    expect(earth.uArid.value.toArray()).toEqual([knee, warmFrom, warmTo]);
+    h.engine.dispose();
+  });
+
+  it('la Tierra pide sus nubes también en la vista general; la noche, la máscara y las normales, solo de cerca (fase 5)', async () => {
+    // Una fuente de texturas falsa que apunta qué se pide (y lo sirve al momento). Los mapas de la
+    // Tierra ocupan 1 MiB cada uno, y los demás, casi nada: la VRAM del motor tiene que contarlos.
+    const withRequests = async (focus: SceneEngineOptions['focus']) => {
+      const requests: string[] = [];
+      const source = {
+        load: (id: TextureId, level: TextureLevel): Promise<LoadedTexture> => {
+          requests.push(id);
+          return Promise.resolve({
+            texture: new Texture(),
+            file: { level, path: `${id}.webp`, width: 4, height: 2, bytes: 1 },
+            vramBytes: id.startsWith('earth-') ? 1_048_576 : 32,
+          });
+        },
+      };
+      const h = await createHarness(
+        { reducedMotion: true, focus },
+        { textures: () => ({ source, meta: TEXTURE_META }) },
+      );
+      settle(h);
+      for (let k = 0; k < 5; k++) await flush();
+      const { vramMB } = h.engine.stats();
+      h.engine.dispose();
+      return { requests, vramMB };
+    };
+    const overview = await withRequests(null);
+    expect(overview.requests).toContain('earth-day');
+    expect(overview.requests).toContain('earth-clouds');
+    for (const id of ['earth-night', 'earth-specular', 'earth-normal']) {
+      expect(overview.requests, id).not.toContain(id);
+    }
+    // En la vista general, el día y las nubes (revisión de la fase 5, hallazgo 2).
+    expect(overview.vramMB).toBeGreaterThanOrEqual(2);
+    expect(overview.vramMB).toBeLessThan(3);
+    const earth = await withRequests('tierra');
+    for (const id of ['earth-clouds', 'earth-night', 'earth-specular', 'earth-normal']) {
+      expect(earth.requests, id).toContain(id);
+    }
+    // De cerca, los cinco: el día, las normales, las nubes, la noche y la máscara del océano.
+    expect(earth.vramMB).toBeGreaterThanOrEqual(5);
+    expect(earth.vramMB).toBeLessThan(6);
+  });
+
+  it('las nubes derivan con los frames pintados: sin pintar no se mueven, y al volver no saltan (fase 5)', async () => {
+    const h = await createHarness({ focus: 'tierra' });
+    h.engine.setPlaying(false);
+    settle(h);
+    interface EarthVisual {
+      earth: { uCloudOffset: { value: number } } | null;
+    }
+    const offset = () =>
+      (internals(h).world as unknown as { visuals: EarthVisual[] }).visuals.find(
+        (visual) => visual.earth,
+      )?.earth?.uCloudOffset.value ?? Number.NaN;
+    const { cloudDrift } = VISUAL_CONFIG.earth;
+    // Diez segundos reproduciendo: diez segundos de deriva (el primer frame cuenta 16 ms).
+    h.engine.setPlaying(true);
+    const start = offset();
+    h.frames(10_000);
+    expect((offset() - start) / cloudDrift).toBeGreaterThan(9.7);
+    expect((offset() - start) / cloudDrift).toBeLessThan(10.1);
+    // En pausa y sin mover la cámara no se pinta: un minuto después, un frame no la hace saltar
+    // (con el reloj de pared, serían 60 s de golpe: 8,6° de longitud).
+    h.engine.setPlaying(false);
+    settle(h);
+    const paused = offset();
+    h.clock.now += 60_000;
+    h.engine.zoomBy(0.999);
+    settle(h);
+    expect(offset() - paused).toBeGreaterThan(0);
+    expect(offset() - paused).toBeLessThan(2 * cloudDrift);
     h.engine.dispose();
   });
 

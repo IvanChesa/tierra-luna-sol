@@ -5,6 +5,7 @@ import type { ExplorerView, SceneEngineEventName, SceneEngineEvents } from '../.
 import { ExplorerStore } from '../../state/explorer.store';
 import { SystemPositions } from '../../state/positions';
 import { SimulationStore } from '../../state/simulation.store';
+import { GUIDED_VIEWS, localDay } from '../../data/tours';
 import { CONTEXT_SPEED } from '../../state/speeds';
 import { ExplorerEngine, ExplorerSession } from './explorer-session';
 
@@ -57,6 +58,12 @@ class FakeEngine implements ExplorerEngine {
   }
   setLabelsVisible(visible: boolean) {
     this.calls.push(`setLabelsVisible ${visible}`);
+  }
+  lookAtSurface(latDeg: number, lonDeg: number, distanceRadii: number, extentDeg?: number) {
+    this.calls.push(`lookAtSurface ${latDeg} ${lonDeg} ${distanceRadii} ${extentDeg}`);
+  }
+  setSurfaceMarkers(visible: boolean) {
+    this.calls.push(`setSurfaceMarkers ${visible}`);
   }
   on<K extends SceneEngineEventName>(type: K, listener: (event: SceneEngineEvents[K]) => void) {
     const set = this.listeners.get(type) ?? new Set();
@@ -315,6 +322,38 @@ describe('ExplorerSession: la URL, la selección y el motor', () => {
       expect(sim.speed()).toBe(CONTEXT_SPEED.body);
       expect(session.announcement()).toBe('');
     });
+  });
+
+  it('una vista guiada pausa, lleva la hora del día del punto sin cambiar la fecha, mueve la cámara y la anuncia (fase 5)', async () => {
+    const { session, sim, explorer } = await setup('', 'earth');
+    const engine = new FakeEngine();
+    session.attachEngine(engine);
+    sim.setTime(new Date('2026-06-21T09:30:00Z'));
+    const espana = GUIDED_VIEWS.find((view) => view.id === 'espana');
+    if (!espana) throw new Error('Falta la vista «España»');
+    session.showGuidedView(espana);
+    expect(sim.playing()).toBe(false);
+    // Mediodía solar a 7° O: las 12:28 UTC del mismo día.
+    expect(sim.time().toISOString()).toBe('2026-06-21T12:28:00.000Z');
+    expect(engine.calls).toContain(
+      `lookAtSurface ${espana.latDeg} ${espana.lonDeg} ${espana.distanceRadii} ${espana.extentDeg}`,
+    );
+    expect(engine.calls).toContain('setSurfaceMarkers true');
+    expect(session.announcement()).toBe(`${espana.title}. ${espana.text}`);
+    // Otra vista quita los marcadores.
+    const night = GUIDED_VIEWS.find((view) => view.id === 'luces-nocturnas');
+    if (!night) throw new Error('Falta la vista de las luces');
+    session.showGuidedView(night);
+    expect(engine.calls.at(-1)).toBe('setSurfaceMarkers false');
+    // Medianoche solar a 10° E: a las 23:20 UTC, en el día que se ve (el local: en España, las
+    // 23:20 UTC del 21 ya serían el 22, así que es la del 20, la 01:20 del 21).
+    expect(sim.time().getUTCHours() * 60 + sim.time().getUTCMinutes()).toBe(23 * 60 + 20);
+    expect(localDay(sim.time())).toBe(localDay(new Date('2026-06-21T09:30:00Z')));
+    // Con UTC elegido, el día UTC.
+    explorer.timeZone.set('utc');
+    sim.setTime(new Date('2026-06-21T09:30:00Z'));
+    session.showGuidedView(night);
+    expect(sim.time().toISOString()).toBe('2026-06-21T23:20:00.000Z');
   });
 
   it('un anuncio repetido vuelve a sonar (la región viva no ignora el mismo texto)', async () => {

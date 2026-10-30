@@ -1,4 +1,4 @@
-// GENERADO por scripts/build-textures.mjs el 2026-10-27. No se edita a mano.
+// GENERADO por scripts/build-textures.mjs el 2026-10-30. No se edita a mano.
 // WebP por niveles con hash (public/textures/), a partir de los originales de assets-src/textures/
 // (origen y licencia de cada uno en docs/FUENTES.md).
 import type { TextureFiles, TextureId } from './textures';
@@ -53,24 +53,31 @@ export const TEXTURE_FILES: TextureFiles = {
   'earth-day': [
     {
       level: '1k',
-      path: 'textures/1k/earth-day.7e71a443cb.webp',
+      path: 'textures/1k/earth-day.8605c306b5.webp',
       width: 1024,
       height: 512,
-      bytes: 39706,
+      bytes: 40050,
     },
     {
       level: '2k',
-      path: 'textures/2k/earth-day.1094337c7d.webp',
+      path: 'textures/2k/earth-day.fe36f2ee0c.webp',
       width: 2048,
       height: 1024,
-      bytes: 130026,
+      bytes: 125280,
     },
     {
       level: '4k',
-      path: 'textures/4k/earth-day.2d4de76ce1.webp',
+      path: 'textures/4k/earth-day.9b416f1fe8.webp',
       width: 4096,
       height: 2048,
-      bytes: 423478,
+      bytes: 421438,
+    },
+    {
+      level: '8k',
+      path: 'textures/8k/earth-day.c8af9a3be7.webp',
+      width: 8192,
+      height: 4096,
+      bytes: 1307490,
     },
   ],
   'earth-night': [
@@ -122,24 +129,24 @@ export const TEXTURE_FILES: TextureFiles = {
   'earth-normal': [
     {
       level: '1k',
-      path: 'textures/1k/earth-normal.d687c776bd.webp',
+      path: 'textures/1k/earth-normal.5bfe4e8f64.webp',
       width: 1024,
       height: 512,
-      bytes: 3562,
+      bytes: 3328,
     },
     {
       level: '2k',
-      path: 'textures/2k/earth-normal.99797a4a91.webp',
+      path: 'textures/2k/earth-normal.c15b33c42c.webp',
       width: 2048,
       height: 1024,
-      bytes: 25102,
+      bytes: 24454,
     },
     {
       level: '4k',
-      path: 'textures/4k/earth-normal.36b6431818.webp',
+      path: 'textures/4k/earth-normal.562ba8aa9b.webp',
       width: 4096,
       height: 2048,
-      bytes: 209208,
+      bytes: 207172,
     },
   ],
   'earth-specular': [
@@ -383,7 +390,7 @@ export const TEXTURE_FILES: TextureFiles = {
 export const TEXTURE_MEAN_LUMINANCE: Readonly<Partial<Record<TextureId, number>>> = {
   mercury: 0.2294,
   venus: 0.554,
-  'earth-day': 0.1197,
+  'earth-day': 0.1195,
   'earth-night': 0.0034,
   moon: 0.3014,
   mars: 0.1819,

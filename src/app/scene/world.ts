@@ -20,6 +20,7 @@ import {
   Mesh,
   PerspectiveCamera,
   PlaneGeometry,
+  Points,
   Quaternion,
   Scene,
   ShaderMaterial,
@@ -31,10 +32,12 @@ import {
 import { BODY_DATA } from '../data/body-data';
 import type { BodyId } from '../data/body.model';
 import { BODY_PHOTOMETRY, BodyPhotometry, RING_PHOTOMETRY } from '../data/photometry';
-import { eclRotationToThree } from '../ephemeris/coordinates';
+import { SKY_PLACES } from '../data/places';
+import { eclRotationToThree, sunApparentGeocentricEcl } from '../ephemeris/coordinates';
 import { albedoScale } from '../ephemeris/photometry';
 import type { SystemState } from '../ephemeris/system-state';
-import { Mat3 } from '../ephemeris/vec3';
+import { KM_PER_AU } from '../ephemeris/constants';
+import { Mat3, Vec3, mulMat3Vec, transposeMat3 } from '../ephemeris/vec3';
 import { SCHEMATIC_COLORS } from './body-colors';
 import type { FrameController } from './frames';
 import {
@@ -42,7 +45,8 @@ import {
   AtmosphereUniforms,
   createAtmosphereMaterial,
 } from './materials/atmosphere-material';
-import { BodyMaterialUniforms, createBodyMaterial } from './materials/body-material';
+import { BodyMaterialUniforms, EarthUniforms, createBodyMaterial } from './materials/body-material';
+import { createMarkerMaterial } from './materials/marker-material';
 import { createMilkyWayMaterial } from './materials/milky-way-material';
 import { createRingMaterial } from './materials/ring-material';
 import { createHaloMaterial, createSunMaterial } from './materials/sun-material';
@@ -50,7 +54,7 @@ import { OrbitLines, OrbitSource, TrailDirection } from './orbits';
 import type { ScreenBody } from './picking';
 import type { QualityProfile, TextureLevel } from './quality';
 import { StarField, temperatureToSrgb } from './stars';
-import type { SceneBody } from './system';
+import { SceneBody, sceneBody } from './system';
 import { TEXTURE_MEAN_LUMINANCE } from './texture-files';
 import { VISUAL_CONFIG } from './visual-config';
 import {
@@ -85,8 +89,29 @@ export const BODY_TEXTURES: Readonly<Partial<Record<BodyId, TextureId>>> = {
  */
 export const BODY_RELIEF_TEXTURES: Readonly<Partial<Record<BodyId, TextureId>>> = {
   mercurio: 'mercury-normal',
+  tierra: 'earth-normal',
   marte: 'mars-normal',
 };
+
+/**
+ * Mapas de la Tierra además del de día (fase 5): las nubes, también en la vista general (son las que
+ * le dan su brillo); las luces nocturnas y la máscara del océano, solo en primer plano y a su propio
+ * nivel (`earthMapsTexture`).
+ */
+const EARTH_MAPS = [
+  { id: 'earth-clouds', uniform: 'uCloudMap', flag: 'uHasClouds', nearOnly: false },
+  { id: 'earth-night', uniform: 'uNightMap', flag: 'uHasNight', nearOnly: true },
+  { id: 'earth-specular', uniform: 'uSpecularMap', flag: 'uHasSpecular', nearOnly: true },
+] as const;
+
+interface BodyMap {
+  readonly id: TextureId;
+  readonly uniform: (typeof EARTH_MAPS)[number]['uniform'];
+  readonly flag: (typeof EARTH_MAPS)[number]['flag'];
+  readonly nearOnly: boolean;
+  loaded: LoadedTexture | null;
+  requested: TextureLevel | null;
+}
 
 /** Radios de los anillos (km), del catálogo; los sustituye la tira calibrada si hay textura. */
 export interface RingRadii {
@@ -137,6 +162,9 @@ interface BodyVisual {
   readonly body: SceneBody;
   readonly mesh: Mesh;
   readonly uniforms: BodyMaterialUniforms | null;
+  /** Uniformes propios de la Tierra (fase 5), con sus mapas; `null` en los demás cuerpos. */
+  readonly earth: EarthUniforms | null;
+  readonly maps: readonly BodyMap[];
   /** Fotometría del cuerpo (`null` en el Sol, que emite luz). */
   readonly photometry: BodyPhotometry | null;
   /** Halo de la atmósfera, si la tiene. */
@@ -158,6 +186,10 @@ const tmpMatrix = new Matrix4();
 const tmpQuaternion = new Quaternion();
 const tmpVector = new Vector3();
 const { halo: HALO, granulation: GRANULATION, intensity: SUN_INTENSITY } = VISUAL_CONFIG.sun;
+/** La Luna y los radios de la Luna y del Sol, para la sombra de los eclipses en la Tierra. */
+const LUNA_INDEX = sceneBody('luna').index;
+const MOON_RADIUS_KM = BODY_DATA.luna.physical.radiusKm.value;
+const SUN_RADIUS_KM = BODY_DATA.sol.physical.radiusKm.value;
 /** Opacidad de la órbita de una luna con su sistema resuelto en pantalla. */
 const MOON_ORBIT_OPACITY = 0.7;
 /** Presencia mínima con la que se dibuja una luna (más pequeña, no llegaría a un píxel). */
@@ -237,6 +269,11 @@ export class World {
   private backgroundGain = 1;
   private readonly milkyWay: Mesh;
   private readonly milkyWayMaterial = createMilkyWayMaterial();
+  /** Marcadores de los lugares del cielo desde España, en la Tierra (fase 5). */
+  private readonly markerMaterial = createMarkerMaterial(VISUAL_CONFIG.earth.markers);
+  private markers: Points | null = null;
+  /** El Sol aparente (geocéntrico, ECL) del último instante, para la sombra de la Luna (fase 5). */
+  private apparentSun: { readonly timeMs: number; readonly ecl: Vec3 } | null = null;
   private milkyWayTexture: LoadedTexture | null = null;
   private milkyWayRequested: TextureLevel | null = null;
   private orbitSources: readonly OrbitSource[];
@@ -270,8 +307,10 @@ export class World {
             photometry: photometry.photometry,
             haze: photometry.haze,
             hazeColor: photometry.hazeColor,
+            earth: body.id === 'tierra',
           })
         : null;
+      if (bodyMaterial?.earth) configureEarth(bodyMaterial.earth);
       if (bodyMaterial && photometry?.chromaticity) {
         const [r, g, b] = photometry.chromaticity.rgb;
         bodyMaterial.uniforms.uChromaticity.value.set(r, g, b, photometry.chromaticity.mix);
@@ -294,6 +333,10 @@ export class World {
         body,
         mesh,
         uniforms: bodyMaterial?.uniforms ?? null,
+        earth: bodyMaterial?.earth ?? null,
+        maps: bodyMaterial?.earth
+          ? EARTH_MAPS.map((map) => ({ ...map, loaded: null, requested: null }))
+          : [],
         photometry,
         atmosphere:
           bodyMaterial && photometry
@@ -333,6 +376,28 @@ export class World {
           ringRadii.outerKm / radiusKm,
         );
       }
+    }
+
+    // Marcadores de los lugares del cielo desde España (fase 5): hijos de la Tierra, giran con ella.
+    const earthVisual = this.visuals.find((visual) => visual.earth);
+    if (earthVisual) {
+      const positions = new Float32Array(3 * SKY_PLACES.length);
+      SKY_PLACES.forEach((place, k) => {
+        const lat = (place.latitudeDeg * Math.PI) / 180;
+        const lon = (place.longitudeDeg * Math.PI) / 180;
+        // Sistema propio en los ejes de la malla (Y, el polo; la longitud este hacia −Z), un poco
+        // por encima de la superficie para no hundirse en ella.
+        positions[3 * k] = 1.004 * Math.cos(lat) * Math.cos(lon);
+        positions[3 * k + 1] = 1.004 * Math.sin(lat);
+        positions[3 * k + 2] = -1.004 * Math.cos(lat) * Math.sin(lon);
+      });
+      const geometry = new BufferGeometry();
+      geometry.setAttribute('position', new BufferAttribute(positions, 3));
+      this.markers = new Points(geometry, this.markerMaterial.material);
+      this.markers.name = 'earth-markers';
+      this.markers.visible = false;
+      this.markers.renderOrder = 4;
+      earthVisual.mesh.add(this.markers);
     }
 
     this.orbitSources = options.orbitSources(options.profile);
@@ -423,8 +488,19 @@ export class World {
     for (const visual of this.visuals) {
       if (!visual.textureId) continue;
       const near = visual.body.id === focusBody?.id || visual.body.id === focusPlanet;
-      const level = near ? this.profile.focusTexture : this.profile.overviewTexture;
-      if (visual.relief) this.requestRelief(visual, near ? this.profile.focusTexture : null);
+      const focusLevel =
+        visual.textureId === 'earth-day' ? this.profile.earthDayTexture : this.profile.focusTexture;
+      const level = near ? focusLevel : this.profile.overviewTexture;
+      const earth = visual.maps.length > 0;
+      if (visual.relief) {
+        const reliefLevel = earth ? this.profile.earthMapsTexture : this.profile.focusTexture;
+        this.requestRelief(visual, near ? reliefLevel : null);
+      }
+      for (const map of visual.maps) {
+        const nearLevel = map.nearOnly ? this.profile.earthMapsTexture : this.profile.focusTexture;
+        const mapLevel = near ? nearLevel : this.profile.overviewTexture;
+        this.requestMap(visual, map, near || !map.nearOnly ? mapLevel : null);
+      }
       if (visual.requested === level) continue;
       visual.requested = level;
       const id = visual.textureId;
@@ -503,6 +579,103 @@ export class World {
     this.options.invalidate();
   }
 
+  /** Pide un mapa de la Tierra a su nivel (o lo libera con `null`). */
+  private requestMap(visual: BodyVisual, map: BodyMap, level: TextureLevel | null): void {
+    const source = this.options.textures;
+    if (!source || map.requested === level) return;
+    map.requested = level;
+    if (level === null) {
+      this.releaseMap(visual, map);
+      return;
+    }
+    source
+      .load(map.id, level)
+      .then((loaded) => this.assignMap(visual, map, level, loaded))
+      .catch((error: unknown) => {
+        if (map.requested === level) map.requested = null;
+        textureFailed(map.id, error);
+      });
+  }
+
+  private assignMap(
+    visual: BodyVisual,
+    map: BodyMap,
+    level: TextureLevel,
+    loaded: LoadedTexture | null,
+  ): void {
+    if (!loaded) return;
+    if (this.disposed || map.requested !== level || !visual.earth) {
+      releaseTexture(loaded.texture);
+      return;
+    }
+    const previous = map.loaded;
+    map.loaded = loaded;
+    visual.earth[map.uniform].value = loaded.texture;
+    visual.earth[map.flag].value = 1;
+    if (previous && previous.texture !== loaded.texture) releaseTexture(previous.texture);
+    this.options.invalidate();
+  }
+
+  private releaseMap(visual: BodyVisual, map: BodyMap): void {
+    if (!map.loaded) return;
+    if (visual.earth) {
+      visual.earth[map.uniform].value = null;
+      visual.earth[map.flag].value = 0;
+    }
+    releaseTexture(map.loaded.texture);
+    map.loaded = null;
+    this.options.invalidate();
+  }
+
+  /**
+   * La Luna y el Sol en el sistema propio de la Tierra, para la sombra de los eclipses (fase 5, D20):
+   * con la geometría real del estado (float64), no con la de la escena, y en los ejes de la malla
+   * (sistema propio x, y, z → x, z, −y: Y, el polo; el meridiano 0 en +X). El Sol, el aparente (con la
+   * aberración anual, como `moonShadowCenter`), calculado una vez por instante.
+   */
+  private updateEclipse(visual: BodyVisual, frame: WorldFrame): void {
+    const earth = visual.earth;
+    const moon = LUNA_INDEX;
+    if (!earth || moon < 0) return;
+    const k = visual.body.index;
+    const toBody = transposeMat3(frame.orientations[k] as Mat3);
+    const toMesh = (v: Vec3): Vec3 => {
+      const b = mulMat3Vec(toBody, v);
+      return { x: b.x, y: b.z, z: -b.y };
+    };
+    const radiusAu = visual.body.radiusKm / KM_PER_AU;
+    const offset = frame.state.parentOffset;
+    const m = toMesh({
+      x: (offset[3 * moon] as number) / radiusAu,
+      y: (offset[3 * moon + 1] as number) / radiusAu,
+      z: (offset[3 * moon + 2] as number) / radiusAu,
+    });
+    earth.uMoonLocal.value.set(m.x, m.y, m.z, MOON_RADIUS_KM / visual.body.radiusKm);
+    const timeMs = frame.state.timeMs;
+    if (this.apparentSun?.timeMs !== timeMs) {
+      this.apparentSun = { timeMs, ecl: sunApparentGeocentricEcl(new Date(timeMs)) };
+    }
+    const s = toMesh(this.apparentSun.ecl);
+    earth.uSunLocal.value.set(
+      s.x / radiusAu,
+      s.y / radiusAu,
+      s.z / radiusAu,
+      SUN_RADIUS_KM / visual.body.radiusKm,
+    );
+  }
+
+  /** Marcadores de los lugares del cielo desde España (la vista guiada «España»). */
+  setSurfaceMarkers(visible: boolean): void {
+    if (this.markers) this.markers.visible = visible;
+  }
+
+  /** Deriva de las nubes de la Tierra (fracción de vuelta; 0 con movimiento reducido o en captura). */
+  setCloudDrift(turns: number): void {
+    for (const visual of this.visuals) {
+      if (visual.earth) visual.earth.uCloudOffset.value = turns % 1;
+    }
+  }
+
   /** Actualiza el grafo para un frame. Devuelve los planos de recorte que ha puesto. */
   update(frame: WorldFrame): { near: number; far: number } {
     const { frames, state, orientations } = frame;
@@ -544,6 +717,7 @@ export class World {
         // Dirección REAL hacia el Sol: −(posición heliocéntrica verdadera), en ejes de Three.
         setFromEcl(visual.uniforms.uSunDirection.value, helio, k).negate().normalize();
       }
+      if (visual.earth) this.updateEclipse(visual, frame);
       if (visual.atmosphere) {
         const onScreen = frame.screen[k];
         visual.atmosphere.uniforms.uRadius.value = r;
@@ -646,13 +820,19 @@ export class World {
 
   setPixelRatio(pixelRatio: number): void {
     this.stars?.setPixelRatio(pixelRatio);
+    this.markerMaterial.uniforms.uPixelRatio.value = pixelRatio;
   }
 
   /** Memoria de vídeo estimada (texturas + geometría), en bytes. */
   vramBytes(): number {
+    // Cada cuerpo: su textura, su relieve y, en la Tierra, sus nubes, su noche y su máscara del océano.
     const textures =
       this.visuals.reduce(
-        (sum, v) => sum + (v.loaded?.vramBytes ?? 0) + (v.relief?.loaded?.vramBytes ?? 0),
+        (sum, v) =>
+          sum +
+          (v.loaded?.vramBytes ?? 0) +
+          (v.relief?.loaded?.vramBytes ?? 0) +
+          v.maps.reduce((maps, map) => maps + (map.loaded?.vramBytes ?? 0), 0),
         0,
       ) +
       (this.ringTexture?.vramBytes ?? 0) +
@@ -690,9 +870,12 @@ export class World {
     });
     this.sphere.dispose();
     this.coarseSphere.dispose();
+    // Los puntos no son mallas: su geometría no la libera el recorrido de arriba.
+    this.markers?.geometry.dispose();
     for (const visual of this.visuals) {
       if (visual.loaded) releaseTexture(visual.loaded.texture);
       if (visual.relief?.loaded) releaseTexture(visual.relief.loaded.texture);
+      for (const map of visual.maps) if (map.loaded) releaseTexture(map.loaded.texture);
     }
     if (this.ringTexture) releaseTexture(this.ringTexture.texture);
     if (this.milkyWayTexture) releaseTexture(this.milkyWayTexture.texture);
@@ -851,6 +1034,16 @@ export class World {
       return (frame.presence[source.bodyIndex] ?? 0) * MOON_ORBIT_OPACITY;
     });
   }
+}
+
+/** Los valores de presentación de la Tierra (`VISUAL_CONFIG.earth`) en sus uniformes. */
+function configureEarth(earth: EarthUniforms): void {
+  const config = VISUAL_CONFIG.earth;
+  earth.uEarth.value.set(config.cloudAlbedo, config.nightLights, config.glint, config.cloudShadow);
+  const scatter = new Color(config.scatter.color).multiplyScalar(config.scatter.intensity);
+  earth.uScatter.value.set(scatter.r, scatter.g, scatter.b, config.scatter.limb);
+  earth.uTwilightColor.value.set(config.twilight);
+  earth.uArid.value.set(config.arid.knee, config.arid.warmFrom, config.arid.warmTo);
 }
 
 /** Una textura no ha llegado: no es un error fatal (queda el color esquemático), pero se anota. */

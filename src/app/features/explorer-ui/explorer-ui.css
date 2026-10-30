@@ -166,8 +166,13 @@ kbd {
   font-size: 0.75rem;
 }
 
+/* Panel de la vista Tierra (fase 5; su sitio, en earth-panel.css): el índice usa su misma área. */
+:host(.has-index) .earth-panel {
+  visibility: hidden;
+}
+
 /* Vista limpia: solo el 3D y el botón para volver. */
-:host(.is-clean) :is(.index-toggle, .index-panel, .chips, .panel, .dock, .camera) {
+:host(.is-clean) :is(.index-toggle, .index-panel, .chips, .panel, .dock, .camera, .earth-panel) {
   display: none;
 }
 
@@ -246,9 +251,14 @@ kbd {
    * Las hojas tapan la franja de abajo y la cámara: mientras están abiertas, lo que tapan sale del
    * orden del foco y del árbol accesible (el foco pasa a la hoja, explorer-ui.ts).
    */
-  :host(.has-panel) :is(.camera, .index-toggle, .chips, .dock),
+  :host(.has-panel) :is(.camera, .index-toggle, .chips, .dock, .earth-panel),
   :host(.has-index) :is(.camera, .index-toggle, .chips, .dock, .panel) {
     visibility: hidden;
+  }
+
+  /* El panel de la Tierra, encima también de la fila de lunas, que flota sobre las fichas. */
+  :host(.has-moons) .earth-panel {
+    margin-bottom: calc(var(--space-2) + 3rem);
   }
 
   /*

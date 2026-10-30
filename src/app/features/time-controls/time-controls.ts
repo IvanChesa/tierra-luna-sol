@@ -1,6 +1,15 @@
-import { Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  WritableSignal,
+  computed,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { TimeZoneChoice, formatDateTime, utcOffsetLabel } from '../../core/format';
 import { MAX_DATE, MIN_DATE } from '../../ephemeris/constants';
+import { ExplorerStore } from '../../state/explorer.store';
 import { SimulationStore } from '../../state/simulation.store';
 import { SPEED_STEPS } from '../../state/speeds';
 import { Icon } from '../viewer/icon';
@@ -30,8 +39,11 @@ export class TimeControls {
   protected readonly sim = inject(SimulationStore);
 
   protected readonly speeds = SPEED_STEPS;
-  /** La zona de las fechas: la hora local del navegador o UTC (se elige en «Controles +»). */
-  protected readonly zone = signal<TimeZoneChoice>('local');
+  /**
+   * La zona de las fechas: la hora local del navegador o UTC (se elige en «Controles +»). Es la del
+   * explorador: el panel de la Tierra y sus vistas guiadas usan la misma.
+   */
+  protected readonly zone: WritableSignal<TimeZoneChoice> = inject(ExplorerStore).timeZone;
   protected readonly minDate = computed(() => toDateInputValue(MIN_DATE, this.zone()));
   protected readonly maxDate = computed(() => toDateInputValue(MAX_DATE, this.zone()));
   /** «Controles +» desplegado (lo dice el propio panel con su evento `toggle`). */

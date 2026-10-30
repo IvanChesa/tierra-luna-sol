@@ -48,7 +48,8 @@ varying float vAlpha;
 void main() {
   ${DEPTH_FRAGMENT}
   float d = length(gl_PointCoord - vec2(0.5));
-  float disc = smoothstep(0.5, 0.15, d);
+  // Los bordes de smoothstep, en orden (al revés, GLSL ES no define el resultado).
+  float disc = 1.0 - smoothstep(0.15, 0.5, d);
   if (disc <= 0.0) discard;
   gl_FragColor = vec4(vColor * vAlpha * disc, 1.0);
   ${OUTPUT_FRAGMENT}

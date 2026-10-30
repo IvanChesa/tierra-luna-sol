@@ -1,0 +1,13 @@
+{
+ "description": "Máximo de un eclipse solar: instante (UT y TDT), ΔT, lugar del máximo (latitud norte y longitud este, en grados; al 0,1° de la ficha) y altura del Sol allí (grados).",
+ "source": "NASA Eclipse Web Site, «Eclipse Predictions by Fred Espenak, NASA's GSFC», https://eclipse.gsfc.nasa.gov/",
+ "retrieved": "2026-10-30",
+ "query": "https://eclipse.gsfc.nasa.gov/SEsearch/SEdata.php?Ecl=+20260812",
+ "greatestEclipseUt": "2026-08-12T17:45:51Z",
+ "greatestEclipseTdt": "2026-08-12T17:47:06Z",
+ "deltaTSeconds": 75.4,
+ "gamma": 0.8977,
+ "latitudeDeg": 65.2,
+ "longitudeDeg": -25.2,
+ "sunAltitudeDeg": 25.8
+}

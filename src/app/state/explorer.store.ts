@@ -1,4 +1,5 @@
 import { Service, Signal, computed, signal } from '@angular/core';
+import type { TimeZoneChoice } from '../core/format';
 import type { ExplorerView } from '../scene';
 
 /** Estado de un recorrido guiado (fase 6). */
@@ -35,6 +36,11 @@ export class ExplorerStore {
   readonly helpOpen = signal(false);
   /** Atajos de una sola tecla activos (WCAG 2.1.4: se pueden desactivar en el diálogo de atajos). */
   readonly singleKeyShortcuts = signal(true);
+  /**
+   * La zona en la que la interfaz dice las fechas y las horas: la local del navegador o UTC (se elige
+   * en «Controles +»). La comparten la barra de tiempo, el panel de la Tierra y sus vistas guiadas.
+   */
+  readonly timeZone = signal<TimeZoneChoice>('local');
   readonly tour = signal<TourState | null>(null);
 
   /** La vista la decide la ruta: el layout del explorador pasa aquí la señal que la lleva. */

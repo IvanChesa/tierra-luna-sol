@@ -63,6 +63,42 @@ export const VISUAL_CONFIG = {
     /** Granulación en primer plano: amplitud ilustrativa y ritmo (unidades de ruido por segundo). */
     granulation: { amplitude: 0.05, rate: 0.015 },
   },
+  /**
+   * La Tierra (fase 5). Valores de presentación, ajustados frente a las fotos de EPIC (DSCOVR;
+   * `docs/realismo/referencias.md`); los dos primeros, medidos con `scripts/measure-earth-epic.mjs`
+   * (nuestra Tierra con la geometría de las tres fotos del 21-06-2016; revisión de la fase 5,
+   * hallazgo 5, y R3):
+   * - `cloudAlbedo`: el de las nubes (el de la superficie lo pone su textura): con 1, el percentil 98
+   *   de las nubes de las tres fotos queda a menos del 3 % del de EPIC (con 0,75, un 20–25 % por
+   *   debajo);
+   * - `arid`: las tierras áridas. La textura las tiene casi tan claras como las nubes; en las fotos de
+   *   EPIC, un tercio. Su brillo se comprime, L / (1 + L / `knee`), en la tierra cálida ((R − B) / L
+   *   de `warmFrom` a `warmTo`; los desiertos de la textura, 0,5–0,55): no toca el océano ni el hielo
+   *   (neutros, ≈ 0) y apenas los bosques (oscuros). Con `knee` 0,55, la relación de brillo océano /
+   *   desierto (el océano medio de las tres fotos entre el desierto medio de Arabia y el Sáhara
+   *   occidental, como en la fase 3b) es 0,189, y en EPIC, 0,178 (sin comprimir, 0,076);
+   * - `nightLights`: la intensidad de las luces de las ciudades (lineal);
+   * - `glint`: el brillo del Sol reflejado en el océano;
+   * - `cloudShadow`: cuánto oscurece la sombra de las nubes (0–1);
+   * - `scatter`: la luz que dispersa la atmósfera sobre el lado diurno (color sRGB, intensidad en
+   *   albedo y refuerzo hacia el limbo); azulada, aclara el océano respecto a la tierra como en EPIC;
+   * - `twilight`: el tono de la luz junto al terminador (sRGB);
+   * - `cloudDrift`: la deriva ilustrativa de las nubes (fracción de vuelta por segundo de los frames
+   *   pintados; se para con movimiento reducido y en las capturas);
+   * - `markers`: los marcadores de los lugares del cielo desde España (vista «España»): su color, el
+   *   de su borde (sRGB; los separa del océano y de las nubes) y su diámetro en px CSS.
+   */
+  earth: {
+    cloudAlbedo: 1,
+    arid: { knee: 0.55, warmFrom: 0.25, warmTo: 0.4 },
+    nightLights: 1.2,
+    glint: 0.12,
+    cloudShadow: 0.35,
+    scatter: { color: '#5b8fe6', intensity: 0.035, limb: 1.5 },
+    twilight: '#ffb488',
+    cloudDrift: 0.0004,
+    markers: { color: '#e8c46f', edge: '#38455a', sizePx: 7 },
+  },
   /** Por debajo de este radio en pantalla (px CSS), el halo de una atmósfera no se dibuja: no se vería. */
   atmosphereMinRadiusPx: 2,
   /** Por debajo de este radio en pantalla (px CSS), un cuerpo no aparta las órbitas de su disco. */

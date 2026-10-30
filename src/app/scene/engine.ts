@@ -13,7 +13,7 @@ import type { Texture } from 'three';
 import { decodeStarCatalog } from '../ephemeris/stars';
 import type { SystemState } from '../ephemeris/system-state';
 import type { PlacementInput } from '../ephemeris/scale';
-import { Mat3, Vec3, columnOf, normalize, vec3 } from '../ephemeris/vec3';
+import { Mat3, Vec3, columnOf, mulMat3Vec, normalize, vec3 } from '../ephemeris/vec3';
 import { AliasingState, MotionBody } from './aliasing';
 import { FOCUS_FLIGHT_MS, FRAME_START, Flight, VIEW_TRIP_MS, flightFrame } from './camera/flight';
 import { ViewFrom, anglesFromEcl, phaseViewDirection } from './camera/view-from';
@@ -106,6 +106,29 @@ export function framingDistanceRadii(fill: number, verticalFovDeg: number, aspec
   const halfMin = Math.min(halfVertical, halfHorizontal);
   return 1 / Math.sin(Math.atan(fill * Math.tan(halfMin)));
 }
+
+/**
+ * Distancia de la cámara (en radios, desde el centro) a la que un casquete de radio angular
+ * `extentDeg` alrededor del punto de la superficie al que mira cabe en una vista con ese campo
+ * vertical (grados) y esa proporción, con un margen (`margin`, del semiángulo menor, α). Un punto
+ * del borde del casquete, a θ del centro, se ve a atan(sen θ / (d − cos θ)) del eje: cabe con
+ * d = cos θ + sen θ / tan α. Si el casquete llega al horizonte (θ ≥ 90° − α), lo que tiene que caber
+ * es el disco entero: d = 1 / sen α. `extentDeg` 0: ninguna exigencia.
+ */
+export function capFitDistance(
+  extentDeg: number,
+  verticalFovDeg: number,
+  aspect: number,
+  margin = 0.9,
+): number {
+  if (!(extentDeg > 0)) return 0;
+  const halfVertical = (verticalFovDeg * Math.PI) / 360;
+  const halfHorizontal = Math.atan(Math.tan(halfVertical) * aspect);
+  const alpha = margin * Math.min(halfVertical, halfHorizontal);
+  const theta = (Math.min(extentDeg, 90) * Math.PI) / 180;
+  if (theta >= Math.PI / 2 - alpha) return 1 / Math.sin(alpha);
+  return Math.cos(theta) + Math.sin(theta) / Math.tan(alpha);
+}
 /**
  * Distancia mínima de la cámara para que una circunferencia de radio `radius` en el plano de la
  * eclíptica, centrada en el punto al que mira, quepa entera en una vista con esas tangentes de los
@@ -140,6 +163,8 @@ const MIN_DISTANCE_RADII = 1.12;
  * `visibilitychange`.
  */
 const MAX_FRAME_DT_MS = 400;
+/** Ancho (px) por encima del cual una textura espera a que la cámara pare para subir (la 8K). */
+const HUGE_TEXTURE_PX = 4096;
 
 /** Los únicos cuerpos con nombre en las vistas Tierra y Luna. */
 const DETAIL_LABELS: readonly string[] = ['tierra', 'luna', 'sol'];
@@ -217,15 +242,17 @@ const EARTH_INDEX = SCENE_BODIES.findIndex((body) => body.id === 'tierra');
 
 /**
  * Albedo con el que se compensa la exposición del primer plano de cada cuerpo (configuración visual),
- * o `null` (el Sol, que emite luz). Los que se calibran, el geométrico del catálogo. La Tierra, hasta
- * la fase 5, el efectivo de su propia textura (su luminancia media por el factor del disco de su
- * modelo, ≈ 0,08): el del catálogo (0,434) incluye las nubes, que aún no se dibujan, y sin compensar
- * quedaba casi negra (revisión de la fase 3b).
+ * o `null` (el Sol, que emite luz). Los que se calibran, el geométrico del catálogo. La Tierra, desde
+ * la fase 5, también el geométrico del catálogo (0,434), que incluye las nubes: ya se dibujan (hasta
+ * entonces, el efectivo de su textura, ≈ 0,08, porque sin nubes quedaba casi negra). Los demás, el
+ * efectivo de su propia textura.
  */
 const FOCUS_ALBEDO: readonly (number | null)[] = SCENE_BODIES.map((body) => {
   if (body.id === 'sol') return null;
   const photometry = BODY_PHOTOMETRY[body.id];
-  if (photometry.calibrateAlbedo) return BODY_DATA[body.id].physical.geometricAlbedo?.value ?? null;
+  if (photometry.calibrateAlbedo || body.id === 'tierra') {
+    return BODY_DATA[body.id].physical.geometricAlbedo?.value ?? null;
+  }
   const texture = BODY_TEXTURES[body.id];
   const luminance = texture ? TEXTURE_MEAN_LUMINANCE[texture] : undefined;
   return luminance ? luminance * discFactor(photometry.photometry) : null;
@@ -297,6 +324,11 @@ export class SceneEngine implements SceneEngineApi {
   /** El frame pedido es uno del render lento (4 Hz): una orden con prisa lo adelanta. */
   private handleDelayed = false;
   private lastFrameMs: number | null = null;
+  /**
+   * Deriva de las nubes de la Tierra (fracción de vuelta): avanza con el tiempo de los frames que se
+   * pintan, con su tope, no con el reloj de pared (sin pintar no se mueven, y al volver no saltan).
+   */
+  private cloudTurns = 0;
   /** Hasta qué instante del reloj de pared (`deps.now`) ha avanzado ya el reloj de la simulación. */
   private wallMs: number | null = null;
   private lastTimeEventMs = -Infinity;
@@ -561,6 +593,37 @@ export class SceneEngine implements SceneEngineApi {
     this.invalidate();
   }
 
+  lookAtSurface(latDeg: number, lonDeg: number, distanceRadii: number, extentDeg = 0): void {
+    const focus = this.focusIndex;
+    if (this.disposed || focus === null) return;
+    this.takeControl();
+    const state = this.system.at(this.clock.timeMsValue);
+    // El punto, del sistema propio del cuerpo a la eclíptica con su orientación de este instante.
+    const lat = (latDeg * Math.PI) / 180;
+    const lon = (lonDeg * Math.PI) / 180;
+    const local = vec3(Math.cos(lat) * Math.cos(lon), Math.cos(lat) * Math.sin(lon), Math.sin(lat));
+    const direction = mulMat3Vec(this.orientations.at(state)[focus] as Mat3, local);
+    // La distancia la pone el encuadre en cada frame: se fija su zoom para que sea la pedida o, si
+    // la parte visible del lienzo es pequeña (un móvil con su panel), la que deja ver la región.
+    if (this.framing.kind === 'body') {
+      const { visibleFovDeg, visibleAspect } = this.projection;
+      const base = framingDistanceRadii(this.framing.fill, visibleFovDeg, visibleAspect);
+      const distance = Math.max(
+        distanceRadii,
+        capFitDistance(extentDeg, visibleFovDeg, visibleAspect),
+      );
+      this.framing.zoom = Math.min(Math.max(distance / base, 0.05), 2e5);
+    }
+    this.rig.setTarget(anglesFromEcl(direction), this.instant());
+    this.invalidate();
+  }
+
+  setSurfaceMarkers(visible: boolean): void {
+    if (this.disposed) return;
+    this.world.setSurfaceMarkers(visible);
+    this.invalidate();
+  }
+
   zoomBy(factor: number): void {
     if (this.disposed || !(factor > 0)) return;
     this.takeControl();
@@ -711,6 +774,7 @@ export class SceneEngine implements SceneEngineApi {
     const continuous = this.lastFrameMs !== null && dt < SLOW_FRAME_MS * 0.8;
     this.lastFrameMs = timeMs;
     if (continuous) this.frameIntervalMs = 0.8 * this.frameIntervalMs + 0.2 * dt;
+    this.cloudTurns = (this.cloudTurns + (dt / 1000) * VISUAL_CONFIG.earth.cloudDrift) % 1;
     const limit = this.clock.advance(this.clockStep(dt));
     if (limit) {
       this.emit('limitReached', { limit });
@@ -1001,6 +1065,10 @@ export class SceneEngine implements SceneEngineApi {
       focus === SUN_INDEX ? closeUp : 0,
       this.instant() ? 0 : this.deps.now() / 1000,
     );
+    // Las nubes de la Tierra derivan con el tiempo real de los frames pintados (quietas con
+    // movimiento reducido y en las capturas), no con el simulado: a 3 días por segundo darían vueltas
+    // a toda velocidad.
+    this.world.setCloudDrift(this.instant() ? 0 : this.cloudTurns);
     if (this.exposure < 0 || Math.abs(exposure - this.exposure) > 1e-4) {
       this.exposure = exposure;
       this.renderer.setExposure(exposure);
@@ -1300,11 +1368,23 @@ export class SceneEngine implements SceneEngineApi {
   }
 
   private processUpload(): boolean {
-    const next = this.uploads.shift();
+    const index = this.uploads.findIndex((upload) => !this.waitsForCamera(upload.texture));
+    if (index < 0) return false;
+    const [next] = this.uploads.splice(index, 1);
     if (!next) return false;
     this.renderer.initTexture(next.texture);
     next.resolve();
     return true;
+  }
+
+  /**
+   * Las texturas enormes (la Tierra en 8K: 128 MiB, con sus mipmaps, en unos 110 ms, y a veces más de
+   * 200) esperan a que acabe el viaje de cámara o la transición de marco: subirlas a mitad daba un
+   * tirón en el viaje (revisión de la fase 5, hallazgo 15). Mientras, se ve el nivel anterior.
+   */
+  private waitsForCamera(texture: Texture): boolean {
+    const width = (texture.image as { width?: number } | null)?.width ?? 0;
+    return width > HUGE_TEXTURE_PX && (this.flight !== null || this.frames.animating);
   }
 
   // --- Eventos del navegador -----------------------------------------------------------------

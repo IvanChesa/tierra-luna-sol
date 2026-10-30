@@ -9,6 +9,7 @@ import decades from './horizons-decades.json';
 import moonIllumination from './horizons-moon-illumination.json';
 import moons2020To2035 from './horizons-moons-2020-2035.json';
 import planDates from './horizons-plan-dates.json';
+import nasaEclipse20260812 from './nasa-eclipse-2026-08-12.json';
 import moonPhases from './usno-moon-phases.json';
 import seasons from './usno-seasons-2026.json';
 import siderealTimes from './usno-sidereal-time.json';
@@ -113,3 +114,15 @@ export function hmsToHours(hms: string): number {
   const [h = 0, m = 0, s = 0] = hms.split(':').map(Number);
   return h + m / 60 + s / 3600;
 }
+
+/** Máximo del eclipse total de Sol del 12-08-2026, del catálogo de eclipses de la NASA. */
+export const NASA_ECLIPSE_2026_08_12 = nasaEclipse20260812 as {
+  readonly query: string;
+  readonly greatestEclipseUt: string;
+  readonly greatestEclipseTdt: string;
+  readonly deltaTSeconds: number;
+  readonly gamma: number | null;
+  readonly latitudeDeg: number;
+  readonly longitudeDeg: number;
+  readonly sunAltitudeDeg: number;
+};
