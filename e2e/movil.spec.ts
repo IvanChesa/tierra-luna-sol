@@ -79,6 +79,27 @@ test.describe('Móvil', () => {
     if (skipGap !== null) expect(skipGap).toBeGreaterThanOrEqual(0);
   });
 
+  test('al entrar en la vista Tierra desde el sistema solar, el encuadre acaba encima de su panel', async ({
+    page,
+  }) => {
+    // El panel de la Tierra aparece al entrar en su vista: los márgenes del encuadre tienen que
+    // medirlo también entonces, no solo los paneles que había al arrancar (revisión de la fase 5).
+    await openExplorer(page, '/?captura=1');
+    await page
+      .getByRole('navigation', { name: 'Vistas del explorador' })
+      .getByRole('link', { name: 'Tierra' })
+      .tap();
+    await expect(page.locator('tls-earth-panel')).toBeVisible();
+    const overlap = () =>
+      page.evaluate(() => {
+        const explorer = document.querySelector('.explorer') as HTMLElement;
+        const viewBottom = parseFloat(getComputedStyle(explorer).getPropertyValue('--view-bottom'));
+        const panel = document.querySelector('tls-earth-panel')?.getBoundingClientRect();
+        return panel ? explorer.getBoundingClientRect().bottom - viewBottom - panel.top : null;
+      });
+    await expect.poll(overlap).toBeLessThanOrEqual(1);
+  });
+
   test('las fichas: una fila que se desplaza, con zonas táctiles de al menos 44 px', async ({
     page,
   }) => {

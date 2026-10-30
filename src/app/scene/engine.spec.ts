@@ -655,6 +655,27 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     h.engine.dispose();
   });
 
+  it('las texturas enormes (la 8K) esperan a que acabe el viaje de cámara para subir (fase 5)', async () => {
+    const h = await createHarness();
+    settle(h);
+    const engine = h.engine as unknown as { queueUpload(texture: Texture): Promise<void> };
+    const image = (width: number) => ({ width, height: width / 2 }) as unknown as HTMLImageElement;
+    const huge = new Texture(image(8192));
+    const small = new Texture(image(4096));
+    h.engine.setView('earth');
+    void engine.queueUpload(huge);
+    void engine.queueUpload(small);
+    h.frames(500);
+    // A mitad del viaje sube la de 4K, no la de 8K.
+    expect(h.events.travel).toHaveLength(1);
+    expect(h.renderer.uploads).toContain(small);
+    expect(h.renderer.uploads).not.toContain(huge);
+    settle(h);
+    expect(h.events.travel.at(-1)).toEqual({ active: false, kind: 'view' });
+    expect(h.renderer.uploads).toContain(huge);
+    h.engine.dispose();
+  });
+
   it('cambiar de vista es un viaje de ~3 s que se puede saltar', async () => {
     const h = await createHarness();
     settle(h);
