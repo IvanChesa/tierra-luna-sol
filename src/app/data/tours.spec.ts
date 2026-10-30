@@ -1,5 +1,6 @@
 import { MAX_DATE, MIN_DATE } from '../ephemeris/constants';
-import { DayOf, GUIDED_VIEWS, atSolarHour, localDay, utcDay } from './tours';
+import { SKY_PLACES } from './places';
+import { DayOf, GUIDED_VIEWS, arcDistanceDeg, atSolarHour, localDay, utcDay } from './tours';
 
 /** El día de una zona fija de UTC+2 (Madrid en verano), sin depender de la del equipo. */
 const madridSummer: DayOf = (date) => utcDay(new Date(date.getTime() + 2 * 3_600_000));
@@ -13,6 +14,39 @@ const at = (id: string, from: string, day: DayOf) => {
   const v = view(id);
   return atSolarHour(new Date(from), v.lonDeg, v.solarHour, day).toISOString();
 };
+
+describe('vistas guiadas: datos', () => {
+  it('cada subtítulo, con sus fuentes (https) y sin revisar', () => {
+    for (const v of GUIDED_VIEWS) {
+      expect(v.sources.length, v.id).toBeGreaterThan(0);
+      for (const source of v.sources) expect(source, v.id).toMatch(/^https:\/\//);
+      expect(v.reviewed, v.id).toBe(false);
+    }
+    // «España»: las fuentes oficiales de sus siete lugares.
+    expect(view('espana').sources).toEqual(SKY_PLACES.map((place) => place.source));
+  });
+
+  it('la región de «España» abarca sus siete lugares, con aire', () => {
+    const espana = view('espana');
+    for (const place of SKY_PLACES) {
+      const arc = arcDistanceDeg(
+        espana.latDeg,
+        espana.lonDeg,
+        place.latitudeDeg,
+        place.longitudeDeg,
+      );
+      expect(arc, place.id).toBeLessThanOrEqual(espana.extentDeg - 2);
+    }
+    expect(SKY_PLACES).toHaveLength(7);
+  });
+
+  it('la distancia angular entre dos puntos de la superficie', () => {
+    expect(arcDistanceDeg(0, 0, 0, 90)).toBeCloseTo(90, 9);
+    expect(arcDistanceDeg(0, 0, 90, 123)).toBeCloseTo(90, 9);
+    expect(arcDistanceDeg(40, -3, 40, -3)).toBe(0);
+    expect(arcDistanceDeg(10, 170, 10, -170)).toBeCloseTo(arcDistanceDeg(10, -10, 10, 10), 9);
+  });
+});
 
 describe('vistas guiadas: la hora solar del punto sin cambiar el día que se ve', () => {
   it('en UTC, el mismo día UTC: mediodía en el Pacífico (160° O) a las 22:40', () => {

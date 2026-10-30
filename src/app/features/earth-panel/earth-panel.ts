@@ -112,7 +112,7 @@ export const TOUR_STEP_MS = 9000;
       }
     </section>
 
-    <section class="earth" aria-labelledby="earth-sun-title">
+    <section class="earth earth--sun" aria-labelledby="earth-sun-title">
       <h2 id="earth-sun-title" class="earth__title">Luz del Sol</h2>
       <div class="earth__row">
         <label class="earth__label" for="earth-sun-hour">Hora del día</label>

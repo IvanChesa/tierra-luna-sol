@@ -167,10 +167,11 @@ export interface SceneEngineApi {
   /**
    * Coloca la cámara sobre un punto de la superficie del cuerpo enfocado (latitud y longitud
    * geográficas, en grados) a `distanceRadii` radios de su centro, con la orientación real del
-   * cuerpo en ese instante: las vistas guiadas de la Tierra (fase 5). Viaje suave, o directo con
-   * movimiento reducido.
+   * cuerpo en ese instante: las vistas guiadas de la Tierra (fase 5). Si la parte visible del lienzo
+   * no deja ver a esa distancia el casquete de `extentDeg` grados alrededor del punto (la región de
+   * la vista), se aleja lo justo. Viaje suave, o directo con movimiento reducido.
    */
-  lookAtSurface(latDeg: number, lonDeg: number, distanceRadii: number): void;
+  lookAtSurface(latDeg: number, lonDeg: number, distanceRadii: number, extentDeg?: number): void;
   /** Muestra u oculta los marcadores de los lugares del cielo desde España sobre la Tierra. */
   setSurfaceMarkers(visible: boolean): void;
   /** Termina ya el viaje de cámara o la transición de marco en curso («Saltar», `Esc`). */

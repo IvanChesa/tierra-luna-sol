@@ -408,16 +408,19 @@ export class ExplorerUi {
    * Mide los paneles que tapan el lienzo (`[data-chrome]`, con su caja de maquetación, sin las
    * transformaciones de las animaciones, y el borde que declaran en `--chrome-edge`) y se los pasa
    * al motor; también como variables CSS, para colocar la cámara y los avisos en la parte visible.
+   * Los paneles que aparecen después (el de la vista Tierra, al entrar en ella desde otra vista) se
+   * miden también: la interfaz los añade como hijos suyos.
    */
   private trackInsets(): void {
-    const explorer = this.host.nativeElement.parentElement;
+    const host = this.host.nativeElement;
+    const explorer = host.parentElement;
     const win = explorer?.ownerDocument.defaultView;
     if (!explorer || !win || typeof ResizeObserver === 'undefined') return;
     let last = '';
-    const chrome = [...explorer.querySelectorAll<HTMLElement>('[data-chrome]')];
+    const chrome = () => [...explorer.querySelectorAll<HTMLElement>('[data-chrome]')];
     const measure = () => {
       const stage = { left: 0, top: 0, right: explorer.clientWidth, bottom: explorer.clientHeight };
-      const rects = chrome
+      const rects = chrome()
         .filter((element) => element.offsetWidth > 0 && element.offsetHeight > 0)
         .map((element) => {
           const { left, top } = offsetWithin(element, explorer);
@@ -439,9 +442,33 @@ export class ExplorerUi {
       this.session.setInsets(insets);
     };
     const observer = new ResizeObserver(measure);
+    const observed = new Set<HTMLElement>();
+    /** Observa los paneles nuevos y deja de observar los que ya no están. */
+    const follow = () => {
+      const current = chrome();
+      for (const element of observed) {
+        if (current.includes(element)) continue;
+        observer.unobserve(element);
+        observed.delete(element);
+      }
+      for (const element of current) {
+        if (observed.has(element)) continue;
+        observer.observe(element);
+        observed.add(element);
+      }
+    };
     observer.observe(explorer);
-    chrome.forEach((element) => observer.observe(element));
+    follow();
+    // Solo los hijos directos de la interfaz: los paneles condicionales (`@if`) entran y salen ahí.
+    const children = new MutationObserver(() => {
+      follow();
+      measure();
+    });
+    children.observe(host, { childList: true });
     measure();
-    this.destroyRef.onDestroy(() => observer.disconnect());
+    this.destroyRef.onDestroy(() => {
+      observer.disconnect();
+      children.disconnect();
+    });
   }
 }

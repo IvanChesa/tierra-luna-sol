@@ -273,7 +273,7 @@ export class ExplorerSession {
     this.sim.setPlaying(false);
     const day = this.explorer.timeZone() === 'utc' ? utcDay : localDay;
     this.sim.setTime(atSolarHour(this.sim.time(), view.lonDeg, view.solarHour, day));
-    this.engine?.lookAtSurface(view.latDeg, view.lonDeg, view.distanceRadii);
+    this.engine?.lookAtSurface(view.latDeg, view.lonDeg, view.distanceRadii, view.extentDeg);
     this.engine?.setSurfaceMarkers(view.markers);
     this.announce(`${view.title}. ${view.text}`);
   }

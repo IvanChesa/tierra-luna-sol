@@ -10,6 +10,7 @@ import {
   FRAMING_FILL,
   FrameScheduler,
   SceneEngine,
+  capFitDistance,
   circleFitDistance,
   framingDistanceRadii,
 } from './engine';
@@ -498,6 +499,45 @@ describe('SceneEngine: foco, marcos y selección', () => {
     expect(framingDistanceRadii(0.82, 40, 1)).toBeCloseTo(DETAIL_RADII, 9);
   });
 
+  it('el casquete de una vista guiada cabe en la parte visible: su borde, al semiángulo con margen (fase 5)', () => {
+    const fov = 40;
+    const alpha = (0.9 * ((fov / 2) * Math.PI)) / 180;
+    // Un casquete pequeño: su borde se ve justo a α del eje.
+    for (const extent of [5, 14, 30]) {
+      const d = capFitDistance(extent, fov, 1.5);
+      const theta = (extent * Math.PI) / 180;
+      expect(Math.atan(Math.sin(theta) / (d - Math.cos(theta)))).toBeCloseTo(alpha, 9);
+    }
+    // El disco entero (o un casquete que llega al horizonte): su radio aparente, α.
+    expect(Math.asin(1 / capFitDistance(90, fov, 1.5))).toBeCloseTo(alpha, 9);
+    expect(capFitDistance(80, fov, 1.5)).toBeCloseTo(capFitDistance(90, fov, 1.5), 9);
+    // Crece con el casquete, en vertical manda el ancho, y 0 no exige nada.
+    expect(capFitDistance(20, fov, 1.5)).toBeGreaterThan(capFitDistance(10, fov, 1.5));
+    expect(capFitDistance(14, fov, 390 / 844)).toBeGreaterThan(capFitDistance(14, fov, 1.5));
+    expect(capFitDistance(0, fov, 1.5)).toBe(0);
+  });
+
+  it('una vista guiada se aleja lo justo si la parte visible no deja ver su región (fase 5)', async () => {
+    const h = await createHarness({ view: 'earth', reducedMotion: true });
+    settle(h);
+    const radii = () =>
+      (h.engine as unknown as { rig: { distance: number } }).rig.distance / position(h, 'tierra').r;
+    // En el lienzo entero (1200 × 800), «España» se queda a 2 radios: su región (14°) ya se ve.
+    h.engine.lookAtSurface(36, -7, 2, 14);
+    settle(h);
+    expect(radii()).toBeCloseTo(2, 3);
+    // Con un panel que tapa los dos tercios de abajo, la cámara se aleja hasta que cabe.
+    h.engine.setViewInsets({ top: 0, right: 0, bottom: (2 * HEIGHT) / 3, left: 0 });
+    settle(h);
+    h.engine.lookAtSurface(36, -7, 2, 14);
+    settle(h);
+    const visibleFov = (2 * Math.atan(Math.tan((20 * Math.PI) / 180) / 3) * 180) / Math.PI;
+    const expected = capFitDistance(14, visibleFov, WIDTH / (HEIGHT / 3));
+    expect(expected).toBeGreaterThan(2);
+    expect(radii()).toBeCloseTo(expected, 3);
+    h.engine.dispose();
+  });
+
   it('las vistas Tierra y Luna encuadran su cuerpo de cerca', async () => {
     const h = await createHarness({ view: 'earth' });
     settle(h);
@@ -937,7 +977,11 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     settle(h);
     interface EarthVisual {
       body: { id: string };
-      earth: { uMoonLocal: { value: Vector4 }; uSunLocal: { value: Vector4 } } | null;
+      earth: {
+        uMoonLocal: { value: Vector4 };
+        uSunLocal: { value: Vector4 };
+        uArid: { value: Vector3 };
+      } | null;
     }
     const earth = (internals(h).world as unknown as { visuals: EarthVisual[] }).visuals.find(
       (visual) => visual.body.id === 'tierra',
@@ -973,6 +1017,9 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
       2,
     );
     expect(earth.uMoonLocal.value.w).toBeCloseTo(0.272, 2);
+    // Y las tierras áridas, con su compresión de la configuración visual (calibrada con EPIC).
+    const { knee, warmFrom, warmTo } = VISUAL_CONFIG.earth.arid;
+    expect(earth.uArid.value.toArray()).toEqual([knee, warmFrom, warmTo]);
     h.engine.dispose();
   });
 

@@ -106,6 +106,29 @@ export function framingDistanceRadii(fill: number, verticalFovDeg: number, aspec
   const halfMin = Math.min(halfVertical, halfHorizontal);
   return 1 / Math.sin(Math.atan(fill * Math.tan(halfMin)));
 }
+
+/**
+ * Distancia de la cámara (en radios, desde el centro) a la que un casquete de radio angular
+ * `extentDeg` alrededor del punto de la superficie al que mira cabe en una vista con ese campo
+ * vertical (grados) y esa proporción, con un margen (`margin`, del semiángulo menor, α). Un punto
+ * del borde del casquete, a θ del centro, se ve a atan(sen θ / (d − cos θ)) del eje: cabe con
+ * d = cos θ + sen θ / tan α. Si el casquete llega al horizonte (θ ≥ 90° − α), lo que tiene que caber
+ * es el disco entero: d = 1 / sen α. `extentDeg` 0: ninguna exigencia.
+ */
+export function capFitDistance(
+  extentDeg: number,
+  verticalFovDeg: number,
+  aspect: number,
+  margin = 0.9,
+): number {
+  if (!(extentDeg > 0)) return 0;
+  const halfVertical = (verticalFovDeg * Math.PI) / 360;
+  const halfHorizontal = Math.atan(Math.tan(halfVertical) * aspect);
+  const alpha = margin * Math.min(halfVertical, halfHorizontal);
+  const theta = (Math.min(extentDeg, 90) * Math.PI) / 180;
+  if (theta >= Math.PI / 2 - alpha) return 1 / Math.sin(alpha);
+  return Math.cos(theta) + Math.sin(theta) / Math.tan(alpha);
+}
 /**
  * Distancia mínima de la cámara para que una circunferencia de radio `radius` en el plano de la
  * eclíptica, centrada en el punto al que mira, quepa entera en una vista con esas tangentes de los
@@ -568,7 +591,7 @@ export class SceneEngine implements SceneEngineApi {
     this.invalidate();
   }
 
-  lookAtSurface(latDeg: number, lonDeg: number, distanceRadii: number): void {
+  lookAtSurface(latDeg: number, lonDeg: number, distanceRadii: number, extentDeg = 0): void {
     const focus = this.focusIndex;
     if (this.disposed || focus === null) return;
     this.takeControl();
@@ -578,14 +601,16 @@ export class SceneEngine implements SceneEngineApi {
     const lon = (lonDeg * Math.PI) / 180;
     const local = vec3(Math.cos(lat) * Math.cos(lon), Math.cos(lat) * Math.sin(lon), Math.sin(lat));
     const direction = mulMat3Vec(this.orientations.at(state)[focus] as Mat3, local);
-    // La distancia la pone el encuadre en cada frame: se fija su zoom para que sea la pedida.
+    // La distancia la pone el encuadre en cada frame: se fija su zoom para que sea la pedida o, si
+    // la parte visible del lienzo es pequeña (un móvil con su panel), la que deja ver la región.
     if (this.framing.kind === 'body') {
-      const base = framingDistanceRadii(
-        this.framing.fill,
-        this.projection.visibleFovDeg,
-        this.projection.visibleAspect,
+      const { visibleFovDeg, visibleAspect } = this.projection;
+      const base = framingDistanceRadii(this.framing.fill, visibleFovDeg, visibleAspect);
+      const distance = Math.max(
+        distanceRadii,
+        capFitDistance(extentDeg, visibleFovDeg, visibleAspect),
       );
-      this.framing.zoom = Math.min(Math.max(distanceRadii / base, 0.05), 2e5);
+      this.framing.zoom = Math.min(Math.max(distance / base, 0.05), 2e5);
     }
     this.rig.setTarget(anglesFromEcl(direction), this.instant());
     this.invalidate();

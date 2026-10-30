@@ -59,8 +59,8 @@ class FakeEngine implements ExplorerEngine {
   setLabelsVisible(visible: boolean) {
     this.calls.push(`setLabelsVisible ${visible}`);
   }
-  lookAtSurface(latDeg: number, lonDeg: number, distanceRadii: number) {
-    this.calls.push(`lookAtSurface ${latDeg} ${lonDeg} ${distanceRadii}`);
+  lookAtSurface(latDeg: number, lonDeg: number, distanceRadii: number, extentDeg?: number) {
+    this.calls.push(`lookAtSurface ${latDeg} ${lonDeg} ${distanceRadii} ${extentDeg}`);
   }
   setSurfaceMarkers(visible: boolean) {
     this.calls.push(`setSurfaceMarkers ${visible}`);
@@ -336,7 +336,7 @@ describe('ExplorerSession: la URL, la selección y el motor', () => {
     // Mediodía solar a 7° O: las 12:28 UTC del mismo día.
     expect(sim.time().toISOString()).toBe('2026-06-21T12:28:00.000Z');
     expect(engine.calls).toContain(
-      `lookAtSurface ${espana.latDeg} ${espana.lonDeg} ${espana.distanceRadii}`,
+      `lookAtSurface ${espana.latDeg} ${espana.lonDeg} ${espana.distanceRadii} ${espana.extentDeg}`,
     );
     expect(engine.calls).toContain('setSurfaceMarkers true');
     expect(session.announcement()).toBe(`${espana.title}. ${espana.text}`);
