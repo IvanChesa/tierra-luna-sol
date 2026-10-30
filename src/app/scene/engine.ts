@@ -12,7 +12,7 @@
 import type { Texture } from 'three';
 import { decodeStarCatalog } from '../ephemeris/stars';
 import type { SystemState } from '../ephemeris/system-state';
-import type { PlacementInput } from '../ephemeris/scale';
+import type { OverviewScreen, PlacementInput, RingReach } from '../ephemeris/scale';
 import { Mat3, Vec3, columnOf, mulMat3Vec, normalize, vec3 } from '../ephemeris/vec3';
 import { AliasingState, MotionBody } from './aliasing';
 import { FOCUS_FLIGHT_MS, FRAME_START, Flight, VIEW_TRIP_MS, flightFrame } from './camera/flight';
@@ -240,6 +240,7 @@ const MOON_PARENT = SCENE_BODIES.map((body) =>
 );
 const NEPTUNE_INDEX = SCENE_BODIES.findIndex((body) => body.id === 'neptuno');
 const EARTH_INDEX = SCENE_BODIES.findIndex((body) => body.id === 'tierra');
+const SATURN_INDEX = SCENE_BODIES.findIndex((body) => body.id === 'saturno');
 
 /**
  * Albedo con el que se compensa la exposición del primer plano de cada cuerpo (configuración visual),
@@ -344,6 +345,13 @@ export class SceneEngine implements SceneEngineApi {
   private readonly presence = new Float64Array(SCENE_BODIES.length).fill(1);
   /** Radios por la presencia: los que se proyectan (etiquetas, puntero y ocultación). */
   private readonly visibleRadius = new Float64Array(SCENE_BODIES.length);
+  /**
+   * La cámara de la vista general, en unidades ilustrativas, para el tamaño mínimo en pantalla de los
+   * planetas (revisión del bloque C, C3). Solo se actualiza con el encuadre de la vista general: con un
+   * cuerpo enfocado se conserva, y la colocación ilustrativa se desvanece en la transición de marco
+   * sin que los planetas cambien de tamaño de golpe.
+   */
+  private overviewScreen: OverviewScreen | null = null;
   private contextLost = false;
   private readonly background: number | null;
   /** Solo en captura: geometría de una foto de referencia (fase 3b). */
@@ -837,7 +845,7 @@ export class SceneEngine implements SceneEngineApi {
     const orientations = this.orientations.at(state);
     this.ephemerisMs = 0.9 * this.ephemerisMs + 0.1 * (this.deps.now() - cpuStart);
     const nowMs = this.deps.now();
-    this.frames.update(placementInput(state), nowMs);
+    this.frames.update(placementInput(state, orientations, this.overviewScreen), nowMs);
     const insets = approachInsets(this.insets, this.insetsTarget, dtMs, INSETS_SMOOTHING_MS);
     this.insets = insets.insets;
     const { width, height } = this.viewport;
@@ -848,6 +856,12 @@ export class SceneEngine implements SceneEngineApi {
     const aliased = this.aliasing.any;
     const camera = this.world.camera;
     this.rig.applyTo(camera, this.look);
+    // El tamaño mínimo de los planetas (C3) sale de la cámara de este frame: si ha cambiado, se
+    // recolocan (son 30 cuerpos). Con la del frame anterior, el último frame tras mover la cámara
+    // (con el render bajo demanda, el que se queda en pantalla) llevaría los tamaños atrasados.
+    if (this.updateOverviewScreen()) {
+      this.frames.update(placementInput(state, orientations, this.overviewScreen), nowMs);
+    }
     this.updatePresence();
     this.world.update({
       frames: this.frames,
@@ -979,6 +993,33 @@ export class SceneEngine implements SceneEngineApi {
     const helio = state.heliocentricOf('neptuno');
     const illustrative = illustrativeDistance(Math.hypot(helio.x, helio.y, helio.z));
     return now > 0 && illustrative > 0 ? now / illustrative : 1;
+  }
+
+  /**
+   * La cámara de la vista general para el tamaño mínimo de los planetas (C3): su posición respecto al
+   * Sol, en unidades ilustrativas (en una transición de marco, el sistema mide `extentScale` veces lo
+   * ilustrativo), y la focal en píxeles, que con los márgenes de la interfaz sigue siendo
+   * alto / (2 · tan(fov / 2)). Devuelve si ha cambiado.
+   */
+  private updateOverviewScreen(): boolean {
+    if (this.framing.kind !== 'overview' || this.frames.focus !== SUN_INDEX) return false;
+    const p = this.rig.position;
+    const toIllustrative = 1 / this.extentScale();
+    // Ejes de three → ECL: (x, y, z) → (x, −z, y).
+    const camera = vec3(p.x * toIllustrative, -p.z * toIllustrative, p.y * toIllustrative);
+    const focalPx = this.viewport.height / (2 * Math.tan((BASE_FOV_DEG * Math.PI) / 360));
+    const last = this.overviewScreen;
+    if (
+      last &&
+      last.focalPx === focalPx &&
+      last.camera.x === camera.x &&
+      last.camera.y === camera.y &&
+      last.camera.z === camera.z
+    ) {
+      return false;
+    }
+    this.overviewScreen = { camera, focalPx, minRadiusPx: VISUAL_CONFIG.overviewMinRadiusPx };
+    return true;
   }
 
   /**
@@ -1449,12 +1490,27 @@ function resolveDepth(mode: DepthMode): ResolvedDepthMode {
   return mode === 'auto' ? DEFAULT_DEPTH : mode;
 }
 
-function placementInput(state: SystemState): PlacementInput {
+/**
+ * Lo que necesita la colocación de los cuerpos: el estado del sistema, los anillos de Saturno con su
+ * polo de ese instante (en la escala ilustrativa, ningún disco los toca: C2) y la cámara de la vista
+ * general (el tamaño mínimo de los planetas: C3).
+ */
+function placementInput(
+  state: SystemState,
+  orientations: readonly Mat3[],
+  screen: OverviewScreen | null,
+): PlacementInput {
+  const saturn = orientations[SATURN_INDEX];
+  const rings: RingReach | null = saturn
+    ? { index: SATURN_INDEX, outer: LABEL_EXTENTS[SATURN_INDEX] ?? 1, pole: columnOf(saturn, 2) }
+    : null;
   return {
     heliocentric: state.heliocentric,
     parentOffset: state.parentOffset,
     parentIndex: state.layout.parentIndex,
     radiusKm: RADII_KM,
+    rings,
+    screen,
   };
 }
 

@@ -3,8 +3,11 @@ import { planetHeliocentric } from './ephemeris';
 import { GALILEAN_IDS, PLANET_IDS } from './ids';
 import {
   DEFAULT_ILLUSTRATIVE_SCALE,
+  OverviewScreen,
   Placement,
   PlacementInput,
+  RELIEF_SOFTNESS,
+  RingReach,
   blendMagnitude,
   blendPlacements,
   blendPosition,
@@ -22,6 +25,8 @@ import {
   placeRadius,
   realPosition,
   realRadius,
+  reliefFactor,
+  relieveOverlaps,
 } from './scale';
 import { SolarSystemModel, SystemBodySpec } from './system-state';
 import { angleBetweenDeg, length, sub, vec3 } from './vec3';
@@ -299,5 +304,131 @@ describe('scale: marcos de escala y transiciones relativas al foco (D12)', () =>
       const distances = PLANET_IDS.map((id) => length(pos(p, id)));
       expect([...distances].sort((a, b) => a - b)).toEqual(distances);
     }
+  });
+
+  describe('scale: tamaños sin solapes en la escala ilustrativa (revisión del bloque C, C2 y C3)', () => {
+    /** Posiciones x, y, z de una lista de puntos. */
+    const positions = (...points: [number, number, number][]) => Float64Array.from(points.flat());
+    const factors = (
+      position: Float64Array,
+      radius: number[],
+      margin = 1,
+      ring: RingReach | null = null,
+    ) =>
+      relieveOverlaps(
+        position,
+        Float64Array.from(radius),
+        radius.map((_, k) => k),
+        margin,
+        ring,
+        new Float64Array(radius.length),
+      );
+
+    it('el paso suave: nada lejos, lo justo de cerca y, entre medias, sin esquinas ni pasarse', () => {
+      const w = RELIEF_SOFTNESS;
+      expect(reliefFactor(1 + w)).toBe(1);
+      expect(reliefFactor(3)).toBe(1);
+      expect(reliefFactor(1 - w)).toBeCloseTo(1 - w, 12);
+      expect(reliefFactor(0.5)).toBe(0.5);
+      expect(reliefFactor(-0.2)).toBe(0);
+      let previous = reliefFactor(0.5);
+      for (let needed = 0.5; needed <= 1.3; needed += 0.001) {
+        const f = reliefFactor(needed);
+        // Nunca más de lo que deja no tocarse; monótono y sin saltos (pendiente entre 0 y 1).
+        expect(f).toBeLessThanOrEqual(needed + 1e-12);
+        expect(f).toBeGreaterThanOrEqual(previous - 1e-12);
+        expect(f - previous).toBeLessThanOrEqual(0.001 + 1e-12);
+        previous = f;
+      }
+    });
+
+    it('solo encogen los dos que se acercan, lo justo para dejar el margen', () => {
+      // Dos cuerpos de radio 2 a 4,5 unidades (se tocarían) y un tercero lejos.
+      const out = factors(positions([0, 0, 0], [4.5, 0, 0], [50, 0, 0]), [2, 2, 3], 1);
+      const f = out[0] as number;
+      expect(out[1]).toBe(f);
+      expect(out[2]).toBe(1);
+      // Quedan a 1 unidad (el margen) o más: (4,5 − 1) / 4 = 0,875 como mucho.
+      expect(f).toBeLessThanOrEqual(0.875);
+      expect(4.5 - 4 * f).toBeGreaterThanOrEqual(1 - 1e-12);
+      // Lejos (a más de 1,15 veces lo necesario), nadie encoge.
+      expect([...factors(positions([0, 0, 0], [6, 0, 0]), [2, 2], 1)]).toEqual([1, 1]);
+    });
+
+    it('recuperan el tamaño al separarse, sin saltos', () => {
+      const at = (d: number) => factors(positions([0, 0, 0], [d, 0, 0]), [2, 2], 1)[0] as number;
+      let previous = at(3);
+      expect(previous).toBeCloseTo(0.5, 12);
+      for (let d = 3; d <= 8; d += 0.01) {
+        const f = at(d);
+        expect(f).toBeGreaterThanOrEqual(previous);
+        expect(f - previous).toBeLessThan(0.005);
+        previous = f;
+      }
+      expect(previous).toBe(1);
+    });
+
+    it('con anillos: nada los atraviesa, y un cuerpo lejos de su plano no encoge por ellos', () => {
+      // Un planeta de radio 2 con anillos hasta 2,3 radios (4,6 unidades) en el plano XY.
+      const ring: RingReach = { index: 0, outer: 2.3, pole: vec3(0, 0, 1) };
+      // En el plano de los anillos, a 7 unidades del centro: el disco (radio 1,5) los tocaría.
+      const inPlane = factors(positions([0, 0, 0], [7, 0, 0]), [2, 1.5], 1, ring);
+      const f = inPlane[0] as number;
+      expect(inPlane[1]).toBe(f);
+      expect(7 - 2.3 * 2 * f - 1.5 * f).toBeGreaterThanOrEqual(1 - 1e-9);
+      expect(f).toBeLessThan(1);
+      // Encima del polo, a la misma distancia: solo cuentan los dos discos, y no se acercan.
+      expect([...factors(positions([0, 0, 0], [0, 0, 7]), [2, 1.5], 1, ring)]).toEqual([1, 1]);
+      // Muy cerca, el factor llega a 0 (el caso límite) sin dar valores negativos.
+      expect([...factors(positions([0, 0, 0], [0.5, 0, 0]), [2, 1.5], 1, ring)]).toEqual([0, 0]);
+      // El anillo también cuenta si el planeta que lo lleva es el segundo del par.
+      const swapped = factors(positions([7, 0, 0], [0, 0, 0]), [1.5, 2], 1, { ...ring, index: 1 });
+      expect(swapped[0]).toBeCloseTo(f, 9);
+    });
+
+    it('en la escala ilustrativa: el tamaño mínimo en pantalla (C3), solo en los planetas y sin cambiar las posiciones', () => {
+      const camera = vec3(0, -1500, 600);
+      const screen: OverviewScreen = { camera, focalPx: 800, minRadiusPx: 2 };
+      const plain = placeBodies(illustrativeFrame(), input);
+      const enlarged = placeBodies(illustrativeFrame(), { ...input, screen });
+      expect([...enlarged.position.slice(0, 3 * 9)]).toEqual([...plain.position.slice(0, 3 * 9)]);
+      for (const id of PLANET_IDS) {
+        const k = ix(id);
+        const depth = length(sub(pos(enlarged, id), camera));
+        const radiusPx = ((enlarged.radius[k] as number) * screen.focalPx) / depth;
+        expect(radiusPx, id).toBeGreaterThanOrEqual(2 - 1e-9);
+        expect(enlarged.radius[k], id).toBeGreaterThanOrEqual(plain.radius[k] as number);
+      }
+      // El Sol no cambia.
+      expect(enlarged.radius[ix('sol')]).toBe(plain.radius[ix('sol')]);
+      // Las lunas siguen a su planeta: fuera de él, y su sistema crece con él.
+      const earthToMoon = length(sub(pos(enlarged, 'luna'), pos(enlarged, 'tierra')));
+      expect(earthToMoon).toBeGreaterThan(enlarged.radius[ix('tierra')] as number);
+      // Los marcos físicos no lo usan.
+      const physical = { kind: 'physical' as const, kmPerUnit: 1e6 };
+      expect([...placeBodies(physical, { ...input, screen }).radius]).toEqual([
+        ...placeBodies(physical, input).radius,
+      ]);
+    });
+
+    it('en la escala ilustrativa, un sistema de lunas encoge con su planeta', () => {
+      // Júpiter, al lado de Marte (un caso imposible, para forzar que encoja).
+      const forced = Float64Array.from(input.heliocentric);
+      const j = ix('jupiter');
+      const m = ix('marte');
+      for (let i = 0; i < 3; i++) forced[3 * j + i] = (forced[3 * m + i] as number) * 1.0001;
+      const placed = placeBodies(illustrativeFrame(), { ...input, heliocentric: forced });
+      const factor = (placed.radius[j] as number) / illustrativeRadius(radius('jupiter'));
+      expect(factor).toBeLessThan(1);
+      expect(placed.radius[m]).toBeLessThan(illustrativeRadius(radius('marte')));
+      // Io, a la misma distancia relativa del planeta encogido, y encogida con él.
+      const free = placeBodies(illustrativeFrame(), input);
+      const offset = (p: Placement) => length(sub(pos(p, 'io'), pos(p, 'jupiter')));
+      expect(offset(placed) / offset(free)).toBeCloseTo(factor, 9);
+      expect((placed.radius[ix('io')] as number) / (free.radius[ix('io')] as number)).toBeCloseTo(
+        factor,
+        9,
+      );
+    });
   });
 });

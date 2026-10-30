@@ -4,6 +4,7 @@ import { KM_PER_AU } from '../ephemeris/constants';
 import { subsolarPoint } from '../ephemeris/coordinates';
 import { moonShadowCenter } from '../ephemeris/eclipse';
 import { NASA_ECLIPSE_2026_08_12 } from '../ephemeris/fixtures/fixtures';
+import { illustrativeRadius } from '../ephemeris/scale';
 import { MAX_DATE } from '../ephemeris/time';
 import {
   EngineDeps,
@@ -605,7 +606,7 @@ describe('SceneEngine: calidad adaptativa, contexto WebGL y limpieza', () => {
 
 describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas y aliasing)', () => {
   interface Internals {
-    screen: { index: number; x: number; y: number; occluded: boolean }[];
+    screen: { index: number; x: number; y: number; radiusPx: number; occluded: boolean }[];
     rig: { distance: number; azimuth: number; elevation: number };
     look: unknown;
     frames: { output: { position: Float64Array; radius: Float64Array } };
@@ -838,6 +839,34 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     h.clock.now += 5000;
     h.engine.setPlaying(false);
     expect(back - h.engine.time.getTime()).toBeCloseTo(5000, -1);
+    h.engine.dispose();
+  });
+
+  it('en un móvil en vertical, ningún planeta mide menos de 2 px de radio en la vista general; enfocado, sí su tamaño (C3)', async () => {
+    const h = await createHarness({ reducedMotion: true });
+    h.engine.resize(390, 844, 2);
+    settle(h);
+    const planets = [
+      'mercurio',
+      'venus',
+      'tierra',
+      'marte',
+      'jupiter',
+      'saturno',
+      'urano',
+      'neptuno',
+    ];
+    for (const id of planets) {
+      expect(screenOf(h, id)?.radiusPx, id).toBeGreaterThanOrEqual(2 - 1e-6);
+    }
+    // Los rocosos medirían menos sin el mínimo: Mercurio, en el móvil, ~1,5 px (fase 4b: 1,2).
+    const mercury = internals(h).frames.output.radius[sceneBody('mercurio').index] as number;
+    expect(mercury).toBeGreaterThan(illustrativeRadius(sceneBody('mercurio').radiusKm) * 1.1);
+    // Con Júpiter enfocado (su sistema local físico), los demás vuelven a su tamaño: Mercurio, sin el
+    // mínimo, a lo lejos.
+    h.engine.focus('jupiter');
+    settle(h);
+    expect(screenOf(h, 'mercurio')?.radiusPx).toBeLessThan(1);
     h.engine.dispose();
   });
 

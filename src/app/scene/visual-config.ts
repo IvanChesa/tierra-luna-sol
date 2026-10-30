@@ -106,6 +106,12 @@ export const VISUAL_CONFIG = {
     cloudFade: { from: 1, to: 2.2, min: 0.3 },
     markers: { color: '#e8c46f', edge: '#38455a', sizePx: 7 },
   },
+  /**
+   * Radio mínimo en pantalla de los planetas en la vista general (px CSS; revisión del bloque C, C3,
+   * decisión de Iván): en un móvil en vertical, los rocosos medían 1–2 px y se veían como marcadores.
+   * No cambia ni las posiciones ni las órbitas, y en escritorio casi nunca actúa.
+   */
+  overviewMinRadiusPx: 2,
   /** Por debajo de este radio en pantalla (px CSS), el halo de una atmósfera no se dibuja: no se vería. */
   atmosphereMinRadiusPx: 2,
   /** Por debajo de este radio en pantalla (px CSS), un cuerpo no aparta las órbitas de su disco. */
@@ -115,9 +121,11 @@ export const VISUAL_CONFIG = {
    * de `from` a `to` px (su distancia real en el espacio, en radios del planeta, a la escala de su
    * disco en pantalla). Hasta entonces, ni su disco ni su órbita se dibujan, ni tapan, ni se pueden
    * elegir con el puntero (fase 4b): en la vista general, los sistemas compactos no se ven como
-   * bultos pegados a cada planeta, y aparecen al acercarse o al enfocar el planeta.
+   * bultos pegados a cada planeta, y aparecen al acercarse o al enfocar el planeta. Con los planetas
+   * un 25 % más grandes (revisión del bloque C, C2), sus sistemas también lo son en pantalla: los
+   * umbrales crecen igual (antes, 8 y 30 px), y las lunas aparecen exactamente cuando antes.
    */
-  moonResolutionPx: { from: 8, to: 30 },
+  moonResolutionPx: { from: 10, to: 37.5 },
   /** Opacidad de las órbitas de los planetas en la vista general (la de las estelas completas). */
   overviewOrbitOpacity: 0.85,
   /**
