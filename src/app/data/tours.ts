@@ -7,6 +7,8 @@
  * o, las luces, de noche (0). Los textos son subtítulos breves, con su fuente y `reviewed: false`
  * (Iván los revisa en la fase 9).
  */
+import { MAX_DATE, MIN_DATE } from '../ephemeris/constants';
+
 export interface GuidedView {
   readonly id: string;
   readonly title: string;
@@ -87,14 +89,44 @@ export const GUIDED_VIEWS: readonly GuidedView[] = [
   },
 ];
 
+const HOUR_MS = 3_600_000;
+const DAY_MS = 24 * HOUR_MS;
+
+/** El día que enseña la interfaz, como clave («2026-6-21»): en la hora local del navegador o en UTC. */
+export type DayOf = (date: Date) => string;
+
+export const localDay: DayOf = (date) =>
+  `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+export const utcDay: DayOf = (date) =>
+  `${date.getUTCFullYear()}-${date.getUTCMonth() + 1}-${date.getUTCDate()}`;
+
 /**
- * La misma fecha (UTC) a la hora UTC en la que la hora solar media en `lonDeg` es `solarHour`: la
- * longitud adelanta la hora solar 1 h cada 15° hacia el este. Sin la ecuación del tiempo (unos
- * minutos): basta para ver el punto de día o de noche.
+ * El instante del mismo día en el que la hora solar media en `lonDeg` es `solarHour`: la longitud
+ * adelanta la hora solar 1 h cada 15° hacia el este. Sin la ecuación del tiempo (unos minutos): basta
+ * para ver el punto de día o de noche.
+ *
+ * El día es el que enseña la interfaz (`day`: el local del navegador o el UTC), no el día UTC: si no,
+ * en España «Las luces de la noche» (las 23:20 UTC) pasarían al día siguiente. Esas horas se repiten
+ * cada 24 h: de los tres candidatos (el del día UTC y los de los días vecinos), el que cae en ese día y
+ * dentro de 1900–2100; si ninguno cae (un día de 23 h, por el cambio de hora), el más cercano.
  */
-export function atSolarHour(date: Date, lonDeg: number, solarHour: number): Date {
+export function atSolarHour(
+  date: Date,
+  lonDeg: number,
+  solarHour: number,
+  day: DayOf = localDay,
+): Date {
   const utcHours = (((solarHour - lonDeg / 15) % 24) + 24) % 24;
-  const result = new Date(date.getTime());
-  result.setUTCHours(0, 0, 0, 0);
-  return new Date(result.getTime() + utcHours * 3_600_000);
+  const midnight = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+  const base = midnight + utcHours * HOUR_MS;
+  const shown = day(date);
+  const candidates = [base - DAY_MS, base, base + DAY_MS].filter(
+    (ms) => ms >= MIN_DATE.getTime() && ms <= MAX_DATE.getTime(),
+  );
+  const sameDay = candidates.find((ms) => day(new Date(ms)) === shown);
+  const nearest = candidates.reduce(
+    (best, ms) => (Math.abs(ms - date.getTime()) < Math.abs(best - date.getTime()) ? ms : best),
+    base,
+  );
+  return new Date(sameDay ?? nearest);
 }

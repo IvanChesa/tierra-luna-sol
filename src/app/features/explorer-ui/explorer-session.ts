@@ -11,7 +11,7 @@ import type {
 import { ExplorerStore } from '../../state/explorer.store';
 import { SystemPositions } from '../../state/positions';
 import { SimulationEngine, SimulationStore } from '../../state/simulation.store';
-import { GuidedView, atSolarHour } from '../../data/tours';
+import { GuidedView, atSolarHour, localDay, utcDay } from '../../data/tours';
 import {
   CONTEXT_SPEED,
   SpeedContext,
@@ -265,12 +265,14 @@ export class ExplorerSession {
 
   /**
    * Una vista guiada de la Tierra (fase 5): pausa la reproducción, lleva el reloj a la hora del día
-   * a la que se ve el punto (sin cambiar la fecha), mueve la cámara sobre él, pone o quita los
-   * marcadores de los lugares del cielo desde España y anuncia su subtítulo.
+   * a la que se ve el punto sin cambiar la fecha que se ve (en la zona elegida: la local o UTC),
+   * mueve la cámara sobre él, pone o quita los marcadores de los lugares del cielo desde España y
+   * anuncia su subtítulo.
    */
   showGuidedView(view: GuidedView): void {
     this.sim.setPlaying(false);
-    this.sim.setTime(atSolarHour(this.sim.time(), view.lonDeg, view.solarHour));
+    const day = this.explorer.timeZone() === 'utc' ? utcDay : localDay;
+    this.sim.setTime(atSolarHour(this.sim.time(), view.lonDeg, view.solarHour, day));
     this.engine?.lookAtSurface(view.latDeg, view.lonDeg, view.distanceRadii);
     this.engine?.setSurfaceMarkers(view.markers);
     this.announce(`${view.title}. ${view.text}`);

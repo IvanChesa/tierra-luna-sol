@@ -37,6 +37,12 @@ test.describe('La vista Tierra (fase 5)', () => {
     // Otra vista los quita.
     await views.getByRole('button', { name: 'El Pacífico', exact: true }).click();
     await expect.poll(markers).toBe(false);
+    // Sin cambiar la fecha que se ve (en Madrid): mediodía a 160° O, las 22:40 UTC del 20 (las 00:40
+    // del 21 en España), y medianoche a 10° E, las 23:20 UTC del 20 (la 01:20 del 21).
+    await expect.poll(() => simTime(page)).toBe(Date.parse('2026-06-20T22:40:00Z'));
+    await views.getByRole('button', { name: 'Las luces de la noche', exact: true }).click();
+    await expect.poll(() => simTime(page)).toBe(Date.parse('2026-06-20T23:20:00Z'));
+    await expect(page.locator('.time__readout')).toContainText(/21\s+jun\s+2026/);
     expect(problems).toEqual([]);
   });
 

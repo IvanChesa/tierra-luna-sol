@@ -33,10 +33,12 @@
   border-radius: var(--radius-md);
 }
 
+/* Rótulos de sección, como los de la tarjeta (Public Sans 600; Newsreader solo se carga en 500). */
 .earth__title {
   margin: 0;
+  font-family: var(--font-body);
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: var(--font-weight-strong);
   letter-spacing: 0.02em;
 }
 
@@ -94,6 +96,23 @@
 
 .earth__back {
   rotate: 180deg;
+}
+
+/* «Vista anterior» y «Vista siguiente» en los extremos: no disponibles, pero conservan el foco. */
+.control[aria-disabled='true'] {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Zonas táctiles de 44 px (como el resto del explorador): las vistas y el deslizador. */
+@media (pointer: coarse) {
+  .earth__view {
+    min-height: var(--tap-target);
+  }
+
+  .earth__slider {
+    height: var(--tap-target);
+  }
 }
 
 .earth__caption {
