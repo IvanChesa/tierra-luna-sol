@@ -76,7 +76,14 @@ const TEXTURES = {
   },
   'earth-night': { file: '8k_earth_nightmap.jpg', kind: 'color', quality: 80 },
   'earth-clouds': { file: '8k_earth_clouds.jpg', kind: 'gray', quality: 80 },
-  'earth-normal': { file: '8k_earth_normal_map.tif', kind: 'normal', quality: 90 },
+  // Solar System Scope guarda el sur en G (convenio «DirectX»): se invierte para que sea (este,
+  // norte, arriba), como lee el shader (revisión de la fase 5, hallazgo 4; lo comprueba NORMAL_PROBES).
+  'earth-normal': {
+    file: '8k_earth_normal_map.tif',
+    kind: 'normal',
+    quality: 90,
+    flipGreen: true,
+  },
   'earth-specular': { file: '8k_earth_specular_map.tif', kind: 'gray', quality: 85 },
   moon: { file: 'lroc_color_poles_4k.tif', kind: 'color', quality: 82 },
   mars: { file: '8k_mars.jpg', kind: 'color', quality: 80 },
@@ -133,6 +140,63 @@ const PROBES = {
     radius: 2,
   },
 };
+
+/**
+ * Sondas de pendiente de los mapas de normales (este, norte, arriba en RGB): la media de una caja
+ * [latitud mín., latitud máx., longitud mín., longitud máx.] en laderas conocidas, que tiene que
+ * inclinarse hacia donde mira (en su canal, más de 1 por encima o por debajo del valor de un terreno
+ * llano del mismo mapa, `flat`: el Pacífico central). Con un canal invertido, fallan. Las laderas sur
+ * del Himalaya, los Alpes y los Pirineos miran al sur (suben hacia el norte), y las norte de los Alpes
+ * y los Pirineos, al norte; la occidental de los Andes centrales, al oeste, y la oriental, al este.
+ */
+const NORMAL_PROBES = {
+  'earth-normal': {
+    flat: [-10, 10, -160, -140],
+    slopes: [
+      { box: [27.2, 27.8, 84, 88], channel: 1, sign: -1, name: 'ladera sur del Himalaya' },
+      { box: [45.6, 46.0, 8, 11], channel: 1, sign: -1, name: 'ladera sur de los Alpes' },
+      { box: [42.2, 42.5, -1, 2], channel: 1, sign: -1, name: 'ladera sur de los Pirineos' },
+      { box: [47.2, 47.6, 10, 13], channel: 1, sign: 1, name: 'ladera norte de los Alpes' },
+      { box: [42.9, 43.2, -1, 2], channel: 1, sign: 1, name: 'ladera norte de los Pirineos' },
+      { box: [-24, -18, -70.4, -69], channel: 0, sign: -1, name: 'ladera oeste de los Andes' },
+      { box: [-24, -18, -66, -64.6], channel: 0, sign: 1, name: 'ladera este de los Andes' },
+    ],
+  },
+};
+
+/** Comprueba las sondas de pendiente de un mapa de normales (falla si alguna se inclina al revés). */
+async function checkNormalSlopes(id, file) {
+  const probes = NORMAL_PROBES[id];
+  if (!probes) return null;
+  const { data, info } = await sharp(fileURLToPath(new URL(file.path, PUBLIC)))
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const mean = ([lat0, lat1, lon0, lon1], channel) => {
+    const y0 = Math.floor(((90 - lat1) / 180) * info.height);
+    const y1 = Math.ceil(((90 - lat0) / 180) * info.height);
+    const x0 = Math.floor(((lon0 + 180) / 360) * info.width);
+    const x1 = Math.ceil(((lon1 + 180) / 360) * info.width);
+    let sum = 0;
+    let n = 0;
+    for (let y = y0; y <= y1; y++) {
+      for (let x = x0; x <= x1; x++) {
+        sum += data[(y * info.width + x) * info.channels + channel];
+        n++;
+      }
+    }
+    return sum / n;
+  };
+  const results = probes.slopes.map(({ box, channel, sign, name }) => {
+    const tilt = mean(box, channel) - mean(probes.flat, channel);
+    return { name, tilt, ok: sign * tilt > 1 };
+  });
+  const show = (r) => `${r.name} ${r.tilt > 0 ? '+' : ''}${r.tilt.toFixed(1)}`;
+  const wrong = results.filter((r) => !r.ok);
+  if (wrong.length) {
+    throw new Error(`Pendientes de «${id}» al revés: ${wrong.map(show).join(', ')}`);
+  }
+  return `${id} (${file.level}, respecto al llano): ${results.map(show).join(' · ')}`;
+}
 
 const sha = (bytes) => createHash('sha256').update(bytes).digest('hex').slice(0, 10);
 
@@ -688,6 +752,8 @@ for (const [id, spec] of Object.entries(TEXTURES)) {
       pipeline = pipeline.resize(width, width / 2, { fit: 'fill', kernel: 'lanczos3' });
     }
     if (spec.kind === 'gray') pipeline = pipeline.toColourspace('b-w');
+    // G ← 255 − G: el norte en G (ver `flipGreen`).
+    if (spec.flipGreen) pipeline = pipeline.removeAlpha().linear([1, -1, 1], [0, 255, 0]);
     // El panorama sin estrellas se ve ampliado en los primeros planos (un píxel de 2k mide 0,18°): un
     // desenfoque leve quita las manchas de la mediana y de la compresión.
     if (spec.kind === 'panorama') pipeline = pipeline.blur(level === '1k' ? 0.6 : 1);
@@ -698,6 +764,9 @@ for (const [id, spec] of Object.entries(TEXTURES)) {
   const report =
     spec.kind === 'panorama' ? await checkPanorama(list[0]) : await checkAlignment(id, list[0]);
   if (report) reports.push(report);
+  // Las pendientes, en el nivel de 2k (en el de 1k, las laderas de los Alpes miden un par de píxeles).
+  const slopes = await checkNormalSlopes(id, list.find((f) => f.level === '2k') ?? list[0]);
+  if (slopes) reports.push(slopes);
   console.log(
     `${id}: ${list.map((f) => `${f.level} ${(f.bytes / 1024).toFixed(0)} kB`).join(' · ')}`,
   );

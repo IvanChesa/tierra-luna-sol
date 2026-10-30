@@ -1,4 +1,4 @@
-// GENERADO por scripts/build-textures.mjs el 2026-10-27. No se edita a mano.
+// GENERADO por scripts/build-textures.mjs el 2026-10-30. No se edita a mano.
 // WebP por niveles con hash (public/textures/), a partir de los originales de assets-src/textures/
 // (origen y licencia de cada uno en docs/FUENTES.md).
 import type { TextureFiles, TextureId } from './textures';
@@ -129,24 +129,24 @@ export const TEXTURE_FILES: TextureFiles = {
   'earth-normal': [
     {
       level: '1k',
-      path: 'textures/1k/earth-normal.d687c776bd.webp',
+      path: 'textures/1k/earth-normal.5bfe4e8f64.webp',
       width: 1024,
       height: 512,
-      bytes: 3562,
+      bytes: 3328,
     },
     {
       level: '2k',
-      path: 'textures/2k/earth-normal.99797a4a91.webp',
+      path: 'textures/2k/earth-normal.c15b33c42c.webp',
       width: 2048,
       height: 1024,
-      bytes: 25102,
+      bytes: 24454,
     },
     {
       level: '4k',
-      path: 'textures/4k/earth-normal.36b6431818.webp',
+      path: 'textures/4k/earth-normal.562ba8aa9b.webp',
       width: 4096,
       height: 2048,
-      bytes: 209208,
+      bytes: 207172,
     },
   ],
   'earth-specular': [
