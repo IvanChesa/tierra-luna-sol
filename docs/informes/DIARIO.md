@@ -221,7 +221,7 @@ El bloque termina aquí. No se ha empezado el bloque C: antes lo revisa la sesi�
   - **La textura de día de 8K:** solo en el nivel alto; sube a la GPU al acabar el viaje de cámara.
 
 ### Métricas al cerrar el bloque
-- **Tests:** 514 unitarios (cobertura de `ephemeris/` del 99,5 %) y 70 e2e, también en el CI de GitHub (fase 4).
+- **Tests:** 514 unitarios (cobertura de `ephemeris/` del 99,5 %) y 70 e2e. Tras la fusión, el CI de GitHub (ejecución 41096556658) pasó lint, tests, build y los 70 e2e (Linux, SwiftShader, 8,1 min); desplegó `main` en staging y comprobó la publicación.
 - **Bundle:**
   - JS inicial de 298,23 kB (aviso a 320), con 12,13 kB de código propio de 15;
   - chunk de three de 678,67 kB (aviso a 900);
