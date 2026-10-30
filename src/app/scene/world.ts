@@ -1043,6 +1043,7 @@ function configureEarth(earth: EarthUniforms): void {
   const scatter = new Color(config.scatter.color).multiplyScalar(config.scatter.intensity);
   earth.uScatter.value.set(scatter.r, scatter.g, scatter.b, config.scatter.limb);
   earth.uTwilightColor.value.set(config.twilight);
+  earth.uArid.value.set(config.arid.knee, config.arid.warmFrom, config.arid.warmTo);
 }
 
 /** Una textura no ha llegado: no es un error fatal (queda el color esquemático), pero se anota. */

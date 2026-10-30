@@ -112,6 +112,8 @@ uniform vec4 uEarth;
 // Luz dispersada por la atmósfera (color lineal × intensidad) y refuerzo hacia el limbo.
 uniform vec4 uScatter;
 uniform vec3 uTwilightColor;
+// Tierras áridas: (rodilla de la compresión, calidez desde la que empieza, calidez a la que es entera).
+uniform vec3 uArid;
 // Centros de la Luna y del Sol (radios ecuatoriales, sistema propio) y sus radios: desde cada punto,
 // las direcciones y los radios aparentes de los dos (el paralaje del Sol mueve la sombra decenas de
 // kilómetros si se toma su dirección desde el centro de la Tierra).
@@ -175,6 +177,14 @@ void main() {
     base *= (uMeanLuminance + (luminance - uMeanLuminance) * uContrast) / luminance;
   }
   vec3 albedo = base * uAlbedoScale;
+#ifdef TLS_EARTH
+  // Las tierras áridas de la textura, casi tan claras como las nubes (en EPIC, un tercio): su brillo,
+  // comprimido, L / (1 + L / rodilla), solo en la tierra cálida ((R − B) / L): ni el océano ni el
+  // hielo (neutros), y apenas los bosques (oscuros).
+  float aridLum = max(dot(albedo, vec3(0.2126, 0.7152, 0.0722)), 1e-4);
+  float arid = smoothstep(uArid.y, uArid.z, (albedo.r - albedo.b) / aridLum);
+  albedo *= mix(1.0, 1.0 / (1.0 + aridLum / uArid.x), arid);
+#endif
   vec3 geometric = normalize(vNormal);
   vec3 normal = uNormalStrength > 0.0 ? reliefNormal(geometric, uv) : geometric;
   vec3 toSun = normalize(vSunDirection);
@@ -297,6 +307,8 @@ export interface EarthUniforms {
   /** Luz dispersada por la atmósfera (rgb lineal) y su refuerzo hacia el limbo (w). */
   readonly uScatter: Uniform<Vector4>;
   readonly uTwilightColor: Uniform<Color>;
+  /** Tierras áridas: (rodilla, calidez desde, calidez hasta); `VISUAL_CONFIG.earth.arid`. */
+  readonly uArid: Uniform<Vector3>;
   /** Centro de la Luna en el sistema propio de la Tierra (radios ecuatoriales) y su radio (w). */
   readonly uMoonLocal: Uniform<Vector4>;
   /** Centro del Sol en el sistema propio de la Tierra (radios ecuatoriales) y su radio (w). */
@@ -347,6 +359,8 @@ export function createBodyMaterial(options: BodyMaterialOptions) {
         uEarth: new Uniform(new Vector4(0.8, 1, 1, 0.35)),
         uScatter: new Uniform(new Vector4(0, 0, 0, 0)),
         uTwilightColor: new Uniform(new Color(1, 0.6, 0.35)),
+        // Sin compresión hasta que se configura (rodilla enorme).
+        uArid: new Uniform(new Vector3(1e6, 0.25, 0.4)),
         // Sin datos, la Luna lejísimos y del otro lado: no tapa nada.
         uMoonLocal: new Uniform(new Vector4(0, 0, 1e6, 0)),
         uSunLocal: new Uniform(new Vector4(23_455, 0, 0, 109)),
