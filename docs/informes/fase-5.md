@@ -162,10 +162,9 @@ Chunk del visor (three): 678,67 kB en bruto (aviso a 900) · explorer-ui: 267,26
 ✔ Código propio en los chunks iniciales: 12.13 kB de 15.00
 ```
 ```
-npm run e2e (30-10): 70 e2e. En la pasada completa, 69 en verde y 1 rojo: esperaba el texto accesible
-anterior de «Hora del día» («…, hora local»; ahora dice la zona, «09:40, hora local, UTC+2»).
-Corregido, e2e/tierra.spec.ts y e2e/movil.spec.ts: 10 de 10 (con el e2e nuevo de los márgenes del
-encuadre al entrar en la vista Tierra desde el sistema solar, en móvil).
+npm run e2e (30-10): 70 passed (3.9m), con el e2e nuevo en móvil de los márgenes del encuadre al
+entrar en la vista Tierra desde el sistema solar. (En una pasada anterior, 69 y 1 rojo: esperaba el
+texto accesible anterior de «Hora del día»; ahora dice la zona, «09:40, hora local, UTC+2».)
 ```
 
 ### 6.1 Mediciones (`node scripts/measure-system.mjs`, 30-10; Chromium con la GPU: RTX 3060, ANGLE D3D11)
