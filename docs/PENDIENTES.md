@@ -67,7 +67,10 @@ Decisiones y tareas que dependen de Iván. Claude Code añade aquí cada `TODO(i
 - [ ] **Confirmar que pasar de un cuerpo a otro mantiene la velocidad elegida a mano** (D33): la fase entiende que los contextos son dos, la vista general y un cuerpo enfocado (informe de la fase 4b, riesgo 3).
 
 ## Bloque C (fase 5: la Tierra)
-- [ ] **Probar la vista Tierra en tu móvil** (no bloquea): FPS y VRAM, las vistas guiadas y el tamaño del panel (en móvil ocupa un tercio de la pantalla; informe de la fase 5, §4.7).
+- [ ] **Probar la vista Tierra en tu móvil** (no bloquea), en https://staging.tierra-luna-sol.pages.dev/explorar/tierra cuando la fase 5 esté en `main`: FPS y VRAM, las vistas guiadas (en «España» se tienen que ver los siete marcadores) y el tamaño del panel (desde la revisión, más bajo, pero aún ocupa algo más de un tercio de la pantalla; informe de la fase 5, §4.7).
+- [ ] **Decidir las dos propuestas de la fase 5** (informe, §10):
+  - las nubes de la vista «El Himalaya» tapan buena parte de la cordillera (son las fijas de la textura): una deriva inicial por vista guiada o atenuarlas en los primeros planos, en la fase 10;
+  - la textura de día de 8K, más barata (fase 10): guardarla ya volteada para quitar los ~105 ms de decodificación y liberar su `ImageBitmap` (128 MiB) tras subirla.
 - [ ] **Revisar los textos de las vistas guiadas** (`data/tours.ts`, `reviewed: false`; fase 9).
 - [ ] La altitud del Parque Astronómico del Montsec y de la Puerta del Sol, que sus fuentes no dan (`data/places.ts`; la usa la fase 8).
 
