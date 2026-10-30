@@ -45,6 +45,8 @@ export type TextureId =
   | 'neptune'
   | 'mercury-normal'
   | 'mars-normal'
+  | 'moon-normal'
+  | 'moon-elevation'
   | 'milky-way';
 
 export interface TextureMeta {
@@ -68,6 +70,11 @@ export interface TextureMeta {
   readonly ringRadiiKm?: { readonly inner: number; readonly outer: number };
   /** Cómo se ha comprobado la alineación (FUENTES.md tiene el origen de cada fichero). */
   readonly alignment: string;
+  /**
+   * `false`: sin mipmaps. La elevación de la Luna (16 bits empaquetados en R y G, D15) solo se lee en
+   * los vértices, en su nivel 0; las medias de los mipmaps redondean cada byte por su lado.
+   */
+  readonly mipmaps?: boolean;
 }
 
 export interface TextureFile {
@@ -137,7 +144,13 @@ export class ManifestTextureSource implements TextureSource {
     if (!file) return null;
     const info = meta[id];
     const loader = new ImageBitmapLoader();
-    loader.setOptions({ imageOrientation: 'flipY', premultiplyAlpha: 'none' });
+    // Los mapas de datos, sin gestión de color: sus bytes se leen tal cual (la elevación de la Luna,
+    // byte a byte).
+    loader.setOptions({
+      imageOrientation: 'flipY',
+      premultiplyAlpha: 'none',
+      ...(info.colorSpace === 'data' ? { colorSpaceConversion: 'none' } : {}),
+    });
     const bitmap = await loader.loadAsync(new URL(file.path, baseUrl).href);
     const texture = new Texture(bitmap);
     texture.name = `${id}@${file.level}`;
@@ -146,13 +159,14 @@ export class ManifestTextureSource implements TextureSource {
     // Los mapas de superficie dan la vuelta en longitud: un desplazamiento de u (el meridiano 0, la
     // deriva de las nubes) sigue por el otro lado, no estira el borde (`ClampToEdge`, el de three).
     if (info.projection === 'equirectangular') texture.wrapS = RepeatWrapping;
-    texture.generateMipmaps = true;
-    texture.minFilter = LinearMipmapLinearFilter;
+    const mipmaps = info.mipmaps !== false;
+    texture.generateMipmaps = mipmaps;
+    texture.minFilter = mipmaps ? LinearMipmapLinearFilter : LinearFilter;
     texture.magFilter = LinearFilter;
     texture.anisotropy = this.options.anisotropy();
     texture.needsUpdate = true;
     await this.options.upload(texture);
-    return { texture, file, vramBytes: textureVramBytes(file.width, file.height) };
+    return { texture, file, vramBytes: textureVramBytes(file.width, file.height, mipmaps) };
   }
 }
 

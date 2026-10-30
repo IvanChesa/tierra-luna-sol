@@ -40,6 +40,7 @@ import {
   checkElevation,
   loadElevation,
   normalMap,
+  packElevation16,
 } from './build-relief.mjs';
 
 const ROOT = new URL('../', import.meta.url);
@@ -62,7 +63,9 @@ const RING_HEIGHT = 16;
  * calculado con build-relief.mjs a partir de un modelo de elevación; `color`: la textura con la que
  * se comprueba la alineación). `ocean`: máscara del agua con la que se corrige el color del océano
  * (OCEAN_CHROMA). `maxWidth`: el nivel más grande que se genera (4k si no se dice; 8k solo la
- * textura de día de la Tierra, en el nivel alto, fase 5).
+ * textura de día de la Tierra, en el nivel alto, fase 5, y el color de la Luna, fase 6). elevation:
+ * la elevación de un modelo en 16 bits empaquetados en R y G (D15), sin pérdidas, para desplazar los
+ * vértices (la Luna, fase 6).
  */
 const TEXTURES = {
   mercury: { file: '8k_mercury.jpg', kind: 'color', quality: 80 },
@@ -85,13 +88,19 @@ const TEXTURES = {
     flipGreen: true,
   },
   'earth-specular': { file: '8k_earth_specular_map.tif', kind: 'gray', quality: 85 },
-  moon: { file: 'lroc_color_poles_4k.tif', kind: 'color', quality: 82 },
+  moon: { file: 'lroc_color_poles_8k.tif', kind: 'color', quality: 82, maxWidth: 8192 },
   mars: { file: '8k_mars.jpg', kind: 'color', quality: 80 },
   jupiter: { file: '8k_jupiter.jpg', kind: 'color', quality: 80 },
   saturn: { file: '8k_saturn.jpg', kind: 'color', quality: 80 },
   'saturn-rings': { file: '8k_saturn_ring_alpha.png', kind: 'ring', quality: 90 },
   'mercury-normal': { dem: 'mercury', kind: 'relief', color: 'mercury', quality: 85 },
   'mars-normal': { dem: 'mars', kind: 'relief', color: 'mars', quality: 85 },
+  // Sus extremos se comprueban en 2k: en 1k, con píxeles de ~10 km, el punto más bajo cae en otro
+  // sitio de la cuenca Polo Sur–Aitken, a 13° de Antoniadi.
+  'moon-normal': { dem: 'moon', kind: 'relief', color: 'moon', quality: 85, checkLevel: '2k' },
+  // La malla de la Luna se desplaza con esta elevación: con 2k (0,18° por píxel) basta para sus
+  // vértices (unos 512 en el ecuador en el nivel alto).
+  'moon-elevation': { dem: 'moon', kind: 'elevation', maxWidth: 2048 },
   uranus: { file: '2k_uranus.jpg', kind: 'color', quality: 82 },
   neptune: { file: '2k_neptune.jpg', kind: 'color', quality: 82 },
   'milky-way': { file: 'eso0932a.tif', kind: 'panorama', quality: 80, maxWidth: 2048 },
@@ -164,6 +173,27 @@ const NORMAL_PROBES = {
   },
 };
 
+/**
+ * La Luna: las paredes interiores de Copérnico (9,621° N, 20,079° O, 96,1 km; Gazetteer, IAU/USGS,
+ * Feature/1296), entre 1,05° y 1,5° de su centro: la norte mira al sur, la sur al norte, la este al
+ * oeste y la oeste al este. El llano, el interior de Mare Imbrium.
+ */
+NORMAL_PROBES['moon-normal'] = {
+  flat: [32, 37, -20, -10],
+  slopes: [
+    { box: [10.67, 11.12, -20.4, -19.76], channel: 1, sign: -1, name: 'pared norte de Copérnico' },
+    { box: [8.12, 8.57, -20.4, -19.76], channel: 1, sign: 1, name: 'pared sur de Copérnico' },
+    { box: [9.3, 9.95, -19.01, -18.56], channel: 0, sign: -1, name: 'pared este de Copérnico' },
+    { box: [9.3, 9.95, -21.6, -21.14], channel: 0, sign: 1, name: 'pared oeste de Copérnico' },
+  ],
+};
+
+/**
+ * Elevación empaquetada (D15) en el intervalo [minM, maxM]: la del LOLA va de unos −9,1 a +10,8 km.
+ * La resolución vertical es (maxM − minM) / 65 535: 0,31 m (la del LOLA es de 0,5 m).
+ */
+const ELEVATION_RANGE_M = { moon: { minM: -9500, maxM: 11000 } };
+
 /** Comprueba las sondas de pendiente de un mapa de normales (falla si alguna se inclina al revés). */
 async function checkNormalSlopes(id, file) {
   const probes = NORMAL_PROBES[id];
@@ -201,9 +231,13 @@ async function checkNormalSlopes(id, file) {
 const sha = (bytes) => createHash('sha256').update(bytes).digest('hex').slice(0, 10);
 
 /** Escribe un WebP con hash y devuelve su entrada del manifiesto. */
-async function emit(id, level, pipeline, quality, { alpha = false } = {}) {
+async function emit(id, level, pipeline, quality, { alpha = false, lossless = false } = {}) {
   const bytes = await pipeline
-    .webp({ quality, effort: 6, ...(alpha ? { alphaQuality: 100 } : {}) })
+    .webp(
+      lossless
+        ? { lossless: true, effort: 6 }
+        : { quality, effort: 6, ...(alpha ? { alphaQuality: 100 } : {}) },
+    )
     .toBuffer();
   const meta = await sharp(bytes).metadata();
   const path = `textures/${level}/${id}.${sha(bytes)}.webp`;
@@ -686,9 +720,9 @@ for (const [id, spec] of Object.entries(TEXTURES)) {
     for (const [level, width] of LEVELS) {
       if (width > (spec.maxWidth ?? DEFAULT_MAX_WIDTH)) continue;
       const elevation = await loadElevation(spec.dem, width);
-      if (level === '1k') {
+      if (level === (spec.checkLevel ?? '1k')) {
         reports.push(checkElevation(spec.dem, elevation, width));
-        const colorFile = files[spec.color]?.[0];
+        const colorFile = files[spec.color]?.find((file) => file.level === level);
         if (!colorFile)
           throw new Error(`Falta la textura de color «${spec.color}» para comprobar el relieve`);
         const color = await sharp(fileURLToPath(new URL(colorFile.path, PUBLIC)))
@@ -708,6 +742,41 @@ for (const [id, spec] of Object.entries(TEXTURES)) {
       list.push(await emit(id, level, pipeline, spec.quality));
     }
     files[id] = list;
+    const slopes = await checkNormalSlopes(id, list.find((f) => f.level === '2k') ?? list[0]);
+    if (slopes) reports.push(slopes);
+    console.log(
+      `${id}: ${list.map((f) => `${f.level} ${(f.bytes / 1024).toFixed(0)} kB`).join(' · ')}`,
+    );
+    continue;
+  }
+  if (spec.kind === 'elevation') {
+    // La elevación remuestreada a cada nivel, en 16 bits (R alto, G bajo), en WebP sin pérdidas: con
+    // pérdidas, el byte bajo sería ruido. Se comprueba que se decodifica igual, byte a byte.
+    const { minM, maxM } = ELEVATION_RANGE_M[spec.dem];
+    const list = [];
+    for (const [level, width] of LEVELS) {
+      if (width > (spec.maxWidth ?? DEFAULT_MAX_WIDTH)) continue;
+      const elevation = await loadElevation(spec.dem, width);
+      const packed = packElevation16(elevation, minM, maxM);
+      const pipeline = sharp(packed, { raw: { width, height: width / 2, channels: 3 } });
+      const file = await emit(id, level, pipeline, 100, { lossless: true });
+      const decoded = await sharp(fileURLToPath(new URL(file.path, PUBLIC)))
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+      for (let i = 0; i < elevation.length; i++) {
+        const k = i * decoded.info.channels;
+        if (decoded.data[k] !== packed[3 * i] || decoded.data[k + 1] !== packed[3 * i + 1]) {
+          throw new Error(
+            `La elevación «${id}» (${level}) no se decodifica igual en el píxel ${i}`,
+          );
+        }
+      }
+      list.push(file);
+    }
+    files[id] = list;
+    reports.push(
+      `${id}: 16 bits en R y G, sin pérdidas, de ${minM} a ${maxM} m (resolución vertical ${((maxM - minM) / 65535).toFixed(2)} m); se decodifica igual byte a byte`,
+    );
     console.log(
       `${id}: ${list.map((f) => `${f.level} ${(f.bytes / 1024).toFixed(0)} kB`).join(' · ')}`,
     );
@@ -804,6 +873,12 @@ export const TEXTURE_MEAN_LUMINANCE: Readonly<Partial<Record<TextureId, number>>
  * anillos B y A de la ficha de la NASA.
  */
 export const SATURN_RING_STRIP_KM = { inner: ${ringStrip.inner}, outer: ${ringStrip.outer} } as const;
+
+/**
+ * Intervalo (m) de la elevación de la Luna empaquetada en 16 bits («moon-elevation», D15): un valor v
+ * de 0 a 65 535 vale minM + v / 65 535 · (maxM − minM) sobre la esfera de 1737,4 km.
+ */
+export const MOON_ELEVATION_RANGE_M = { min: ${ELEVATION_RANGE_M.moon.minM}, max: ${ELEVATION_RANGE_M.moon.maxM} } as const;
 `;
 const target = new URL('src/app/scene/texture-files.ts', ROOT);
 await writeFile(target, ts);

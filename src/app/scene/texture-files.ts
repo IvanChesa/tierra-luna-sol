@@ -175,24 +175,31 @@ export const TEXTURE_FILES: TextureFiles = {
   moon: [
     {
       level: '1k',
-      path: 'textures/1k/moon.94f17ec3ad.webp',
+      path: 'textures/1k/moon.c499d18b30.webp',
       width: 1024,
       height: 512,
-      bytes: 62062,
+      bytes: 60654,
     },
     {
       level: '2k',
-      path: 'textures/2k/moon.69696ffa6c.webp',
+      path: 'textures/2k/moon.6613651f23.webp',
       width: 2048,
       height: 1024,
-      bytes: 239522,
+      bytes: 231480,
     },
     {
       level: '4k',
-      path: 'textures/4k/moon.6d9c1952d8.webp',
+      path: 'textures/4k/moon.3bdf1de33e.webp',
       width: 4096,
       height: 2048,
-      bytes: 988228,
+      bytes: 869492,
+    },
+    {
+      level: '8k',
+      path: 'textures/8k/moon.69fa90142f.webp',
+      width: 8192,
+      height: 4096,
+      bytes: 3507364,
     },
   ],
   mars: [
@@ -333,6 +340,45 @@ export const TEXTURE_FILES: TextureFiles = {
       bytes: 1002672,
     },
   ],
+  'moon-normal': [
+    {
+      level: '1k',
+      path: 'textures/1k/moon-normal.8a1078f1d6.webp',
+      width: 1024,
+      height: 512,
+      bytes: 39766,
+    },
+    {
+      level: '2k',
+      path: 'textures/2k/moon-normal.f3c3c4924a.webp',
+      width: 2048,
+      height: 1024,
+      bytes: 200918,
+    },
+    {
+      level: '4k',
+      path: 'textures/4k/moon-normal.8cfc2b3a0e.webp',
+      width: 4096,
+      height: 2048,
+      bytes: 829228,
+    },
+  ],
+  'moon-elevation': [
+    {
+      level: '1k',
+      path: 'textures/1k/moon-elevation.56799ab170.webp',
+      width: 1024,
+      height: 512,
+      bytes: 759462,
+    },
+    {
+      level: '2k',
+      path: 'textures/2k/moon-elevation.c0c60e8753.webp',
+      width: 2048,
+      height: 1024,
+      bytes: 2849256,
+    },
+  ],
   uranus: [
     {
       level: '1k',
@@ -392,7 +438,7 @@ export const TEXTURE_MEAN_LUMINANCE: Readonly<Partial<Record<TextureId, number>>
   venus: 0.554,
   'earth-day': 0.1195,
   'earth-night': 0.0034,
-  moon: 0.3014,
+  moon: 0.3003,
   mars: 0.1819,
   jupiter: 0.4093,
   saturn: 0.6154,
@@ -405,3 +451,9 @@ export const TEXTURE_MEAN_LUMINANCE: Readonly<Partial<Record<TextureId, number>>
  * anillos B y A de la ficha de la NASA.
  */
 export const SATURN_RING_STRIP_KM = { inner: 69250, outer: 141048 } as const;
+
+/**
+ * Intervalo (m) de la elevación de la Luna empaquetada en 16 bits («moon-elevation», D15): un valor v
+ * de 0 a 65 535 vale minM + v / 65 535 · (maxM − minM) sobre la esfera de 1737,4 km.
+ */
+export const MOON_ELEVATION_RANGE_M = { min: -9500, max: 11000 } as const;

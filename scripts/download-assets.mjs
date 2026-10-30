@@ -4,7 +4,7 @@
 //
 // Licencias (comprobadas en la página de cada fuente; detalle en docs/FUENTES.md):
 // - Solar System Scope: CC BY 4.0 (https://www.solarsystemscope.com/textures/).
-// - NASA SVS 4720 (CGI Moon Kit): material de la NASA.
+// - NASA SVS 4720 (CGI Moon Kit): material de la NASA; el color (LROC) y la elevación (LOLA) de la Luna.
 // - Vía Láctea (fase 3b): «The Milky Way panorama», ESO/S. Brunier, con la licencia por defecto de
 //   las imágenes de ESO, CC BY 4.0 (https://www.eso.org/public/outreach/copyright/); su página no
 //   indica ninguna excepción. Sustituye al mapa de NASA SVS 4851, descartado por la licencia
@@ -56,6 +56,12 @@ const ASSETS = [
     SVS_MOON + 'lroc_color_poles_4k.tif',
     'https://svs.gsfc.nasa.gov/4720',
   ],
+  // La Luna en detalle (fase 6): el color en 8K, solo para el nivel alto.
+  [
+    'lroc_color_poles_8k.tif',
+    SVS_MOON + 'lroc_color_poles_8k.tif',
+    'https://svs.gsfc.nasa.gov/4720',
+  ],
   // Vía Láctea: panorama de 6000 × 3000 px en coordenadas galácticas (el original completo).
   ['eso0932a.tif', ESO_MILKY_WAY, ESO_MILKY_WAY_PAGE],
 ];
@@ -66,6 +72,9 @@ const ELEVATION = [
   ['megt90n000eb.img', MOLA + 'megt90n000eb.img', MOLA_PAGE],
   ['megt90n000eb.lbl', MOLA + 'megt90n000eb.lbl', MOLA_PAGE],
   ['Mercury_Messenger_USGS_DEM_Global_665m_v2.tif', MERCURY_DEM, MERCURY_DEM_PAGE],
+  // La Luna (fase 6): la elevación del LOLA del CGI Moon Kit, 16 px/° (5760 × 2880), en enteros sin
+  // signo de 16 bits: medios metros sobre la esfera de 1737,4 km, más 20 000 (10 km).
+  ['ldem_16_uint.tif', SVS_MOON + 'ldem_16_uint.tif', 'https://svs.gsfc.nasa.gov/4720'],
 ];
 
 const KTX2 = [
