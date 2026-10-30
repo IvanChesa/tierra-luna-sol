@@ -4,7 +4,7 @@
 - **Rama:** `revision-bloque-c`, desde `main` (lo pide la revisión: su vista previa deja verlo antes de fusionar)
 - **Revisión:** `docs/revisiones/bloque-C.md`, **APROBADO**. Por aplicar: C1, C2, C3 y C5, con tests y capturas, y C6 en GitHub. Al plan: C4 (fase 6), C8 (fases 9 y 11) y la 8K más barata (fase 10). C7 queda para Iván.
 - **Además:** la decisión nueva de Iván del mismo día, la **mejora de los anillos de Saturno** (`docs/decisiones/ANILLOS-SATURNO.md`), llevada a la fase 7 del plan junto a R2 (D36), con el realce moderado del brillo ya decidido.
-- **Estado:** listo para la revisión por subagente.
+- **Estado:** revisado por el subagente (`docs/revisiones/revision-bloque-C.md`: CAMBIOS NECESARIOS, sin bloqueantes), con todo corregido; listo para fusionar.
 
 ## Plan
 1. C6 primero, porque el CI de GitHub tarda: el rebase del PR 1, el cierre del PR 2 y el `ignore` de `dependabot.yml`.
@@ -70,8 +70,8 @@ En el móvil, la parte visible es más estrecha y, a igual distancia, el disco l
 - **Sin solapes (`relieveOverlaps`, función pura en `ephemeris/scale.ts`).** Para cada par de cuerpos (el Sol y los planetas), el factor que deja 1,5 unidades de aire entre sus discos es f = (d − 1,5) / (r₁ + r₂). Si uno es Saturno, también entre el otro disco y **sus anillos como disco plano** en su ecuador (con el polo de ese instante y una bisección), no como una esfera: así Júpiter solo encoge cuando de verdad se acerca al plano de los anillos.
   - Los dos encogen por igual con un paso suave: nada por encima de 1,15, lo justo por debajo de 0,85 y, entre medias, una parábola tangente a las dos que nunca se pasa.
   - Cada cuerpo se queda con el menor de sus pares: **solo encogen los que se acercan**, y recuperan el tamaño al separarse. Las posiciones cambian de forma continua y los tamaños también.
-- **El tamaño mínimo (C3):** en la escala ilustrativa, ningún planeta mide menos de **2 px de radio** (4 de diámetro). El radio mínimo sale de la distancia de cada planeta a la cámara de la vista general y de la focal en píxeles. No toca posiciones ni órbitas, y el Sol no lo necesita.
-- **Todo va dentro de la colocación ilustrativa** (`placeBodies`): primero el Sol y los planetas, después el mínimo y el alivio de solapes, y por último las lunas, alrededor de su planeta con su tamaño final.
+- **El tamaño mínimo (C3):** en la escala ilustrativa, ningún planeta mide menos de **2 px de radio** (4 de diámetro). El radio mínimo sale de la distancia de cada planeta a la cámara de la vista general y de la focal en píxeles. No toca posiciones ni órbitas, y el Sol no lo necesita. Esos planetas **no llevan el anillo de marcador** (que se dibuja por debajo de 3 px): se ven como discos (revisión, hallazgo 1).
+- **Todo va dentro de la colocación ilustrativa** (`placeBodies`): primero el Sol y los planetas, después el alivio de solapes, con los radios propios, y el mínimo, que así nunca se deshace (revisión, hallazgo 2), y por último las lunas, alrededor de su planeta con su tamaño final. Con la cámara muy lejos, los discos mínimos de los planetas interiores, a unos píxeles unos de otros, pueden tocarse; es lo que se acepta al alejarse tanto (D35).
   - Un sistema de lunas encoge con su planeta, y sus órbitas (que usan el radio colocado del planeta) siguen pasando por ellas.
   - Las transiciones de marco interpolan desde esos tamaños: al enfocar un planeta, el mínimo de los demás se desvanece con la colocación ilustrativa, sin saltos. Mientras hay un cuerpo enfocado, la cámara de la vista general se conserva.
   - En los marcos físicos (un sistema local o la escala real), nada de esto actúa.
@@ -92,6 +92,7 @@ En el móvil, la parte visible es más estrecha y, a igual distancia, el disco l
 - En las conjunciones de Júpiter y Saturno, cada ~20 años, encogen unos meses: a 3 días/s, decenas de segundos.
 - El test del móvil usa una cámara más pesimista que la real (0,5 px por unidad a la distancia del Sol; la fase 4b midió 0,62 en Júpiter). En el móvil, con los planetas de unos 2 px, ningún sistema de lunas se distingue y sus lunas no se dibujan (`moonPresence`): el test solo mira sus discos y los anillos.
 - Las lunas de sistemas distintos se tocan algo más que en la 4b en las conjunciones (−3,30 frente a −2,5), porque sus sistemas son un 25 % mayores. En esas fechas no se dibujan; el límite del test crece igual (−3,5).
+- **Con la cámara del móvil 4 veces más lejos** (test nuevo tras la revisión, hallazgo 2): todos los planetas miden su mínimo (Júpiter, 16 unidades frente a sus 9) y ninguno baja de 2 px en 200 años; los discos de los interiores, a unos píxeles unos de otros, se tocan (hasta −20 unidades), que es lo que se acepta al alejarse tanto.
 
 ### Radios en pantalla (px CSS, `node scripts/measure-system.mjs`, modo de captura)
 
@@ -110,7 +111,7 @@ Júpiter pasa de 13–17 px de radio a **16–21** en escritorio (la revisión p
 ### Capturas (`docs/informes/img/revision-bloque-c/{antes,despues}/`)
 - `escritorio-sistema`, `escritorio-sistema-2032` y `portatil-sistema`: los planetas, más grandes.
 - `escritorio-sistema-2040` y `movil-sistema-2040` (nuevas en `capture-system.mjs`): la conjunción de Júpiter y Saturno de 2040. Los dos encogen hasta más o menos su tamaño de la fase 4b y no se tocan; los demás, más grandes.
-- `movil-sistema`, `movil-sistema-2032` y `movil-sistema-2040`: los rocosos ya no bajan de 4 px de diámetro. Por debajo de 3 px de radio siguen llevando su marcador (un anillo), como en la fase 4b.
+- `movil-sistema`, `movil-sistema-2032` y `movil-sistema-2040`: los rocosos ya no bajan de 4 px de diámetro y se ven como discos, sin el anillo de marcador. `comparativa-movil-marcadores.webp`, ampliada al doble: arriba, antes (Mercurio, la Tierra y Marte con su anillo); abajo, después. Mercurio, con su albedo de 0,14, sigue siendo un punto oscuro: se encuentra por su nombre y su estela (fase 4b, §4.6).
 
 ## C5: los e2e, sin `networkidle`
 `settlePage` (en `e2e/support.ts`) espera:
@@ -120,7 +121,7 @@ Júpiter pasa de 13–17 px de radio a **16–21** en escritorio (la revisión p
 
 Además:
 - **accesibilidad** («todas las páginas del sitio»): `settlePage` en cada ruta;
-- **privacidad**: `settlePage` en cada ficha y, al final, 2 s fijos escuchando peticiones, por si alguna llega tarde (lo que pide la revisión);
+- **privacidad**: `settlePage` en cada ficha y, en cada una, 1,5 s fijos escuchando peticiones, por si alguna llega tarde (lo que pide la revisión; tras la revisión del subagente, en todas las páginas y no solo tras la última);
 - **publicación** (CSP): espera a que hayan terminado la petición del catálogo de estrellas y las de 9 texturas, y después `settlePage`.
 
 ## C6: Dependabot
@@ -147,10 +148,10 @@ Además:
 
 ## Hallazgos propios
 - **El póster de la vista Tierra era el de la fase 4b.** La fase 5 cambió el material de la Tierra y no regeneró los pósteres. Como el 3D entra con un fundido sobre el póster, durante ese fundido se veían dos Tierras distintas: la lechosa del póster y la nueva. Regenerados los seis con `build-poster.mjs` (mismos tamaños, así que `viewer-poster.ts` no cambia). El de la vista general cambia por los planetas más grandes, y los de la Luna, apenas (diferencia media < 0,4).
-- **El tamaño mínimo, atrasado un frame.** La primera versión calculaba el mínimo con la cámara del frame anterior. Con el render bajo demanda, el último frame tras mover la cámara se quedaba con los tamaños de antes: el test del motor en 390 × 844 dio 1,7 px. Ahora se recalcula después de colocar la cámara y, si ha cambiado, se recolocan los 30 cuerpos (en reposo, una sola vez).
+- **El tamaño mínimo, atrasado un frame.** La primera versión calculaba el mínimo con la cámara del frame anterior. Con el render bajo demanda, el último frame tras mover la cámara se quedaba con los tamaños de antes: el test del motor en 390 × 844 dio 1,7 px. Ahora se recalcula después de colocar la cámara y, si ha cambiado (con tolerancia, revisión, hallazgo 3), se recolocan los 30 cuerpos. Con la cámara quieta, una sola vez por frame.
 
 ## Comprobaciones
-- **Tests unitarios:** 524 (antes, 514), con la cobertura de `ephemeris/` en el 99,56 % de sentencias y el 96,96 % de ramas.
+- **Tests unitarios:** 526 (antes, 514), con la cobertura de `ephemeris/` en el 99,42 % de sentencias y el 96,61 % de ramas.
 - **Mediciones** (RTX 3060, `measure-system.mjs`, alta / media / baja):
   - **vista general a 3 días/s:** 60 / 59,8 / 59,8 FPS, 21 llamadas de dibujo y 38 / 38 / 37 MB de VRAM;
   - **Júpiter a 1 h/s:** 60 FPS, 7 llamadas y 78 / 46 / 45 MB;
@@ -160,8 +161,15 @@ Además:
 - **`npm run check` y e2e:** en §«Salida de los checks».
 
 ## Salida de los checks
-- **e2e:** 70 de 70 en 4,5 min (`npx playwright test`, SwiftShader, 4 trabajadores), con las esperas nuevas de C5.
-- **`npm run check`:** (se completa tras la revisión).
+- **`npm run check`** (tras las correcciones de la revisión), en verde:
+  - lint y Prettier, limpios;
+  - 526 tests, con la cobertura de `ephemeris/` en el 99,42 % de sentencias y el 96,61 % de ramas;
+  - build sin avisos de presupuesto: JS inicial de 298,23 kB (aviso a 320) y chunk de three de 681,99 kB (aviso a 900; 678,67 en la fase 5);
+  - el JS inicial de las 17 páginas, sin three ni astronomy-engine ni los stores ni los controles del visor, con 12,13 kB de código propio de 15.
+- **e2e:**
+  - antes de la revisión por subagente, 70 de 70 en 4,5 min (`npx playwright test`, SwiftShader, 4 trabajadores), con las esperas nuevas de C5;
+  - el subagente pasó los tres que cambian (privacidad, publicación y accesibilidad) en escritorio: 9 de 9;
+  - tras sus correcciones, la batería local la paró Claude Code porque el equipo se quedó sin memoria (no es un fallo de los tests). La pasa entera el CI de GitHub al subir la rama (abajo).
 
 ## Cómo probarlo
 1. La vista previa de la rama: https://revision-bloque-c.tierra-luna-sol.pages.dev.
@@ -169,3 +177,19 @@ Además:
 3. **C2:** en la vista general, los planetas, más grandes. Con `/?fecha=2040-10-15T00:00Z` y la reproducción a 3 días/s, Júpiter y Saturno encogen un poco al cruzarse y recuperan su tamaño después.
 4. **C3:** en el móvil, en vertical, ningún planeta baja de 4 px de diámetro.
 5. Capturas y mediciones: `npm run build && node scripts/capture-earth.mjs <carpeta> --solo=vista-himalaya,movil-vista-himalaya`, `node scripts/capture-system.mjs <carpeta>` y `node scripts/measure-system.mjs`.
+
+---
+
+## Respuesta a la revisión
+Revisión del subagente en `docs/revisiones/revision-bloque-C.md` (veredicto: CAMBIOS NECESARIOS; un importante, cuatro menores y tres sugerencias, sin bloqueantes). Todo corregido en `5d6b887`.
+
+| Hallazgo | Acción | Commit |
+|---|---|---|
+| 1 · Importante: en el móvil, los rocosos medían 2,0–2,1 px y seguían llevando el anillo de marcador (que se dibuja por debajo de 3 px): C3 no conseguía que dejaran de verse como marcadores | Umbral del marcador por cuerpo (`markerRadiusPx` en `layoutLabels`): con el mínimo en marcha (la escala ilustrativa de la vista general, sin transición), los planetas no lo llevan si miden su mínimo; en lo demás, el de siempre. Tests de las etiquetas y del motor (en 390 × 844, ningún planeta con anillo; con Júpiter enfocado, el umbral de siempre). Capturas del móvil rehechas y `comparativa-movil-marcadores.webp` para Iván. D35 lo dice | `5d6b887` |
+| 2 · Menor: al alejar la cámara en el móvil, el alivio deshacía el mínimo y los interiores «latían» | El alivio trabaja con los radios propios y el mínimo va después: nunca se deshace. Al alejarse mucho, los discos mínimos de los interiores pueden tocarse (D35 y el comentario de `placeBodies` lo dicen). Test nuevo con la cámara del móvil ×4: ningún planeta baja de 2 px en 200 años | `5d6b887` |
+| 3 · Menor: `extentScale` baila en el último bit y, con la cámara quieta, los cuerpos se colocaban dos veces en muchos frames | La cámara de la vista general se compara con tolerancia relativa (10⁻⁹) | `5d6b887` |
+| 4 · Menor: la prueba de privacidad solo escuchaba peticiones tardías tras la última página | 1,5 s de escucha en cada página | `5d6b887` |
+| 5 · Menor: dos copias nuevas de la foto de EPIC sin su fila en `FUENTES.md` | Añadidas a la fila de las comparativas de EPIC (solo en los informes) | `5d6b887` |
+| 6 · Sugerencia: dos comentarios inexactos | El de `moonResolutionPx` dice ahora que las lunas aparecen cuando antes en la vista general (en un sistema local, algo más tarde); el de `localPhysicalKmPerUnit`, que un planeta encogido o agrandado en la vista general vuelve con suavidad a su tamaño al enfocarlo | `5d6b887` |
+| 7 · Sugerencia: D18 y la línea de `toktx` no recogían C4 | D18: la reevaluación de KTX2 empieza por la 8K de la Tierra y los mapas de la Luna. `PENDIENTES.md`: `toktx`, solo si la VRAM no se cumple en el peor caso de las vistas Tierra y Luna. Y la tarea 9 de la fase 7 nombra `FUENTES.md` y `/creditos` | `5d6b887` |
+| 8 · Sugerencia: el comentario de los búferes prometía no reservar memoria y `relieveOverlaps` creaba ~120 objetos por colocación | `relieveOverlaps`, `ringFactor` y el mínimo, con aritmética escalar sobre los arrays (sin `Vec3` intermedios); el comentario dice lo que hace | `5d6b887` |
