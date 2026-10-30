@@ -68,6 +68,10 @@ const SHOTS = [
   ['luna-cara-oculta', `/?captura=1&cuerpo=luna&fecha=${NEW}&fase=15&latitud=0`, SQUARE],
   // El eclipse total del 3-3-2026 en su máximo (11:33:37 UT; catálogo de la NASA), desde la Tierra.
   ['luna-eclipse-2026', '/?captura=1&cuerpo=luna&fecha=2026-03-03T11:33:37Z&desde=tierra', SQUARE],
+  // La libración en longitud, desde la Tierra: +6,65° el 6-1-2026 y −6,60° el 21-11-2026 (los extremos
+  // de 2026 con la Luna gibosa; astronomy-engine, `Libration`).
+  ['luna-libracion-este', '/?captura=1&cuerpo=luna&fecha=2026-01-06T06:00Z&desde=tierra', SQUARE],
+  ['luna-libracion-oeste', '/?captura=1&cuerpo=luna&fecha=2026-11-21T18:00Z&desde=tierra', SQUARE],
   // El polo sur, desde 75° S sobre el ecuador de la Luna.
   ['luna-polo-sur', `/?captura=1&cuerpo=luna&fecha=${FIRST_QUARTER}&fase=70&latitud=-75`, SQUARE],
 ];

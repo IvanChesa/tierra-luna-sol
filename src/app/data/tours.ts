@@ -289,8 +289,8 @@ export const MOON_TOUR: readonly MoonStop[] = [
     reviewed: false,
     latDeg: 9.621,
     lonDeg: -20.079,
-    distanceRadii: 1.3,
-    extentDeg: 4,
+    distanceRadii: 1.6,
+    extentDeg: 5,
     light: { kind: 'sun', elevationDeg: 15 },
   },
   {
@@ -304,8 +304,8 @@ export const MOON_TOUR: readonly MoonStop[] = [
     reviewed: false,
     latDeg: -43.296,
     lonDeg: -11.215,
-    distanceRadii: 1.3,
-    extentDeg: 4,
+    distanceRadii: 1.6,
+    extentDeg: 5,
     light: { kind: 'sun', elevationDeg: 20 },
   },
   {

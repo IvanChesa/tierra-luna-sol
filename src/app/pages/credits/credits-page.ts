@@ -28,7 +28,17 @@ import { Component } from '@angular/core';
       <li>
         Luna: CGI Moon Kit del
         <a href="https://svs.gsfc.nasa.gov/4720">Scientific Visualization Studio de la NASA</a>, con
-        datos de LRO/LROC.
+        datos de LRO/LROC (el color) y LRO/LOLA (el relieve). Los lugares con nombre de sus vistas y
+        su recorrido, del
+        <a href="https://planetarynames.wr.usgs.gov/">Gazetteer of Planetary Nomenclature</a> (IAU y
+        USGS).
+      </li>
+      <li>
+        Eclipses de Luna:
+        <a href="https://eclipse.gsfc.nasa.gov/LEcat5/LEcatalog.html"
+          >catálogo de cinco milenios de la NASA</a
+        >
+        (Fred Espenak y Jean Meeus, NASA/GSFC), con el que se comprueba la sombra de la Tierra.
       </li>
       <li>
         Relieve de Mercurio: modelo de elevación global de MESSENGER del

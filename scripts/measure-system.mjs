@@ -1,7 +1,7 @@
 // Mediciones de la fase 4b: la vista general con las estelas de color (D34) y los planetas más
 // grandes, a la velocidad de cada contexto (D33). Por calidad (alta, media y baja): FPS, coste por
 // frame en la CPU, llamadas de dibujo, triángulos y VRAM estimada, en la vista general a 3 días por
-// segundo, con Júpiter enfocado y en la vista Tierra (fase 5) a 1 hora por segundo (modo de captura,
+// segundo, con Júpiter enfocado y en las vistas Tierra (fase 5) y Luna (fase 6) a 1 hora por segundo (modo de captura,
 // sin interacción).
 //
 // También el radio en pantalla (px CSS) del Sol y de los planetas en la vista general, en escritorio,
@@ -91,6 +91,10 @@ try {
     const earth = await openViewer(browser, `/explorar/tierra?captura=1&calidad=${quality}`);
     results[`tierra-1-hora-${quality}`] = await sample(earth.page, HOUR_S);
     await earth.page.close();
+    // La vista Luna (fase 6): la esfera cúbica con el relieve desplazado y, en alto, el color en 8K.
+    const moon = await openViewer(browser, `/explorar/luna?captura=1&calidad=${quality}`);
+    results[`luna-1-hora-${quality}`] = await sample(moon.page, HOUR_S);
+    await moon.page.close();
   }
 } finally {
   await close();
