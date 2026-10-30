@@ -1118,6 +1118,30 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     h.engine.dispose();
   });
 
+  it('las nubes se atenúan en los primeros planos de la Tierra y no en la vista general (C1)', async () => {
+    const h = await createHarness({ reducedMotion: true, focus: 'tierra' });
+    settle(h);
+    interface EarthVisual {
+      earth: { uCloudOpacity: { value: number } } | null;
+    }
+    const opacity = () =>
+      (internals(h).world as unknown as { visuals: EarthVisual[] }).visuals.find(
+        (visual) => visual.earth,
+      )?.earth?.uCloudOpacity.value ?? Number.NaN;
+    // Enfocada, la Tierra cabe entera: las nubes, enteras.
+    expect(opacity()).toBe(1);
+    // El Himalaya, a 1,9 radios: la Tierra desborda la vista y las nubes se atenúan.
+    h.engine.lookAtSurface(28, 86, 1.9);
+    settle(h);
+    expect(opacity()).toBeLessThan(0.6);
+    expect(opacity()).toBeGreaterThanOrEqual(VISUAL_CONFIG.earth.cloudFade.min);
+    // En la vista general, otra vez enteras.
+    h.engine.focus(null);
+    settle(h);
+    expect(opacity()).toBe(1);
+    h.engine.dispose();
+  });
+
   it('las lunas de un sistema que no se distingue no se dibujan; al enfocar su planeta, sí (fase 4b)', async () => {
     const visible = (h: Harness, id: string) =>
       internals(h).world.scene.getObjectByName(id)?.visible;

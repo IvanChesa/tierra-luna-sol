@@ -73,6 +73,7 @@ import {
   VISUAL_CONFIG,
   backgroundGain,
   closeUpAmount,
+  cloudOpacity,
   exposureFor,
   fillLight,
   moonPresence,
@@ -1069,6 +1070,15 @@ export class SceneEngine implements SceneEngineApi {
     // movimiento reducido y en las capturas), no con el simulado: a 3 días por segundo darían vueltas
     // a toda velocidad.
     this.world.setCloudDrift(this.instant() ? 0 : this.cloudTurns);
+    // Y se atenúan en los primeros planos (revisión del bloque C, C1): según lo que su disco desborda
+    // la parte visible del lienzo.
+    const { width, height } = this.viewport;
+    const insets = this.insets;
+    const halfVisible =
+      Math.min(width - insets.left - insets.right, height - insets.top - insets.bottom) / 2;
+    this.world.setCloudOpacity(
+      cloudOpacity(this.screen[EARTH_INDEX]?.radiusPx ?? 0, Math.max(halfVisible, 1)),
+    );
     if (this.exposure < 0 || Math.abs(exposure - this.exposure) > 1e-4) {
       this.exposure = exposure;
       this.renderer.setExposure(exposure);

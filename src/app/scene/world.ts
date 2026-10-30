@@ -676,6 +676,13 @@ export class World {
     }
   }
 
+  /** Opacidad de las nubes de la Tierra y de su sombra (`cloudOpacity`: menos en los primeros planos). */
+  setCloudOpacity(opacity: number): void {
+    for (const visual of this.visuals) {
+      if (visual.earth) visual.earth.uCloudOpacity.value = opacity;
+    }
+  }
+
   /** Actualiza el grafo para un frame. Devuelve los planos de recorte que ha puesto. */
   update(frame: WorldFrame): { near: number; far: number } {
     const { frames, state, orientations } = frame;

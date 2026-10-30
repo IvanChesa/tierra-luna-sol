@@ -1,12 +1,37 @@
 import {
   VISUAL_CONFIG,
   closeUpAmount,
+  cloudOpacity,
   exposureFor,
   fillLight,
   moonPresence,
 } from './visual-config';
 
 describe('configuración visual', () => {
+  it('las nubes de la Tierra, enteras con el disco a la vista y atenuadas de cerca, sin saltos (C1)', () => {
+    const { from, to, min } = VISUAL_CONFIG.earth.cloudFade;
+    // El disco entero a la vista (las comparativas con EPIC, la vista Tierra y «La Tierra completa»).
+    expect(cloudOpacity(0, 300)).toBe(1);
+    expect(cloudOpacity(0.82 * 300, 300)).toBe(1);
+    expect(cloudOpacity(from * 300, 300)).toBe(1);
+    // Los primeros planos (el Himalaya, a 1,9 radios, desborda unas dos veces la parte visible).
+    expect(cloudOpacity(to * 300, 300)).toBeCloseTo(min, 12);
+    expect(cloudOpacity(5 * 300, 300)).toBeCloseTo(min, 12);
+    expect(cloudOpacity(Infinity, 300)).toBeCloseTo(min, 12);
+    expect(min).toBeGreaterThan(0);
+    // Baja de forma monótona y suave al acercarse.
+    let previous = 1;
+    for (let ratio = from; ratio <= to + 0.5; ratio += 0.02) {
+      const opacity = cloudOpacity(ratio * 300, 300);
+      expect(opacity).toBeLessThanOrEqual(previous);
+      expect(previous - opacity).toBeLessThan(0.05);
+      previous = opacity;
+    }
+    // Sin datos de pantalla, las nubes enteras.
+    expect(cloudOpacity(Number.NaN, 300)).toBe(1);
+    expect(cloudOpacity(100, 0)).toBe(1);
+  });
+
   it('la vista general no es primer plano y un cuerpo grande en pantalla sí', () => {
     expect(closeUpAmount(null)).toBe(0);
     expect(closeUpAmount(3)).toBe(0);

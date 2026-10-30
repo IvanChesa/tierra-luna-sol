@@ -85,6 +85,12 @@ export const VISUAL_CONFIG = {
    * - `twilight`: el tono de la luz junto al terminador (sRGB);
    * - `cloudDrift`: la deriva ilustrativa de las nubes (fracción de vuelta por segundo de los frames
    *   pintados; se para con movimiento reducido y en las capturas);
+   * - `cloudFade`: las nubes se atenúan en los primeros planos, como en Google Earth (revisión del
+   *   bloque C, C1: tapaban el Himalaya en su vista guiada). Va con lo que el disco de la Tierra
+   *   desborda la parte visible del lienzo (su radio en pantalla entre la mitad del lado más corto de
+   *   esa parte): opacidad completa hasta `from` (el disco entero a la vista: las comparativas con
+   *   EPIC y la medida de R3 no cambian) y, al acercarse, baja suavemente hasta `min` en `to`. Su
+   *   sombra, igual (`cloudOpacity`);
    * - `markers`: los marcadores de los lugares del cielo desde España (vista «España»): su color, el
    *   de su borde (sRGB; los separa del océano y de las nubes) y su diámetro en px CSS.
    */
@@ -97,6 +103,7 @@ export const VISUAL_CONFIG = {
     scatter: { color: '#5b8fe6', intensity: 0.035, limb: 1.5 },
     twilight: '#ffb488',
     cloudDrift: 0.0004,
+    cloudFade: { from: 1, to: 2.2, min: 0.3 },
     markers: { color: '#e8c46f', edge: '#38455a', sizePx: 7 },
   },
   /** Por debajo de este radio en pantalla (px CSS), el halo de una atmósfera no se dibuja: no se vería. */
@@ -172,6 +179,19 @@ export function moonPresence(
   const { from, to } = VISUAL_CONFIG.moonResolutionPx;
   const t = Math.min(Math.max((separation - from) / (to - from), 0), 1);
   return t * t * (3 - 2 * t);
+}
+
+/**
+ * Opacidad de las nubes de la Tierra (`VISUAL_CONFIG.earth.cloudFade`) según lo que su disco desborda
+ * la parte visible del lienzo: `radiusPx`, su radio en pantalla, y `halfVisiblePx`, la mitad del lado
+ * más corto de la parte visible (px CSS). 1 con el disco entero a la vista; `min` en los primeros
+ * planos.
+ */
+export function cloudOpacity(radiusPx: number, halfVisiblePx: number): number {
+  const { from, to, min } = VISUAL_CONFIG.earth.cloudFade;
+  if (Number.isNaN(radiusPx) || !(halfVisiblePx > 0)) return 1;
+  const t = Math.min(Math.max((radiusPx / halfVisiblePx - from) / (to - from), 0), 1);
+  return 1 - (1 - min) * t * t * (3 - 2 * t);
 }
 
 /** Relleno ilustrativo para esa cantidad de primer plano. */
