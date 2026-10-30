@@ -1,4 +1,10 @@
-import { SphereGeometry, Vector3 } from 'three';
+import {
+  ClampToEdgeWrapping,
+  ImageBitmapLoader,
+  RepeatWrapping,
+  SphereGeometry,
+  Vector3,
+} from 'three';
 import {
   eclRotationToThree,
   eclToThree,
@@ -9,6 +15,7 @@ import { Mat3, mulMat3Vec, vec3 } from '../ephemeris/vec3';
 import { TEXTURE_FILES, SATURN_RING_STRIP_KM } from './texture-files';
 import { TEXTURE_META } from './texture-meta';
 import {
+  ManifestTextureSource,
   TextureFile,
   TextureId,
   chooseTextureFile,
@@ -129,6 +136,26 @@ describe('texturas: nivel elegido y VRAM', () => {
     // Las demás, como mucho 4k: pedir 8k da 4k.
     expect(chooseTextureFile(TEXTURE_FILES['earth-clouds'], '8k', 16_384)?.level).toBe('4k');
     expect(QUALITY_PROFILES.high.earthDayTexture).toBe('8k');
+  });
+
+  it('los mapas de superficie dan la vuelta en longitud; la tira de los anillos, no (fase 5)', async () => {
+    // Sin ImageBitmap en jsdom: un bitmap falso. Con ClampToEdge (el de three), la deriva de las
+    // nubes estiraba la última columna del mapa en una franja cada vez más ancha.
+    const bitmap = { width: 4, height: 2, close: () => undefined } as unknown as ImageBitmap;
+    const spy = vi.spyOn(ImageBitmapLoader.prototype, 'loadAsync').mockResolvedValue(bitmap);
+    const source = new ManifestTextureSource({
+      files: TEXTURE_FILES,
+      meta: TEXTURE_META,
+      baseUrl: 'http://localhost/',
+      maxTextureSize: 16_384,
+      anisotropy: () => 1,
+      upload: () => Promise.resolve(),
+    });
+    for (const id of ['earth-day', 'earth-clouds', 'earth-night', 'mars'] as const) {
+      expect((await source.load(id, '1k'))?.texture.wrapS, id).toBe(RepeatWrapping);
+    }
+    expect((await source.load('saturn-rings', '1k'))?.texture.wrapS).toBe(ClampToEdgeWrapping);
+    spy.mockRestore();
   });
 
   it('estima la VRAM con mipmaps (4/3) y deja las vistas dentro del presupuesto de §5', () => {

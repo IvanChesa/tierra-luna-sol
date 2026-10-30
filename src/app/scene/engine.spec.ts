@@ -960,8 +960,9 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     const e2 = 1 - squash * squash;
     const latDeg = (Math.atan2(hit.y, (1 - e2) * Math.hypot(hit.x, hit.z)) * 180) / Math.PI;
     const lonDeg = (Math.atan2(-hit.z, hit.x) * 180) / Math.PI;
-    expect(Math.abs(latDeg - eclipse.latitudeDeg)).toBeLessThan(1);
-    expect(Math.abs(lonDeg - eclipse.longitudeDeg)).toBeLessThan(1);
+    // A ±0,1° de la ficha (el plan pide ±1°): el Sol que recibe, el aparente (con la aberración).
+    expect(Math.abs(latDeg - eclipse.latitudeDeg)).toBeLessThan(0.1);
+    expect(Math.abs(lonDeg - eclipse.longitudeDeg)).toBeLessThan(0.1);
     // Y con la función de efemérides (con el elipsoide WGS84: unas centésimas de grado).
     const center = moonShadowCenter(date);
     expect(Math.abs(latDeg - (center?.latDeg ?? 0))).toBeLessThan(0.1);
@@ -976,7 +977,8 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
   });
 
   it('la Tierra pide sus nubes también en la vista general; la noche, la máscara y las normales, solo de cerca (fase 5)', async () => {
-    // Una fuente de texturas falsa que apunta qué se pide (y lo sirve al momento).
+    // Una fuente de texturas falsa que apunta qué se pide (y lo sirve al momento). Los mapas de la
+    // Tierra ocupan 1 MiB cada uno, y los demás, casi nada: la VRAM del motor tiene que contarlos.
     const withRequests = async (focus: SceneEngineOptions['focus']) => {
       const requests: string[] = [];
       const source = {
@@ -985,7 +987,7 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
           return Promise.resolve({
             texture: new Texture(),
             file: { level, path: `${id}.webp`, width: 4, height: 2, bytes: 1 },
-            vramBytes: 32,
+            vramBytes: id.startsWith('earth-') ? 1_048_576 : 32,
           });
         },
       };
@@ -995,19 +997,57 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
       );
       settle(h);
       for (let k = 0; k < 5; k++) await flush();
+      const { vramMB } = h.engine.stats();
       h.engine.dispose();
-      return requests;
+      return { requests, vramMB };
     };
     const overview = await withRequests(null);
-    expect(overview).toContain('earth-day');
-    expect(overview).toContain('earth-clouds');
+    expect(overview.requests).toContain('earth-day');
+    expect(overview.requests).toContain('earth-clouds');
     for (const id of ['earth-night', 'earth-specular', 'earth-normal']) {
-      expect(overview, id).not.toContain(id);
+      expect(overview.requests, id).not.toContain(id);
     }
+    // En la vista general, el día y las nubes (revisión de la fase 5, hallazgo 2).
+    expect(overview.vramMB).toBeGreaterThanOrEqual(2);
+    expect(overview.vramMB).toBeLessThan(3);
     const earth = await withRequests('tierra');
     for (const id of ['earth-clouds', 'earth-night', 'earth-specular', 'earth-normal']) {
-      expect(earth, id).toContain(id);
+      expect(earth.requests, id).toContain(id);
     }
+    // De cerca, los cinco: el día, las normales, las nubes, la noche y la máscara del océano.
+    expect(earth.vramMB).toBeGreaterThanOrEqual(5);
+    expect(earth.vramMB).toBeLessThan(6);
+  });
+
+  it('las nubes derivan con los frames pintados: sin pintar no se mueven, y al volver no saltan (fase 5)', async () => {
+    const h = await createHarness({ focus: 'tierra' });
+    h.engine.setPlaying(false);
+    settle(h);
+    interface EarthVisual {
+      earth: { uCloudOffset: { value: number } } | null;
+    }
+    const offset = () =>
+      (internals(h).world as unknown as { visuals: EarthVisual[] }).visuals.find(
+        (visual) => visual.earth,
+      )?.earth?.uCloudOffset.value ?? Number.NaN;
+    const { cloudDrift } = VISUAL_CONFIG.earth;
+    // Diez segundos reproduciendo: diez segundos de deriva (el primer frame cuenta 16 ms).
+    h.engine.setPlaying(true);
+    const start = offset();
+    h.frames(10_000);
+    expect((offset() - start) / cloudDrift).toBeGreaterThan(9.7);
+    expect((offset() - start) / cloudDrift).toBeLessThan(10.1);
+    // En pausa y sin mover la cámara no se pinta: un minuto después, un frame no la hace saltar
+    // (con el reloj de pared, serían 60 s de golpe: 8,6° de longitud).
+    h.engine.setPlaying(false);
+    settle(h);
+    const paused = offset();
+    h.clock.now += 60_000;
+    h.engine.zoomBy(0.999);
+    settle(h);
+    expect(offset() - paused).toBeGreaterThan(0);
+    expect(offset() - paused).toBeLessThan(2 * cloudDrift);
+    h.engine.dispose();
   });
 
   it('las lunas de un sistema que no se distingue no se dibujan; al enfocar su planeta, sí (fase 4b)', async () => {

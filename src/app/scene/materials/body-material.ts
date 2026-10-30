@@ -237,7 +237,8 @@ void main() {
   color += uScatter.rgb * day * (1.0 + uScatter.w * pow(1.0 - clamp(muViewer, 0.0, 1.0), 2.0));
   // Luces de las ciudades: se encienden en el crepúsculo (del Sol en el horizonte a unos 9° bajo él).
   if (uHasNight > 0.5) {
-    float night = smoothstep(0.0, -0.15, muSun);
+    // (Los bordes de smoothstep, en orden: al revés, GLSL ES no define el resultado.)
+    float night = 1.0 - smoothstep(-0.15, 0.0, muSun);
     color += texture2D(uNightMap, uv).rgb * uEarth.y * night * (1.0 - 0.85 * cloud);
   }
   vec3 composite = mix(albedo, vec3(uEarth.x), cloud);

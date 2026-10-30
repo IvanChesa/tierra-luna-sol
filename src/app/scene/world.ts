@@ -33,7 +33,7 @@ import { BODY_DATA } from '../data/body-data';
 import type { BodyId } from '../data/body.model';
 import { BODY_PHOTOMETRY, BodyPhotometry, RING_PHOTOMETRY } from '../data/photometry';
 import { SKY_PLACES } from '../data/places';
-import { eclRotationToThree } from '../ephemeris/coordinates';
+import { eclRotationToThree, sunApparentGeocentricEcl } from '../ephemeris/coordinates';
 import { albedoScale } from '../ephemeris/photometry';
 import type { SystemState } from '../ephemeris/system-state';
 import { KM_PER_AU } from '../ephemeris/constants';
@@ -95,14 +95,14 @@ export const BODY_RELIEF_TEXTURES: Readonly<Partial<Record<BodyId, TextureId>>> 
 
 /**
  * Mapas de la Tierra además del de día (fase 5): las nubes, también en la vista general (son las que
- * le dan su brillo); las luces nocturnas y la máscara del océano, solo en primer plano.
+ * le dan su brillo); las luces nocturnas y la máscara del océano, solo en primer plano y a su propio
+ * nivel (`earthMapsTexture`).
  */
 const EARTH_MAPS = [
   { id: 'earth-clouds', uniform: 'uCloudMap', flag: 'uHasClouds', nearOnly: false },
   { id: 'earth-night', uniform: 'uNightMap', flag: 'uHasNight', nearOnly: true },
   { id: 'earth-specular', uniform: 'uSpecularMap', flag: 'uHasSpecular', nearOnly: true },
 ] as const;
-/** Los mapas de la Tierra que solo se ven de cerca van a su propio nivel (`earthMapsTexture`). */
 
 interface BodyMap {
   readonly id: TextureId;
@@ -270,8 +270,10 @@ export class World {
   private readonly milkyWay: Mesh;
   private readonly milkyWayMaterial = createMilkyWayMaterial();
   /** Marcadores de los lugares del cielo desde España, en la Tierra (fase 5). */
-  private readonly markerMaterial = createMarkerMaterial('#e8c46f');
+  private readonly markerMaterial = createMarkerMaterial(VISUAL_CONFIG.earth.markers);
   private markers: Points | null = null;
+  /** El Sol aparente (geocéntrico, ECL) del último instante, para la sombra de la Luna (fase 5). */
+  private apparentSun: { readonly timeMs: number; readonly ecl: Vec3 } | null = null;
   private milkyWayTexture: LoadedTexture | null = null;
   private milkyWayRequested: TextureLevel | null = null;
   private orbitSources: readonly OrbitSource[];
@@ -628,7 +630,8 @@ export class World {
   /**
    * La Luna y el Sol en el sistema propio de la Tierra, para la sombra de los eclipses (fase 5, D20):
    * con la geometría real del estado (float64), no con la de la escena, y en los ejes de la malla
-   * (sistema propio x, y, z → x, z, −y: Y, el polo; el meridiano 0 en +X).
+   * (sistema propio x, y, z → x, z, −y: Y, el polo; el meridiano 0 en +X). El Sol, el aparente (con la
+   * aberración anual, como `moonShadowCenter`), calculado una vez por instante.
    */
   private updateEclipse(visual: BodyVisual, frame: WorldFrame): void {
     const earth = visual.earth;
@@ -648,13 +651,11 @@ export class World {
       z: (offset[3 * moon + 2] as number) / radiusAu,
     });
     earth.uMoonLocal.value.set(m.x, m.y, m.z, MOON_RADIUS_KM / visual.body.radiusKm);
-    const helio = frame.state.heliocentric;
-    const toSun = {
-      x: -(helio[3 * k] as number),
-      y: -(helio[3 * k + 1] as number),
-      z: -(helio[3 * k + 2] as number),
-    };
-    const s = toMesh(toSun);
+    const timeMs = frame.state.timeMs;
+    if (this.apparentSun?.timeMs !== timeMs) {
+      this.apparentSun = { timeMs, ecl: sunApparentGeocentricEcl(new Date(timeMs)) };
+    }
+    const s = toMesh(this.apparentSun.ecl);
     earth.uSunLocal.value.set(
       s.x / radiusAu,
       s.y / radiusAu,
@@ -824,9 +825,14 @@ export class World {
 
   /** Memoria de vídeo estimada (texturas + geometría), en bytes. */
   vramBytes(): number {
+    // Cada cuerpo: su textura, su relieve y, en la Tierra, sus nubes, su noche y su máscara del océano.
     const textures =
       this.visuals.reduce(
-        (sum, v) => sum + (v.loaded?.vramBytes ?? 0) + (v.relief?.loaded?.vramBytes ?? 0),
+        (sum, v) =>
+          sum +
+          (v.loaded?.vramBytes ?? 0) +
+          (v.relief?.loaded?.vramBytes ?? 0) +
+          v.maps.reduce((maps, map) => maps + (map.loaded?.vramBytes ?? 0), 0),
         0,
       ) +
       (this.ringTexture?.vramBytes ?? 0) +

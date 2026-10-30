@@ -73,8 +73,10 @@ export const VISUAL_CONFIG = {
    * - `scatter`: la luz que dispersa la atmósfera sobre el lado diurno (color sRGB, intensidad en
    *   albedo y refuerzo hacia el limbo); azulada, aclara el océano respecto a la tierra como en EPIC;
    * - `twilight`: el tono de la luz junto al terminador (sRGB);
-   * - `cloudDrift`: la deriva ilustrativa de las nubes (fracción de vuelta por segundo de reloj; se
-   *   para con movimiento reducido y en las capturas).
+   * - `cloudDrift`: la deriva ilustrativa de las nubes (fracción de vuelta por segundo de los frames
+   *   pintados; se para con movimiento reducido y en las capturas);
+   * - `markers`: los marcadores de los lugares del cielo desde España (vista «España»): su color, el
+   *   de su borde (sRGB; los separa del océano y de las nubes) y su diámetro en px CSS.
    */
   earth: {
     cloudAlbedo: 0.75,
@@ -84,6 +86,7 @@ export const VISUAL_CONFIG = {
     scatter: { color: '#5b8fe6', intensity: 0.035, limb: 1.5 },
     twilight: '#ffb488',
     cloudDrift: 0.0004,
+    markers: { color: '#e8c46f', edge: '#38455a', sizePx: 7 },
   },
   /** Por debajo de este radio en pantalla (px CSS), el halo de una atmósfera no se dibuja: no se vería. */
   atmosphereMinRadiusPx: 2,

@@ -299,6 +299,11 @@ export class SceneEngine implements SceneEngineApi {
   /** El frame pedido es uno del render lento (4 Hz): una orden con prisa lo adelanta. */
   private handleDelayed = false;
   private lastFrameMs: number | null = null;
+  /**
+   * Deriva de las nubes de la Tierra (fracción de vuelta): avanza con el tiempo de los frames que se
+   * pintan, con su tope, no con el reloj de pared (sin pintar no se mueven, y al volver no saltan).
+   */
+  private cloudTurns = 0;
   /** Hasta qué instante del reloj de pared (`deps.now`) ha avanzado ya el reloj de la simulación. */
   private wallMs: number | null = null;
   private lastTimeEventMs = -Infinity;
@@ -742,6 +747,7 @@ export class SceneEngine implements SceneEngineApi {
     const continuous = this.lastFrameMs !== null && dt < SLOW_FRAME_MS * 0.8;
     this.lastFrameMs = timeMs;
     if (continuous) this.frameIntervalMs = 0.8 * this.frameIntervalMs + 0.2 * dt;
+    this.cloudTurns = (this.cloudTurns + (dt / 1000) * VISUAL_CONFIG.earth.cloudDrift) % 1;
     const limit = this.clock.advance(this.clockStep(dt));
     if (limit) {
       this.emit('limitReached', { limit });
@@ -1032,11 +1038,10 @@ export class SceneEngine implements SceneEngineApi {
       focus === SUN_INDEX ? closeUp : 0,
       this.instant() ? 0 : this.deps.now() / 1000,
     );
-    // Las nubes de la Tierra derivan con el reloj de pared (quietas con movimiento reducido y en las
-    // capturas), no con el simulado: a 3 días por segundo darían vueltas a toda velocidad.
-    this.world.setCloudDrift(
-      this.instant() ? 0 : (this.deps.now() / 1000) * VISUAL_CONFIG.earth.cloudDrift,
-    );
+    // Las nubes de la Tierra derivan con el tiempo real de los frames pintados (quietas con
+    // movimiento reducido y en las capturas), no con el simulado: a 3 días por segundo darían vueltas
+    // a toda velocidad.
+    this.world.setCloudDrift(this.instant() ? 0 : this.cloudTurns);
     if (this.exposure < 0 || Math.abs(exposure - this.exposure) > 1e-4) {
       this.exposure = exposure;
       this.renderer.setExposure(exposure);
