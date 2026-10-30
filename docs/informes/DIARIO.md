@@ -13,6 +13,7 @@ Una línea por cada fase cerrada en modo autónomo por bloques y, al terminar ca
 | Revisión del bloque R aplicada (en `main`) | 2026-10-27 | Bloque R **APROBADO** (`docs/revisiones/bloque-R.md`): R1 (anillos de Saturno gris lavanda y con bandas planas) y R4 (la pista de uso), corregidos; R2 a la fase 7 y R3 a la fase 5. Licencia MIT (D32), primer push autorizado y, por decisión de Iván, el hosting pasa a Cloudflare Pages (D9, D17, D23, D24, D26 y fases 4 y 11). Detalle y capturas antes y después en `docs/informes/revision-bloque-R.md` | 453 tests · 60 e2e · JS inicial de 298,00 kB · anillo B: contraste fino 0,016 → 0,197 (la foto, 0,178) y su perfil, el de la foto · brillo y opacidad de los anillos, los de la NASA y el Hubble (sin cambios) |
 | 4 · Despliegue continuo en Cloudflare Pages | 2026-10-27 | CAMBIOS NECESARIOS: 0 bloqueantes, 2 importantes (las cabeceras `Link` de los Early Hints de Pages, relativas, pedían módulos que no existen en las páginas anidadas; Cloudflare añade Network Error Logging hacia un dominio suyo), 5 menores y 8 sugerencias. Corregido todo salvo NEL, que la red de Cloudflare pone después de Pages y no se puede quitar: decide Iván (`PENDIENTES.md`). Fusionada con `--no-ff` (`4a5841f`) y en GitHub | Primer push (sin secretos; el blob mayor, 1,8 MB) · 461 tests · 65 e2e en local y en el CI de GitHub · JS inicial de 298,23 kB (código propio 12,13 de 15 kB, +0,55 por el canonical) · build para Pages: 126 ficheros, el mayor de 1,76 MiB · vista previa por rama y `main` en https://staging.tierra-luna-sol.pages.dev, verificadas por el propio CI: 31 de 32 y el aviso de NEL, con el HTML servido idéntico al del build |
 | 4b · Pulido de la vista del sistema solar | 2026-10-27 | CAMBIOS NECESARIOS: 0 bloqueantes, 4 importantes (el test de solapes no miraba las lunas frente a los anillos ni entre sistemas; los sistemas de lunas compactos, pegados a los discos e interpenetrados, con la etiqueta de Saturno tapada; el criterio de planetas visibles, sin demostrar en móvil ni con los anillos abiertos; el relleno sin cambios), 4 menores y 2 sugerencias. Corregido todo: cada luna solo se dibuja cuando su sistema se distingue (como su órbita), un clic en un disco elige ese cuerpo, una unidad de aire también frente a los anillos y relleno 0,3. En móvil, los rocosos siguen siendo marcadores: decide Iván (`PENDIENTES.md`). Fusionada con `--no-ff` (`3fa69d5`) | Velocidad: 3 días/s en la vista general y 1 h/s con un cuerpo (D33) · estelas de color, 1/8 de vuelta, también en pausa (D34) · Júpiter 5,25 → 7,34 u (de ~8 a 13–17 px en escritorio), sin solapes de 1900 a 2100 · 481 tests · 67 e2e · 60 FPS, 21 llamadas de dibujo (43 en la 3c) y 35 MB en la vista general · JS inicial de 298,23 kB |
+| 5 · La Tierra | 2026-10-30 | CAMBIOS NECESARIOS: 0 bloqueantes, 6 importantes (las vistas guiadas cambiaban la fecha que se ve; la VRAM del motor no contaba los mapas de la Tierra; el reloj de «Luz del Sol» era una región viva; el relieve, con el norte y el sur cambiados; R3, sin medir; y «España», que no se veía en el móvil), 9 menores y 5 sugerencias. Corregido todo salvo parte de una sugerencia (las nubes del Himalaya, a §10 del informe), más 2 fallos propios (una franja de nubes estiradas que crecía con el tiempo y el panel de la Tierra fuera de los márgenes del encuadre al entrar en su vista). Fusionada con `--no-ff` (`5d9a5a2`) | 514 tests · cobertura de `ephemeris/` del 99,5 % · 70 e2e · JS inicial de 298,23 kB (código propio 12,13 de 15) · vista Tierra a 60 FPS en los tres niveles, con 278/86/85 MB de VRAM (de 300 y 120) y 3,34 MB de texturas en alto · R3 medido: océano / desierto 0,189 (EPIC, 0,178) y nubes a menos del 3 % · sombra del eclipse a 2,7 km del punto de la NASA · tareas largas ≤ 110 ms |
 ---
 
 ## Resumen del bloque «fases 1 a 1» (2026-10-24)
@@ -195,3 +196,86 @@ No se activó ninguna: no quedó ningún bloqueante, no hizo falta ninguna depen
 5. **Cuando puedas, en tu móvil** (`npm start -- --host 0.0.0.0`): las hojas, la fila de fichas, la línea de tiempo al tacto y el gasto de batería con la reproducción automática.
 
 El bloque termina aquí. No se ha empezado el bloque C: antes lo revisa la sesión de revisión.
+
+## Resumen del bloque C, fases 4, 4b y 5 (2026-10-30)
+
+### Sesiones
+1. **Sesión 1** (27-10): fase 4 (Cloudflare Pages) y fase 4b (pulido de la vista general), cada una con su revisión, sus correcciones y su fusión. Fase 5 hecha en su rama, hasta el informe. La revisión de la fase 5 por subagente no llegó a terminar: límite de uso.
+2. **Sesión 2** (30-10): retomada desde este diario, el informe de la fase 5 y `git log`. Revisión de la fase 5 por un subagente sin contexto, correcciones, fusión y este resumen.
+
+### Qué se ha hecho
+- **Fase 4, despliegue continuo en Cloudflare Pages** (D23 y D26):
+  - el repo, en GitHub (primer push sin secretos ni ficheros grandes);
+  - CI con lint, tests, build y e2e (SwiftShader);
+  - despliegue con `wrangler-action` fijado por SHA: una vista previa por rama, y la de `main` en https://staging.tierra-luna-sol.pages.dev;
+  - `_headers` y `_redirects`, CSP con hashes, `404.html` y URLs sin barra;
+  - la vista previa, verificada por el propio CI tras cada despliegue;
+  - Dependabot.
+- **Fase 4b, la vista general del sistema solar:** velocidad según el contexto (D33: 3 días/s en la vista general y 1 h/s con un cuerpo), estelas de color sobre las órbitas (D34) y planetas más grandes sin solapes de 1900 a 2100. Las lunas solo aparecen cuando su sistema se distingue.
+- **Fase 5, la Tierra:**
+  - **El material:** nubes con deriva y sombra, reflejo del Sol en el océano, luces de las ciudades, crepúsculo y luz dispersada, calibrado con tres fotos de EPIC (R3).
+  - **El relieve:** con el norte en G y comprobado por sondas.
+  - **La sombra de la Luna:** analítica (D20), a 2,7 km del punto del máximo de la NASA.
+  - **La «Luz del Sol»:** la hora del día sin cambiar la fecha que se ve, en la zona elegida.
+  - **Las vistas guiadas:** cinco, con los siete lugares del cielo desde España, con coordenadas oficiales, y un recorrido automático. Encuadran su región también en el móvil.
+  - **La textura de día de 8K:** solo en el nivel alto; sube a la GPU al acabar el viaje de cámara.
+
+### Métricas al cerrar el bloque
+- **Tests:** 514 unitarios (cobertura de `ephemeris/` del 99,5 %) y 70 e2e, también en el CI de GitHub (fase 4).
+- **Bundle:**
+  - JS inicial de 298,23 kB (aviso a 320), con 12,13 kB de código propio de 15;
+  - chunk de three de 678,67 kB (aviso a 900);
+  - interfaz diferida de 267,26 kB.
+- **Rendimiento (RTX 3060):**
+  - vista general a 3 días/s: 60 FPS, 21 llamadas de dibujo y 38 MB de VRAM;
+  - vista Tierra a 1 h/s: 60 FPS en alto, medio y bajo, con 278 / 86 / 85 MB de VRAM (de 300 y 120);
+  - texturas de la vista Tierra: 3,34 MB en alto (de 6) y 0,77 MB en bajo (de 2);
+  - tareas largas: como mucho 110 ms (§5: 200).
+- **Precisión:**
+  - punto subsolar, a < 0,05° del de `subsolarPoint`;
+  - centro de la sombra del eclipse del 12-08-2026, a 2,7 km del de la NASA (test a ±0,1°; el plan pide ±1°).
+- **Realismo (R3):**
+  - relación de brillo océano / desierto: 0,189, y en EPIC, 0,178 (antes, 0,076);
+  - nubes, a menos del 3 % de las de EPIC.
+
+### Desviaciones importantes (detalle en los informes, §4)
+- **Fase 4:** sin `security.autoCsp` (CSP propia con hashes); el canonical llega ya, no en la fase 9; la verificación de la vista previa, con un script en el CI además de `curl`; `/explorar` redirige a `/`; el CI corre en todas las ramas.
+- **Fase 4b:** los planetas, más grandes, pero no tanto como en la referencia de Iván (lo limitan las conjunciones de Júpiter y Saturno y la Luna). Los sistemas de lunas, compactos y visibles solo cuando se distinguen; el relleno de la vista general, 0,3.
+- **Fase 5:**
+  - el material de la Tierra es una variante del común (`TLS_EARTH`), no uno nuevo;
+  - R3 se resuelve comprimiendo las tierras áridas y aclarando las nubes, con medida; el océano no vuelve a su color de superficie;
+  - la sombra de la Luna, con el Sol aparente;
+  - la noche, la máscara y las normales de la Tierra, en 2k para caber en la VRAM;
+  - la altitud del Montsec y de la Puerta del Sol, sin fuente (`null`, para la fase 8);
+  - el panel de la Tierra hace de `TourPlayerComponent`.
+
+### Incidencias
+- **La revisión de la fase 5, cortada por el límite de uso** (sesión 1). Se repitió entera en la sesión 2; el informe vivo y este diario bastaron para retomarla.
+- **Dos fallos propios encontrados al corregir la revisión, antes de llegar a `main`:**
+  - con `ClampToEdge`, la deriva de las nubes estiraba la última columna del mapa en una franja que crecía con el tiempo (43° a los 5 minutos). Las capturas no lo enseñaban: en ellas las nubes están quietas;
+  - los márgenes del encuadre no medían el panel de la Tierra si se entraba en su vista desde el sistema solar. Los e2e y las capturas cargaban `/explorar/tierra` directamente; ahora hay un e2e en móvil.
+- **El mapa de normales de la Tierra tenía el sur en G:** lo detectó la revisión midiendo laderas. El build lo comprueba desde ahora.
+
+### Condiciones de parada
+No se activó ninguna:
+- no quedó ningún bloqueante;
+- no hizo falta ninguna dependencia ni herramienta nueva;
+- los datos y las licencias nuevas tienen fuente compatible: los lugares, de fuentes oficiales; el eclipse y EPIC, de la NASA, con su crédito;
+- todos los criterios se cumplen. El del móvil de Iván no bloquea.
+
+### Pendiente para Iván (`PENDIENTES.md`)
+1. **Probar en tu móvil** la vista previa de `main` (https://staging.tierra-luna-sol.pages.dev): la vista general (fase 4b) y la vista Tierra (fase 5: FPS, las vistas guiadas, con los siete marcadores en «España», y el tamaño del panel).
+2. **Fase 4:**
+   - decidir sobre el Network Error Logging de Cloudflare (D24);
+   - comprobar en el panel que Web Analytics sigue desactivado;
+   - opcionales: vistas previas privadas y un entorno de GitHub para los secrets.
+3. **Fase 4b:** mirar la vista general junto a tu referencia y decidir si quieres los planetas aún más grandes y qué hacer con la vista general en el móvil (informe de la 4b, §10). Confirmar que pasar de un cuerpo a otro mantiene la velocidad elegida a mano (D33).
+4. **Fase 5:**
+   - las dos propuestas del informe (§10): las nubes del Himalaya y la 8K más barata;
+   - los textos de las vistas guiadas (fase 9);
+   - la altitud del Montsec y de la Puerta del Sol (fase 8).
+5. **Dependabot:** dos PR abiertos en GitHub desde el 27-10, sin fusionar:
+   - el n.º 1, `typescript-eslint` 8.71.0 → 8.72.0 (grupo de herramientas);
+   - el n.º 2, `@types/node` 24.19.2 → 26.6.5 (salto de versión mayor: el proyecto usa Node 24).
+
+El bloque termina aquí. No se ha empezado el bloque D: antes lo revisa la sesión de revisión.
