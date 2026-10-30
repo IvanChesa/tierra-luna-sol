@@ -56,6 +56,7 @@ test.describe('La vista Tierra (fase 5)', () => {
     await page.keyboard.press('ArrowRight');
     // Dos pasos de 5 minutos, el mismo día.
     await expect.poll(async () => (await simTime(page)) - before.getTime()).toBe(10 * 60_000);
-    await expect(slider).toHaveAttribute('aria-valuetext', /, hora local$/);
+    // La zona, como en la barra de tiempo (ESTILO §4): en Madrid, en junio, UTC+2.
+    await expect(slider).toHaveAttribute('aria-valuetext', '09:40, hora local, UTC+2');
   });
 });
