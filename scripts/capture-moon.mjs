@@ -48,6 +48,8 @@ const SHOTS = [
   ['luna-cuarto-creciente', `/?captura=1&cuerpo=luna&fecha=${FIRST_QUARTER}&desde=tierra`, SQUARE],
   // La cara oculta, iluminada en luna nueva, con la cámara cerca de la dirección del Sol.
   ['luna-cara-oculta', `/?captura=1&cuerpo=luna&fecha=${NEW}&fase=15&latitud=0`, SQUARE],
+  // El eclipse total del 3-3-2026 en su máximo (11:33:37 UT; catálogo de la NASA), desde la Tierra.
+  ['luna-eclipse-2026', '/?captura=1&cuerpo=luna&fecha=2026-03-03T11:33:37Z&desde=tierra', SQUARE],
   // El polo sur, desde 75° S sobre el ecuador de la Luna.
   ['luna-polo-sur', `/?captura=1&cuerpo=luna&fecha=${FIRST_QUARTER}&fase=70&latitud=-75`, SQUARE],
 ];

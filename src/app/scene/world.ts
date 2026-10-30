@@ -34,6 +34,7 @@ import type { BodyId } from '../data/body.model';
 import { BODY_PHOTOMETRY, BodyPhotometry, RING_PHOTOMETRY } from '../data/photometry';
 import { SKY_PLACES } from '../data/places';
 import { eclRotationToThree, sunApparentGeocentricEcl } from '../ephemeris/coordinates';
+import { EARTH_SHADOW_RADIUS_KM } from '../ephemeris/eclipse';
 import { albedoScale } from '../ephemeris/photometry';
 import type { SystemState } from '../ephemeris/system-state';
 import { KM_PER_AU } from '../ephemeris/constants';
@@ -695,7 +696,7 @@ export class World {
       y: (offset[3 * moon + 1] as number) / radiusAu,
       z: (offset[3 * moon + 2] as number) / radiusAu,
     });
-    earth.uMoonLocal.value.set(m.x, m.y, m.z, MOON_RADIUS_KM / visual.body.radiusKm);
+    earth.uOccluderLocal.value.set(m.x, m.y, m.z, MOON_RADIUS_KM / visual.body.radiusKm);
     const timeMs = frame.state.timeMs;
     if (this.apparentSun?.timeMs !== timeMs) {
       this.apparentSun = { timeMs, ecl: sunApparentGeocentricEcl(new Date(timeMs)) };
@@ -707,6 +708,49 @@ export class World {
       s.z / radiusAu,
       SUN_RADIUS_KM / visual.body.radiusKm,
     );
+  }
+
+  /**
+   * La Tierra y el Sol en el sistema propio de la Luna, para la sombra de la Tierra en los eclipses
+   * de Luna (fase 6, D20): con la geometría real del estado (float64) y en los ejes de la malla, en
+   * radios de la Luna. La Tierra, con el radio de su sombra (`EARTH_SHADOW_RADIUS_KM`, regla de
+   * Danjon, como `earthShadow`); el Sol, el aparente visto desde la Tierra, menos la Luna.
+   */
+  private updateEarthShadow(visual: BodyVisual, frame: WorldFrame): void {
+    const moon = visual.moon;
+    if (!moon) return;
+    const k = visual.body.index;
+    const toBody = transposeMat3(frame.orientations[k] as Mat3);
+    const radiusAu = visual.body.radiusKm / KM_PER_AU;
+    const toMesh = (v: Vec3): Vec3 => {
+      const b = mulMat3Vec(toBody, v);
+      return { x: b.x / radiusAu, y: b.z / radiusAu, z: -b.y / radiusAu };
+    };
+    // La Luna respecto a la Tierra (UA, ECL): la Tierra, al revés.
+    const offset = frame.state.parentOffset;
+    const fromEarth = {
+      x: offset[3 * k] as number,
+      y: offset[3 * k + 1] as number,
+      z: offset[3 * k + 2] as number,
+    };
+    const earth = toMesh({ x: -fromEarth.x, y: -fromEarth.y, z: -fromEarth.z });
+    moon.uOccluderLocal.value.set(
+      earth.x,
+      earth.y,
+      earth.z,
+      EARTH_SHADOW_RADIUS_KM / visual.body.radiusKm,
+    );
+    const timeMs = frame.state.timeMs;
+    if (this.apparentSun?.timeMs !== timeMs) {
+      this.apparentSun = { timeMs, ecl: sunApparentGeocentricEcl(new Date(timeMs)) };
+    }
+    const sunEcl = this.apparentSun.ecl;
+    const sun = toMesh({
+      x: sunEcl.x - fromEarth.x,
+      y: sunEcl.y - fromEarth.y,
+      z: sunEcl.z - fromEarth.z,
+    });
+    moon.uSunLocal.value.set(sun.x, sun.y, sun.z, SUN_RADIUS_KM / visual.body.radiusKm);
   }
 
   /** Marcadores de los lugares del cielo desde España (la vista guiada «España»). */
@@ -770,6 +814,7 @@ export class World {
         setFromEcl(visual.uniforms.uSunDirection.value, helio, k).negate().normalize();
       }
       if (visual.earth) this.updateEclipse(visual, frame);
+      if (visual.moon) this.updateEarthShadow(visual, frame);
       if (visual.atmosphere) {
         const onScreen = frame.screen[k];
         visual.atmosphere.uniforms.uRadius.value = r;
@@ -1113,6 +1158,8 @@ function configureMoon(moon: MoonUniforms, radiusKm: number): void {
   const { min, max } = MOON_ELEVATION_RANGE_M;
   const scale = VISUAL_CONFIG.moon.reliefExaggeration / (radiusKm * 1000);
   moon.uElevation.value.set(min * scale, (max - min) * scale);
+  const { color, intensity } = VISUAL_CONFIG.moon.umbraLight;
+  moon.uUmbraLight.value.set(color).multiplyScalar(intensity);
 }
 
 /** Una textura no ha llegado: no es un error fatal (queda el color esquemático), pero se anota. */

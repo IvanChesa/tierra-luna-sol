@@ -117,7 +117,16 @@ export const VISUAL_CONFIG = {
    * escala física; ±10 km sobre 1737 km). Las normales del relieve van sin exagerar
    * (`scripts/build-relief.mjs`).
    */
-  moon: { reliefExaggeration: 1 },
+  moon: {
+    reliefExaggeration: 1,
+    /**
+     * Dentro de la sombra de la Tierra, la luz del Sol que refracta su atmósfera: rojiza (la de un
+     * eclipse de Danjon 2–3, cobriza) y, en fracción de la luz del Sol, mucho más de la real
+     * (≈ 1/10 000): ilustrativa, para que la Luna eclipsada se vea roja y no negra con la exposición
+     * de su primer plano, como en las fotos de larga exposición. Más tenue hacia el eje de la umbra.
+     */
+    umbraLight: { color: '#b8502e', intensity: 0.18 },
+  },
   /** Por debajo de este radio en pantalla (px CSS), el halo de una atmósfera no se dibuja: no se vería. */
   atmosphereMinRadiusPx: 2,
   /** Por debajo de este radio en pantalla (px CSS), un cuerpo no aparta las órbitas de su disco. */

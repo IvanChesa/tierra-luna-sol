@@ -31,7 +31,10 @@
  *   180° resuelta por derivadas (Tarini, 2012, «Cylindrical and Toroidal Parameterizations Without
  *   Vertex Seams»): de las dos u, la que tiene el corte en ±180° o la que lo tiene en 0°, la que no
  *   salta dentro del cuadrado de píxeles. El marco este–norte del relieve, también por píxel, con el
- *   polo del cuerpo: el interpolado entre vértices falla junto a los polos.
+ *   polo del cuerpo: el interpolado entre vértices falla junto a los polos. Y la sombra de la Tierra
+ *   en los eclipses de Luna (D20), como la de la Luna sobre la Tierra, con el radio de la Tierra de
+ *   la regla de Danjon (`EARTH_SHADOW_RADIUS_KM`): dentro de la umbra, la luz del Sol que refracta la
+ *   atmósfera de la Tierra, rojiza y más tenue hacia el eje (ilustrativa, de la configuración visual).
  *
  * La geometría es la esfera unidad (Y = polo, meridiano 0 en +X, longitud este hacia −Z, como
  * `SphereGeometry`); el elipsoide sale de la escala de la malla (radio ecuatorial, polar, ecuatorial).
@@ -161,31 +164,39 @@ uniform vec4 uScatter;
 uniform vec3 uTwilightColor;
 // Tierras áridas: (rodilla de la compresión, calidez desde la que empieza, calidez a la que es entera).
 uniform vec3 uArid;
-// Centros de la Luna y del Sol (radios ecuatoriales, sistema propio) y sus radios: desde cada punto,
-// las direcciones y los radios aparentes de los dos (el paralaje del Sol mueve la sombra decenas de
-// kilómetros si se toma su dirección desde el centro de la Tierra).
-uniform vec4 uMoonLocal;
+#endif
+#if defined(TLS_EARTH) || defined(TLS_MOON)
+// Centros del cuerpo que puede tapar el Sol (la Luna sobre la Tierra; la Tierra sobre la Luna) y del
+// Sol (radios ecuatoriales, sistema propio) y sus radios: desde cada punto, las direcciones y los
+// radios aparentes de los dos (el paralaje del Sol mueve la sombra decenas de kilómetros si se toma
+// su dirección desde el centro del cuerpo).
+uniform vec4 uOccluderLocal;
 uniform vec4 uSunLocal;
 
-// Fracción del disco del Sol que se ve desde p (D20): la Luna es un disco de radio angular aM a una
-// separación d del centro del Sol (radio aS); se resta el área común de los dos círculos. Ángulos
-// pequeños: d es la cuerda entre las direcciones, que en float32 no pierde precisión como acos.
-float tlsSunVisible(vec3 p) {
-  vec3 toMoon = uMoonLocal.xyz - p;
+// La sombra en p (D20): x, la fracción del disco del Sol que se ve (el que tapa es un disco de radio
+// angular aO a una separación d del centro del Sol, de radio aS: se resta el área común de los dos
+// círculos); y, lo hondo que está p en la umbra (0 en su borde, 1 en el eje). Ángulos pequeños: d es
+// la cuerda entre las direcciones, que en float32 no pierde precisión como acos.
+vec2 tlsShadow(vec3 p) {
+  vec3 toOccluder = uOccluderLocal.xyz - p;
   vec3 toSun = uSunLocal.xyz - p;
-  float moonDistance = length(toMoon);
+  float occluderDistance = length(toOccluder);
   float sunDistance = length(toSun);
-  float aM = uMoonLocal.w / moonDistance;
+  float aO = uOccluderLocal.w / occluderDistance;
   float aS = uSunLocal.w / sunDistance;
-  float d = length(toMoon / moonDistance - toSun / sunDistance);
-  if (d >= aS + aM) return 1.0;
-  if (d <= aM - aS) return 0.0;
-  if (d <= aS - aM) return 1.0 - (aM * aM) / (aS * aS);
-  float a1 = aS * aS * acos(clamp((d * d + aS * aS - aM * aM) / (2.0 * d * aS), -1.0, 1.0));
-  float a2 = aM * aM * acos(clamp((d * d + aM * aM - aS * aS) / (2.0 * d * aM), -1.0, 1.0));
-  float a3 = 0.5 * sqrt(max((-d + aS + aM) * (d + aS - aM) * (d - aS + aM) * (d + aS + aM), 0.0));
-  return clamp(1.0 - (a1 + a2 - a3) / (3.14159265 * aS * aS), 0.0, 1.0);
+  float d = length(toOccluder / occluderDistance - toSun / sunDistance);
+  if (d >= aS + aO) return vec2(1.0, 0.0);
+  if (d <= aO - aS) return vec2(0.0, 1.0 - d / (aO - aS));
+  if (d <= aS - aO) return vec2(1.0 - (aO * aO) / (aS * aS), 0.0);
+  float a1 = aS * aS * acos(clamp((d * d + aS * aS - aO * aO) / (2.0 * d * aS), -1.0, 1.0));
+  float a2 = aO * aO * acos(clamp((d * d + aO * aO - aS * aS) / (2.0 * d * aO), -1.0, 1.0));
+  float a3 = 0.5 * sqrt(max((-d + aS + aO) * (d + aS - aO) * (d - aS + aO) * (d + aS + aO), 0.0));
+  return vec2(clamp(1.0 - (a1 + a2 - a3) / (3.14159265 * aS * aS), 0.0, 1.0), 0.0);
 }
+#endif
+#ifdef TLS_MOON
+// La luz refractada por la atmósfera de la Tierra dentro de su sombra (rgb lineal, ilustrativa).
+uniform vec3 uUmbraLight;
 #endif
 
 float ringShadow() {
@@ -276,7 +287,7 @@ void main() {
 #ifdef TLS_EARTH
   float muSun = dot(geometric, toSun);
   // La sombra de la Luna: lo que llega del Sol a este punto (1 fuera de los eclipses).
-  float sunVisible = muSun > 0.0 ? tlsSunVisible(vLocal * vec3(1.0, uPolarScale, 1.0)) : 1.0;
+  float sunVisible = muSun > 0.0 ? tlsShadow(vLocal * vec3(1.0, uPolarScale, 1.0)).x : 1.0;
   light *= sunVisible;
   haze *= sunVisible;
   // Nubes: la cobertura de su capa, que deriva en longitud (ilustrativo).
@@ -316,7 +327,17 @@ void main() {
   vec3 earthFill = composite * uFill * (0.25 + 0.75 * max(muViewer, 0.0));
   gl_FragColor = vec4(color + uHazeColor.rgb * haze + earthFill, 1.0);
 #else
-  gl_FragColor = vec4(albedo * light + uHazeColor.rgb * haze + fill, 1.0);
+  vec3 lit = vec3(light);
+#ifdef TLS_MOON
+  // La sombra de la Tierra: lo que llega del Sol y, donde la Tierra lo tapa, su luz refractada,
+  // más tenue hacia el eje de la umbra.
+  if (light > 0.0) {
+    vec2 eclipse = tlsShadow(vLocal * vec3(1.0, uPolarScale, 1.0));
+    lit = light * (eclipse.x + (1.0 - eclipse.x) * mix(1.0, 0.35, eclipse.y) * uUmbraLight);
+    haze *= eclipse.x;
+  }
+#endif
+  gl_FragColor = vec4(albedo * lit + uHazeColor.rgb * haze + fill, 1.0);
 #endif
   ${OUTPUT_FRAGMENT}
 }
@@ -373,7 +394,7 @@ export interface EarthUniforms {
   /** Tierras áridas: (rodilla, calidez desde, calidez hasta); `VISUAL_CONFIG.earth.arid`. */
   readonly uArid: Uniform<Vector3>;
   /** Centro de la Luna en el sistema propio de la Tierra (radios ecuatoriales) y su radio (w). */
-  readonly uMoonLocal: Uniform<Vector4>;
+  readonly uOccluderLocal: Uniform<Vector4>;
   /** Centro del Sol en el sistema propio de la Tierra (radios ecuatoriales) y su radio (w). */
   readonly uSunLocal: Uniform<Vector4>;
 }
@@ -385,6 +406,12 @@ export interface MoonUniforms {
   readonly uHasElevation: Uniform<number>;
   /** (Elevación del valor 0, la del intervalo entero), en radios de la Luna y con la exageración. */
   readonly uElevation: Uniform<Vector2>;
+  /** Centro de la Tierra en el sistema propio de la Luna (radios de la Luna) y su radio de sombra (w). */
+  readonly uOccluderLocal: Uniform<Vector4>;
+  /** Centro del Sol en el sistema propio de la Luna (radios de la Luna) y su radio (w). */
+  readonly uSunLocal: Uniform<Vector4>;
+  /** Luz refractada dentro de la sombra de la Tierra (rgb lineal, en fracción de la del Sol). */
+  readonly uUmbraLight: Uniform<Color>;
 }
 
 export interface BodyMaterialOptions {
@@ -437,7 +464,7 @@ export function createBodyMaterial(options: BodyMaterialOptions) {
         // Sin compresión hasta que se configura (rodilla enorme).
         uArid: new Uniform(new Vector3(1e6, 0.25, 0.4)),
         // Sin datos, la Luna lejísimos y del otro lado: no tapa nada.
-        uMoonLocal: new Uniform(new Vector4(0, 0, 1e6, 0)),
+        uOccluderLocal: new Uniform(new Vector4(0, 0, 1e6, 0)),
         uSunLocal: new Uniform(new Vector4(23_455, 0, 0, 109)),
       }
     : null;
@@ -446,6 +473,10 @@ export function createBodyMaterial(options: BodyMaterialOptions) {
         uElevationMap: new Uniform<Texture | null>(null),
         uHasElevation: new Uniform(0),
         uElevation: new Uniform(new Vector2(0, 0)),
+        // Sin datos, la Tierra lejísimos y del otro lado: no tapa nada.
+        uOccluderLocal: new Uniform(new Vector4(0, 0, 1e6, 0)),
+        uSunLocal: new Uniform(new Vector4(86_000, 0, 0, 400)),
+        uUmbraLight: new Uniform(new Color(0, 0, 0)),
       }
     : null;
   const defines = {

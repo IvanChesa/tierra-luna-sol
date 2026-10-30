@@ -2,7 +2,7 @@ import starsBin from '../../../public/data/stars.bin' with { loader: 'binary' };
 import { BackSide, FrontSide, Quaternion, Texture, Vector3, Vector4 } from 'three';
 import { KM_PER_AU } from '../ephemeris/constants';
 import { subsolarPoint } from '../ephemeris/coordinates';
-import { moonShadowCenter } from '../ephemeris/eclipse';
+import { earthShadow, moonShadowCenter } from '../ephemeris/eclipse';
 import { NASA_ECLIPSE_2026_08_12 } from '../ephemeris/fixtures/fixtures';
 import { illustrativeRadius } from '../ephemeris/scale';
 import { MAX_DATE } from '../ephemeris/time';
@@ -1029,6 +1029,50 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     h.engine.dispose();
   });
 
+  it('la sombra de la Tierra que recibe el shader de la Luna: su centro, en la umbra en el eclipse del 3-3-2026, y fuera de ella en una luna llena (fase 6)', async () => {
+    interface MoonVisual {
+      body: { id: string };
+      moon: {
+        uOccluderLocal: { value: Vector4 };
+        uSunLocal: { value: Vector4 };
+        uUmbraLight: { value: { r: number; g: number; b: number } };
+      } | null;
+    }
+    /** Desde el centro de la Luna: radios aparentes de la Tierra y del Sol y separación (grados). */
+    const geometry = async (iso: string) => {
+      const h = await createHarness({ reducedMotion: true, focus: 'luna', time: new Date(iso) });
+      settle(h);
+      const moon = (internals(h).world as unknown as { visuals: MoonVisual[] }).visuals.find(
+        (visual) => visual.body.id === 'luna',
+      )?.moon;
+      if (!moon) throw new Error('Sin uniformes de la Luna');
+      const earth = new Vector3().copy(moon.uOccluderLocal.value as unknown as Vector3);
+      const sun = new Vector3().copy(moon.uSunLocal.value as unknown as Vector3);
+      const deg = 180 / Math.PI;
+      const result = {
+        earthDeg: Math.asin(moon.uOccluderLocal.value.w / earth.length()) * deg,
+        sunDeg: Math.asin(moon.uSunLocal.value.w / sun.length()) * deg,
+        separationDeg: earth.angleTo(sun) * deg,
+        umbraLight: moon.uUmbraLight.value,
+      };
+      h.engine.dispose();
+      return result;
+    };
+    const iso = '2026-03-03T11:33:37Z';
+    const eclipse = await geometry(iso);
+    const shadow = earthShadow(new Date(iso));
+    // El centro de la Luna, dentro de la umbra, con el margen de `earthShadow` (radio de la umbra menos
+    // la distancia al eje, vistos desde la Tierra): las dos geometrías son la misma.
+    const margin = eclipse.earthDeg - eclipse.sunDeg - eclipse.separationDeg;
+    expect(margin).toBeGreaterThan(0);
+    expect(Math.abs(margin - (shadow.umbraDeg - shadow.axisDeg))).toBeLessThan(0.01);
+    // La luz de la umbra, rojiza.
+    expect(eclipse.umbraLight.r).toBeGreaterThan(2 * eclipse.umbraLight.b);
+    // En la luna llena de noviembre, la Tierra no tapa el Sol: separación mayor que la suma de radios.
+    const full = await geometry('2026-11-24T14:54:00Z');
+    expect(full.separationDeg).toBeGreaterThan(full.earthDeg + full.sunDeg);
+  });
+
   it('la sombra de la Luna que recibe el shader de la Tierra cae donde el catálogo de la NASA (fase 5)', async () => {
     const eclipse = NASA_ECLIPSE_2026_08_12;
     const date = new Date(eclipse.greatestEclipseUt);
@@ -1037,7 +1081,7 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     interface EarthVisual {
       body: { id: string };
       earth: {
-        uMoonLocal: { value: Vector4 };
+        uOccluderLocal: { value: Vector4 };
         uSunLocal: { value: Vector4 };
         uArid: { value: Vector3 };
       } | null;
@@ -1050,7 +1094,7 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     // ecuatoriales): desde la Luna, en la dirección del Sol a la Luna, hasta el elipsoide de la malla (el
     // polo, en Y, achatado como la Tierra), que es donde el shader mira cada punto.
     const squash = 1 - sceneBody('tierra').flattening;
-    const moon = new Vector3().copy(earth.uMoonLocal.value as unknown as Vector3);
+    const moon = new Vector3().copy(earth.uOccluderLocal.value as unknown as Vector3);
     const sun = new Vector3().copy(earth.uSunLocal.value as unknown as Vector3);
     const from = new Vector3(moon.x, moon.y / squash, moon.z);
     const direction = moon.clone().sub(sun);
@@ -1075,7 +1119,7 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
       0.263,
       2,
     );
-    expect(earth.uMoonLocal.value.w).toBeCloseTo(0.272, 2);
+    expect(earth.uOccluderLocal.value.w).toBeCloseTo(0.272, 2);
     // Y las tierras áridas, con su compresión de la configuración visual (calibrada con EPIC).
     const { knee, warmFrom, warmTo } = VISUAL_CONFIG.earth.arid;
     expect(earth.uArid.value.toArray()).toEqual([knee, warmFrom, warmTo]);
