@@ -55,6 +55,23 @@ export async function openExplorer(page: Page, path: string): Promise<void> {
   }
 }
 
+/**
+ * Espera a que una página esté lista para mirarla, sin `networkidle` (Playwright lo desaconseja, y
+ * era el origen de un fallo intermitente; revisión del bloque C, C5): su `h1` visible, las fuentes
+ * cargadas y, en el explorador (su layout está en el HTML prerenderizado), el primer frame del 3D y
+ * la interfaz diferida.
+ */
+export async function settlePage(page: Page): Promise<void> {
+  await expect(page.locator('h1')).toBeVisible();
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+  });
+  if ((await page.locator('tls-viewer-layout').count()) > 0) {
+    await expect(page.locator('tls-viewer-canvas')).toHaveClass(/is-ready/, { timeout: 90_000 });
+    await expect(page.locator('tls-time-controls')).toBeVisible();
+  }
+}
+
 /** Espera a que el motor lleve un rato sin pintar (texturas subidas, cámara quieta). */
 export async function waitForIdle(page: Page, quietMs = 1200): Promise<void> {
   let last = -1;
