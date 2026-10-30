@@ -3,12 +3,13 @@
  *
  * El eje de la sombra es la recta que va del Sol a la Luna y sigue más allá. Donde corta el
  * elipsoide terrestre está el centro de la sombra; en el máximo de un eclipse central, el punto del
- * máximo que da el catálogo de la NASA. Con las mismas posiciones (astronomy-engine, sin aberración)
- * y la misma orientación de la Tierra que la escena (`eclToEarthFixed`), que también da al shader
- * de la Tierra la Luna y el Sol en su sistema propio.
+ * máximo que da el catálogo de la NASA. El Sol es el aparente, con la aberración anual (de donde
+ * llega su luz; sin ella, la sombra se aparta unos 36 km), y la Luna, la geométrica; con la misma
+ * orientación de la Tierra que la escena (`eclToEarthFixed`), que también da al shader de la Tierra
+ * la Luna y el Sol en su sistema propio.
  */
 import { KM_PER_AU } from './constants';
-import { eclToEarthFixed, sunGeocentricEcl } from './coordinates';
+import { eclToEarthFixed, sunApparentGeocentricEcl } from './coordinates';
 import { moonGeocentric } from './ephemeris';
 import { dot, mulMat3Vec, normalize, scale, sub, vec3 } from './vec3';
 
@@ -27,7 +28,7 @@ export function moonShadowCenter(date: Date): { latDeg: number; lonDeg: number }
   const toEarthFixed = eclToEarthFixed(date);
   const auToRadii = KM_PER_AU / WGS84_EQUATORIAL_KM;
   const moon = mulMat3Vec(toEarthFixed, scale(moonGeocentric(date), auToRadii));
-  const sun = mulMat3Vec(toEarthFixed, scale(sunGeocentricEcl(date), auToRadii));
+  const sun = mulMat3Vec(toEarthFixed, scale(sunApparentGeocentricEcl(date), auToRadii));
   const axis = sub(moon, sun);
   // El elipsoide se lleva a la esfera unidad estirando el eje polar.
   const squash = 1 - WGS84_FLATTENING;

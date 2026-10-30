@@ -124,4 +124,5 @@ export const NASA_ECLIPSE_2026_08_12 = nasaEclipse20260812 as {
   readonly gamma: number | null;
   readonly latitudeDeg: number;
   readonly longitudeDeg: number;
+  readonly sunAltitudeDeg: number;
 };

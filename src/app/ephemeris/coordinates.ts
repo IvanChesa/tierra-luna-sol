@@ -168,6 +168,15 @@ export function sunGeocentricEcl(date: Date): Vec3 {
 }
 
 /**
+ * Vector geocéntrico ECL (UA) del Sol aparente: con la aberración anual (unos 20,5″ hacia atrás en
+ * longitud), que es de donde llega su luz a la Tierra. Para la sombra de la Luna en los eclipses: sin
+ * ella, el eje de la sombra se desplaza unos 38 km a la distancia de la Luna.
+ */
+export function sunApparentGeocentricEcl(date: Date): Vec3 {
+  return eqjToEcl(GeoVector(Body.Sun, toAstroTime(date), true));
+}
+
+/**
  * Punto subsolar: dónde está el Sol en el cénit. Usa la MISMA orientación de la Tierra que la
  * escena ({@link earthFixedToEcl}), así que sirve para alimentar el sombreado día/noche.
  */
