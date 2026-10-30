@@ -85,6 +85,12 @@ export const VISUAL_CONFIG = {
    * - `twilight`: el tono de la luz junto al terminador (sRGB);
    * - `cloudDrift`: la deriva ilustrativa de las nubes (fracción de vuelta por segundo de los frames
    *   pintados; se para con movimiento reducido y en las capturas);
+   * - `cloudFade`: las nubes se atenúan en los primeros planos, como en Google Earth (revisión del
+   *   bloque C, C1: tapaban el Himalaya en su vista guiada). Va con lo que el disco de la Tierra
+   *   desborda la parte visible del lienzo (su radio en pantalla entre la mitad del lado más corto de
+   *   esa parte): opacidad completa hasta `from` (el disco entero a la vista: las comparativas con
+   *   EPIC y la medida de R3 no cambian) y, al acercarse, baja suavemente hasta `min` en `to`. Su
+   *   sombra, igual (`cloudOpacity`);
    * - `markers`: los marcadores de los lugares del cielo desde España (vista «España»): su color, el
    *   de su borde (sRGB; los separa del océano y de las nubes) y su diámetro en px CSS.
    */
@@ -97,8 +103,15 @@ export const VISUAL_CONFIG = {
     scatter: { color: '#5b8fe6', intensity: 0.035, limb: 1.5 },
     twilight: '#ffb488',
     cloudDrift: 0.0004,
+    cloudFade: { from: 1, to: 2.2, min: 0.3 },
     markers: { color: '#e8c46f', edge: '#38455a', sizePx: 7 },
   },
+  /**
+   * Radio mínimo en pantalla de los planetas en la vista general (px CSS; revisión del bloque C, C3,
+   * decisión de Iván): en un móvil en vertical, los rocosos medían 1–2 px y se veían como marcadores.
+   * No cambia ni las posiciones ni las órbitas, y en escritorio casi nunca actúa.
+   */
+  overviewMinRadiusPx: 2,
   /** Por debajo de este radio en pantalla (px CSS), el halo de una atmósfera no se dibuja: no se vería. */
   atmosphereMinRadiusPx: 2,
   /** Por debajo de este radio en pantalla (px CSS), un cuerpo no aparta las órbitas de su disco. */
@@ -108,9 +121,12 @@ export const VISUAL_CONFIG = {
    * de `from` a `to` px (su distancia real en el espacio, en radios del planeta, a la escala de su
    * disco en pantalla). Hasta entonces, ni su disco ni su órbita se dibujan, ni tapan, ni se pueden
    * elegir con el puntero (fase 4b): en la vista general, los sistemas compactos no se ven como
-   * bultos pegados a cada planeta, y aparecen al acercarse o al enfocar el planeta.
+   * bultos pegados a cada planeta, y aparecen al acercarse o al enfocar el planeta. Con los planetas
+   * un 25 % más grandes (revisión del bloque C, C2), sus sistemas también lo son en pantalla: los
+   * umbrales crecen igual (antes, 8 y 30 px), y en la vista general las lunas aparecen cuando antes
+   * (en un sistema local físico, el planeta no ha crecido, y sus lunas aparecen algo más tarde).
    */
-  moonResolutionPx: { from: 8, to: 30 },
+  moonResolutionPx: { from: 10, to: 37.5 },
   /** Opacidad de las órbitas de los planetas en la vista general (la de las estelas completas). */
   overviewOrbitOpacity: 0.85,
   /**
@@ -172,6 +188,19 @@ export function moonPresence(
   const { from, to } = VISUAL_CONFIG.moonResolutionPx;
   const t = Math.min(Math.max((separation - from) / (to - from), 0), 1);
   return t * t * (3 - 2 * t);
+}
+
+/**
+ * Opacidad de las nubes de la Tierra (`VISUAL_CONFIG.earth.cloudFade`) según lo que su disco desborda
+ * la parte visible del lienzo: `radiusPx`, su radio en pantalla, y `halfVisiblePx`, la mitad del lado
+ * más corto de la parte visible (px CSS). 1 con el disco entero a la vista; `min` en los primeros
+ * planos.
+ */
+export function cloudOpacity(radiusPx: number, halfVisiblePx: number): number {
+  const { from, to, min } = VISUAL_CONFIG.earth.cloudFade;
+  if (Number.isNaN(radiusPx) || !(halfVisiblePx > 0)) return 1;
+  const t = Math.min(Math.max((radiusPx / halfVisiblePx - from) / (to - from), 0), 1);
+  return 1 - (1 - min) * t * t * (3 - 2 * t);
 }
 
 /** Relleno ilustrativo para esa cantidad de primer plano. */

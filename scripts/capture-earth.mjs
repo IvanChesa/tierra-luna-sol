@@ -56,6 +56,7 @@ const SHOTS = [
   ['vista-tierra-completa', '/explorar/tierra?captura=1', DESKTOP, guided('La Tierra completa')],
   ['vista-pacifico', '/explorar/tierra?captura=1', DESKTOP, guided('El Pacífico')],
   ['vista-himalaya', '/explorar/tierra?captura=1', DESKTOP, guided('El Himalaya')],
+  ['movil-vista-himalaya', '/explorar/tierra?captura=1', MOBILE, guided('El Himalaya')],
   ['vista-luces', '/explorar/tierra?captura=1', DESKTOP, guided('Las luces de la noche')],
   ['vista-espana', '/explorar/tierra?captura=1', DESKTOP, guided('España')],
   ['movil-vista-espana', '/explorar/tierra?captura=1', MOBILE, guided('España')],

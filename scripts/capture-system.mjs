@@ -32,6 +32,8 @@ const playBriefly = async (page) => {
 
 /** Una fecha con los anillos de Saturno muy abiertos (en 2026 están casi de canto). */
 const OPEN_RINGS = '2032-03-01T00:00Z';
+/** La conjunción de Júpiter y Saturno de 2040: los dos, a unas 25 unidades (revisión del bloque C, C2). */
+const CONJUNCTION = '2040-10-31T00:00Z';
 
 /** [nombre, ruta, tamaño, acción tras cargar]. */
 const SHOTS = [
@@ -40,6 +42,7 @@ const SHOTS = [
   ['escritorio-sistema-reproduciendo', '/?captura=1', DESKTOP, playBriefly],
   // Con los anillos de Saturno abiertos y Venus por su cara nocturna.
   ['escritorio-sistema-2032', `/?captura=1&fecha=${OPEN_RINGS}`, DESKTOP],
+  ['escritorio-sistema-2040', `/?captura=1&fecha=${CONJUNCTION}`, DESKTOP],
   ['escritorio-jupiter', '/?captura=1&cuerpo=jupiter', DESKTOP],
   ['escritorio-saturno', '/?captura=1&cuerpo=saturno', DESKTOP],
   ['escritorio-tierra', '/explorar/tierra?captura=1', DESKTOP],
@@ -47,6 +50,7 @@ const SHOTS = [
   ['movil-sistema', '/?captura=1', MOBILE],
   ['movil-sistema-atras', '/?captura=1', MOBILE, press('r')],
   ['movil-sistema-2032', `/?captura=1&fecha=${OPEN_RINGS}`, MOBILE],
+  ['movil-sistema-2040', `/?captura=1&fecha=${CONJUNCTION}`, MOBILE],
   ['movil-jupiter', '/?captura=1&cuerpo=jupiter', MOBILE],
 ];
 

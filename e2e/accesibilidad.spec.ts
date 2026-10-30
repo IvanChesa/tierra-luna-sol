@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
-import { openControls, openExplorer, openIndex } from './support';
+import { openControls, openExplorer, openIndex, settlePage } from './support';
 
 /** Las rutas prerenderizadas del build (todas las páginas del sitio). */
 const ROUTES = Object.keys(
@@ -80,7 +80,7 @@ test.describe('Accesibilidad (axe)', () => {
     expect(ROUTES.length).toBeGreaterThan(10);
     for (const route of ROUTES) {
       await page.goto(route);
-      await page.waitForLoadState('networkidle');
+      await settlePage(page);
       const violations = await seriousViolations(page);
       expect(violations, route).toEqual([]);
     }

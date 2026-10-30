@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { openExplorer, openIndex } from './support';
+import { openExplorer, openIndex, settlePage } from './support';
 
 test('0 peticiones a otros dominios y 0 cookies en un recorrido por el sitio', async ({
   page,
@@ -30,9 +30,12 @@ test('0 peticiones a otros dominios y 0 cookies en un recorrido por el sitio', a
     })
     .click();
   await expect(page).toHaveURL(/\/explorar\/tierra/);
+  // Sin `networkidle` (revisión del bloque C, C5): en cada página se siguen oyendo las peticiones
+  // un tiempo fijo, por si alguna llega tarde (como el `import()` de los datos «de hoy» de las fichas).
   for (const path of ['/planetas', '/sol', '/luna', '/creditos', '/sobre-el-proyecto']) {
     await page.goto(path);
-    await page.waitForLoadState('networkidle');
+    await settlePage(page);
+    await page.waitForTimeout(1500);
   }
 
   expect(foreign).toEqual([]);

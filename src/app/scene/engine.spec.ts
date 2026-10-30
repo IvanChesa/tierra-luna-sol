@@ -4,6 +4,7 @@ import { KM_PER_AU } from '../ephemeris/constants';
 import { subsolarPoint } from '../ephemeris/coordinates';
 import { moonShadowCenter } from '../ephemeris/eclipse';
 import { NASA_ECLIPSE_2026_08_12 } from '../ephemeris/fixtures/fixtures';
+import { illustrativeRadius } from '../ephemeris/scale';
 import { MAX_DATE } from '../ephemeris/time';
 import {
   EngineDeps,
@@ -605,7 +606,7 @@ describe('SceneEngine: calidad adaptativa, contexto WebGL y limpieza', () => {
 
 describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas y aliasing)', () => {
   interface Internals {
-    screen: { index: number; x: number; y: number; occluded: boolean }[];
+    screen: { index: number; x: number; y: number; radiusPx: number; occluded: boolean }[];
     rig: { distance: number; azimuth: number; elevation: number };
     look: unknown;
     frames: { output: { position: Float64Array; radius: Float64Array } };
@@ -615,6 +616,7 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
       orbitSources: readonly { bodyIndex: number; segments: number }[];
     };
     labels: { visibleLayer: boolean };
+    markerRadius: Float64Array;
   }
   const internals = (h: Harness) => h.engine as unknown as Internals;
   const screenOf = (h: Harness, id: string) => internals(h).screen[sceneBody(id as never).index];
@@ -838,6 +840,42 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     h.clock.now += 5000;
     h.engine.setPlaying(false);
     expect(back - h.engine.time.getTime()).toBeCloseTo(5000, -1);
+    h.engine.dispose();
+  });
+
+  it('en un móvil en vertical, ningún planeta mide menos de 2 px de radio en la vista general; enfocado, sí su tamaño (C3)', async () => {
+    const h = await createHarness({ reducedMotion: true });
+    h.engine.resize(390, 844, 2);
+    settle(h);
+    const planets = [
+      'mercurio',
+      'venus',
+      'tierra',
+      'marte',
+      'jupiter',
+      'saturno',
+      'urano',
+      'neptuno',
+    ];
+    for (const id of planets) {
+      expect(screenOf(h, id)?.radiusPx, id).toBeGreaterThanOrEqual(2 - 1e-6);
+    }
+    // Se ven como discos: sin el anillo de marcador (revisión, hallazgo 1).
+    const marked = () =>
+      [...h.labels.querySelectorAll<HTMLElement>('.scene-label--marker')]
+        .filter((label) => !label.hidden)
+        .map((label) => label.dataset['body']);
+    for (const id of planets) expect(marked(), id).not.toContain(id);
+    // Los rocosos medirían menos sin el mínimo: Mercurio, en el móvil, ~1,5 px (fase 4b: 1,2).
+    const mercury = internals(h).frames.output.radius[sceneBody('mercurio').index] as number;
+    expect(mercury).toBeGreaterThan(illustrativeRadius(sceneBody('mercurio').radiusKm) * 1.1);
+    // Con Júpiter enfocado (su sistema local físico), los demás vuelven a su tamaño: Mercurio, sin el
+    // mínimo, a lo lejos.
+    h.engine.focus('jupiter');
+    settle(h);
+    expect(screenOf(h, 'mercurio')?.radiusPx).toBeLessThan(1);
+    // Ahí, los diminutos vuelven a llevar su marcador (si se nombran).
+    expect(internals(h).markerRadius[sceneBody('mercurio').index]).toBe(3);
     h.engine.dispose();
   });
 
@@ -1115,6 +1153,30 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     settle(h);
     expect(offset() - paused).toBeGreaterThan(0);
     expect(offset() - paused).toBeLessThan(2 * cloudDrift);
+    h.engine.dispose();
+  });
+
+  it('las nubes se atenúan en los primeros planos de la Tierra y no en la vista general (C1)', async () => {
+    const h = await createHarness({ reducedMotion: true, focus: 'tierra' });
+    settle(h);
+    interface EarthVisual {
+      earth: { uCloudOpacity: { value: number } } | null;
+    }
+    const opacity = () =>
+      (internals(h).world as unknown as { visuals: EarthVisual[] }).visuals.find(
+        (visual) => visual.earth,
+      )?.earth?.uCloudOpacity.value ?? Number.NaN;
+    // Enfocada, la Tierra cabe entera: las nubes, enteras.
+    expect(opacity()).toBe(1);
+    // El Himalaya, a 1,9 radios: la Tierra desborda la vista y las nubes se atenúan.
+    h.engine.lookAtSurface(28, 86, 1.9);
+    settle(h);
+    expect(opacity()).toBeLessThan(0.6);
+    expect(opacity()).toBeGreaterThanOrEqual(VISUAL_CONFIG.earth.cloudFade.min);
+    // En la vista general, otra vez enteras.
+    h.engine.focus(null);
+    settle(h);
+    expect(opacity()).toBe(1);
     h.engine.dispose();
   });
 

@@ -46,6 +46,10 @@ updates:
         update-types: ['version-update:semver-major', 'version-update:semver-minor']
       - dependency-name: 'typescript'
         update-types: ['version-update:semver-major', 'version-update:semver-minor']
+      # Los tipos de Node siguen la versión mayor de Node del proyecto (`.nvmrc`, Node 24): una
+      # mayor nueva describiría APIs que el proyecto no tiene (revisión del bloque C, C6).
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
 
   - package-ecosystem: github-actions
     directory: /

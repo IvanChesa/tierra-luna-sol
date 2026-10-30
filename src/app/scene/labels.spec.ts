@@ -161,6 +161,14 @@ describe('labels: colocación sin solapes', () => {
     const [box] = layoutLabels([screen(3, 400, 300, 0.4)], infos, sizes, viewport, -1, -1);
     expect(box?.marker).toBe(true);
   });
+
+  it('con un umbral propio (los planetas con su tamaño mínimo, D35), un disco de 2 px no lleva marcador', () => {
+    const body = [screen(3, 400, 300, 2)];
+    expect(layoutLabels(body, infos, sizes, viewport, -1, -1)[0]?.marker).toBe(true);
+    const threshold = [3, 3, 3, 1.98];
+    const [box] = layoutLabels(body, infos, sizes, viewport, -1, -1, { markerRadiusPx: threshold });
+    expect(box?.marker).toBe(false);
+  });
 });
 
 describe('labels: capa DOM', () => {

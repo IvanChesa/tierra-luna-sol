@@ -107,6 +107,8 @@ uniform float uHasNight;
 uniform float uHasClouds;
 uniform float uHasSpecular;
 uniform float uCloudOffset;
+// Opacidad de las nubes y de su sombra: 1 con el disco entero a la vista; menos en los primeros planos.
+uniform float uCloudOpacity;
 // (albedo de las nubes, intensidad de las luces, brillo del océano, oscuridad de la sombra)
 uniform vec4 uEarth;
 // Luz dispersada por la atmósfera (color lineal × intensidad) y refuerzo hacia el limbo.
@@ -220,12 +222,12 @@ void main() {
   haze *= sunVisible;
   // Nubes: la cobertura de su capa, que deriva en longitud (ilustrativo).
   vec2 cloudUv = vec2(uv.x + uCloudOffset, uv.y);
-  float cloud = uHasClouds > 0.5 ? texture2D(uCloudMap, cloudUv).r : 0.0;
+  float cloud = uHasClouds > 0.5 ? texture2D(uCloudMap, cloudUv).r * uCloudOpacity : 0.0;
   // Su sombra: la misma capa, un poco desplazada hacia el Sol en el plano tangente (aproximación).
   float shadow = 0.0;
   if (uHasClouds > 0.5 && muSun > 0.0) {
     vec2 towardSun = vec2(dot(toSun, normalize(vEast)), dot(toSun, normalize(vNorth)));
-    shadow = texture2D(uCloudMap, cloudUv + towardSun * vec2(0.0016, 0.0032)).r;
+    shadow = texture2D(uCloudMap, cloudUv + towardSun * vec2(0.0016, 0.0032)).r * uCloudOpacity;
   }
   vec3 surface = albedo * light * (1.0 - uEarth.w * shadow * (1.0 - cloud));
   // El Sol reflejado en el agua, sin nubes delante.
@@ -302,6 +304,8 @@ export interface EarthUniforms {
   readonly uHasSpecular: Uniform<number>;
   /** Deriva de las nubes, en fracción de vuelta (0 con movimiento reducido o en captura). */
   readonly uCloudOffset: Uniform<number>;
+  /** Opacidad de las nubes y de su sombra (`cloudOpacity`; 1 con el disco entero a la vista). */
+  readonly uCloudOpacity: Uniform<number>;
   /** (albedo de las nubes, intensidad de las luces, brillo del océano, oscuridad de su sombra). */
   readonly uEarth: Uniform<Vector4>;
   /** Luz dispersada por la atmósfera (rgb lineal) y su refuerzo hacia el limbo (w). */
@@ -356,6 +360,7 @@ export function createBodyMaterial(options: BodyMaterialOptions) {
         uHasClouds: new Uniform(0),
         uHasSpecular: new Uniform(0),
         uCloudOffset: new Uniform(0),
+        uCloudOpacity: new Uniform(1),
         uEarth: new Uniform(new Vector4(0.8, 1, 1, 0.35)),
         uScatter: new Uniform(new Vector4(0, 0, 0, 0)),
         uTwilightColor: new Uniform(new Color(1, 0.6, 0.35)),

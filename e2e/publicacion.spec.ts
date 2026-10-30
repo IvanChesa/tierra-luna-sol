@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { SITE_CONFIG } from '../src/app/core/site.config';
-import { openExplorer } from './support';
+import { openExplorer, settlePage } from './support';
 
 /**
  * Lo que se publica en Cloudflare Pages (fase 4): el servidor de los e2e (`scripts/serve-dist.mjs`)
@@ -102,12 +102,19 @@ test.describe('Publicación (Cloudflare Pages)', () => {
       });
     });
     const violations = () => page.evaluate(() => (window as unknown as { __csp: string[] }).__csp);
+    const finished: string[] = [];
+    page.on('requestfinished', (request) => finished.push(new URL(request.url()).pathname));
     await openExplorer(page, '/');
-    // La escena ha cargado sus texturas, las estrellas y las fuentes.
-    await page.waitForLoadState('networkidle');
+    // La escena ha cargado las estrellas, las texturas de la vista general y las fuentes (sin
+    // `networkidle`, revisión del bloque C, C5).
+    await expect.poll(() => finished.includes('/data/stars.bin')).toBe(true);
+    await expect
+      .poll(() => finished.filter((path) => path.startsWith('/textures/')).length)
+      .toBeGreaterThanOrEqual(9);
+    await settlePage(page);
     expect(await violations()).toEqual([]);
     await page.goto('/planetas/saturno');
-    await page.waitForLoadState('networkidle');
+    await settlePage(page);
     expect(await violations()).toEqual([]);
     // Control: la CSP está activa y el detector la oye. Un script en línea sin hash no se ejecuta.
     const ran = await page.evaluate(() => {
