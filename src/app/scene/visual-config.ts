@@ -112,6 +112,12 @@ export const VISUAL_CONFIG = {
    * No cambia ni las posiciones ni las órbitas, y en escritorio casi nunca actúa.
    */
   overviewMinRadiusPx: 2,
+  /**
+   * La Luna (fase 6): la exageración del relieve que desplaza su malla (1: la elevación del LOLA a
+   * escala física; ±10 km sobre 1737 km). Las normales del relieve van sin exagerar
+   * (`scripts/build-relief.mjs`).
+   */
+  moon: { reliefExaggeration: 1 },
   /** Por debajo de este radio en pantalla (px CSS), el halo de una atmósfera no se dibuja: no se vería. */
   atmosphereMinRadiusPx: 2,
   /** Por debajo de este radio en pantalla (px CSS), un cuerpo no aparta las órbitas de su disco. */

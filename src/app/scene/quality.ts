@@ -34,6 +34,20 @@ export interface QualityProfile {
    */
   readonly earthMapsTexture: TextureLevel;
   /**
+   * La Luna enfocada (fase 6): su color, su relieve (normales) y su elevación (16 bits en R y G, sin
+   * mipmaps; solo para los vértices). En alto, el color en 8K (171 MiB con sus mipmaps), las normales
+   * en 4K (43) y la elevación en 2K (8): la vista Luna cabe en los 300 MB de §5. §5 pide en la vista
+   * Luna ≤ 10 MB de texturas en alto (7,0) y ≤ 3 en bajo (1,2).
+   */
+  readonly moonTexture: TextureLevel;
+  readonly moonNormalTexture: TextureLevel;
+  readonly moonElevationTexture: TextureLevel;
+  /**
+   * Segmentos de cada cara de la esfera cúbica de la Luna de cerca (seis caras de n × n cuadrados):
+   * 128 en alto (~197 000 triángulos), con unos 512 vértices en su ecuador para la elevación de 2K.
+   */
+  readonly moonSegments: number;
+  /**
    * Vía Láctea (el panorama de ESO, fase 3b), o `null` para no cargarla. §5: ≤ 1,5 MB en alta y
    * ≤ 400 kB en baja. Sin las estrellas del panorama, 2k en todos los niveles: 4k no aportaba detalle
    * y costaba 43 MB de VRAM, frente a 11 (revisión de la fase 3b).
@@ -58,6 +72,10 @@ export const QUALITY_PROFILES: Readonly<Record<QualityLevel, QualityProfile>> = 
     focusTexture: '4k',
     earthDayTexture: '8k',
     earthMapsTexture: '2k',
+    moonTexture: '8k',
+    moonNormalTexture: '4k',
+    moonElevationTexture: '2k',
+    moonSegments: 128,
     milkyWayTexture: '2k',
     orbitSegments: 360,
     vramBudgetMB: 300,
@@ -74,6 +92,10 @@ export const QUALITY_PROFILES: Readonly<Record<QualityLevel, QualityProfile>> = 
     focusTexture: '2k',
     earthDayTexture: '2k',
     earthMapsTexture: '2k',
+    moonTexture: '4k',
+    moonNormalTexture: '2k',
+    moonElevationTexture: '1k',
+    moonSegments: 72,
     milkyWayTexture: '2k',
     orbitSegments: 256,
     vramBudgetMB: 200,
@@ -90,6 +112,10 @@ export const QUALITY_PROFILES: Readonly<Record<QualityLevel, QualityProfile>> = 
     focusTexture: '2k',
     earthDayTexture: '2k',
     earthMapsTexture: '2k',
+    moonTexture: '2k',
+    moonNormalTexture: '2k',
+    moonElevationTexture: '1k',
+    moonSegments: 48,
     milkyWayTexture: '2k',
     orbitSegments: 180,
     vramBudgetMB: 120,
