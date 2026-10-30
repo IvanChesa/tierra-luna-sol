@@ -3,7 +3,8 @@ import { BackSide, FrontSide, Quaternion, Texture, Vector3, Vector4 } from 'thre
 import { KM_PER_AU } from '../ephemeris/constants';
 import { subsolarPoint } from '../ephemeris/coordinates';
 import { earthShadow, moonShadowCenter } from '../ephemeris/eclipse';
-import { NASA_ECLIPSE_2026_08_12 } from '../ephemeris/fixtures/fixtures';
+import { NASA_ECLIPSE_2026_08_12, USNO_MOON_PHASES } from '../ephemeris/fixtures/fixtures';
+import { moonPhase } from '../ephemeris/ephemeris';
 import { illustrativeRadius } from '../ephemeris/scale';
 import { MAX_DATE } from '../ephemeris/time';
 import {
@@ -18,7 +19,9 @@ import {
 import { SCHEMATIC_COLORS } from './body-colors';
 import { TEXTURE_META } from './texture-meta';
 import type { TextureLevel } from './quality';
+import { chooseTextureFile, textureVramBytes } from './textures';
 import type { LoadedTexture, TextureId } from './textures';
+import { TEXTURE_FILES } from './texture-files';
 import { hasDepthChunks } from './materials/depth';
 import { ORBIT_WIDTH_PX, trailColor } from './orbits';
 import { VISUAL_CONFIG } from './visual-config';
@@ -1073,6 +1076,41 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     expect(full.separationDeg).toBeGreaterThan(full.earthDeg + full.sunDeg);
   });
 
+  it('la fase de la Luna en la escena es la de la ficha (moonPhase) y la del USNO en sus fases de 2026 (fase 6)', async () => {
+    interface MoonVisual {
+      body: { id: string };
+      moon: { uOccluderLocal: { value: Vector4 }; uSunLocal: { value: Vector4 } } | null;
+    }
+    const phases = USNO_MOON_PHASES.series.find((series) => series.year === 2026)?.phases ?? [];
+    const sample = ['New Moon', 'First Quarter', 'Full Moon', 'Last Quarter'].map(
+      (name) => phases.find(([phase, iso]) => phase === name && iso >= '2026-10-01') ?? ['', ''],
+    );
+    const expected: Record<string, number> = {
+      'New Moon': 0,
+      'First Quarter': 0.5,
+      'Full Moon': 1,
+      'Last Quarter': 0.5,
+    };
+    for (const [name, iso] of sample) {
+      const date = new Date(iso);
+      const h = await createHarness({ reducedMotion: true, focus: 'luna', time: date });
+      settle(h);
+      const moon = (internals(h).world as unknown as { visuals: MoonVisual[] }).visuals.find(
+        (visual) => visual.body.id === 'luna',
+      )?.moon;
+      if (!moon) throw new Error('Sin uniformes de la Luna');
+      // Lo que ilumina el shader visto desde la Tierra: el ángulo de fase entre el Sol y la Tierra.
+      const earth = new Vector3().copy(moon.uOccluderLocal.value as unknown as Vector3);
+      const sun = new Vector3().copy(moon.uSunLocal.value as unknown as Vector3);
+      const lit = (1 + Math.cos(earth.angleTo(sun))) / 2;
+      expect(Math.abs(lit - moonPhase(date).illuminatedFraction), `${name} ${iso}`).toBeLessThan(
+        0.005,
+      );
+      expect(Math.abs(lit - (expected[name] ?? Number.NaN)), `${name} ${iso}`).toBeLessThan(0.02);
+      h.engine.dispose();
+    }
+  });
+
   it('la sombra de la Luna que recibe el shader de la Tierra cae donde el catálogo de la NASA (fase 5)', async () => {
     const eclipse = NASA_ECLIPSE_2026_08_12;
     const date = new Date(eclipse.greatestEclipseUt);
@@ -1167,6 +1205,82 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     // De cerca, los cinco: el día, las normales, las nubes, la noche y la máscara del océano.
     expect(earth.vramMB).toBeGreaterThanOrEqual(5);
     expect(earth.vramMB).toBeLessThan(6);
+  });
+
+  /**
+   * Una fuente de texturas con los tamaños de los ficheros de verdad (`TEXTURE_FILES`): apunta qué se
+   * pide y qué se libera, y cuenta su VRAM como el cargador (C4).
+   */
+  const realisticTextures = () => {
+    const requests: string[] = [];
+    const released: string[] = [];
+    const source = {
+      load: (id: TextureId, level: TextureLevel): Promise<LoadedTexture> => {
+        const file = chooseTextureFile(TEXTURE_FILES[id], level, 16_384);
+        if (!file) return Promise.reject(new Error(`sin fichero de ${id}`));
+        const texture = new Texture();
+        texture.name = `${id}@${file.level}`;
+        texture.addEventListener('dispose', () => released.push(texture.name));
+        requests.push(texture.name);
+        const mipmaps = TEXTURE_META[id].mipmaps !== false;
+        return Promise.resolve({
+          texture,
+          file,
+          vramBytes: textureVramBytes(file.width, file.height, mipmaps),
+        });
+      },
+    };
+    return { requests, released, textures: () => ({ source, meta: TEXTURE_META }) };
+  };
+
+  it('C4: en la vista Luna, la Tierra (pequeña al fondo) no pide su 8K, y la 8K se libera al salir de la vista Tierra (fase 6)', async () => {
+    const fake = realisticTextures();
+    const h = await createHarness(
+      { reducedMotion: true, focus: 'tierra', view: 'earth' },
+      { textures: fake.textures },
+    );
+    settle(h);
+    for (let k = 0; k < 5; k++) await flush();
+    expect(fake.requests).toContain('earth-day@8k');
+    h.engine.setView('moon');
+    // La Tierra deja de verse grande con la proyección del frame siguiente: entonces pide su 1k.
+    for (let round = 0; round < 3; round++) {
+      settle(h);
+      for (let k = 0; k < 5; k++) await flush();
+    }
+    // La Luna, con sus mapas de cerca; la Tierra, con los de la vista general, y su 8K, liberada.
+    expect(fake.requests).toContain('moon@8k');
+    expect(fake.requests).toContain('moon-normal@4k');
+    expect(fake.requests).toContain('moon-elevation@2k');
+    expect(fake.requests).toContain('earth-day@1k');
+    expect(fake.released).toContain('earth-day@8k');
+    expect(fake.released).toContain('earth-night@2k');
+    h.engine.dispose();
+  });
+
+  it('C4: la VRAM de las vistas Tierra y Luna en su peor caso (cada una con la otra al fondo), dentro de §5 en alto y en bajo (fase 6)', async () => {
+    const vram = async (view: 'earth' | 'moon', quality: 'high' | 'low') => {
+      const fake = realisticTextures();
+      const h = await createHarness(
+        { reducedMotion: true, view, focus: view === 'earth' ? 'tierra' : 'luna', quality },
+        { textures: fake.textures },
+      );
+      for (let round = 0; round < 3; round++) {
+        settle(h);
+        for (let k = 0; k < 5; k++) await flush();
+      }
+      const { vramMB } = h.engine.stats();
+      h.engine.dispose();
+      return vramMB;
+    };
+    const budgets = { high: 300, low: 120 } as const;
+    for (const quality of ['high', 'low'] as const) {
+      for (const view of ['earth', 'moon'] as const) {
+        expect(await vram(view, quality), `${view} ${quality}`).toBeLessThanOrEqual(
+          budgets[quality],
+        );
+      }
+    }
   });
 
   it('las nubes derivan con los frames pintados: sin pintar no se mueven, y al volver no saltan (fase 5)', async () => {

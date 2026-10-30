@@ -164,3 +164,178 @@ export function atSolarHour(
   );
   return new Date(sameDay ?? nearest);
 }
+
+// --- La Luna (fase 6) ------------------------------------------------------------------------------
+
+/**
+ * La luz con la que se ve una vista o una parada de la Luna: la fecha se lleva al instante más
+ * cercano con esa luz (`ephemeris/moon-light.ts`), a menos de medio mes.
+ */
+export type MoonLight =
+  /** La fase más cercana, por su elongación (0, luna nueva; 180, luna llena). */
+  | { readonly kind: 'phase'; readonly phaseDeg: number }
+  /** La mañana lunar más cercana en que el Sol está a esa altura (grados) sobre el lugar. */
+  | { readonly kind: 'sun'; readonly elevationDeg: number }
+  /** Sin cambiar la fecha: junto al polo, el Sol está siempre bajo. */
+  | null;
+
+/** Una vista o una parada del recorrido de la Luna: un lugar, la cámara y su luz. */
+export interface MoonStop {
+  readonly id: string;
+  readonly title: string;
+  /** Subtítulo (se muestra y se anuncia). */
+  readonly text: string;
+  /** Las páginas que respaldan el subtítulo (y, de los lugares con nombre, sus coordenadas). */
+  readonly sources: readonly string[];
+  readonly reviewed: boolean;
+  /** Latitud y longitud selenográficas (grados, este positivo). */
+  readonly latDeg: number;
+  readonly lonDeg: number;
+  /** Distancia de la cámara al centro de la Luna, en radios lunares (la de una pantalla ancha). */
+  readonly distanceRadii: number;
+  /** Radio angular (grados de arco sobre la Luna) de la región que tiene que verse (como en la Tierra). */
+  readonly extentDeg: number;
+  readonly light: MoonLight;
+}
+
+const NASA_MOON_FACTS = 'https://science.nasa.gov/moon/facts/';
+const GAZETTEER = (feature: number) => `https://planetarynames.wr.usgs.gov/Feature/${feature}`;
+
+/**
+ * Las vistas de la Luna (PLAN, fase 6, tarea 5): la cara visible en luna llena, la oculta en luna
+ * nueva, el polo sur con su luz de siempre y la luz rasante junto al terminador, en las tierras altas
+ * del sur, llenas de cráteres.
+ */
+export const MOON_VIEWS: readonly MoonStop[] = [
+  {
+    id: 'cara-visible',
+    title: 'Cara visible',
+    text: 'La cara que la Luna enseña siempre a la Tierra, porque gira sobre sí misma al mismo ritmo al que da la vuelta a la Tierra: los mares, oscuros, son cuencas de impacto rellenas de lava, y las tierras altas, más claras.',
+    sources: [NASA_MOON_FACTS],
+    reviewed: false,
+    latDeg: 0,
+    lonDeg: 0,
+    distanceRadii: 3.4,
+    extentDeg: 90,
+    light: { kind: 'phase', phaseDeg: 180 },
+  },
+  {
+    id: 'cara-oculta',
+    title: 'Cara oculta',
+    text: 'La cara que nunca se ve desde la Tierra. No es una «cara oscura»: en luna nueva, el Sol la ilumina de lleno.',
+    sources: [NASA_MOON_FACTS],
+    reviewed: false,
+    latDeg: 0,
+    lonDeg: 180,
+    distanceRadii: 3.4,
+    extentDeg: 90,
+    light: { kind: 'phase', phaseDeg: 0 },
+  },
+  {
+    id: 'polo-sur',
+    title: 'Polo sur',
+    text: 'En el polo sur de la Luna, el Sol pasa siempre rozando el horizonte: las sombras son muy largas y el fondo de algunos cráteres no ha visto la luz en miles de millones de años.',
+    sources: [
+      'https://science.nasa.gov/solar-system/moon/phenomena-nasa-astronauts-will-encounter-at-moons-south-pole/',
+    ],
+    reviewed: false,
+    latDeg: -90,
+    lonDeg: 0,
+    distanceRadii: 1.7,
+    extentDeg: 20,
+    light: null,
+  },
+  {
+    id: 'luz-rasante',
+    title: 'Luz rasante',
+    text: 'Junto al terminador, la línea entre el día y la noche, el Sol está bajo y las sombras largas dibujan el relieve de los cráteres.',
+    sources: [
+      'https://science.nasa.gov/image-article/apod-2018-may-22-craters-and-shadows-at-the-lunar-terminator/',
+    ],
+    reviewed: false,
+    latDeg: -25,
+    lonDeg: 0,
+    distanceRadii: 1.6,
+    extentDeg: 12,
+    light: { kind: 'sun', elevationDeg: 4 },
+  },
+];
+
+/**
+ * El recorrido por la Luna (PLAN, fase 6, tarea 6): cinco lugares con nombre (sus centros, del
+ * Gazetteer of Planetary Nomenclature de la IAU y el USGS), cada uno con la luz de su mañana lunar.
+ */
+export const MOON_TOUR: readonly MoonStop[] = [
+  {
+    id: 'base-tranquilidad',
+    title: 'Base Tranquilidad',
+    text: 'Aquí, en el Mar de la Tranquilidad, se posó el Apolo 11 el 20 de julio de 1969: la Base Tranquilidad.',
+    sources: [GAZETTEER(5684), GAZETTEER(3691), 'https://www.nasa.gov/mission/apollo-11/'],
+    reviewed: false,
+    latDeg: 0.674,
+    lonDeg: 23.473,
+    distanceRadii: 1.3,
+    extentDeg: 6,
+    light: { kind: 'sun', elevationDeg: 20 },
+  },
+  {
+    id: 'copernico',
+    title: 'Copérnico',
+    text: 'Copérnico, un cráter de 96 km rodeado de mares oscuros, con rayos claros: los restos que lanzó el impacto que lo formó.',
+    sources: [
+      GAZETTEER(1296),
+      'https://science.nasa.gov/image-article/apod-2005-march-5-tycho-and-copernicus-lunar-ray-craters/',
+    ],
+    reviewed: false,
+    latDeg: 9.621,
+    lonDeg: -20.079,
+    distanceRadii: 1.3,
+    extentDeg: 4,
+    light: { kind: 'sun', elevationDeg: 15 },
+  },
+  {
+    id: 'tycho',
+    title: 'Tycho',
+    text: 'Tycho, de 85 km: con sus rayos, que llegan muy lejos, es el cráter grande más joven de la cara visible.',
+    sources: [
+      GAZETTEER(6163),
+      'https://science.nasa.gov/image-article/apod-2005-march-5-tycho-and-copernicus-lunar-ray-craters/',
+    ],
+    reviewed: false,
+    latDeg: -43.296,
+    lonDeg: -11.215,
+    distanceRadii: 1.3,
+    extentDeg: 4,
+    light: { kind: 'sun', elevationDeg: 20 },
+  },
+  {
+    id: 'mare-orientale',
+    title: 'Mare Orientale',
+    text: 'Mare Orientale, una diana de unos 950 km en el borde oeste de la Luna: sus anillos son las ondas que dejó en la corteza un impacto de hace más de 3000 millones de años.',
+    sources: [
+      GAZETTEER(3685),
+      'https://science.nasa.gov/image-article/apod-2011-march-12-mare-orientale/',
+    ],
+    reviewed: false,
+    latDeg: -19.866,
+    lonDeg: -94.67,
+    distanceRadii: 1.8,
+    extentDeg: 18,
+    light: { kind: 'sun', elevationDeg: 20 },
+  },
+  {
+    id: 'shackleton',
+    title: 'Shackleton',
+    text: 'Shackleton, un cráter de 21 km en el polo sur: su borde recibe la luz del Sol, y su interior está siempre en sombra.',
+    sources: [
+      GAZETTEER(5450),
+      'https://science.nasa.gov/resource/shackleton-craters-illuminated-rim-shadowed-interior/',
+    ],
+    reviewed: false,
+    latDeg: -89.67,
+    lonDeg: 129.78,
+    distanceRadii: 1.15,
+    extentDeg: 3,
+    light: null,
+  },
+];

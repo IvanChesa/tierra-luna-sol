@@ -212,6 +212,14 @@ const SUN_RADIUS_KM = BODY_DATA.sol.physical.radiusKm.value;
 const MOON_ORBIT_OPACITY = 0.7;
 /** Presencia mínima con la que se dibuja una luna (más pequeña, no llegaría a un píxel). */
 const MIN_PRESENCE = 0.05;
+/**
+ * Radio en pantalla (px CSS) a partir del cual un cuerpo que no es el foco se ve grande y lleva las
+ * texturas del primer plano, y por debajo del cual las suelta (histéresis: no se piden y se sueltan
+ * con un vaivén de la cámara). Revisión del bloque C, C4: en la vista Luna, la Tierra mide unos 20 px
+ * y ya no pide su textura de 8K.
+ */
+const LARGE_ENTER_PX = 160;
+const LARGE_EXIT_PX = 120;
 /** Segmentos de la esfera ligera de las lunas pequeñas (a lo ancho). */
 const COARSE_SEGMENTS = 32;
 
@@ -276,6 +284,8 @@ export class World {
   /** La Luna enfocada (fase 6): una esfera cúbica, sin polos pellizcados, para su relieve. */
   private moonSphere: BufferGeometry;
   private focusIndex: number | null = null;
+  /** 1 para los cuerpos que se ven grandes en pantalla (`LARGE_ENTER_PX`). */
+  private readonly large: Uint8Array;
   private readonly visuals: BodyVisual[];
   private readonly sun: ReturnType<typeof createSunMaterial>;
   private readonly halo: Mesh;
@@ -307,6 +317,7 @@ export class World {
     this.sphere = this.createSphere(options.profile.sphereSegments);
     this.coarseSphere = this.createSphere(COARSE_SEGMENTS);
     this.moonSphere = createCubeSphere(options.profile.moonSegments);
+    this.large = new Uint8Array(options.bodies.length);
     // Color de la fotosfera: un cuerpo negro a la temperatura efectiva del catálogo.
     const temperature = BODY_DATA.sol.physical.effectiveTemperatureK?.value ?? 5772;
     const [r, g, b] = temperatureToSrgb(temperature);
@@ -516,11 +527,12 @@ export class World {
           textureFailed('milky-way', error);
         });
     }
-    const focusBody = focusIndex === null ? undefined : this.visuals[focusIndex]?.body;
-    const focusPlanet = focusBody?.kind === 'moon' ? focusBody.parent : focusBody?.id;
     for (const visual of this.visuals) {
       if (!visual.textureId) continue;
-      const near = visual.body.id === focusBody?.id || visual.body.id === focusPlanet;
+      // Las del primer plano, solo el cuerpo enfocado y los que se ven grandes (C4): el planeta de una
+      // luna enfocada, solo si se ve grande.
+      const index = visual.body.index;
+      const near = index === focusIndex || this.large[index] === 1;
       const focusLevel =
         visual.textureId === 'earth-day'
           ? this.profile.earthDayTexture
@@ -774,6 +786,7 @@ export class World {
 
   /** Actualiza el grafo para un frame. Devuelve los planos de recorte que ha puesto. */
   update(frame: WorldFrame): { near: number; far: number } {
+    this.updateLarge(frame.screen);
     const { frames, state, orientations } = frame;
     const positions = frames.output.position;
     const radii = frames.output.radius;
@@ -867,6 +880,25 @@ export class World {
       frame.aliasedOrbit,
     );
     return { near, far };
+  }
+
+  /**
+   * Qué cuerpos se ven grandes en pantalla (C4), con la proyección del frame anterior. Si cambia, se
+   * vuelven a pedir las texturas: el que crece, a su nivel del primer plano, y el que mengua, al de
+   * la vista general (su textura grande se libera cuando llega la pequeña).
+   */
+  private updateLarge(screen: readonly ScreenBody[]): void {
+    let changed = false;
+    for (const body of screen) {
+      const was = this.large[body.index] === 1;
+      const radius = Number.isFinite(body.radiusPx) ? body.radiusPx : Infinity;
+      const is = body.onScreen && radius >= (was ? LARGE_EXIT_PX : LARGE_ENTER_PX);
+      if (is !== was) {
+        this.large[body.index] = is ? 1 : 0;
+        changed = true;
+      }
+    }
+    if (changed) this.requestTextures(this.focusIndex);
   }
 
   /** Cuánto primer plano del Sol hay (0–1): recoge su halo y enciende la granulación. */

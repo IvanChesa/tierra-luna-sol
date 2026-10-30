@@ -59,6 +59,11 @@
   <tls-earth-panel class="earth-panel" data-chrome />
 }
 
+<!-- La vista Luna (fase 6): sus vistas, el recorrido y la fase. -->
+@if (view() === 'moon') {
+  <tls-moon-panel class="moon-panel" data-chrome />
+}
+
 <tls-body-chips class="chips" />
 
 <tls-time-controls class="dock" />
