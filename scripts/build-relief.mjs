@@ -52,6 +52,7 @@ export const DEMS = {
     format: 'svs-uint16',
     radiusM: 1737400,
     exaggeration: 1,
+    minCosLat: 0.001,
     // El punto más alto del LOLA, junto a Engel'gardt, y el más bajo, en Antoniadi (centros del
     // Gazetteer, IAU/USGS: Feature/1801 y Feature/296).
     highest: [5.389, -159.468, "Engel'gardt", 1.5],
@@ -267,15 +268,17 @@ export function resampleArea(source, sourceWidth, sourceHeight, width, height) {
 /**
  * Mapa de normales (RGB de 8 bits: este, norte, arriba en [0, 255]) de una elevación equirrectangular,
  * con diferencias centradas: en longitud, la distancia de un píxel es R·cos φ·Δλ (con un mínimo cerca
- * de los polos) y la longitud da la vuelta; en latitud, R·Δφ.
+ * de los polos, `minCosLat`) y la longitud da la vuelta; en latitud, R·Δφ. Con el mínimo de 0,02 (el
+ * de Marte y Mercurio), en el último grado y pico las pendientes este–oeste salen muy pequeñas y el
+ * relieve, solo radial: la Luna, que se ve desde su polo sur (fase 6), usa la distancia real.
  */
-export function normalMap(elevation, width, height, radiusM, exaggeration) {
+export function normalMap(elevation, width, height, radiusM, exaggeration, minCosLat = 0.02) {
   const out = Buffer.alloc(width * height * 3);
   const dLon = (2 * Math.PI) / width;
   const dLat = Math.PI / height;
   for (let y = 0; y < height; y++) {
     const lat = Math.PI / 2 - (y + 0.5) * dLat;
-    const east = 2 * radiusM * Math.max(Math.cos(lat), 0.02) * dLon;
+    const east = 2 * radiusM * Math.max(Math.cos(lat), minCosLat) * dLon;
     const north = 2 * radiusM * dLat;
     const up = Math.max(y - 1, 0) * width;
     const down = Math.min(y + 1, height - 1) * width;

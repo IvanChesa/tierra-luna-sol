@@ -137,6 +137,16 @@ varying vec3 vNorth;
 #ifdef TLS_MOON
 varying vec3 vPoleView;
 
+// Muestreo de un mapa equirrectangular con la huella física del píxel: junto a los polos, la u
+// cambia mucho de un píxel a otro (un paralelo mide 2π·cos φ), y el mipmap que elige esa derivada
+// difumina también en latitud, que allí es la dirección radial: el polo saldría rayado como un sol.
+// La derivada de u se multiplica por cos φ (el tamaño físico de su paso).
+vec4 tlsSurface(sampler2D map, vec2 uv) {
+  float cosLat = max(cos((uv.y - 0.5) * 3.14159265359), 0.02);
+  vec2 scaleGrad = vec2(cosLat, 1.0);
+  return textureGrad(map, uv, dFdx(uv) * scaleGrad, dFdy(uv) * scaleGrad);
+}
+
 // Coordenadas de textura por píxel (ver la cabecera): u y v de la dirección del punto.
 vec2 tlsMoonUv() {
   vec3 d = normalize(vLocal);
@@ -215,7 +225,11 @@ float ringShadow() {
 
 // Normal con el relieve: el mapa guarda (este, norte, arriba) en [0, 1].
 vec3 reliefNormal(vec3 geometric, vec2 uv) {
+#ifdef TLS_MOON
+  vec3 t = tlsSurface(uNormalMap, uv).xyz * 2.0 - 1.0;
+#else
   vec3 t = texture2D(uNormalMap, uv).xyz * 2.0 - 1.0;
+#endif
   t.xy *= uNormalStrength;
 #ifdef TLS_MOON
   // El este, por píxel: el polo por la normal (solo degenera en el polo exacto).
@@ -237,7 +251,11 @@ void main() {
 #else
   vec2 uv = vec2(vUv.x + uMeridianOffset, vUv.y);
 #endif
+#ifdef TLS_MOON
+  vec3 base = uHasMap > 0.5 ? tlsSurface(uMap, uv).rgb : uColor;
+#else
   vec3 base = uHasMap > 0.5 ? texture2D(uMap, uv).rgb : uColor;
+#endif
   // Color medido (data/photometry.ts): la textura conserva su luminancia y toma esa cromaticidad.
   if (uChromaticity.w > 0.0) {
     float luminance = dot(base, vec3(0.2126, 0.7152, 0.0722));

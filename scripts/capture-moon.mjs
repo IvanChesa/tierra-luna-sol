@@ -39,10 +39,28 @@ const NEW = '2026-11-09T07:03Z';
 const FIRST_QUARTER = '2026-11-17T11:48Z';
 const FULL = '2026-11-24T14:54Z';
 
+/** Pulsa un botón del panel de la Luna (por su texto o por su etiqueta), las veces que se diga. */
+const press =
+  (name, times = 1) =>
+  async (page) => {
+    for (let k = 0; k < times; k++) {
+      await page.getByRole('button', { name, exact: true }).click();
+    }
+  };
+
 /** [nombre, ruta, tamaño, acción tras cargar]. */
 const SHOTS = [
   ['escritorio-luna', '/explorar/luna?captura=1', DESKTOP],
   ['movil-luna', '/explorar/luna?captura=1', MOBILE],
+  // Las vistas del panel (cada una lleva la fecha a su luz) y dos paradas del recorrido.
+  ['vista-cara-visible', '/explorar/luna?captura=1', DESKTOP, press('Cara visible')],
+  ['vista-cara-oculta', '/explorar/luna?captura=1', DESKTOP, press('Cara oculta')],
+  ['vista-polo-sur', '/explorar/luna?captura=1', DESKTOP, press('Polo sur')],
+  ['vista-luz-rasante', '/explorar/luna?captura=1', DESKTOP, press('Luz rasante')],
+  ['recorrido-copernico', '/explorar/luna?captura=1', DESKTOP, press('Parada siguiente', 2)],
+  ['recorrido-shackleton', '/explorar/luna?captura=1', DESKTOP, press('Parada anterior')],
+  ['movil-vista-luz-rasante', '/explorar/luna?captura=1', MOBILE, press('Luz rasante')],
+  ['movil-vista-polo-sur', '/explorar/luna?captura=1', MOBILE, press('Polo sur')],
   // Desde la Tierra, en sus fases (la geometría real de la cámara: `desde=tierra`).
   ['luna-llena', `/?captura=1&cuerpo=luna&fecha=${FULL}&desde=tierra`, SQUARE],
   ['luna-cuarto-creciente', `/?captura=1&cuerpo=luna&fecha=${FIRST_QUARTER}&desde=tierra`, SQUARE],

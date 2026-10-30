@@ -737,7 +737,14 @@ for (const [id, spec] of Object.entries(TEXTURES)) {
           }),
         );
       }
-      const normals = normalMap(elevation, width, width / 2, dem.radiusM, dem.exaggeration);
+      const normals = normalMap(
+        elevation,
+        width,
+        width / 2,
+        dem.radiusM,
+        dem.exaggeration,
+        dem.minCosLat,
+      );
       const pipeline = sharp(normals, { raw: { width, height: width / 2, channels: 3 } });
       list.push(await emit(id, level, pipeline, spec.quality));
     }

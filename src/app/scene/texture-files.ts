@@ -343,24 +343,24 @@ export const TEXTURE_FILES: TextureFiles = {
   'moon-normal': [
     {
       level: '1k',
-      path: 'textures/1k/moon-normal.8a1078f1d6.webp',
+      path: 'textures/1k/moon-normal.35d781fbfc.webp',
       width: 1024,
       height: 512,
-      bytes: 39766,
+      bytes: 40108,
     },
     {
       level: '2k',
-      path: 'textures/2k/moon-normal.f3c3c4924a.webp',
+      path: 'textures/2k/moon-normal.a6f42c0c6a.webp',
       width: 2048,
       height: 1024,
-      bytes: 200918,
+      bytes: 205676,
     },
     {
       level: '4k',
-      path: 'textures/4k/moon-normal.8cfc2b3a0e.webp',
+      path: 'textures/4k/moon-normal.b1102eeaa5.webp',
       width: 4096,
       height: 2048,
-      bytes: 829228,
+      bytes: 862094,
     },
   ],
   'moon-elevation': [
