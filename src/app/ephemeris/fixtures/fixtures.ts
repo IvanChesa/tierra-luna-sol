@@ -10,6 +10,7 @@ import moonIllumination from './horizons-moon-illumination.json';
 import moons2020To2035 from './horizons-moons-2020-2035.json';
 import planDates from './horizons-plan-dates.json';
 import nasaEclipse20260812 from './nasa-eclipse-2026-08-12.json';
+import nasaLunarEclipses from './nasa-lunar-eclipses.json';
 import moonPhases from './usno-moon-phases.json';
 import seasons from './usno-seasons-2026.json';
 import siderealTimes from './usno-sidereal-time.json';
@@ -114,6 +115,22 @@ export function hmsToHours(hms: string): number {
   const [h = 0, m = 0, s = 0] = hms.split(':').map(Number);
   return h + m / 60 + s / 3600;
 }
+
+/** Eclipses de Luna del catálogo de cinco milenios de la NASA (fase 6): el máximo y sus fases. */
+export const NASA_LUNAR_ECLIPSES = nasaLunarEclipses as {
+  readonly query: string;
+  readonly eclipses: readonly {
+    readonly greatestEclipseTd: string;
+    readonly deltaTSeconds: number;
+    readonly type: string;
+    readonly gamma: number;
+    readonly penumbralMagnitude: number;
+    readonly umbralMagnitude: number;
+    readonly penumbralMinutes: number | null;
+    readonly partialMinutes: number | null;
+    readonly totalMinutes: number | null;
+  }[];
+};
 
 /** Máximo del eclipse total de Sol del 12-08-2026, del catálogo de eclipses de la NASA. */
 export const NASA_ECLIPSE_2026_08_12 = nasaEclipse20260812 as {
