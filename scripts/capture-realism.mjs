@@ -84,6 +84,20 @@ const SHOTS = [
     '/?captura=1&cuerpo=saturno&fecha=2013-07-19T21:30Z&fase=176&latitud=-17',
     SQUARE,
   ],
+  // El tránsito triple del 24-01-2015 que fotografió el Hubble (fase 7.b): a las 06:28 UT, las sombras
+  // de Europa, Calisto e Ío sobre Júpiter; a las 07:10 UT, ya no la de Ío. Desde la Tierra, con la
+  // hora en Júpiter: la de la foto menos el tiempo de luz (36,37 min, astronomy-engine; la escena
+  // pinta las posiciones verdaderas de cada instante, no las que se ven desde la Tierra).
+  [
+    'jupiter-transito-2015-0628',
+    '/?captura=1&cuerpo=jupiter&fecha=2015-01-24T05:51:38Z&desde=tierra',
+    SQUARE,
+  ],
+  [
+    'jupiter-transito-2015-0710',
+    '/?captura=1&cuerpo=jupiter&fecha=2015-01-24T06:33:38Z&desde=tierra',
+    SQUARE,
+  ],
   // Titán en color natural, como PIA06230 (Cassini, 16-04-2005): fase de 56° (fase 7).
   ['titan-cassini-2005', '/?captura=1&cuerpo=titan&fecha=2005-04-16T12:00Z&fase=56', SQUARE],
   // Sombra del planeta sobre los anillos: en 2017, el Sol a unos 26° sobre los anillos; la cámara, a
