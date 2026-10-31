@@ -52,15 +52,16 @@ import {
   sceneShaderMaterial,
 } from './depth';
 import { SHADING_PARS, ShadingUniforms, shadingUniforms } from './shading';
+import { MOON_POLAR_CAP_EDGE_DEG } from '../texture-files';
 
 /**
- * Los casquetes polares de la Luna (revisión de la fase 6): el atlas «moon-normal-poles» cubre de 75°
- * de latitud al polo en estereográfica (`scripts/lola-polar.mjs`: r = 1 a 75°, con r = tan(c/2) / T y
- * T = tan(7,5°)), y el shader lo mezcla con el mapa equirrectangular entre 76° y 78° (el seno de
- * esas latitudes, que es la y de la esfera unidad).
+ * Los casquetes polares de la Luna (revisión de la fase 6): el atlas «moon-normal-poles» cubre del
+ * borde que genera el script (`MOON_POLAR_CAP_EDGE_DEG`, 75°) al polo en estereográfica
+ * (`scripts/lola-polar.mjs`: r = 1 en el borde, con r = tan(c/2) / T y T = tan(7,5°)), y el shader lo
+ * mezcla con el mapa equirrectangular entre 76° y 78° (el seno de esas latitudes, que es la y de la
+ * esfera unidad).
  */
-const POLAR_CAP_EDGE_DEG = 75;
-const POLAR_CAP_T = Math.tan((((90 - POLAR_CAP_EDGE_DEG) / 2) * Math.PI) / 180);
+const POLAR_CAP_T = Math.tan((((90 - MOON_POLAR_CAP_EDGE_DEG) / 2) * Math.PI) / 180);
 const POLAR_BLEND_SIN = [76, 78].map((deg) => Math.sin((deg * Math.PI) / 180)) as [number, number];
 
 /** Un número de JS como literal float de GLSL. */

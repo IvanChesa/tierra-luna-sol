@@ -46,7 +46,8 @@ export interface QualityProfile {
   readonly moonPoleTexture: TextureLevel;
   /**
    * Segmentos de cada cara de la esfera cúbica de la Luna de cerca (seis caras de n × n cuadrados):
-   * 128 en alto (~197 000 triángulos), con unos 512 vértices en su ecuador para la elevación de 2K.
+   * 128 en alto (~197 000 triángulos), con unos 512 vértices en su ecuador para la elevación de 1K
+   * (dos muestras por vértice).
    */
   readonly moonSegments: number;
   /**

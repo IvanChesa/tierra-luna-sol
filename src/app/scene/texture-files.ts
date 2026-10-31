@@ -466,3 +466,9 @@ export const SATURN_RING_STRIP_KM = { inner: 69250, outer: 141048 } as const;
  * de 0 a 65 535 vale minM + v / 65 535 · (maxM − minM) sobre la esfera de 1737,4 km.
  */
 export const MOON_ELEVATION_RANGE_M = { min: -9500, max: 11000 } as const;
+
+/**
+ * Latitud (grados) del borde de los casquetes polares de la Luna («moon-normal-poles»): el atlas cubre
+ * de ahí al polo en estereográfica (scripts/lola-polar.mjs), y el shader lo coloca con ella.
+ */
+export const MOON_POLAR_CAP_EDGE_DEG = 75;

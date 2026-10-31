@@ -38,6 +38,8 @@ const SQUARE = { width: 900, height: 900, scale: 1 };
 const NEW = '2026-11-09T07:03Z';
 const FIRST_QUARTER = '2026-11-17T11:48Z';
 const FULL = '2026-11-24T14:54Z';
+/** El 31-5-2026, el Sol está a 1,6° sobre el horizonte del polo norte de la Luna (astronomy-engine). */
+const NORTH_LIT = '2026-05-31T00:00Z';
 
 /** Pulsa un botón del panel de la Luna (por su texto o por su etiqueta), las veces que se diga. */
 const press =
@@ -47,6 +49,15 @@ const press =
       await page.getByRole('button', { name, exact: true }).click();
     }
   };
+
+/** Lleva la cámara a un lugar de la Luna (en captura, por el motor: no hay una vista del polo norte). */
+const lookAt = (latDeg, lonDeg, distanceRadii, extentDeg) => async (page) => {
+  await page.evaluate(
+    ([lat, lon, distance, extent]) =>
+      window.__tlsViewer.engine.lookAtSurface(lat, lon, distance, extent),
+    [latDeg, lonDeg, distanceRadii, extentDeg],
+  );
+};
 
 /** [nombre, ruta, tamaño, acción tras cargar]. */
 const SHOTS = [
@@ -74,6 +85,16 @@ const SHOTS = [
   ['luna-libracion-oeste', '/?captura=1&cuerpo=luna&fecha=2026-11-21T18:00Z&desde=tierra', SQUARE],
   // El polo sur, desde 75° S sobre el ecuador de la Luna.
   ['luna-polo-sur', `/?captura=1&cuerpo=luna&fecha=${FIRST_QUARTER}&fase=70&latitud=-75`, SQUARE],
+  // El polo norte (revisión de la fase 6), desde 75° N, el 31-5-2026: el Sol, a 1,6° sobre su horizonte,
+  // cerca de su máximo de 2026 (astronomy-engine). Y de cerca, con el anillo en el que se mezclan el
+  // casquete y el mapa equirrectangular (76–78°) a la vista.
+  ['luna-polo-norte', `/?captura=1&cuerpo=luna&fecha=${NORTH_LIT}&fase=70&latitud=75`, SQUARE],
+  [
+    'luna-polo-norte-cerca',
+    `/explorar/luna?captura=1&fecha=${NORTH_LIT}`,
+    SQUARE,
+    lookAt(86, 0, 1.8, 16),
+  ],
 ];
 
 const only = process.argv.find((arg) => arg.startsWith('--solo='))?.slice('--solo='.length);

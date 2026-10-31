@@ -42,7 +42,7 @@ import {
   normalMap,
   packElevation16,
 } from './build-relief.mjs';
-import { buildPolarNormalAtlas } from './lola-polar.mjs';
+import { POLAR_EDGE_DEG, buildPolarNormalAtlas } from './lola-polar.mjs';
 
 const ROOT = new URL('../', import.meta.url);
 const SRC = new URL('assets-src/textures/', ROOT);
@@ -103,8 +103,8 @@ const TEXTURES = {
   'moon-normal': { dem: 'moon', kind: 'relief', color: 'moon', quality: 85, checkLevel: '2k' },
   // La malla de la Luna se desplaza con esta elevación: sus vértices están a 0,7° en el ecuador en el
   // nivel alto (512 por vuelta), y la de 1k (0,35° por píxel, cada uno la media de su área) ya da dos
-  // muestras por vértice; la de 2k pesaba 2,7 MiB y 8 MiB de VRAM más sin verse (revisión de la fase 6,
-  // sugerencia 12).
+  // muestras por vértice; la de 2k pesaba 2,7 MiB (0,7 la de 1k) y ocupaba 8 MiB de VRAM (2 la de 1k)
+  // sin verse (revisión de la fase 6, sugerencia 12).
   'moon-elevation': { dem: 'moon', kind: 'elevation', maxWidth: 1024 },
   // Sus casquetes polares, por encima de 76° (revisión de la fase 6, hallazgo 1): las normales de los
   // modelos polares del LOLA, a 893 m por píxel en 2k, sin el «sol de rayas» del equirrectangular.
@@ -911,6 +911,12 @@ export const SATURN_RING_STRIP_KM = { inner: ${ringStrip.inner}, outer: ${ringSt
  * de 0 a 65 535 vale minM + v / 65 535 · (maxM − minM) sobre la esfera de 1737,4 km.
  */
 export const MOON_ELEVATION_RANGE_M = { min: ${ELEVATION_RANGE_M.moon.minM}, max: ${ELEVATION_RANGE_M.moon.maxM} } as const;
+
+/**
+ * Latitud (grados) del borde de los casquetes polares de la Luna («moon-normal-poles»): el atlas cubre
+ * de ahí al polo en estereográfica (scripts/lola-polar.mjs), y el shader lo coloca con ella.
+ */
+export const MOON_POLAR_CAP_EDGE_DEG = ${POLAR_EDGE_DEG};
 `;
 const target = new URL('src/app/scene/texture-files.ts', ROOT);
 await writeFile(target, ts);

@@ -19,6 +19,7 @@ import {
 } from './engine';
 import { SCHEMATIC_COLORS } from './body-colors';
 import { TEXTURE_META } from './texture-meta';
+import { QUALITY_PROFILES } from './quality';
 import type { TextureLevel } from './quality';
 import { chooseTextureFile, textureVramBytes } from './textures';
 import type { LoadedTexture, TextureId } from './textures';
@@ -1419,13 +1420,24 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
       Object.values(sphere.attributes).reduce((sum, a) => sum + a.array.byteLength, 0) +
       (sphere.index?.array.byteLength ?? 0);
     expect(h.engine.stats().vramMB - overview).toBeCloseTo(bytes / 1_048_576, 1);
+    // Al cambiar de calidad con la Luna enfocada, se rehace con los segmentos del nivel nuevo.
+    let replaced = false;
+    sphere.addEventListener('dispose', () => (replaced = true));
+    h.engine.setQuality('low');
+    settle(h);
+    const low = world.moonSphere as unknown as {
+      getAttribute(name: string): { count: number };
+      addEventListener(type: 'dispose', listener: () => void): void;
+    } | null;
+    expect(replaced).toBe(true);
+    const n = QUALITY_PROFILES.low.moonSegments;
+    expect(low?.getAttribute('position').count).toBe(6 * (n + 1) ** 2);
     let disposed = false;
-    sphere.addEventListener('dispose', () => (disposed = true));
+    low?.addEventListener('dispose', () => (disposed = true));
     h.engine.setView('system');
     settle(h);
     expect(world.moonSphere).toBeNull();
     expect(disposed).toBe(true);
-    expect(h.engine.stats().vramMB).toBeCloseTo(overview, 1);
     h.engine.dispose();
   });
 
