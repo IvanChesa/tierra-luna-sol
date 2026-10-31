@@ -245,6 +245,21 @@ export class ExplorerSession {
     writeQualityPreference(this.storage, setting);
   }
 
+  /**
+   * Cambia la escala (fase 7): la ilustrativa agranda los cuerpos y acerca las distancias para que todo
+   * se vea; la real pone tamaños y distancias en la misma proporción. La transición la anima el motor
+   * (directa con movimiento reducido), y la URL la recoge (`escala=real`).
+   */
+  setScale(mode: Parameters<SimulationStore['setScale']>[0]): void {
+    if (mode === this.sim.scaleFrame()) return;
+    this.sim.setScale(mode);
+    this.announce(
+      mode === 'real'
+        ? 'Escala real: los tamaños y las distancias, en la misma proporción. Los cuerpos diminutos se señalan con un anillo.'
+        : 'Escala ilustrativa: los cuerpos, agrandados, y las distancias, acortadas, para que todo se vea.',
+    );
+  }
+
   /** Activa o desactiva los atajos de una sola tecla (y lo recuerda). */
   setSingleKeyShortcuts(enabled: boolean): void {
     this.explorer.singleKeyShortcuts.set(enabled);
