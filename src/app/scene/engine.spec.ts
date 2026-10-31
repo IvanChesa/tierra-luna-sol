@@ -1,6 +1,7 @@
 import starsBin from '../../../public/data/stars.bin' with { loader: 'binary' };
 import { Libration } from 'astronomy-engine';
 import { BackSide, FrontSide, Quaternion, Texture, Vector3, Vector4 } from 'three';
+import type { BodyId } from '../data/body.model';
 import { BODY_PHOTOMETRY } from '../data/photometry';
 import { KM_PER_AU } from '../ephemeris/constants';
 import { subsolarPoint } from '../ephemeris/coordinates';
@@ -1519,6 +1520,33 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
       }
     }
   });
+
+  it('la VRAM con cada sistema de lunas cargado (el planeta o una de sus lunas enfocados), dentro de §5 en alto y en bajo (fase 7)', async () => {
+    const vram = async (focus: BodyId, quality: 'high' | 'low') => {
+      const fake = realisticTextures();
+      const h = await createHarness(
+        { reducedMotion: true, focus, quality },
+        { textures: fake.textures },
+      );
+      for (let round = 0; round < 3; round++) {
+        settle(h);
+        for (let k = 0; k < 5; k++) await flush();
+      }
+      const { vramMB } = h.engine.stats();
+      h.engine.dispose();
+      return vramMB;
+    };
+    const budgets = { high: 300, low: 120 } as const;
+    // Los sistemas con más lunas con mosaico: Saturno (seis) y Júpiter (cuatro), con el planeta o con
+    // la luna de mosaico más pesado enfocados; y Marte con Fobos, y Neptuno con Tritón.
+    for (const quality of ['high', 'low'] as const) {
+      for (const focus of ['saturno', 'dione', 'jupiter', 'europa', 'fobos', 'triton'] as const) {
+        expect(await vram(focus, quality), `${focus} ${quality}`).toBeLessThanOrEqual(
+          budgets[quality],
+        );
+      }
+    }
+  }, 60_000);
 
   it('C4: en el viaje entre las vistas Tierra y Luna, la VRAM no pasa de §5 en ningún frame (revisión de la fase 6)', async () => {
     const travel = async (from: 'earth' | 'moon', to: 'earth' | 'moon') => {
