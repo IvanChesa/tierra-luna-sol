@@ -68,3 +68,17 @@ La fase es grande: va por entregas, con este informe al día al final de cada un
 - Al terminar, el resumen del bloque D en `DIARIO.md`. **No se empieza el bloque E.**
 
 Fuera de alcance, por el plan: formas reales de las lunas irregulares (backlog 3) y sombras del relieve (backlog 11).
+
+## Avance (en curso)
+- **7.b · Sombras generalizadas (hecho, `925533d`):**
+  - la sombra del shader (D20) recibe como parámetros el cuerpo que tapa y el Sol;
+  - con `TLS_SHADOWS`, cada planeta recibe las de sus cuatro lunas más grandes (en Júpiter, las galileanas) y cada luna, la de su planeta, con la geometría real del estado (float64);
+  - `satelliteShadowPoint` (`ephemeris/eclipse.ts`) da la misma geometría y se comprueba con el **tránsito triple del 24-1-2015** que fotografió el Hubble (NASA, ESA y el Hubble Heritage Team, https://science.nasa.gov/asset/hubble/jupiter-january-24-2015/): a las 06:28 UT, las sombras de Europa, Calisto e Ío sobre Júpiter; a las 07:10 UT, ya no la de Ío;
+  - test del motor: los uniformes reproducen esa geometría;
+  - las predicciones del IMCCE se descartaron como fixture: su aviso legal pide autorización expresa para reproducir sus datos.
+  - En la captura del tránsito, el encuadre deja a Calisto (a 26 radios de Júpiter) detrás de la cámara y a Ío casi encima. Es la perspectiva de una cámara a unos 6 radios, no la de un telescopio. Las sombras caen donde las vio el Hubble.
+- **7.c · Escala real (en curso, `b6de0a3`):** un selector «Escala» (Ilustrativa / Real) en «Controles +», con su anuncio, que cambia la escala y la URL (`escala=real`).
+- **7.d · R2 (hecho, `ee6d9cb`):**
+  - un lóbulo hacia delante estrecho e intenso en la neblina de Saturno (g = 0,9 y refuerzo 60, ajuste visual con PIA17172), con su test;
+  - el halo de las atmósferas decide si está iluminado con la normal del limbo de un observador lejano, como el disco: antes, a pocos radios y a contraluz, caía en el lado nocturno. La vista Tierra y la captura de EPIC apenas cambian (diferencia media de 0,7 a 1 nivel, en el limbo).
+- **7.a y los anillos (D36):** investigando las fuentes (mosaicos del USGS luna a luna; color de los anillos y perfil de τ del PDS).
