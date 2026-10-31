@@ -40,18 +40,28 @@ export function moonSunElevationDeg(latDeg: number, lonDeg: number, date: Date):
 const inRange = (ms: number): boolean => ms >= MIN_DATE.getTime() && ms <= MAX_DATE.getTime();
 
 /**
- * El instante más cercano a `date` (como mucho, un mes antes o después) en que la Luna tiene la fase
- * `phaseDeg` (su elongación eclíptica: 0, nueva; 90, cuarto creciente; 180, llena), dentro de
- * 1900–2100; `date` si no hay ninguno.
+ * Media ventana de {@link nearestMoonPhase} (días): la fase más cercana está a menos de media lunación
+ * (las más largas duran unos 29,8 días), así que cae entre 16 días antes y 16 después.
+ */
+const PHASE_WINDOW_DAYS = 16;
+
+/**
+ * El instante más cercano a `date` (a menos de medio mes) en que la Luna tiene la fase `phaseDeg` (su
+ * elongación eclíptica: 0, nueva; 90, cuarto creciente; 180, llena), dentro de 1900–2100; `date` si
+ * no hay ninguno. En la ventana de 16 días antes a 16 después caben una o dos fases: la primera y la
+ * siguiente (revisión de la fase 6: buscar «un mes atrás» encontraba a veces la de hace un mes, si la
+ * lunación anterior era corta).
  */
 export function nearestMoonPhase(date: Date, phaseDeg: number): Date {
-  const before = SearchMoonPhase(
+  const first = SearchMoonPhase(
     phaseDeg,
-    new Date(date.getTime() - SYNODIC_DAYS * DAY_MS),
-    SYNODIC_DAYS,
+    new Date(date.getTime() - PHASE_WINDOW_DAYS * DAY_MS),
+    2 * PHASE_WINDOW_DAYS,
   );
-  const after = SearchMoonPhase(phaseDeg, date, SYNODIC_DAYS);
-  const candidates = [before?.date, after?.date]
+  const next = first
+    ? SearchMoonPhase(phaseDeg, new Date(first.date.getTime() + DAY_MS), SYNODIC_DAYS + 1)
+    : null;
+  const candidates = [first?.date, next?.date]
     .filter((d): d is Date => d !== undefined && inRange(d.getTime()))
     .sort(
       (a, b) => Math.abs(a.getTime() - date.getTime()) - Math.abs(b.getTime() - date.getTime()),

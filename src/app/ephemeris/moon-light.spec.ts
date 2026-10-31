@@ -45,6 +45,41 @@ describe('la luz sobre la Luna (fase 6)', () => {
     expect(nearestMoonPhase(MIN_DATE, 180).getTime()).toBeGreaterThanOrEqual(MIN_DATE.getTime());
   });
 
+  it('justo antes y justo después de cada fase de 2026 del USNO, esa fase, aunque la lunación anterior sea corta (revisión de la fase 6)', () => {
+    const PHASE_DEG: Readonly<Record<string, number>> = {
+      'New Moon': 0,
+      'First Quarter': 90,
+      'Full Moon': 180,
+      'Last Quarter': 270,
+    };
+    const HOUR = 3_600_000;
+    for (const [phase, iso] of PHASES_2026) {
+      const deg = PHASE_DEG[phase];
+      if (deg === undefined) throw new Error(`Fase desconocida: ${phase}`);
+      const at = Date.parse(iso);
+      for (const offset of [-12 * HOUR, -HOUR, 180_000, HOUR, 6 * HOUR, 12 * HOUR]) {
+        const found = nearestMoonPhase(new Date(at + offset), deg).getTime();
+        expect(Math.abs(found - at), `${phase} ${iso} ${offset / HOUR} h`).toBeLessThan(90_000);
+      }
+    }
+  });
+
+  it('una hora después de la llena del 26-10-2026, la misma llena; y pulsar dos veces no salta de mes', () => {
+    const full = PHASES_2026.find(
+      ([phase, at]) => phase === 'Full Moon' && at.startsWith('2026-10-26'),
+    );
+    if (!full) throw new Error('Falta la llena del 26-10-2026 en el fixture del USNO');
+    const at = Date.parse(full[1]);
+    const once = nearestMoonPhase(new Date(at + 3_600_000), 180);
+    expect(Math.abs(once.getTime() - at)).toBeLessThan(90_000);
+    const twice = nearestMoonPhase(once, 180);
+    expect(Math.abs(twice.getTime() - once.getTime())).toBeLessThan(1000);
+    // La cara oculta (luna nueva) desde el 14-10-2026, dos veces: la nueva del 10-10 las dos.
+    const newMoon = nearestMoonPhase(new Date('2026-10-14T00:00:00Z'), 0);
+    expect(newMoon.toISOString().slice(0, 10)).toBe('2026-10-10');
+    expect(nearestMoonPhase(newMoon, 0).toISOString().slice(0, 10)).toBe('2026-10-10');
+  });
+
   it('la mañana lunar más cercana con el Sol a la altura pedida, en un lugar con nombre', () => {
     // Copérnico (9,621° N, 20,079° O; Gazetteer, IAU/USGS), con el Sol a 20° subiendo.
     const date = new Date('2026-11-20T00:00:00Z');
