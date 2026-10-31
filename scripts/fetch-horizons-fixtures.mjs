@@ -281,6 +281,63 @@ async function nasaSolarEclipse(id) {
   };
 }
 
+/**
+ * Eclipses de Luna del catálogo de cinco milenios de la NASA (Fred Espenak y Jean Meeus, GSFC), en su
+ * tabla de 2001–2100: para cada fecha (AAAA-MM-DD), el instante del máximo (TD), ΔT, el tipo, gamma
+ * (distancia del centro de la Luna al eje de la sombra, en radios ecuatoriales de la Tierra; negativa
+ * al sur), las magnitudes penumbral y umbral y la duración de las fases penumbral, parcial y total
+ * (minutos). La NASA calcula la sombra con la regla de Danjon (el radio de la Tierra, +1/85).
+ */
+async function nasaLunarEclipses(dates) {
+  const query = 'https://eclipse.gsfc.nasa.gov/LEcat5/LE2001-2100.html';
+  const text = (await fetchText(query)).replace(/<[^>]+>/g, '');
+  const months = {
+    Jan: 1,
+    Feb: 2,
+    Mar: 3,
+    Apr: 4,
+    May: 5,
+    Jun: 6,
+    Jul: 7,
+    Aug: 8,
+    Sep: 9,
+    Oct: 10,
+    Nov: 11,
+    Dec: 12,
+  };
+  const rows = dates.map((date) => {
+    const [year, month, day] = date.split('-');
+    const name = Object.entries(months).find(([, n]) => n === Number(month))?.[0];
+    const row = text.match(
+      new RegExp(
+        `\\d{5}\\s+${year} ${name} ${day}\\s+(\\d{2}:\\d{2}:\\d{2})\\s+(\\d+)\\s+\\d+\\s+\\d+\\s+(\\S+)\\s+\\S+\\s+(-?[\\d.]+)\\s+(-?[\\d.]+)\\s+(-?[\\d.]+)\\s+([\\d.]+|-)\\s+([\\d.]+|-)\\s+([\\d.]+|-)`,
+      ),
+    );
+    if (!row) throw new Error(`No está el eclipse de Luna del ${date} en el catálogo`);
+    const minutes = (value) => (value === '-' ? null : Number(value));
+    return {
+      greatestEclipseTd: `${date}T${row[1]}Z`,
+      deltaTSeconds: Number(row[2]),
+      type: row[3],
+      gamma: Number(row[4]),
+      penumbralMagnitude: Number(row[5]),
+      umbralMagnitude: Number(row[6]),
+      penumbralMinutes: minutes(row[7]),
+      partialMinutes: minutes(row[8]),
+      totalMinutes: minutes(row[9]),
+    };
+  });
+  return {
+    description:
+      'Eclipses de Luna: instante del máximo (TD), ΔT (s), tipo, gamma (radios ecuatoriales de la Tierra; negativa al sur del eje), magnitudes penumbral y umbral y duración de las fases penumbral, parcial y total (minutos). La NASA calcula la sombra con la regla de Danjon.',
+    source:
+      'NASA Eclipse Web Site, «Five Millennium Catalog of Lunar Eclipses» (Fred Espenak y Jean Meeus, NASA/GSFC), https://eclipse.gsfc.nasa.gov/LEcat5/LEcatalog.html',
+    retrieved: new Date().toISOString().slice(0, 10),
+    query,
+    eclipses: rows,
+  };
+}
+
 async function save(name, data) {
   // Una fila por línea: los arrays sin anidar se escriben en una sola línea.
   const json = JSON.stringify(data, null, 1).replace(
@@ -381,6 +438,9 @@ const JOBS = [
   ],
   ['usno-seasons-2026.json', () => usnoSeasons(2026)],
   ['nasa-eclipse-2026-08-12.json', () => nasaSolarEclipse('20260812')],
+  // Fase 6: el total del 3-3-2026 (el de las capturas), el total del 7-9-2025 y el parcial del
+  // 28-8-2026.
+  ['nasa-lunar-eclipses.json', () => nasaLunarEclipses(['2026-03-03', '2025-09-07', '2026-08-28'])],
 ];
 
 const wanted = process.argv.slice(2);

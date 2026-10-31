@@ -776,3 +776,4 @@ Reglas:
 8. Un desvanecimiento elíptico de las órbitas sobre los anillos de Saturno (informe de la fase 3b, §4.12).
 9. El relieve como mapa de alturas en gris, con las normales calculadas en el shader (informe de la fase 3b, §4.10).
 10. Unificar los colores de los planetas con la fotometría de Mallama et al. (2017) y las funciones de color de la CIE (informe de la fase 3b, §4.12).
+11. Las sombras que proyecta el relieve (mapas de horizonte): en el polo sur de la Luna, el interior de Shackleton saldría en sombra, como en las fotos (informe de la fase 6, §10.4).

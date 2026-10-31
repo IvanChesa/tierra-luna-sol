@@ -42,6 +42,22 @@ export const DEMS = {
     // exageración, casi todo se autosombrea con luz rasante.
     exaggeration: 2,
   },
+  /**
+   * La Luna (fase 6): la elevación del LOLA del CGI Moon Kit (NASA SVS 4720), 16 px/°, en enteros sin
+   * signo de 16 bits: medios metros sobre la esfera de referencia de 1737,4 km, más 20 000 (10 km).
+   * El TIFF no lleva georreferencia: su página dice que está centrado en la longitud 0.
+   */
+  moon: {
+    file: 'ldem_16_uint.tif',
+    format: 'svs-uint16',
+    radiusM: 1737400,
+    exaggeration: 1,
+    minCosLat: 0.001,
+    // El punto más alto del LOLA, junto a Engel'gardt, y el más bajo, en Antoniadi (centros del
+    // Gazetteer, IAU/USGS: Feature/1801 y Feature/296).
+    highest: [5.389, -159.468, "Engel'gardt", 1.5],
+    lowest: [-69.303, -173.059, 'Antoniadi', 2.5],
+  },
 };
 
 /** Lee los campos de la cabecera TIFF que hacen falta para saber dónde empieza la longitud. */
@@ -140,7 +156,19 @@ export async function loadElevation(name, width) {
   let sourceWidth;
   let sourceHeight;
   let firstLon;
-  if (dem.format === 'mola-megdr') {
+  if (dem.format === 'svs-uint16') {
+    const info = await tiffGeoInfo(path);
+    if (info.sampleFormat !== 1 || info.bitsPerSample !== 16 || info.width !== 2 * info.height) {
+      throw new Error(`La elevación del LOLA no es la esperada (${JSON.stringify(info)})`);
+    }
+    sourceWidth = info.width;
+    sourceHeight = info.height;
+    const raw = await readTiffInt16(path, info);
+    source = new Float32Array(raw.length);
+    // Sin signo (los enteros se leen con signo): medios metros con 20 000 de desplazamiento.
+    for (let i = 0; i < raw.length; i++) source[i] = ((raw[i] & 0xffff) - 20000) / 2;
+    firstLon = -180;
+  } else if (dem.format === 'mola-megdr') {
     // Enteros de 16 bits con signo, big-endian, en metros; la muestra 1 empieza en 0° E y la línea 1
     // en 90° N (etiqueta megt90n000eb.lbl del PDS).
     const bytes = await readFile(path);
@@ -240,15 +268,17 @@ export function resampleArea(source, sourceWidth, sourceHeight, width, height) {
 /**
  * Mapa de normales (RGB de 8 bits: este, norte, arriba en [0, 255]) de una elevación equirrectangular,
  * con diferencias centradas: en longitud, la distancia de un píxel es R·cos φ·Δλ (con un mínimo cerca
- * de los polos) y la longitud da la vuelta; en latitud, R·Δφ.
+ * de los polos, `minCosLat`) y la longitud da la vuelta; en latitud, R·Δφ. Con el mínimo de 0,02 (el
+ * de Marte y Mercurio), en el último grado y pico las pendientes este–oeste salen muy pequeñas y el
+ * relieve, solo radial: la Luna, que se ve desde su polo sur (fase 6), usa la distancia real.
  */
-export function normalMap(elevation, width, height, radiusM, exaggeration) {
+export function normalMap(elevation, width, height, radiusM, exaggeration, minCosLat = 0.02) {
   const out = Buffer.alloc(width * height * 3);
   const dLon = (2 * Math.PI) / width;
   const dLat = Math.PI / height;
   for (let y = 0; y < height; y++) {
     const lat = Math.PI / 2 - (y + 0.5) * dLat;
-    const east = 2 * radiusM * Math.max(Math.cos(lat), 0.02) * dLon;
+    const east = 2 * radiusM * Math.max(Math.cos(lat), minCosLat) * dLon;
     const north = 2 * radiusM * dLat;
     const up = Math.max(y - 1, 0) * width;
     const down = Math.min(y + 1, height - 1) * width;
@@ -411,7 +441,7 @@ export function checkAlignmentWithColor(name, elevation, color) {
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const [name, out] = process.argv.slice(2);
   if (!DEMS[name] || !out)
-    throw new Error('Uso: node scripts/build-relief.mjs <mars|mercury> <carpeta>');
+    throw new Error('Uso: node scripts/build-relief.mjs <mars|mercury|moon> <carpeta>');
   const width = 2048;
   const elevation = await loadElevation(name, width);
   console.log(checkElevation(name, elevation, width));

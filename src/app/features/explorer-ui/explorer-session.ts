@@ -11,7 +11,8 @@ import type {
 import { ExplorerStore } from '../../state/explorer.store';
 import { SystemPositions } from '../../state/positions';
 import { SimulationEngine, SimulationStore } from '../../state/simulation.store';
-import { GuidedView, atSolarHour, localDay, utcDay } from '../../data/tours';
+import { GuidedView, MoonStop, atSolarHour, localDay, utcDay } from '../../data/tours';
+import { nearestMoonPhase, nearestMoonSunElevation } from '../../ephemeris/moon-light';
 import {
   CONTEXT_SPEED,
   SpeedContext,
@@ -276,6 +277,26 @@ export class ExplorerSession {
     this.engine?.lookAtSurface(view.latDeg, view.lonDeg, view.distanceRadii, view.extentDeg);
     this.engine?.setSurfaceMarkers(view.markers);
     this.announce(`${view.title}. ${view.text}`);
+  }
+
+  /**
+   * Una vista o una parada del recorrido de la Luna (fase 6): pausa la reproducción, lleva la fecha al
+   * instante más cercano con su luz (la luna llena, la nueva o la mañana lunar del lugar, a menos de
+   * medio mes; `MoonStop.light`), mueve la cámara sobre el lugar y anuncia su subtítulo.
+   */
+  showMoonStop(stop: MoonStop): void {
+    this.sim.setPlaying(false);
+    const now = this.sim.time();
+    const light = stop.light;
+    const date =
+      light === null
+        ? now
+        : light.kind === 'phase'
+          ? nearestMoonPhase(now, light.phaseDeg)
+          : (nearestMoonSunElevation(stop.latDeg, stop.lonDeg, light.elevationDeg, now) ?? now);
+    if (date.getTime() !== now.getTime()) this.sim.setTime(date);
+    this.engine?.lookAtSurface(stop.latDeg, stop.lonDeg, stop.distanceRadii, stop.extentDeg);
+    this.announce(`${stop.title}. ${stop.text}`);
   }
 
   private applyView(view: ExplorerView): void {

@@ -1,0 +1,152 @@
+/* Panel de la vista Luna (fase 6): dos bloques opacos sobre el lienzo, como el de la vista Tierra. */
+/*
+ * Su sitio en la rejilla del explorador (el anfitrión de la interfaz es `display: contents`): en
+ * escritorio, en la columna de la presentación, debajo de ella, sin apartar el encuadre; en móvil,
+ * al pie del lienzo, encima de las fichas, y el encuadre sube por encima de él.
+ */
+:host {
+  --chrome-edge: none;
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-area: index;
+  align-self: start;
+  gap: var(--space-2);
+  margin: var(--space-2) var(--space-4) 0;
+}
+
+@media (max-width: 63.99rem) {
+  :host {
+    --chrome-edge: bottom;
+    grid-area: view;
+    align-self: end;
+    margin: 0 var(--space-4) var(--space-2);
+  }
+}
+
+.moon {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-line);
+  border-radius: var(--radius-md);
+}
+
+/* Rótulos de sección, como los de la tarjeta (Public Sans 600; Newsreader solo se carga en 500). */
+.moon__title {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-strong);
+  letter-spacing: 0.02em;
+}
+
+.moon__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.moon__phase {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.moon__hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs, 0.75rem);
+}
+
+/* Las vistas guiadas: botones compactos que se reparten en filas. */
+.moon__views {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.moon__view {
+  min-height: 2rem;
+  padding-inline: var(--space-2);
+}
+
+.moon__player {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.moon__tour {
+  flex: 1;
+  gap: var(--space-1);
+  padding-inline: var(--space-2);
+  white-space: nowrap;
+}
+
+.moon__back {
+  rotate: 180deg;
+}
+
+/* «Parada anterior» y «Parada siguiente» en los extremos: no disponibles, pero conservan el foco. */
+.control[aria-disabled='true'] {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Zonas táctiles de 44 px (como el resto del explorador). */
+@media (pointer: coarse) {
+  .moon__view {
+    min-height: var(--tap-target);
+  }
+}
+
+.moon__caption {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  line-height: 1.45;
+}
+
+/*
+ * En móvil, compacto, para que la Luna se vea por encima: sin la nota, los rótulos solo para los
+ * lectores de pantalla (los botones ya dicen qué son) y las vistas en una sola fila que se desplaza.
+ */
+@media (max-width: 63.99rem) {
+  .moon {
+    gap: var(--space-1);
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .moon__hint {
+    display: none;
+  }
+
+  .moon__title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* Las vistas, en una sola fila que se desplaza: el panel no tapa media pantalla. */
+  .moon__views {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .moon__view {
+    flex: none;
+  }
+
+  .moon__caption {
+    font-size: var(--text-xs, 0.75rem);
+  }
+}

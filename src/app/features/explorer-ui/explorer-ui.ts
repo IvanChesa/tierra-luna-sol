@@ -24,6 +24,7 @@ import { systemOf } from '../body-picker/body-tree';
 import { BodyPanel } from '../body-panel/body-panel';
 import { CameraControls, ZOOM_STEP } from '../camera-controls/camera-controls';
 import { EarthPanel } from '../earth-panel/earth-panel';
+import { MoonPanel } from '../moon-panel/moon-panel';
 import { ShortcutCommand, globalCommand, isTextField, repeats } from '../shortcuts/shortcuts';
 import { ShortcutsDialog } from '../shortcuts/shortcuts-dialog';
 import { closePopover, isPopoverOpen } from '../time-controls/popover';
@@ -99,6 +100,7 @@ function offsetWithin(element: HTMLElement, root: HTMLElement): { left: number; 
     TimeControls,
     CameraControls,
     EarthPanel,
+    MoonPanel,
     Notices,
     ShortcutsDialog,
     Icon,

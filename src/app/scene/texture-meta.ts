@@ -76,6 +76,31 @@ export const TEXTURE_META: Readonly<Record<TextureId, TextureMeta>> = {
     alignment:
       'Normales del MOLA MEGDR (16 px/°), de 0–360° E desplazado para centrar el meridiano 0. Sondas: el punto más alto cae en Olympus Mons y el más bajo en Hellas; además, sus pendientes coinciden con los bordes de la textura de color de Marte solo sin girar.',
   },
+  'moon-normal': {
+    colorSpace: 'data',
+    alpha: false,
+    projection: 'equirectangular',
+    primeMeridianU: 0.5,
+    alignment:
+      "Normales de la elevación del LOLA (CGI Moon Kit, NASA SVS 4720, «centrada en 0° de longitud»). Sondas: el punto más alto cae junto a Engel'gardt y el más bajo en Antoniadi (Gazetteer, IAU/USGS); las paredes de Copérnico se inclinan hacia su centro; y sus pendientes coinciden con los bordes de la textura de color solo sin girar.",
+  },
+  'moon-elevation': {
+    colorSpace: 'data',
+    alpha: false,
+    projection: 'equirectangular',
+    primeMeridianU: 0.5,
+    mipmaps: false,
+    alignment:
+      'La misma elevación del LOLA que las normales de la Luna, en 16 bits empaquetados en R y G (D15) y sin pérdidas (build-textures.mjs comprueba que se decodifica igual byte a byte).',
+  },
+  'moon-normal-poles': {
+    colorSpace: 'data',
+    alpha: false,
+    projection: 'polar-caps',
+    primeMeridianU: null,
+    alignment:
+      'Normales de los modelos polares del LOLA (PDS, estereográfica de 75° al polo, 240 m por píxel), en los ejes de su plano. build-textures.mjs elige la orientación de cada modelo comparando su elevación con la equirrectangular entre 76° y 79° (correlación de 0,999 en el sur y 0,993 en el norte), comprueba que sus normales, llevadas al este–norte como en el shader, casan con las equirrectangulares allí y que Shackleton (Gazetteer, IAU/USGS) sale como un hoyo con las paredes hacia dentro.',
+  },
   'milky-way': {
     colorSpace: 'srgb',
     alpha: false,

@@ -1,0 +1,41 @@
+{
+ "description": "Eclipses de Luna: instante del máximo (TD), ΔT (s), tipo, gamma (radios ecuatoriales de la Tierra; negativa al sur del eje), magnitudes penumbral y umbral y duración de las fases penumbral, parcial y total (minutos). La NASA calcula la sombra con la regla de Danjon.",
+ "source": "NASA Eclipse Web Site, «Five Millennium Catalog of Lunar Eclipses» (Fred Espenak y Jean Meeus, NASA/GSFC), https://eclipse.gsfc.nasa.gov/LEcat5/LEcatalog.html",
+ "retrieved": "2026-10-30",
+ "query": "https://eclipse.gsfc.nasa.gov/LEcat5/LE2001-2100.html",
+ "eclipses": [
+  {
+   "greatestEclipseTd": "2026-03-03T11:34:52Z",
+   "deltaTSeconds": 75,
+   "type": "T",
+   "gamma": -0.3765,
+   "penumbralMagnitude": 2.1838,
+   "umbralMagnitude": 1.1507,
+   "penumbralMinutes": 338.6,
+   "partialMinutes": 207.2,
+   "totalMinutes": 58.3
+  },
+  {
+   "greatestEclipseTd": "2025-09-07T18:12:58Z",
+   "deltaTSeconds": 75,
+   "type": "T",
+   "gamma": -0.2752,
+   "penumbralMagnitude": 2.344,
+   "umbralMagnitude": 1.3619,
+   "penumbralMinutes": 326.7,
+   "partialMinutes": 209.4,
+   "totalMinutes": 82.1
+  },
+  {
+   "greatestEclipseTd": "2026-08-28T04:14:04Z",
+   "deltaTSeconds": 75,
+   "type": "P",
+   "gamma": 0.4964,
+   "penumbralMagnitude": 1.9645,
+   "umbralMagnitude": 0.9299,
+   "penumbralMinutes": 337.8,
+   "partialMinutes": 198.1,
+   "totalMinutes": null
+  }
+ ]
+}

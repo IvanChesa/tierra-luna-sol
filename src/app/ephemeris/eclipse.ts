@@ -1,5 +1,6 @@
 /**
- * Eclipses de Sol (fase 5): dónde cae el centro de la sombra de la Luna sobre la Tierra.
+ * Eclipses de Sol (fase 5): dónde cae el centro de la sombra de la Luna sobre la Tierra. Y eclipses de
+ * Luna (fase 6): la sombra de la Tierra a la distancia de la Luna (`earthShadow`).
  *
  * El eje de la sombra es la recta que va del Sol a la Luna y sigue más allá. Donde corta el
  * elipsoide terrestre está el centro de la sombra; en el máximo de un eclipse central, el punto del
@@ -8,10 +9,10 @@
  * orientación de la Tierra que la escena (`eclToEarthFixed`), que también da al shader de la Tierra
  * la Luna y el Sol en su sistema propio.
  */
-import { KM_PER_AU } from './constants';
-import { eclToEarthFixed, sunApparentGeocentricEcl } from './coordinates';
+import { KM_PER_AU, MOON_RADIUS_KM, SUN_RADIUS_KM } from './constants';
+import { ECL_TO_EQJ, eclToEarthFixed, sunApparentGeocentricEcl } from './coordinates';
 import { moonGeocentric } from './ephemeris';
-import { dot, mulMat3Vec, normalize, scale, sub, vec3 } from './vec3';
+import { angleBetweenDeg, dot, length, mulMat3Vec, normalize, scale, sub, vec3 } from './vec3';
 
 /** Elipsoide WGS84: semieje mayor (km) y achatamiento (EPSG 7030). */
 export const WGS84_EQUATORIAL_KM = 6378.137;
@@ -48,4 +49,71 @@ export function moonShadowCenter(date: Date): { latDeg: number; lonDeg: number }
   let lonDeg = Math.atan2(y, x) / DEG;
   if (lonDeg <= -180) lonDeg += 360;
   return { latDeg, lonDeg };
+}
+
+// --- Eclipses de Luna (fase 6) ---------------------------------------------------------------------
+
+/**
+ * Regla de Danjon, la que usa el catálogo de eclipses de la NASA: la atmósfera agranda la sombra como
+ * si el radio de la Tierra fuera 1/85 mayor (unos 75 km). Con el radio de la Tierra a 45° de latitud
+ * (por su achatamiento), da los radios de la umbra y la penumbra de la NASA (0,6983° y 1,2361° en el
+ * eclipse del 3-3-2026: https://eclipse.gsfc.nasa.gov/LEplot/LEplot2001/LE2026Mar03T.pdf).
+ */
+export const DANJON_ENLARGEMENT = 1 / 85;
+
+/** Radio efectivo de la Tierra para su sombra (km): a 45° de latitud y agrandado por la atmósfera. */
+export const EARTH_SHADOW_RADIUS_KM =
+  WGS84_EQUATORIAL_KM * (1 - WGS84_FLATTENING / 2) * (1 + DANJON_ENLARGEMENT);
+
+/** La sombra de la Tierra a la distancia de la Luna, vista desde el centro de la Tierra. */
+export interface EarthShadow {
+  /** Radios angulares de la umbra y la penumbra (grados). */
+  readonly umbraDeg: number;
+  readonly penumbraDeg: number;
+  /** Semidiámetro de la Luna (grados). */
+  readonly moonDeg: number;
+  /** Distancia angular del centro de la Luna al eje de la sombra (grados). */
+  readonly axisDeg: number;
+  /**
+   * Esa distancia en radios ecuatoriales de la Tierra, a la distancia de la Luna, negativa si la Luna
+   * pasa al sur del eje (en declinación): el «gamma» de la NASA.
+   */
+  readonly gamma: number;
+  /** Fracción del diámetro de la Luna dentro de la umbra y de la penumbra (las de la NASA). */
+  readonly umbralMagnitude: number;
+  readonly penumbralMagnitude: number;
+}
+
+/**
+ * La sombra de la Tierra en un instante (UTC). El eje es la dirección opuesta al Sol aparente (de
+ * donde llega su luz, con la aberración); la Luna, la geométrica, como en `moonShadowCenter`. Los
+ * radios: π_L + π_S ∓ s_S, con la paralaje de la Luna (π_L) calculada con el radio de
+ * `EARTH_SHADOW_RADIUS_KM`, la del Sol (π_S) y su semidiámetro (s_S).
+ */
+export function earthShadow(date: Date): EarthShadow {
+  const moon = moonGeocentric(date);
+  const sun = sunApparentGeocentricEcl(date);
+  const moonKm = length(moon) * KM_PER_AU;
+  const sunKm = length(sun) * KM_PER_AU;
+  const moonParallax = Math.asin(EARTH_SHADOW_RADIUS_KM / moonKm);
+  const sunParallax = Math.asin(WGS84_EQUATORIAL_KM / sunKm);
+  const sunRadius = Math.asin(SUN_RADIUS_KM / sunKm);
+  const moonRadius = Math.asin(MOON_RADIUS_KM / moonKm);
+  const umbra = moonParallax + sunParallax - sunRadius;
+  const penumbra = moonParallax + sunParallax + sunRadius;
+  const antisolar = scale(sun, -1);
+  const axis = angleBetweenDeg(moon, antisolar) * DEG;
+  // El signo, por la declinación (ecuador de J2000): al norte o al sur del eje.
+  const north =
+    mulMat3Vec(ECL_TO_EQJ, normalize(moon)).z > mulMat3Vec(ECL_TO_EQJ, normalize(antisolar)).z;
+  const magnitude = (radius: number) => (radius + moonRadius - axis) / (2 * moonRadius);
+  return {
+    umbraDeg: umbra / DEG,
+    penumbraDeg: penumbra / DEG,
+    moonDeg: moonRadius / DEG,
+    axisDeg: axis / DEG,
+    gamma: ((north ? 1 : -1) * moonKm * Math.sin(axis)) / WGS84_EQUATORIAL_KM,
+    umbralMagnitude: magnitude(umbra),
+    penumbralMagnitude: magnitude(penumbra),
+  };
 }

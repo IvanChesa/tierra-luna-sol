@@ -24,6 +24,20 @@
  *   Luna en los eclipses (D20): desde cada punto, la fracción del disco del Sol que tapa la Luna,
  *   con la Luna y el Sol en el sistema propio de la Tierra (geometría real, calculada en float64).
  *
+ * - La Luna (fase 6, `moon: true`, `#define TLS_MOON`): su malla (una esfera cúbica cuando se ve de
+ *   cerca) se desplaza con la elevación del LOLA (16 bits en R y G, D15) a escala física (la
+ *   exageración, en la configuración visual). Las coordenadas de textura se calculan por píxel desde
+ *   la dirección: sin el pellizco de los polos de `SphereGeometry`, y con la costura del meridiano
+ *   180° resuelta por derivadas (Tarini, 2012, «Cylindrical and Toroidal Parameterizations Without
+ *   Vertex Seams»): de las dos u, la que tiene el corte en ±180° o la que lo tiene en 0°, la que no
+ *   salta dentro del cuadrado de píxeles. El marco este–norte del relieve, también por píxel, con el
+ *   polo del cuerpo: el interpolado entre vértices falla junto a los polos. Por encima de 76° de
+ *   latitud, el relieve sale de los modelos polares del LOLA (un atlas de dos estereográficas): junto
+ *   al polo, el equirrectangular salía como un «sol de rayas» (revisión de la fase 6). Y la sombra de la Tierra
+ *   en los eclipses de Luna (D20), como la de la Luna sobre la Tierra, con el radio de la Tierra de
+ *   la regla de Danjon (`EARTH_SHADOW_RADIUS_KM`): dentro de la umbra, la luz del Sol que refracta la
+ *   atmósfera de la Tierra, rojiza y más tenue hacia el eje (ilustrativa, de la configuración visual).
+ *
  * La geometría es la esfera unidad (Y = polo, meridiano 0 en +X, longitud este hacia −Z, como
  * `SphereGeometry`); el elipsoide sale de la escala de la malla (radio ecuatorial, polar, ecuatorial).
  */
@@ -38,10 +52,32 @@ import {
   sceneShaderMaterial,
 } from './depth';
 import { SHADING_PARS, ShadingUniforms, shadingUniforms } from './shading';
+import { MOON_POLAR_CAP_EDGE_DEG } from '../texture-files';
+
+/**
+ * Los casquetes polares de la Luna (revisión de la fase 6): el atlas «moon-normal-poles» cubre del
+ * borde que genera el script (`MOON_POLAR_CAP_EDGE_DEG`, 75°) al polo en estereográfica
+ * (`scripts/lola-polar.mjs`: r = 1 en el borde, con r = tan(c/2) / T y T = tan(7,5°)), y el shader lo
+ * mezcla con el mapa equirrectangular entre 76° y 78° (el seno de esas latitudes, que es la y de la
+ * esfera unidad).
+ */
+const POLAR_CAP_T = Math.tan((((90 - MOON_POLAR_CAP_EDGE_DEG) / 2) * Math.PI) / 180);
+const POLAR_BLEND_SIN = [76, 78].map((deg) => Math.sin((deg * Math.PI) / 180)) as [number, number];
+
+/** Un número de JS como literal float de GLSL. */
+const glslFloat = (value: number): string => value.toFixed(9);
 
 const vertexShader = /* glsl */ `
 ${DEPTH_VERTEX_PARS}
 uniform vec3 uSunDirection;
+#ifdef TLS_MOON
+uniform float uMeridianOffset;
+uniform sampler2D uElevationMap;
+uniform float uHasElevation;
+// Elevación en radios del cuerpo, ya con la exageración: (la del valor 0, la del intervalo entero).
+uniform vec2 uElevation;
+varying vec3 vPoleView;
+#endif
 varying vec2 vUv;
 varying vec3 vNormal;
 varying vec3 vSunDirection;
@@ -54,7 +90,26 @@ varying vec3 vNorth;
 void main() {
   vUv = uv;
   vLocal = position;
-  vNormal = normalize(normalMatrix * normal);
+  vec3 displaced = position;
+#ifdef TLS_MOON
+  vPoleView = normalize((modelViewMatrix * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
+  if (uHasElevation > 0.5) {
+    vec3 d = normalize(position);
+    // En el polo, cualquier u vale: GLSL no define atan(0, 0), y una GPU que diera NaN hundiría el
+    // vértice del polo (la esfera cúbica tiene uno en cada polo).
+    float u = abs(d.x) + abs(d.z) > 1e-7 ? atan(-d.z, d.x) / 6.28318530718 : 0.0;
+    vec2 elevationUv = vec2(
+      u + 0.5 + uMeridianOffset,
+      asin(clamp(d.y, -1.0, 1.0)) / 3.14159265359 + 0.5
+    );
+    // 16 bits: R, el byte alto, y G, el bajo (D15). El filtrado lineal de los dos canales es el del
+    // valor entero, porque es lineal en ellos.
+    vec2 packed = texture2D(uElevationMap, elevationUv).rg;
+    displaced = position * (1.0 + uElevation.x + uElevation.y * (packed.r * 65280.0 + packed.g * 255.0) / 65535.0);
+  }
+#endif
+  // En la esfera unidad, la normal es la posición (la esfera cúbica de la Luna no lleva normales).
+  vNormal = normalize(normalMatrix * position);
   // Marco tangente del relieve: este y norte en el sistema propio, llevados a la vista.
   vec3 up = normalize(position);
   vec3 east = vec3(up.z, 0.0, -up.x);
@@ -63,7 +118,7 @@ void main() {
   vEast = normalize((modelViewMatrix * vec4(east, 0.0)).xyz);
   vNorth = normalize((modelViewMatrix * vec4(cross(up, east), 0.0)).xyz);
   vSunDirection = normalize((viewMatrix * vec4(uSunDirection, 0.0)).xyz);
-  vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+  vec4 mvPosition = modelViewMatrix * vec4(displaced, 1.0);
   vViewPosition = mvPosition.xyz;
   vCenterView = (modelViewMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
   gl_Position = projectionMatrix * mvPosition;
@@ -99,6 +154,56 @@ varying vec3 vViewPosition;
 varying vec3 vCenterView;
 varying vec3 vEast;
 varying vec3 vNorth;
+#ifdef TLS_MOON
+varying vec3 vPoleView;
+
+// Muestreo de un mapa equirrectangular con la huella física del píxel: junto a los polos, la u
+// cambia mucho de un píxel a otro (un paralelo mide 2π·cos φ), y el mipmap que elige esa derivada
+// difumina también en latitud, que allí es la dirección radial: el polo saldría rayado como un sol.
+// La derivada de u se multiplica por cos φ (el tamaño físico de su paso).
+vec4 tlsSurface(sampler2D map, vec2 uv) {
+  float cosLat = max(cos((uv.y - 0.5) * 3.14159265359), 0.02);
+  vec2 scaleGrad = vec2(cosLat, 1.0);
+  return textureGrad(map, uv, dFdx(uv) * scaleGrad, dFdy(uv) * scaleGrad);
+}
+
+// Coordenadas de textura por píxel (ver la cabecera): u y v de la dirección del punto.
+vec2 tlsMoonUv() {
+  vec3 d = normalize(vLocal);
+  // En el polo, cualquier u vale (GLSL no define atan(0, 0)).
+  float u = (abs(d.x) + abs(d.z) > 1e-7 ? atan(-d.z, d.x) / 6.28318530718 : 0.0) + 0.5;
+  float v = asin(clamp(d.y, -1.0, 1.0)) / 3.14159265359 + 0.5;
+  // Con el corte en ±180° (u) o en 0° (uSeam): la que no salta en este cuadrado de píxeles.
+  float uSeam = fract(u + 0.5) - 0.5;
+  return vec2((fwidth(u) <= fwidth(uSeam) + 1e-6 ? u : uSeam) + uMeridianOffset, v);
+}
+
+// Los casquetes polares (revisión de la fase 6, hallazgo 1): por encima de 76° de latitud, el relieve
+// sale del atlas de los modelos polares del LOLA («moon-normal-poles», scripts/lola-polar.mjs), sin el
+// «sol de rayas» del mapa equirrectangular junto al polo. Cada casquete es una estereográfica polar
+// hasta 75° (r = 1): x = r·sen λ e y = r·cos λ en el sur (y = −r·cos λ en el norte), que en la esfera
+// unidad es (−z, ±x) / ((1 + |y|)·tan 7,5°); el sur ocupa la mitad izquierda del atlas y el norte, la
+// derecha. Sus normales vienen en los ejes x, y del plano (no degeneran en el polo) y pasan aquí al
+// este–norte del punto. Las derivadas, antes del condicional (en el ecuador saltan de casquete, pero
+// allí no se usan).
+uniform sampler2D uPoleNormalMap;
+uniform float uHasPoleNormals;
+
+vec3 tlsPolarRelief(vec3 t) {
+  vec3 d = normalize(vLocal);
+  float s = d.y < 0.0 ? 1.0 : -1.0;
+  vec2 p = vec2(-d.z, s * d.x) / ((1.0 + abs(d.y)) * ${glslFloat(POLAR_CAP_T)});
+  vec2 uv = vec2((s > 0.0 ? 0.25 : 0.75) + 0.25 * p.x, 0.5 + 0.5 * p.y);
+  vec2 dx = dFdx(uv);
+  vec2 dy = dFdy(uv);
+  float w = uHasPoleNormals * smoothstep(${glslFloat(POLAR_BLEND_SIN[0])}, ${glslFloat(POLAR_BLEND_SIN[1])}, abs(d.y));
+  if (w <= 0.0) return t;
+  vec3 c = textureGrad(uPoleNormalMap, uv, dx, dy).xyz * 2.0 - 1.0;
+  float r = max(length(p), 1e-6);
+  vec2 eastNorth = s * vec2(c.x * p.y - c.y * p.x, c.x * p.x + c.y * p.y) / r;
+  return mix(t, vec3(eastNorth, c.z), w);
+}
+#endif
 #ifdef TLS_EARTH
 uniform sampler2D uNightMap;
 uniform sampler2D uCloudMap;
@@ -116,31 +221,41 @@ uniform vec4 uScatter;
 uniform vec3 uTwilightColor;
 // Tierras áridas: (rodilla de la compresión, calidez desde la que empieza, calidez a la que es entera).
 uniform vec3 uArid;
-// Centros de la Luna y del Sol (radios ecuatoriales, sistema propio) y sus radios: desde cada punto,
-// las direcciones y los radios aparentes de los dos (el paralaje del Sol mueve la sombra decenas de
-// kilómetros si se toma su dirección desde el centro de la Tierra).
-uniform vec4 uMoonLocal;
+#endif
+#if defined(TLS_EARTH) || defined(TLS_MOON)
+// Centros del cuerpo que puede tapar el Sol (la Luna sobre la Tierra; la Tierra sobre la Luna) y del
+// Sol (radios ecuatoriales, sistema propio) y sus radios: desde cada punto, las direcciones y los
+// radios aparentes de los dos (el paralaje del Sol mueve la sombra decenas de kilómetros si se toma
+// su dirección desde el centro del cuerpo).
+uniform vec4 uOccluderLocal;
 uniform vec4 uSunLocal;
 
-// Fracción del disco del Sol que se ve desde p (D20): la Luna es un disco de radio angular aM a una
-// separación d del centro del Sol (radio aS); se resta el área común de los dos círculos. Ángulos
-// pequeños: d es la cuerda entre las direcciones, que en float32 no pierde precisión como acos.
-float tlsSunVisible(vec3 p) {
-  vec3 toMoon = uMoonLocal.xyz - p;
+// La sombra en p (D20): x, la fracción del disco del Sol que se ve (el que tapa es un disco de radio
+// angular aO a una separación d del centro del Sol, de radio aS: se resta el área común de los dos
+// círculos); y, lo hondo que está p en la umbra (0 en su borde, 1 en el eje). Ángulos pequeños: d es
+// la cuerda entre las direcciones, que en float32 no pierde precisión como acos.
+vec2 tlsShadow(vec3 p) {
+  vec3 toOccluder = uOccluderLocal.xyz - p;
   vec3 toSun = uSunLocal.xyz - p;
-  float moonDistance = length(toMoon);
+  float occluderDistance = length(toOccluder);
   float sunDistance = length(toSun);
-  float aM = uMoonLocal.w / moonDistance;
+  float aO = uOccluderLocal.w / occluderDistance;
   float aS = uSunLocal.w / sunDistance;
-  float d = length(toMoon / moonDistance - toSun / sunDistance);
-  if (d >= aS + aM) return 1.0;
-  if (d <= aM - aS) return 0.0;
-  if (d <= aS - aM) return 1.0 - (aM * aM) / (aS * aS);
-  float a1 = aS * aS * acos(clamp((d * d + aS * aS - aM * aM) / (2.0 * d * aS), -1.0, 1.0));
-  float a2 = aM * aM * acos(clamp((d * d + aM * aM - aS * aS) / (2.0 * d * aM), -1.0, 1.0));
-  float a3 = 0.5 * sqrt(max((-d + aS + aM) * (d + aS - aM) * (d - aS + aM) * (d + aS + aM), 0.0));
-  return clamp(1.0 - (a1 + a2 - a3) / (3.14159265 * aS * aS), 0.0, 1.0);
+  float d = length(toOccluder / occluderDistance - toSun / sunDistance);
+  if (d >= aS + aO) return vec2(1.0, 0.0);
+  if (d <= aO - aS) return vec2(0.0, 1.0 - d / (aO - aS));
+  if (d <= aS - aO) return vec2(1.0 - (aO * aO) / (aS * aS), 0.0);
+  float a1 = aS * aS * acos(clamp((d * d + aS * aS - aO * aO) / (2.0 * d * aS), -1.0, 1.0));
+  float a2 = aO * aO * acos(clamp((d * d + aO * aO - aS * aS) / (2.0 * d * aO), -1.0, 1.0));
+  float a3 = 0.5 * sqrt(max((-d + aS + aO) * (d + aS - aO) * (d - aS + aO) * (d + aS + aO), 0.0));
+  return vec2(clamp(1.0 - (a1 + a2 - a3) / (3.14159265 * aS * aS), 0.0, 1.0), 0.0);
 }
+#endif
+#ifdef TLS_MOON
+// La luz refractada por la atmósfera de la Tierra dentro de su sombra (rgb lineal, ilustrativa), y
+// la fracción que queda de ella en el eje de la umbra.
+uniform vec3 uUmbraLight;
+uniform float uUmbraAxis;
 #endif
 
 float ringShadow() {
@@ -159,15 +274,37 @@ float ringShadow() {
 
 // Normal con el relieve: el mapa guarda (este, norte, arriba) en [0, 1].
 vec3 reliefNormal(vec3 geometric, vec2 uv) {
+#ifdef TLS_MOON
+  vec3 t = tlsPolarRelief(tlsSurface(uNormalMap, uv).xyz * 2.0 - 1.0);
+#else
   vec3 t = texture2D(uNormalMap, uv).xyz * 2.0 - 1.0;
+#endif
   t.xy *= uNormalStrength;
-  return normalize(normalize(vEast) * t.x + normalize(vNorth) * t.y + geometric * max(t.z, 0.05));
+#ifdef TLS_MOON
+  // El este, por píxel: el polo por la normal (solo degenera en el polo exacto).
+  vec3 east = cross(vPoleView, geometric);
+  float eastLength = length(east);
+  east = eastLength > 1e-5 ? east / eastLength : normalize(vEast);
+  vec3 north = cross(geometric, east);
+#else
+  vec3 east = normalize(vEast);
+  vec3 north = normalize(vNorth);
+#endif
+  return normalize(east * t.x + north * t.y + geometric * max(t.z, 0.05));
 }
 
 void main() {
   ${DEPTH_FRAGMENT}
+#ifdef TLS_MOON
+  vec2 uv = tlsMoonUv();
+#else
   vec2 uv = vec2(vUv.x + uMeridianOffset, vUv.y);
+#endif
+#ifdef TLS_MOON
+  vec3 base = uHasMap > 0.5 ? tlsSurface(uMap, uv).rgb : uColor;
+#else
   vec3 base = uHasMap > 0.5 ? texture2D(uMap, uv).rgb : uColor;
+#endif
   // Color medido (data/photometry.ts): la textura conserva su luminancia y toma esa cromaticidad.
   if (uChromaticity.w > 0.0) {
     float luminance = dot(base, vec3(0.2126, 0.7152, 0.0722));
@@ -217,7 +354,7 @@ void main() {
 #ifdef TLS_EARTH
   float muSun = dot(geometric, toSun);
   // La sombra de la Luna: lo que llega del Sol a este punto (1 fuera de los eclipses).
-  float sunVisible = muSun > 0.0 ? tlsSunVisible(vLocal * vec3(1.0, uPolarScale, 1.0)) : 1.0;
+  float sunVisible = muSun > 0.0 ? tlsShadow(vLocal * vec3(1.0, uPolarScale, 1.0)).x : 1.0;
   light *= sunVisible;
   haze *= sunVisible;
   // Nubes: la cobertura de su capa, que deriva en longitud (ilustrativo).
@@ -257,7 +394,17 @@ void main() {
   vec3 earthFill = composite * uFill * (0.25 + 0.75 * max(muViewer, 0.0));
   gl_FragColor = vec4(color + uHazeColor.rgb * haze + earthFill, 1.0);
 #else
-  gl_FragColor = vec4(albedo * light + uHazeColor.rgb * haze + fill, 1.0);
+  vec3 lit = vec3(light);
+#ifdef TLS_MOON
+  // La sombra de la Tierra: lo que llega del Sol y, donde la Tierra lo tapa, su luz refractada,
+  // más tenue hacia el eje de la umbra.
+  if (light > 0.0) {
+    vec2 eclipse = tlsShadow(vLocal * vec3(1.0, uPolarScale, 1.0));
+    lit = light * (eclipse.x + (1.0 - eclipse.x) * mix(1.0, uUmbraAxis, eclipse.y) * uUmbraLight);
+    haze *= eclipse.x;
+  }
+#endif
+  gl_FragColor = vec4(albedo * lit + uHazeColor.rgb * haze + fill, 1.0);
 #endif
   ${OUTPUT_FRAGMENT}
 }
@@ -314,9 +461,29 @@ export interface EarthUniforms {
   /** Tierras áridas: (rodilla, calidez desde, calidez hasta); `VISUAL_CONFIG.earth.arid`. */
   readonly uArid: Uniform<Vector3>;
   /** Centro de la Luna en el sistema propio de la Tierra (radios ecuatoriales) y su radio (w). */
-  readonly uMoonLocal: Uniform<Vector4>;
+  readonly uOccluderLocal: Uniform<Vector4>;
   /** Centro del Sol en el sistema propio de la Tierra (radios ecuatoriales) y su radio (w). */
   readonly uSunLocal: Uniform<Vector4>;
+}
+
+/** Uniformes de la Luna (fase 6): solo con `moon: true`. */
+export interface MoonUniforms {
+  /** Elevación del LOLA en 16 bits empaquetados en R y G (D15), sin mipmaps. */
+  readonly uElevationMap: Uniform<Texture | null>;
+  readonly uHasElevation: Uniform<number>;
+  /** (Elevación del valor 0, la del intervalo entero), en radios de la Luna y con la exageración. */
+  readonly uElevation: Uniform<Vector2>;
+  /** Centro de la Tierra en el sistema propio de la Luna (radios de la Luna) y su radio de sombra (w). */
+  readonly uOccluderLocal: Uniform<Vector4>;
+  /** Centro del Sol en el sistema propio de la Luna (radios de la Luna) y su radio (w). */
+  readonly uSunLocal: Uniform<Vector4>;
+  /** Luz refractada dentro de la sombra de la Tierra (rgb lineal, en fracción de la del Sol). */
+  readonly uUmbraLight: Uniform<Color>;
+  /** Fracción de esa luz que queda en el eje de la umbra (`VISUAL_CONFIG.moon.umbraLight.axis`). */
+  readonly uUmbraAxis: Uniform<number>;
+  /** Normales de los casquetes polares (`moon-normal-poles`, por encima de 76°; revisión de la fase 6). */
+  readonly uPoleNormalMap: Uniform<Texture | null>;
+  readonly uHasPoleNormals: Uniform<number>;
 }
 
 export interface BodyMaterialOptions {
@@ -327,6 +494,8 @@ export interface BodyMaterialOptions {
   readonly hazeColor: string;
   /** La Tierra: nubes, océanos, luces nocturnas, crepúsculo y luz dispersada (`TLS_EARTH`). */
   readonly earth?: boolean;
+  /** La Luna: relieve desplazado y coordenadas de textura por píxel (`TLS_MOON`). */
+  readonly moon?: boolean;
 }
 
 export function createBodyMaterial(options: BodyMaterialOptions) {
@@ -367,16 +536,34 @@ export function createBodyMaterial(options: BodyMaterialOptions) {
         // Sin compresión hasta que se configura (rodilla enorme).
         uArid: new Uniform(new Vector3(1e6, 0.25, 0.4)),
         // Sin datos, la Luna lejísimos y del otro lado: no tapa nada.
-        uMoonLocal: new Uniform(new Vector4(0, 0, 1e6, 0)),
+        uOccluderLocal: new Uniform(new Vector4(0, 0, 1e6, 0)),
         uSunLocal: new Uniform(new Vector4(23_455, 0, 0, 109)),
       }
     : null;
+  const moon: MoonUniforms | null = options.moon
+    ? {
+        uElevationMap: new Uniform<Texture | null>(null),
+        uHasElevation: new Uniform(0),
+        uElevation: new Uniform(new Vector2(0, 0)),
+        // Sin datos, la Tierra lejísimos y del otro lado: no tapa nada.
+        uOccluderLocal: new Uniform(new Vector4(0, 0, 1e6, 0)),
+        uSunLocal: new Uniform(new Vector4(86_000, 0, 0, 400)),
+        uUmbraLight: new Uniform(new Color(0, 0, 0)),
+        uUmbraAxis: new Uniform(1),
+        uPoleNormalMap: new Uniform<Texture | null>(null),
+        uHasPoleNormals: new Uniform(0),
+      }
+    : null;
+  const defines = {
+    ...(options.earth ? { TLS_EARTH: '' } : {}),
+    ...(options.moon ? { TLS_MOON: '' } : {}),
+  };
   const material = sceneShaderMaterial({
-    name: options.earth ? 'tls-earth' : 'tls-body',
-    uniforms: { ...uniforms, ...earth } as unknown as Record<string, Uniform>,
+    name: options.earth ? 'tls-earth' : options.moon ? 'tls-moon' : 'tls-body',
+    uniforms: { ...uniforms, ...earth, ...moon } as unknown as Record<string, Uniform>,
     vertexShader,
     fragmentShader,
-    ...(options.earth ? { defines: { TLS_EARTH: '' } } : {}),
+    ...(Object.keys(defines).length > 0 ? { defines } : {}),
   });
-  return { material, uniforms, earth };
+  return { material, uniforms, earth, moon };
 }

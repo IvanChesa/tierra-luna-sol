@@ -164,8 +164,14 @@ const MIN_DISTANCE_RADII = 1.12;
  * `visibilitychange`.
  */
 const MAX_FRAME_DT_MS = 400;
-/** Ancho (px) por encima del cual una textura espera a que la cámara pare para subir (la 8K). */
-const HUGE_TEXTURE_PX = 4096;
+/**
+ * Ancho (px) desde el que una textura espera a que la cámara pare para subir: las del primer plano
+ * (2k, 4k y 8k). Las 8K, por el tirón que daban a mitad del viaje (revisión de la fase 5); todas, por
+ * la VRAM: en un viaje entre las vistas Tierra y Luna, el cuerpo que se deja conserva su primer plano
+ * mientras se ve grande, y con el del nuevo encima se pasaba de los 300 MB de §5 (revisión de la
+ * fase 6, hallazgo 4).
+ */
+const WAIT_FOR_CAMERA_PX = 2048;
 
 /** Los únicos cuerpos con nombre en las vistas Tierra y Luna. */
 const DETAIL_LABELS: readonly string[] = ['tierra', 'luna', 'sol'];
@@ -886,6 +892,7 @@ export class SceneEngine implements SceneEngineApi {
     });
     camera.updateMatrixWorld();
     this.updateScreen();
+    this.world.updateLarge(this.screen);
     this.updateOrbitDiscs();
     this.applyLighting();
     if (!paint) return moving;
@@ -1462,13 +1469,15 @@ export class SceneEngine implements SceneEngineApi {
   }
 
   /**
-   * Las texturas enormes (la Tierra en 8K: 128 MiB, con sus mipmaps, en unos 110 ms, y a veces más de
-   * 200) esperan a que acabe el viaje de cámara o la transición de marco: subirlas a mitad daba un
-   * tirón en el viaje (revisión de la fase 5, hallazgo 15). Mientras, se ve el nivel anterior.
+   * Las texturas del primer plano (`WAIT_FOR_CAMERA_PX`) esperan a que acabe el viaje de cámara o la
+   * transición de marco: la Tierra en 8K (128 MiB, con sus mipmaps, en unos 110 ms, y a veces más de
+   * 200) daba un tirón a mitad del viaje (revisión de la fase 5, hallazgo 15), y el primer plano del
+   * cuerpo nuevo, sumado al del que se deja, pasaba de la VRAM de §5 (revisión de la fase 6). Mientras,
+   * se ve el nivel anterior.
    */
   private waitsForCamera(texture: Texture): boolean {
     const width = (texture.image as { width?: number } | null)?.width ?? 0;
-    return width > HUGE_TEXTURE_PX && (this.flight !== null || this.frames.animating);
+    return width >= WAIT_FOR_CAMERA_PX && (this.flight !== null || this.frames.animating);
   }
 
   // --- Eventos del navegador -----------------------------------------------------------------
