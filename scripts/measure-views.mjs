@@ -1,7 +1,9 @@
 // FPS, VRAM y peso por vista en los tres niveles de calidad (fase 3b, criterio de la tabla; PLAN §5).
-// Uso: npm run build && node scripts/measure-views.mjs [--swiftshader]
+// Uso: npm run build && node scripts/measure-views.mjs [--swiftshader] [alta|media|baja…]
+// (sin niveles, los tres; con alguno, solo esos: para repetir uno si la máquina estaba ocupada).
 //
-// Por cada nivel, una página en modo de captura que recorre las vistas como lo haría quien la usa,
+// Por cada nivel, una página en modo de captura que recorre las vistas como lo haría quien la usa
+// (desde la fase 7, también los sistemas de lunas, con sus mosaicos),
 // sin recargar: la primera vista (`/`), los primeros planos con algo nuevo de la fase 3b (Marte con su
 // relieve, Saturno con sus anillos y el Sol) y las vistas Tierra y Luna. En cada paso:
 // - peso: bytes de las texturas y del catálogo de estrellas descargados en ese paso (el tamaño del
@@ -21,6 +23,12 @@ const STEPS = [
   ['sistema', null],
   ['marte (primer plano)', { focus: 'marte' }],
   ['saturno (primer plano)', { focus: 'saturno' }],
+  // Fase 7: los sistemas de lunas, con sus mosaicos (se cargan al enfocar el sistema).
+  ['dione (luna de saturno)', { focus: 'dione' }],
+  ['jupiter (sus lunas)', { focus: 'jupiter' }],
+  ['europa (luna de jupiter)', { focus: 'europa' }],
+  ['triton (luna de neptuno)', { focus: 'triton' }],
+  ['fobos (luna de marte)', { focus: 'fobos' }],
   ['sol (primer plano)', { focus: 'sol' }],
   ['tierra (vista)', { route: '/explorar/tierra' }],
   ['luna (vista)', { route: '/explorar/luna' }],
@@ -47,10 +55,13 @@ const playbackStats = (page) =>
     };
   });
 
+const LEVELS = ['alta', 'media', 'baja'];
+const chosen = LEVELS.filter((level) => process.argv.includes(level));
+
 const results = { gpu: null, niveles: {} };
 const { browser, close } = await openBrowser();
 try {
-  for (const quality of ['alta', 'media', 'baja']) {
+  for (const quality of chosen.length > 0 ? chosen : LEVELS) {
     const page = await browser.newPage(pageOptions({ width: 1600, height: 900 }));
     const downloads = [];
     // Cada fichero cuenta una vez: si se vuelve a pedir (al dejar un primer plano, el cuerpo vuelve a
