@@ -39,14 +39,16 @@ const CROP_RADII = 1.06;
  *   general, con su halo, recortado por lo que se ve: así se lee como una estrella;
  * - la Tierra, a las 11:00 UTC del día de las capturas: Europa y África de cara (a las 00:00, el
  *   Pacífico);
- * - Saturno, desde 25°, con los anillos abiertos, y recortado a 1,7 radios: el círculo de la ficha
- *   corta las puntas de los anillos y el planeta se ve más grande.
+ * - Saturno, desde 25° al sur, con los anillos abiertos, y recortado a 1,7 radios: el círculo de la
+ *   ficha corta las puntas de los anillos y el planeta se ve más grande. Al sur porque, desde el
+ *   equinoccio de 2025, el Sol ilumina la cara sur de los anillos: desde el norte se veía su cara de
+ *   sombra, oscura (fase 7, D36).
  */
 const LIGHT = { phase: 30, latitude: 15 };
 const SPECIAL = {
   sol: { light: null, crop: 'visible', zoomOut: 6 },
   tierra: { date: '2026-10-24T11:00Z' },
-  saturno: { light: { phase: 30, latitude: 25 }, crop: 1.7 },
+  saturno: { light: { phase: 30, latitude: -25 }, crop: 1.7 },
 };
 
 /** Los ids y el tipo de los cuerpos del catálogo, del índice ligero (sin compilar TypeScript). */
@@ -149,4 +151,4 @@ try {
 } finally {
   await close();
 }
-console.log(`Total: ${(total / 1024).toFixed(1)} kB en ${ids.length} miniaturas.`);
+console.log(`Total: ${(total / 1024).toFixed(1)} kB en ${bodies.length} miniaturas.`);
