@@ -140,7 +140,9 @@ for (const screen of LOW_SCREENS) {
           const s = getComputedStyle(node);
           const y = /(auto|scroll)/.test(s.overflowY) && node.scrollHeight > node.clientHeight + 1;
           const x = /(auto|scroll)/.test(s.overflowX) && node.scrollWidth > node.clientWidth + 1;
-          if (x || y) return node.className;
+          // Su clase o, si no tiene (el anfitrión de «Controles +», `tls-time-menu`), su etiqueta: con
+          // la clase vacía, el panel desplazable no contaba como contenedor (fase 7, con la escala).
+          if (x || y) return node.className || node.tagName.toLowerCase();
         }
         return null;
       };
