@@ -34,14 +34,16 @@ export interface QualityProfile {
    */
   readonly earthMapsTexture: TextureLevel;
   /**
-   * La Luna enfocada (fase 6): su color, su relieve (normales) y su elevación (16 bits en R y G, sin
-   * mipmaps; solo para los vértices). En alto, el color en 8K (171 MiB con sus mipmaps), las normales
-   * en 4K (43) y la elevación en 2K (8): la vista Luna cabe en los 300 MB de §5. §5 pide en la vista
-   * Luna ≤ 10 MB de texturas en alto (7,0) y ≤ 3 en bajo (1,2).
+   * La Luna enfocada (fase 6): su color, su relieve (normales), su elevación (16 bits en R y G, sin
+   * mipmaps; solo para los vértices) y las normales de sus casquetes polares (revisión de la fase 6).
+   * En alto, el color en 8K (171 MiB con sus mipmaps), las normales en 4K (43), la elevación en 1K (2;
+   * los vértices están a 0,7°: la de 2K no se veía) y los casquetes en 2K (11): la vista Luna cabe en
+   * los 300 MB de §5. §5 pide en la vista Luna ≤ 10 MB de texturas en alto y ≤ 3 en bajo.
    */
   readonly moonTexture: TextureLevel;
   readonly moonNormalTexture: TextureLevel;
   readonly moonElevationTexture: TextureLevel;
+  readonly moonPoleTexture: TextureLevel;
   /**
    * Segmentos de cada cara de la esfera cúbica de la Luna de cerca (seis caras de n × n cuadrados):
    * 128 en alto (~197 000 triángulos), con unos 512 vértices en su ecuador para la elevación de 2K.
@@ -74,7 +76,8 @@ export const QUALITY_PROFILES: Readonly<Record<QualityLevel, QualityProfile>> = 
     earthMapsTexture: '2k',
     moonTexture: '8k',
     moonNormalTexture: '4k',
-    moonElevationTexture: '2k',
+    moonElevationTexture: '1k',
+    moonPoleTexture: '2k',
     moonSegments: 128,
     milkyWayTexture: '2k',
     orbitSegments: 360,
@@ -95,6 +98,7 @@ export const QUALITY_PROFILES: Readonly<Record<QualityLevel, QualityProfile>> = 
     moonTexture: '4k',
     moonNormalTexture: '2k',
     moonElevationTexture: '1k',
+    moonPoleTexture: '2k',
     moonSegments: 72,
     milkyWayTexture: '2k',
     orbitSegments: 256,
@@ -115,6 +119,7 @@ export const QUALITY_PROFILES: Readonly<Record<QualityLevel, QualityProfile>> = 
     moonTexture: '2k',
     moonNormalTexture: '2k',
     moonElevationTexture: '1k',
+    moonPoleTexture: '1k',
     moonSegments: 48,
     milkyWayTexture: '2k',
     orbitSegments: 180,

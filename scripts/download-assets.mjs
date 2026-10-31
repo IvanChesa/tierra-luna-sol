@@ -29,6 +29,9 @@ const ESO_MILKY_WAY_PAGE = 'https://www.eso.org/public/images/eso0932a/';
 const THREE_RAW = 'https://raw.githubusercontent.com/mrdoob/three.js/r186/examples/textures/';
 const MOLA = 'https://pds-geosciences.wustl.edu/mgs/mgs-m-mola-5-megdr-l3-v1/mgsl_300x/meg016/';
 const MOLA_PAGE = 'https://pds-geosciences.wustl.edu/missions/mgs/megdr.html';
+const LOLA_POLAR =
+  'https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/data/lola_gdr/polar/img/';
+const LOLA_POLAR_PAGE = 'https://pds-geosciences.wustl.edu/missions/lro/lola.htm';
 const MERCURY_DEM =
   'https://planetarymaps.usgs.gov/mosaic/Mercury_Messenger_USGS_DEM_Global_665m_v2.tif';
 const MERCURY_DEM_PAGE =
@@ -75,6 +78,13 @@ const ELEVATION = [
   // La Luna (fase 6): la elevación del LOLA del CGI Moon Kit, 16 px/° (5760 × 2880), en enteros sin
   // signo de 16 bits: medios metros sobre la esfera de 1737,4 km, más 20 000 (10 km).
   ['ldem_16_uint.tif', SVS_MOON + 'ldem_16_uint.tif', 'https://svs.gsfc.nasa.gov/4720'],
+  // Sus polos (revisión de la fase 6, hallazgo 1): la elevación equirrectangular junto a un polo salta
+  // cientos de metros entre columnas separadas unos metros. Los modelos polares del LOLA (PDS,
+  // estereográfica polar de 75° al polo, 240 m por píxel, enteros de 16 bits en medios metros).
+  ...['ldem_75s_240m', 'ldem_75n_240m'].flatMap((name) => [
+    [`${name}.img`, `${LOLA_POLAR}${name}.img`, LOLA_POLAR_PAGE],
+    [`${name}.lbl`, `${LOLA_POLAR}${name}.lbl`, LOLA_POLAR_PAGE],
+  ]),
 ];
 
 const KTX2 = [

@@ -26,6 +26,7 @@ import {
   ShaderMaterial,
   SRGBColorSpace,
   SphereGeometry,
+  Texture,
   Uniform,
   Vector3,
 } from 'three';
@@ -102,30 +103,79 @@ export const BODY_RELIEF_TEXTURES: Readonly<Partial<Record<BodyId, TextureId>>> 
 };
 
 /**
+ * Un mapa extra de un cuerpo: su textura va en `uniform` y `flag` dice si la hay (1) o no (0). De
+ * cerca, se pide al nivel del campo `level` del perfil de calidad; lejos, al de la vista general, o
+ * se suelta si es `nearOnly`.
+ */
+interface BodyMapSpec {
+  readonly id: TextureId;
+  readonly uniform: 'uCloudMap' | 'uNightMap' | 'uSpecularMap' | 'uElevationMap' | 'uPoleNormalMap';
+  readonly flag: 'uHasClouds' | 'uHasNight' | 'uHasSpecular' | 'uHasElevation' | 'uHasPoleNormals';
+  readonly level: 'focusTexture' | 'earthMapsTexture' | 'moonElevationTexture' | 'moonPoleTexture';
+  readonly nearOnly: boolean;
+}
+
+interface BodyMap extends BodyMapSpec {
+  loaded: LoadedTexture | null;
+  requested: TextureLevel | null;
+}
+
+/** Dónde van los mapas extra: los uniformes de la Tierra o de la Luna (los nombres, comprobados). */
+type BodyMapUniforms = Readonly<
+  Partial<Record<BodyMapSpec['uniform'], Uniform<Texture | null>>> &
+    Partial<Record<BodyMapSpec['flag'], Uniform<number>>>
+>;
+
+/**
  * Mapas de la Tierra además del de día (fase 5): las nubes, también en la vista general (son las que
  * le dan su brillo); las luces nocturnas y la máscara del océano, solo en primer plano y a su propio
  * nivel (`earthMapsTexture`).
  */
-const EARTH_MAPS = [
-  { id: 'earth-clouds', uniform: 'uCloudMap', flag: 'uHasClouds', nearOnly: false },
-  { id: 'earth-night', uniform: 'uNightMap', flag: 'uHasNight', nearOnly: true },
-  { id: 'earth-specular', uniform: 'uSpecularMap', flag: 'uHasSpecular', nearOnly: true },
-] as const;
+const EARTH_MAPS: readonly BodyMapSpec[] = [
+  {
+    id: 'earth-clouds',
+    uniform: 'uCloudMap',
+    flag: 'uHasClouds',
+    level: 'focusTexture',
+    nearOnly: false,
+  },
+  {
+    id: 'earth-night',
+    uniform: 'uNightMap',
+    flag: 'uHasNight',
+    level: 'earthMapsTexture',
+    nearOnly: true,
+  },
+  {
+    id: 'earth-specular',
+    uniform: 'uSpecularMap',
+    flag: 'uHasSpecular',
+    level: 'earthMapsTexture',
+    nearOnly: true,
+  },
+];
 
-/** Mapas de la Luna además del de color (fase 6): la elevación, solo de cerca (desplaza la malla). */
-const MOON_MAPS = [
-  { id: 'moon-elevation', uniform: 'uElevationMap', flag: 'uHasElevation', nearOnly: true },
-] as const;
-
-/** Un mapa extra de un cuerpo: su textura va en `uniform` y `flag` dice si la hay (1) o no (0). */
-interface BodyMap {
-  readonly id: TextureId;
-  readonly uniform: string;
-  readonly flag: string;
-  readonly nearOnly: boolean;
-  loaded: LoadedTexture | null;
-  requested: TextureLevel | null;
-}
+/**
+ * Mapas de la Luna además del de color y de las normales, solo de cerca (fase 6): la elevación, que
+ * desplaza la malla, y las normales de los casquetes polares, por encima de 76° (revisión de la
+ * fase 6).
+ */
+const MOON_MAPS: readonly BodyMapSpec[] = [
+  {
+    id: 'moon-elevation',
+    uniform: 'uElevationMap',
+    flag: 'uHasElevation',
+    level: 'moonElevationTexture',
+    nearOnly: true,
+  },
+  {
+    id: 'moon-normal-poles',
+    uniform: 'uPoleNormalMap',
+    flag: 'uHasPoleNormals',
+    level: 'moonPoleTexture',
+    nearOnly: true,
+  },
+];
 
 /** Radios de los anillos (km), del catálogo; los sustituye la tira calibrada si hay textura. */
 export interface RingRadii {
@@ -182,7 +232,7 @@ interface BodyVisual {
   readonly moon: MoonUniforms | null;
   readonly maps: readonly BodyMap[];
   /** Dónde van los mapas extra (los uniformes de la Tierra o de la Luna). */
-  readonly mapUniforms: Readonly<Record<string, Uniform>> | null;
+  readonly mapUniforms: BodyMapUniforms | null;
   /** Fotometría del cuerpo (`null` en el Sol, que emite luz). */
   readonly photometry: BodyPhotometry | null;
   /** Halo de la atmósfera, si la tiene. */
@@ -281,8 +331,11 @@ export class World {
   /** Esfera detallada (Sol, planetas, la Luna y el cuerpo enfocado) y esfera ligera (las demás lunas). */
   private sphere: SphereGeometry;
   private coarseSphere: SphereGeometry;
-  /** La Luna enfocada (fase 6): una esfera cúbica, sin polos pellizcados, para su relieve. */
-  private moonSphere: BufferGeometry;
+  /**
+   * La Luna enfocada (fase 6): una esfera cúbica, sin polos pellizcados, para su relieve. Solo existe
+   * mientras la Luna está enfocada (revisión de la fase 6, hallazgo 11).
+   */
+  private moonSphere: BufferGeometry | null = null;
   private focusIndex: number | null = null;
   /** 1 para los cuerpos que se ven grandes en pantalla (`LARGE_ENTER_PX`). */
   private readonly large: Uint8Array;
@@ -316,7 +369,6 @@ export class World {
     this.scene.name = 'tierra-luna-sol';
     this.sphere = this.createSphere(options.profile.sphereSegments);
     this.coarseSphere = this.createSphere(COARSE_SEGMENTS);
-    this.moonSphere = createCubeSphere(options.profile.moonSegments);
     this.large = new Uint8Array(options.bodies.length);
     // Color de la fotosfera: un cuerpo negro a la temperatura efectiva del catálogo.
     const temperature = BODY_DATA.sol.physical.effectiveTemperatureK?.value ?? 5772;
@@ -372,9 +424,7 @@ export class World {
         maps: (bodyMaterial?.earth ? EARTH_MAPS : bodyMaterial?.moon ? MOON_MAPS : []).map(
           (map) => ({ ...map, loaded: null, requested: null }),
         ),
-        mapUniforms: (bodyMaterial?.earth ?? bodyMaterial?.moon ?? null) as unknown as Readonly<
-          Record<string, Uniform>
-        > | null,
+        mapUniforms: bodyMaterial?.earth ?? bodyMaterial?.moon ?? null,
         photometry,
         atmosphere:
           bodyMaterial && photometry
@@ -483,9 +533,9 @@ export class World {
     const old = this.sphere;
     this.sphere = this.createSphere(profile.sphereSegments);
     old.dispose();
-    const oldMoon = this.moonSphere;
-    this.moonSphere = createCubeSphere(profile.moonSegments);
-    oldMoon.dispose();
+    // La esfera cúbica se rehace con los segmentos del nivel nuevo si la Luna sigue enfocada.
+    this.moonSphere?.dispose();
+    this.moonSphere = null;
     this.stars?.setMagnitudeLimit(profile.starMagnitudeLimit);
     this.orbitSources = this.options.orbitSources(profile);
     this.orbits.setSources(this.orbitSources);
@@ -498,13 +548,19 @@ export class World {
    */
   setFocus(focusIndex: number | null): void {
     this.focusIndex = focusIndex;
+    const moonFocused = focusIndex !== null && Boolean(this.visuals[focusIndex]?.moon);
+    if (moonFocused) this.moonSphere ??= createCubeSphere(this.profile.moonSegments);
     for (const visual of this.visuals) {
       visual.mesh.geometry =
-        visual.moon && visual.body.index === focusIndex
+        visual.moon && visual.body.index === focusIndex && this.moonSphere
           ? this.moonSphere
           : this.detailed(visual.body, focusIndex)
             ? this.sphere
             : this.coarseSphere;
+    }
+    if (!moonFocused && this.moonSphere) {
+      this.moonSphere.dispose();
+      this.moonSphere = null;
     }
     this.requestTextures(focusIndex);
   }
@@ -549,12 +605,7 @@ export class World {
         this.requestRelief(visual, near ? reliefLevel : null);
       }
       for (const map of visual.maps) {
-        const nearLevel = visual.moon
-          ? this.profile.moonElevationTexture
-          : map.nearOnly
-            ? this.profile.earthMapsTexture
-            : this.profile.focusTexture;
-        const mapLevel = near ? nearLevel : this.profile.overviewTexture;
+        const mapLevel = near ? this.profile[map.level] : this.profile.overviewTexture;
         this.requestMap(visual, map, near || !map.nearOnly ? mapLevel : null);
       }
       if (visual.requested === level) continue;
@@ -667,19 +718,20 @@ export class World {
     const previous = map.loaded;
     map.loaded = loaded;
     const uniforms = visual.mapUniforms;
-    if (uniforms?.[map.uniform]) (uniforms[map.uniform] as Uniform).value = loaded.texture;
-    if (uniforms?.[map.flag]) (uniforms[map.flag] as Uniform).value = 1;
+    const texture = uniforms[map.uniform];
+    const flag = uniforms[map.flag];
+    if (texture) texture.value = loaded.texture;
+    if (flag) flag.value = 1;
     if (previous && previous.texture !== loaded.texture) releaseTexture(previous.texture);
     this.options.invalidate();
   }
 
   private releaseMap(visual: BodyVisual, map: BodyMap): void {
     if (!map.loaded) return;
-    {
-      const uniforms = visual.mapUniforms;
-      if (uniforms?.[map.uniform]) (uniforms[map.uniform] as Uniform).value = null;
-      if (uniforms?.[map.flag]) (uniforms[map.flag] as Uniform).value = 0;
-    }
+    const texture = visual.mapUniforms?.[map.uniform];
+    const flag = visual.mapUniforms?.[map.flag];
+    if (texture) texture.value = null;
+    if (flag) flag.value = 0;
     releaseTexture(map.loaded.texture);
     map.loaded = null;
     this.options.invalidate();
@@ -786,7 +838,6 @@ export class World {
 
   /** Actualiza el grafo para un frame. Devuelve los planos de recorte que ha puesto. */
   update(frame: WorldFrame): { near: number; far: number } {
-    this.updateLarge(frame.screen);
     const { frames, state, orientations } = frame;
     const positions = frames.output.position;
     const radii = frames.output.radius;
@@ -883,11 +934,14 @@ export class World {
   }
 
   /**
-   * Qué cuerpos se ven grandes en pantalla (C4), con la proyección del frame anterior. Si cambia, se
-   * vuelven a pedir las texturas: el que crece, a su nivel del primer plano, y el que mengua, al de
-   * la vista general (su textura grande se libera cuando llega la pequeña).
+   * Qué cuerpos se ven grandes en pantalla (C4), con la proyección del frame que se acaba de colocar
+   * (la llama el motor tras proyectar los cuerpos: con la del frame anterior, tras un corte de vista
+   * con el motor en reposo, la Luna conservaba su primer plano en la vista general hasta el siguiente
+   * render; revisión de la fase 6). Si cambia, se vuelven a pedir las texturas: el que crece, a su
+   * nivel del primer plano, y el que mengua, al de la vista general (su textura grande se libera
+   * cuando llega la pequeña).
    */
-  private updateLarge(screen: readonly ScreenBody[]): void {
+  updateLarge(screen: readonly ScreenBody[]): void {
     let changed = false;
     for (const body of screen) {
       const was = this.large[body.index] === 1;
@@ -972,9 +1026,7 @@ export class World {
     return (
       textures +
       geometryBytes(this.sphere) +
-      (this.focusIndex !== null && this.visuals[this.focusIndex]?.moon
-        ? geometryBytes(this.moonSphere)
-        : 0) +
+      (this.moonSphere ? geometryBytes(this.moonSphere) : 0) +
       (this.rings ? geometryBytes(this.rings.geometry) : 0)
     );
   }
@@ -1004,7 +1056,7 @@ export class World {
     });
     this.sphere.dispose();
     this.coarseSphere.dispose();
-    this.moonSphere.dispose();
+    this.moonSphere?.dispose();
     // Los puntos no son mallas: su geometría no la libera el recorrido de arriba.
     this.markers?.geometry.dispose();
     for (const visual of this.visuals) {
@@ -1190,8 +1242,9 @@ function configureMoon(moon: MoonUniforms, radiusKm: number): void {
   const { min, max } = MOON_ELEVATION_RANGE_M;
   const scale = VISUAL_CONFIG.moon.reliefExaggeration / (radiusKm * 1000);
   moon.uElevation.value.set(min * scale, (max - min) * scale);
-  const { color, intensity } = VISUAL_CONFIG.moon.umbraLight;
+  const { color, intensity, axis } = VISUAL_CONFIG.moon.umbraLight;
   moon.uUmbraLight.value.set(color).multiplyScalar(intensity);
+  moon.uUmbraAxis.value = axis;
 }
 
 /** Una textura no ha llegado: no es un error fatal (queda el color esquemático), pero se anota. */

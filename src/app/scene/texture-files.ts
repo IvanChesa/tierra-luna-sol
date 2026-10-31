@@ -1,4 +1,4 @@
-// GENERADO por scripts/build-textures.mjs el 2026-10-30. No se edita a mano.
+// GENERADO por scripts/build-textures.mjs el 2026-10-31. No se edita a mano.
 // WebP por niveles con hash (public/textures/), a partir de los originales de assets-src/textures/
 // (origen y licencia de cada uno en docs/FUENTES.md).
 import type { TextureFiles, TextureId } from './textures';
@@ -371,12 +371,21 @@ export const TEXTURE_FILES: TextureFiles = {
       height: 512,
       bytes: 759462,
     },
+  ],
+  'moon-normal-poles': [
+    {
+      level: '1k',
+      path: 'textures/1k/moon-normal-poles.b891442ec8.webp',
+      width: 1024,
+      height: 512,
+      bytes: 56138,
+    },
     {
       level: '2k',
-      path: 'textures/2k/moon-elevation.c0c60e8753.webp',
+      path: 'textures/2k/moon-normal-poles.6841cfd741.webp',
       width: 2048,
       height: 1024,
-      bytes: 2849256,
+      bytes: 218694,
     },
   ],
   uranus: [

@@ -47,6 +47,7 @@ export type TextureId =
   | 'mars-normal'
   | 'moon-normal'
   | 'moon-elevation'
+  | 'moon-normal-poles'
   | 'milky-way';
 
 export interface TextureMeta {
@@ -58,8 +59,11 @@ export interface TextureMeta {
    * - `ring-strip`: tira radial de los anillos (u = radio, de `innerKm` a `outerKm`).
    * - `galactic`: cielo en longitud y latitud galácticas (l = 0 en el centro, creciendo hacia la
    *   izquierda; el norte galáctico arriba).
+   * - `polar-caps`: los dos casquetes polares, de 75° al polo, en estereográfica (la mitad izquierda,
+   *   el sur; la derecha, el norte; `scripts/lola-polar.mjs`). El meridiano 0 va hacia arriba en el
+   *   sur y hacia abajo en el norte, con la longitud este hacia la derecha en los dos.
    */
-  readonly projection: 'equirectangular' | 'ring-strip' | 'galactic';
+  readonly projection: 'equirectangular' | 'ring-strip' | 'galactic' | 'polar-caps';
   /**
    * u del meridiano 0 en los mapas de superficie (0,5: centrado), o `null` si no tiene sentido
    * (Sol, nubes de Venus y de los gigantes gaseosos, que no tienen accidentes fijos). La escena lo

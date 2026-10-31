@@ -42,6 +42,7 @@ import {
   normalMap,
   packElevation16,
 } from './build-relief.mjs';
+import { buildPolarNormalAtlas } from './lola-polar.mjs';
 
 const ROOT = new URL('../', import.meta.url);
 const SRC = new URL('assets-src/textures/', ROOT);
@@ -65,7 +66,9 @@ const RING_HEIGHT = 16;
  * (OCEAN_CHROMA). `maxWidth`: el nivel más grande que se genera (4k si no se dice; 8k solo la
  * textura de día de la Tierra, en el nivel alto, fase 5, y el color de la Luna, fase 6). elevation:
  * la elevación de un modelo en 16 bits empaquetados en R y G (D15), sin pérdidas, para desplazar los
- * vértices (la Luna, fase 6).
+ * vértices (la Luna, fase 6). polar-relief: el atlas de normales de los casquetes polares de la Luna
+ * (scripts/lola-polar.mjs; revisión de la fase 6): 2n × n px, el sur a la izquierda y el norte a la
+ * derecha.
  */
 const TEXTURES = {
   mercury: { file: '8k_mercury.jpg', kind: 'color', quality: 80 },
@@ -98,9 +101,14 @@ const TEXTURES = {
   // Sus extremos se comprueban en 2k: en 1k, con píxeles de ~10 km, el punto más bajo cae en otro
   // sitio de la cuenca Polo Sur–Aitken, a 13° de Antoniadi.
   'moon-normal': { dem: 'moon', kind: 'relief', color: 'moon', quality: 85, checkLevel: '2k' },
-  // La malla de la Luna se desplaza con esta elevación: con 2k (0,18° por píxel) basta para sus
-  // vértices (unos 512 en el ecuador en el nivel alto).
-  'moon-elevation': { dem: 'moon', kind: 'elevation', maxWidth: 2048 },
+  // La malla de la Luna se desplaza con esta elevación: sus vértices están a 0,7° en el ecuador en el
+  // nivel alto (512 por vuelta), y la de 1k (0,35° por píxel, cada uno la media de su área) ya da dos
+  // muestras por vértice; la de 2k pesaba 2,7 MiB y 8 MiB de VRAM más sin verse (revisión de la fase 6,
+  // sugerencia 12).
+  'moon-elevation': { dem: 'moon', kind: 'elevation', maxWidth: 1024 },
+  // Sus casquetes polares, por encima de 76° (revisión de la fase 6, hallazgo 1): las normales de los
+  // modelos polares del LOLA, a 893 m por píxel en 2k, sin el «sol de rayas» del equirrectangular.
+  'moon-normal-poles': { kind: 'polar-relief', quality: 85, maxWidth: 2048 },
   uranus: { file: '2k_uranus.jpg', kind: 'color', quality: 82 },
   neptune: { file: '2k_neptune.jpg', kind: 'color', quality: 82 },
   'milky-way': { file: 'eso0932a.tif', kind: 'panorama', quality: 80, maxWidth: 2048 },
@@ -751,6 +759,23 @@ for (const [id, spec] of Object.entries(TEXTURES)) {
     files[id] = list;
     const slopes = await checkNormalSlopes(id, list.find((f) => f.level === '2k') ?? list[0]);
     if (slopes) reports.push(slopes);
+    console.log(
+      `${id}: ${list.map((f) => `${f.level} ${(f.bytes / 1024).toFixed(0)} kB`).join(' · ')}`,
+    );
+    continue;
+  }
+  if (spec.kind === 'polar-relief') {
+    // Un atlas por nivel (n = la mitad del ancho), con sus comprobaciones: la proyección de cada modelo
+    // polar, Shackleton y el acuerdo con las normales equirrectangulares donde se mezclan.
+    const list = [];
+    for (const [level, width] of LEVELS) {
+      if (width > spec.maxWidth) continue;
+      const { normals, report } = await buildPolarNormalAtlas(width / 2);
+      const pipeline = sharp(normals, { raw: { width, height: width / 2, channels: 3 } });
+      list.push(await emit(id, level, pipeline, spec.quality));
+      if (width === spec.maxWidth) reports.push(report);
+    }
+    files[id] = list;
     console.log(
       `${id}: ${list.map((f) => `${f.level} ${(f.bytes / 1024).toFixed(0)} kB`).join(' · ')}`,
     );

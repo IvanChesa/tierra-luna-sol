@@ -28,8 +28,12 @@ import { Component } from '@angular/core';
       <li>
         Luna: CGI Moon Kit del
         <a href="https://svs.gsfc.nasa.gov/4720">Scientific Visualization Studio de la NASA</a>, con
-        datos de LRO/LROC (el color) y LRO/LOLA (el relieve). Los lugares con nombre de sus vistas y
-        su recorrido, del
+        datos de LRO/LROC (el color) y LRO/LOLA (el relieve). Junto a los polos, el relieve sale de
+        los
+        <a href="https://pds-geosciences.wustl.edu/missions/lro/lola.htm"
+          >modelos polares del LOLA</a
+        >
+        (NASA/GSFC, en el PDS de la NASA). Los lugares con nombre de sus vistas y su recorrido, del
         <a href="https://planetarynames.wr.usgs.gov/">Gazetteer of Planetary Nomenclature</a> (IAU y
         USGS).
       </li>

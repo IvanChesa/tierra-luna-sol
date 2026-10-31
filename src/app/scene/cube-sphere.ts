@@ -11,6 +11,8 @@
  * - Los mismos ejes que `SphereGeometry`: Y, el polo norte; el meridiano 0 en +X y la longitud este
  *   hacia −Z. Las coordenadas de textura (u, v) son la longitud y la latitud equirrectangulares del
  *   vértice (u = 0,5 en el meridiano 0); el material de la Luna las calcula por píxel.
+ * - Sin normales: en la esfera unidad son la posición, y el material de los cuerpos las saca de ella
+ *   (revisión de la fase 6: un array de menos, 1,2 MB en el nivel alto).
  */
 import { BufferAttribute, BufferGeometry } from 'three';
 
@@ -57,7 +59,6 @@ export function createCubeSphere(segments: number): BufferGeometry {
   const positions = new Float32Array(6 * perFace * 3);
   const uvs = new Float32Array(6 * perFace * 2);
   const indices = new Uint32Array(6 * n * n * 6);
-  let p = 0;
   let t = 0;
   FACES.forEach(([normal, a, b], face) => {
     const base = face * perFace;
@@ -75,7 +76,6 @@ export function createCubeSphere(segments: number): BufferGeometry {
         positions[3 * k + 2] = z / length;
         uvs[2 * k] = 0.5 + Math.atan2(-z, x) / (2 * Math.PI);
         uvs[2 * k + 1] = 0.5 + Math.asin(Math.max(-1, Math.min(1, y / length))) / Math.PI;
-        p++;
       }
     }
     for (let j = 0; j < n; j++) {
@@ -92,8 +92,6 @@ export function createCubeSphere(segments: number): BufferGeometry {
   });
   const geometry = new BufferGeometry();
   geometry.setAttribute('position', new BufferAttribute(positions, 3));
-  // En la esfera unidad, la normal es la posición.
-  geometry.setAttribute('normal', new BufferAttribute(positions.slice(0, 3 * p), 3));
   geometry.setAttribute('uv', new BufferAttribute(uvs, 2));
   geometry.setIndex(new BufferAttribute(indices, 1));
   geometry.computeBoundingSphere();

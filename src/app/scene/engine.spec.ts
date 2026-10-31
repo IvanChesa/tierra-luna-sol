@@ -1,4 +1,5 @@
 import starsBin from '../../../public/data/stars.bin' with { loader: 'binary' };
+import { Libration } from 'astronomy-engine';
 import { BackSide, FrontSide, Quaternion, Texture, Vector3, Vector4 } from 'three';
 import { KM_PER_AU } from '../ephemeris/constants';
 import { subsolarPoint } from '../ephemeris/coordinates';
@@ -6,7 +7,7 @@ import { earthShadow, moonShadowCenter } from '../ephemeris/eclipse';
 import { NASA_ECLIPSE_2026_08_12, USNO_MOON_PHASES } from '../ephemeris/fixtures/fixtures';
 import { moonPhase } from '../ephemeris/ephemeris';
 import { illustrativeRadius } from '../ephemeris/scale';
-import { MAX_DATE } from '../ephemeris/time';
+import { MAX_DATE, toAstroTime } from '../ephemeris/time';
 import {
   EngineDeps,
   FRAMING_FILL,
@@ -660,23 +661,27 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     h.engine.dispose();
   });
 
-  it('las texturas enormes (la 8K) esperan a que acabe el viaje de cámara para subir (fase 5)', async () => {
+  it('las texturas del primer plano (2k y más) esperan a que acabe el viaje de cámara para subir (fases 5 y 6)', async () => {
     const h = await createHarness();
     settle(h);
     const engine = h.engine as unknown as { queueUpload(texture: Texture): Promise<void> };
     const image = (width: number) => ({ width, height: width / 2 }) as unknown as HTMLImageElement;
     const huge = new Texture(image(8192));
-    const small = new Texture(image(4096));
+    const near = new Texture(image(2048));
+    const small = new Texture(image(1024));
     h.engine.setView('earth');
     void engine.queueUpload(huge);
+    void engine.queueUpload(near);
     void engine.queueUpload(small);
     h.frames(500);
-    // A mitad del viaje sube la de 4K, no la de 8K.
+    // A mitad del viaje sube la de 1k, no las del primer plano.
     expect(h.events.travel).toHaveLength(1);
     expect(h.renderer.uploads).toContain(small);
+    expect(h.renderer.uploads).not.toContain(near);
     expect(h.renderer.uploads).not.toContain(huge);
     settle(h);
     expect(h.events.travel.at(-1)).toEqual({ active: false, kind: 'view' });
+    expect(h.renderer.uploads).toContain(near);
     expect(h.renderer.uploads).toContain(huge);
     h.engine.dispose();
   });
@@ -1211,26 +1216,29 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
    * Una fuente de texturas con los tamaños de los ficheros de verdad (`TEXTURE_FILES`): apunta qué se
    * pide y qué se libera, y cuenta su VRAM como el cargador (C4).
    */
-  const realisticTextures = () => {
+  const realisticTextures = (throughUpload = false) => {
     const requests: string[] = [];
     const released: string[] = [];
-    const source = {
-      load: (id: TextureId, level: TextureLevel): Promise<LoadedTexture> => {
-        const file = chooseTextureFile(TEXTURE_FILES[id], level, 16_384);
-        if (!file) return Promise.reject(new Error(`sin fichero de ${id}`));
-        const texture = new Texture();
-        texture.name = `${id}@${file.level}`;
-        texture.addEventListener('dispose', () => released.push(texture.name));
-        requests.push(texture.name);
-        const mipmaps = TEXTURE_META[id].mipmaps !== false;
-        return Promise.resolve({
-          texture,
-          file,
-          vramBytes: textureVramBytes(file.width, file.height, mipmaps),
-        });
+    const textures: EngineDeps['textures'] = (context) => ({
+      meta: TEXTURE_META,
+      source: {
+        load: async (id: TextureId, level: TextureLevel): Promise<LoadedTexture> => {
+          const file = chooseTextureFile(TEXTURE_FILES[id], level, 16_384);
+          if (!file) throw new Error(`sin fichero de ${id}`);
+          // Con sus medidas: las del primer plano esperan al final de los viajes para subir.
+          const image = { width: file.width, height: file.height } as unknown as HTMLImageElement;
+          const texture = new Texture(image);
+          texture.name = `${id}@${file.level}`;
+          texture.addEventListener('dispose', () => released.push(texture.name));
+          requests.push(texture.name);
+          // Como el cargador de verdad: la textura cuenta cuando ha subido a la GPU.
+          if (throughUpload) await context.upload(texture);
+          const mipmaps = TEXTURE_META[id].mipmaps !== false;
+          return { texture, file, vramBytes: textureVramBytes(file.width, file.height, mipmaps) };
+        },
       },
-    };
-    return { requests, released, textures: () => ({ source, meta: TEXTURE_META }) };
+    });
+    return { requests, released, textures };
   };
 
   it('C4: en la vista Luna, la Tierra (pequeña al fondo) no pide su 8K, y la 8K se libera al salir de la vista Tierra (fase 6)', async () => {
@@ -1243,7 +1251,7 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     for (let k = 0; k < 5; k++) await flush();
     expect(fake.requests).toContain('earth-day@8k');
     h.engine.setView('moon');
-    // La Tierra deja de verse grande con la proyección del frame siguiente: entonces pide su 1k.
+    // La Tierra deja de verse grande con la proyección del frame: entonces pide su 1k.
     for (let round = 0; round < 3; round++) {
       settle(h);
       for (let k = 0; k < 5; k++) await flush();
@@ -1251,11 +1259,53 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     // La Luna, con sus mapas de cerca; la Tierra, con los de la vista general, y su 8K, liberada.
     expect(fake.requests).toContain('moon@8k');
     expect(fake.requests).toContain('moon-normal@4k');
-    expect(fake.requests).toContain('moon-elevation@2k');
+    expect(fake.requests).toContain('moon-elevation@1k');
+    expect(fake.requests).toContain('moon-normal-poles@2k');
     expect(fake.requests).toContain('earth-day@1k');
     expect(fake.released).toContain('earth-day@8k');
     expect(fake.released).toContain('earth-night@2k');
     h.engine.dispose();
+  });
+
+  it('en la vista Luna, el punto de la malla que mira a la Tierra es el de la libración de astronomy-engine (fase 6)', async () => {
+    // Los extremos de la libración en longitud de 2026 con la Luna gibosa (los de las capturas).
+    for (const iso of ['2026-01-06T06:00:00Z', '2026-11-21T18:00:00Z']) {
+      const date = new Date(iso);
+      const h = await createHarness({
+        reducedMotion: true,
+        view: 'moon',
+        focus: 'luna',
+        time: date,
+      });
+      settle(h);
+      const scene = internals(h).world.scene as unknown as {
+        getObjectByName(
+          name: string,
+        ): { position: Vector3; getWorldQuaternion(q: Quaternion): Quaternion } | undefined;
+      };
+      const moon = scene.getObjectByName('luna');
+      const earth = scene.getObjectByName('tierra');
+      if (!moon || !earth) throw new Error('Sin la Luna o la Tierra en la escena');
+      // La dirección hacia la Tierra, en los ejes de la malla (Y, el polo; el meridiano 0 en +X y el
+      // este hacia −Z).
+      const toEarth = earth.position
+        .clone()
+        .sub(moon.position)
+        .normalize()
+        .applyQuaternion(moon.getWorldQuaternion(new Quaternion()).invert());
+      const latDeg = (Math.asin(toEarth.y) * 180) / Math.PI;
+      const lonDeg = (Math.atan2(-toEarth.z, toEarth.x) * 180) / Math.PI;
+      const libration = Libration(toAstroTime(date));
+      expect(
+        Math.abs(lonDeg - libration.elon),
+        `${iso}: ${lonDeg.toFixed(2)}° frente a ${libration.elon.toFixed(2)}°`,
+      ).toBeLessThan(0.1);
+      expect(
+        Math.abs(latDeg - libration.elat),
+        `${iso}: ${latDeg.toFixed(2)}° frente a ${libration.elat.toFixed(2)}°`,
+      ).toBeLessThan(0.1);
+      h.engine.dispose();
+    }
   });
 
   it('C4: la VRAM de las vistas Tierra y Luna en su peor caso (cada una con la otra al fondo), dentro de §5 en alto y en bajo (fase 6)', async () => {
@@ -1281,6 +1331,133 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
         );
       }
     }
+  });
+
+  it('C4: en el viaje entre las vistas Tierra y Luna, la VRAM no pasa de §5 en ningún frame (revisión de la fase 6)', async () => {
+    const travel = async (from: 'earth' | 'moon', to: 'earth' | 'moon') => {
+      const fake = realisticTextures(true);
+      const h = await createHarness(
+        { view: from, focus: from === 'earth' ? 'tierra' : 'luna' },
+        { textures: fake.textures },
+      );
+      // Frame a frame, dejando que lleguen las texturas, hasta que el motor reposa: el máximo.
+      const run = async (maxFrames: number) => {
+        let max = 0;
+        for (let k = 0; k < maxFrames; k++) {
+          h.frames(16, 62.5);
+          await flush();
+          max = Math.max(max, h.engine.stats().vramMB);
+          if (k > 30 && h.scheduler.waiting === 0) break;
+        }
+        return max;
+      };
+      await run(400);
+      const start = h.engine.stats().vramMB;
+      h.engine.setView(to);
+      const peak = await run(800);
+      const end = h.engine.stats().vramMB;
+      const travelled = h.events.travel.some((event) => event.active && event.kind === 'view');
+      h.engine.dispose();
+      return { start, peak, end, travelled };
+    };
+    for (const [from, to] of [
+      ['earth', 'moon'],
+      ['moon', 'earth'],
+    ] as const) {
+      const { start, peak, end, travelled } = await travel(from, to);
+      const label = `${from} → ${to}: ${start.toFixed(0)} → ${peak.toFixed(0)} → ${end.toFixed(0)} MB`;
+      expect(travelled, label).toBe(true);
+      // Las dos vistas, cada una con su primer plano entero, antes y después del viaje.
+      expect(start, label).toBeGreaterThan(200);
+      expect(end, label).toBeGreaterThan(200);
+      expect(peak, label).toBeLessThanOrEqual(300);
+    }
+  }, 60_000);
+
+  it('C4: un cuerpo se ve grande desde 160 px y deja de verse grande por debajo de 120 (histéresis)', async () => {
+    const h = await createHarness({ reducedMotion: true });
+    settle(h);
+    const world = internals(h).world as unknown as {
+      large: Uint8Array;
+      updateLarge(screen: readonly { index: number; onScreen: boolean; radiusPx: number }[]): void;
+    };
+    const index = sceneBody('marte').index;
+    const at = (radiusPx: number, onScreen = true) => {
+      world.updateLarge([{ index, onScreen, radiusPx }]);
+      return world.large[index];
+    };
+    expect(at(150)).toBe(0);
+    expect(at(160)).toBe(1);
+    // Entre 120 y 160 sigue grande; por debajo de 120 deja de serlo, y no vuelve hasta 160.
+    expect(at(130)).toBe(1);
+    expect(at(119)).toBe(0);
+    expect(at(130)).toBe(0);
+    expect(at(170)).toBe(1);
+    // Fuera de la pantalla no cuenta, aunque su radio sea enorme.
+    expect(at(500, false)).toBe(0);
+    h.engine.dispose();
+  });
+
+  it('la esfera cúbica de la Luna solo existe con la Luna enfocada, sin normales, y cuenta en la VRAM mientras existe (revisión de la fase 6)', async () => {
+    const h = await createHarness({ reducedMotion: true });
+    settle(h);
+    const world = internals(h).world as unknown as {
+      moonSphere: {
+        attributes: Record<string, { array: ArrayLike<number> & { byteLength: number } }>;
+        index: { array: { byteLength: number } } | null;
+        addEventListener(type: 'dispose', listener: () => void): void;
+      } | null;
+    };
+    expect(world.moonSphere).toBeNull();
+    const overview = h.engine.stats().vramMB;
+    h.engine.setView('moon');
+    settle(h);
+    const sphere = world.moonSphere;
+    if (!sphere) throw new Error('Sin esfera cúbica con la Luna enfocada');
+    expect(Object.keys(sphere.attributes).sort()).toEqual(['position', 'uv']);
+    const bytes =
+      Object.values(sphere.attributes).reduce((sum, a) => sum + a.array.byteLength, 0) +
+      (sphere.index?.array.byteLength ?? 0);
+    expect(h.engine.stats().vramMB - overview).toBeCloseTo(bytes / 1_048_576, 1);
+    let disposed = false;
+    sphere.addEventListener('dispose', () => (disposed = true));
+    h.engine.setView('system');
+    settle(h);
+    expect(world.moonSphere).toBeNull();
+    expect(disposed).toBe(true);
+    expect(h.engine.stats().vramMB).toBeCloseTo(overview, 1);
+    h.engine.dispose();
+  });
+
+  it('las normales de los casquetes polares llegan a la Luna enfocada y se sueltan al salir (revisión de la fase 6)', async () => {
+    const fake = realisticTextures();
+    const h = await createHarness(
+      { reducedMotion: true, view: 'moon', focus: 'luna' },
+      { textures: fake.textures },
+    );
+    for (let round = 0; round < 2; round++) {
+      settle(h);
+      for (let k = 0; k < 5; k++) await flush();
+    }
+    interface MoonVisual {
+      moon: {
+        uHasPoleNormals: { value: number };
+        uPoleNormalMap: { value: Texture | null };
+      } | null;
+    }
+    const moon = () =>
+      (internals(h).world as unknown as { visuals: MoonVisual[] }).visuals.find((v) => v.moon)
+        ?.moon;
+    expect(moon()?.uHasPoleNormals.value).toBe(1);
+    expect(moon()?.uPoleNormalMap.value?.name).toBe('moon-normal-poles@2k');
+    h.engine.setView('system');
+    for (let round = 0; round < 2; round++) {
+      settle(h);
+      for (let k = 0; k < 5; k++) await flush();
+    }
+    expect(moon()?.uHasPoleNormals.value).toBe(0);
+    expect(fake.released).toContain('moon-normal-poles@2k');
+    h.engine.dispose();
   });
 
   it('las nubes derivan con los frames pintados: sin pintar no se mueven, y al volver no saltan (fase 5)', async () => {

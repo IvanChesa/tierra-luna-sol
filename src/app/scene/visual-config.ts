@@ -121,11 +121,13 @@ export const VISUAL_CONFIG = {
     reliefExaggeration: 1,
     /**
      * Dentro de la sombra de la Tierra, la luz del Sol que refracta su atmósfera: rojiza (la de un
-     * eclipse de Danjon 2–3, cobriza) y, en fracción de la luz del Sol, mucho más de la real
-     * (≈ 1/10 000): ilustrativa, para que la Luna eclipsada se vea roja y no negra con la exposición
-     * de su primer plano, como en las fotos de larga exposición. Más tenue hacia el eje de la umbra.
+     * eclipse de Danjon 2–3, cobriza) y, en fracción de la luz del Sol, mucho más de la real:
+     * ilustrativa, para que la Luna eclipsada se vea roja y no negra con la exposición de su primer
+     * plano, como en las fotos de larga exposición. Más tenue hacia el eje de la umbra (`axis`: la
+     * fracción que queda en el eje), como en los eclipses en que la Luna pasa cerca de su centro:
+     * también ilustrativo.
      */
-    umbraLight: { color: '#b8502e', intensity: 0.18 },
+    umbraLight: { color: '#b8502e', intensity: 0.18, axis: 0.35 },
   },
   /** Por debajo de este radio en pantalla (px CSS), el halo de una atmósfera no se dibuja: no se vería. */
   atmosphereMinRadiusPx: 2,
