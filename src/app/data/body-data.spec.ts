@@ -1,3 +1,4 @@
+import { MOON_RADIUS_KM, SUN_RADIUS_KM } from '../ephemeris/constants';
 import { BODY_DATA } from './body-data';
 import { BODY_INDEX, PLANETS, findBody } from './body-index';
 import type { BodyId } from './body.model';
@@ -41,6 +42,12 @@ describe('body-data: datos físicos y orbitales', () => {
         expect(e >= 0 && e < 1).toBe(true);
       }
     }
+  });
+
+  it('los radios del Sol y de la Luna de los eclipses (ephemeris/constants.ts) son los del catálogo', () => {
+    // ephemeris/ no puede importar data/: este test los mantiene iguales (revisión de la fase 6).
+    expect(SUN_RADIUS_KM).toBe(BODY_DATA.sol.physical.radiusKm.value);
+    expect(MOON_RADIUS_KM).toBe(BODY_DATA.luna.physical.radiusKm.value);
   });
 
   it('ordena los planetas por distancia al Sol y pone cada luna fuera de su planeta', () => {
