@@ -91,6 +91,12 @@ export const BODY_TEXTURES: Readonly<Partial<Record<BodyId, TextureId>>> = {
   urano: 'uranus',
   neptuno: 'neptune',
   luna: 'moon',
+  // Las lunas con mosaico global del USGS (fase 7): solo con su sistema enfocado.
+  fobos: 'phobos',
+  io: 'io',
+  europa: 'europa',
+  ganimedes: 'ganymede',
+  calisto: 'callisto',
 };
 
 /**
@@ -592,19 +598,32 @@ export class World {
           textureFailed('milky-way', error);
         });
     }
+    const focusSystem = focusIndex === null ? null : this.systemOf(focusIndex);
     for (const visual of this.visuals) {
       if (!visual.textureId) continue;
       // Las del primer plano, solo el cuerpo enfocado y los que se ven grandes (C4): el planeta de una
       // luna enfocada, solo si se ve grande.
       const index = visual.body.index;
       const near = index === focusIndex || this.large[index] === 1;
+      const satellite = visual.body.kind === 'moon' && !visual.moon;
       const focusLevel =
         visual.textureId === 'earth-day'
           ? this.profile.earthDayTexture
           : visual.moon
             ? this.profile.moonTexture
-            : this.profile.focusTexture;
-      const level = near ? focusLevel : this.profile.overviewTexture;
+            : satellite
+              ? this.profile.satelliteTexture
+              : this.profile.focusTexture;
+      // Las demás lunas (fase 7), solo con su sistema enfocado; si no, su color esquemático.
+      const level = near
+        ? focusLevel
+        : satellite && focusSystem !== this.systemOf(index)
+          ? null
+          : this.profile.overviewTexture;
+      if (level === null) {
+        this.releaseTexture(visual);
+        continue;
+      }
       if (visual.relief) {
         const reliefLevel = visual.earth
           ? this.profile.earthMapsTexture
@@ -1173,6 +1192,12 @@ export class World {
       visual.uniforms.uMeridianOffset.value = meta ? meridianOffset(meta) : 0;
       const luminance = visual.textureId ? TEXTURE_MEAN_LUMINANCE[visual.textureId] : undefined;
       if (luminance !== undefined) visual.uniforms.uMeanLuminance.value = luminance;
+      // Un mosaico en gris (las lunas, fase 7), con el tono de su color esquemático: un tinte de
+      // presentación, no una medida.
+      if (meta?.grayscale && !visual.photometry?.chromaticity) {
+        const [r, g, b] = chromaticityOf(visual.uniforms.uColor.value);
+        visual.uniforms.uChromaticity.value.set(r, g, b, 1);
+      }
       if (visual.photometry?.contrast)
         visual.uniforms.uContrast.value = visual.photometry.contrast.value;
       if (visual.photometry && luminance !== undefined) {
@@ -1185,6 +1210,38 @@ export class World {
     }
     if (previous && previous.texture !== loaded.texture) releaseTexture(previous.texture);
     this.options.invalidate();
+  }
+
+  /**
+   * Suelta la textura de un cuerpo (fase 7: una luna cuyo sistema ya no está enfocado): vuelve a su
+   * color esquemático, con su albedo.
+   */
+  private releaseTexture(visual: BodyVisual): void {
+    visual.requested = null;
+    const loaded = visual.loaded;
+    if (!loaded) return;
+    visual.loaded = null;
+    if (visual.uniforms) {
+      visual.uniforms.uMap.value = null;
+      visual.uniforms.uHasMap.value = 0;
+      if (!visual.photometry?.chromaticity) visual.uniforms.uChromaticity.value.setW(0);
+      if (visual.photometry) {
+        visual.uniforms.uAlbedoScale.value = bodyAlbedoScale(
+          visual.body.id,
+          visual.photometry,
+          colorLuminance(visual.uniforms.uColor.value),
+        );
+      }
+    }
+    releaseTexture(loaded.texture);
+    this.options.invalidate();
+  }
+
+  /** El sistema de un cuerpo: el índice de su planeta si es una luna; si no, el suyo. */
+  private systemOf(index: number): number {
+    const body = this.visuals[index]?.body;
+    if (!body || body.kind !== 'moon') return index;
+    return this.visuals.find((visual) => visual.body.id === body.parent)?.body.index ?? index;
   }
 
   private assignRingTexture(level: TextureLevel, loaded: LoadedTexture | null): void {
@@ -1310,6 +1367,14 @@ export function shadowCasters(body: SceneBody, bodies: readonly SceneBody[]): nu
     .sort((a, b) => b.radiusKm - a.radiusKm)
     .slice(0, MAX_SHADOW_CASTERS)
     .map((other) => other.index);
+}
+
+/** Cromaticidad de un color (RGB lineal / su luminancia, Rec. 709): el tono, sin el brillo. */
+export function chromaticityOf(color: Color): [number, number, number] {
+  const luminance = colorLuminance(color);
+  return luminance > 0
+    ? [color.r / luminance, color.g / luminance, color.b / luminance]
+    : [1, 1, 1];
 }
 
 /** Una textura no ha llegado: no es un error fatal (queda el color esquemático), pero se anota. */

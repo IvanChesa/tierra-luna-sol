@@ -114,6 +114,8 @@ export async function tiffGeoInfo(path) {
       stripOffsets: tags[273] ?? [],
       stripByteCounts: tags[279] ?? [],
       centerLonDeg: keys[3088] ?? keys[3080] ?? 0,
+      // GeogSemiMajorAxisGeoKey (2057): el radio del cuerpo de la georreferencia (m).
+      semiMajorAxisM: keys[2057],
       pixelIsPoint: keys[1025] === 2,
       width: tags[256]?.[0],
       height: tags[257]?.[0],

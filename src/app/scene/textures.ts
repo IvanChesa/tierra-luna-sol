@@ -48,6 +48,11 @@ export type TextureId =
   | 'moon-normal'
   | 'moon-elevation'
   | 'moon-normal-poles'
+  | 'phobos'
+  | 'io'
+  | 'europa'
+  | 'ganymede'
+  | 'callisto'
   | 'milky-way';
 
 export interface TextureMeta {
@@ -79,6 +84,12 @@ export interface TextureMeta {
    * los vértices, en su nivel 0; las medias de los mipmaps redondean cada byte por su lado.
    */
   readonly mipmaps?: boolean;
+  /**
+   * Mosaico en gris (las lunas del USGS, fase 7): la escena le pone el tono del color esquemático del
+   * cuerpo (`body-colors.ts`), un tinte de presentación, no una medida; el brillo y el detalle son
+   * los del mosaico.
+   */
+  readonly grayscale?: boolean;
 }
 
 export interface TextureFile {

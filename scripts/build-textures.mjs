@@ -43,6 +43,7 @@ import {
   packElevation16,
 } from './build-relief.mjs';
 import { POLAR_EDGE_DEG, buildPolarNormalAtlas } from './lola-polar.mjs';
+import { checkMosaicProbes, loadMosaic } from './usgs-mosaic.mjs';
 
 const ROOT = new URL('../', import.meta.url);
 const SRC = new URL('assets-src/textures/', ROOT);
@@ -68,7 +69,8 @@ const RING_HEIGHT = 16;
  * la elevación de un modelo en 16 bits empaquetados en R y G (D15), sin pérdidas, para desplazar los
  * vértices (la Luna, fase 6). polar-relief: el atlas de normales de los casquetes polares de la Luna
  * (scripts/lola-polar.mjs; revisión de la fase 6): 2n × n px, el sur a la izquierda y el norte a la
- * derecha.
+ * derecha. mosaic: el mosaico global de una luna del USGS (scripts/usgs-mosaic.mjs, fase 7), con
+ * sondas de rasgos con nombre (`MOSAIC_PROBES`).
  */
 const TEXTURES = {
   mercury: { file: '8k_mercury.jpg', kind: 'color', quality: 80 },
@@ -109,6 +111,21 @@ const TEXTURES = {
   // Sus casquetes polares, por encima de 76° (revisión de la fase 6, hallazgo 1): las normales de los
   // modelos polares del LOLA, a 893 m por píxel en 2k, sin el «sol de rayas» del equirrectangular.
   'moon-normal-poles': { kind: 'polar-relief', quality: 85, maxWidth: 2048 },
+  // Las lunas (fase 7): mosaicos globales del USGS Astrogeology, en 1k y 2k (§5: ≤ 300 kB por luna
+  // en el nivel bajo). Deimos no tiene ninguno.
+  phobos: { file: 'Phobos_Viking_Mosaic_40ppd_DLRcontrol.tif', kind: 'mosaic', quality: 80 },
+  io: { file: 'Io_GalileoSSI-Voyager_Global_Mosaic_1km.tif', kind: 'mosaic', quality: 80 },
+  europa: { file: 'Europa_Voyager_GalileoSSI_global_mosaic_500m.tif', kind: 'mosaic', quality: 80 },
+  ganymede: {
+    file: 'Ganymede_Voyager_GalileoSSI_global_mosaic_1km.tif',
+    kind: 'mosaic',
+    quality: 80,
+  },
+  callisto: {
+    file: 'Callisto_Voyager_GalileoSSI_global_mosaic_1km.tif',
+    kind: 'mosaic',
+    quality: 80,
+  },
   uranus: { file: '2k_uranus.jpg', kind: 'color', quality: 82 },
   neptune: { file: '2k_neptune.jpg', kind: 'color', quality: 82 },
   'milky-way': { file: 'eso0932a.tif', kind: 'panorama', quality: 80, maxWidth: 2048 },
@@ -759,6 +776,28 @@ for (const [id, spec] of Object.entries(TEXTURES)) {
     files[id] = list;
     const slopes = await checkNormalSlopes(id, list.find((f) => f.level === '2k') ?? list[0]);
     if (slopes) reports.push(slopes);
+    console.log(
+      `${id}: ${list.map((f) => `${f.level} ${(f.bytes / 1024).toFixed(0)} kB`).join(' · ')}`,
+    );
+    continue;
+  }
+  if (spec.kind === 'mosaic') {
+    // El mosaico, a 2048 px y centrado en la longitud 0 (con sus huecos rellenos); sus sondas; y los
+    // niveles de 1k y 2k. La luminancia media, como la de los mapas de color, para el albedo (D29).
+    const mosaic = await loadMosaic(new URL(spec.file, SRC), 2048);
+    reports.push(`${id}: ${mosaic.report}`);
+    const probes = checkMosaicProbes(id, mosaic);
+    if (probes) reports.push(probes);
+    const list = [];
+    for (const [level, width] of LEVELS) {
+      if (width > 2048) continue;
+      const pipeline = sharp(mosaic.data, {
+        raw: { width: mosaic.width, height: mosaic.height, channels: 3 },
+      }).resize(width, width / 2, { fit: 'fill', kernel: 'lanczos3' });
+      list.push(await emit(id, level, pipeline, spec.quality));
+    }
+    files[id] = list;
+    luminance[id] = Number((await meanLuminance(list[0])).toFixed(4));
     console.log(
       `${id}: ${list.map((f) => `${f.level} ${(f.bytes / 1024).toFixed(0)} kB`).join(' · ')}`,
     );

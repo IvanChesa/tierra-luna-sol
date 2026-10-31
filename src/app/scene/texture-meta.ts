@@ -15,6 +15,9 @@ const surface = (alignment: string): TextureMeta => ({
   alignment,
 });
 
+/** Un mosaico en gris de una luna (fase 7): la escena lo tiñe con su color esquemático. */
+const grayMosaic = (alignment: string): TextureMeta => ({ ...surface(alignment), grayscale: true });
+
 const clouds = (alignment: string): TextureMeta => ({
   colorSpace: 'srgb',
   alpha: false,
@@ -101,6 +104,23 @@ export const TEXTURE_META: Readonly<Record<TextureId, TextureMeta>> = {
     alignment:
       'Normales de los modelos polares del LOLA (PDS, estereográfica de 75° al polo, 240 m por píxel), en los ejes de su plano. build-textures.mjs elige la orientación de cada modelo comparando su elevación con la equirrectangular entre 76° y 79° (correlación de 0,999 en el sur y 0,993 en el norte), comprueba que sus normales, llevadas al este–norte como en el shader, casan con las equirrectangulares allí y que Shackleton (Gazetteer, IAU/USGS) sale como un hoyo con las paredes hacia dentro.',
   },
+  // Las lunas (fase 7): mosaicos globales del USGS Astrogeology, alineados con su georreferencia
+  // (scripts/usgs-mosaic.mjs) y comprobados con rasgos con nombre del Gazetteer (IAU/USGS).
+  phobos: grayMosaic(
+    'Mosaico Viking de Fobos del USGS (40 px/°, control del DLR), con longitudes este de −180° a 180°: alineado con su georreferencia. Sus rasgos se ven por el sombreado, no por el brillo: sin sondas.',
+  ),
+  io: grayMosaic(
+    'Mosaico Voyager–Galileo SSI de Ío del USGS (1 km), alineado con su georreferencia. Sonda: Loki Patera (Gazetteer, Feature/3459), más oscura que su entorno; con el mapa girado 180° o reflejado, falla.',
+  ),
+  europa: grayMosaic(
+    'Mosaico Voyager–Galileo SSI de Europa del USGS (500 m), alineado con su georreferencia. Sondas: Pwyll (Feature/4878), clara, y Thrace Macula (Feature/5984), oscura; con el mapa girado 180° o reflejado, falla alguna.',
+  ),
+  ganymede: grayMosaic(
+    'Mosaico Voyager–Galileo SSI de Ganímedes del USGS (1 km), alineado con su georreferencia. Sondas: Osiris (Feature/4509) y Tros (Feature/6091), claras; con el mapa girado 180° o reflejado, falla alguna.',
+  ),
+  callisto: grayMosaic(
+    'Mosaico Voyager–Galileo SSI de Calisto del USGS (1 km), alineado con su georreferencia. Sondas: Burr (Feature/927) y Lofn (Feature/3451), claras; con el mapa girado 180° o reflejado, falla alguna.',
+  ),
   'milky-way': {
     colorSpace: 'srgb',
     alpha: false,

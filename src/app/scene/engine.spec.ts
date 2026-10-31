@@ -1378,6 +1378,69 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     }
   });
 
+  it('las lunas con mosaico, solo con su sistema enfocado: a 1k con el planeta, a su nivel enfocadas y sueltas al salir, con su tinte (fase 7)', async () => {
+    const requests: string[] = [];
+    const released: string[] = [];
+    const source = {
+      load: (id: TextureId, level: TextureLevel): Promise<LoadedTexture> => {
+        const texture = new Texture();
+        texture.name = `${id}@${level}`;
+        texture.addEventListener('dispose', () => released.push(texture.name));
+        requests.push(texture.name);
+        return Promise.resolve({
+          texture,
+          file: { level, path: `${id}.webp`, width: 4, height: 2, bytes: 1 },
+          vramBytes: 32,
+        });
+      },
+    };
+    const h = await createHarness(
+      { reducedMotion: true },
+      { textures: () => ({ source, meta: TEXTURE_META }) },
+    );
+    const step = async () => {
+      for (let round = 0; round < 2; round++) {
+        settle(h);
+        for (let k = 0; k < 5; k++) await flush();
+      }
+    };
+    await step();
+    // En la vista general, ninguna luna con mosaico; la Luna, sí (su 1k).
+    expect(requests.filter((r) => r.startsWith('io@'))).toEqual([]);
+    expect(requests).toContain('moon@1k');
+    // Con Júpiter enfocado, sus galileanas a 1k; Fobos, no.
+    h.engine.focus('jupiter');
+    await step();
+    for (const id of ['io', 'europa', 'ganymede', 'callisto'])
+      expect(requests).toContain(`${id}@1k`);
+    expect(requests.filter((r) => r.startsWith('phobos@'))).toEqual([]);
+    interface TintVisual {
+      body: { id: string };
+      uniforms: { uHasMap: { value: number }; uChromaticity: { value: Vector4 } } | null;
+    }
+    const io = () =>
+      (internals(h).world as unknown as { visuals: TintVisual[] }).visuals.find(
+        (v) => v.body.id === 'io',
+      )?.uniforms;
+    expect(io()?.uHasMap.value).toBe(1);
+    // El tinte del color esquemático (el mosaico es gris): Ío, amarillento (más rojo que azul).
+    const tint = io()?.uChromaticity.value;
+    expect(tint?.w).toBe(1);
+    expect(tint?.x ?? 0).toBeGreaterThan(tint?.z ?? 0);
+    // Ío enfocada: su nivel del primer plano.
+    h.engine.focus('io');
+    await step();
+    expect(requests).toContain(`io@${QUALITY_PROFILES.high.satelliteTexture}`);
+    // De vuelta a la vista general: sueltas, con su color esquemático y sin tinte.
+    h.engine.focus(null);
+    await step();
+    expect(released).toContain('io@1k');
+    expect(released).toContain('callisto@1k');
+    expect(io()?.uHasMap.value).toBe(0);
+    expect(io()?.uChromaticity.value.w).toBe(0);
+    h.engine.dispose();
+  });
+
   it('C4: la VRAM de las vistas Tierra y Luna en su peor caso (cada una con la otra al fondo), dentro de §5 en alto y en bajo (fase 6)', async () => {
     const vram = async (view: 'earth' | 'moon', quality: 'high' | 'low') => {
       const fake = realisticTextures();

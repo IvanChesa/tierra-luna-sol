@@ -32,6 +32,9 @@ const MOLA_PAGE = 'https://pds-geosciences.wustl.edu/missions/mgs/megdr.html';
 const LOLA_POLAR =
   'https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/data/lola_gdr/polar/img/';
 const LOLA_POLAR_PAGE = 'https://pds-geosciences.wustl.edu/missions/lro/lola.htm';
+/** Mosaicos globales de las lunas (fase 7): el bucket del USGS Astrogeology y sus páginas. */
+const USGS_MOSAIC = 'https://planetarymaps.usgs.gov/mosaic/';
+const ASTROPEDIA = 'https://astrogeology.usgs.gov/search/map/';
 const MERCURY_DEM =
   'https://planetarymaps.usgs.gov/mosaic/Mercury_Messenger_USGS_DEM_Global_665m_v2.tif';
 const MERCURY_DEM_PAGE =
@@ -67,6 +70,24 @@ const ASSETS = [
   ],
   // Vía Láctea: panorama de 6000 × 3000 px en coordenadas galácticas (el original completo).
   ['eso0932a.tif', ESO_MILKY_WAY, ESO_MILKY_WAY_PAGE],
+  // Las lunas (fase 7): mosaicos globales del USGS Astrogeology, en dominio público (FUENTES.md, uno a
+  // uno). Deimos no tiene ninguno: se queda con su color esquemático.
+  ...[
+    ['Phobos_Viking_Mosaic_40ppd_DLRcontrol.tif', 'phobos_viking_global_mosaic_5m'],
+    ['Io_GalileoSSI-Voyager_Global_Mosaic_1km.tif', 'io_voyager_galileo_ssi_global_mosaic_1km'],
+    [
+      'Europa_Voyager_GalileoSSI_global_mosaic_500m.tif',
+      'europa_voyager_galileo_ssi_global_mosaic_500m',
+    ],
+    [
+      'Ganymede_Voyager_GalileoSSI_global_mosaic_1km.tif',
+      'ganymede_voyager_galileo_ssi_global_mosaic_1km',
+    ],
+    [
+      'Callisto_Voyager_GalileoSSI_global_mosaic_1km.tif',
+      'callisto_galileo_voyager_global_mosaic_1km',
+    ],
+  ].map(([name, page]) => [name, USGS_MOSAIC + name, ASTROPEDIA + page]),
 ];
 
 /** Modelos de elevación (fase 3b): a assets-src/elevation/, con su propio manifiesto. */

@@ -388,6 +388,80 @@ export const TEXTURE_FILES: TextureFiles = {
       bytes: 218694,
     },
   ],
+  phobos: [
+    {
+      level: '1k',
+      path: 'textures/1k/phobos.5e8bc5c417.webp',
+      width: 1024,
+      height: 512,
+      bytes: 86810,
+    },
+    {
+      level: '2k',
+      path: 'textures/2k/phobos.943905ad7f.webp',
+      width: 2048,
+      height: 1024,
+      bytes: 264486,
+    },
+  ],
+  io: [
+    { level: '1k', path: 'textures/1k/io.1dbb741ee3.webp', width: 1024, height: 512, bytes: 34348 },
+    {
+      level: '2k',
+      path: 'textures/2k/io.47f8b2d595.webp',
+      width: 2048,
+      height: 1024,
+      bytes: 91390,
+    },
+  ],
+  europa: [
+    {
+      level: '1k',
+      path: 'textures/1k/europa.02ddb4d479.webp',
+      width: 1024,
+      height: 512,
+      bytes: 83426,
+    },
+    {
+      level: '2k',
+      path: 'textures/2k/europa.07d92945f8.webp',
+      width: 2048,
+      height: 1024,
+      bytes: 324830,
+    },
+  ],
+  ganymede: [
+    {
+      level: '1k',
+      path: 'textures/1k/ganymede.5db21c8501.webp',
+      width: 1024,
+      height: 512,
+      bytes: 48994,
+    },
+    {
+      level: '2k',
+      path: 'textures/2k/ganymede.5dcb662052.webp',
+      width: 2048,
+      height: 1024,
+      bytes: 195022,
+    },
+  ],
+  callisto: [
+    {
+      level: '1k',
+      path: 'textures/1k/callisto.1032e37fe0.webp',
+      width: 1024,
+      height: 512,
+      bytes: 51400,
+    },
+    {
+      level: '2k',
+      path: 'textures/2k/callisto.cb77073d70.webp',
+      width: 2048,
+      height: 1024,
+      bytes: 218320,
+    },
+  ],
   uranus: [
     {
       level: '1k',
@@ -451,6 +525,11 @@ export const TEXTURE_MEAN_LUMINANCE: Readonly<Partial<Record<TextureId, number>>
   mars: 0.1819,
   jupiter: 0.4093,
   saturn: 0.6154,
+  phobos: 0.2738,
+  io: 0.1545,
+  europa: 0.3132,
+  ganymede: 0.0753,
+  callisto: 0.048,
   uranus: 0.5649,
   neptune: 0.1231,
 };
