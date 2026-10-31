@@ -84,6 +84,8 @@ const SHOTS = [
     '/?captura=1&cuerpo=saturno&fecha=2013-07-19T21:30Z&fase=176&latitud=-17',
     SQUARE,
   ],
+  // Titán en color natural, como PIA06230 (Cassini, 16-04-2005): fase de 56° (fase 7).
+  ['titan-cassini-2005', '/?captura=1&cuerpo=titan&fecha=2005-04-16T12:00Z&fase=56', SQUARE],
   // Sombra del planeta sobre los anillos: en 2017, el Sol a unos 26° sobre los anillos; la cámara, a
   // 60° de fase y 30° por encima (como las vistas de Cassini desde latitudes altas).
   [

@@ -1,5 +1,5 @@
 // Capturas de la fase 7, entrega 7.a (las lunas con su mosaico), deterministas (?captura=1):
-// - Una hoja de contactos con las 13 lunas que tienen mosaico global, cada una sola (`aislado=1`) y
+// - Una hoja de contactos con las 12 lunas que tienen mosaico global, cada una sola (`aislado=1`) y
 //   con la luz de las miniaturas (fase de 30°, desde 15° sobre la eclíptica), con su nombre; y la
 //   misma hoja «antes», con su color esquemático (sus texturas, bloqueadas).
 // - Algunas lunas delante de su planeta (`detras=`), en escritorio y en móvil.
@@ -15,7 +15,10 @@ const dir = new URL(`../${out.replace(/\/?$/, '/')}`, import.meta.url);
 await mkdir(dir, { recursive: true });
 const file = (name) => fileURLToPath(new URL(name, dir));
 
-/** [id del catálogo, nombre, textura]: las lunas con mosaico (scene/world.ts, BODY_TEXTURES). */
+/**
+ * [id del catálogo, nombre, textura]: las lunas con mosaico (scene/world.ts, BODY_TEXTURES). Titán no
+ * lleva (su color y su halo, frente a PIA06230: `titan-cassini-2005` de capture-realism.mjs).
+ */
 const MOONS = [
   ['fobos', 'Fobos', 'phobos'],
   ['io', 'Ío', 'io'],
@@ -27,7 +30,6 @@ const MOONS = [
   ['tetis', 'Tetis', 'tethys'],
   ['dione', 'Dione', 'dione'],
   ['rea', 'Rea', 'rhea'],
-  ['titan', 'Titán', 'titan'],
   ['japeto', 'Jápeto', 'iapetus'],
   ['triton', 'Tritón', 'triton'],
 ];
@@ -90,7 +92,7 @@ async function moonCell(browser, id, blockTexture) {
     .toBuffer();
 }
 
-/** La hoja de contactos de las 13 lunas, con o sin sus texturas. */
+/** La hoja de contactos de las lunas con mosaico, con o sin sus texturas. */
 async function contactSheet(browser, name, withTextures) {
   const rows = Math.ceil(MOONS.length / COLUMNS);
   const width = COLUMNS * CELL;
