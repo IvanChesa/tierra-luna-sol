@@ -2,7 +2,7 @@
 
 - **Rama:** `fase-7-lunas-escala-real`
 - **Fecha:** 2026-10-31
-- **Estado:** en curso (entrega 7.a)
+- **Estado:** en curso (entregas 7.a, 7.b y 7.c hechas; 7.d, los anillos de D36)
 
 ## Plan
 La fase es grande: va por entregas, con este informe al día al final de cada una. Toca dos cosas que ya existen y hay que comprobar antes de rehacer nada:
@@ -70,6 +70,18 @@ La fase es grande: va por entregas, con este informe al día al final de cada un
 Fuera de alcance, por el plan: formas reales de las lunas irregulares (backlog 3) y sombras del relieve (backlog 11).
 
 ## Avance (en curso)
+- **7.a · Las lunas, con su superficie (hecho: `0abb56f`, `36a5c64`, `99844f2`, `bd62ef9`, `355c322`):**
+  - comprobado luna a luna en Astropedia, en su bucket y en la tabla de productos del USGS (https://fdp.astrogeology.usgs.gov/fdp/saturn/ y …/uranus/): **12 lunas con mosaico global** (Fobos, las cuatro galileanas, Encélado, Tetis, Dione, Rea, Jápeto y Tritón, del USGS; Mimas, que Astropedia no tiene, del mapa final del DLR en el PDS, COISS_3006). Sin mosaico: Deimos, Proteo y las cinco de Urano (el USGS solo tiene sus mapas aerografiados en PDF, del hemisferio sur);
+  - `scripts/usgs-mosaic.mjs` lleva cada mosaico a la convención de la escena con su georreferencia (GeoTIFF) o su etiqueta PDS3 (Mimas), rellena los huecos con el gris medio (Tritón: el 38,4 %, el norte que no vio Voyager 2) y comprueba **sondas del Gazetteer** que fallan con el mapa girado 180° o reflejado: de brillo donde hay manchas (Ío, Europa, Ganímedes, Calisto, Tritón) y, en las lunas de Saturno (normalizadas en brillo y dominadas por el sombreado), **de borde de cráter**, elegidas entre los cráteres del Gazetteer por cómo discriminan (con todos los cráteres grandes, el borde se detecta en el 63 % de los de Rea en su sitio frente al 5 % girado y el 3 % reflejado; Encélado 52/11/2 %, Dione 31/0/3 %, Tetis 23/5/0 %, Jápeto 22/6/12 %, Mimas 12/0/3 %);
+  - test de que, con la orientación de la escena, la longitud 0 de cada mapa mira a su planeta (< 0,01°) y el hemisferio delantero cae a 90° O (a 90° E en Tritón, retrógrada: su polo IAU es el contrario a su momento angular);
+  - carga solo con su sistema enfocado (test); en el nivel bajo, la luna más pesada pesa 170 kB (§5: ≤ 300);
+  - **Titán, sin superficie:** su mosaico del USGS (ISS, 938 nm) es la superficie en una ventana del metano; en luz visible la neblina la oculta (PIA06230, color natural, fase de 56°: un globo naranja liso). Su color, el de esa foto; su halo, tenue y casi neutro, con la caída medida en ella (`scripts/measure-titan-halo.mjs`: a 1,02–1,05 radios, 0,0083 del brillo del borde del disco; en la foto, 0,010);
+  - **Ío**, con el color de la foto en color real PIA02308 (1,154 · 1,026 · 0,284), no con el tinte esquemático; las demás, en gris con el tinte de su color esquemático (dicho como tal);
+  - miniaturas regeneradas con sus mosaicos y desde 15° sobre la eclíptica; `FUENTES.md`, `/creditos` y `referencias.md`, al día.
+- **7.c · Escala real (hecho: `b6de0a3`, `b517fc0`, `e47ddc9`):**
+  - el selector «Escala» de «Controles +», con su anuncio y la URL (`escala=real`), con un e2e; la transición la anima el motor (directa con movimiento reducido; tests de continuidad de la fase 2);
+  - medidas (`scripts/measure-real-scale.mjs`, RTX 3060): el cuerpo enfocado no se mueve en pantalla (temblor 0, salto 0, radio constante; Fobos y Neptuno, a 1 h/s y a 1 día/s o 30 días/s); un vecino en movimiento tiembla 0,035 px (Fobos con Marte) y 0,020 px (Tritón con Neptuno); el búfer de profundidad distingue superficies a 1,3 m junto a Fobos, 10 m en Marte detrás, 188 m en Neptuno y 500 m en Tritón;
+  - capturas en escritorio y móvil: la vista general, Fobos con Marte detrás, Neptuno con Tritón detrás y el selector abierto.
 - **7.b · Sombras generalizadas (hecho, `925533d`):**
   - la sombra del shader (D20) recibe como parámetros el cuerpo que tapa y el Sol;
   - con `TLS_SHADOWS`, cada planeta recibe las de sus cuatro lunas más grandes (en Júpiter, las galileanas) y cada luna, la de su planeta, con la geometría real del estado (float64);
@@ -77,8 +89,8 @@ Fuera de alcance, por el plan: formas reales de las lunas irregulares (backlog 3
   - test del motor: los uniformes reproducen esa geometría;
   - las predicciones del IMCCE se descartaron como fixture: su aviso legal pide autorización expresa para reproducir sus datos.
   - En la captura del tránsito, el encuadre deja a Calisto (a 26 radios de Júpiter) detrás de la cámara y a Ío casi encima. Es la perspectiva de una cámara a unos 6 radios, no la de un telescopio. Las sombras caen donde las vio el Hubble.
-- **7.c · Escala real (en curso, `b6de0a3`):** un selector «Escala» (Ilustrativa / Real) en «Controles +», con su anuncio, que cambia la escala y la URL (`escala=real`).
+
 - **7.d · R2 (hecho, `ee6d9cb`):**
   - un lóbulo hacia delante estrecho e intenso en la neblina de Saturno (g = 0,9 y refuerzo 60, ajuste visual con PIA17172), con su test;
   - el halo de las atmósferas decide si está iluminado con la normal del limbo de un observador lejano, como el disco: antes, a pocos radios y a contraluz, caía en el lado nocturno. La vista Tierra y la captura de EPIC apenas cambian (diferencia media de 0,7 a 1 nivel, en el limbo).
-- **7.a y los anillos (D36):** investigando las fuentes (mosaicos del USGS luna a luna; color de los anillos y perfil de τ del PDS).
+- **Los anillos (D36):** investigando las fuentes (color de los anillos y perfil de τ del PDS).
