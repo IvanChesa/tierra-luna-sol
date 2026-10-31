@@ -229,12 +229,6 @@ export const MOSAIC_PROBES = {
     { name: 'Valdebron', lat: 29.6, lon: -104.4, diameterKm: 49, feature: 14489 },
     { name: 'Dapamort', lat: 36.6, lon: -84.9, diameterKm: 49, feature: 14462 },
   ],
-  // Titán, en el infrarrojo cercano del ISS (938 nm): Xanadu, clara; las llanuras de dunas, oscuras.
-  titan: [
-    { name: 'Xanadu', lat: -15, lon: -100, radius: 12, sign: 1, feature: 6958 },
-    { name: 'Shangri La', lat: -10, lon: -165, radius: 8, sign: -1, feature: 6990 },
-    { name: 'Belet', lat: -5, lon: 105, radius: 8, sign: -1, feature: 6984 },
-  ],
   // Tritón, en su canal naranja: una mancha oscura y dos depresiones oscuras del hemisferio que vio
   // Voyager 2 (giradas o reflejadas caen en el hueco del norte o en terreno sin ellas).
   triton: [

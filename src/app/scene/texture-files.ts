@@ -542,22 +542,6 @@ export const TEXTURE_FILES: TextureFiles = {
       bytes: 332764,
     },
   ],
-  titan: [
-    {
-      level: '1k',
-      path: 'textures/1k/titan.96bcbb0e2b.webp',
-      width: 1024,
-      height: 512,
-      bytes: 47686,
-    },
-    {
-      level: '2k',
-      path: 'textures/2k/titan.0b66c7d611.webp',
-      width: 2048,
-      height: 1024,
-      bytes: 140682,
-    },
-  ],
   iapetus: [
     {
       level: '1k',
@@ -663,7 +647,6 @@ export const TEXTURE_MEAN_LUMINANCE: Readonly<Partial<Record<TextureId, number>>
   tethys: 0.2008,
   dione: 0.2234,
   rhea: 0.162,
-  titan: 0.2421,
   iapetus: 0.1906,
   triton: 0.3187,
   uranus: 0.5649,

@@ -715,18 +715,29 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     h.engine.dispose();
   });
 
-  it('con la cámara dentro del halo de Titán (1,2 radios), se pintan sus caras interiores', async () => {
+  it('el halo de Titán no desaparece al acercarse: con la cámara dentro de su esfera se pintarían sus caras interiores', async () => {
     const h = await createHarness({ reducedMotion: true, focus: 'titan' });
     settle(h);
     const shell = () =>
       internals(h).world.scene.getObjectByName('titan-atmosphere') as unknown as {
         material: { side: number };
+        visible: boolean;
+        scale: { x: number };
       };
     expect(shell().material.side).toBe(FrontSide);
-    // Lo más cerca que deja la cámara (1,12 radios): dentro de la esfera del halo.
+    // Lo más cerca que deja la cámara (1,12 radios). Desde la fase 7 (el halo de PIA06230), la esfera
+    // del halo mide 1,085 radios: la cámara se queda fuera y el halo, visible por delante.
     for (let k = 0; k < 40; k++) h.engine.zoomBy(0.5);
     settle(h);
-    expect(shell().material.side).toBe(BackSide);
+    const titan = internals(h).world.scene.getObjectByName('titan') as unknown as {
+      position: Vector3;
+      scale: Vector3;
+    };
+    const world = internals(h).world as unknown as { camera: { position: Vector3 } };
+    const distance = world.camera.position.distanceTo(titan.position);
+    const inside = distance < titan.scale.x * shell().scale.x;
+    expect(shell().visible).toBe(true);
+    expect(shell().material.side).toBe(inside ? BackSide : FrontSide);
     h.engine.dispose();
   });
 
@@ -1421,44 +1432,66 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
       body: { id: string };
       uniforms: { uHasMap: { value: number }; uChromaticity: { value: Vector4 } } | null;
     }
-    const io = () =>
+    const uniformsOf = (id: string) =>
       (internals(h).world as unknown as { visuals: TintVisual[] }).visuals.find(
-        (v) => v.body.id === 'io',
+        (v) => v.body.id === id,
       )?.uniforms;
-    expect(io()?.uHasMap.value).toBe(1);
-    // El tinte del color esquemático (el mosaico es gris): Ío, amarillento (más rojo que azul).
-    const tint = io()?.uChromaticity.value;
+    expect(uniformsOf('europa')?.uHasMap.value).toBe(1);
+    // El tinte del color esquemático (el mosaico es gris): Europa, beis (más rojo que azul).
+    const tint = uniformsOf('europa')?.uChromaticity.value;
     expect(tint?.w).toBe(1);
     expect(tint?.x ?? 0).toBeGreaterThan(tint?.z ?? 0);
+    // Ío, con el color medido en PIA02308 (data/photometry.ts), no con el esquemático.
+    const measured = BODY_PHOTOMETRY.io.chromaticity?.rgb ?? [0, 0, 0];
+    expect(uniformsOf('io')?.uChromaticity.value.x).toBeCloseTo(measured[0], 6);
     // Ío enfocada: su nivel del primer plano.
     h.engine.focus('io');
     await step();
     expect(requests).toContain(`io@${QUALITY_PROFILES.high.satelliteTexture}`);
-    // De vuelta a la vista general: sueltas, con su color esquemático y sin tinte.
+    // De vuelta a la vista general: sueltas, con su color esquemático, sin tinte (Europa) o con el
+    // color medido (Ío), que vale también para el color esquemático.
     h.engine.focus(null);
     await step();
     expect(released).toContain('io@1k');
     expect(released).toContain('callisto@1k');
-    expect(io()?.uHasMap.value).toBe(0);
-    expect(io()?.uChromaticity.value.w).toBe(0);
-    // Con Saturno, sus siete lunas; Titán, con el contraste de su mosaico (la superficie bajo la
-    // neblina, muy atenuada), que vuelve a 1 con su color esquemático.
+    expect(uniformsOf('europa')?.uHasMap.value).toBe(0);
+    expect(uniformsOf('europa')?.uChromaticity.value.w).toBe(0);
+    expect(uniformsOf('io')?.uHasMap.value).toBe(0);
+    expect(uniformsOf('io')?.uChromaticity.value.w).toBe(1);
+    // Con Saturno, sus seis lunas heladas; Titán no lleva textura (la de su superficie no se ve en luz
+    // visible): su color, el medido en PIA06230.
     h.engine.focus('saturno');
     await step();
-    for (const id of ['mimas', 'enceladus', 'tethys', 'dione', 'rhea', 'titan', 'iapetus'])
+    for (const id of ['mimas', 'enceladus', 'tethys', 'dione', 'rhea', 'iapetus'])
       expect(requests).toContain(`${id}@1k`);
-    const titan = () =>
-      (
-        internals(h).world as unknown as {
-          visuals: { body: { id: string }; uniforms: { uContrast: { value: number } } | null }[];
-        }
-      ).visuals.find((v) => v.body.id === 'titan')?.uniforms;
-    expect(titan()?.uContrast.value).toBe(BODY_PHOTOMETRY.titan.contrast?.value);
-    expect(titan()?.uContrast.value).toBeLessThan(1);
+    expect(requests.filter((r) => r.startsWith('titan@'))).toEqual([]);
     h.engine.focus(null);
     await step();
-    expect(released).toContain('titan@1k');
-    expect(titan()?.uContrast.value).toBe(1);
+    expect(released).toContain('rhea@1k');
+    h.engine.dispose();
+  });
+
+  it('el halo de Titán, con su propio color (casi neutro) y el disco, con el naranja de su neblina (fase 7)', async () => {
+    const h = await createHarness({ reducedMotion: true });
+    interface HaloVisual {
+      body: { id: string };
+      uniforms: { uHazeColor: { value: Vector4 }; uChromaticity: { value: Vector4 } } | null;
+      atmosphere: { uniforms: { uHazeColor: { value: Vector4 } } } | null;
+    }
+    const visuals = (internals(h).world as unknown as { visuals: HaloVisual[] }).visuals;
+    const titan = visuals.find((v) => v.body.id === 'titan');
+    const venus = visuals.find((v) => v.body.id === 'venus');
+    const halo = BODY_PHOTOMETRY.titan.halo;
+    expect(halo).toBeDefined();
+    const color = titan?.atmosphere?.uniforms.uHazeColor.value;
+    expect(color?.x).toBeCloseTo((halo?.chromaticity[0] ?? 0) * (halo?.gain ?? 0), 6);
+    expect(color?.z).toBeCloseTo((halo?.chromaticity[2] ?? 0) * (halo?.gain ?? 0), 6);
+    // La neblina del disco sigue siendo naranja (más rojo que azul), y su color, el de la foto.
+    const disk = titan?.uniforms?.uHazeColor.value;
+    expect(disk?.x ?? 0).toBeGreaterThan(3 * (disk?.z ?? 0));
+    expect(titan?.uniforms?.uChromaticity.value.w).toBe(1);
+    // Los demás comparten el color de su neblina con el halo (el mismo uniforme).
+    expect(venus?.atmosphere?.uniforms.uHazeColor).toBe(venus?.uniforms?.uHazeColor);
     h.engine.dispose();
   });
 

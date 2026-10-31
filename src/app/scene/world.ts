@@ -29,6 +29,7 @@ import {
   Texture,
   Uniform,
   Vector3,
+  Vector4,
 } from 'three';
 import { BODY_DATA } from '../data/body-data';
 import type { BodyId } from '../data/body.model';
@@ -102,7 +103,6 @@ export const BODY_TEXTURES: Readonly<Partial<Record<BodyId, TextureId>>> = {
   tetis: 'tethys',
   dione: 'dione',
   rea: 'rhea',
-  titan: 'titan',
   japeto: 'iapetus',
   triton: 'triton',
 };
@@ -1152,11 +1152,23 @@ export class World {
   ): BodyVisual['atmosphere'] {
     const scaleHeight = photometry.haloScaleHeight;
     if (!photometry.haze || !scaleHeight) return null;
+    // El halo de Titán (fase 7) tiene su color y su intensidad; los demás, los de la neblina del disco.
+    const halo = photometry.halo;
+    const hazeColor = halo
+      ? new Uniform(
+          new Vector4(
+            halo.chromaticity[0] * halo.gain,
+            halo.chromaticity[1] * halo.gain,
+            halo.chromaticity[2] * halo.gain,
+            body.uHazeColor.value.w,
+          ),
+        )
+      : body.uHazeColor;
     const { material, uniforms } = createAtmosphereMaterial({
       uRadius: new Uniform(1),
       uScaleHeight: new Uniform(scaleHeight),
       uHaze: body.uHaze,
-      uHazeColor: body.uHazeColor,
+      uHazeColor: hazeColor,
       uSunDirection: body.uSunDirection,
     });
     const shell = new Mesh(this.coarseSphere, material);

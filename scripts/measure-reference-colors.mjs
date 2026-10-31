@@ -57,6 +57,20 @@ const DISCS = [
     radius: 88,
     note: 'Irwin et al. (2024), imagen reprocesada (abajo a la derecha): el 60 % del disco (radio 147 px)',
   },
+  {
+    id: 'io',
+    url: 'https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia02/pia02308/PIA02308.jpg',
+    center: [1397, 1397],
+    radius: 833,
+    note: 'Galileo, mosaico global en color real del 03-07-1999 (PIA02308, NASA/JPL/University of Arizona; fase 7): el 60 % del disco (radio 1389 px)',
+  },
+  {
+    id: 'titan',
+    url: 'https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia06/pia06230/PIA06230.jpg',
+    center: [380, 385],
+    radius: 163,
+    note: 'Cassini, 16-04-2005, color natural con una fase de 56° (PIA06230, NASA/JPL/Space Science Institute; fase 7): el 60 % del disco (radio 272 px)',
+  },
 ];
 
 /**

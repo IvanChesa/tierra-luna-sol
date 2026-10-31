@@ -137,9 +137,6 @@ export const TEXTURE_META: Readonly<Record<TextureId, TextureMeta>> = {
   rhea: grayMosaic(
     'Mosaico Cassini–Voyager de Rea del USGS (417 m), alineado con su georreferencia. Sondas de borde: Pachacamac (Feature/14683), Inmar (Feature/14672) y Pouliuli (Feature/14685); con el mapa girado 180° o reflejado, falla alguna.',
   ),
-  titan: grayMosaic(
-    'Mosaico Cassini ISS de Titán del USGS (4 km, 938 nm: la superficie bajo la neblina), alineado con su georreferencia. Sondas: Xanadu (Feature/6958), clara, y Shangri La (Feature/6990) y Belet (Feature/6984), oscuras; con el mapa girado 180° o reflejado, falla alguna.',
-  ),
   iapetus: grayMosaic(
     'Mosaico Cassini–Voyager de Jápeto del USGS (783 m), alineado con su georreferencia. Sondas de borde: Valdebron (Feature/14489) y Dapamort (Feature/14462); con el mapa girado 180° o reflejado, falla alguna.',
   ),

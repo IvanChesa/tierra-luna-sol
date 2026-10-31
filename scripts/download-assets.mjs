@@ -79,7 +79,8 @@ const ASSETS = [
   // Vía Láctea: panorama de 6000 × 3000 px en coordenadas galácticas (el original completo).
   ['eso0932a.tif', ESO_MILKY_WAY, ESO_MILKY_WAY_PAGE],
   // Las lunas (fase 7): mosaicos globales del USGS Astrogeology, en dominio público (FUENTES.md, uno a
-  // uno). Deimos, Proteo y las cinco de Urano no tienen ninguno: se quedan con su color esquemático.
+  // uno). Deimos, Proteo y las cinco de Urano no tienen ninguno: se quedan con su color esquemático. El
+  // de Titán (ISS, 938 nm) es la superficie bajo su neblina, invisible en luz visible: no se usa.
   ...[
     ['Phobos_Viking_Mosaic_40ppd_DLRcontrol.tif', 'phobos_viking_global_mosaic_5m'],
     ['Io_GalileoSSI-Voyager_Global_Mosaic_1km.tif', 'io_voyager_galileo_ssi_global_mosaic_1km'],
@@ -99,7 +100,6 @@ const ASSETS = [
     ['Tethys_Cassini_mosaic_global_293m.tif', 'tethys_cassini_global_mosaic_293m'],
     ['Dione_Cassini_Voyager_mosaic_global_154m.tif', 'dione_cassini_voyager_global_mosaic_154m'],
     ['Rhea_Cassini_Voyager_mosaic_global_417m.tif', 'rhea_cassini_voyager_global_mosaic_417m'],
-    ['Titan_ISS_P19658_Mosaic_Global_4km.tif', 'titan_cassini_iss_global_mosaic_4005m'],
     [
       'Iapetus_Cassini_Voyager_mosaic_global_783m.tif',
       'iapetus_cassini_voyager_global_mosaic_803m',

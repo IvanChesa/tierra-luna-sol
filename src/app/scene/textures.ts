@@ -58,7 +58,6 @@ export type TextureId =
   | 'tethys'
   | 'dione'
   | 'rhea'
-  | 'titan'
   | 'iapetus'
   | 'triton'
   | 'milky-way';
@@ -93,9 +92,10 @@ export interface TextureMeta {
    */
   readonly mipmaps?: boolean;
   /**
-   * Mosaico en gris (las lunas del USGS, fase 7): la escena le pone el tono del color esquemático del
-   * cuerpo (`body-colors.ts`), un tinte de presentación, no una medida; el brillo y el detalle son
-   * los del mosaico.
+   * Mosaico en gris (las lunas del USGS, fase 7): la escena le pone el color medido del cuerpo si su
+   * fotometría lo da (Ío, `data/photometry.ts`) y, si no, el tono de su color esquemático
+   * (`body-colors.ts`), un tinte de presentación, no una medida; el brillo y el detalle son los del
+   * mosaico.
    */
   readonly grayscale?: boolean;
 }

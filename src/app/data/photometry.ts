@@ -44,6 +44,16 @@ export interface BodyPhotometry {
    */
   readonly contrast?: { readonly value: number; readonly note: string };
   /**
+   * El halo por encima del limbo, si no es como la neblina del disco (Titán, fase 7): su color
+   * (cromaticidad, RGB lineal / luminancia) y su intensidad respecto a la de la neblina, ajustados a
+   * una foto (el disco conserva `hazeColor`).
+   */
+  readonly halo?: {
+    readonly chromaticity: readonly [number, number, number];
+    readonly gain: number;
+    readonly source: string;
+  };
+  /**
    * ¿Se calibra el brillo con el albedo geométrico? En la Tierra, no hasta la fase 5: su albedo
    * (0,434) incluye las nubes, que todavía no se dibujan.
    */
@@ -305,7 +315,16 @@ export const BODY_PHOTOMETRY: Readonly<Record<Exclude<BodyId, 'sol'>, BodyPhotom
   },
   fobos: airless(),
   deimos: airless(),
-  io: airless(),
+  io: {
+    ...airless(),
+    // Su mosaico es en gris (fase 7): toma este color en lugar del esquemático.
+    chromaticity: {
+      rgb: [1.154, 1.026, 0.284],
+      mix: 1,
+      source:
+        'Media del 60 % del disco en el mosaico global de Ío en color real de Galileo del 03-07-1999 (PIA02308, NASA/JPL/University of Arizona; https://photojournal.jpl.nasa.gov/catalog/PIA02308), con scripts/measure-reference-colors.mjs',
+    },
+  },
   europa: airless(),
   ganimedes: airless(),
   calisto: airless(),
@@ -319,13 +338,22 @@ export const BODY_PHOTOMETRY: Readonly<Record<Exclude<BodyId, 'sol'>, BodyPhotom
     photometry: giant(0.9),
     haze: haze(0.4, 2.5, 0.35, 3),
     hazeColor: '#e3a95c',
-    haloScaleHeight: 0.04,
-    contrast: {
-      value: 0.2,
-      note: 'Su mosaico (fase 7) es la superficie vista por el ISS de Cassini a 938 nm, en una ventana del metano; en luz visible, la neblina la oculta casi por completo. Se deja al 20 % de su contraste, como una insinuación de las dunas oscuras y de Xanadu: ajuste visual, ilustrativo.',
+    // La caída del halo de PIA06230: diez veces menos brillo de 1,02–1,05 a 1,05–1,1 radios (fase 7).
+    haloScaleHeight: 0.017,
+    chromaticity: {
+      rgb: [1.478, 0.945, 0.137],
+      mix: 1,
+      source:
+        'Media del 60 % del disco en la foto en color natural de Cassini del 16-04-2005, con una fase de 56° (PIA06230, NASA/JPL/Space Science Institute; https://photojournal.jpl.nasa.gov/catalog/PIA06230), con scripts/measure-reference-colors.mjs',
+    },
+    halo: {
+      chromaticity: [0.97, 1.02, 0.85],
+      gain: 0.085,
+      source:
+        'PIA06230 (la foto de su color): por encima del limbo iluminado, una neblina tenue y casi neutra (de 1,02 a 1,05 radios, cromaticidad 0,97/1,02/0,85 y un 1 % del brillo del borde del disco; nada a partir de 1,05), no un halo naranja. Su intensidad, ajustada a esa proporción en la misma geometría (scripts/measure-titan-halo.mjs)',
     },
     calibrateAlbedo: true,
-    note: 'Neblina espesa y anaranjada: Minnaert y atmósfera, ajuste visual. Desde la fase 7, con su mosaico del ISS muy atenuado (contraste) y teñido con su color esquemático.',
+    note: 'Neblina espesa y anaranjada: Minnaert y atmósfera, ajuste visual. Sin textura de superficie: el mosaico del USGS (ISS de Cassini, 938 nm) muestra la superficie en una ventana del metano, y en luz visible la neblina la oculta (PIA06230). Color y halo, de PIA06230 (fase 7).',
   },
   japeto: airless(),
   miranda: airless(),

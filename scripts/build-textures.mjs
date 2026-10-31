@@ -112,7 +112,8 @@ const TEXTURES = {
   // modelos polares del LOLA, a 893 m por píxel en 2k, sin el «sol de rayas» del equirrectangular.
   'moon-normal-poles': { kind: 'polar-relief', quality: 85, maxWidth: 2048 },
   // Las lunas (fase 7): mosaicos globales del USGS Astrogeology (Mimas, del PDS), en 1k y 2k (§5:
-  // ≤ 300 kB por luna en el nivel bajo). Deimos, Proteo y las de Urano no tienen ninguno.
+  // ≤ 300 kB por luna en el nivel bajo). Deimos, Proteo y las de Urano no tienen ninguno; el de Titán
+  // (ISS, 938 nm) es su superficie bajo la neblina, que en luz visible no se ve: no se usa.
   phobos: { file: 'Phobos_Viking_Mosaic_40ppd_DLRcontrol.tif', kind: 'mosaic', quality: 80 },
   io: { file: 'Io_GalileoSSI-Voyager_Global_Mosaic_1km.tif', kind: 'mosaic', quality: 80 },
   europa: { file: 'Europa_Voyager_GalileoSSI_global_mosaic_500m.tif', kind: 'mosaic', quality: 80 },
@@ -131,7 +132,6 @@ const TEXTURES = {
   tethys: { file: 'Tethys_Cassini_mosaic_global_293m.tif', kind: 'mosaic', quality: 80 },
   dione: { file: 'Dione_Cassini_Voyager_mosaic_global_154m.tif', kind: 'mosaic', quality: 80 },
   rhea: { file: 'Rhea_Cassini_Voyager_mosaic_global_417m.tif', kind: 'mosaic', quality: 80 },
-  titan: { file: 'Titan_ISS_P19658_Mosaic_Global_4km.tif', kind: 'mosaic', quality: 80 },
   iapetus: { file: 'Iapetus_Cassini_Voyager_mosaic_global_783m.tif', kind: 'mosaic', quality: 80 },
   // Tritón: un mosaico en falso color (naranja, violeta y ultravioleta en R, G y B); solo su canal
   // naranja, el más cercano al visible, en gris.
