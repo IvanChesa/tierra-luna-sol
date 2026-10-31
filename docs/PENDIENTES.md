@@ -91,7 +91,7 @@ Decisiones y tareas que dependen de Iván. Claude Code añade aquí cada `TODO(i
 
 ## Revisiones y pruebas de Iván
 - [ ] Textos de los 30 cuerpos (120 textos con `reviewed: false`): lista de revisión con las citas que los respaldan en `docs/datos/textos-cuerpos.md`. En la **fase 9** (decisión del 24-10; antes «al final de las fases 1 y 8»).
-- [ ] Textos de las vistas guiadas y de los recorridos (fases 5 y 6; en el plan v1, 4 y 5).
+- [ ] Textos de las vistas guiadas y de los recorridos (fases 5 y 6; en el plan v1, 4 y 5). En Shackleton, el subtítulo dice, como su fuente, que el interior está siempre en sombra, pero la escena no dibuja las sombras del relieve y se ve iluminada la pared interior que mira al Sol: matizarlo (segunda ronda de la revisión de la fase 6).
 - [ ] Pruebas en el móvil real: por la vista previa de Cloudflare Pages desde la fase 4 (`staging.tierra-luna-sol.pages.dev`, la de `main`) o por la red local (fases 4–10; en el plan v1, 4–9).
 - [ ] Visto bueno final en el móvil (fase 10; en el plan v1, la 9).
 

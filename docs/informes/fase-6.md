@@ -2,7 +2,7 @@
 
 - **Rama:** `fase-6-luna`
 - **Fecha:** 2026-10-30 · 2026-10-31
-- **Estado:** revisado (`docs/revisiones/fase-6.md`, CAMBIOS NECESARIOS) y corregido; a la espera de la segunda revisión, porque había un Bloqueante
+- **Estado:** terminada. Revisada dos veces (`docs/revisiones/fase-6.md`): la primera ronda, CAMBIOS NECESARIOS, con un Bloqueante; la segunda, APROBADA CON CAMBIOS MENORES. Corregido todo
 
 ## Plan
 La fase es grande: va por entregas, con este informe al día al final de cada una.
@@ -66,7 +66,7 @@ La Luna de cerca, con su relieve real y su luz:
 |---|---|---|
 | Capturas: cara visible, cara oculta, polo sur, luz rasante, luna llena, cuarto creciente y un eclipse lunar total (Luna enrojecida, fecha de la NASA) | ✅ | En `docs/informes/img/fase-6/` (§7): `vista-cara-visible`, `vista-cara-oculta` y `luna-cara-oculta`, `vista-polo-sur` y `movil-vista-polo-sur`, `vista-luz-rasante` y `movil-vista-luz-rasante`, `luna-llena`, `luna-cuarto-creciente` y `luna-eclipse-2026` (el máximo del total del 3-3-2026, a las 11:33:37 UT, del catálogo de la NASA) |
 | Peso, VRAM y FPS según §5 en los tres niveles | ✅ | §6: **texturas de la vista Luna**: 5,1 MiB en alto (de 10 MB), 2,0 en medio y 1,2 en bajo (de 3); **VRAM**: 265 / 102 / 61 MB (de 300 y 120); **FPS** (RTX 3060, 1 hora/s): 59,8 / 60 / 59,6 |
-| Sin costuras visibles en el meridiano 180° ni en los polos | ✅ | `luna-cara-oculta` y `vista-cara-oculta` (el meridiano 180°, en el centro del disco), `vista-polo-sur`, `movil-vista-polo-sur` y `recorrido-shackleton` (el polo sur, en el centro; antes de la revisión, con el «sol de rayas»: las `antes-*`), y `cube-sphere.spec.ts` (las aristas de las seis caras, con las mismas coordenadas: 6n² + 2 puntos distintos). §4.4: los casquetes polares, con sus comprobaciones |
+| Sin costuras visibles en el meridiano 180° ni en los polos | ✅ | `luna-cara-oculta` y `vista-cara-oculta` (el meridiano 180°, en el centro del disco), `vista-polo-sur`, `movil-vista-polo-sur` y `recorrido-shackleton` (el polo sur, en el centro; antes de la revisión, con el «sol de rayas»: las `antes-*`), `luna-polo-norte` y `luna-polo-norte-cerca` (el polo norte, iluminado el 31-5-2026), y `cube-sphere.spec.ts` (las aristas de las seis caras, con las mismas coordenadas: 6n² + 2 puntos distintos). §4.4: los casquetes polares, con sus comprobaciones |
 | Libración visible y coherente con `Libration` (test) | ✅ | `orientation.spec.ts` (desde la fase 2): el punto subterrestre de la orientación frente a `Libration`, a ≤ 0,005° en tres fechas (el criterio pide ±1°). `engine.spec.ts` (revisión de la fase 6): el punto de la malla de la escena que mira a la Tierra, a menos de 0,1° del de `Libration` en las dos fechas de las capturas. `luna-libracion-comparada`: +6,65° el 6-1-2026 y −6,60° el 21-11-2026 (los extremos de 2026 con la Luna gibosa), con Mare Crisium a distinta distancia del limbo |
 | Recorrido usable con teclado y con movimiento reducido (paso a paso) | ✅ | `e2e/luna.spec.ts`: se reproduce, se salta y se pausa con el teclado; con movimiento reducido no avanza solo y el botón («Seguir el recorrido») da la parada siguiente. Tests unitarios del panel (`moon-panel.spec.ts`) |
 | La VRAM de §5 también en el peor caso de las dos vistas, con test; la 8K de la Tierra se libera al salir de su vista (C4) | ✅ | `engine.spec.ts`, con los tamaños de los ficheros de verdad: en la vista Luna, la Tierra pide su 1k y suelta la 8K y sus mapas de cerca; las vistas Tierra y Luna caben en 300 MB (alto) y 120 MB (bajo); y, frame a frame, en el viaje de una a otra (como mucho 284 MB de la Tierra a la Luna y 278 de vuelta). Medido: 278 MB en la vista Tierra (con la Luna al fondo) y 265 en la vista Luna (con la Tierra al fondo, a 1k) |
@@ -89,7 +89,7 @@ La Luna de cerca, con su relieve real y su luz:
 2. **La ficha de la Luna (`/luna`) llega en la fase 9.** Hasta entonces, la fase del día la dice el panel de la vista Luna, con `moonPhase`, la función que usará la ficha. Lo que se prueba es que la escena, esa función y el USNO coinciden.
 3. **KTX2 (D18; C4 pedía empezar por la 8K de la Tierra y los mapas de la Luna):** reevaluado y no hace falta. Con WebP, las dos vistas caben: 278 y 265 MB de 300 en alto (y 284 como mucho en el viaje entre las dos). KTX2 pesaría unas 4 veces más (fase 2) y necesitaría `toktx`, una herramienta externa (condición de parada). Queda para la fase 10 si el iPhone se queda corto de memoria.
 4. **El polo, con casquetes polares propios** (revisión de la fase 6, hallazgo 1: era un Bloqueante). La primera versión pintaba el polo con rayas radiales, y `textureGrad` con la derivada de u por cos φ (que se queda: es lo correcto para el color) no bastaba. La causa era el dato: junto al polo, la elevación equirrectangular de 16 px/° salta hasta 190 m entre columnas vecinas separadas unos metros. Ahora, por encima de 76° de latitud, las normales salen de los **modelos polares del LOLA** (PDS, estereográfica de 75° al polo, 240 m por píxel), en un atlas de dos casquetes (`moon-normal-poles`: 2k en alto y medio, 893 m por píxel; 1k en bajo), mezclado con el mapa equirrectangular de 76° a 78°. Sus normales van en los ejes del plano, que no degeneran en el polo, y el shader las lleva al este–norte. El build comprueba la orientación de cada modelo (su elevación frente a la equirrectangular a 76–79°: correlación de 0,999 en el sur y 0,993 en el norte), que sus normales casan con las equirrectangulares donde se mezclan (0,92 y 0,87 en el sur; 0,87 y 0,83 en el norte, este y norte) y que Shackleton sale como un hoyo de 4 km con las paredes hacia dentro. El color y la elevación de los vértices no cambian: el color ya es la versión «poles» del CGI Moon Kit y, según la revisión, reproyectado solo tiene rayas leves; y los saltos de la elevación, con 21 km entre vértices, no se ven.
-5. **La elevación, en 1K** (no en 4K u 8K; hasta la revisión, 2K en alto). Solo desplaza los vértices, que están a 0,7° en el ecuador en el nivel alto: la de 1K (0,35° por píxel, cada uno la media de su área) ya da dos muestras por vértice, y la de 2K pesaba 2,7 MiB y 8 MiB de VRAM más sin verse. El detalle fino lo dan las normales de 4K.
+5. **La elevación, en 1K** (no en 4K u 8K; hasta la revisión, 2K en alto). Solo desplaza los vértices, que están a 0,7° en el ecuador en el nivel alto: la de 1K (0,35° por píxel, cada uno la media de su área) ya da dos muestras por vértice, y la de 2K pesaba 2,7 MiB (0,7 la de 1K) y ocupaba 8 MiB de VRAM (2 la de 1K) sin verse. El detalle fino lo dan las normales de 4K.
 6. **Las normales, en 4K como mucho** (el plan pedía «a resolución completa»: los 5760 px del LOLA de 16 px/°). Unas normales de 8K costarían unos 128 MiB más de VRAM y la vista Luna pasaría de los 300 MB de §5. Los casquetes polares dan el detalle donde más falta hacía.
 7. **«Saltar»** es «Parada siguiente»: salta a la siguiente parada y para el recorrido.
 8. **Las vistas cercanas, algo más lejos.** A 1,3 radios, la textura de 8K se ampliaba unas 3,5 veces en Copérnico y Tycho. Ahora van a 1,6.
@@ -154,7 +154,7 @@ En `docs/informes/img/fase-6/` (modo de captura; la escena, el 24-10-2026 si no 
 - Sin interfaz:
   - `luna-llena` y `luna-cuarto-creciente`: desde la Tierra, el 24 y el 17-11-2026;
   - `luna-cara-oculta`: en la luna nueva del 9-11-2026;
-  - `luna-polo-sur`;
+  - `luna-polo-sur`; `luna-polo-norte`, desde 75° N el 31-5-2026 (el Sol, a 1,6° sobre el horizonte del polo norte: el polo queda en el terminador), y `luna-polo-norte-cerca`, a 86° N y 1,8 radios, con el anillo de 76–78° en el que se mezclan el casquete y el mapa equirrectangular;
   - `luna-eclipse-2026`: el máximo del 3-3-2026;
   - `luna-libracion-comparada`: este y oeste.
 
@@ -168,6 +168,8 @@ Ninguna. Los datos nuevos son el color y la elevación del CGI Moon Kit, los mod
 ## 10. Propuestas de cambio al plan
 1. ~~**Casquetes polares propios**~~: hechos en la revisión de la fase 6 (§4.4), para las normales.
 2. **La luz de la umbra** es ilustrativa. Si se prefiere más realista (la Luna eclipsada mucho más oscura), es un valor de la configuración visual.
+3. **Que la cola de subidas descarte lo que ya no se pide** (fase 10; segunda ronda de la revisión, sugerencia 6). Si se va de la Tierra a la Luna y se vuelve antes de que acabe el viaje, las texturas de la Luna que esperaban al final del viaje suben al aterrizar y se liberan enseguida: una subida inútil (con la 8K de la Luna, 171 MiB y un tirón de unos 100–200 ms). Basta con que cada entrada de la cola sepa si su textura se sigue pidiendo.
+4. **Las sombras que proyecta el relieve** (al backlog, §9 del plan): la escena no las dibuja (D20: solo esferas y anillos), y en Shackleton se ve iluminada la pared interior que mira al Sol, aunque su subtítulo dice, como su fuente, que el interior está siempre en sombra. Con mapas de horizonte se podrían dibujar. El texto se revisa en la fase 9.
 
 ## 11. Cómo probarlo
 1. `npm start` y abrir `http://localhost:4200/explorar/luna`. El panel dice la fase del día.
@@ -193,10 +195,26 @@ Revisión: `docs/revisiones/fase-6.md` (CAMBIOS NECESARIOS: 1 Bloqueante, 2 Impo
 | 9 | Menor | `PENDIENTES.md`: probar la vista Luna en tu móvil y decidir sobre la luz de la umbra (propuesta 2). Cerrados `toktx` (no hace falta: 278, 265 y 284 MB de 300) y los casquetes polares (hechos). |
 | 10 | Menor | Con movimiento reducido, el botón grande dice «Seguir el recorrido» y, en la última parada, «Volver a empezar», que es lo que hace. `ESTILO.md`, el e2e y los tests, al día. |
 | 11 | Menor | La esfera cúbica se crea al enfocar la Luna y se libera al dejar de enfocarla, y cuenta en la VRAM mientras existe. Sin el array de normales: el material saca la normal de la posición (1,2 MB menos en alto). Test. |
-| 12 | Sugerencia | La elevación, en 1K también en alto: 2,7 MiB menos de descarga y 6 MiB menos de VRAM. La de 2K ya no se genera. |
+| 12 | Sugerencia | La elevación, en 1K también en alto: 2,0 MiB menos de descarga y 6 MiB menos de VRAM. La de 2K ya no se genera. |
 | 13 | Sugerencia | `BodyMap`, tipado: los nombres de los uniformes y el nivel de cada mapa son uniones que comprueba el compilador, sin `as unknown as`. |
 | 14 | Sugerencia | `.moon__label`, quitada. |
 | 15 | Sugerencia | Test del motor: el punto de la malla que mira a la Tierra, frente a `Libration`, a menos de 0,1° en las dos fechas de las capturas. |
 | 16 | Sugerencia | El recorrido se para al abrir el índice, que tapa el panel (test). |
 
 Después de los cambios: `npm run check` en verde (555 tests y sin avisos de presupuesto); e2e de la fase, 23 de 23; mediciones y capturas repetidas con el build final (§6 y §7).
+
+### Respuesta a la segunda ronda
+Segunda ronda (al final de `docs/revisiones/fase-6.md`): APROBADA CON CAMBIOS MENORES. Los 16 hallazgos de la primera ronda, resueltos; 4 Menores y 4 Sugerencias nuevos:
+
+| # | Severidad | Qué se ha hecho |
+|---|---|---|
+| 1 | Menor | Capturas del polo norte: `luna-polo-norte` (desde 75° N, como la del sur) y `luna-polo-norte-cerca` (a 86° N, con el anillo de la mezcla), el 31-5-2026, con el polo norte iluminado. En el criterio del §2 y en el §7. |
+| 2 | Menor | Las cifras de la elevación: 2,0 MiB menos de descarga, y la de 2K ocupaba 8 MiB de VRAM, 2 la de 1K (en el informe y en `build-textures.mjs`). |
+| 3 | Menor | El comentario de `quality.ts`, al día (la elevación de 1K, dos muestras por vértice). |
+| 4 | Menor | `FUENTES.md`: el modelo del sur es la versión 2.0 (2017-06-15) y el del norte, la 2.1 (2016-09-15), según sus etiquetas. |
+| 5 | Sugerencia | El borde de los casquetes, en un solo sitio: `build-textures.mjs` genera `MOON_POLAR_CAP_EDGE_DEG` en `texture-files.ts` desde el script, y el shader lo usa. |
+| 6 | Sugerencia | Propuesta para la fase 10 (§10.3): que la cola de subidas descarte lo que ya no se pide. |
+| 7 | Sugerencia | Las sombras del relieve, al backlog (§10.4 y §9 del plan); el subtítulo de Shackleton, a la revisión de textos de la fase 9 (`PENDIENTES.md`). |
+| 8 | Sugerencia | Test del cambio de calidad con la Luna enfocada: la esfera de antes recibe `dispose` y la nueva tiene los 6·(n + 1)² vértices del nivel bajo. |
+
+Después: `npm run check` en verde y la fase, fusionada en `main`.
