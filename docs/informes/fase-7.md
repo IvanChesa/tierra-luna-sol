@@ -150,7 +150,7 @@ npm run check (con el código final de la entrega 7.e)
   interfaz diferida 285,35 kB
 - JS inicial sin three ni astronomy-engine; código propio, 12,13 kB de 15
 ```
-- **e2e:** la batería completa, en el CI de GitHub al subir la rama (en verde con `63a331d`; con la 7.e, en §6.1).
+- **e2e:** la batería completa, en el CI de GitHub al subir la rama (§6.1).
 - **Mediciones** (RTX 3060, modo de captura, `node scripts/measure-views.mjs`; el recorrido de cada nivel, sin recargar, y en cada paso los FPS durante 4 s a 1 día/s). El nivel bajo se repitió con la máquina libre: en la primera pasada, otra sesión pasaba sus e2e de Playwright a la vez (CPU al 96 %) y los FPS caían a partir de Europa.
 
 | Vista | VRAM (MB): alto · medio · bajo | FPS mínimo: alto · medio · bajo | Descarga del paso (kB): alto · bajo |
@@ -177,7 +177,7 @@ npm run check (con el código final de la entrega 7.e)
   - el estado a 1 año/s: 4,8 actualizaciones por segundo, y ningún cambio de la URL en 5 s de reproducción.
 
 ### 6.1 e2e de la entrega 7.e
-Se completa con el resultado del CI de la rama al subir este informe.
+El CI de GitHub con `1b22fe0` (ejecución 41234386428): lint, tests y build en verde; los **74 e2e**, en verde (Linux, Chromium con SwiftShader, 12,3 min); y la vista previa de la rama, desplegada y comprobada. Entre ellos, el del selector de escala (`e2e/tiempo.spec.ts`) y el de las pantallas bajas con «Controles +» (`e2e/maquetacion.spec.ts`).
 
 ## 7. Capturas
 En `docs/informes/img/fase-7/` (modo de captura; la escena, el 24-10-2026 si no se dice otra fecha):
