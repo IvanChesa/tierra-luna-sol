@@ -9,7 +9,9 @@
 // Cifras, en px CSS:
 // - temblor: la raíz cuadrática media de la segunda diferencia de la posición;
 // - salto: el mayor cambio de un frame (o de un paso) al siguiente;
-// - radio: el menor y el mayor de la serie.
+// - radio: el menor y el mayor de la serie;
+// - profundidad: lo más cerca que pueden estar dos superficies para que el búfer las ordene, a la
+//   distancia del cuerpo enfocado y de su vecino (`depthResolution`).
 // Uso: npm run build && node scripts/measure-real-scale.mjs
 import { openBrowser, openViewer, waitForIdle } from './capture-lib.mjs';
 
@@ -46,6 +48,34 @@ function summarize(xs, ys, radii) {
     radioPx: [Number(Math.min(...radii).toFixed(3)), Number(Math.max(...radii).toFixed(3))],
   };
 }
+
+/**
+ * Error de profundidad (D13, fase 7): con la profundidad logarítmica de three, la profundidad de un
+ * punto a una distancia w de la cámara es log₂(1 + w) / log₂(1 + far), en un búfer de 24 bits: lo
+ * más cerca que pueden estar dos superficies para que el búfer las ordene es
+ * Δw = (1 + w) · ln 2 · log₂(1 + far) / 2²⁴ (en unidades de la escena; aquí, en km, con el radio del
+ * cuerpo en km y en la escena). Se da para el cuerpo enfocado y para los que se piden.
+ */
+const depthResolution = (page, ids) =>
+  page.evaluate((ids) => {
+    const engine = window.__tlsViewer.engine;
+    const camera = engine.world.camera;
+    const out = { nearKm: 0, farKm: 0 };
+    let kmPerUnit = 0;
+    for (const id of ids) {
+      const visual = engine.world.visuals.find((v) => v.body.id === id);
+      const w = camera.position.distanceTo(visual.mesh.position);
+      kmPerUnit = visual.body.radiusKm / visual.mesh.scale.x;
+      const step = ((1 + w) * Math.LN2 * Math.log2(1 + camera.far)) / 2 ** 24;
+      out[id] = {
+        distanciaKm: Math.round(w * kmPerUnit),
+        resolucionKm: Number((step * kmPerUnit).toPrecision(3)),
+      };
+    }
+    out.nearKm = Number((camera.near * kmPerUnit).toPrecision(3));
+    out.farKm = Number((camera.far * kmPerUnit).toPrecision(3));
+    return out;
+  }, ids);
 
 /** Reproduce `seconds` segundos reales a `speed` y apunta el cuerpo enfocado en cada frame. */
 const trackFocused = (page, id, speed, seconds) =>
@@ -103,8 +133,13 @@ try {
         `/?captura=1&cuerpo=${id}&escala=${scale}&fecha=${START}`,
       );
       await waitForIdle(page);
+      // Lo que hay detrás del cuerpo enfocado: su planeta (Fobos) o el Sol (Neptuno).
+      const depth = await depthResolution(page, [id, id === 'fobos' ? 'marte' : 'sol']);
       const s = await trackFocused(page, id, speed, 4);
-      results[`${scale}-${id}-enfocado-${speed}s`] = summarize(s.xs, s.ys, s.radii);
+      results[`${scale}-${id}-enfocado-${speed}s`] = {
+        ...summarize(s.xs, s.ys, s.radii),
+        profundidad: depth,
+      };
       await page.close();
     }
     for (const [focus, id, step, steps] of NEIGHBOURS) {
@@ -113,10 +148,12 @@ try {
         `/?captura=1&cuerpo=${focus}&escala=${scale}&fecha=${START}`,
       );
       await waitForIdle(page);
+      const depth = await depthResolution(page, [focus, id]);
       const s = await trackNeighbour(page, id, step, steps, START);
       results[`${scale}-${id}-con-${focus}-cada-${step}s`] = {
         ...summarize(s.xs, s.ys, s.radii),
         enPantalla: `${s.onScreen} de ${steps}`,
+        profundidad: depth,
       };
       await page.close();
     }
