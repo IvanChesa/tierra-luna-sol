@@ -96,3 +96,126 @@ Veredicto: CAMBIOS NECESARIOS
   - temporizador limpiado con `DestroyRef`;
   - Public Sans 600 en los rótulos y zonas táctiles de 44 px: las lecciones de la fase 5, aplicadas.
 - **Capas, tipos y textos:** capas respetadas, sin `any` en el código de producción, textos en español con fuente y `reviewed: false`, y `FUENTES.md`, `/creditos` y `ESTILO.md` al día.
+
+## Segunda ronda
+Veredicto (segunda ronda): APROBADA CON CAMBIOS MENORES
+
+- **Fecha:** 2026-10-31
+- **Revisor:** subagente revisor automático (sin el contexto de la sesión que programó la fase)
+- **Revisado:** los cinco commits de corrección (`a52c4ba` a `70c4ccb`; `git diff 3488644..fase-6-luna`: 54 ficheros, +1120 −191), la «Respuesta a la revisión» y los §1–§7 de `docs/informes/fase-6.md`, las capturas nuevas y las `antes-*`, `scripts/lola-polar.mjs`, los WebP publicados del atlas, `docs/FUENTES.md`, `/creditos`, `PENDIENTES.md` y el CI de la rama.
+
+### Comprobaciones
+
+**`npm run check`** (lanzado por mí; código de salida 0, en 1 min 8 s):
+- lint y Prettier, limpios;
+- **555/555 tests** en 63 ficheros; cobertura de `ephemeris/`: 99,47 % de sentencias y 95,48 % de ramas;
+- build **sin avisos de presupuesto** (el de `explorer-ui.css` ya no sale): JS inicial de 298,66 kB, `three` de 692,71 kB e interfaz diferida de 284,39 kB;
+- `check-initial-bundle.mjs`: sin `three` ni `astronomy-engine` en el JS inicial, y 12,13 kB de 15 de código propio.
+
+**e2e** (con ese build y un trabajador; el árbol de trabajo, limpio antes y después):
+- `luna.spec.ts` en escritorio: 3/3 (25,7 s);
+- `movil.spec.ts` y `accesibilidad.spec.ts` en el proyecto `movil`: 11/11 (1,1 min);
+- `tierra.spec.ts` y `maquetacion.spec.ts` en escritorio: 13/13 (28,2 s), por la clase nueva de los paneles.
+- El CI de GitHub del último commit (`70c4ccb`, ejecución 41157355776), en verde: lint, tests y build; la batería e2e completa (73 en 11,9 min); y la vista previa en Cloudflare Pages.
+
+**El Bloqueante (los casquetes polares):**
+- **Las matemáticas, revisadas a mano:**
+  - **La proyección.** La estereográfica del GLSL, `p = (−z, s·x) / ((1 + |y|)·tan 7,5°)`, es la del script (r = tan(c/2) / T; x = r·sen λ, y = ±r·cos λ), con λ = atan2(−z, x), la longitud de la malla.
+  - **El atlas.** Su disposición (el sur en u ∈ [0; 0,5], el norte en [0,5; 1] y v = 0,5 + 0,5·y) casa con la carga: con `imageOrientation: 'flipY'` y `texture.flipY = false`, la fila 0 (y = +1) va a v = 1. Casa también con `ClampToEdge`, porque `polar-caps` no repite en u, y con los mipmaps.
+  - **El paso al este–norte.** En el sur, el este del plano es (y, −x)/r y el norte, (x, y)/r: las derivadas de la proyección respecto a λ y a φ. En el norte cambian los dos de signo. Las componentes son productos escalares, que valen aunque la proyección invierta la orientación.
+  - **El suelo.** La estereográfica es conforme, con escala sec²(c/2). `ground = 1/(1 + (r·T)²) = cos²(c/2)` pasa las diferencias del plano a metros del suelo. El píxel mide 4·R·T/n: 893 m en 2k y 1,79 km en 1k, con 4 × 4 y 8 × 8 muestras de los 240 m del modelo.
+  - **Las convenciones del PDS.** Las que elige el script por correlación (en el sur, y = ρ·cos λ; en el norte, y = −ρ·cos λ; un desfase de 1905,5, el centro de 3812 px contando desde 0) son las de las etiquetas PDS, que he leído, y las de su disposición simétrica.
+  - **Las derivadas.** Las de `textureGrad` se calculan antes del `if (w <= 0.0)`, que es flujo no uniforme. `reliefNormal` solo se llama con una condición uniforme (`uNormalStrength > 0.0`), y así también las derivadas de `tlsSurface`. El salto de casquete del ecuador (cambia `s`) cae donde w = 0.
+  - **Sin casos raros.** No hay `atan`, r tiene un mínimo de 1e−6 y la mezcla de 76° a 78° usa el seno de la latitud, con los bordes de `smoothstep` en orden.
+- **`node scripts/lola-polar.mjs`, a una carpeta temporal.** Reproduce las cifras del informe:
+  - la elevación frente a la equirrectangular: 0,999 en el sur y 0,993 en el norte;
+  - las normales donde se mezclan: este 0,92 y norte 0,87 en el sur, y 0,87 y 0,83 en el norte;
+  - Shackleton: fondo a −2786 m, borde a 1208 m de media y paredes hacia dentro (0,48).
+
+  El sombreado de prueba (`moon-poles-shade.png`) no tiene rayas. Shackleton sale como un hoyo a unos 11 px del centro del casquete sur, donde le toca (a 0,33° del polo).
+- **Lo publicado, comprobado por mi cuenta** (script propio):
+  - Leo `2k/moon-normal-poles.6841cfd741.webp` y `4k/moon-normal.b1102eeaa5.webp` como el shader (bilineal y con flipY), y llevo el atlas al este–norte con las fórmulas del GLSL.
+  - **Contra las normales equirrectangulares**, de 76° a 78°, el atlas correlaciona 0,93 en el este y 0,88 en el norte en el sur, y 0,90 y 0,83 en el norte.
+  - **El ángulo entre las dos normales:** mediana de 2,1° a 2,6° y percentil 90 de 5° a 6°, también a 80–82° y a 85–87°. En la mezcla no puede quedar costura.
+  - **Shackleton**, por la tubería del shader: su normal apunta hacia el centro (0,48).
+  - **Control negativo:** con el atlas leído sin flipY, las correlaciones van de −0,01 a 0,07. La prueba distingue la orientación.
+  - **Nivel bajo** (atlas de 1k y normales de 2k): 0,91 y 0,85 en el sur, y 0,87 y 0,78 en el norte.
+- **Las capturas:**
+  - En `recorrido-shackleton` ya no están el abanico ni la mancha de ruido de `antes-recorrido-shackleton`: se ven cráteres y, junto al polo, un hoyo con el borde iluminado.
+  - `vista-polo-sur` y `movil-vista-polo-sur`, ampliadas: el abanico centrado en el polo ha desaparecido, y no se ve el anillo de la mezcla.
+  - `luna-polo-sur` y `antes-luna-polo-sur`, desde esa distancia, son casi iguales.
+  - He repetido `luna-polo-sur` con el build actual: coincide con la publicada (diferencia media de 0,64 por canal), con 265,3 MB de VRAM.
+- **El polo norte**, que no tiene captura en el informe: en las mías, con `latitud=75` y `latitud=88` (el encuadre de `luna-polo-sur`), no hay abanico ni costura.
+- **Fuentes y licencia:**
+  - el SHA-256 de `ldem_75{s,n}_240m.img` y de sus `.lbl` coincide con el manifiesto y con `FUENTES.md`;
+  - el pie de la página del PDS (`lola.htm`) enlaza «Copyright/Image Use Policy» con la política de JPL, que dice «may be used for any purpose without prior permission» (con crédito y sin dar a entender respaldo), como cita `FUENTES.md`;
+  - `/creditos` nombra los modelos polares, con enlace.
+
+**Hallazgo 2.** Copio la lógica nueva de `nearestMoonPhase` en un script con astronomy-engine y la comparo con la fase más cercana de verdad:
+- **0 fallos en 21 080 instantes** de 1900–2100, con una diferencia máxima de 0,1 s. Son lunas nuevas y llenas, de 14,5 días antes a 14,5 días después de cada fase: todas las de 1900–1902 y 2098–2100, y una de cada tres en medio.
+- En ese periodo, las lunaciones duran de 29,274 a 29,830 días. La ventana de ±16 días siempre contiene la fase más cercana, y en 32 días caben como mucho dos.
+- Los ejemplos de la primera ronda ya salen bien. El 26-10-2026 a las 05:12 UT da la llena de las 04:12. «Cara oculta» desde el 14-10, pulsado dos veces, da el 10-10 las dos.
+
+**`WAIT_FOR_CAMERA_PX`:**
+- **Qué espera ahora.** Mira `texture.image.width ≥ 2048`. Esperan al final de los viajes (`flight`, de 2 a 3 s) o de las transiciones de marco (`frames.animating`, finitas) todas las texturas del primer plano de cualquier cuerpo:
+  - las de 4k (alto) o 2k (medio y bajo) de los planetas;
+  - los anillos de Saturno de 2k y 4k;
+  - las nubes, la noche, el océano y las normales de la Tierra;
+  - y la Vía Láctea de 2k, si se pide durante un viaje.
+- **Dónde no cambia nada.** En la vista general todo es de 1k. Los recorridos y las vistas guiadas de la Tierra y de la Luna mueven la cámara con el rig (`lookAtSurface` → `setTarget`), no con `flight`, así que no retienen subidas.
+- **Sin subidas a destiempo.** Sube una por frame, y la textura solo se asigna tras `initTexture`, así que esperar no provoca subidas perezosas a mitad del viaje.
+- **Lo que se ve.** Durante el viaje, el nivel anterior; al aterrizar, el primer plano, como ya pasaba con la 8K.
+- **Veredicto:** correcto y documentado (el comentario y el §5 del informe). Lo único que empeora es el caso de la sugerencia 6.
+- **El test del viaje** (`engine.spec.ts:1336`) mide de verdad frame a frame: `h.frames(16, 62.5)` es un solo frame.
+
+**`updateLarge`, tras proyectar:**
+- Se llama en `renderFrame` después de `updateScreen()` (`engine.ts:895`), también en los frames que no se pintan, que usan la misma proyección.
+- El test de los casquetes (`engine.spec.ts:1432`) pasa de la vista Luna a la del sistema con movimiento reducido. Exige `uHasPoleNormals = 0` y que el atlas se libere. Con la llamada de antes, tras un corte con el motor en reposo, no se cumpliría.
+
+**La esfera cúbica:**
+- **Su vida.** Se crea en `setFocus` con la Luna enfocada y se libera al dejar de enfocarla, después de reasignar las mallas. Al cambiar de calidad, `setQuality` la libera y el `setFocus` con el que acaba la rehace con los segmentos nuevos. El `dispose()` de la escena la libera si existe, y `vramBytes()` la cuenta mientras existe.
+- **Lo que cuesta crearla** (en V8, en este PC): con 128 segmentos, de 10 a 35 ms; con 72, unos 5; con 48, unos 2. No hay riesgo de tarea larga.
+
+**La normal, desde la posición:**
+- Todas las mallas con el material común son `SphereGeometry(1, …)` o la esfera cúbica, centradas.
+- El achatamiento va en la escala de la malla (`world.ts:856`), que `normalMatrix` ya tiene en cuenta: el resultado es el mismo que con `normal`.
+- El vertex shader ya no lee el atributo `normal`: solo aparece en un comentario.
+
+**Cifras del informe:**
+- **El peso** de las texturas de la vista Luna, con los tamaños de `texture-files.ts`: 5,10, 1,96 y 1,19 MiB en alto, medio y bajo, como en el §6.
+- **La VRAM** de la vista Luna en alto, 265 MB: la he medido en mi captura.
+- **La subida del atlas:** 214 KiB más de descarga y 10,7 MiB más de VRAM. Cuadra.
+
+### Hallazgos de la primera ronda
+
+| # | Severidad | Estado | Evidencia |
+|---|---|---|---|
+| 1 | Bloqueante | **Resuelto** | **Casquetes polares:**<br>- el atlas `moon-normal-poles` y `tlsPolarRelief` (`body-material.ts:191-204`), mezclados de 76° a 78°;<br>- las matemáticas y lo publicado, comprobados arriba;<br>- sin el abanico en `recorrido-shackleton`, `vista-polo-sur` y `movil-vista-polo-sur`, frente a las `antes-*`;<br>- el norte, en capturas mías.<br>El color y la elevación de los vértices siguen sin casquete, como justifica el §4.4, y en las capturas no se nota. Falta la captura del norte: hallazgo nuevo 1 |
+| 2 | Importante | Resuelto | `moon-light.ts:46` y `:55-70` (±16 días: la primera fase y la siguiente). 0 fallos en 21 080 instantes de 1900–2100 (script mío). Tests nuevos (`moon-light.spec.ts:48` y `:67`): las 49 fases de 2026 a ±12 h, la llena del 26-10 y dos pulsaciones |
+| 3 | Importante | Resuelto | `npm run check`, sin avisos de presupuesto. La clase común `view-panel` (`explorer-ui.css:173`, `:178`, `:257` y `:263`; `explorer-ui.html:59` y `:64`) tiene la misma especificidad que el `:is()` de antes, y no quedan referencias a `.earth-panel` ni a `.moon-panel`. Los e2e de móvil, maquetación y Tierra, en verde |
+| 4 | Menor | Resuelto | `engine.ts:174` y `:1480`. Tests: `engine.spec.ts:1336` (el viaje, frame a frame y con la subida de verdad: ≤ 300 MB en los dos sentidos), `:1377` (la histéresis de 160 y 120 px) y `:664` (la de 2k espera; la de 1k, no). El fallo de «se ve grande» con la proyección anterior queda cubierto por `:1432` |
+| 5 | Menor | Resuelto | `body-material.ts:99` y `:173`: u = 0 si \|x\| + \|z\| ≤ 1e−7. `tlsPolarRelief` no usa `atan` |
+| 6 | Menor | Resuelto | `body-data.spec.ts:47`; el comentario de `constants.ts` lo cita |
+| 7 | Menor | Resuelto | La cifra «≈ 1/10 000» ya no está ni en el código ni en el informe. El 0,35 pasa a `visual-config.ts:130` (`axis`, con su motivo) y llega al shader en `uUmbraAxis` (`configureMoon`) |
+| 8 | Menor | Resuelto | `docs/informes/fase-6.md:93` (§4.6), con los 128 MiB |
+| 9 | Menor | Resuelto | `PENDIENTES.md:84` (el móvil), `:86` (la luz de la umbra) y `:89` (`toktx`, cerrado con sus cifras); los casquetes, cerrados |
+| 10 | Menor | Resuelto | `moon-panel.ts:129-134`: «Seguir el recorrido» y, en la última parada, «Volver a empezar», que es lo que hace `toggleTour` en los dos modos. Al día: `ESTILO.md`, `moon-panel.spec.ts:81` y `:124` y `e2e/luna.spec.ts:66`, que pasa |
+| 11 | Menor | Resuelto | `world.ts:537`, `:552`, `:562` y `:1059`; `vramBytes()` la cuenta mientras existe. Sin el atributo `normal`: 1,2 MB menos. Test `engine.spec.ts:1401`, con el evento `dispose`. El cambio de calidad no tiene test: sugerencia 8 |
+| 12 | Sugerencia | Resuelto | La elevación, de 1K también en alto (`quality.ts:79`; `maxWidth: 1024`). La de 2K ya no está en `public/` ni en `texture-files.ts`. Quedan una cifra mal en el informe (hallazgo nuevo 2) y un comentario desfasado (hallazgo nuevo 3) |
+| 13 | Sugerencia | Resuelto | `world.ts:110-127`: los uniformes, las banderas y los niveles, con uniones de sus nombres y sin `as unknown as`; `this.profile[map.level]` |
+| 14 | Sugerencia | Resuelto | `.moon__label` ya no está en `moon-panel.css` |
+| 15 | Sugerencia | Resuelto | `engine.spec.ts:1270`: el punto de la malla que mira a la Tierra está a menos de 0,1° del de `Libration` en las dos fechas de las capturas |
+| 16 | Sugerencia | Resuelto | `moon-panel.ts:194`: si el índice está abierto, el recorrido se para en el siguiente paso del temporizador (como mucho, 12 s después). Test en `moon-panel.spec.ts:110` |
+
+### Hallazgos nuevos
+
+| # | Severidad | Archivo:línea | Hallazgo | Qué hacer |
+|---|---|---|---|---|
+| 1 | Menor | `docs/informes/fase-6.md:69` y `:185` · `docs/informes/img/fase-6/` · `scripts/capture-moon.mjs:76` | **El polo norte no tiene captura.** El criterio dice «ni en los polos», y la respuesta al hallazgo 1 dice que se comprobó «también en el norte». Pero las capturas (también las del antes y el después) son solo del sur. El norte lo cubren las comprobaciones numéricas del build y está bien: en mis capturas, con el encuadre de `luna-polo-sur` y `latitud=75`, no hay abanico ni costura | Añadir `luna-polo-norte` (`latitud=75`) a `capture-moon.mjs`, al §7 y al criterio del §2 |
+| 2 | Menor | `docs/informes/fase-6.md:196` y `:92` · `scripts/build-textures.mjs:106` | **Una cifra del ahorro de la elevación no cuadra.** Dice «2,7 MiB menos de descarga». Pero la de 2K pesaba 2 849 256 bytes (2,72 MiB) y la de 1K pesa 759 462 (0,72 MiB): el ahorro es de 2,0 MiB. Además, «pesaba 2,7 MiB y 8 MiB de VRAM más» se entiende como 8 MiB de más, y eran 8 MiB en total, 6 más que la de 1K (como dice bien la misma fila 12) | Poner «2,0 MiB menos de descarga» y «8 MiB de VRAM (6 más que la de 1K)» |
+| 3 | Menor | `src/app/scene/quality.ts:49` | **Un comentario desfasado:** «con unos 512 vértices en su ecuador para la elevación de 2K». La elevación ya es de 1K en todos los niveles | Cambiarlo por «para la elevación de 1K (dos muestras por vértice)» |
+| 4 | Menor | `docs/FUENTES.md:75` | **La versión de los modelos polares está mal en uno de los dos.** Pone «versión 2.0 de 2017» para los dos. Pero la etiqueta del norte (`ldem_75n_240m.lbl`) dice `PRODUCT_VERSION_ID = "V2.1"`, del 2016-09-15, con datos hasta `LRO_ES_45`. La V2.0, del 2017-06-15 y hasta `LRO_ES_54`, es la del sur | Poner: «sur, V2.0 (2017-06-15); norte, V2.1 (2016-09-15)» |
+| 5 | Sugerencia | `scripts/lola-polar.mjs:24-25` · `src/app/scene/materials/body-material.ts:62-63` | **El borde de los casquetes está escrito dos veces.** Los 75° y su `T` están en el script y en el shader. Si el script cambiara el borde, el shader colocaría mal el atlas y nada fallaría, porque las comprobaciones del build usan las funciones del script, no el GLSL | Generarlos en `texture-files.ts`, como `MOON_ELEVATION_RANGE_M` («una sola fuente para el script y el shader»), o comprobar con un test que coinciden |
+| 6 | Sugerencia | `src/app/scene/engine.ts:1461-1469` · `src/app/scene/world.ts:665`, `:714` y `:1116` | **Subidas que ya no hacen falta.** Con `WAIT_FOR_CAMERA_PX = 2048`, en la cola esperan más texturas. Si se va y se vuelve antes de que acabe el viaje (Tierra → Luna → Tierra), las de la Luna siguen en la cola. Suben al aterrizar y se liberan en cuanto acaba su subida, porque `requested !== level`. Es una subida inútil: con la 8K de la Luna, 171 MiB y un tirón de unos 100–200 ms | Que `processUpload` descarte y libere lo que ya no se pide, por ejemplo con una función `wanted()` en cada entrada de la cola |
+| 7 | Sugerencia | `src/app/data/tours.ts:329` · `docs/informes/img/fase-6/recorrido-shackleton.webp` | **El subtítulo de Shackleton y la imagen no dicen lo mismo.** El subtítulo dice que «su interior está siempre en sombra». Pero la escena no dibuja las sombras que proyecta el relieve (D20: solo esferas y anillos), así que en la captura de la parada sale iluminada la pared interior que mira al Sol | Para la revisión de textos de la fase 9: el texto es fiel a su fuente, la imagen no. Matizarlo o anotar en el backlog las sombras del relieve (mapas de horizonte) |
+| 8 | Sugerencia | `src/app/scene/world.ts:530-543` · `src/app/scene/engine.spec.ts:1401` | **El cambio de calidad con la Luna enfocada no tiene test.** El de la esfera cúbica cubre enfocar la Luna y dejarla, pero no ese caso. El código está bien: la esfera se libera y `setFocus` la rehace con los segmentos nuevos | Añadirlo al test: tras `setQuality`, la esfera de antes recibe `dispose` y la nueva tiene los 6·(n + 1)² vértices del nivel nuevo |
