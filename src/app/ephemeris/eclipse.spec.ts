@@ -6,10 +6,14 @@ import {
   SearchLunarEclipse,
   SearchMoonPhase,
 } from 'astronomy-engine';
+import { KM_PER_AU } from './constants';
 import { sunApparentGeocentricEcl, sunGeocentricEcl } from './coordinates';
-import { earthShadow, moonShadowCenter } from './eclipse';
+import { earthShadow, moonShadowCenter, satelliteShadowPoint } from './eclipse';
+import { planetHeliocentric } from './ephemeris';
+import { GalileanId } from './ids';
+import { galileanMoons } from './moons';
 import { NASA_ECLIPSE_2026_08_12, NASA_LUNAR_ECLIPSES } from './fixtures/fixtures';
-import { angleBetweenDeg } from './vec3';
+import { angleBetweenDeg, dot, length, scale, sub } from './vec3';
 
 describe('eclipses: el centro de la sombra de la Luna', () => {
   const eclipse = NASA_ECLIPSE_2026_08_12;
@@ -143,5 +147,55 @@ describe('eclipse: la sombra de la Tierra sobre la Luna frente al catálogo de l
     const later = earthShadow(new Date('2026-03-10T11:33:37Z'));
     expect(later.penumbralMagnitude).toBeLessThan(0);
     expect(later.umbralMagnitude).toBeLessThan(0);
+  });
+});
+
+describe('sombras de las galileanas sobre Júpiter frente al Hubble (fase 7)', () => {
+  /** Radio ecuatorial de Júpiter (km), de la ficha de la NASA (https://nssdc.gsfc.nasa.gov/planetary/factsheet/jupiterfact.html). */
+  const JUPITER_EQUATORIAL_KM = 71_492;
+  /** Velocidad de la luz (km/s), exacta por definición del metro. */
+  const LIGHT_KM_S = 299_792.458;
+
+  /**
+   * Las galileanas cuya sombra se ve sobre Júpiter desde la Tierra a una hora de observación: la
+   * geometría es la de un tiempo de luz antes (cuando salió de Júpiter la luz que llega), y la sombra
+   * se ve si cae en el hemisferio que mira a la Tierra.
+   */
+  function visibleShadows(iso: string): GalileanId[] {
+    const observed = new Date(iso);
+    const earth = planetHeliocentric('tierra', observed);
+    let emitted = observed;
+    for (let k = 0; k < 3; k++) {
+      const distanceKm = length(sub(planetHeliocentric('jupiter', emitted), earth)) * KM_PER_AU;
+      emitted = new Date(observed.getTime() - (distanceKm / LIGHT_KM_S) * 1000);
+    }
+    const jupiter = planetHeliocentric('jupiter', emitted);
+    const earthFromJupiter = sub(earth, jupiter);
+    const moons = galileanMoons(emitted);
+    return (Object.keys(moons) as GalileanId[]).filter((id) => {
+      const point = satelliteShadowPoint(moons[id], scale(jupiter, -1), JUPITER_EQUATORIAL_KM);
+      return point !== null && dot(point, sub(earthFromJupiter, point)) > 0;
+    });
+  }
+
+  // El tránsito triple del 24-1-2015 que fotografió el Hubble (NASA, ESA y el Hubble Heritage Team,
+  // https://science.nasa.gov/asset/hubble/jupiter-january-24-2015/): a las 06:28 UT, las sombras de
+  // Europa, Calisto e Ío sobre Júpiter; a las 07:10 UT, las de Europa y Calisto, y la de Ío ya no.
+  it('a las 06:28 UT del 24-1-2015, las de Europa, Calisto e Ío; a las 07:10 UT, ya no la de Ío', () => {
+    expect(visibleShadows('2015-01-24T06:28:00Z').sort()).toEqual(['calisto', 'europa', 'io']);
+    expect(visibleShadows('2015-01-24T07:10:00Z').sort()).toEqual(['calisto', 'europa']);
+  });
+
+  it('sin sombra si la luna está detrás del planeta o la recta no lo toca', () => {
+    const sun = { x: -5, y: 0, z: 0 };
+    // Detrás de Júpiter, respecto al Sol (el Sol, a la izquierda): su «sombra» caería delante, no cuenta.
+    expect(satelliteShadowPoint({ x: 0.003, y: 0, z: 0 }, sun, JUPITER_EQUATORIAL_KM)).toBeNull();
+    // Muy por encima del planeta: la recta no lo corta.
+    expect(
+      satelliteShadowPoint({ x: -0.003, y: 0.01, z: 0 }, sun, JUPITER_EQUATORIAL_KM),
+    ).toBeNull();
+    // Entre el Sol y el planeta, en su recta: la sombra, en el punto subsolar.
+    const point = satelliteShadowPoint({ x: -0.003, y: 0, z: 0 }, sun, JUPITER_EQUATORIAL_KM);
+    expect(point?.x).toBeCloseTo(-JUPITER_EQUATORIAL_KM / KM_PER_AU, 12);
   });
 });

@@ -50,7 +50,9 @@ import {
 import {
   BodyMaterialUniforms,
   EarthUniforms,
+  MAX_SHADOW_CASTERS,
   MoonUniforms,
+  ShadowUniforms,
   createBodyMaterial,
 } from './materials/body-material';
 import { createCubeSphere } from './cube-sphere';
@@ -230,6 +232,9 @@ interface BodyVisual {
   readonly earth: EarthUniforms | null;
   /** Uniformes propios de la Luna (fase 6); `null` en los demás cuerpos. */
   readonly moon: MoonUniforms | null;
+  /** Las sombras de otros cuerpos que recibe (fase 7) y quiénes las proyectan (sus índices). */
+  readonly shadows: ShadowUniforms | null;
+  readonly shadowCasters: readonly number[];
   readonly maps: readonly BodyMap[];
   /** Dónde van los mapas extra (los uniformes de la Tierra o de la Luna). */
   readonly mapUniforms: BodyMapUniforms | null;
@@ -383,6 +388,7 @@ export class World {
 
     this.visuals = options.bodies.map((body) => {
       const photometry = body.id === 'sol' ? null : BODY_PHOTOMETRY[body.id];
+      const casters = shadowCasters(body, options.bodies);
       const color = new Color(SCHEMATIC_COLORS[body.id]);
       const bodyMaterial = photometry
         ? createBodyMaterial({
@@ -393,6 +399,7 @@ export class World {
             hazeColor: photometry.hazeColor,
             earth: body.id === 'tierra',
             moon: body.id === 'luna',
+            shadows: casters.length > 0,
           })
         : null;
       if (bodyMaterial?.earth) configureEarth(bodyMaterial.earth);
@@ -421,6 +428,8 @@ export class World {
         uniforms: bodyMaterial?.uniforms ?? null,
         earth: bodyMaterial?.earth ?? null,
         moon: bodyMaterial?.moon ?? null,
+        shadows: bodyMaterial?.shadows ?? null,
+        shadowCasters: bodyMaterial?.shadows ? casters : [],
         maps: (bodyMaterial?.earth ? EARTH_MAPS : bodyMaterial?.moon ? MOON_MAPS : []).map(
           (map) => ({ ...map, loaded: null, requested: null }),
         ),
@@ -817,6 +826,43 @@ export class World {
     moon.uSunLocal.value.set(sun.x, sun.y, sun.z, SUN_RADIUS_KM / visual.body.radiusKm);
   }
 
+  /**
+   * Las sombras que recibe un cuerpo de otros (fase 7, D20): los que le tapan el Sol (sus lunas más
+   * grandes, o su planeta) y el Sol, en el sistema propio de la malla y en sus radios ecuatoriales,
+   * con la geometría real del estado (float64, heliocéntrica: la de la luz que le llega). Un planeta
+   * tapa con su radio ecuatorial, el que cruzan sus lunas, que orbitan cerca de su ecuador.
+   */
+  private updateShadows(visual: BodyVisual, frame: WorldFrame): void {
+    const shadows = visual.shadows;
+    if (!shadows) return;
+    const k = visual.body.index;
+    const toBody = transposeMat3(frame.orientations[k] as Mat3);
+    const radiusAu = visual.body.radiusKm / KM_PER_AU;
+    const helio = frame.state.heliocentric;
+    // Del centro del cuerpo a un punto (UA, ECL), en la malla (x, y, z → x, z, −y) y en sus radios.
+    const toMesh = (x: number, y: number, z: number): Vec3 => {
+      const b = mulMat3Vec(toBody, { x: x / radiusAu, y: y / radiusAu, z: z / radiusAu });
+      return { x: b.x, y: b.z, z: -b.y };
+    };
+    const hx = helio[3 * k] as number;
+    const hy = helio[3 * k + 1] as number;
+    const hz = helio[3 * k + 2] as number;
+    const sun = toMesh(-hx, -hy, -hz);
+    shadows.uShadowSun.value.set(sun.x, sun.y, sun.z, SUN_RADIUS_KM / visual.body.radiusKm);
+    visual.shadowCasters.forEach((index, slot) => {
+      const caster = this.visuals[index]?.body;
+      const target = shadows.uShadowCasters.value[slot];
+      if (!caster || !target) return;
+      const c = toMesh(
+        (helio[3 * index] as number) - hx,
+        (helio[3 * index + 1] as number) - hy,
+        (helio[3 * index + 2] as number) - hz,
+      );
+      target.set(c.x, c.y, c.z, caster.radiusKm / visual.body.radiusKm);
+    });
+    shadows.uShadowCount.value = visual.shadowCasters.length;
+  }
+
   /** Marcadores de los lugares del cielo desde España (la vista guiada «España»). */
   setSurfaceMarkers(visible: boolean): void {
     if (this.markers) this.markers.visible = visible;
@@ -879,6 +925,7 @@ export class World {
       }
       if (visual.earth) this.updateEclipse(visual, frame);
       if (visual.moon) this.updateEarthShadow(visual, frame);
+      if (visual.shadows) this.updateShadows(visual, frame);
       if (visual.atmosphere) {
         const onScreen = frame.screen[k];
         visual.atmosphere.uniforms.uRadius.value = r;
@@ -1245,6 +1292,24 @@ function configureMoon(moon: MoonUniforms, radiusKm: number): void {
   const { color, intensity, axis } = VISUAL_CONFIG.moon.umbraLight;
   moon.uUmbraLight.value.set(color).multiplyScalar(intensity);
   moon.uUmbraAxis.value = axis;
+}
+
+/**
+ * Quiénes proyectan su sombra sobre un cuerpo (fase 7, D20): sobre un planeta, sus lunas más grandes
+ * (hasta `MAX_SHADOW_CASTERS`, por radio: en Júpiter, las cuatro galileanas); sobre una luna, su
+ * planeta. La Tierra y la Luna tienen las suyas (fases 5 y 6), y el Sol no recibe ninguna.
+ */
+export function shadowCasters(body: SceneBody, bodies: readonly SceneBody[]): number[] {
+  if (body.id === 'sol' || body.id === 'tierra' || body.id === 'luna') return [];
+  if (body.kind === 'moon') {
+    const parent = bodies.find((other) => other.id === body.parent);
+    return parent ? [parent.index] : [];
+  }
+  return bodies
+    .filter((other) => other.parent === body.id)
+    .sort((a, b) => b.radiusKm - a.radiusKm)
+    .slice(0, MAX_SHADOW_CASTERS)
+    .map((other) => other.index);
 }
 
 /** Una textura no ha llegado: no es un error fatal (queda el color esquemático), pero se anota. */

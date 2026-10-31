@@ -3,11 +3,12 @@ import { Libration } from 'astronomy-engine';
 import { BackSide, FrontSide, Quaternion, Texture, Vector3, Vector4 } from 'three';
 import { KM_PER_AU } from '../ephemeris/constants';
 import { subsolarPoint } from '../ephemeris/coordinates';
-import { earthShadow, moonShadowCenter } from '../ephemeris/eclipse';
+import { earthShadow, moonShadowCenter, satelliteShadowPoint } from '../ephemeris/eclipse';
 import { NASA_ECLIPSE_2026_08_12, USNO_MOON_PHASES } from '../ephemeris/fixtures/fixtures';
 import { moonPhase } from '../ephemeris/ephemeris';
 import { illustrativeRadius } from '../ephemeris/scale';
 import { MAX_DATE, toAstroTime } from '../ephemeris/time';
+import { length, scale } from '../ephemeris/vec3';
 import {
   EngineDeps,
   FRAMING_FILL,
@@ -1268,6 +1269,74 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     h.engine.dispose();
   });
 
+  it('las sombras que recibe Júpiter (sus cuatro galileanas) y la que recibe Ío (Júpiter), con la geometría de satelliteShadowPoint (fase 7)', async () => {
+    // Durante el tránsito triple del 24-1-2015 que fotografió el Hubble (un tiempo de luz antes de las
+    // 06:28 UT, cuando salió de Júpiter la luz que vio): las sombras de Ío, Europa y Calisto caen sobre
+    // Júpiter.
+    const date = new Date('2015-01-24T05:52:00Z');
+    const h = await createHarness({ reducedMotion: true, focus: 'jupiter', time: date });
+    settle(h);
+    interface ShadowVisual {
+      body: { id: string; index: number; radiusKm: number };
+      shadows: {
+        uShadowCasters: { value: { x: number; y: number; z: number; w: number }[] };
+        uShadowCount: { value: number };
+        uShadowSun: { value: { x: number; y: number; z: number; w: number } };
+      } | null;
+      shadowCasters: readonly number[];
+    }
+    const visuals = (internals(h).world as unknown as { visuals: ShadowVisual[] }).visuals;
+    const jupiter = visuals.find((v) => v.body.id === 'jupiter');
+    if (!jupiter?.shadows) throw new Error('Júpiter sin sombras');
+    expect(jupiter.shadows.uShadowCount.value).toBe(4);
+    const casters = jupiter.shadowCasters.map((index) => SCENE_BODIES[index]?.id);
+    expect([...casters].sort()).toEqual(['calisto', 'europa', 'ganimedes', 'io']);
+    // Lo que no depende de la orientación de la malla (distancias y ángulos), frente a la geometría
+    // del estado: la recta del Sol por cada luna corta el planeta si y solo si satelliteShadowPoint
+    // da un punto, y las tres del tránsito lo cortan.
+    const state = createSolarSystemModel().at(date.getTime());
+    const sunFromJupiter = scale(state.heliocentricOf('jupiter'), -1);
+    const sun = jupiter.shadows.uShadowSun.value;
+    const radiusAu = jupiter.body.radiusKm / KM_PER_AU;
+    expect(Math.hypot(sun.x, sun.y, sun.z)).toBeCloseTo(length(sunFromJupiter) / radiusAu, 3);
+    const onPlanet: string[] = [];
+    jupiter.shadowCasters.forEach((index, slot) => {
+      const id = SCENE_BODIES[index]?.id ?? '';
+      const caster = jupiter.shadows?.uShadowCasters.value[slot];
+      if (!caster) throw new Error('falta un caster');
+      const offset = state.parentOffsetOf(id);
+      expect(Math.hypot(caster.x, caster.y, caster.z), id).toBeCloseTo(
+        length(offset) / radiusAu,
+        6,
+      );
+      expect(caster.w, id).toBeCloseTo(
+        (SCENE_BODIES[index]?.radiusKm ?? 0) / jupiter.body.radiusKm,
+        9,
+      );
+      // La recta del Sol por la luna, en la malla: ¿corta la esfera unidad por detrás de la luna?
+      const dir = normalizeXyz(caster.x - sun.x, caster.y - sun.y, caster.z - sun.z);
+      const b = caster.x * dir.x + caster.y * dir.y + caster.z * dir.z;
+      const disc = b * b - (caster.x ** 2 + caster.y ** 2 + caster.z ** 2 - 1);
+      const hits = disc >= 0 && -b - Math.sqrt(disc) >= 0;
+      const expected = satelliteShadowPoint(offset, sunFromJupiter, jupiter.body.radiusKm) !== null;
+      expect(hits, id).toBe(expected);
+      if (hits) onPlanet.push(id);
+    });
+    expect(onPlanet.sort()).toEqual(['calisto', 'europa', 'io']);
+    // Ío recibe la sombra de Júpiter, con el radio de Júpiter en radios de Ío.
+    const io = visuals.find((v) => v.body.id === 'io');
+    expect(io?.shadows?.uShadowCount.value).toBe(1);
+    expect(io?.shadows?.uShadowCasters.value[0]?.w).toBeCloseTo(
+      jupiter.body.radiusKm / (io?.body.radiusKm ?? 1),
+      9,
+    );
+    // La Tierra y la Luna llevan las suyas (fases 5 y 6), y el Sol ninguna.
+    for (const id of ['sol', 'tierra', 'luna']) {
+      expect(visuals.find((v) => v.body.id === id)?.shadows ?? null, id).toBeNull();
+    }
+    h.engine.dispose();
+  });
+
   it('en la vista Luna, el punto de la malla que mira a la Tierra es el de la libración de astronomy-engine (fase 6)', async () => {
     // Los extremos de la libración en longitud de 2026 con la Luna gibosa (los de las capturas).
     for (const iso of ['2026-01-06T06:00:00Z', '2026-11-21T18:00:00Z']) {
@@ -1560,3 +1629,9 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     h.engine.dispose();
   });
 });
+
+/** Un vector normalizado (para los tests de las sombras). */
+function normalizeXyz(x: number, y: number, z: number): { x: number; y: number; z: number } {
+  const n = Math.hypot(x, y, z);
+  return { x: x / n, y: y / n, z: z / n };
+}

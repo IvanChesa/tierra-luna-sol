@@ -1,6 +1,7 @@
 /**
- * Eclipses de Sol (fase 5): dónde cae el centro de la sombra de la Luna sobre la Tierra. Y eclipses de
- * Luna (fase 6): la sombra de la Tierra a la distancia de la Luna (`earthShadow`).
+ * Eclipses de Sol (fase 5): dónde cae el centro de la sombra de la Luna sobre la Tierra. Eclipses de
+ * Luna (fase 6): la sombra de la Tierra a la distancia de la Luna (`earthShadow`). Y las sombras de
+ * las lunas sobre su planeta (fase 7, `satelliteShadowPoint`), como las de las galileanas en Júpiter.
  *
  * El eje de la sombra es la recta que va del Sol a la Luna y sigue más allá. Donde corta el
  * elipsoide terrestre está el centro de la sombra; en el máximo de un eclipse central, el punto del
@@ -12,7 +13,18 @@
 import { KM_PER_AU, MOON_RADIUS_KM, SUN_RADIUS_KM } from './constants';
 import { ECL_TO_EQJ, eclToEarthFixed, sunApparentGeocentricEcl } from './coordinates';
 import { moonGeocentric } from './ephemeris';
-import { angleBetweenDeg, dot, length, mulMat3Vec, normalize, scale, sub, vec3 } from './vec3';
+import {
+  Vec3,
+  add,
+  angleBetweenDeg,
+  dot,
+  length,
+  mulMat3Vec,
+  normalize,
+  scale,
+  sub,
+  vec3,
+} from './vec3';
 
 /** Elipsoide WGS84: semieje mayor (km) y achatamiento (EPSG 7030). */
 export const WGS84_EQUATORIAL_KM = 6378.137;
@@ -116,4 +128,29 @@ export function earthShadow(date: Date): EarthShadow {
     umbralMagnitude: magnitude(umbra),
     penumbralMagnitude: magnitude(penumbra),
   };
+}
+
+// --- Sombras de las lunas sobre su planeta (fase 7) ------------------------------------------------
+
+/**
+ * Dónde cae el centro de la sombra de una luna sobre su planeta: donde la recta que va del Sol a la
+ * luna, más allá de ella, corta el planeta, tomado como una esfera de su radio ecuatorial (las lunas
+ * regulares orbitan cerca de su ecuador). Es la misma geometría que pinta la escena (`TLS_SHADOWS`).
+ * Posiciones respecto al centro del planeta (ECL, UA), como las del estado del sistema. Devuelve el
+ * punto (igual) o `null` si la sombra no toca el planeta.
+ */
+export function satelliteShadowPoint(
+  moonFromPlanet: Vec3,
+  sunFromPlanet: Vec3,
+  planetRadiusKm: number,
+): Vec3 | null {
+  const radius = planetRadiusKm / KM_PER_AU;
+  const toward = normalize(sub(moonFromPlanet, sunFromPlanet));
+  const b = dot(moonFromPlanet, toward);
+  const discriminant = b * b - (dot(moonFromPlanet, moonFromPlanet) - radius * radius);
+  if (discriminant < 0) return null;
+  const t = -b - Math.sqrt(discriminant);
+  // Detrás de la luna, no delante: si no, la luna está al otro lado del planeta (o dentro).
+  if (t < 0) return null;
+  return add(moonFromPlanet, scale(toward, t));
 }
