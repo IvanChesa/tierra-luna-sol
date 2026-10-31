@@ -96,12 +96,28 @@ describe('MoonPanel: vistas y recorrido de la Luna (fase 6)', () => {
     fixture.detectChanges();
     expect(shown.at(-1)).toBe(MOON_TOUR[2]?.id);
     expect(button('Recorrer la Luna')).not.toBeNull();
-    // Otra vez en marcha, llega a la última y se para.
+    // Otra vez en marcha, llega a la última y se para; el botón dice entonces lo que hace.
     button('Recorrer la Luna')?.click();
     vi.advanceTimersByTime(MOON_TOUR_STEP_MS * MOON_TOUR.length);
     fixture.detectChanges();
     expect(shown.at(-1)).toBe(MOON_TOUR.at(-1)?.id);
     expect(labelled('Parada siguiente')?.getAttribute('aria-disabled')).toBe('true');
+    button('Volver a empezar')?.click();
+    fixture.detectChanges();
+    expect(shown.at(-1)).toBe(MOON_TOUR[0]?.id);
+  });
+
+  it('el recorrido se para al abrir el índice, que tapa el panel (revisión de la fase 6)', () => {
+    vi.useFakeTimers();
+    const { fixture, session, button } = render();
+    const shown: string[] = [];
+    vi.spyOn(session, 'showMoonStop').mockImplementation((stop) => shown.push(stop.id));
+    button('Recorrer la Luna')?.click();
+    fixture.detectChanges();
+    TestBed.inject(ExplorerStore).indexOpen.set(true);
+    vi.advanceTimersByTime(MOON_TOUR_STEP_MS * 3);
+    fixture.detectChanges();
+    expect(shown).toEqual([MOON_TOUR[0]?.id]);
     expect(button('Recorrer la Luna')).not.toBeNull();
   });
 
@@ -115,7 +131,9 @@ describe('MoonPanel: vistas y recorrido de la Luna (fase 6)', () => {
     fixture.detectChanges();
     vi.advanceTimersByTime(MOON_TOUR_STEP_MS * 3);
     expect(shown).toEqual([MOON_TOUR[0]?.id]);
-    button('Siguiente parada')?.click();
+    fixture.detectChanges();
+    // El botón grande no se llama como el chevrón «Parada siguiente» (revisión de la fase 6).
+    button('Seguir el recorrido')?.click();
     expect(shown).toEqual(MOON_TOUR.slice(0, 2).map((stop) => stop.id));
   });
 

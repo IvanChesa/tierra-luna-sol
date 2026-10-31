@@ -63,7 +63,7 @@ test.describe('La vista Luna (fase 6)', () => {
     // No avanza solo (una parada dura 12 s): sigue en la primera, y el botón da la siguiente.
     await page.waitForTimeout(13_000);
     await expect(caption).toContainText('1 de 5');
-    await page.getByRole('button', { name: 'Siguiente parada' }).click();
+    await page.getByRole('button', { name: 'Seguir el recorrido' }).click();
     await expect(caption).toContainText('2 de 5');
   });
 });

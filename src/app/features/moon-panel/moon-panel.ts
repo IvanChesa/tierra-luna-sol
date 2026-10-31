@@ -1,6 +1,7 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { MOON_TOUR, MOON_VIEWS, MoonStop } from '../../data/tours';
 import { moonPhase } from '../../ephemeris/ephemeris';
+import { ExplorerStore } from '../../state/explorer.store';
 import { SimulationStore } from '../../state/simulation.store';
 import { ExplorerSession } from '../explorer-ui/explorer-session';
 import { Icon } from '../viewer/icon';
@@ -21,10 +22,11 @@ interface Shown {
  *   una pausa, lleva la fecha a la luz con la que se ve (`ExplorerSession.showMoonStop`), mueve la
  *   cámara y anuncia su subtítulo, que se queda escrito.
  * - «Recorrido»: cinco lugares con nombre. «Recorrer la Luna» los pasa solo cada 12 s y se para al
- *   final o con el mismo botón; «Parada siguiente» salta a la siguiente. Con movimiento reducido va
- *   paso a paso: el botón muestra la parada siguiente y no avanza solo (PLAN, fase 6). En los
- *   extremos, «Parada anterior» y «Parada siguiente» no están disponibles (`aria-disabled`, sin
- *   perder el foco).
+ *   final, con el mismo botón o al abrir el índice (que tapa el panel); «Parada siguiente» salta a la
+ *   siguiente. Con movimiento reducido va paso a paso: el botón («Seguir el recorrido») muestra la
+ *   parada siguiente y no avanza solo (PLAN, fase 6). En la última parada, el botón dice «Volver a
+ *   empezar», que es lo que hace. En los extremos, «Parada anterior» y «Parada siguiente» no están
+ *   disponibles (`aria-disabled`, sin perder el foco).
  */
 @Component({
   selector: 'tls-moon-panel',
@@ -94,6 +96,7 @@ interface Shown {
 export class MoonPanel {
   private readonly sim = inject(SimulationStore);
   private readonly session = inject(ExplorerSession);
+  private readonly explorer = inject(ExplorerStore);
 
   readonly views = MOON_VIEWS;
   readonly stops = MOON_TOUR;
@@ -119,13 +122,16 @@ export class MoonPanel {
   });
   readonly atFirst = computed(() => this.stopIndex() === 0);
   readonly atLast = computed(() => this.stopIndex() === this.stops.length - 1);
-  readonly tourLabel = computed(() =>
-    this.touring()
-      ? 'Pausar el recorrido'
-      : this.stepByStep && this.stopIndex() !== null
-        ? 'Siguiente parada'
-        : 'Recorrer la Luna',
-  );
+  /**
+   * El botón grande, con un nombre distinto del chevrón «Parada siguiente» (revisión de la fase 6): en
+   * la última parada vuelve a la primera, y paso a paso sigue con la siguiente.
+   */
+  readonly tourLabel = computed(() => {
+    if (this.touring()) return 'Pausar el recorrido';
+    const index = this.stopIndex();
+    if (index === this.stops.length - 1) return 'Volver a empezar';
+    return this.stepByStep && index !== null ? 'Seguir el recorrido' : 'Recorrer la Luna';
+  });
 
   private readonly stopIndex = computed(() => {
     const shown = this.shown();
@@ -183,7 +189,9 @@ export class MoonPanel {
   private schedule(): void {
     this.timer = setTimeout(() => {
       const index = (this.stopIndex() ?? -1) + 1;
-      if (index >= this.stops.length) {
+      // Con el índice abierto, el panel no se ve: el recorrido se para en vez de mover la cámara y
+      // anunciar paradas sin un botón de pausa a mano.
+      if (index >= this.stops.length || this.explorer.indexOpen()) {
         this.stopTour();
         return;
       }

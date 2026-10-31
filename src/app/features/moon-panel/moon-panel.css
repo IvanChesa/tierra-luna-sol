@@ -55,11 +55,6 @@
   font-size: var(--text-sm);
 }
 
-.moon__label {
-  color: var(--color-text-muted);
-  font-size: var(--text-sm);
-}
-
 .moon__hint {
   margin: 0;
   color: var(--color-text-muted);
