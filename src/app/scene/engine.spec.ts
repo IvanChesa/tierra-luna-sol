@@ -1608,8 +1608,12 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     expect(at(119)).toBe(0);
     expect(at(130)).toBe(0);
     expect(at(170)).toBe(1);
-    // Fuera de la pantalla no cuenta, aunque su radio sea enorme.
+    // Fuera de la pantalla no entra, aunque su radio sea enorme; el que ya se veía grande y sale del
+    // encuadre sin alejarse lo conserva (fase 7: Marte, con Fobos enfocado) hasta que se aleja.
+    expect(at(500, false)).toBe(1);
+    expect(at(119, false)).toBe(0);
     expect(at(500, false)).toBe(0);
+    expect(at(500)).toBe(1);
     h.engine.dispose();
   });
 

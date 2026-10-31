@@ -285,7 +285,10 @@ const MIN_PRESENCE = 0.05;
  * Radio en pantalla (px CSS) a partir del cual un cuerpo que no es el foco se ve grande y lleva las
  * texturas del primer plano, y por debajo del cual las suelta (histéresis: no se piden y se sueltan
  * con un vaivén de la cámara). Revisión del bloque C, C4: en la vista Luna, la Tierra mide unos 20 px
- * y ya no pide su textura de 8K.
+ * y ya no pide su textura de 8K. Para entrar hay que estar en la pantalla; para salir, basta con
+ * alejarse: el que sale del encuadre sin alejarse conserva su primer plano (fase 7: con Fobos enfocado
+ * a 1 día/s, Marte entraba y salía del encuadre seis veces por segundo y cada vez se volvían a
+ * descodificar y a subir sus texturas de 4K, a 46–50 FPS).
  */
 const LARGE_ENTER_PX = 160;
 const LARGE_EXIT_PX = 120;
@@ -1024,7 +1027,7 @@ export class World {
     for (const body of screen) {
       const was = this.large[body.index] === 1;
       const radius = Number.isFinite(body.radiusPx) ? body.radiusPx : Infinity;
-      const is = body.onScreen && radius >= (was ? LARGE_EXIT_PX : LARGE_ENTER_PX);
+      const is = was ? radius >= LARGE_EXIT_PX : body.onScreen && radius >= LARGE_ENTER_PX;
       if (is !== was) {
         this.large[body.index] = is ? 1 : 0;
         changed = true;
