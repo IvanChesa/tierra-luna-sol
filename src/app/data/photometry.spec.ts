@@ -3,6 +3,7 @@ import {
   PhaseLaw,
   Photometry,
   discBrightness,
+  hazeGlow,
   lawPhaseMagnitude,
 } from '../ephemeris/photometry';
 import { BODY_DATA } from './body-data';
@@ -54,6 +55,20 @@ describe('fotometría de los cuerpos', () => {
     ['marte', 0.03],
   ] as const)('la curva de fase de %s sigue su ley publicada (RMS ≤ %s mag)', (id, tolerance) => {
     expect(rms(PHASE_LAWS[id], BODY_PHOTOMETRY[id].photometry)).toBeLessThan(tolerance);
+  });
+
+  it('Saturno a contraluz (R2): el limbo brilla con la fase de PIA17172 y casi nada en las fases de siempre', () => {
+    const haze = BODY_PHOTOMETRY.saturno.haze;
+    if (!haze) throw new Error('Saturno sin atmósfera');
+    // Lo que brilla el limbo (μ₀ = 1, μ = 0) a cada fase, respecto a casi de frente.
+    const limb = (alphaDeg: number) =>
+      hazeGlow(1, 0, alphaDeg * DEG, haze) / hazeGlow(1, 0, 0, haze);
+    // A contraluz, con la fase de la foto de Cassini (≈ 176°), unas 35 veces más.
+    expect(limb(176)).toBeGreaterThan(30);
+    // A 60° de fase (las vistas de Cassini desde latitudes altas), menos de un 5 % más; en la del
+    // Hubble (6°), nada.
+    expect(limb(60)).toBeLessThan(1.05);
+    expect(limb(6)).toBeLessThan(1.001);
   });
 
   it('el color medido de cada cuerpo y de cada anillo es una cromaticidad (luminancia 1), con fuente', () => {

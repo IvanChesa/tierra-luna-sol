@@ -108,9 +108,26 @@ const giant = (minnaertK: number): Photometry => ({
   ...NO_FORWARD,
 });
 
-/** Atmósfera: brillo en el limbo, exponente, crepúsculo (en μ₀) y refuerzo a contraluz. */
-const haze = (strength: number, limbExponent: number, twilight: number, forwardBoost: number) =>
-  ({ strength, limbExponent, twilight, forwardBoost, forwardAsymmetry: 0.7 }) as const;
+/**
+ * Atmósfera: brillo en el limbo, exponente, crepúsculo (en μ₀), refuerzo a contraluz y asimetría de
+ * ese refuerzo (g de Henyey–Greenstein: cuanto más cerca de 1, más estrecho y más a contraluz).
+ */
+const haze = (
+  strength: number,
+  limbExponent: number,
+  twilight: number,
+  forwardBoost: number,
+  forwardAsymmetry = 0.7,
+) => ({ strength, limbExponent, twilight, forwardBoost, forwardAsymmetry }) as const;
+
+/**
+ * El anillo de luz del limbo de Saturno a contraluz (fase 7, R2 de la revisión del bloque R): la luz
+ * del Sol que la neblina de su alta atmósfera dispersa hacia delante, lo más reconocible de las fotos
+ * de Cassini con el Sol detrás del planeta (PIA17172, «The Day the Earth Smiled», con una fase de
+ * unos 176°; docs/realismo/referencias.md). Un lóbulo estrecho (g = 0,9) e intenso. Ajuste visual con
+ * esa foto, no una medida (`photometry.spec.ts` dice cuánto cambia con la fase).
+ */
+export const SATURN_FORWARD_HAZE = { forwardBoost: 60, forwardAsymmetry: 0.9 } as const;
 
 /**
  * Partículas de los anillos de Saturno (solo cuenta su función de fase; la profundidad óptica y el
@@ -233,7 +250,13 @@ export const BODY_PHOTOMETRY: Readonly<Record<Exclude<BodyId, 'sol'>, BodyPhotom
   saturno: {
     kind: 'giant',
     photometry: giant(0.85),
-    haze: haze(0.02, 4, 0.07, 10),
+    haze: haze(
+      0.02,
+      4,
+      0.07,
+      SATURN_FORWARD_HAZE.forwardBoost,
+      SATURN_FORWARD_HAZE.forwardAsymmetry,
+    ),
     haloScaleHeight: 0.005,
     hazeColor: '#f0e2c4',
     chromaticity: {
