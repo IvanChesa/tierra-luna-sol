@@ -7,18 +7,12 @@
 // - Alineación del meridiano 0 de los mapas de superficie: en cada uno, unos puntos conocidos
 //   (mares lunares, Syrtis Major, el Sáhara…) tienen que ser oscuros o claros donde toca. Con el
 //   mapa girado 180°, las sondas fallan.
-// - Radios que cubre la tira de los anillos de Saturno: Solar System Scope no los documenta. Se
-//   calibran con dos bordes de la ficha de los anillos de la NASA (src/app/data/body-data.ts): el
-//   exterior del anillo B (empieza la división de Cassini) y el exterior del anillo A. Se comprueba
-//   después que el borde interior del anillo C cae donde la textura empieza a ser opaca y que la
-//   división de Encke está donde dice la ficha.
-// - Opacidad física de los anillos (fase 3b): la opacidad de la textura es artística (la división
-//   de Cassini tiene τ ≈ 0,6; la NASA da 0–0,1). Se conserva su estructura radial y se lleva cada
-//   anillo (C, B, A y la división de Cassini) a la profundidad óptica normal y al albedo de la ficha.
-//   La luminancia de la textura modula ese albedo (su estructura fina, sin cambiar la media de cada
-//   anillo donde se calibra; revisión del bloque R, R1) y el color es el medido en la foto del Hubble
-//   (`RING_PHOTOMETRY.chromaticity`). El alfa de la tira es la opacidad vista de frente, 1 − e^(−τ), y
-//   su color, el albedo.
+// - La tira de los anillos de Saturno (fase 7, D36): su profundidad óptica, de una ocultación de
+//   Cassini (scripts/ring-profile.mjs), comprobada con los radios publicados de sus divisiones
+//   (Colombo, Maxwell, Huygens, Encke y Keeler) y de sus bordes (data/saturn-rings.ts); el color de
+//   cada anillo, de su reflectividad por bandas medida por el Hubble (`RING_SPECTRA`), y su albedo,
+//   el de la ficha de la NASA calibrado con esas medidas. El alfa de la tira es la opacidad vista de
+//   frente, 1 − e^(−τ), y su color, el albedo.
 // - Color del océano de la Tierra (fase 3b): el de la textura es un azul plano y saturado; se lleva
 //   al medido en fotos de EPIC (DSCOVR) con la máscara del agua y se comprueba el resultado.
 // - Orientación de la Vía Láctea (panorama de ESO en coordenadas galácticas, con l = 0 en el centro y
@@ -31,8 +25,13 @@ import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 import { BODY_DATA } from '../src/app/data/body-data.ts';
-import { RING_PHOTOMETRY } from '../src/app/data/photometry.ts';
-import { phaseFunction, relativeDetail, ringReflectance } from '../src/app/ephemeris/photometry.ts';
+import { RING_PHOTOMETRY, RING_SPECTRA } from '../src/app/data/photometry.ts';
+import { SATURN_RING_FEATURES } from '../src/app/data/saturn-rings.ts';
+import {
+  bandChromaticity,
+  phaseFunction,
+  ringReflectance,
+} from '../src/app/ephemeris/photometry.ts';
 import { OCEAN_CHROMA } from './reference-colors.mjs';
 import {
   DEMS,
@@ -44,9 +43,11 @@ import {
 } from './build-relief.mjs';
 import { POLAR_EDGE_DEG, buildPolarNormalAtlas } from './lola-polar.mjs';
 import { checkMosaicProbes, loadMosaic } from './usgs-mosaic.mjs';
+import { checkRingFeatures, loadUvisProfile, ringStripTau } from './ring-profile.mjs';
 
 const ROOT = new URL('../', import.meta.url);
 const SRC = new URL('assets-src/textures/', ROOT);
+const RINGS_SRC = new URL('assets-src/rings/', ROOT);
 const PUBLIC = new URL('public/', ROOT);
 const LEVELS = [
   ['1k', 1024],
@@ -61,7 +62,8 @@ const RING_HEIGHT = 16;
 
 /**
  * kind: color (sRGB), gray (datos en escala de grises, sin espacio de color), normal (datos RGB),
- * ring (tira RGBA de los anillos), panorama (cielo en coordenadas galácticas), relief (mapa de normales
+ * ring-profile (la tira RGBA de los anillos, de una ocultación: `profile`, de `innerKm` a `outerKm`),
+ * panorama (cielo en coordenadas galácticas), relief (mapa de normales
  * calculado con build-relief.mjs a partir de un modelo de elevación; `color`: la textura con la que
  * se comprueba la alineación). `ocean`: máscara del agua con la que se corrige el color del océano
  * (OCEAN_CHROMA). `maxWidth`: el nivel más grande que se genera (4k si no se dice; 8k solo la
@@ -97,7 +99,16 @@ const TEXTURES = {
   mars: { file: '8k_mars.jpg', kind: 'color', quality: 80 },
   jupiter: { file: '8k_jupiter.jpg', kind: 'color', quality: 80 },
   saturn: { file: '8k_saturn.jpg', kind: 'color', quality: 80 },
-  'saturn-rings': { file: '8k_saturn_ring_alpha.png', kind: 'ring', quality: 90 },
+  // Los anillos de Saturno (fase 7, D36): la τ de la ocultación de β Centauri de Cassini UVIS, de
+  // 74 000 km (por dentro del anillo C) a 141 000 km (por fuera del F): 8,2 km por píxel en 8k.
+  'saturn-rings': {
+    kind: 'ring-profile',
+    profile: 'UVIS_HSP_2008_231_BETCEN_I_TAU01KM.TAB',
+    innerKm: 74_000,
+    outerKm: 141_000,
+    quality: 90,
+    maxWidth: 8192,
+  },
   'mercury-normal': { dem: 'mercury', kind: 'relief', color: 'mercury', quality: 85 },
   'mars-normal': { dem: 'mars', kind: 'relief', color: 'mars', quality: 85 },
   // Sus extremos se comprueban en 2k: en 1k, con píxeles de ~10 km, el punto más bajo cae en otro
@@ -364,81 +375,9 @@ async function meanLuminance(file) {
   return sum / weights;
 }
 
-/** Perfil radial (alfa medio por columna) de la tira de los anillos. */
-async function ringProfile(file) {
-  const { data, info } = await sharp(fileURLToPath(new URL(file, SRC)))
-    .raw()
-    .toBuffer({ resolveWithObject: true });
-  const alpha = new Float64Array(info.width);
-  for (let x = 0; x < info.width; x++) {
-    let sum = 0;
-    for (let y = 0; y < info.height; y++) sum += data[(y * info.width + x) * info.channels + 3];
-    alpha[x] = sum / info.height / 255;
-  }
-  return alpha;
-}
-
-/** x (px) de la mayor caída del alfa (de ≥ 0,5 a ≤ 0,3 en 8 px) dentro de una ventana. */
-function steepestDrop(alpha, from, to) {
-  let best = null;
-  for (let x = from; x < to; x++) {
-    const before = alpha[x - 4];
-    const after = alpha[x + 4];
-    if (before >= 0.5 && after <= 0.3 && (!best || before - after > best.drop)) {
-      best = { x, drop: before - after };
-    }
-  }
-  if (!best) throw new Error(`No encuentro el borde de los anillos entre ${from} y ${to} px`);
-  return best.x;
-}
-
-/** Los anillos de Saturno del catálogo (ficha de la NASA). */
+/** Los anillos de Saturno del catálogo (ficha de la NASA): el intervalo del albedo de cada uno. */
 const RINGS = BODY_DATA.saturno.rings;
 if (!RINGS) throw new Error('Faltan los anillos de Saturno en body-data.ts');
-/** Borde interior y anchura de la división de Encke en la ficha de los anillos de la NASA. */
-const ENCKE_GAP_KM = { inner: 133410, width: 325 };
-
-async function calibrateRings(file) {
-  const bOuter = RINGS.cassiniInnerKm.value;
-  const aOuter = RINGS.outerRadiusKm.value;
-  const cInner = RINGS.innerRadiusKm.value;
-  const alpha = await ringProfile(file);
-  const width = alpha.length;
-  // Ventanas: la división de Cassini y el borde exterior del anillo A están en el último tercio.
-  const xB = steepestDrop(alpha, Math.round(width * 0.6), Math.round(width * 0.73));
-  const xA = steepestDrop(alpha, Math.round(width * 0.9), Math.round(width * 0.97));
-  const kmPerPx = (aOuter - bOuter) / (xA - xB);
-  const inner = bOuter - xB * kmPerPx;
-  const outer = inner + width * kmPerPx;
-  // Comprobación independiente: el anillo C empieza (el alfa sube) en su radio de la NASA.
-  const xC = Math.round((cInner - inner) / kmPerPx);
-  const mean = (a, b) => alpha.slice(a, b).reduce((s, v) => s + v, 0) / (b - a);
-  const before = mean(xC - 40, xC - 10);
-  const after = mean(xC + 10, xC + 40);
-  if (!(after > before + 0.04)) {
-    throw new Error(
-      `La calibración de los anillos no cuadra con el anillo C (${before} → ${after})`,
-    );
-  }
-  // Segunda comprobación independiente: el mínimo de opacidad cerca de la división de Encke cae
-  // dentro de ella (o a menos de su anchura).
-  const enckeCenter = ENCKE_GAP_KM.inner + ENCKE_GAP_KM.width / 2;
-  const xE = Math.round((enckeCenter - inner) / kmPerPx);
-  let xMin = xE;
-  for (let x = xE - 60; x <= xE + 60; x++) if (alpha[x] < alpha[xMin]) xMin = x;
-  const enckeFound = inner + (xMin + 0.5) * kmPerPx;
-  if (Math.abs(enckeFound - enckeCenter) > ENCKE_GAP_KM.width) {
-    throw new Error(
-      `La división de Encke no está donde dice la ficha (${Math.round(enckeFound)} km)`,
-    );
-  }
-  return {
-    inner: Math.round(inner),
-    outer: Math.round(outer),
-    kmPerPx,
-    report: `anillos: borde exterior del B en x = ${xB} px y del A en x = ${xA} px → ${kmPerPx.toFixed(3)} km/px; la tira cubre de ${Math.round(inner)} a ${Math.round(outer)} km; el anillo C (${cInner} km) cae en x = ${xC} px, donde el alfa sube de ${before.toFixed(2)} a ${after.toFixed(2)}; la división de Encke (${Math.round(enckeCenter)} km) tiene su mínimo a ${Math.round(enckeFound - enckeCenter)} km`,
-  };
-}
 
 const srgbToLinear = (c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
 const linearToSrgb = (v) => (v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055);
@@ -451,163 +390,271 @@ const smooth = (t) => {
 const typical = ([lo, hi]) => (lo > 0 ? Math.sqrt(lo * hi) : (lo + hi) / 2);
 
 /**
- * Reflectividad de los anillos medida por el Hubble (F555W, banda V) a 6° de fase con los anillos
- * abiertos 23,6°: I/F = 0,4650 en el anillo B (100 000–107 000 km) y 0,2970 en el A
- * (127 000–129 000 km), del ajuste de la tabla 5 de Salo y French (2010), «The opposition and tilt
- * effects of Saturn's rings from HST observations», Icarus 210, 785 (arXiv:1007.0349). El albedo de
- * esos anillos en la tira es el que hace que el modelo de la escena (dispersión simple con la función
- * de fase de `data/photometry.ts`) dé esa reflectividad, sin salir del intervalo de la ficha de la
- * NASA. El C y la división de Cassini se quedan con el valor típico de la ficha.
+ * Las regiones de los anillos (radios publicados, `data/saturn-rings.ts`), con el intervalo de su
+ * albedo en la ficha de la NASA, el espectro del que sale su color (`RING_SPECTRA.colorFrom`) y, en el
+ * C, el B y el A, la ventana donde el Hubble midió su reflectividad (Salo y French, 2010).
  */
-const RING_HST = {
-  phaseDeg: 6,
-  openingDeg: 23.6,
-  rings: {
-    B: { from: 100_000, to: 107_000, reflectance: 0.465 },
-    A: { from: 127_000, to: 129_000, reflectance: 0.297 },
-  },
-};
+const RING_REGIONS = (() => {
+  const f = SATURN_RING_FEATURES;
+  const { regions } = RINGS;
+  return [
+    ['C', f.cInnerKm, f.bInnerKm, regions.c, [78_000, 83_000]],
+    ['B', f.bInnerKm, f.bOuterKm, regions.b, [100_000, 107_000]],
+    ['Cassini', f.bOuterKm, f.aInnerKm, regions.cassini, null],
+    ['A', f.aInnerKm, f.aOuterKm, regions.a, [127_000, 129_000]],
+  ].map(([name, from, to, region, window]) => ({
+    name,
+    from,
+    to,
+    albedoRange: region.albedo.value,
+    window,
+    chroma: bandChromaticity(
+      RING_SPECTRA[RING_SPECTRA.colorFrom[name]].map((value, i) => ({
+        nm: RING_SPECTRA.wavelengthsNm[i],
+        value,
+      })),
+    ),
+  }));
+})();
 
 /**
- * Cuánto puede subir o bajar el albedo de una columna por el detalle de la textura: acota los huecos
- * (la división de Encke, el borde del anillo C), donde la luminancia de la textura cae casi a 0 y la
- * profundidad óptica ya los oscurece.
+ * El detalle del brillo de los anillos (revisión del bloque R, R1; fase 7, D36): la luminancia de la
+ * textura de Solar System Scope por radio, relativa a su media en la ventana de cada región (donde se
+ * calibra su albedo), entre ×0,2 y ×2. Aporta lo que la ocultación no da: con τ de 2 a 5, la luz que
+ * refleja el anillo B está saturada y saldría plano; en las fotos, su parte interior es más oscura y la
+ * central, más clara, con bandas. La τ ya no sale de la textura.
+ * - Su radio: el borde exterior del B y el del A de la textura (las dos mayores caídas de su opacidad),
+ *   en los radios medidos en la ocultación (`checkRingFeatures`): el del B no es circular.
+ * - Comprobación: la opacidad de la textura, llevada a esos radios, correlaciona con la τ de la
+ *   ocultación (en logaritmo) mejor sin desplazarla que desplazada más de 25 km.
  */
+const RING_TEXTURE = '8k_saturn_ring_alpha.png';
 const RING_DETAIL = { min: 0.2, max: 2 };
 
-/**
- * Tira física de los anillos (fase 3b): la estructura radial de la textura con la profundidad óptica
- * y el albedo de cada anillo de la ficha de la NASA, modulado por la luminancia de la textura (R1).
- * Devuelve la tira RGBA (8 bits, sRGB) y un informe. Falla si la mediana de τ de algún anillo queda
- * fuera de su intervalo.
- */
-async function physicalRingStrip(file, calibration) {
-  const { data, info } = await sharp(fileURLToPath(new URL(file, SRC)))
+async function ringTextureDetail(tau, innerKm, outerKm, edges) {
+  const { data, info } = await sharp(fileURLToPath(new URL(RING_TEXTURE, SRC)))
     .raw()
     .toBuffer({ resolveWithObject: true });
-  const width = info.width;
-  const radius = (x) => calibration.inner + (x + 0.5) * calibration.kmPerPx;
-  // Por columna, la opacidad media de la textura y su profundidad óptica aparente, y la luminancia
-  // lineal media de su color (el brillo que pinta: la estructura fina de cada anillo).
-  const tauSource = new Float64Array(width);
-  const lumSource = new Float64Array(width);
-  for (let x = 0; x < width; x++) {
+  const columns = info.width;
+  const alpha = new Float64Array(columns);
+  const lum = new Float64Array(columns);
+  for (let x = 0; x < columns; x++) {
     let a = 0;
     let l = 0;
     for (let y = 0; y < info.height; y++) {
-      const k = (y * width + x) * info.channels;
+      const k = (y * columns + x) * info.channels;
       a += data[k + 3] / 255;
       l +=
         0.2126 * srgbToLinear(data[k] / 255) +
         0.7152 * srgbToLinear(data[k + 1] / 255) +
         0.0722 * srgbToLinear(data[k + 2] / 255);
     }
-    tauSource[x] = -Math.log(1 - Math.min(a / info.height, 0.995));
-    lumSource[x] = l / info.height;
+    alpha[x] = a / info.height;
+    lum[x] = l / info.height;
   }
-  const { regions } = RINGS;
-  const bounds = [
-    ['C', RINGS.innerRadiusKm.value, RINGS.bInnerKm.value, regions.c],
-    ['B', RINGS.bInnerKm.value, RINGS.cassiniInnerKm.value, regions.b],
-    ['Cassini', RINGS.cassiniInnerKm.value, RINGS.cassiniOuterKm.value, regions.cassini],
-    ['A', RINGS.cassiniOuterKm.value, RINGS.outerRadiusKm.value, regions.a],
-  ];
-  const columnsOf = (from, to) => {
+  // La mayor caída de la opacidad (de ≥ 0,5 a ≤ 0,3 en 8 px) en una ventana: los bordes del B y del A.
+  const steepestDrop = (from, to) => {
+    let best = null;
+    for (let x = from; x < to; x++) {
+      const before = alpha[x - 4];
+      const after = alpha[x + 4];
+      if (before >= 0.5 && after <= 0.3 && (!best || before - after > best.drop)) {
+        best = { x, drop: before - after };
+      }
+    }
+    if (!best) throw new Error(`No encuentro el borde de los anillos entre ${from} y ${to} px`);
+    return best.x;
+  };
+  const xB = steepestDrop(Math.round(columns * 0.6), Math.round(columns * 0.73));
+  const xA = steepestDrop(Math.round(columns * 0.9), Math.round(columns * 0.97));
+  const width = tau.length;
+  const kmPerPx = (outerKm - innerKm) / width;
+  const radius = (x) => innerKm + (x + 0.5) * kmPerPx;
+  /** Un perfil de la textura (por columna) en el radio r, con su escala y su origen, interpolado. */
+  const sampleWith = (profile, scale, start, r) => {
+    const u = (r - start) / scale - 0.5;
+    const i = Math.min(Math.max(Math.floor(u), 0), columns - 2);
+    const t = Math.min(Math.max(u - i, 0), 1);
+    return profile[i] + t * (profile[i + 1] - profile[i]);
+  };
+  // Registro con la ocultación: la escala y el origen de la textura que más correlacionan su opacidad
+  // con la τ medida (en logaritmo), de 75 000 a 136 000 km, partiendo de sus bordes del B y del A en los
+  // radios medidos en la ocultación (el del B no es circular). La textura no es lineal en radio a mejor
+  // que un 0,3 %: con dos bordes, el anillo C quedaba desplazado 150 km.
+  const logTau = (t) => Math.log(Math.max(t, 0.01));
+  const pixelsIn = (from, to) => {
     const list = [];
-    for (let x = 0; x < width; x++) if (radius(x) >= from && radius(x) < to) list.push(x);
+    for (let x = 0; x < width; x++) if (radius(x) >= from && radius(x) <= to) list.push(x);
     return list;
   };
-  const quantile = (values, q) =>
-    [...values].sort((p, r) => p - r)[Math.floor(q * (values.length - 1))];
-  const median = (values) => quantile(values, 0.5);
-  // Para cada anillo, una ley de potencia que lleva sus percentiles 10 y 90 de τ a los extremos del
-  // intervalo de la ficha (conserva el orden y los contrastes de la estructura radial), su albedo, el
-  // detalle de la textura (su luminancia respecto a la media donde se calibra el anillo: la ventana
-  // del Hubble en el B y el A, el anillo entero en el C y la división de Cassini) y su color, medido
-  // en la foto del Hubble.
-  const fitted = bounds.map(([name, from, to, region]) => {
-    const columns = columnsOf(from, to);
-    const logs = columns.map((x) => Math.log(Math.max(tauSource[x], 1e-4)));
-    const [lo, hi] = region.opticalDepth.value;
-    const low = Math.log(Math.max(lo, hi / 20));
-    const p10 = quantile(logs, 0.1);
-    const p90 = quantile(logs, 0.9);
-    const slope = (Math.log(hi) - low) / Math.max(p90 - p10, 1e-3);
-    const sourceMedian = median(columns.map((x) => tauSource[x]));
-    const hst = RING_HST.rings[name];
-    const window = hst ? columnsOf(hst.from, hst.to) : columns;
-    const detail = relativeDetail(lumSource, window[0], window.at(-1) + 1).map((v) =>
-      Math.min(Math.max(v, RING_DETAIL.min), RING_DETAIL.max),
+  const correlation = (scale, start, pixels) => {
+    const a = pixels.map((x) => logTau(tau[x]));
+    const b = pixels.map((x) =>
+      logTau(-Math.log(1 - Math.min(sampleWith(alpha, scale, start, radius(x)), 0.995))),
     );
-    return {
-      name,
-      from,
-      to,
-      region,
-      slope,
-      intercept: low - slope * p10,
-      albedo: typical(region.albedo.value),
-      detail,
-      chroma: RING_PHOTOMETRY.chromaticity[name],
-      sourceMedian,
-    };
-  });
-  // Mezcla suave entre anillos vecinos (±250 km en cada borde), en escala logarítmica para τ.
-  const BLEND_KM = 250;
-  const weightsAt = (r) => {
-    const w = fitted.map((ring) => {
-      const rise = smooth((r - (ring.from - BLEND_KM)) / (2 * BLEND_KM));
-      const fall = 1 - smooth((r - (ring.to - BLEND_KM)) / (2 * BLEND_KM));
-      return Math.min(rise, fall);
-    });
-    // Por dentro del C y por fuera del A, el anillo más cercano.
-    if (r < fitted[0].from) w[0] = 1;
-    if (r > fitted[fitted.length - 1].to) w[w.length - 1] = 1;
-    const total = w.reduce((sum, v) => sum + v, 0) || 1;
-    return w.map((v) => v / total);
+    const mean = (v) => v.reduce((s, y) => s + y, 0) / v.length;
+    const ma = mean(a);
+    const mb = mean(b);
+    let sab = 0;
+    let saa = 0;
+    let sbb = 0;
+    for (let i = 0; i < a.length; i++) {
+      sab += (a[i] - ma) * (b[i] - mb);
+      saa += (a[i] - ma) ** 2;
+      sbb += (b[i] - mb) ** 2;
+    }
+    return sab / Math.sqrt(saa * sbb);
   };
-  const tauPhysical = new Float64Array(width);
-  for (let x = 0; x < width; x++) {
-    const w = weightsAt(radius(x));
-    const logSource = Math.log(Math.max(tauSource[x], 1e-4));
-    const logTau = fitted.reduce(
-      (s, ring, j) => s + w[j] * (ring.intercept + ring.slope * logSource),
-      0,
-    );
-    const ceiling = fitted.reduce((s, ring, j) => s + w[j] * ring.region.opticalDepth.value[1], 0);
-    tauPhysical[x] = Math.min(Math.exp(logTau), 1.5 * ceiling);
+  const all = pixelsIn(75_000, 136_000);
+  const scale0 = (edges.aOuterKm - edges.bOuterKm) / (xA - xB);
+  const start0 = edges.bOuterKm - (xB + 0.5) * scale0;
+  let fit = { scale: scale0, start: start0, r: correlation(scale0, start0, all) };
+  // De lo grueso a lo fino: ±1 % de escala y ±300 km de origen; luego ±0,1 % y ±20 km.
+  for (const [ds, steps, dStart, startSteps] of [
+    [scale0 * 0.0005, 20, 10, 30],
+    [scale0 * 0.0001, 10, 1, 20],
+  ]) {
+    const center = fit;
+    for (let i = -steps; i <= steps; i++) {
+      const scale = center.scale + i * ds;
+      // El origen que deja fija la textura en el borde del A al cambiar la escala, más un desplazamiento.
+      const pivot = center.start + (xA + 0.5) * (center.scale - scale);
+      for (let j = -startSteps; j <= startSteps; j++) {
+        const start = pivot + j * dStart;
+        const r = correlation(scale, start, all);
+        if (r > fit.r) fit = { scale, start, r };
+      }
+    }
   }
-  // Albedo de los anillos B y A: el que da la reflectividad medida por el Hubble (RING_HST) en esa
-  // zona, de media, con la τ y el detalle de cada columna, el Sol y la vista a la misma elevación y la
-  // función de fase de la escena.
-  const mu = Math.sin((RING_HST.openingDeg * Math.PI) / 180);
+  // Con el registro, cada región tiene que quedar alineada por sí misma (su mejor desplazamiento,
+  // a menos de 25 km): si no, la textura no tiene la estructura de la ocultación en su sitio.
+  const regionShifts = [
+    ['C', 75_000, 91_500],
+    ['B', 92_500, 117_000],
+    ['Cassini', 117_700, 121_800],
+    ['A', 122_300, 136_500],
+  ].map(([name, from, to]) => {
+    const pixels = pixelsIn(from, to);
+    let best = { shift: 0, r: correlation(fit.scale, fit.start, pixels) };
+    for (let shift = -150; shift <= 150; shift += 5) {
+      const r = correlation(fit.scale, fit.start - shift, pixels);
+      if (r > best.r) best = { shift, r };
+    }
+    return { name, ...best };
+  });
+  const misaligned = regionShifts.filter((region) => Math.abs(region.shift) > 25);
+  if (misaligned.length) {
+    throw new Error(
+      `La textura de los anillos no está alineada con la ocultación: ${misaligned.map((g) => `${g.name} a ${g.shift} km`).join(', ')}`,
+    );
+  }
+  const texKmPerPx = fit.scale;
+  const texInner = fit.start;
+  const sample = (profile, r) => sampleWith(profile, texKmPerPx, texInner, r);
+  /** La luminancia media de la textura entre dos radios (8 muestras: un píxel de cualquier nivel). */
+  const lumBetween = (r0, r1) => {
+    let sum = 0;
+    for (let k = 0; k < 8; k++) sum += sample(lum, r0 + ((k + 0.5) / 8) * (r1 - r0));
+    return sum / 8;
+  };
+  // La media de cada región en su ventana, con la tira más fina.
+  const means = RING_REGIONS.map((ring) => {
+    const [from, to] = ring.window ?? [ring.from, ring.to];
+    let sum = 0;
+    let n = 0;
+    for (let x = 0; x < width; x++) {
+      if (radius(x) >= from && radius(x) < to) {
+        sum += lumBetween(radius(x) - kmPerPx / 2, radius(x) + kmPerPx / 2);
+        n++;
+      }
+    }
+    return sum / n;
+  });
+  return {
+    /** El detalle de la región j en el píxel que va de r0 a r1 km. */
+    detailAt: (j, r0, r1) =>
+      Math.min(Math.max(lumBetween(r0, r1) / means[j], RING_DETAIL.min), RING_DETAIL.max),
+    report: `anillos, detalle de la textura: registrada con la ocultación (de sus bordes del B y del A, ${scale0.toFixed(3)} km/px y ${Math.round(start0)} km, a ${texKmPerPx.toFixed(3)} km/px y ${Math.round(texInner)} km; correlación de log τ de ${correlation(scale0, start0, all).toFixed(3)} a ${fit.r.toFixed(3)}); el mejor desplazamiento de cada región, ${regionShifts.map((g) => `${g.name} ${g.shift} km`).join(', ')}`,
+  };
+}
+
+/** Mezcla suave entre regiones vecinas (±250 km en cada borde): lo de fuera, la más cercana. */
+const BLEND_KM = 250;
+function regionWeights(r) {
+  const w = RING_REGIONS.map((ring) => {
+    const rise = smooth((r - (ring.from - BLEND_KM)) / (2 * BLEND_KM));
+    const fall = 1 - smooth((r - (ring.to - BLEND_KM)) / (2 * BLEND_KM));
+    return Math.min(rise, fall);
+  });
+  if (r < RING_REGIONS[0].from) w[0] = 1;
+  if (r > RING_REGIONS.at(-1).to) w[w.length - 1] = 1;
+  const total = w.reduce((sum, v) => sum + v, 0) || 1;
+  return w.map((v) => v / total);
+}
+
+/**
+ * El albedo de cada región (fase 7, D36): en el C, el B y el A, el que hace que el modelo de la escena
+ * (dispersión simple con la τ medida de cada píxel y la función de fase de `data/photometry.ts`, con el
+ * Sol y la vista a la misma elevación) dé la reflectividad medida por el Hubble en F555W (549 nm) en su
+ * ventana, sin salir del intervalo de la ficha; en la división de Cassini, que el Hubble no midió, el
+ * valor típico de la ficha. Se calcula con la tira más fina y vale para todos los niveles.
+ */
+function ringAlbedos(tau, innerKm, outerKm, texture) {
+  const kmPerPx = (outerKm - innerKm) / tau.length;
+  const mu = Math.sin((RING_SPECTRA.openingDeg * Math.PI) / 180);
   const particles = RING_PHOTOMETRY.photometry;
   const phase =
-    phaseFunction((RING_HST.phaseDeg * Math.PI) / 180, particles) / phaseFunction(0, particles);
-  for (const ring of fitted) {
-    const measured = RING_HST.rings[ring.name];
-    if (!measured) continue;
-    const columns = columnsOf(measured.from, measured.to);
-    const tau = median(columns.map((x) => tauPhysical[x]));
-    const reflected = columns.reduce(
-      (s, x) => s + ring.detail[x] * ringReflectance(mu, mu, tauPhysical[x], true),
-      0,
-    );
-    const model = (reflected / columns.length) * phase;
-    const [lo, hi] = ring.region.albedo.value;
-    ring.albedo = Math.min(Math.max(measured.reflectance / model, lo), hi);
-    ring.calibration = `I/F ${measured.reflectance} del Hubble a ${RING_HST.phaseDeg}° con τ ${tau.toFixed(2)}`;
-  }
+    phaseFunction((RING_SPECTRA.phaseDeg * Math.PI) / 180, particles) / phaseFunction(0, particles);
+  const v = RING_SPECTRA.wavelengthsNm.indexOf(549);
+  return RING_REGIONS.map((ring) => {
+    const [lo, hi] = ring.albedoRange;
+    if (!ring.window)
+      return { albedo: typical(ring.albedoRange), calibration: 'típico de la ficha' };
+    const [from, to] = ring.window;
+    let sum = 0;
+    let n = 0;
+    for (let x = 0; x < tau.length; x++) {
+      const r = innerKm + (x + 0.5) * kmPerPx;
+      if (r < from || r >= to) continue;
+      // Con el detalle de la textura (su media en la ventana es 1): la de la ventana, la medida.
+      const j = RING_REGIONS.indexOf(ring);
+      sum +=
+        texture.detailAt(j, r - kmPerPx / 2, r + kmPerPx / 2) *
+        ringReflectance(mu, mu, tau[x], true);
+      n++;
+    }
+    const measured = RING_SPECTRA[ring.name][v];
+    const model = (sum / n) * phase;
+    const albedo = Math.min(Math.max(measured / model, lo), hi);
+    return {
+      albedo,
+      calibration: `I/F ${measured} del Hubble a ${RING_SPECTRA.phaseDeg}° (${from / 1000}–${to / 1000} mil km)${albedo === measured / model ? '' : `, acotado a la ficha (${lo}–${hi})`}`,
+    };
+  });
+}
+
+/**
+ * La tira de los anillos (fase 7, D36): `width` píxeles de `innerKm` a `outerKm`, con la τ medida en la
+ * ocultación (`ringStripTau`) en el alfa, como la opacidad vista de frente (1 − e^(−τ)), y el albedo y
+ * el color de su región en RGB (sRGB, 8 bits), con el detalle de la textura en el albedo.
+ */
+function measuredRingStrip(tau, innerKm, outerKm, albedos, texture) {
+  const width = tau.length;
+  const kmPerPx = (outerKm - innerKm) / width;
   const strip = Buffer.alloc(width * RING_HEIGHT * 4);
   for (let x = 0; x < width; x++) {
-    const w = weightsAt(radius(x));
-    const tau = tauPhysical[x];
-    const albedo = fitted.reduce((s, ring, j) => s + w[j] * ring.albedo * ring.detail[x], 0);
+    const r = innerKm + (x + 0.5) * kmPerPx;
+    const w = regionWeights(r);
+    const albedo = albedos.reduce(
+      (s, ring, j) =>
+        s + (w[j] ? w[j] * ring.albedo * texture.detailAt(j, r - kmPerPx / 2, r + kmPerPx / 2) : 0),
+      0,
+    );
     const chroma = [0, 1, 2].map((i) =>
-      fitted.reduce((s, ring, j) => s + w[j] * ring.chroma[i], 0),
+      RING_REGIONS.reduce((s, ring, j) => s + w[j] * ring.chroma[i], 0),
     );
     const rgb = chroma.map((v) => Math.round(255 * linearToSrgb(Math.min(albedo * v, 1))));
-    const alpha = Math.round(255 * (1 - Math.exp(-tau)));
+    const alpha = Math.round(255 * (1 - Math.exp(-tau[x])));
     for (let y = 0; y < RING_HEIGHT; y++) {
       const k = (y * width + x) * 4;
       strip[k] = rgb[0];
@@ -616,34 +663,24 @@ async function physicalRingStrip(file, calibration) {
       strip[k + 3] = alpha;
     }
   }
-  // Comprobación: la mediana de τ de cada anillo, ya física, cae en el intervalo de la ficha.
-  const lines = fitted.map((ring) => {
-    const columns = columnsOf(ring.from, ring.to);
-    const after = median(columns.map((x) => tauPhysical[x]));
-    const [lo, hi] = ring.region.opticalDepth.value;
-    if (after < lo || after > hi) {
-      throw new Error(
-        `La τ del anillo ${ring.name} (${after.toFixed(2)}) no está en [${lo}, ${hi}]`,
-      );
+  return sharp(strip, { raw: { width, height: RING_HEIGHT, channels: 4 } });
+}
+
+/** Informe de cada región: su τ mediana (frente al intervalo de la ficha), su albedo y su color. */
+function ringRegionsReport(tau, innerKm, outerKm, albedos) {
+  const kmPerPx = (outerKm - innerKm) / tau.length;
+  return RING_REGIONS.map((ring, j) => {
+    const values = [];
+    for (let x = 0; x < tau.length; x++) {
+      const r = innerKm + (x + 0.5) * kmPerPx;
+      if (r >= ring.from && r < ring.to) values.push(tau[x]);
     }
-    const [albedoLo, albedoHi] = ring.region.albedo.value;
-    const albedoSource = ring.calibration ?? 'típico de la ficha';
-    // El contraste de la estructura fina: desviación / media del detalle en bandas de 500 km.
-    const bands = [];
-    for (let km = ring.from; km + 500 <= ring.to; km += 500) {
-      const cols = columnsOf(km, km + 500);
-      bands.push(cols.reduce((s, x) => s + ring.detail[x], 0) / cols.length);
-    }
-    const mean = bands.reduce((s, v) => s + v, 0) / bands.length;
-    const sd = Math.sqrt(bands.reduce((s, v) => s + (v - mean) ** 2, 0) / bands.length);
-    const values = columns.map((x) => ring.detail[x]);
-    const range = `×${Math.min(...values).toFixed(2)}–${Math.max(...values).toFixed(2)}`;
-    return `${ring.name}: τ mediana ${ring.sourceMedian.toFixed(2)} → ${after.toFixed(2)} (ficha ${lo}–${hi}), albedo ${ring.albedo.toFixed(3)} (${albedoSource}; ficha ${albedoLo}–${albedoHi}), detalle de la textura ${range} (contraste ${(sd / mean).toFixed(3)} en bandas de 500 km), color ${ring.chroma.map((v) => v.toFixed(2)).join('/')}`;
-  });
-  return {
-    image: () => sharp(strip, { raw: { width, height: RING_HEIGHT, channels: 4 } }),
-    report: `anillos físicos: ${lines.join(' · ')}`,
-  };
+    values.sort((a, b) => a - b);
+    const median = values[Math.floor((values.length - 1) / 2)];
+    const factsheet = RINGS.regions[ring.name === 'Cassini' ? 'cassini' : ring.name.toLowerCase()];
+    const [lo, hi] = factsheet.opticalDepth.value;
+    return `${ring.name}: τ mediana ${median.toFixed(2)} (ficha ${lo}–${hi}), albedo ${albedos[j].albedo.toFixed(3)} (${albedos[j].calibration}), color ${ring.chroma.map((v) => v.toFixed(3)).join('/')}`;
+  }).join(' · ');
 }
 
 /**
@@ -868,6 +905,37 @@ for (const [id, spec] of Object.entries(TEXTURES)) {
     );
     continue;
   }
+  if (spec.kind === 'ring-profile') {
+    // La tira de los anillos (fase 7, D36): la τ de la ocultación, reducida a cada nivel desde el perfil
+    // (reescalar la tira con lanczos dejaría halos en la opacidad junto a las divisiones); el albedo de
+    // cada región, calibrado con la tira más fina, y sus rasgos, comprobados en ella.
+    const profile = await loadUvisProfile(new URL(spec.profile, RINGS_SRC));
+    reports.push(profile.report);
+    const finest = LEVELS.filter(([, width]) => width <= spec.maxWidth).at(-1)[1];
+    const fineTau = ringStripTau(profile, spec.innerKm, spec.outerKm, finest);
+    const features = checkRingFeatures(fineTau, spec.innerKm, spec.outerKm);
+    reports.push(features.report);
+    const texture = await ringTextureDetail(fineTau, spec.innerKm, spec.outerKm, features.edges);
+    reports.push(texture.report);
+    const albedos = ringAlbedos(fineTau, spec.innerKm, spec.outerKm, texture);
+    reports.push(
+      `anillos, regiones: ${ringRegionsReport(fineTau, spec.innerKm, spec.outerKm, albedos)}`,
+    );
+    const list = [];
+    for (const [level, width] of LEVELS) {
+      if (width > spec.maxWidth) continue;
+      const tau =
+        width === finest ? fineTau : ringStripTau(profile, spec.innerKm, spec.outerKm, width);
+      const strip = measuredRingStrip(tau, spec.innerKm, spec.outerKm, albedos, texture);
+      list.push(await emit(id, level, strip, spec.quality, { alpha: true }));
+    }
+    files[id] = list;
+    ringStrip = { inner: spec.innerKm, outer: spec.outerKm, features };
+    console.log(
+      `${id}: ${list.map((f) => `${f.level} ${(f.bytes / 1024).toFixed(0)} kB`).join(' · ')}`,
+    );
+    continue;
+  }
   const input = fileURLToPath(new URL(spec.file, SRC));
   let sourceWidth;
   let base;
@@ -890,29 +958,17 @@ for (const [id, spec] of Object.entries(TEXTURES)) {
     const filtered = await base().median(5).png({ compressionLevel: 1 }).toBuffer();
     base = () => sharp(filtered, { limitInputPixels: false });
   }
-  if (spec.kind === 'ring') {
-    ringStrip = await calibrateRings(spec.file);
-    reports.push(ringStrip.report);
-    const physical = await physicalRingStrip(spec.file, ringStrip);
-    reports.push(physical.report);
-    base = physical.image;
-  }
   const list = [];
   for (const [level, width] of LEVELS) {
     if (width > sourceWidth || width > (spec.maxWidth ?? DEFAULT_MAX_WIDTH)) continue;
-    let pipeline = base();
-    if (spec.kind === 'ring') {
-      pipeline = pipeline.resize(width, RING_HEIGHT, { fit: 'fill', kernel: 'lanczos3' });
-    } else {
-      pipeline = pipeline.resize(width, width / 2, { fit: 'fill', kernel: 'lanczos3' });
-    }
+    let pipeline = base().resize(width, width / 2, { fit: 'fill', kernel: 'lanczos3' });
     if (spec.kind === 'gray') pipeline = pipeline.toColourspace('b-w');
     // G ← 255 − G: el norte en G (ver `flipGreen`).
     if (spec.flipGreen) pipeline = pipeline.removeAlpha().linear([1, -1, 1], [0, 255, 0]);
     // El panorama sin estrellas se ve ampliado en los primeros planos (un píxel de 2k mide 0,18°): un
     // desenfoque leve quita las manchas de la mediana y de la compresión.
     if (spec.kind === 'panorama') pipeline = pipeline.blur(level === '1k' ? 0.6 : 1);
-    list.push(await emit(id, level, pipeline, spec.quality, { alpha: spec.kind === 'ring' }));
+    list.push(await emit(id, level, pipeline, spec.quality));
   }
   files[id] = list;
   if (spec.kind === 'color') luminance[id] = Number((await meanLuminance(list[0])).toFixed(4));
@@ -955,10 +1011,17 @@ ${entries}
 export const TEXTURE_MEAN_LUMINANCE: Readonly<Partial<Record<TextureId, number>>> = ${JSON.stringify(luminance)};
 
 /**
- * Radios (km) que cubre la tira de los anillos de Saturno, calibrada con los bordes exteriores de los
- * anillos B y A de la ficha de la NASA.
+ * Radios (km) que cubre la tira de los anillos de Saturno (fase 7, D36): de por dentro del anillo C a
+ * por fuera del F, con la τ de la ocultación de β Centauri de Cassini UVIS.
  */
 export const SATURN_RING_STRIP_KM = { inner: ${ringStrip.inner}, outer: ${ringStrip.outer} } as const;
+
+/**
+ * Lo medido en la tira más fina de los anillos al generarla (scripts/ring-profile.mjs): la τ mínima de
+ * cada división (y la mediana del anillo a sus lados) y el radio de los bordes de los anillos C, B y A
+ * y del núcleo del F. Un test lo compara con los radios publicados (data/saturn-rings.ts).
+ */
+export const SATURN_RING_FEATURES_MEASURED = ${JSON.stringify({ gaps: ringStrip.features.gaps, ...ringStrip.features.edges })} as const;
 
 /**
  * Intervalo (m) de la elevación de la Luna empaquetada en 16 bits («moon-elevation», D15): un valor v

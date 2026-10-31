@@ -470,6 +470,7 @@ export class World {
       this.ringMaterial = createRingMaterial({
         polarScale: 1 - saturn.body.flattening,
         photometry: RING_PHOTOMETRY.photometry,
+        brightness: VISUAL_CONFIG.rings.brightness,
       });
       this.rings = new Mesh(
         createRingGeometry(ringRadii.innerKm / radiusKm, ringRadii.outerKm / radiusKm, 256),
@@ -644,6 +645,19 @@ export class World {
         const mapLevel = near ? this.profile[map.level] : this.profile.overviewTexture;
         this.requestMap(visual, map, near || !map.nearOnly ? mapLevel : null);
       }
+      // La tira de los anillos, a su propio nivel (D36): pesa poco y lleva la estructura radial fina.
+      // Antes de comparar el nivel de Saturno: un cambio de calidad puede cambiar solo el de la tira.
+      const ringLevel = this.profile.ringTexture;
+      if (visual.body.id === 'saturno' && this.ringRequested !== ringLevel) {
+        this.ringRequested = ringLevel;
+        source
+          .load('saturn-rings', ringLevel)
+          .then((loaded) => this.assignRingTexture(ringLevel, loaded))
+          .catch((error: unknown) => {
+            if (this.ringRequested === ringLevel) this.ringRequested = null;
+            textureFailed('saturn-rings', error);
+          });
+      }
       if (visual.requested === level) continue;
       visual.requested = level;
       const id = visual.textureId;
@@ -656,16 +670,6 @@ export class World {
           if (visual.requested === level) visual.requested = null;
           textureFailed(id, error);
         });
-      if (visual.body.id === 'saturno' && this.ringRequested !== level) {
-        this.ringRequested = level;
-        source
-          .load('saturn-rings', level)
-          .then((loaded) => this.assignRingTexture(level, loaded))
-          .catch((error: unknown) => {
-            if (this.ringRequested === level) this.ringRequested = null;
-            textureFailed('saturn-rings', error);
-          });
-      }
     }
   }
 

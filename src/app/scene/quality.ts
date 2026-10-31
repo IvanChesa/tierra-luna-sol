@@ -51,6 +51,13 @@ export interface QualityProfile {
    */
   readonly satelliteTexture: TextureLevel;
   /**
+   * La tira de los anillos de Saturno (fase 7, D36): su perfil de profundidad óptica, de una
+   * ocultación, a unos 8 km por píxel en 8k (las divisiones de Encke y de Keeler, de 325 y 42 km, se
+   * resuelven). Una tira de unos píxeles de alto apenas ocupa (menos de 1 MB en 8k): el mismo nivel
+   * con Saturno lejos o cerca. Si el dispositivo no llega a 8192 px, el mayor que quepa.
+   */
+  readonly ringTexture: TextureLevel;
+  /**
    * Segmentos de cada cara de la esfera cúbica de la Luna de cerca (seis caras de n × n cuadrados):
    * 128 en alto (~197 000 triángulos), con unos 512 vértices en su ecuador para la elevación de 1K
    * (dos muestras por vértice).
@@ -86,6 +93,7 @@ export const QUALITY_PROFILES: Readonly<Record<QualityLevel, QualityProfile>> = 
     moonElevationTexture: '1k',
     moonPoleTexture: '2k',
     satelliteTexture: '2k',
+    ringTexture: '8k',
     moonSegments: 128,
     milkyWayTexture: '2k',
     orbitSegments: 360,
@@ -108,6 +116,7 @@ export const QUALITY_PROFILES: Readonly<Record<QualityLevel, QualityProfile>> = 
     moonElevationTexture: '1k',
     moonPoleTexture: '2k',
     satelliteTexture: '2k',
+    ringTexture: '8k',
     moonSegments: 72,
     milkyWayTexture: '2k',
     orbitSegments: 256,
@@ -130,6 +139,7 @@ export const QUALITY_PROFILES: Readonly<Record<QualityLevel, QualityProfile>> = 
     moonElevationTexture: '1k',
     moonPoleTexture: '1k',
     satelliteTexture: '1k',
+    ringTexture: '4k',
     moonSegments: 48,
     milkyWayTexture: '2k',
     orbitSegments: 180,

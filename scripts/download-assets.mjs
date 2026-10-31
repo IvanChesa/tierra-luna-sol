@@ -110,6 +110,22 @@ const ASSETS = [
   ['SM_1M_0_0_SIMP.IMG', MIMAS_PDS + 'data/images/SM_1M_0_0_SIMP.IMG', MIMAS_PDS],
 ];
 
+/**
+ * Anillos de Saturno (fase 7, D36): el perfil radial de la profundidad óptica normal de la ocultación
+ * de β Centauri del 18-08-2008 (Cassini UVIS, HSP; órbita 81, entrada), con 1 km de paso, y su
+ * etiqueta: COUVIS_8001 del PDS Ring-Moon Systems Node (Colwell et al., «Cassini Orbiter Saturn UVIS
+ * Ring Stellar Occultations 3.0», CO-SR-UVIS-HSP-2/4-OCC-V3.0, 2020; https://doi.org/10.17189/1522418:
+ * «a work of the U.S. Government and is not subject to copyright protection in the United States»).
+ */
+const RINGS_OUT = new URL('assets-src/rings/', ROOT);
+const UVIS_PAGE = 'https://pds-rings.seti.org/holdings/volumes/COUVIS_8xxx/COUVIS_8001/';
+const UVIS_PROFILE = 'UVIS_HSP_2008_231_BETCEN_I_TAU01KM';
+const RINGS = ['TAB', 'LBL'].map((ext) => [
+  `${UVIS_PROFILE}.${ext}`,
+  `${UVIS_PAGE}data/${UVIS_PROFILE}.${ext}`,
+  UVIS_PAGE,
+]);
+
 /** Modelos de elevación (fase 3b): a assets-src/elevation/, con su propio manifiesto. */
 const ELEVATION_OUT = new URL('assets-src/elevation/', ROOT);
 const ELEVATION = [
@@ -193,10 +209,20 @@ const elevationManifest = (await exists(elevationManifestUrl))
 await downloadAll(ELEVATION, ELEVATION_OUT, elevationManifest);
 await writeFile(elevationManifestUrl, JSON.stringify(elevationManifest, null, 2) + '\n');
 
+await mkdir(RINGS_OUT, { recursive: true });
+const ringsManifestUrl = new URL('manifest.json', RINGS_OUT);
+const ringsManifest = (await exists(ringsManifestUrl))
+  ? JSON.parse(await readFile(ringsManifestUrl, 'utf8'))
+  : {};
+await downloadAll(RINGS, RINGS_OUT, ringsManifest);
+await writeFile(ringsManifestUrl, JSON.stringify(ringsManifest, null, 2) + '\n');
+
 for (const [file, url] of KTX2) {
   const target = new URL(file, KTX2_OUT);
   if (!FORCE && (await exists(target))) continue;
   const bytes = await download(url, target);
   console.log(`↓ ktx2/${file} (${bytes.byteLength} B)`);
 }
-console.log('Listo: assets-src/textures/, assets-src/elevation/ y assets-src/ktx2/');
+console.log(
+  'Listo: assets-src/textures/, assets-src/elevation/, assets-src/rings/ y assets-src/ktx2/',
+);

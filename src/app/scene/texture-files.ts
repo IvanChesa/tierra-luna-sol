@@ -274,24 +274,31 @@ export const TEXTURE_FILES: TextureFiles = {
   'saturn-rings': [
     {
       level: '1k',
-      path: 'textures/1k/saturn-rings.c893f34265.webp',
+      path: 'textures/1k/saturn-rings.f4d39d20be.webp',
       width: 1024,
       height: 16,
-      bytes: 1780,
+      bytes: 1576,
     },
     {
       level: '2k',
-      path: 'textures/2k/saturn-rings.36e322029c.webp',
+      path: 'textures/2k/saturn-rings.b240eb6982.webp',
       width: 2048,
       height: 16,
-      bytes: 3050,
+      bytes: 2694,
     },
     {
       level: '4k',
-      path: 'textures/4k/saturn-rings.5b91fcc87f.webp',
+      path: 'textures/4k/saturn-rings.4485ff8518.webp',
       width: 4096,
       height: 16,
-      bytes: 5024,
+      bytes: 4470,
+    },
+    {
+      level: '8k',
+      path: 'textures/8k/saturn-rings.92950f22eb.webp',
+      width: 8192,
+      height: 16,
+      bytes: 7520,
     },
   ],
   'mercury-normal': [
@@ -654,10 +661,29 @@ export const TEXTURE_MEAN_LUMINANCE: Readonly<Partial<Record<TextureId, number>>
 };
 
 /**
- * Radios (km) que cubre la tira de los anillos de Saturno, calibrada con los bordes exteriores de los
- * anillos B y A de la ficha de la NASA.
+ * Radios (km) que cubre la tira de los anillos de Saturno (fase 7, D36): de por dentro del anillo C a
+ * por fuera del F, con la τ de la ocultación de β Centauri de Cassini UVIS.
  */
-export const SATURN_RING_STRIP_KM = { inner: 69250, outer: 141048 } as const;
+export const SATURN_RING_STRIP_KM = { inner: 74000, outer: 141000 } as const;
+
+/**
+ * Lo medido en la tira más fina de los anillos al generarla (scripts/ring-profile.mjs): la τ mínima de
+ * cada división (y la mediana del anillo a sus lados) y el radio de los bordes de los anillos C, B y A
+ * y del núcleo del F. Un test lo compara con los radios publicados (data/saturn-rings.ts).
+ */
+export const SATURN_RING_FEATURES_MEASURED = {
+  gaps: {
+    colombo: { minTau: 0, sidesTau: 0.0338 },
+    maxwell: { minTau: 0, sidesTau: 0.0462 },
+    huygens: { minTau: 0, sidesTau: 0.1759 },
+    encke: { minTau: 0, sidesTau: 0.5611 },
+    keeler: { minTau: 0, sidesTau: 0.6161 },
+  },
+  cInnerKm: 74491,
+  bOuterKm: 117478,
+  aOuterKm: 136772,
+  fCoreKm: 140203,
+} as const;
 
 /**
  * Intervalo (m) de la elevación de la Luna empaquetada en 16 bits («moon-elevation», D15): un valor v

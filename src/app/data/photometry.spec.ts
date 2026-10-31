@@ -2,13 +2,14 @@ import {
   PHASE_LAWS,
   PhaseLaw,
   Photometry,
+  bandChromaticity,
   discBrightness,
   hazeGlow,
   lawPhaseMagnitude,
 } from '../ephemeris/photometry';
 import { BODY_DATA } from './body-data';
 import { BODY_INDEX } from './body-index';
-import { BODY_PHOTOMETRY, RING_PHOTOMETRY } from './photometry';
+import { BODY_PHOTOMETRY, RING_SPECTRA } from './photometry';
 
 const DEG = Math.PI / 180;
 
@@ -71,7 +72,7 @@ describe('fotometría de los cuerpos', () => {
     expect(limb(6)).toBeLessThan(1.001);
   });
 
-  it('el color medido de cada cuerpo y de cada anillo es una cromaticidad (luminancia 1), con fuente', () => {
+  it('el color medido de cada cuerpo es una cromaticidad (luminancia 1), con fuente', () => {
     const luminance = ([r, g, b]: readonly [number, number, number]) =>
       0.2126 * r + 0.7152 * g + 0.0722 * b;
     for (const [id, entry] of Object.entries(BODY_PHOTOMETRY)) {
@@ -79,11 +80,38 @@ describe('fotometría de los cuerpos', () => {
       expect(luminance(entry.chromaticity.rgb), id).toBeCloseTo(1, 2);
       expect(entry.chromaticity.source, id).toMatch(/https:\/\//);
     }
-    const { source, ...rings } = RING_PHOTOMETRY.chromaticity;
-    expect(Object.keys(rings)).toEqual(['C', 'B', 'Cassini', 'A']);
-    for (const [name, rgb] of Object.entries(rings)) {
-      expect(luminance(rgb), name).toBeCloseTo(1, 2);
+  });
+
+  it('el color de los anillos sale de su reflectividad por bandas medida por el Hubble: el B, tostado, no azulado (fase 7, D36)', () => {
+    const color = (name: keyof typeof RING_SPECTRA.colorFrom) =>
+      bandChromaticity(
+        RING_SPECTRA[RING_SPECTRA.colorFrom[name]].map((value, i) => ({
+          nm: RING_SPECTRA.wavelengthsNm[i] ?? 0,
+          value,
+        })),
+      );
+    expect(RING_SPECTRA.source).toMatch(/https:\/\/arxiv\.org\/abs\/1007\.0349/);
+    expect(RING_SPECTRA.source).toMatch(/https:\/\/doi\.org\/10\.1006\/icar\.2002\.6851/);
+    // Los cinco filtros de la tabla 5, y el V (549 nm) es el de la calibración del brillo (fase 3b).
+    expect(RING_SPECTRA.wavelengthsNm).toEqual([338, 434, 549, 672, 798]);
+    expect(RING_SPECTRA.B[2]).toBe(0.465);
+    expect(RING_SPECTRA.A[2]).toBe(0.297);
+    // El B, rojizo (más rojo que verde y más verde que azul) y no azulado; el C, el más gris.
+    const [r, g, b] = color('B');
+    expect(r).toBeCloseTo(1.073, 3);
+    expect(g).toBeCloseTo(0.997, 3);
+    expect(b).toBeCloseTo(0.82, 3);
+    expect(r).toBeGreaterThan(g);
+    expect(g).toBeGreaterThan(b);
+    expect(color('A')[2]).toBeGreaterThan(b);
+    expect(color('C')[2]).toBeGreaterThan(color('A')[2]);
+    // La división de Cassini, sin valores publicados, con el color del C.
+    expect(color('Cassini')).toEqual(color('C'));
+    for (const name of ['C', 'B', 'Cassini', 'A'] as const) {
+      const [cr, cg, cb] = color(name);
+      expect(0.2126 * cr + 0.7152 * cg + 0.0722 * cb, name).toBeCloseTo(1, 12);
+      // Sin tono lavanda: ni el azul ni el rojo por encima del verde a la vez.
+      expect(cr > cg && cb > cg, name).toBe(false);
     }
-    expect(source).toMatch(/https:\/\/esahubble\.org\/images\/heic1917a/);
   });
 });

@@ -15,7 +15,12 @@ import type { BodyId } from '../data/body.model';
 import { Mat3, mulMat3Vec, vec3 } from '../ephemeris/vec3';
 import { OrientationModel } from './orientations';
 import { SCENE_BODIES, createSolarSystemModel, sceneBody } from './system';
-import { TEXTURE_FILES, SATURN_RING_STRIP_KM } from './texture-files';
+import { SATURN_RING_FEATURES } from '../data/saturn-rings';
+import {
+  TEXTURE_FILES,
+  SATURN_RING_FEATURES_MEASURED,
+  SATURN_RING_STRIP_KM,
+} from './texture-files';
 import { TEXTURE_META } from './texture-meta';
 import {
   ManifestTextureSource,
@@ -142,11 +147,45 @@ describe('texturas: manifiesto y alineación del meridiano 0', () => {
     }
   });
 
-  it('la tira de los anillos cubre del interior del anillo C al exterior del A', () => {
-    // Bordes de la ficha de la NASA: anillo C desde 74 658 km; anillo A hasta 136 780 km.
-    expect(SATURN_RING_STRIP_KM.inner).toBeLessThan(74_658);
-    expect(SATURN_RING_STRIP_KM.outer).toBeGreaterThan(136_780);
+  it('la tira de los anillos cubre del interior del anillo C al exterior del F', () => {
+    const f = SATURN_RING_FEATURES;
+    expect(SATURN_RING_STRIP_KM.inner).toBeLessThan(f.cInnerKm);
+    expect(SATURN_RING_STRIP_KM.outer).toBeGreaterThan(f.fToKm);
     expect(TEXTURE_META['saturn-rings'].ringRadiiKm).toEqual(SATURN_RING_STRIP_KM);
+  });
+
+  it('en la tira de los anillos, las divisiones están vacías y los bordes, en sus radios publicados (fase 7, D36)', () => {
+    const f = SATURN_RING_FEATURES;
+    const measured = SATURN_RING_FEATURES_MEASURED;
+    expect(f.source).toMatch(/https:\/\/pds-rings\.seti\.org\//);
+    // Cassini, Encke y Keeler (y las de Colombo, Maxwell y Huygens): sin anillo dentro de su intervalo
+    // publicado y con anillo a los lados (con la tira desplazada más que su anchura, fallaría).
+    for (const id of ['colombo', 'maxwell', 'huygens', 'encke', 'keeler'] as const) {
+      const gap = measured.gaps[id];
+      expect(gap.minTau, id).toBeLessThan(0.05);
+      expect(gap.minTau, id).toBeLessThan(0.25 * gap.sidesTau);
+    }
+    // El borde interior del C, a ±15 km; el exterior del A (7 lóbulos de 12,8 km), a ±20; el del B
+    // (no circular), a ±100; y el núcleo del F, dentro de su extensión.
+    expect(Math.abs(measured.cInnerKm - f.cInnerKm)).toBeLessThanOrEqual(15);
+    expect(Math.abs(measured.aOuterKm - f.aOuterKm)).toBeLessThanOrEqual(20);
+    expect(Math.abs(measured.bOuterKm - f.bOuterKm)).toBeLessThanOrEqual(100);
+    expect(measured.fCoreKm).toBeGreaterThanOrEqual(f.fFromKm);
+    expect(measured.fCoreKm).toBeLessThanOrEqual(f.fToKm);
+    // La división de Cassini empieza donde acaba el B: su hueco de Huygens, junto a ese borde.
+    expect(f.gaps.huygens.fromKm).toBeLessThanOrEqual(f.bOuterKm);
+  });
+
+  it('la tira de los anillos llega a unos 8 km por píxel en 8k (D36)', () => {
+    const files = TEXTURE_FILES['saturn-rings'] ?? [];
+    const finest = files.reduce((best, file) => (file.width > best.width ? file : best));
+    const kmPerPx = (SATURN_RING_STRIP_KM.outer - SATURN_RING_STRIP_KM.inner) / finest.width;
+    expect(finest.level).toBe('8k');
+    expect(kmPerPx).toBeGreaterThan(7);
+    expect(kmPerPx).toBeLessThan(10);
+    // Lo que se pide con cada calidad (los dispositivos sin 8192 px se quedan con el mayor que quepa).
+    expect(QUALITY_PROFILES.high.ringTexture).toBe('8k');
+    expect(chooseTextureFile(files, QUALITY_PROFILES.high.ringTexture, 4096)?.level).toBe('4k');
   });
 });
 

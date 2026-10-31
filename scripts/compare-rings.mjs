@@ -5,6 +5,7 @@
 //
 // Uso: npm run build && node scripts/compare-rings.mjs [carpeta] [--swiftshader]
 //   carpeta: si se da, guarda allí la captura de la escena (`saturno-hubble-2019.webp`).
+// Fase 7 (D36): también el color CIELAB de cada banda, para medir el «tono lavanda».
 //
 // La foto se descarga a una carpeta temporal del sistema (no entra en el repo; docs/realismo/
 // referencias.md dice de dónde sale y con qué licencia). Todo en RGB lineal (la imagen se decodifica
@@ -142,7 +143,10 @@ function measure(image, point, disc) {
   const bands = Object.fromEntries(
     Object.entries(BANDS).map(([name, [from, to]]) => {
       const m = ring(from, to);
-      return [name, { l: luminance(m) / discL, chroma: m.map((v) => v / luminance(m)) }];
+      return [
+        name,
+        { l: luminance(m) / discL, chroma: m.map((v) => v / luminance(m)), lab: cielab(m) },
+      ];
     }),
   );
   // Estructura fina: desviación típica / media del brillo en bandas de 500 km.
@@ -159,6 +163,25 @@ function measure(image, point, disc) {
     }),
   );
   return { disc: { l: discL, chroma: discMean.map((v) => v / discL) }, profile, bands, fine };
+}
+
+/**
+ * CIELAB (D65) de un color en RGB lineal (sRGB): L*, a*, b*, su croma C* y su tono h (grados). Con él se
+ * mide el «tono lavanda» de los anillos tenues (fase 7, D36): un tono entre 280° y 345° (violeta y
+ * morado) a más de dos diferencias apenas perceptibles del gris (C* > 4,6; la diferencia apenas
+ * perceptible es ΔE*ab ≈ 2,3: Sharma, «Digital Color Imaging Handbook», CRC Press, 2003).
+ */
+function cielab([r, g, b]) {
+  const x = (0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047;
+  const y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  const z = (0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883;
+  const t = (v) => (v > 216 / 24389 ? Math.cbrt(v) : ((24389 / 27) * v + 16) / 116);
+  const [fx, fy, fz] = [t(x), t(y), t(z)];
+  const a = 500 * (fx - fy);
+  const bb = 200 * (fy - fz);
+  const c = Math.hypot(a, bb);
+  const h = ((Math.atan2(bb, a) * 180) / Math.PI + 360) % 360;
+  return { L: 116 * fy - 16, a, b: bb, c, h, lavender: c > 4.6 && h > 280 && h < 345 };
 }
 
 // --- La foto ------------------------------------------------------------------------------------
@@ -277,14 +300,18 @@ try {
 // --- Informe ------------------------------------------------------------------------------------
 const f = (v, d = 2) => v.toFixed(d).replace('.', ',');
 const chroma = (c) => c.map((v) => f(v)).join(' · ');
+const lab = (c) =>
+  `${f(c.L, 1)} ${f(c.a, 1)} ${f(c.b, 1)} (${f(c.c, 1)}, ${Math.round(c.h)}°${c.lavender ? ', lavanda' : ''})`;
 console.log('Disco (medio radio): foto', chroma(photoResult.disc.chroma));
 console.log('                     escena', chroma(sceneResult.disc.chroma));
-console.log('\nBanda       | brillo / disco: foto · escena | cromaticidad: foto  ·  escena');
+console.log(
+  '\nBanda       | brillo / disco: foto · escena | cromaticidad: foto  ·  escena | CIELAB L* a* b* (C*, h): foto · escena',
+);
 for (const name of Object.keys(BANDS)) {
   const a = photoResult.bands[name];
   const b = sceneResult.bands[name];
   console.log(
-    `${name.padEnd(11)} | ${f(a.l)} · ${f(b.l)} | ${chroma(a.chroma)}  ·  ${chroma(b.chroma)}`,
+    `${name.padEnd(11)} | ${f(a.l)} · ${f(b.l)} | ${chroma(a.chroma)}  ·  ${chroma(b.chroma)} | ${lab(a.lab)} · ${lab(b.lab)}`,
   );
 }
 console.log('\nEstructura fina (desviación / media en bandas de 500 km): foto · escena');

@@ -59,7 +59,7 @@ export const TEXTURE_META: Readonly<Record<TextureId, TextureMeta>> = {
     primeMeridianU: null,
     ringRadiiKm: SATURN_RING_STRIP_KM,
     alignment:
-      'Radios calibrados con los bordes exteriores de los anillos B y A (ficha de la NASA); el borde interior del anillo C cae donde la textura empieza a ser opaca.',
+      'La τ de la ocultación de β Centauri de Cassini UVIS (COUVIS_8001) por radio, de 74 000 a 141 000 km: sus divisiones (Colombo, Maxwell, Huygens, Encke y Keeler) y los bordes de los anillos C, B y A y el núcleo del F, comprobados con sus radios publicados (PDS Ring-Moon Systems Node; data/saturn-rings.ts).',
   },
   uranus: clouds('Sin accidentes: color casi uniforme.'),
   neptune: clouds('Bandas de nubes: sin meridiano observable.'),

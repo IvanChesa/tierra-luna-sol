@@ -1,5 +1,6 @@
 // Colores medidos en fotos reales (fase 3b): repite las medidas que usan `data/photometry.ts`
-// (`chromaticity` de los planetas y de cada anillo de Saturno) y `scripts/reference-colors.mjs` (el
+// (`chromaticity` de los planetas y, como referencia, de cada anillo de Saturno, cuyo color sale
+// desde la fase 7 de `RING_SPECTRA`) y `scripts/reference-colors.mjs` (el
 // océano de la Tierra), con las regiones exactas de cada foto, y las compara con los valores en uso.
 // Uso: node scripts/measure-reference-colors.mjs
 //
@@ -11,7 +12,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
-import { BODY_PHOTOMETRY, RING_PHOTOMETRY } from '../src/app/data/photometry.ts';
+import { BODY_PHOTOMETRY, RING_SPECTRA } from '../src/app/data/photometry.ts';
+import { bandChromaticity } from '../src/app/ephemeris/photometry.ts';
 import { OCEAN_CHROMA } from './reference-colors.mjs';
 
 const CACHE = join(tmpdir(), 'tls-referencias');
@@ -168,6 +170,16 @@ for (const disc of DISCS) {
 }
 
 // --- Anillos -------------------------------------------------------------------------------------
+// Desde la fase 7 (D36), el color de los anillos ya no sale de esta foto (de prensa, equilibrada hacia
+// el blanco azulado), sino de su reflectividad por bandas medida por el Hubble (`RING_SPECTRA`): se
+// compara con ella, como referencia.
+const ringInUse = (name) =>
+  bandChromaticity(
+    RING_SPECTRA[RING_SPECTRA.colorFrom[name]].map((value, i) => ({
+      nm: RING_SPECTRA.wavelengthsNm[i],
+      value,
+    })),
+  );
 {
   const image = await rgbImage(await download(RINGS.url));
   const [cx, cy] = RINGS.center;
@@ -191,7 +203,7 @@ for (const disc of DISCS) {
     report(
       `anillo ${name}`,
       chroma(mean(samples)),
-      RING_PHOTOMETRY.chromaticity[name],
+      ringInUse(name),
       `heic1917a, ansa derecha, ${RINGS.bands[name].map((km) => km / 1000).join('–')} mil km (${samples.length} px)`,
     );
   }

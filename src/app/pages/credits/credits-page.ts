@@ -19,11 +19,18 @@ import { Component } from '@angular/core';
         <a href="https://creativecommons.org/licenses/by/4.0/deed.es">CC BY 4.0</a>. Se han reducido
         y convertido a WebP; el color de algunos planetas se ha corregido con fotos del Hubble; el
         del océano de la Tierra, con fotos de
-        <a href="https://epic.gsfc.nasa.gov/">EPIC (DSCOVR), del NASA EPIC Team</a>; la opacidad de
-        los anillos, con la ficha de los anillos de la NASA; su brillo, con las medidas del Hubble
-        de <a href="https://arxiv.org/abs/1007.0349">Salo y French (2010)</a>, y su color, con la
-        <a href="https://esahubble.org/images/heic1917a/">foto del Hubble de 2019</a> (NASA/ESA, A.
-        Simon y M. H. Wong).
+        <a href="https://epic.gsfc.nasa.gov/">EPIC (DSCOVR), del NASA EPIC Team</a>. De la textura
+        de los anillos solo queda el detalle de su brillo.
+      </li>
+      <li>
+        Anillos de Saturno: su opacidad, de la ocultación de β Centauri de Cassini UVIS (Colwell et
+        al., 2020, en el
+        <a href="https://pds-rings.seti.org/holdings/volumes/COUVIS_8xxx/COUVIS_8001/"
+          >PDS Ring-Moon Systems Node</a
+        >); su color y su brillo, de las medidas del Hubble de
+        <a href="https://arxiv.org/abs/1007.0349">Salo y French (2010)</a> y de Cuzzi, French y
+        Dones (2002), con la ficha de los anillos de la NASA; y los radios de sus divisiones, de la
+        <a href="https://pds-rings.seti.org/saturn/saturn_tables.html">tabla del PDS</a>.
       </li>
       <li>
         Luna: CGI Moon Kit del

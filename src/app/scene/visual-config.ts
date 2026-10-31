@@ -129,6 +129,14 @@ export const VISUAL_CONFIG = {
      */
     umbraLight: { color: '#b8502e', intensity: 0.18, axis: 0.35 },
   },
+  /**
+   * Los anillos de Saturno (fase 7, D36; decisión de Iván del 30-10): un realce **ilustrativo** del
+   * brillo que reflejan (no de su opacidad), como el relleno de D21. Con su albedo calibrado con el
+   * Hubble, el anillo B brilla 0,8 veces el disco de Saturno en la geometría de la foto de 2019 (lo
+   * físico); en las fotos de prensa, 1,44, procesadas. Se lleva a un punto medio, B / disco ≈ 1,05,
+   * medido con `scripts/compare-rings.mjs`. No toca la fotometría ni sus tests.
+   */
+  rings: { brightness: 1.3 },
   /** Por debajo de este radio en pantalla (px CSS), el halo de una atmósfera no se dibuja: no se vería. */
   atmosphereMinRadiusPx: 2,
   /** Por debajo de este radio en pantalla (px CSS), un cuerpo no aparta las órbitas de su disco. */
