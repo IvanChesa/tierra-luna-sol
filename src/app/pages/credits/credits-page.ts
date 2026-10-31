@@ -56,6 +56,18 @@ import { Component } from '@angular/core';
         <a href="https://pds-geosciences.wustl.edu/missions/mgs/megdr.html">PDS</a>.
       </li>
       <li>
+        Lunas: mosaicos globales del
+        <a href="https://astrogeology.usgs.gov/search">USGS Astrogeology</a> (dominio público), con
+        imágenes de Viking (Fobos), Voyager y Galileo (las de Júpiter), Cassini (las de Saturno) y
+        Voyager 2 (Tritón, del Lunar and Planetary Institute, P. Schenk); los de Tetis y Rea, del
+        DLR (T. Roatsch et al.). Mimas: mapa del DLR (Roatsch et al., 2018) en el
+        <a href="https://pds-rings.seti.org/holdings/volumes/COISS_3xxx/COISS_3006/"
+          >PDS de la NASA</a
+        >. Se han reducido y convertido a WebP y se muestran en gris con un tinte; el de Ío y el
+        color de Titán, medidos en fotos de la NASA en color real (PIA02308 y PIA06230). Sus rasgos
+        con nombre, del Gazetteer of Planetary Nomenclature (IAU y USGS).
+      </li>
+      <li>
         Vía Láctea: «The Milky Way panorama», de
         <a href="https://www.eso.org/public/images/eso0932a/">ESO/S. Brunier</a>, con licencia
         <a href="https://creativecommons.org/licenses/by/4.0/deed.es">CC BY 4.0</a>. Modificada: se
