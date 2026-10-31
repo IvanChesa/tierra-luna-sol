@@ -12,7 +12,8 @@
  *   (encuadre con ese cuerpo detrás del enfocado).
  * - Solo en captura, para comparar con fotos reales (fase 3b): `desde=tierra` (la geometría de una
  *   foto del Hubble en esa fecha), `fase=30` y `latitud=-17` (ángulo de fase y latitud de la cámara
- *   sobre el ecuador del cuerpo, en grados) y `tonemapping=neutral|agx|aces`.
+ *   sobre el ecuador del cuerpo, en grados; con `sobre=ecliptica`, sobre la eclíptica, fase 7) y
+ *   `tonemapping=neutral|agx|aces`.
  * - Solo en captura, para las miniaturas de las fichas (fase 3c): `aislado=1`, el cuerpo de
  *   `cuerpo=` solo y centrado.
  */
@@ -79,9 +80,10 @@ function parseViewFrom(params: URLSearchParams): ViewFrom | null {
   const phaseDeg = numberParam(params.get('fase'), 0, 180);
   if (phaseDeg === null) return null;
   const latitudeDeg = numberParam(params.get('latitud'), -90, 90);
+  const reference = params.get('sobre') === 'ecliptica' ? ({ reference: 'ecliptic' } as const) : {};
   return latitudeDeg === null
-    ? { kind: 'phase', phaseDeg }
-    : { kind: 'phase', phaseDeg, latitudeDeg };
+    ? { kind: 'phase', phaseDeg, ...reference }
+    : { kind: 'phase', phaseDeg, latitudeDeg, ...reference };
 }
 const SCALE_PARAM: Readonly<Record<ScaleMode, string>> = {
   real: 'real',
