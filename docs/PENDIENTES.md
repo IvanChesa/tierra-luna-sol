@@ -80,8 +80,13 @@ Decisiones y tareas que dependen de Iván. Claude Code añade aquí cada `TODO(i
 - [x] El PR 2 (`@types/node` 26), cerrado con un comentario, y `dependabot.yml` ya no propone versiones mayores de `@types/node` (C6).
 - [x] **Los anillos de Saturno** (`docs/decisiones/ANILLOS-SATURNO.md`, D36): en la fase 7, junto a R2, con el realce moderado del brillo ya decidido.
 
+## Bloque D (fase 6: la Luna)
+- [ ] **Probar la vista Luna en tu móvil** (no bloquea), en la vista previa (`/explorar/luna`): los FPS, el tamaño del panel (como el de la Tierra, C7, ocupa buena parte de la pantalla), el «Polo sur» y el recorrido.
+- [x] **Los casquetes polares de la Luna** (propuesta 1 de la fase 6): hechos ya en la revisión de la fase 6 (hallazgo 1, era un Bloqueante): las normales de los modelos polares del LOLA por encima de 76°, sin el «sol de rayas» del polo.
+- [ ] **La luz de la umbra** (propuesta 2 de la fase 6): en los eclipses, la Luna se ve rojiza y bastante clara, más de lo real, para que no salga negra con la exposición de su primer plano (ilustrativo, `VISUAL_CONFIG.moon.umbraLight`). Si la prefieres más oscura y realista, es cambiar ese valor: dime cuál.
+
 ## Decisiones
-- [ ] **(Fase 6) `toktx` (KTX-Software):** solo si la VRAM de §5 no se cumple con WebP en el peor caso de las vistas Tierra y Luna (C4: la reevaluación de KTX2 empieza por la 8K de la Tierra y los mapas de la Luna; prueba de KTX2 de la fase 2, §5.2 del informe).
+- [x] **(Fase 6) `toktx` (KTX-Software): no hace falta.** Con WebP, la VRAM cabe en los 300 MB de §5 en el peor caso de las dos vistas (C4, con test): la vista Tierra, 278 MB, y la vista Luna, 265; y en el viaje entre las dos, como mucho 284 (revisión de la fase 6, hallazgo 4). La reevaluación de KTX2 queda para la fase 10 si hiciera falta en el móvil.
 - [ ] **Subdominio definitivo.** Propuesto: `tierra-luna-sol.ivanchesa.es`. Si cambia, se edita solo `src/app/core/site.config.ts`.
 
 ## Revisiones y pruebas de Iván
