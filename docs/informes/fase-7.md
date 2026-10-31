@@ -2,7 +2,7 @@
 
 - **Rama:** `fase-7-lunas-escala-real`
 - **Fecha:** 2026-10-31
-- **Estado:** en curso (entregas 7.a, 7.b y 7.c hechas; 7.d, los anillos de D36)
+- **Estado:** listo para revisión
 
 ## Plan
 La fase es grande: va por entregas, con este informe al día al final de cada una. Toca dos cosas que ya existen y hay que comprobar antes de rehacer nada:
@@ -69,28 +69,156 @@ La fase es grande: va por entregas, con este informe al día al final de cada un
 
 Fuera de alcance, por el plan: formas reales de las lunas irregulares (backlog 3) y sombras del relieve (backlog 11).
 
-## Avance (en curso)
-- **7.a · Las lunas, con su superficie (hecho: `0abb56f`, `36a5c64`, `99844f2`, `bd62ef9`, `355c322`):**
-  - comprobado luna a luna en Astropedia, en su bucket y en la tabla de productos del USGS (https://fdp.astrogeology.usgs.gov/fdp/saturn/ y …/uranus/): **12 lunas con mosaico global** (Fobos, las cuatro galileanas, Encélado, Tetis, Dione, Rea, Jápeto y Tritón, del USGS; Mimas, que Astropedia no tiene, del mapa final del DLR en el PDS, COISS_3006). Sin mosaico: Deimos, Proteo y las cinco de Urano (el USGS solo tiene sus mapas aerografiados en PDF, del hemisferio sur);
-  - `scripts/usgs-mosaic.mjs` lleva cada mosaico a la convención de la escena con su georreferencia (GeoTIFF) o su etiqueta PDS3 (Mimas), rellena los huecos con el gris medio (Tritón: el 38,4 %, el norte que no vio Voyager 2) y comprueba **sondas del Gazetteer** que fallan con el mapa girado 180° o reflejado: de brillo donde hay manchas (Ío, Europa, Ganímedes, Calisto, Tritón) y, en las lunas de Saturno (normalizadas en brillo y dominadas por el sombreado), **de borde de cráter**, elegidas entre los cráteres del Gazetteer por cómo discriminan (con todos los cráteres grandes, el borde se detecta en el 63 % de los de Rea en su sitio frente al 5 % girado y el 3 % reflejado; Encélado 52/11/2 %, Dione 31/0/3 %, Tetis 23/5/0 %, Jápeto 22/6/12 %, Mimas 12/0/3 %);
-  - test de que, con la orientación de la escena, la longitud 0 de cada mapa mira a su planeta (< 0,01°) y el hemisferio delantero cae a 90° O (a 90° E en Tritón, retrógrada: su polo IAU es el contrario a su momento angular);
-  - carga solo con su sistema enfocado (test); en el nivel bajo, la luna más pesada pesa 170 kB (§5: ≤ 300);
-  - **Titán, sin superficie:** su mosaico del USGS (ISS, 938 nm) es la superficie en una ventana del metano; en luz visible la neblina la oculta (PIA06230, color natural, fase de 56°: un globo naranja liso). Su color, el de esa foto; su halo, tenue y casi neutro, con la caída medida en ella (`scripts/measure-titan-halo.mjs`: a 1,02–1,05 radios, 0,0083 del brillo del borde del disco; en la foto, 0,010);
-  - **Ío**, con el color de la foto en color real PIA02308 (1,154 · 1,026 · 0,284), no con el tinte esquemático; las demás, en gris con el tinte de su color esquemático (dicho como tal);
-  - miniaturas regeneradas con sus mosaicos y desde 15° sobre la eclíptica; `FUENTES.md`, `/creditos` y `referencias.md`, al día.
-- **7.c · Escala real (hecho: `b6de0a3`, `b517fc0`, `e47ddc9`):**
-  - el selector «Escala» de «Controles +», con su anuncio y la URL (`escala=real`), con un e2e; la transición la anima el motor (directa con movimiento reducido; tests de continuidad de la fase 2);
-  - medidas (`scripts/measure-real-scale.mjs`, RTX 3060): el cuerpo enfocado no se mueve en pantalla (temblor 0, salto 0, radio constante; Fobos y Neptuno, a 1 h/s y a 1 día/s o 30 días/s); un vecino en movimiento tiembla 0,035 px (Fobos con Marte) y 0,020 px (Tritón con Neptuno); el búfer de profundidad distingue superficies a 1,3 m junto a Fobos, 10 m en Marte detrás, 188 m en Neptuno y 500 m en Tritón;
-  - capturas en escritorio y móvil: la vista general, Fobos con Marte detrás, Neptuno con Tritón detrás y el selector abierto.
-- **7.b · Sombras generalizadas (hecho, `925533d`):**
-  - la sombra del shader (D20) recibe como parámetros el cuerpo que tapa y el Sol;
-  - con `TLS_SHADOWS`, cada planeta recibe las de sus cuatro lunas más grandes (en Júpiter, las galileanas) y cada luna, la de su planeta, con la geometría real del estado (float64);
-  - `satelliteShadowPoint` (`ephemeris/eclipse.ts`) da la misma geometría y se comprueba con el **tránsito triple del 24-1-2015** que fotografió el Hubble (NASA, ESA y el Hubble Heritage Team, https://science.nasa.gov/asset/hubble/jupiter-january-24-2015/): a las 06:28 UT, las sombras de Europa, Calisto e Ío sobre Júpiter; a las 07:10 UT, ya no la de Ío;
-  - test del motor: los uniformes reproducen esa geometría;
-  - las predicciones del IMCCE se descartaron como fixture: su aviso legal pide autorización expresa para reproducir sus datos.
-  - En la captura del tránsito, el encuadre deja a Calisto (a 26 radios de Júpiter) detrás de la cámara y a Ío casi encima. Es la perspectiva de una cámara a unos 6 radios, no la de un telescopio. Las sombras caen donde las vio el Hubble.
+## 1. Resumen
+- **Las lunas, con su superficie:** 12 de las 20 llevan su mosaico global: Fobos, las cuatro galileanas, seis de Saturno y Tritón. Son del USGS, salvo Mimas, que sale de un mapa del DLR en el PDS. Se cargan al enfocar su sistema y el build las comprueba con rasgos del Gazetteer. Titán va sin superficie (en luz visible la tapa su neblina), con el color y el halo de una foto de Cassini.
+- **Sombras generalizadas (D20):** las lunas sobre su planeta y el planeta sobre sus lunas. Se comprueban con el tránsito triple que fotografió el Hubble el 24-1-2015.
+- **Escala real:** un selector en «Controles +» que va a la URL (`escala=real`). Sin temblores (medido).
+- **Saturno:**
+  - el limbo, a contraluz (R2);
+  - los anillos nuevos (D36): τ de una ocultación de Cassini, a 8 km por píxel, con las divisiones en su radio publicado (test);
+  - su color, de la reflectividad que midió el Hubble: el B, tostado;
+  - B / disco de 1,03, con un realce ilustrativo, y sin tono lavanda (medido).
+- **Rendimiento:**
+  - todas las vistas, también los sistemas de lunas, van a 58–60 FPS en los tres niveles y caben en la VRAM de §5;
+  - la memoria no crece tras 10 vueltas por los sistemas de lunas;
+  - al medir, Fobos bajaba a 46–50 FPS: Marte entraba y salía del encuadre y volvía a subir sus texturas de 4K. Corregido.
 
-- **7.d · R2 (hecho, `ee6d9cb`):**
-  - un lóbulo hacia delante estrecho e intenso en la neblina de Saturno (g = 0,9 y refuerzo 60, ajuste visual con PIA17172), con su test;
-  - el halo de las atmósferas decide si está iluminado con la normal del limbo de un observador lejano, como el disco: antes, a pocos radios y a contraluz, caía en el lado nocturno. La vista Tierra y la captura de EPIC apenas cambian (diferencia media de 0,7 a 1 nivel, en el limbo).
-- **Los anillos (D36):** investigando las fuentes (color de los anillos y perfil de τ del PDS).
+## 2. Criterios de aceptación
+
+| Criterio | ✅/❌ | Evidencia |
+|---|---|---|
+| Sin parpadeos ni temblores en escala real (Fobos y Neptuno; capturas o vídeo corto) | ✅ | `scripts/measure-real-scale.mjs` (RTX 3060). El cuerpo enfocado no se mueve en pantalla (temblor 0 px, salto 0, radio constante), con Fobos y con Neptuno, a 1 h/s y a 1 día/s o 30 días/s. Un vecino en movimiento tiembla 0,035 px (Marte, desde Fobos) y 0,020 px (Tritón, junto a Neptuno). El búfer de profundidad distingue superficies a 1,3 m junto a Fobos, a 10 m en Marte (detrás), a 188 m en Neptuno y a 500 m en Tritón. Capturas `escritorio-escala-real-*` y `movil-escala-real-*` (Fobos con Marte, Neptuno con Tritón, la vista general y el selector) |
+| Captura de una sombra de luna galileana sobre Júpiter en una fecha de tránsito real (fuente citada) | ✅ | `jupiter-transito-2015-0628` y `jupiter-transito-2015-0710`: el tránsito triple del 24-1-2015 que fotografió el Hubble (NASA, ESA y el Hubble Heritage Team, https://science.nasa.gov/asset/hubble/jupiter-january-24-2015/). La escena va a la hora en Júpiter: la de la foto menos 36,37 min de tiempo de luz. A las 06:28 de la foto se ven las sombras de Calisto e Ío y la de Europa, que entra por el limbo (a 0,998 radios). A las 07:10, las de Europa y Calisto. Tests: `satelliteShadowPoint` (`eclipse.spec.ts`) y los uniformes del motor (`engine.spec.ts`) |
+| FPS, VRAM y memoria con todos los sistemas cargados según §5 | ✅ | §6, `measure-views.mjs`: 11 vistas en los tres niveles, cinco de ellas sistemas de lunas. FPS mínimo ≥ 58 (§5: ≥ 55); VRAM ≤ 278 MB en alto (de 300) y ≤ 86 en bajo (de 120). `measure.mjs`: tras 10 vueltas por los sistemas de lunas, 7 geometrías, 12 texturas, 11 MB de heap y un contexto WebGL, igual que al empezar. Test de la VRAM con cada sistema cargado, en alto y en bajo (`engine.spec.ts`) |
+| Licencias del USGS registradas una a una en `FUENTES.md` | ✅ | `FUENTES.md`, «Usadas»: una fila por luna (11 del USGS y Mimas, del PDS), con su página, el fichero, el SHA-256, la proyección, la convención de longitudes, la resolución, la cobertura y la licencia (dominio público), y otra para el Gazetteer, que da las sondas. También en `/creditos` |
+| Captura `saturno-cassini-2013` con el limbo iluminado a contraluz (R2) | ✅ | `anillos-despues/escritorio-saturno-cassini-2013` y `movil-saturno-cassini-2013` (y sus `anillos-antes/`): la geometría de PIA17172 (fase de 176°, 17° bajo los anillos), con el anillo de luz del limbo. Test del lóbulo hacia delante (`ee6d9cb`) |
+| Anillos (D36): el color de cada uno con fuente científica publicada y test, y el B crema o tostado, no azulado (medido en la captura) | ✅ | `RING_SPECTRA` (`data/photometry.ts`): la I/F del Hubble en cinco bandas, de Salo y French (2010), con las longitudes de onda de Cuzzi, French y Dones (2002). Se lleva a cromaticidad con `bandChromaticity`, el método de Venus: C 1,047 · 0,992 · 0,945; B 1,073 · 0,997 · 0,820; A 1,059 · 0,998 · 0,847. La división de Cassini no tiene valores publicados y toma el del C, el más cercano documentado. Tests en `photometry.spec.ts` (los dos). Medido en la captura (`compare-rings.mjs`, la geometría de heic1917a): el B, con C* de 9,5 y h de 94° en CIELAB, crema; en la foto de prensa, 4,0 y 250°, azulado |
+| Anillos (D36): las divisiones de Cassini, Encke y Keeler, visibles en primer plano y en su radio publicado (test) | ✅ | El build (`checkRingFeatures`) y `texture-meta.spec.ts`, en la tira de 8K (8,2 km por píxel). Las divisiones de Colombo, Maxwell, Huygens, Encke y Keeler, vacías (τ 0) en su radio de la tabla del PDS. Los bordes, frente a los publicados: el interior del C, 74 491 km (74 491); el exterior del B, 117 478 (117 570: es excéntrico, ±100); el exterior del A, 136 772 (136 770); el núcleo del F, 140 203 (140 224). Con la tira desplazada 25 km (3 píxeles) hacia dentro o hacia fuera, o reflejada, la comprobación falla; un píxel cabe. Visibles en `anillos-despues/ansa-ampliada` |
+| Anillos (D36): B / disco en el valor elegido con el realce, documentado como ilustrativo | ✅ | `VISUAL_CONFIG.rings.brightness` = 1,3, con un comentario que lo dice ilustrativo. Medido en la geometría del Hubble: B / disco de 1,03 (D36: 1,0–1,1). Sin el realce, unos 0,79; en la foto de prensa, 1,44 |
+| Anillos (D36): sin tono lavanda en el anillo C ni en la división de Cassini (medido) | ✅ | `compare-rings.mjs`, CIELAB en la captura: el C, C* de 2,7 (h 316°), y la división de Cassini, 4,3 (h 303°). El umbral es 4,6: dos diferencias apenas perceptibles (ΔE 2,3; Sharma, 2003); por debajo, se lee como un gris neutro. En la foto de prensa, 4,6 y 5,4. El poco tono que queda es el fondo azul tinta, que se ve a través de los anillos tenues |
+
+## 3. Tareas del plan
+
+| Tarea | Estado | Notas |
+|---|---|---|
+| 7.1 20 lunas | hecha | Comprobado luna a luna en Astropedia, en su bucket y en la tabla de productos del USGS (https://fdp.astrogeology.usgs.gov/fdp/saturn/ y …/uranus/). **12 con mosaico global:** Fobos, Ío, Europa, Ganímedes, Calisto, Encélado, Tetis, Dione, Rea, Jápeto y Tritón, del USGS, y Mimas, del mapa final del DLR en el PDS (COISS_3006). **8 con su color esquemático:** Deimos, Proteo y las cinco de Urano (el USGS solo tiene sus mapas aerografiados en PDF, del hemisferio sur), y Titán (§4.1). En 1k y 2k (1k en bajo; la más pesada, 170 kB de 300). Rotación síncrona: la longitud 0 de cada mapa mira a su planeta (< 0,01°, test), y el hemisferio delantero cae a 90° O (a 90° E en Tritón, retrógrada). Carga solo con su sistema enfocado (test) |
+| 7.2 Sistemas de lunas | hecha | Ya estaban: el marco local físico con sus órbitas (fase 2) y la ficha resumida, la tarjeta flotante (fase 4b). Comprobados en las capturas de la 7.a (Dione con Saturno, Europa con Júpiter, Tritón con Neptuno y Titán con Saturno). Lo nuevo son los mosaicos, las sombras y la escala real |
+| 7.3 Sombras generalizadas | hecha | La sombra del shader (D20) recibe como parámetros el cuerpo que tapa y el Sol. Con `TLS_SHADOWS`, cada planeta recibe las de sus cuatro lunas más grandes y cada luna, la de su planeta, con la geometría del estado en float64. `satelliteShadowPoint` (`ephemeris/eclipse.ts`) da la misma geometría |
+| 7.4 Escala real | hecha | El selector «Escala» de «Controles +», con su anuncio y la URL, y un e2e (`e2e/tiempo.spec.ts`). La transición la anima el motor: directa con movimiento reducido |
+| 7.5 Atmósferas | hecha | Titán, con el color y el halo de PIA06230 y sin superficie (§4.1). Con R2, el halo de las atmósferas decide si está iluminado con la normal del limbo de un observador lejano, como el disco |
+| 7.6 Tests | hecha | La precisión de las lunas frente a Horizons, de la fase 1 (`moons.spec.ts`: ≤ 0,5° en 1900–2100), sigue pasando. La continuidad de las transiciones de escala, de la fase 2 (`engine.spec.ts`). Las sombras: `eclipse.spec.ts` y `engine.spec.ts` |
+| 7.7 R2 | hecha | Un lóbulo hacia delante estrecho e intenso en la neblina de Saturno (g = 0,9 y refuerzo 60), ajustado a ojo con PIA17172, con su test. La vista Tierra y la captura de EPIC apenas cambian (diferencia media de 0,7 a 1 nivel, en el limbo) |
+| 7.8 Miniaturas de las lunas | hecha | Con sus mosaicos y desde 15° sobre la eclíptica (`sobre=ecliptica`). La de Saturno, desde el sur (§4.9) |
+| 7.9 Anillos (D36) | hecha | Ver los criterios y §4.6–4.8 |
+
+## 4. Desviaciones del plan y motivo
+1. **Titán, sin textura de superficie** (el plan: «Titán con su textura, si cabe en el presupuesto»). El mosaico del USGS es de ISS a 938 nm, una ventana del metano en el infrarrojo cercano. En luz visible, la neblina tapa la superficie: en PIA06230 (color natural, fase de 56°) se ve un globo naranja liso. Con la textura, Titán salía con unos continentes que nadie puede ver. Su color, el de esa foto: 1,478 · 0,945 · 0,137. Su halo, tenue y casi neutro, con la caída medida en ella (`scripts/measure-titan-halo.mjs`): a 1,02–1,05 radios, 0,0083 del brillo del borde del disco, frente a 0,010 en la foto. El primer halo era unas 70 veces más brillante que el de la foto.
+2. **Mimas, del PDS.** Astropedia no tiene Mimas. Es el mapa final del DLR (Roatsch et al., 2018) en el volumen cartográfico de Cassini del PDS (COISS_3006). Son datos de la NASA, de dominio público. `usgs-mosaic.mjs` lee su etiqueta PDS3.
+3. **Sin mosaico: Deimos, Proteo y las cinco de Urano.** No hay un mosaico global del USGS. De las de Urano solo hay mapas aerografiados en PDF, del hemisferio sur. El JPL tiene mapas de textura de ellas, pero su licencia no está clara (§10.3). Se quedan con su color esquemático, como decía el plan.
+4. **El color:**
+   - Ío lleva el de su foto en color real, PIA02308 (1,154 · 1,026 · 0,284), en lugar de un tinte. Con el esquemático salía verdosa;
+   - las demás lunas con mosaico, en gris con el tinte de su color esquemático, dicho como tal. Tritón usa el canal naranja de Voyager 2.
+5. **Las sondas de las lunas de Saturno, de borde de cráter.** Sus mosaicos van normalizados en brillo y los domina el sombreado: una sonda de brillo no distingue un mapa girado. Las sondas miran el escalón de brillo del borde de cráteres con nombre del Gazetteer, elegidos por cómo discriminan. Con todos los cráteres grandes, el borde se detecta en su sitio en el 63 % de los de Rea, frente al 5 % con el mapa girado 180° y el 3 % reflejado. Encélado: 52, 11 y 2 %; Dione: 31, 0 y 3 %; Tetis: 23, 5 y 0 %; Jápeto: 22, 6 y 12 %; Mimas: 12, 0 y 3 %. Las galileanas y Tritón usan sondas de brillo (manchas oscuras o claras). Fobos no lleva sondas: es irregular (los radios angulares de sus cráteres no valen) y sus rasgos se ven por el sombreado, no por su brillo. Lo alinea su georreferencia.
+6. **El detalle del brillo de los anillos, de la textura de antes** (el plan lo permitía «si aporta algo que el perfil no tenga»). El B es casi opaco: τ satura y el perfil no da la variación de brillo de dentro del B. La luminancia de la textura de Solar System Scope sí la da. Para no inventar posiciones, se registra con la ocultación por correlación. Sale una escala de 8,749 km por píxel (r de 0,955). El ajuste fino por región desplaza el C 0 km, el B −10, la división de Cassini 0 y el A −10. El build falla si alguno pasa de 25 km. Estructura fina del B: 0,186 en la escena, frente a 0,178 en la foto del Hubble.
+7. **El brillo de cada anillo (albedo)** sale de la I/F del Hubble en F555W (Salo y French, 2010), con el modelo de dispersión de la escena, dentro del intervalo de la ficha de la NASA: C 0,140 y B 0,533. El A pedía menos y queda en 0,400, el mínimo de la ficha (0,4–0,6). La división de Cassini, que el Hubble no midió, lleva el típico de la ficha: 0,283, la media geométrica de 0,2–0,4. El anillo A queda plano: estructura fina de 0,027, frente a 0,22 en la foto, que lleva el oscurecimiento hacia fuera y la zona de Encke. No es un criterio de la fase (§10.4).
+8. **El umbral del tono lavanda.** El plan pedía medirlo, sin cifra. Es lavanda si el tono CIELAB cae entre 280° y 345° y C* pasa de 4,6: dos diferencias apenas perceptibles (ΔE 2,3; Sharma, 2003).
+9. **La miniatura de Saturno, desde el sur.** Desde el equinoccio de 2025, el Sol ilumina la cara sur de los anillos. Desde el norte, la miniatura enseñaba su cara de sombra, oscura (y, antes de D36, lavanda).
+10. **Las predicciones del IMCCE, descartadas como fuente del tránsito:** su aviso legal pide autorización expresa para reproducir sus datos. La fuente independiente es la foto del Hubble, con la hora corregida por el tiempo de luz (36,37 min): la escena pinta la posición geométrica.
+
+## 5. Decisiones técnicas nuevas
+- **Las texturas de las lunas, solo con su sistema enfocado** (`systemOf` en `world.ts`): el planeta o una de sus lunas. El nivel, `satelliteTexture` (2k, 2k y 1k). Al soltarlas, la luna vuelve a su color esquemático, sin el contraste ni el tinte del mosaico.
+- **`scripts/usgs-mosaic.mjs`:** lleva cada mosaico a la convención de la escena (longitud 0 en el centro, longitudes al este) desde su GeoTIFF o su etiqueta PDS3. Rellena los huecos con el gris medio (Tritón: el 38,4 %, el norte que no vio Voyager 2) y comprueba las sondas.
+- **La sombra (`tlsShadow`), con varios cuerpos que tapan** (`TLS_SHADOWS`): hasta cuatro por cuerpo, con la geometría en float64 en JS.
+- **El halo de Titán, con su propio color** (`uHazeColor`): la cromaticidad del halo de PIA06230 por su ganancia.
+- **La tira de los anillos, a su propio nivel** (`ringTexture`: 8k, 8k y 4k). Pesa poco y lleva la estructura radial fina.
+- **`scripts/ring-profile.mjs`:**
+  - reduce la ocultación a τ por píxel promediando la transmisión, no τ;
+  - lo opaco, a τ 5; el ruido, por debajo de 0,005, a 0; y 0 más allá del F;
+  - `checkRingFeatures` comprueba las divisiones y los bordes frente a la tabla del PDS (`data/saturn-rings.ts`).
+- **`bandChromaticity` (`ephemeris/photometry.ts`):** la cromaticidad a partir de la reflectividad por bandas, interpolada a las longitudes de onda dominantes de los primarios sRGB (611, 549 y 464 nm). Reproduce la de Venus de la fase 3b (1,027 · 0,996 · 0,958).
+- **El realce de los anillos** (`uBrightness` en su material, `VISUAL_CONFIG.rings.brightness`), ilustrativo.
+- **«Se ve grande», con dos condiciones** (C4, fase 6): para entrar hay que estar en la pantalla; para salir, basta con alejarse. El que sale del encuadre sin alejarse conserva su primer plano. Con Fobos enfocado a 1 día/s, Marte entraba y salía del encuadre seis veces por segundo y cada vez se volvían a descodificar y a subir sus texturas de 4K: 24 cambios y 12 subidas de cada textura en 4 s, a 46–50 FPS. Ahora, un cambio y una subida, a 59–60 FPS. Test.
+- **En captura, la latitud de la cámara también sobre la eclíptica** (`sobre=ecliptica`), para las miniaturas de las lunas: con su ecuador, las de Urano salían con un tercio del disco en sombra.
+
+## 6. Salida de los checks
+```
+npm run check (con el código final de la entrega 7.e)
+- lint y Prettier: limpios
+- 567 tests (63 ficheros); cobertura de ephemeris/: 99,48 % de sentencias, 95,63 % de ramas,
+  100 % de funciones y 99,85 % de líneas
+- build sin avisos de presupuesto: JS inicial 298,66 kB (aviso a 320); three 703,49 kB (aviso a 900);
+  interfaz diferida 285,35 kB
+- JS inicial sin three ni astronomy-engine; código propio, 12,13 kB de 15
+```
+- **e2e:** la batería completa, en el CI de GitHub al subir la rama (en verde con `63a331d`; con la 7.e, en §6.1).
+- **Mediciones** (RTX 3060, modo de captura, `node scripts/measure-views.mjs`; el recorrido de cada nivel, sin recargar, y en cada paso los FPS durante 4 s a 1 día/s). El nivel bajo se repitió con la máquina libre: en la primera pasada, otra sesión pasaba sus e2e de Playwright a la vez (CPU al 96 %) y los FPS caían a partir de Europa.
+
+| Vista | VRAM (MB): alto · medio · bajo | FPS mínimo: alto · medio · bajo | Descarga del paso (kB): alto · bajo |
+|---|---|---|---|
+| Vista general | 38 · 38 · 38 | 60 · 60 · 59 | 513 · 510 |
+| Marte | 124 · 59 · 59 | 60 · 60 · 60 | 1673 · 482 |
+| Saturno (con sus lunas) | 94 · 62 · 62 | 60 · 59 · 59 | 916 · 862 |
+| Dione | 62 · 62 · 54 | 59 · 60 · 59 | 599 · 0 |
+| Júpiter (con sus lunas) | 89 · 57 · 56 | 59 · 60 · 60 | 487 · 312 |
+| Europa | 57 · 57 · 48 | 60 · 60 · 58 | 317 · 0 |
+| Tritón | 49 · 49 · 40 | 60 · 60 · 60 | 107 · 33 |
+| Fobos | 49 · 49 · 40 | 60 · 60 · 60 | 258 · 0 |
+| Sol | 121 · 57 · 56 | 59 · 60 · 60 | 0 · 0 |
+| Vista Tierra | 278 · 86 · 86 | 60 · 60 · 60 | 3258 · 750 |
+| Vista Luna | 266 · 103 · 62 | 60 · 60 · 60 | 5222 · 1223 |
+
+  En el nivel bajo, las lunas de un sistema se descargan al enfocar el planeta (su nivel de primer plano es el mismo, 1k). Por eso Dione, Europa y Fobos no descargan nada.
+- **`node scripts/measure.mjs`:**
+  - reposo: 0 frames y 0 llamadas a `requestAnimationFrame` en 3 s;
+  - contexto WebGL perdido y recuperado: 0 frames mientras estaba perdido y uno al recuperarlo, en la misma fecha (`contexto-recuperado.webp`);
+  - vista general a 1 día/s: 60 FPS en alto y medio, 59 en bajo, 1,2–1,4 ms de CPU por frame, 21 llamadas de dibujo;
+  - memoria: al empezar y tras 10 idas y vueltas a una ficha, 10 cambios de vista, 6 de calidad y 10 vueltas por los sistemas de lunas, 7 geometrías, 12 texturas, 11 MB de heap y un contexto WebGL;
+  - primera vista: 443 kB de texturas, 70 de estrellas, 31 de imágenes y 52 de tipografías. Elemento LCP: el póster, a los 232 ms. Una tarea larga de 51 ms (en alto);
+  - el estado a 1 año/s: 4,8 actualizaciones por segundo, y ningún cambio de la URL en 5 s de reproducción.
+
+### 6.1 e2e de la entrega 7.e
+Se completa con el resultado del CI de la rama al subir este informe.
+
+## 7. Capturas
+En `docs/informes/img/fase-7/` (modo de captura; la escena, el 24-10-2026 si no se dice otra fecha):
+- **Lunas (7.a):** `escritorio-` y `movil-dione-saturno`, `-europa-jupiter`, `-titan-saturno` y `-triton-neptuno`; `lunas-mosaicos-antes` y `lunas-mosaicos-despues` (las 12, sin y con su mosaico); `titan-cassini-2005` (la geometría de PIA06230).
+- **Sombras (7.b):** `jupiter-transito-2015-0628` y `jupiter-transito-2015-0710`. El encuadre deja a Calisto (a 26 radios de Júpiter) detrás de la cámara y a Ío casi encima: es la perspectiva de una cámara a unos 6 radios, no la de un telescopio. Las sombras caen donde las vio el Hubble.
+- **Escala real (7.c):** `escritorio-` y `movil-escala-real-sistema`, `-fobos-marte`, `-neptuno-triton` y `-controles`.
+- **Anillos y R2 (7.d):** `anillos-antes/` y `anillos-despues/`, cada una con `escritorio-` y `movil-saturno-hubble-2019` (heic1917a), `-saturno-cassini-2013` (PIA17172, a contraluz), `-saturno-sombra`, `-saturno-2026` (casi de canto) y `-sistema`, y `ansa-ampliada` (el ansa derecha, con las divisiones). Las fotos reales, enlazadas en `docs/realismo/referencias.md`.
+- **Robustez:** `contexto-recuperado`.
+- **Fuera de la carpeta:** las miniaturas de las fichas (`public/img/cuerpos/`) y los pósters (`public/img/poster-*`), regenerados (§9).
+
+## 8. Dependencias añadidas
+Ninguna. Datos nuevos (todos en `FUENTES.md` y en `/creditos`):
+- los mosaicos de las lunas (USGS y, Mimas, el PDS);
+- el Gazetteer (las sondas);
+- la ocultación de β Centauri de Cassini UVIS (PDS Ring-Moon Systems Node; Colwell et al., 2020) y la tabla de radios de los anillos del PDS;
+- la reflectividad de los anillos de Salo y French (2010) y de Cuzzi, French y Dones (2002).
+
+Las fotos de referencia (Hubble y Cassini) solo se enlazan y se miden en una carpeta temporal: no entran en el repo.
+
+## 9. Pendientes y `TODO(ivan)`
+- **Probar en tu móvil** (no bloquea): los sistemas de lunas (Júpiter con sus lunas, Fobos) y la escala real («Controles +» → «Escala»).
+- **Los pósters de la vista Luna estaban desfasados desde la fase 6** (hallazgo propio): eran de antes de su panel. En el móvil, el póster tenía la Luna grande y en medio, y el 3D la pone más pequeña, encima del panel: el fundido mostraba dos escenas. Regenerados todos (`1b22fe0`).
+- Las propuestas de §10, para que decidas.
+
+## 10. Propuestas de cambio al plan
+1. **El terminador de Titán:** su neblina lo hace muy suave en las fotos, y en la escena es un escalón. Haría falta un parámetro de fotometría nuevo (una sombra suavizada por la atmósfera). Propuesta: la fase 10 o el backlog.
+2. **La dicotomía de Jápeto, comprimida:** los mosaicos van normalizados en brillo y la cara oscura sale a 0,58 de la clara; la real es de un 10 % o menos. Habría que llevar el contraste de cada luna a su albedo medido (con su fuente). Propuesta: el backlog.
+3. **Las lunas de Urano:** el JPL tiene mapas de textura de ellas, pero su licencia no está clara. Preguntarlo a la NASA o al JPL, o dejarlas con su color. Propuesta: el backlog.
+4. **El anillo A, más plano que en las fotos:** su oscurecimiento hacia fuera y la zona de Encke saldrían de un perfil radial de I/F medido (por ejemplo, de Cassini ISS, en el PDS). Propuesta: el backlog.
+5. **Que el motor espere a la textura de un vecino que se acerca** (fase 10): al enfocar Fobos, Marte pide su 4K la primera vez que entra en el encuadre, con un tirón al subirla. Se podría pedir al enfocar una luna, si su planeta se ve grande desde ella.
+
+## 11. Cómo probarlo
+1. `npm start` y abrir `http://localhost:4200/?cuerpo=europa`. Júpiter y sus lunas cargan sus mosaicos; en la vista general siguen con su color.
+2. Las sombras: `/?cuerpo=jupiter&fecha=2015-01-24T05:51:38Z` (el tránsito triple del Hubble a la hora en Júpiter).
+3. La escala real: «Controles +» → «Escala» → «Real», o `/?cuerpo=fobos&escala=real`.
+4. Los anillos, en el modo de captura (`desde`, `fase` y `latitud` solo valen en él): `/?captura=1&cuerpo=saturno&fecha=2019-06-20T12:00Z&desde=tierra` (la geometría de la foto del Hubble de 2019). El limbo a contraluz: `/?captura=1&cuerpo=saturno&fecha=2013-07-19T21:30Z&fase=176&latitud=-17`. Fuera de él, `/?cuerpo=saturno` y la rueda para acercarse a un ansa.
+5. Capturas y mediciones (tras `npm run build`):
+   - `node scripts/capture-moons.mjs`, `capture-real-scale.mjs`, `capture-rings.mjs <carpeta>` y `capture-realism.mjs`;
+   - `node scripts/compare-rings.mjs` (brillo, color y estructura de los anillos frente a la foto);
+   - `node scripts/measure-views.mjs [alta|media|baja]`, `measure.mjs` y `measure-real-scale.mjs`.
+
+---
+
+## Respuesta a la revisión

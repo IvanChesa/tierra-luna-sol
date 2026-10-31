@@ -85,6 +85,15 @@ Decisiones y tareas que dependen de Iván. Claude Code añade aquí cada `TODO(i
 - [x] **Los casquetes polares de la Luna** (propuesta 1 de la fase 6): hechos ya en la revisión de la fase 6 (hallazgo 1, era un Bloqueante): las normales de los modelos polares del LOLA por encima de 76°, sin el «sol de rayas» del polo.
 - [ ] **La luz de la umbra** (propuesta 2 de la fase 6): en los eclipses, la Luna se ve rojiza y bastante clara, más de lo real, para que no salga negra con la exposición de su primer plano (ilustrativo, `VISUAL_CONFIG.moon.umbraLight`). Si la prefieres más oscura y realista, es cambiar ese valor: dime cuál.
 
+## Bloque D (fase 7: lunas, sombras y escala real)
+- [ ] **Probar en tu móvil** (no bloquea), en la vista previa: los sistemas de lunas (`/?cuerpo=europa`, `/?cuerpo=fobos`: los FPS con los mosaicos) y la escala real («Controles +» → «Escala»).
+- [ ] **Las propuestas de la fase 7** (`docs/informes/fase-7.md`, §10), para decidir:
+  - el terminador de Titán, suave por su neblina (en la escena, un escalón): un parámetro de fotometría nuevo, en la fase 10 o en el backlog;
+  - la dicotomía de Jápeto, comprimida por la normalización de los mosaicos: el contraste de cada luna, llevado a su albedo medido (backlog);
+  - las lunas de Urano: el JPL tiene mapas de textura, con la licencia sin aclarar; preguntarlo o dejarlas con su color (backlog);
+  - el anillo A, más plano que en las fotos: un perfil radial de I/F de Cassini (backlog);
+  - pedir la textura del planeta al enfocar una de sus lunas, si se ve grande desde ella (fase 10).
+
 ## Decisiones
 - [x] **(Fase 6) `toktx` (KTX-Software): no hace falta.** Con WebP, la VRAM cabe en los 300 MB de §5 en el peor caso de las dos vistas (C4, con test): la vista Tierra, 278 MB, y la vista Luna, 265; y en el viaje entre las dos, como mucho 284 (revisión de la fase 6, hallazgo 4). La reevaluación de KTX2 queda para la fase 10 si hiciera falta en el móvil.
 - [ ] **Subdominio definitivo.** Propuesto: `tierra-luna-sol.ivanchesa.es`. Si cambia, se edita solo `src/app/core/site.config.ts`.
