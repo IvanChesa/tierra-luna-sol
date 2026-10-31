@@ -69,8 +69,8 @@ const RING_HEIGHT = 16;
  * la elevación de un modelo en 16 bits empaquetados en R y G (D15), sin pérdidas, para desplazar los
  * vértices (la Luna, fase 6). polar-relief: el atlas de normales de los casquetes polares de la Luna
  * (scripts/lola-polar.mjs; revisión de la fase 6): 2n × n px, el sur a la izquierda y el norte a la
- * derecha. mosaic: el mosaico global de una luna del USGS (scripts/usgs-mosaic.mjs, fase 7), con
- * sondas de rasgos con nombre (`MOSAIC_PROBES`).
+ * derecha. mosaic: el mosaico global de una luna del USGS o del PDS (scripts/usgs-mosaic.mjs, fase 7),
+ * con sondas de rasgos con nombre (`MOSAIC_PROBES`); `band`: solo ese canal, en gris.
  */
 const TEXTURES = {
   mercury: { file: '8k_mercury.jpg', kind: 'color', quality: 80 },
@@ -111,8 +111,8 @@ const TEXTURES = {
   // Sus casquetes polares, por encima de 76° (revisión de la fase 6, hallazgo 1): las normales de los
   // modelos polares del LOLA, a 893 m por píxel en 2k, sin el «sol de rayas» del equirrectangular.
   'moon-normal-poles': { kind: 'polar-relief', quality: 85, maxWidth: 2048 },
-  // Las lunas (fase 7): mosaicos globales del USGS Astrogeology, en 1k y 2k (§5: ≤ 300 kB por luna
-  // en el nivel bajo). Deimos no tiene ninguno.
+  // Las lunas (fase 7): mosaicos globales del USGS Astrogeology (Mimas, del PDS), en 1k y 2k (§5:
+  // ≤ 300 kB por luna en el nivel bajo). Deimos, Proteo y las de Urano no tienen ninguno.
   phobos: { file: 'Phobos_Viking_Mosaic_40ppd_DLRcontrol.tif', kind: 'mosaic', quality: 80 },
   io: { file: 'Io_GalileoSSI-Voyager_Global_Mosaic_1km.tif', kind: 'mosaic', quality: 80 },
   europa: { file: 'Europa_Voyager_GalileoSSI_global_mosaic_500m.tif', kind: 'mosaic', quality: 80 },
@@ -125,6 +125,21 @@ const TEXTURES = {
     file: 'Callisto_Voyager_GalileoSSI_global_mosaic_1km.tif',
     kind: 'mosaic',
     quality: 80,
+  },
+  mimas: { file: 'SM_1M_0_0_SIMP.IMG', kind: 'mosaic', quality: 80 },
+  enceladus: { file: 'Enceladus_Cassini_mosaic_global_110m.tif', kind: 'mosaic', quality: 80 },
+  tethys: { file: 'Tethys_Cassini_mosaic_global_293m.tif', kind: 'mosaic', quality: 80 },
+  dione: { file: 'Dione_Cassini_Voyager_mosaic_global_154m.tif', kind: 'mosaic', quality: 80 },
+  rhea: { file: 'Rhea_Cassini_Voyager_mosaic_global_417m.tif', kind: 'mosaic', quality: 80 },
+  titan: { file: 'Titan_ISS_P19658_Mosaic_Global_4km.tif', kind: 'mosaic', quality: 80 },
+  iapetus: { file: 'Iapetus_Cassini_Voyager_mosaic_global_783m.tif', kind: 'mosaic', quality: 80 },
+  // Tritón: un mosaico en falso color (naranja, violeta y ultravioleta en R, G y B); solo su canal
+  // naranja, el más cercano al visible, en gris.
+  triton: {
+    file: 'Triton_Voyager2_ClrMosaic_GlobalFill_600m.tif',
+    kind: 'mosaic',
+    quality: 80,
+    band: 0,
   },
   uranus: { file: '2k_uranus.jpg', kind: 'color', quality: 82 },
   neptune: { file: '2k_neptune.jpg', kind: 'color', quality: 82 },
@@ -784,7 +799,7 @@ for (const [id, spec] of Object.entries(TEXTURES)) {
   if (spec.kind === 'mosaic') {
     // El mosaico, a 2048 px y centrado en la longitud 0 (con sus huecos rellenos); sus sondas; y los
     // niveles de 1k y 2k. La luminancia media, como la de los mapas de color, para el albedo (D29).
-    const mosaic = await loadMosaic(new URL(spec.file, SRC), 2048);
+    const mosaic = await loadMosaic(new URL(spec.file, SRC), 2048, { band: spec.band });
     reports.push(`${id}: ${mosaic.report}`);
     const probes = checkMosaicProbes(id, mosaic);
     if (probes) reports.push(probes);

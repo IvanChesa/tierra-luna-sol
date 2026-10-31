@@ -121,6 +121,31 @@ export const TEXTURE_META: Readonly<Record<TextureId, TextureMeta>> = {
   callisto: grayMosaic(
     'Mosaico Voyager–Galileo SSI de Calisto del USGS (1 km), alineado con su georreferencia. Sondas: Burr (Feature/927) y Lofn (Feature/3451), claras; con el mapa girado 180° o reflejado, falla alguna.',
   ),
+  // Las de Saturno, normalizadas en brillo y dominadas por el sombreado: sondas de borde de cráteres.
+  mimas: grayMosaic(
+    'Mapa de Mimas del DLR (Cassini ISS, 16 px/°) en el PDS (COISS_3006), alineado con su etiqueta. Sondas de borde: Gareth (Feature/2106) e Iseult (Feature/2729); con el mapa girado 180° o reflejado, falla alguna.',
+  ),
+  enceladus: grayMosaic(
+    'Mosaico Cassini de Encélado del USGS (110 m), alineado con su georreferencia. Sondas de borde: Bahman (Feature/14604), Parwez (Feature/14615) y Marjanah (Feature/14235); con el mapa girado 180° o reflejado, falla alguna.',
+  ),
+  tethys: grayMosaic(
+    'Mosaico Cassini de Tetis del USGS (293 m), alineado con su georreferencia. Sondas de borde: Oenops (Feature/14427), Polyphemus (Feature/4788) y Philoetius (Feature/14429); con el mapa girado 180° o reflejado, falla alguna.',
+  ),
+  dione: grayMosaic(
+    'Mosaico Cassini–Voyager de Dione del USGS (154 m), alineado con su georreferencia. Sondas de borde: Catillus (Feature/1079), Halys (Feature/2335) y Eumelus (Feature/14352); con el mapa girado 180° o reflejado, falla alguna.',
+  ),
+  rhea: grayMosaic(
+    'Mosaico Cassini–Voyager de Rea del USGS (417 m), alineado con su georreferencia. Sondas de borde: Pachacamac (Feature/14683), Inmar (Feature/14672) y Pouliuli (Feature/14685); con el mapa girado 180° o reflejado, falla alguna.',
+  ),
+  titan: grayMosaic(
+    'Mosaico Cassini ISS de Titán del USGS (4 km, 938 nm: la superficie bajo la neblina), alineado con su georreferencia. Sondas: Xanadu (Feature/6958), clara, y Shangri La (Feature/6990) y Belet (Feature/6984), oscuras; con el mapa girado 180° o reflejado, falla alguna.',
+  ),
+  iapetus: grayMosaic(
+    'Mosaico Cassini–Voyager de Jápeto del USGS (783 m), alineado con su georreferencia. Sondas de borde: Valdebron (Feature/14489) y Dapamort (Feature/14462); con el mapa girado 180° o reflejado, falla alguna.',
+  ),
+  triton: grayMosaic(
+    'Canal naranja del mosaico Voyager 2 de Tritón del USGS (600 m), alineado con su georreferencia; el norte que no vio Voyager 2 (38 %), con el gris medio. Sondas: Doro Macula (Feature/1583), Kasu Patera (Feature/2951) y Ukupanio Cavus (Feature/6196), oscuras; con el mapa girado 180° o reflejado, falla alguna.',
+  ),
   'milky-way': {
     colorSpace: 'srgb',
     alpha: false,

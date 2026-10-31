@@ -1,6 +1,7 @@
 import starsBin from '../../../public/data/stars.bin' with { loader: 'binary' };
 import { Libration } from 'astronomy-engine';
 import { BackSide, FrontSide, Quaternion, Texture, Vector3, Vector4 } from 'three';
+import { BODY_PHOTOMETRY } from '../data/photometry';
 import { KM_PER_AU } from '../ephemeris/constants';
 import { subsolarPoint } from '../ephemeris/coordinates';
 import { earthShadow, moonShadowCenter, satelliteShadowPoint } from '../ephemeris/eclipse';
@@ -559,7 +560,9 @@ describe('SceneEngine: foco, marcos y selección', () => {
     settle(h);
     expect(h.engine.focusedBody).toBeNull();
     h.engine.dispose();
-  });
+    // La esfera cúbica de la Luna (unos 200 000 triángulos) se crea al entrar en su vista: con la suite
+    // entera en paralelo, rozaba los 5 s por defecto.
+  }, 20_000);
 });
 
 describe('SceneEngine: calidad adaptativa, contexto WebGL y limpieza', () => {
@@ -1438,6 +1441,24 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     expect(released).toContain('callisto@1k');
     expect(io()?.uHasMap.value).toBe(0);
     expect(io()?.uChromaticity.value.w).toBe(0);
+    // Con Saturno, sus siete lunas; Titán, con el contraste de su mosaico (la superficie bajo la
+    // neblina, muy atenuada), que vuelve a 1 con su color esquemático.
+    h.engine.focus('saturno');
+    await step();
+    for (const id of ['mimas', 'enceladus', 'tethys', 'dione', 'rhea', 'titan', 'iapetus'])
+      expect(requests).toContain(`${id}@1k`);
+    const titan = () =>
+      (
+        internals(h).world as unknown as {
+          visuals: { body: { id: string }; uniforms: { uContrast: { value: number } } | null }[];
+        }
+      ).visuals.find((v) => v.body.id === 'titan')?.uniforms;
+    expect(titan()?.uContrast.value).toBe(BODY_PHOTOMETRY.titan.contrast?.value);
+    expect(titan()?.uContrast.value).toBeLessThan(1);
+    h.engine.focus(null);
+    await step();
+    expect(released).toContain('titan@1k');
+    expect(titan()?.uContrast.value).toBe(1);
     h.engine.dispose();
   });
 

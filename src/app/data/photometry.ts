@@ -320,8 +320,12 @@ export const BODY_PHOTOMETRY: Readonly<Record<Exclude<BodyId, 'sol'>, BodyPhotom
     haze: haze(0.4, 2.5, 0.35, 3),
     hazeColor: '#e3a95c',
     haloScaleHeight: 0.04,
+    contrast: {
+      value: 0.2,
+      note: 'Su mosaico (fase 7) es la superficie vista por el ISS de Cassini a 938 nm, en una ventana del metano; en luz visible, la neblina la oculta casi por completo. Se deja al 20 % de su contraste, como una insinuación de las dunas oscuras y de Xanadu: ajuste visual, ilustrativo.',
+    },
     calibrateAlbedo: true,
-    note: 'Neblina espesa y anaranjada: Minnaert y atmósfera, ajuste visual (la fase 7 añade su textura).',
+    note: 'Neblina espesa y anaranjada: Minnaert y atmósfera, ajuste visual. Desde la fase 7, con su mosaico del ISS muy atenuado (contraste) y teñido con su color esquemático.',
   },
   japeto: airless(),
   miranda: airless(),

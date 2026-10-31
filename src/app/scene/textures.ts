@@ -53,6 +53,14 @@ export type TextureId =
   | 'europa'
   | 'ganymede'
   | 'callisto'
+  | 'mimas'
+  | 'enceladus'
+  | 'tethys'
+  | 'dione'
+  | 'rhea'
+  | 'titan'
+  | 'iapetus'
+  | 'triton'
   | 'milky-way';
 
 export interface TextureMeta {

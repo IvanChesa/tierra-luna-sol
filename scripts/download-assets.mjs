@@ -13,6 +13,9 @@
 // - Modelos de elevación (fase 3b, relieve): MOLA MEGDR de 16 px/° (PDS Geosciences Node, datos de
 //   la NASA) y MESSENGER, modelo global de 665 m v2 (USGS Astrogeology: «USGS-authored or produced
 //   data and information are considered to be in the U.S. Public Domain»; uso: citar a los autores).
+// - Lunas (fase 7): mosaicos globales de Astropedia (USGS Astrogeology; en su ficha, «Public domain»
+//   o sin restricciones, y «Please cite authors») y, Mimas, el mapa del DLR archivado en el PDS
+//   (COISS_3006: datos de la NASA, dominio público en EE. UU.).
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 
@@ -35,6 +38,11 @@ const LOLA_POLAR_PAGE = 'https://pds-geosciences.wustl.edu/missions/lro/lola.htm
 /** Mosaicos globales de las lunas (fase 7): el bucket del USGS Astrogeology y sus páginas. */
 const USGS_MOSAIC = 'https://planetarymaps.usgs.gov/mosaic/';
 const ASTROPEDIA = 'https://astrogeology.usgs.gov/search/map/';
+/**
+ * Mimas (fase 7): Astropedia no tiene su mosaico; el mapa final del DLR (Roatsch et al., 2018), en el
+ * volumen cartográfico de Cassini ISS del PDS (COISS_3006, nodo Rings).
+ */
+const MIMAS_PDS = 'https://pds-rings.seti.org/holdings/volumes/COISS_3xxx/COISS_3006/';
 const MERCURY_DEM =
   'https://planetarymaps.usgs.gov/mosaic/Mercury_Messenger_USGS_DEM_Global_665m_v2.tif';
 const MERCURY_DEM_PAGE =
@@ -71,7 +79,7 @@ const ASSETS = [
   // Vía Láctea: panorama de 6000 × 3000 px en coordenadas galácticas (el original completo).
   ['eso0932a.tif', ESO_MILKY_WAY, ESO_MILKY_WAY_PAGE],
   // Las lunas (fase 7): mosaicos globales del USGS Astrogeology, en dominio público (FUENTES.md, uno a
-  // uno). Deimos no tiene ninguno: se queda con su color esquemático.
+  // uno). Deimos, Proteo y las cinco de Urano no tienen ninguno: se quedan con su color esquemático.
   ...[
     ['Phobos_Viking_Mosaic_40ppd_DLRcontrol.tif', 'phobos_viking_global_mosaic_5m'],
     ['Io_GalileoSSI-Voyager_Global_Mosaic_1km.tif', 'io_voyager_galileo_ssi_global_mosaic_1km'],
@@ -87,7 +95,19 @@ const ASSETS = [
       'Callisto_Voyager_GalileoSSI_global_mosaic_1km.tif',
       'callisto_galileo_voyager_global_mosaic_1km',
     ],
+    ['Enceladus_Cassini_mosaic_global_110m.tif', 'enceladus_cassini_global_mosaic_110m'],
+    ['Tethys_Cassini_mosaic_global_293m.tif', 'tethys_cassini_global_mosaic_293m'],
+    ['Dione_Cassini_Voyager_mosaic_global_154m.tif', 'dione_cassini_voyager_global_mosaic_154m'],
+    ['Rhea_Cassini_Voyager_mosaic_global_417m.tif', 'rhea_cassini_voyager_global_mosaic_417m'],
+    ['Titan_ISS_P19658_Mosaic_Global_4km.tif', 'titan_cassini_iss_global_mosaic_4005m'],
+    [
+      'Iapetus_Cassini_Voyager_mosaic_global_783m.tif',
+      'iapetus_cassini_voyager_global_mosaic_803m',
+    ],
+    ['Triton_Voyager2_ClrMosaic_GlobalFill_600m.tif', 'triton_voyager_2_global_color_mosaic_600m'],
   ].map(([name, page]) => [name, USGS_MOSAIC + name, ASTROPEDIA + page]),
+  // Mimas: 5760 × 2880 px (16 px/°, 216 m por píxel), en un IMG del PDS con su etiqueta dentro.
+  ['SM_1M_0_0_SIMP.IMG', MIMAS_PDS + 'data/images/SM_1M_0_0_SIMP.IMG', MIMAS_PDS],
 ];
 
 /** Modelos de elevación (fase 3b): a assets-src/elevation/, con su propio manifiesto. */

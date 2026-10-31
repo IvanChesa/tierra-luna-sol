@@ -91,12 +91,20 @@ export const BODY_TEXTURES: Readonly<Partial<Record<BodyId, TextureId>>> = {
   urano: 'uranus',
   neptuno: 'neptune',
   luna: 'moon',
-  // Las lunas con mosaico global del USGS (fase 7): solo con su sistema enfocado.
+  // Las lunas con mosaico global (fase 7, del USGS; Mimas, del PDS): solo con su sistema enfocado.
   fobos: 'phobos',
   io: 'io',
   europa: 'europa',
   ganimedes: 'ganymede',
   calisto: 'callisto',
+  mimas: 'mimas',
+  encelado: 'enceladus',
+  tetis: 'tethys',
+  dione: 'dione',
+  rea: 'rhea',
+  titan: 'titan',
+  japeto: 'iapetus',
+  triton: 'triton',
 };
 
 /**
@@ -1224,6 +1232,8 @@ export class World {
     if (visual.uniforms) {
       visual.uniforms.uMap.value = null;
       visual.uniforms.uHasMap.value = 0;
+      // El contraste es el de la textura (Titán): con su color esquemático, el suyo.
+      visual.uniforms.uContrast.value = 1;
       if (!visual.photometry?.chromaticity) visual.uniforms.uChromaticity.value.setW(0);
       if (visual.photometry) {
         visual.uniforms.uAlbedoScale.value = bodyAlbedoScale(
