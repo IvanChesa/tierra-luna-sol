@@ -1,0 +1,79 @@
+# Revisión: Fase 8
+Veredicto: CAMBIOS NECESARIOS
+
+Sin bloqueantes. Hay dos importantes que se corrigen en la rama antes de fusionar: el deslizador de la noche y el desbordamiento de `/eclipses` en el móvil. El resto son menores y sugerencias. La astronomía está bien hecha y bien probada: los sistemas de referencia, la refracción, las zonas horarias, las búsquedas, los eclipses y los fixtures se han comprobado contra sus fuentes, y los criterios de aceptación se cumplen con evidencias. Lo que falla es la interfaz, en dos casos que los tests no cubren.
+
+## Verificación
+- **`npm run check`** en `fase-8-cielo-eclipses`, el 01-11-2026: sale con código 0.
+  - Lint y Prettier, limpios.
+  - Tests: 663 de 663, en 71 ficheros.
+  - Cobertura de `ephemeris/`: 99,08 % de sentencias, 94,24 % de ramas, 100 % de funciones y 99,76 % de líneas. Por ficheros, `eclipse-search.ts` tiene un 95 % de sentencias y un 85,71 % de ramas (la línea 189 queda sin cubrir; ver el hallazgo 9), y `night.ts`, un 100 % y un 93,18 %.
+  - Build: 19 rutas prerenderizadas. JS inicial de 300,17 kB (82,72 kB comprimido).
+  - `check-initial-bundle`: ninguna página lleva en su JS inicial `three`, astronomy-engine, los stores ni los controles. El código propio inicial ocupa 12,62 kB de 15.
+  - Chunks diferidos: `three`, 743,27 kB; interfaz del explorador, 242,22 kB; astronomy-engine, 84,46 kB; `/eclipses`, 36,78 kB.
+  - Todo coincide con el informe.
+- **e2e:** `npx playwright test e2e/cielo.spec.ts --project=escritorio` pasa 7 de 7. No he pasado los 81.
+- **Datos comprobados en vivo contra sus fuentes:**
+  - USNO: la consulta del fixture (el Teide, el 21-06-2026, `tz=0&dst=true`) devuelve exactamente las ocho horas del fichero.
+  - IGN: el WMS del MDT02 da 812,18 m en el punto del Montsec.
+  - NASA: la tabla del camino de SE2026Aug12T da las dos filas de la línea central del fixture (43°22,3′ N 6°11,3′ O con 1m49,3s; 41°49,0′ N 3°11,1′ O con 1m44,6s).
+  - d3-celestial: su README en el commit fijado dice que las líneas salen de la «IAU Constellation page, … some line modifications by me», y el repositorio es BSD (ver el hallazgo 5).
+  - Los 45 eclipses del catálogo (22 de Sol y 23 de Luna) tienen la secuencia, las fechas y los tipos de Espenak y Meeus.
+  - Los tests comparan con fuentes independientes (USNO, NASA y la Polar de Hipparcos). Los de coherencia interna (la matriz frente a `skyBodies`) también aportan.
+- **Scripts propios** (en el scratchpad, con `scripts/lib/ts-hooks.mjs`, sin tocar el repo):
+  - El eclipse del 12-08-2026 en los siete lugares coincide con el informe: Fraga, total (60,6 s); el Montsec, 99,74 %; Madrid, 99,97 %; Canarias, ~69 %.
+  - Diez años de eclipses del Montsec se calculan en 64 ms.
+  - He simulado la lógica del deslizador (hallazgo 1).
+- **Navegador** (Playwright, con servidores propios en los puertos 4393 y 4394):
+  - `/eclipses` a 390 y a 320 px (hallazgo 2).
+  - `/eclipses?lugar=teide` cargada directamente no da errores de consola: la hidratación con otro lugar funciona.
+  - El deslizador de `/cielo` con la tecla Fin (hallazgo 1).
+  - Tareas largas al pasar por primera vez del sistema solar al cielo, con la GPU (RTX 3060): una de 61 ms en la primera de tres pasadas y ninguna en las demás (sugerencia 12).
+- **Geometría:**
+  - He reproyectado a mano la captura de la Vía Láctea (20:00 UT desde el Montsec; rumbo 300°, altura 50°, campo 80°). Deneb, Sadr, Albireo, δ y ε Cyg, Vega y Altair caen donde salen en la captura, con errores de unos 15 px. La cadena ECL → horizonte → ejes de Three y la cámara son correctas.
+  - `HORIZONTAL_TO_SKY_THREE` es dextrógira (determinante +1).
+  - La refracción del shader es la `normal` de astronomy-engine.
+  - He comprobado en el código de astronomy-engine 2.1.19 `Rotation_EQJ_HOR`, la búsqueda hacia atrás de `SearchRiseSet` y la dirección de `SearchHourAngle`.
+  - La fase y el terminador de la Luna (con el limbo iluminado hacia el Sol) y la sombra de la Tierra vista desde su centro son coherentes.
+- **Capturas** (las 14 de `docs/informes/img/fase-8/`):
+  - El Montsec de noche, en escritorio y en móvil, está bien: Saturno y Neptuno cerca del meridiano y el cielo austral de noviembre. En el móvil, los nombres de las constelaciones pisan el texto (hallazgo 6).
+  - La Vía Láctea, bien.
+  - Crepúsculo, náutico y día: los colores van en orden. En el náutico mandan las líneas; de día, el horizonte satura (sugerencia 14).
+  - El Teide: «Atlantic/Canary, UTC», a las 21:00, frente a las 22:00 UTC+1 de la barra. El selector se corta en «Tenerife (» (sugerencia 16).
+  - La Luna de cerca: fase y orientación correctas.
+  - El eclipse desde Fraga, de lejos y de cerca: el cielo oscurecido, la corona, Venus y Júpiter. La Luna, del color del cielo, es coherente con la luz sumada.
+  - «Ver en 3D» del eclipse de Sol: la sombra sobre la Península solo se distingue aclarando la imagen (sugerencia 15).
+  - «Ver en 3D» del eclipse de Luna: la Luna enrojecida, bien.
+  - `/eclipses` en escritorio, bien. En el móvil, el selector y la nota se salen por la derecha (hallazgo 2).
+- **Arquitectura y reglas:**
+  - Las capas se respetan (lo vigila el lint) y hay un solo renderer: la escena del cielo vive dentro del motor.
+  - `dispose()` libera las geometrías, los materiales y las etiquetas del cielo. Las texturas son compartidas y no se liberan aquí, como debe ser.
+  - En tiempo real se pinta a 4 Hz (`SLOW_SPEED`), es decir, render bajo demanda.
+  - No hay `effect()` para derivar estado: los dos nuevos sincronizan el motor con `untracked`, y el fundido usa `linkedSignal`.
+  - `/eclipses` usa `afterNextRender` y un `import()` dinámico.
+  - Geolocalización:
+    - se pide solo al pulsar el botón;
+    - no va ni a la URL ni a `localStorage`;
+    - `_headers` lleva `Permissions-Policy: geolocation=(self)`;
+    - si se rechaza, todo sigue funcionando (e2e).
+  - Con CSP `connect-src 'self'`, las constelaciones se sirven desde el propio dominio.
+  - El texto queda dentro de `docs/ESTILO.md` salvo el hallazgo 4.
+
+| # | Severidad | Archivo:línea | Hallazgo | Qué hacer |
+|---|---|---|---|---|
+| 1 | Importante | `src/app/features/sky-panel/sky-panel.ts:84-117` (y `sky-panel.html:33-49`) | **El deslizador de la noche se rompe en su última media hora y su resultado depende de lo que se ha hecho antes.** `range()` llega hasta la salida del Sol más 30 min. En cuanto el instante pasa la salida, `night()` recalcula y `nightSky` devuelve la noche **siguiente**: el rango cambia, el valor se recorta a 0, aparece «Ahora es de día: arrastra para ver la noche» y «Esta noche» pasa a ser la noche siguiente. Comprobado en el navegador: en `/cielo?fecha=2026-11-01T21:00Z`, la tecla Fin lleva a las 08:00 del 2-11 con el pulgar en 0, y después «←» ya no hace nada; al arrastrar hasta el final, el pulgar salta al principio. Además, la caché vale desde `sunset − 12 h`, y en invierno eso empieza antes de la salida anterior del Sol. Si se va hacia atrás desde mediodía hasta las 06:00 UT del 21-12-2026, el panel da la noche del 21 en lugar de la del 20, que es la que da `nightSky` sin caché. El e2e solo prueba dos pulsaciones de «→». | La noche del panel y del deslizador tiene que ser una función pura del instante y coherente con su rango. Por ejemplo, `nightSky(t − MARGIN_MS)`: el margen del amanecer sigue en la misma noche, y la siguiente empieza a la salida más 30 min. La caché tendría que valer en [salida anterior + margen, salida + margen), con la salida anterior sacada de una búsqueda hacia atrás al calcular la noche, y sin estado mutable dentro del `computed`. Tests: uno unitario de esa función (salida ± margen, y hacia atrás en invierno) y un e2e con Inicio y Fin. |
+| 2 | Importante | `src/app/pages/eclipses/eclipses-page.css:6-25` | **`/eclipses` no se adapta al ancho del móvil (WCAG 1.4.10, *Reflow*).** `.eclipses__controls` es una rejilla con la pista en `auto`, y el `select` toma el ancho de su opción más larga («Observatorio del Roque de los Muchachos, La Palma (Santa Cruz de Tenerife)»): 609 px. Medido con un Pixel 7 a 390 y a 320 px, el viewport de diseño crece hasta 625 px. En `movil-eclipses.png`, el selector se sale por la derecha y la nota «Calculado en tu navegador… con astronomy-engine» queda cortada. axe no lo detecta. | Poner `grid-template-columns: minmax(0, 1fr)` en `.eclipses__controls` y `width: 100%; min-width: 0` en `.eclipses__select`, como ya hace el panel del cielo. Añadir al e2e de móvil una comprobación de `scrollWidth ≤ innerWidth` a 320 px y repetir la captura. |
+| 3 | Menor | `src/app/features/sky-panel/sky-panel.css:234-235` | En el móvil se ocultan a la vista la nota con la zona («Hora del lugar (Atlantic/Canary, UTC), …») y el aviso «Ahora es de día: arrastra para ver la noche». Solo queda «Hora 21:00», sin zona, junto a una barra de tiempo que dice «22:00 Hora local, UTC+1»: en Canarias se ven dos horas distintas y solo una indica su zona. El plan pide la hora del lugar «con la zona indicada» (§4.3 y tarea 1 de la fase), y ESTILO, «siempre en la del lugar con su zona IANA y su desfase». | En el móvil, poner la zona compacta junto al reloj («21:00 · Atlantic/Canary, UTC») y dejar visible el aviso de día (en una línea corta, si hace falta). |
+| 4 | Menor | `src/app/features/sky-panel/sky-panel.html:110-113`, `e2e/cielo.spec.ts:75` | El nombre accesible del botón es «Mirar a el Sol», y en español se contrae: «Mirar al Sol». | Escribir «Mirar al Sol», también en el e2e. |
+| 5 | Menor | `docs/FUENTES.md:14` (y la fila de `constellations.json`), `src/app/pages/credits/credits-page.ts:101-107`, `scripts/build-constellations.mjs:127-139` | Las líneas son una adaptación de las cartas de constelaciones de la IAU, según el README de d3-celestial en el commit fijado (fuente [3]: «IAU Constellation page, name positions and some line modifications by me»). Esas cartas llevan el crédito «IAU and Sky & Telescope magazine (Roger Sinnott & Rick Fienberg)» y se publican con CC BY 4.0. Esa licencia entra en la lista de Iván, pero exige atribución, y ni `FUENTES.md` ni `/creditos` ni `constellations.LICENSE.txt` la dan: solo dicen que las líneas «siguen las cartas de la IAU». | Comprobar la licencia en la página de la IAU y añadir el crédito y la licencia, con su enlace, en los tres sitios. En el fichero de licencia, desde `build-constellations.mjs`. |
+| 6 | Menor | `src/styles.css:481-516`, `src/app/scene/sky/sky-scene.ts:613-662` | **Las etiquetas del cielo se leen mal.** De día y en el crepúsculo, los puntos cardinales quedan sobre la franja clara del horizonte. En una captura a las 08:00, «S» (color de acento) tiene un contraste de 1,4:1 con el fondo y «SO» (texto apagado), de 1,1:1; el halo de 3 px no basta. En el móvil, los nombres de las constelaciones caen encima del texto de la página: «Pisces» y «Pegasus» pisan «Arrastra para girar · pellizca para acercarte», y las líneas cruzan la entradilla (`movil-cielo-montsec-noche.png`; en escritorio, el H1 y la entradilla). Además, el color de las constelaciones (`#8fa6c8`) está fijado a mano, fuera de las custom properties. | Para los cardinales, un halo o una placa más fuertes, o un color que dependa de la luz del cielo. No colocar etiquetas en las zonas que tapa el texto (los márgenes de la vista), o poner un velo detrás de la entradilla. Pasar el color a un token. |
+| 7 | Menor | `src/app/features/sky-panel/sky-panel.html:53-65` | Jerarquía de encabezados: «Esta noche» es un `summary`, no un encabezado, y el `h3` que hay dentro («Qué planetas se ven y hacia dónde mirar») queda colgando del `h2` «Lugar». | Poner un `h2` dentro del `summary`, o convertir el `h3` en un rótulo de texto. |
+| 8 | Menor | `src/app/scene/sky/sky-scene.ts:589`, `:622` | La conversión de rumbo y altura a los ejes del cielo está escrita a mano dos veces, en lugar de usar `horizontalToSkyThree` de `ephemeris/coordinates.ts`. La regla es que toda conversión de sistema de referencia viva allí, con sus tests. | Llamar a `horizontalToSkyThree`. |
+| 9 | Menor | `src/app/ephemeris/eclipse-search.ts:110-118` | `aboveHorizon` mezcla dos criterios. Decide si el astro está «sobre el horizonte al empezar» con su centro y la refracción (`altitude > 0`), pero busca la salida con `SearchRiseSet`, que usa el borde superior. Si una fase empieza en el minuto, más o menos, en que el borde ya ha salido y el centro todavía no, la salida ya ha pasado: `SearchRiseSet(+1)` encuentra la del día siguiente y el eclipse se descarta aunque se vea casi entero. Es raro, pero falsea «se ve». Esa rama (`NextLocalSolarEclipse` después de descartar uno, la línea 189) es la que queda sin cubrir. | Usar un solo criterio: el borde superior (la altura del centro más el radio aparente, con la refracción), o buscar la salida desde un poco antes del comienzo del intervalo. Añadir un test con un intervalo que empiece en ese hueco. |
+| 10 | Menor | `scripts/download-assets.mjs:137` | El comentario «Modelos de elevación (fase 3b)…» ha quedado separado de su bloque: ahora encabeza el de las constelaciones. | Moverlo encima de `ELEVATION_OUT`. |
+| 11 | Menor | `docs/informes/fase-8.md:22`, `:70` | El plan del informe habla de `ephemeris/eclipses.ts`, pero el fichero es `eclipse-search.ts`. Además, la evidencia del criterio 4 dice que el e2e abre «la vista Tierra con la sombra», y el e2e solo comprueba la URL (`sombra=1`) y que la vista Tierra está lista; la puntería la prueba el test de la sesión. | Corregir las dos frases. |
+| 12 | Sugerencia | `src/app/scene/engine.ts:1632-1646` | Al entrar en el cielo desde otra vista, su escena se crea y sus nueve shaders se compilan en el primer `render`, en el hilo principal. Solo se compilan con `compileAsync` si se entra directamente por `/cielo`. Con la RTX 3060, eso da una tarea larga de 61 ms la primera vez; en un móvil será bastante más (§4.7). | La primera vez, `await this.renderer.compile(sky.scene, sky.camera)` antes de pintar (el fundido lo tapa), o precompilar la escena en reposo después de `ready`. |
+| 13 | Sugerencia | `src/app/scene/engine.ts:920`, `:1641` (`world.releaseCloseUps`) | En el cielo, el mundo sigue pidiendo las texturas de la vista general de los 30 cuerpos: entrando por `/cielo`, unos 38 MB de VRAM más la descarga de sus WebP. El cielo solo usa la de la Luna y la Vía Láctea. Cabe en §5, pero en el móvil sobra. | En la vista del cielo, pedir solo esas dos y el resto al salir. |
+| 14 | Sugerencia | `src/app/scene/visual-config.ts:242`, `:260-264`; `src/app/scene/sky/sky-materials.ts:113-115` | En las capturas se ven tres cosas mejorables. En el crepúsculo náutico, las líneas de las constelaciones dominan cuando casi no hay estrellas. De día, el resplandor bajo un Sol alto satura a blanco unos 600 px del horizonte. El Sol, al ponerse, es un punto blanco. Todo es ilustrativo y está documentado. | Atar la opacidad de las líneas al límite de magnitud, atenuar `band` según la altura del Sol y enrojecer el disco del Sol cerca del horizonte. |
+| 15 | Sugerencia | `src/app/features/explorer-ui/explorer-session.ts:78-79` | En «Ver en 3D» de un eclipse de Sol con el máximo local a la puesta (el del 12-08-2026 visto desde España), la sombra cae sobre el terminador y a 3,2 radios apenas se distingue. En `escritorio-ver-en-3d-sol` solo se ve aclarando la imagen. | Acercar más la cámara, o encuadrar con el terminador a un lado, cuando el Sol está bajo en el punto de la sombra. También se puede añadir una captura en el máximo global. |
+| 16 | Sugerencia | `src/app/features/sky-panel/sky-panel.html:7-8`, `src/app/pages/eclipses/eclipses-page.html:11-13` | Las opciones del selector («Observatorio del Teide, Tenerife (Santa Cruz de Tenerife)») no caben. En escritorio se lee «Observatorio del Teide, Tenerife (» (`escritorio-cielo-teide.png`), y en el móvil son el origen del hallazgo 2. | Un rótulo corto en el selector (el nombre y la isla o la provincia) y la forma larga en el pie de la tabla. |
