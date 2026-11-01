@@ -134,7 +134,10 @@ export const VISUAL_CONFIG = {
    * brillo que reflejan (no de su opacidad), como el relleno de D21. Con su albedo calibrado con el
    * Hubble, el anillo B brilla 0,8 veces el disco de Saturno en la geometría de la foto de 2019 (lo
    * físico); en las fotos de prensa, 1,44, procesadas. Se lleva a un punto medio, B / disco ≈ 1,05,
-   * medido con `scripts/compare-rings.mjs`. No toca la fotometría ni sus tests.
+   * medido con `scripts/compare-rings.mjs`. No toca la fotometría ni sus tests. Solo en la cara
+   * iluminada: a contraluz, con la luz que los atraviesa, el anillo A salía casi blanco y la división
+   * de Cassini, quemada (revisión del bloque D, D4; `scripts/compare-rings-backlit.mjs`, frente a
+   * PIA17172).
    */
   rings: { brightness: 1.3 },
   /** Por debajo de este radio en pantalla (px CSS), el halo de una atmósfera no se dibuja: no se vería. */
