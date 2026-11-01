@@ -100,10 +100,15 @@ import { Component } from '@angular/core';
 
     <h2>Constelaciones</h2>
     <p>
-      Las líneas de las constelaciones del cielo desde España, de
-      <a href="https://github.com/ofrohn/d3-celestial">d3-celestial</a>, de Olaf Frohn (licencia BSD
-      de 3 cláusulas: © 2015, Olaf Frohn; su texto, junto al fichero), que siguen las cartas de las
-      constelaciones de la IAU. Sus nombres, los oficiales de la IAU, de astronomy-engine.
+      Las líneas de las constelaciones del cielo desde España son las figuras de las
+      <a href="https://www.iau.org/IAU/IAU/Astronomy-FAQs/Constellations.aspx"
+        >cartas de las constelaciones de la IAU</a
+      >
+      (IAU y Sky &amp; Telescope: Roger Sinnott y Rick Fienberg; las figuras, de Alan MacRobert),
+      con licencia <a href="https://creativecommons.org/licenses/by/4.0/deed.es">CC BY 4.0</a>, tal
+      como las prepara <a href="https://github.com/ofrohn/d3-celestial">d3-celestial</a>, de Olaf
+      Frohn (licencia BSD de 3 cláusulas: © 2015, Olaf Frohn; su texto y la atribución, junto al
+      fichero). Sus nombres, los oficiales de la IAU, de astronomy-engine.
     </p>
 
     <h2>Datos</h2>

@@ -5,6 +5,7 @@ import {
   Place,
   SKY_PLACES,
   findPlace,
+  placeOptionLabel,
 } from './places';
 
 /** Distancia por la superficie (km) con la fórmula del haversine y radio medio 6371 km. */
@@ -115,6 +116,15 @@ describe('places', () => {
     expect(teide.altitudeM).toBe(2390);
     expect(place('calar-alto').altitudeM).toBe(2168);
     expect(place('fraga').altitudeM).toBeLessThan(300);
+  });
+
+  it('en los selectores, el nombre y la provincia o, en las islas, la isla', () => {
+    expect(placeOptionLabel(place('teide'))).toBe('Observatorio del Teide, Tenerife');
+    expect(placeOptionLabel(place('roque-de-los-muchachos'))).toBe(
+      'Observatorio del Roque de los Muchachos, La Palma',
+    );
+    expect(placeOptionLabel(place('montsec'))).toBe('Parque Astronómico del Montsec, Lleida');
+    expect(placeOptionLabel(place('madrid'))).toBe('Puerta del Sol, Madrid');
   });
 
   it('Fraga y Lleida están a unos 25 km en línea recta', () => {

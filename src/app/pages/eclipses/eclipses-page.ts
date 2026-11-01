@@ -3,7 +3,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { formatLongDateInZone } from '../../core/format';
 import { EclipseEntry, toEclipseEntry } from '../../data/eclipse-entry';
 import { ECLIPSES_BY_PLACE, ECLIPSES_FROM } from '../../data/eclipses';
-import { DEFAULT_PLACE_ID, SKY_PLACES } from '../../data/places';
+import { DEFAULT_PLACE_ID, SKY_PLACES, placeOptionLabel } from '../../data/places';
 import { skyPlaceOf } from '../../data/sky-place';
 import {
   amountText,
@@ -52,6 +52,7 @@ export class EclipsesPage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   protected readonly places = SKY_PLACES;
+  protected readonly optionLabel = placeOptionLabel;
   protected readonly placeId = signal<string>(this.initialPlace());
   protected readonly place = computed(() => skyPlaceOf(this.placeId()));
   /** La lista que se ve: la generada hasta que el navegador la recalcula. */

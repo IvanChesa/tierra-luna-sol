@@ -1,8 +1,9 @@
 // GENERADO por scripts/build-constellations.mjs: no se edita a mano.
 /**
  * Los nombres oficiales de la IAU (en latín) de las 88 constelaciones, por su símbolo (el que da
- * `Constellation` de astronomy-engine). Sus líneas, de d3-celestial (Olaf Frohn, licencia BSD de 3
- * cláusulas), en `public/data/constellations.json`.
+ * `Constellation` de astronomy-engine). Sus líneas, en `public/data/constellations.json`: las figuras
+ * de las cartas de la IAU (IAU y Sky & Telescope, CC BY 4.0), de d3-celestial (Olaf Frohn, licencia
+ * BSD de 3 cláusulas).
  */
 export const CONSTELLATION_NAMES: Readonly<Record<string, string>> = {
   And: 'Andromeda',
@@ -97,4 +98,5 @@ export const CONSTELLATION_NAMES: Readonly<Record<string, string>> = {
 
 export const CONSTELLATIONS_SOURCE =
   'd3-celestial (Olaf Frohn), commit 7e720a3de062059d4c5400a379146a601d9010e0, https://github.com/ofrohn/d3-celestial';
-export const CONSTELLATIONS_LICENSE = 'BSD de 3 cláusulas';
+export const CONSTELLATIONS_LICENSE =
+  'BSD de 3 cláusulas (d3-celestial) y CC BY 4.0 (las cartas de la IAU)';

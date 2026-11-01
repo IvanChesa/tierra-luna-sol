@@ -5,7 +5,7 @@
     <select id="sky-place" class="sky__select" (change)="choosePlace($event)">
       @for (option of places; track option.id) {
         <option [value]="option.id" [selected]="place().id === option.id">
-          {{ option.name }}, {{ option.province }}
+          {{ optionLabel(option) }}
         </option>
       }
       @if (place().id === 'user') {
@@ -28,7 +28,9 @@
 <section class="sky" aria-labelledby="sky-hour-title">
   <div class="sky__row">
     <label id="sky-hour-title" class="sky__title" for="sky-hour">Hora</label>
-    <span class="sky__clock">{{ clock() }}</span>
+    <span class="sky__clock"
+      >{{ clock() }}<span class="sky__zone" aria-hidden="true"> · {{ zone() }}</span></span
+    >
   </div>
   <input
     id="sky-hour"
@@ -43,10 +45,10 @@
   />
   <p class="sky__hint sky__hour-hint">
     Hora del lugar ({{ zone() }}), de la puesta a la salida del Sol.
-    @if (daytime()) {
-      Ahora es de día: arrastra para ver la noche.
-    }
   </p>
+  @if (daytime()) {
+    <p class="sky__hint sky__day">Ahora es de día: arrastra para ver la noche.</p>
+  }
 </section>
 
 <details class="sky sky--tonight" [open]="tonightOpen()" (toggle)="toggleTonight($event)">
@@ -62,7 +64,8 @@
       <p class="sky__text">{{ text }}</p>
     }
 
-    <h3 class="sky__subtitle">Qué planetas se ven y hacia dónde mirar</h3>
+    <!-- Un rótulo, no un encabezado: «Esta noche» es un summary, y un h3 colgaría de «Lugar». -->
+    <p class="sky__subtitle">Qué planetas se ven y hacia dónde mirar</p>
     @if (planetTexts().length > 0) {
       <ul class="sky__planets">
         @for (planet of planetTexts(); track planet.id) {
@@ -107,10 +110,8 @@
                 <button
                   type="button"
                   class="control control--icon sky__look"
-                  [attr.aria-label]="
-                    'Mirar a ' +
-                    (row.id === 'sol' ? 'el Sol' : row.id === 'luna' ? 'la Luna' : row.name)
-                  "
+                  [attr.aria-label]="row.look"
+                  [title]="row.look"
                   (click)="lookAt(row.id)"
                 >
                   <tls-icon name="target" />

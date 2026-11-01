@@ -90,6 +90,13 @@ export function skyPositionText(id: SkyBodyId, azimuthDeg: number, altitudeDeg: 
   return `${name}, a ${degreesText(altitudeDeg)} de altura, hacia el ${compassName(azimuthDeg)}.`;
 }
 
+/** El botón «Mirar» de la tabla: «Mirar al Sol», «Mirar a la Luna», «Mirar a Saturno». */
+export function lookLabel(id: SkyBodyId): string {
+  if (id === 'sol') return 'Mirar al Sol';
+  if (id === 'luna') return 'Mirar a la Luna';
+  return `Mirar a ${BODY_NAMES[id]}`;
+}
+
 /** «35° SE» (la celda «Ahora» de la tabla) o «Bajo el horizonte». */
 export function nowCell(azimuthDeg: number, altitudeDeg: number): string {
   if (altitudeDeg <= -0.5) return 'Bajo el horizonte';

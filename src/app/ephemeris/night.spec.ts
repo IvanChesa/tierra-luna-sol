@@ -160,6 +160,34 @@ describe('night: los planetas y la Luna esta noche', () => {
     expect(night.dark.start).toEqual(night.dusk.civil);
   });
 
+  it('«esta noche» es la misma desde la salida anterior del Sol hasta la siguiente (since)', () => {
+    const night = nightSky(new Date('2026-11-01T21:00:00Z'), montsec);
+    if (night.kind !== 'night') throw new Error(night.kind);
+    const sunsetAt = (ms: number): number => {
+      const other = nightSky(new Date(ms), montsec);
+      if (other.kind !== 'night') throw new Error(other.kind);
+      return other.sunset.getTime();
+    };
+    const sunset = night.sunset.getTime();
+    // La misma puesta, salvo la precisión de la búsqueda (unas decenas de ms según desde dónde se busca).
+    expect(Math.abs(sunsetAt(night.since.getTime()) - sunset)).toBeLessThan(1000);
+    expect(Math.abs(sunsetAt(night.sunrise.getTime() - 1000) - sunset)).toBeLessThan(1000);
+    // Justo antes de la salida anterior, la noche anterior; justo después de esta salida, la siguiente.
+    expect(sunsetAt(night.since.getTime() - 2000)).toBeLessThan(sunset - 20 * HOUR_MS);
+    expect(sunsetAt(night.sunrise.getTime() + 1000)).toBeGreaterThan(sunset + 20 * HOUR_MS);
+  });
+
+  it('en invierno, «esta noche» empieza con la salida del Sol, menos de 12 h antes de la puesta', () => {
+    // A las 06:00 UT del 21-12 todavía no ha salido el Sol: es la noche del 20 al 21 (revisión de la
+    // fase 8, hallazgo 1: una caché que valía desde la puesta menos 12 h daba la del 21).
+    const night = nightSky(new Date('2026-12-21T06:00:00Z'), montsec);
+    if (night.kind !== 'night') throw new Error(night.kind);
+    expect(night.sunset.toISOString().slice(0, 10)).toBe('2026-12-20');
+    const daylight = night.sunset.getTime() - night.since.getTime();
+    expect(daylight).toBeGreaterThan(8 * HOUR_MS);
+    expect(daylight).toBeLessThan(10 * HOUR_MS);
+  });
+
   it('la última noche de 2100 se calcula aunque acabe en 2101', () => {
     const night = nightSky(new Date('2100-12-31T23:00:00Z'), montsec);
     if (night.kind !== 'night') throw new Error(night.kind);

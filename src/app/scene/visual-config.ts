@@ -220,7 +220,8 @@ export const VISUAL_CONFIG = {
    *   en el cielo (`milkyWayIntensity`): desde un lugar oscuro se ve bien, más que el fondo sutil del
    *   espacio (`VISUAL_CONFIG.milkyWay`).
    * - `constellations`: la opacidad de sus líneas según la altura del Sol: nada de día y del todo con
-   *   el cielo oscuro.
+   *   el cielo oscuro; en el crepúsculo náutico, poca, para que no manden sobre las pocas estrellas que
+   *   se ven (revisión de la fase 8, sugerencia 14).
    * - `extinction`: magnitudes que se pierden por masa de aire (≈ 0,25 en un buen observatorio; el
    *   valor típico en el visible): las estrellas se apagan junto al horizonte.
    * - `eclipse`: en un eclipse total de Sol el cielo se oscurece como en el crepúsculo civil tardío;
@@ -258,9 +259,10 @@ export const VISUAL_CONFIG = {
     milkyWayIntensity: 0.75,
     milkyWayKnee: 0.12,
     constellations: [
-      [-15, 0.5],
-      [-9, 0.2],
-      [-5, 0],
+      [-16, 0.5],
+      [-12, 0.25],
+      [-9, 0.1],
+      [-6, 0],
     ] as readonly (readonly [number, number])[],
     extinction: 0.25,
     eclipse: { from: 0.96, altitudeDeg: -7 },

@@ -1,4 +1,4 @@
-import { Body, GeoVector, MakeTime } from 'astronomy-engine';
+import { Body, GeoVector, MakeTime, Observer, SearchRiseSet } from 'astronomy-engine';
 import {
   GeoObserver,
   ECL_TO_THREE,
@@ -19,6 +19,7 @@ import {
   refractionDeg,
   skyBodies,
   skyPhase,
+  upperLimbAltitudeOf,
 } from './sky';
 import { USNO_RISE_SET_SPAIN } from './fixtures/fixtures';
 import { angleBetweenDeg, mulMat3Vec, normalize } from './vec3';
@@ -166,5 +167,30 @@ describe('sky: el Sol, la Luna y los planetas desde el lugar', () => {
     expect(['Tau', 'Gem']).toContain(
       constellationOf('sol', new Date('2026-06-21T12:00:00Z'), MONTSEC),
     );
+  });
+
+  it('el borde de arriba del Sol y de la Luna está en el horizonte en sus salidas y puestas (±0,1°)', () => {
+    // El criterio de `SearchRiseSet` (revisión de la fase 8, hallazgo 9). Busca las salidas con una
+    // refracción fija de 34′ en el horizonte; la `normal` es algo mayor allí, así que el borde ya ha
+    // asomado menos de 0,1° (unos segundos).
+    const observer = new Observer(MONTSEC.latDeg, MONTSEC.lonDeg, MONTSEC.altitudeM);
+    const start = MakeTime(new Date('2026-11-01T00:00:00Z'));
+    for (const [id, body] of [
+      ['sol', Body.Sun],
+      ['luna', Body.Moon],
+    ] as const) {
+      for (const direction of [+1, -1]) {
+        const event = SearchRiseSet(body, observer, direction, start, 2);
+        if (!event) throw new Error(`${id} ${direction}`);
+        const what = `${id} ${direction}`;
+        const limb = upperLimbAltitudeOf(id, event.date, MONTSEC);
+        expect(Math.abs(limb), what).toBeLessThan(0.1);
+        // El centro, bajo el horizonte: el radio aparente (de 0,24° a 0,29°) por debajo del borde.
+        const center = horizontalOf(id, event.date, MONTSEC).altitudeDeg;
+        expect(center, what).toBeLessThan(0);
+        expect(limb - center, what).toBeGreaterThan(0.24);
+        expect(limb - center, what).toBeLessThan(0.29);
+      }
+    }
   });
 });

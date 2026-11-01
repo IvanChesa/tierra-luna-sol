@@ -22,6 +22,8 @@
   --color-text-muted: #aba593;
   --color-accent: #d9b76e;
   --color-focus: #f0cf86;
+  /* Los nombres de las constelaciones de la vista del cielo: un azul apagado, por detrás de los cuerpos. */
+  --color-sky-constellation: #8fa6c8;
 
   /* Tipografía */
   --font-display: 'Newsreader', 'Iowan Old Style', Georgia, serif;
@@ -491,6 +493,20 @@ select.control {
     0 0 1px var(--color-bg);
 }
 
+/*
+ * Los puntos cardinales y los nombres del Sol, la Luna y los planetas, sobre una placa del color del
+ * fondo: de día y en el crepúsculo el horizonte y el resplandor del Sol son claros, y con solo el halo
+ * no se leían (revisión de la fase 8, hallazgo 6). Con la placa al 85 %, el contraste es de al menos
+ * 4,9:1 aunque detrás haya blanco. Los de las constelaciones no la llevan: solo se ven de noche.
+ */
+.sky-label--cardinal,
+.sky-label--cardinal-minor,
+.sky-label--body {
+  padding: 0 0.3125rem;
+  background: color-mix(in srgb, var(--color-bg) 85%, transparent);
+  border-radius: var(--radius-sm);
+}
+
 .sky-label--cardinal {
   color: var(--color-accent);
   font-size: 0.875rem;
@@ -510,7 +526,7 @@ select.control {
 }
 
 .sky-label--constellation {
-  color: #8fa6c8;
+  color: var(--color-sky-constellation);
   font-size: 0.6875rem;
   letter-spacing: 0.04em;
   opacity: 0.85;

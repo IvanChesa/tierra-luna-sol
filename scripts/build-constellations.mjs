@@ -3,12 +3,16 @@
 // assets-src/constellations/ (fijado a un commit, con su SHA-256 en el manifiesto):
 // - public/data/constellations.json: las líneas de las 88 constelaciones (J2000, en grados) y dónde va
 //   su nombre; lo carga la escena del cielo al abrir la vista;
-// - public/data/constellations.LICENSE.txt: la licencia BSD, que pide reproducir su aviso;
+// - public/data/constellations.LICENSE.txt: la licencia BSD, que pide reproducir su aviso, y la
+//   atribución de las cartas de la IAU de las que salen las figuras (CC BY 4.0);
 // - src/app/data/constellations.ts: el nombre de cada una por su símbolo de la IAU, para la tabla del
 //   cielo («Júpiter, en Gemini»).
 //
-// Las líneas de d3-celestial siguen las cartas de las constelaciones de la IAU, con algún retoque de su
-// autor (su README, fuente [3]). Los nombres son los oficiales de la IAU, en latín: los que da
+// Las líneas de d3-celestial son las figuras (de Alan MacRobert) de las cartas de las constelaciones de
+// la IAU, hechas con Sky & Telescope (Roger Sinnott y Rick Fienberg) y publicadas con licencia CC BY 4.0
+// (la página de la IAU, consultada el 2026-11-01), con algún retoque de Olaf Frohn (su README, fuente
+// [3]). CC BY 4.0 pide la atribución: va en el fichero de licencia, en FUENTES.md y en /creditos
+// (revisión de la fase 8, hallazgo 5). Los nombres son los oficiales de la IAU, en latín: los que da
 // `Constellation` de astronomy-engine (licencia MIT) en el punto donde d3-celestial pone el nombre, lo
 // que comprueba de paso que su símbolo es el de esa región del cielo. Los nombres «es» de d3-celestial
 // no se usan: son traducciones del nombre inglés («Gemelos», «Carnero», «Toro»), no los de la
@@ -22,6 +26,12 @@ import { Constellation } from 'astronomy-engine';
 const ROOT = new URL('../', import.meta.url);
 const SRC = new URL('assets-src/constellations/', ROOT);
 const PAGE = 'https://github.com/ofrohn/d3-celestial';
+/** Las cartas de las constelaciones de la IAU, de las que salen las figuras. */
+const IAU_CHARTS = {
+  url: 'https://www.iau.org/IAU/IAU/Astronomy-FAQs/Constellations.aspx',
+  credit: 'IAU and Sky & Telescope magazine (Roger Sinnott & Rick Fienberg)',
+  license: 'https://creativecommons.org/licenses/by/4.0/',
+};
 
 const manifest = JSON.parse(await readFile(new URL('manifest.json', SRC), 'utf8'));
 /** Lee un fichero descargado y comprueba que es el del manifiesto (el del commit fijado). */
@@ -112,9 +122,9 @@ const SOURCE = `d3-celestial (Olaf Frohn), commit ${commit}, ${PAGE}`;
 const data = {
   generated: 'GENERADO por scripts/build-constellations.mjs: no se edita a mano.',
   source: SOURCE,
-  license: 'BSD de 3 cláusulas (constellations.LICENSE.txt)',
-  basis:
-    'Las cartas de las constelaciones de la IAU, con retoques de su autor (README de d3-celestial, fuente [3]). Nombres oficiales de la IAU, de astronomy-engine.',
+  license:
+    'BSD de 3 cláusulas (d3-celestial) y CC BY 4.0 (las cartas de la IAU): constellations.LICENSE.txt',
+  basis: `Las figuras de las cartas de las constelaciones de la IAU (${IAU_CHARTS.credit}; CC BY 4.0, ${IAU_CHARTS.url}), con retoques de Olaf Frohn (README de d3-celestial, fuente [3]). Nombres oficiales de la IAU, de astronomy-engine.`,
   frame: 'J2000: ascensión recta y declinación en grados',
   constellations: constellations.map(({ id, name, label, lines: polylines }) => ({
     id,
@@ -130,8 +140,16 @@ await writeFile(
     'Líneas de las constelaciones (constellations.json), preparadas por',
     'scripts/build-constellations.mjs de Tierra Luna Sol a partir de d3-celestial:',
     `${PAGE} (commit ${commit}).`,
-    'Las líneas siguen las cartas de las constelaciones de la IAU; los nombres son los oficiales de la',
-    'IAU, de astronomy-engine (licencia MIT). Licencia de d3-celestial:',
+    'Los nombres son los oficiales de la IAU, de astronomy-engine (licencia MIT).',
+    '',
+    'Las líneas son las figuras de las cartas de las constelaciones de la IAU (las de Alan MacRobert),',
+    'con algún retoque de Olaf Frohn en d3-celestial:',
+    `  ${IAU_CHARTS.credit}.`,
+    `  Licencia Creative Commons Attribution 4.0 International (${IAU_CHARTS.license}),`,
+    `  según ${IAU_CHARTS.url} (consultada el 2026-11-01).`,
+    '  Cambios: las líneas, de d3-celestial; pasadas a grados con tres decimales.',
+    '',
+    'Licencia de d3-celestial:',
     '',
     license.trim(),
     '',
@@ -147,8 +165,9 @@ const entries = symbols
 const doc = [
   '/**',
   ' * Los nombres oficiales de la IAU (en latín) de las 88 constelaciones, por su símbolo (el que da',
-  ' * `Constellation` de astronomy-engine). Sus líneas, de d3-celestial (Olaf Frohn, licencia BSD de 3',
-  ' * cláusulas), en `public/data/constellations.json`.',
+  ' * `Constellation` de astronomy-engine). Sus líneas, en `public/data/constellations.json`: las figuras',
+  ' * de las cartas de la IAU (IAU y Sky & Telescope, CC BY 4.0), de d3-celestial (Olaf Frohn, licencia',
+  ' * BSD de 3 cláusulas).',
   ' */',
 ].join('\n');
 const ts = `// GENERADO por scripts/build-constellations.mjs: no se edita a mano.
@@ -158,7 +177,7 @@ ${entries}
 };
 
 export const CONSTELLATIONS_SOURCE = '${SOURCE}';
-export const CONSTELLATIONS_LICENSE = 'BSD de 3 cláusulas';
+export const CONSTELLATIONS_LICENSE = 'BSD de 3 cláusulas (d3-celestial) y CC BY 4.0 (las cartas de la IAU)';
 `;
 await writeFile(new URL('src/app/data/constellations.ts', ROOT), ts);
 execFileSync(

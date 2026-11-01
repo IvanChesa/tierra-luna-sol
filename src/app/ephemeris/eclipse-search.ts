@@ -3,8 +3,8 @@
  * con su tipo allí) y de Luna (`NextLunarEclipse`, el mismo para toda la Tierra), con la parte que se ve
  * con el astro sobre el horizonte. La geometría de las sombras está en `eclipse.ts`.
  *
- * Un eclipse se ve si el astro está sobre el horizonte (el centro, con la refracción) en alguna parte
- * de su fase principal: en los de Sol, entre el primer y el último contacto; en los de Luna, mientras
+ * Un eclipse se ve si el astro está sobre el horizonte (su borde de arriba, con la refracción: el
+ * criterio de las salidas y las puestas) en alguna parte de su fase principal: en los de Sol, entre el primer y el último contacto; en los de Luna, mientras
  * la sombra (la umbra en los parciales y los totales, la penumbra en los penumbrales) la cubre.
  */
 import {
@@ -21,10 +21,12 @@ import {
   SearchRiseSet,
 } from 'astronomy-engine';
 import { GeoObserver, astronomyObserver } from './coordinates';
-import { horizontalOf } from './sky';
+import { horizontalOf, upperLimbAltitudeOf } from './sky';
 
 const DAY_MS = 86_400_000;
 const MINUTE_MS = 60_000;
+/** La salida se busca desde un poco antes del intervalo: por si el borde asoma justo al empezar. */
+const RISE_LEAD_MS = 10 * MINUTE_MS;
 
 export type SolarEclipseType = 'partial' | 'annular' | 'total';
 export type LunarEclipseType = 'penumbral' | 'partial' | 'total';
@@ -96,23 +98,30 @@ const around = (peak: AstroTime, halfMinutes: number): Interval => ({
 
 /**
  * La parte de un intervalo con el astro (el Sol o la Luna) sobre el horizonte, o `null` si no sale en
- * todo él. Con las salidas y las puestas de astronomy-engine: el intervalo dura unas horas, así que
- * dentro hay como mucho una salida o una puesta (o una puesta y una salida en latitudes altas).
+ * todo él. Con las salidas y las puestas de astronomy-engine y su mismo criterio, el borde de arriba
+ * (`upperLimbAltitudeOf`): el intervalo dura unas horas, así que dentro hay como mucho una salida o una
+ * puesta (o una puesta y una salida en latitudes altas). La salida se busca desde un poco antes del
+ * intervalo: si el borde ya ha asomado al empezar (con el criterio de `SearchRiseSet`, que puede
+ * diferir en segundos del de la altura), se ve desde el principio y no se busca la del día siguiente.
  */
-function aboveHorizon(
+export function aboveHorizon(
   id: 'sol' | 'luna',
   interval: Interval,
   place: GeoObserver,
 ): { visible: Interval; complete: boolean } | null {
   const observer = astronomyObserver(place);
   const body = id === 'sol' ? Body.Sun : Body.Moon;
-  const span = (interval.to.getTime() - interval.from.getTime()) / DAY_MS;
-  const up = (date: Date) => horizontalOf(id, date, place).altitudeDeg > 0;
-  const upAtStart = up(interval.from);
-  const from = upAtStart
-    ? interval.from
-    : (SearchRiseSet(body, observer, +1, interval.from, span)?.date ?? null);
-  if (!from || from > interval.to) return null;
+  let upAtStart = upperLimbAltitudeOf(id, interval.from, place) > 0;
+  let from = interval.from;
+  if (!upAtStart) {
+    const lead = new Date(interval.from.getTime() - RISE_LEAD_MS);
+    const span = (interval.to.getTime() - lead.getTime()) / DAY_MS;
+    const rise = SearchRiseSet(body, observer, +1, lead, span)?.date ?? null;
+    if (!rise) return null;
+    if (rise <= interval.from) upAtStart = true;
+    else from = rise;
+  }
+  if (from > interval.to) return null;
   const rest = (interval.to.getTime() - from.getTime()) / DAY_MS;
   const setting = rest > 0 ? (SearchRiseSet(body, observer, -1, from, rest)?.date ?? null) : null;
   const to = setting && setting <= interval.to ? setting : interval.to;

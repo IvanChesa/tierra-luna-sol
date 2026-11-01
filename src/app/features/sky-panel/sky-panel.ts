@@ -1,17 +1,19 @@
-import { Component, DOCUMENT, computed, inject, signal } from '@angular/core';
+import { Component, DOCUMENT, computed, inject, linkedSignal, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { formatNumber } from '../../core/format';
-import { SKY_PLACES } from '../../data/places';
-import { NightSky, nightSky } from '../../ephemeris/night';
+import { SKY_PLACES, placeOptionLabel } from '../../data/places';
+import type { NightSky } from '../../ephemeris/night';
 import { SKY_BODY_IDS, SkyBodyId, skyBodies } from '../../ephemeris/sky';
 import { ExplorerStore } from '../../state/explorer.store';
 import { SimulationStore } from '../../state/simulation.store';
 import type { SkyPlace } from '../../data/sky-place';
 import { ExplorerSession, LocationResult } from '../explorer-ui/explorer-session';
 import { Icon } from '../viewer/icon';
+import { sliderNight, sliderNightHolds, sliderRange } from './night-slider';
 import {
   BODY_NAMES,
   clockAt,
+  lookLabel,
   moonNightText,
   moonPhaseText,
   nowCell,
@@ -23,11 +25,6 @@ import {
 } from './sky-text';
 
 const MINUTE_MS = 60_000;
-const HOUR_MS = 60 * MINUTE_MS;
-/** El deslizador abarca la noche y media hora de luz a cada lado (los crepúsculos se ven enteros). */
-const MARGIN_MS = 30 * MINUTE_MS;
-/** Paso del deslizador (minutos). */
-const STEP_MINUTES = 5;
 /** En escritorio, «Esta noche» abierto al entrar; en móvil, plegado (el cielo se ve encima). */
 const COMPACT_MEDIA = '(max-width: 63.99rem)';
 
@@ -40,6 +37,8 @@ interface TableRow {
   readonly up: boolean;
   readonly rise: string;
   readonly set: string;
+  /** «Mirar al Sol»: el nombre del botón que lleva la cámara. */
+  readonly look: string;
 }
 
 /**
@@ -70,6 +69,7 @@ export class SkyPanel {
   private readonly doc = inject(DOCUMENT);
 
   protected readonly places = SKY_PLACES;
+  protected readonly optionLabel = placeOptionLabel;
   protected readonly place = this.explorer.skyPlace;
   protected readonly constellations = this.explorer.constellations;
   protected readonly locating = signal(false);
@@ -78,48 +78,29 @@ export class SkyPanel {
     !(this.doc.defaultView?.matchMedia?.(COMPACT_MEDIA).matches ?? false),
   );
 
-  private nightCache: { key: string; night: NightSky; from: number; to: number } | null = null;
-
-  /** «Esta noche» del lugar: se recalcula al cambiar de noche o de lugar, no con cada tic. */
-  protected readonly night = computed(() => {
-    const t = this.sim.time().getTime();
-    const place = this.place();
-    const key = `${place.id}|${place.latDeg}|${place.lonDeg}`;
-    const cached = this.nightCache;
-    if (cached && cached.key === key && t >= cached.from && t < cached.to) return cached.night;
-    const night = nightSky(new Date(t), place);
-    // Vale desde el día anterior a la puesta (de día, `nightSky` da la noche que viene) hasta la
-    // salida del Sol. Si el instante se sale, se recalcula (y da la noche correcta).
-    const range =
-      night.kind === 'night'
-        ? { from: night.sunset.getTime() - 12 * HOUR_MS, to: night.sunrise.getTime() }
-        : { from: t - HOUR_MS, to: t + HOUR_MS };
-    this.nightCache = { key, night, ...range };
-    return night;
+  /**
+   * «Esta noche» del lugar: la del deslizador (`night-slider.ts`), una función del instante y del lugar.
+   * Se reutiliza la anterior mientras siga siendo la misma noche: no se recalcula con cada tic.
+   */
+  protected readonly night = linkedSignal<{ time: number; place: SkyPlace }, NightSky>({
+    source: () => ({ time: this.sim.time().getTime(), place: this.place() }),
+    computation: ({ time, place }, previous) =>
+      previous && previous.source.place === place && sliderNightHolds(previous.value, time)
+        ? previous.value
+        : sliderNight(time, place),
   });
 
-  /** El deslizador: los minutos desde su comienzo (la puesta menos media hora). */
-  protected readonly range = computed(() => {
-    const night = this.night();
-    const t = this.sim.time().getTime();
-    // Alineado a 5 minutos: cada paso del deslizador cae en una hora redonda (22:00, 22:05…).
-    const step = STEP_MINUTES * MINUTE_MS;
-    const from = night.kind === 'night' ? night.sunset.getTime() - MARGIN_MS : t - 12 * HOUR_MS;
-    const start = Math.floor(from / step) * step;
-    const end = night.kind === 'night' ? night.sunrise.getTime() + MARGIN_MS : t + 12 * HOUR_MS;
-    const max = Math.floor((end - start) / MINUTE_MS / STEP_MINUTES) * STEP_MINUTES;
-    return { start, max };
-  });
+  /** El deslizador: su comienzo (la puesta menos media hora) y su recorrido en minutos. */
+  protected readonly range = computed(() => sliderRange(this.night(), this.sim.time().getTime()));
   protected readonly minutes = computed(() => {
     const { start, max } = this.range();
     const value = Math.round((this.sim.time().getTime() - start) / MINUTE_MS);
     return Math.min(Math.max(value, 0), max);
   });
   /** Ahora es de día (antes de la noche del deslizador): se dice, para que se arrastre. */
-  protected readonly daytime = computed(() => {
-    const night = this.night();
-    return night.kind === 'night' && this.sim.time().getTime() < night.sunset.getTime() - MARGIN_MS;
-  });
+  protected readonly daytime = computed(
+    () => this.night().kind === 'night' && this.sim.time().getTime() < this.range().start,
+  );
   protected readonly clock = computed(() => clockAt(this.sim.time(), this.place()));
   protected readonly zone = computed(() => zoneText(this.sim.time(), this.place()));
   protected readonly valueText = computed(() => `${this.clock()}, hora del lugar (${this.zone()})`);
@@ -171,6 +152,7 @@ export class SkyPanel {
       return {
         id,
         name: BODY_NAMES[id],
+        look: lookLabel(id),
         now: nowCell(az, alt),
         nowSpoken: nowSpoken(az, alt),
         up: alt > -0.5,

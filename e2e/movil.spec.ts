@@ -187,4 +187,24 @@ test.describe('Móvil', () => {
     await expect(page).toHaveURL(/\/creditos$/);
     await expect(menu).toBeHidden();
   });
+
+  // WCAG 1.4.10: a 320 px de ancho, nada obliga a desplazarse en horizontal (revisión de la fase 8,
+  // hallazgo 2: el selector de /eclipses ensanchaba la página hasta 625 px).
+  for (const path of ['/eclipses', '/creditos', '/sobre-el-proyecto', '/planetas', '/sol']) {
+    test(`${path}: a 320 px de ancho, sin desplazamiento horizontal`, async ({ page }) => {
+      await page.setViewportSize({ width: 320, height: 640 });
+      await page.goto(path);
+      await expect(page.locator('h1')).toBeVisible();
+      if (path === '/eclipses') {
+        await expect(page.locator('.eclipses__note')).toContainText('Calculado en tu navegador', {
+          timeout: 30_000,
+        });
+      }
+      const widths = await page.evaluate(() => ({
+        page: document.documentElement.scrollWidth,
+        viewport: window.innerWidth,
+      }));
+      expect(widths).toEqual({ page: 320, viewport: 320 });
+    });
+  }
 });

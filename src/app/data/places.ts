@@ -154,3 +154,12 @@ export const PLACES_LICENSE_URL = 'https://www.ign.es/web/politica-datos';
 export function findPlace(id: string): Place | undefined {
   return PLACES.find((place) => place.id === id);
 }
+
+/**
+ * El texto del lugar en los selectores (el cielo y los eclipses): el nombre y la provincia o, en las
+ * islas, solo la isla («Observatorio del Teide, Tenerife»). La forma larga no cabía (revisión de la
+ * fase 8, sugerencia 16) y la provincia de las islas no añade nada para situarlas.
+ */
+export function placeOptionLabel(place: Pick<Place, 'name' | 'province'>): string {
+  return `${place.name}, ${place.province.split(' (')[0]}`;
+}

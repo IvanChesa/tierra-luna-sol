@@ -81,6 +81,13 @@ export interface NightBody {
 export type NightSky =
   | {
       readonly kind: 'night';
+      /**
+       * Desde cuándo es «esta noche»: justo después de la salida del Sol anterior (de día, `nightSky`
+       * ya da la noche que viene). `nightSky` da esta misma noche en cualquier instante de
+       * [since, sunrise). Si no hay salida en los dos días anteriores (al acabar el Sol de medianoche),
+       * la puesta.
+       */
+      readonly since: Date;
       readonly sunset: Date;
       readonly sunrise: Date;
       /** Al anochecer: cuándo termina cada crepúsculo (`null`: el Sol no baja tanto). */
@@ -122,6 +129,10 @@ export function nightSky(date: Date, place: GeoObserver): NightSky {
   }
   const sunset = sunsetTime.date;
   const sunrise = sunriseTime.date;
+  // Un segundo después de la salida anterior: en el instante mismo de la salida, la búsqueda podría
+  // encontrar esa misma salida.
+  const previousSunrise = SearchRiseSet(Body.Sun, observer, +1, sunsetTime, -2);
+  const since = previousSunrise ? new Date(previousSunrise.date.getTime() + 1000) : sunset;
   const span = days(sunset, sunrise);
   const descent = (altitude: number) =>
     dateOf(SearchAltitude(Body.Sun, observer, -1, sunsetTime, span, altitude));
@@ -145,6 +156,7 @@ export function nightSky(date: Date, place: GeoObserver): NightSky {
   const [moon, ...planets] = NIGHT_BODY_IDS.map((id) => nightBody(id, place, night));
   return {
     kind: 'night',
+    since,
     sunset,
     sunrise,
     dusk,

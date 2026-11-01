@@ -103,6 +103,13 @@
   font-size: var(--text-sm);
 }
 
+/* La zona junto al reloj, solo en el móvil (en escritorio la dice la nota de la hora). */
+.sky__zone {
+  display: none;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs, 0.75rem);
+}
+
 .sky__slider {
   width: 100%;
   accent-color: var(--color-accent);
@@ -214,8 +221,10 @@
 
 /*
  * En móvil, compacto, para que el cielo se vea por encima: los rótulos «Lugar» y «Hora» solo para los
- * lectores de pantalla (el selector y el reloj ya dicen qué son), sin la nota de la hora, el lugar y
- * «Usar mi ubicación» en una fila, y «Esta noche» plegado (la interfaz lo pliega al entrar).
+ * lectores de pantalla (el selector y el reloj ya dicen qué son), la nota de la hora cambiada por la zona
+ * junto al reloj (revisión de la fase 8, hallazgo 3: la hora del lugar, siempre con su zona), el aviso
+ * de día a la vista, el lugar y «Usar mi ubicación» en una fila, y «Esta noche» plegado (la interfaz lo
+ * pliega al entrar).
  */
 @media (max-width: 63.99rem) {
   :host {
@@ -229,6 +238,10 @@
 
   .sky__place {
     grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .sky__zone {
+    display: inline;
   }
 
   #sky-place-title,

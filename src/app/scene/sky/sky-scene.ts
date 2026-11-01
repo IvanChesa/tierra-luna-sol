@@ -26,14 +26,19 @@ import {
   Texture,
   Vector3,
 } from 'three';
-import { ECL_TO_THREE, eqjToEcl, equatorialToVector } from '../../ephemeris/coordinates';
+import {
+  ECL_TO_THREE,
+  eqjToEcl,
+  equatorialToVector,
+  horizontalToSkyThree,
+} from '../../ephemeris/coordinates';
 import type { SkyBody, SkyBodyId } from '../../ephemeris/sky';
 import { StarCatalog, starDirectionsEcl } from '../../ephemeris/stars';
 import { Mat3, Vec3, mulMat3Vec } from '../../ephemeris/vec3';
 import { SCHEMATIC_COLORS } from '../body-colors';
 import { createMilkyWayMaterial } from '../materials/milky-way-material';
 import { bvToTemperature, temperatureToSrgb } from '../stars';
-import type { ViewProjection } from '../view-insets';
+import type { ViewInsets, ViewProjection } from '../view-insets';
 import { VISUAL_CONFIG } from '../visual-config';
 import {
   constellationOpacityAt,
@@ -95,6 +100,8 @@ export interface SkyFrame {
   readonly moonShadow: SkyMoonShadow;
   readonly pose: SkyPose;
   readonly projection: ViewProjection;
+  /** Lo que tapa la interfaz (px CSS): las etiquetas solo van en la parte visible. */
+  readonly insets: ViewInsets;
   readonly viewport: { readonly width: number; readonly height: number };
   readonly pixelRatio: number;
   /** El límite de magnitud de la calidad (el catálogo entero en la alta). */
@@ -584,9 +591,8 @@ export class SkyScene {
       camera.clearViewOffset();
     }
     camera.updateProjectionMatrix();
-    const az = pose.azimuthDeg * DEG;
-    const alt = pose.altitudeDeg * DEG;
-    this.tmpVector.set(Math.sin(az) * Math.cos(alt), Math.sin(alt), -Math.cos(az) * Math.cos(alt));
+    const look = horizontalToSkyThree(pose.azimuthDeg, pose.altitudeDeg);
+    this.tmpVector.set(look.x, look.y, look.z);
     camera.up.set(0, 1, 0);
     camera.lookAt(this.tmpVector);
     camera.updateMatrixWorld();
@@ -614,15 +620,18 @@ export class SkyScene {
     const placements = this.placements;
     placements.clear();
     const viewport = frame.viewport;
+    // Solo en la parte visible: no encima de los paneles ni del texto de arriba (revisión de la fase 8,
+    // hallazgo 6: en el móvil, los nombres de las constelaciones pisaban la entradilla).
+    const { top, right, bottom, left } = frame.insets;
+    const visible = (at: { x: number; y: number }): boolean =>
+      at.x >= left &&
+      at.x <= viewport.width - right &&
+      at.y >= top &&
+      at.y <= viewport.height - bottom;
     for (const [text, azimuth] of CARDINALS) {
-      const az = azimuth * DEG;
-      // Un poco por encima del horizonte, para que la letra no pise la línea del suelo.
-      const lift = 1.6 * DEG;
-      const at = this.project(
-        { x: Math.sin(az) * Math.cos(lift), y: Math.sin(lift), z: -Math.cos(az) * Math.cos(lift) },
-        viewport,
-      );
-      if (at) placements.set(`cardinal-${text}`, at);
+      // Un poco por encima del horizonte (1,6°), para que la letra no pise la línea del suelo.
+      const at = this.project(horizontalToSkyThree(azimuth, 1.6), viewport);
+      if (at && visible(at)) placements.set(`cardinal-${text}`, at);
     }
     // Las etiquetas no se pisan: se colocan por orden (el Sol, la Luna, los planetas del más brillante
     // al más débil y las constelaciones) y se salta la que caería encima de otra ya puesta. Las cajas,
@@ -649,7 +658,9 @@ export class SkyScene {
       this.screenBodies.push({ id: body.id, x: at.x, y: at.y, radiusPx });
       // El nombre, debajo del cuerpo.
       const y = at.y + radiusPx * 1.15 + 14;
-      if (free(at.x, y, BODY_NAMES[body.id])) placements.set(`body-${body.id}`, { x: at.x, y });
+      const label = { x: at.x, y };
+      if (visible(label) && free(at.x, y, BODY_NAMES[body.id]))
+        placements.set(`body-${body.id}`, label);
     }
     if (this.constellations && this.constellationsVisible && this.constellationLinesVisible) {
       const rotation = frame.eclThreeToSky;
@@ -657,7 +668,7 @@ export class SkyScene {
         const direction = mulMat3Vec(rotation, label.direction);
         if (direction.y < 0.03) continue;
         const at = this.project(direction, viewport);
-        if (at && free(at.x, at.y, label.text)) placements.set(label.key, at);
+        if (at && visible(at) && free(at.x, at.y, label.text)) placements.set(label.key, at);
       }
     }
     this.labels.update(placements);

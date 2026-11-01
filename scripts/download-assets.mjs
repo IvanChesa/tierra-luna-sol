@@ -134,7 +134,6 @@ const RINGS = ['TAB', 'LBL'].map((ext) => [
   UVIS_PAGE,
 ]);
 
-/** Modelos de elevación (fase 3b): a assets-src/elevation/, con su propio manifiesto. */
 /** Constelaciones (fase 8): d3-celestial, fijado a su último commit (2022-07-05). */
 const D3_CELESTIAL_COMMIT = '7e720a3de062059d4c5400a379146a601d9010e0';
 const D3_CELESTIAL = `https://raw.githubusercontent.com/ofrohn/d3-celestial/${D3_CELESTIAL_COMMIT}/`;
@@ -145,6 +144,7 @@ const CONSTELLATIONS = [
   ['constellations.json', `${D3_CELESTIAL}data/constellations.json`, D3_CELESTIAL_PAGE],
   ['LICENSE', `${D3_CELESTIAL}LICENSE`, D3_CELESTIAL_PAGE],
 ];
+/** Modelos de elevación (fase 3b): a assets-src/elevation/, con su propio manifiesto. */
 const ELEVATION_OUT = new URL('assets-src/elevation/', ROOT);
 const ELEVATION = [
   ['megt90n000eb.img', MOLA + 'megt90n000eb.img', MOLA_PAGE],

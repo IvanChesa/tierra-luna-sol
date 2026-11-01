@@ -443,11 +443,14 @@ export class SceneEngine implements SceneEngineApi {
   private constellationsVisible = true;
   /** Las etiquetas que pide la interfaz (la vista limpia las quita), en el espacio y en el cielo. */
   private labelsWanted = true;
+  /** Los sombreados del cielo ya están compilados; `skyCompiling`, mientras se compilan. */
+  private skyCompiled = false;
+  private skyCompiling = false;
   /** El instante y el lugar del último cálculo del cielo (no se repite si no cambian). */
   private skyKey = '';
   private skyState: Omit<
     SkyFrame,
-    'pose' | 'projection' | 'viewport' | 'pixelRatio' | 'qualityMagnitudeLimit'
+    'pose' | 'projection' | 'insets' | 'viewport' | 'pixelRatio' | 'qualityMagnitudeLimit'
   > | null = null;
 
   constructor(
@@ -908,6 +911,7 @@ export class SceneEngine implements SceneEngineApi {
         const sky = this.ensureSky();
         if (sky) await this.renderer.compile(sky.scene, sky.camera);
         if (this.disposed) return;
+        this.skyCompiled = sky !== null;
       }
       if (this.disposed) return;
       this.emit('progress', { loaded: 3, total, step: 'Primer fotograma' });
@@ -1642,7 +1646,27 @@ export class SceneEngine implements SceneEngineApi {
     this.skyKey = '';
     this.exposure = -1;
     this.lastFrameMs = null;
+    if (!this.skyCompiled) this.compileSky(sky);
     this.invalidate();
+  }
+
+  /**
+   * La primera vez que se entra en el cielo desde otra vista, sus sombreados se compilan sin bloquear
+   * (`compileAsync`) y no se pinta hasta que están: se queda la última imagen, bajo el fundido de la
+   * interfaz. Compilados en el primer `render`, eran una tarea larga de 61 ms con una RTX 3060 (revisión
+   * de la fase 8, sugerencia 12). Entrando por /cielo se compilan en el arranque, con los del espacio.
+   */
+  private compileSky(sky: SkyScene): void {
+    if (this.skyCompiling) return;
+    this.skyCompiling = true;
+    this.renderer
+      .compile(sky.scene, sky.camera)
+      .catch(() => undefined)
+      .then(() => {
+        this.skyCompiling = false;
+        this.skyCompiled = true;
+        if (!this.disposed && this._view === 'sky') this.invalidate();
+      });
   }
 
   private leaveSky(): void {
@@ -1709,7 +1733,7 @@ export class SceneEngine implements SceneEngineApi {
   /** Calcula y (si `paint`) pinta un frame del cielo. Devuelve si la cámara sigue moviéndose. */
   private renderSkyFrame(timeMs: number, paint: boolean, dtMs: number): boolean {
     const sky = this.sky;
-    if (!sky) return false;
+    if (!sky || !this.skyCompiled) return false;
     const cpuStart = this.deps.now();
     const state = this.skyFrameState();
     this.ephemerisMs = 0.9 * this.ephemerisMs + 0.1 * (this.deps.now() - cpuStart);
@@ -1726,6 +1750,7 @@ export class SceneEngine implements SceneEngineApi {
       ...state,
       pose,
       projection,
+      insets: this.insets,
       viewport: this.viewport,
       pixelRatio: this.pixelRatio(),
       qualityMagnitudeLimit: this.profile.starMagnitudeLimit,

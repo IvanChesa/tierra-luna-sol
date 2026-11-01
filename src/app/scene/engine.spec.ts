@@ -51,6 +51,8 @@ class FakeRenderer implements RendererPort {
   };
   renders = 0;
   compiles = 0;
+  /** Si se pone, las compilaciones esperan a esta promesa (para ver qué pasa mientras compilan). */
+  compileGate: Promise<void> | null = null;
   uploads: Texture[] = [];
   exposure = 1;
   size = { width: 0, height: 0, pixelRatio: 0 };
@@ -68,7 +70,7 @@ class FakeRenderer implements RendererPort {
   }
   compile(): Promise<void> {
     this.compiles++;
-    return Promise.resolve();
+    return this.compileGate ?? Promise.resolve();
   }
   initTexture(texture: Texture): void {
     this.uploads.push(texture);
@@ -1884,6 +1886,58 @@ describe('SceneEngine: la vista del cielo (fase 8)', () => {
     h.engine.dispose();
   });
 
+  it('las etiquetas del cielo, solo en la parte visible: ninguna bajo los márgenes de la interfaz', async () => {
+    // Revisión de la fase 8, hallazgo 6: en el móvil, los nombres de las constelaciones pisaban el
+    // texto de arriba, que es un margen del encuadre.
+    const h = await createHarness({ view: 'sky', time: NIGHT, observer: MONTSEC });
+    const placed = () =>
+      [...h.labels.querySelectorAll<HTMLElement>('.sky-label')]
+        .filter((el) => !el.hidden)
+        .map((el) => {
+          const [, x = 'NaN', y = 'NaN'] =
+            /translate\(([-\d.]+)px, ([-\d.]+)px\)/.exec(el.style.transform) ?? [];
+          return { text: el.textContent ?? '', x: Number(x), y: Number(y) };
+        });
+    const insets = { top: 300, right: 0, bottom: 150, left: 250 };
+    const covered = (label: { x: number; y: number }) =>
+      label.x < insets.left || label.y < insets.top || label.y > HEIGHT - insets.bottom;
+    settle(h);
+    // Sin márgenes, alguna etiqueta cae donde luego habrá interfaz.
+    expect(placed().some(covered)).toBe(true);
+    h.engine.setViewInsets(insets);
+    settle(h);
+    const after = placed();
+    expect(after.length).toBeGreaterThan(0);
+    expect(after.filter(covered)).toEqual([]);
+    h.engine.dispose();
+  });
+
+  it('del espacio al cielo: sus sombreados se compilan sin bloquear, una vez, y se pinta después', async () => {
+    // Revisión de la fase 8, sugerencia 12: compilados en el primer render, eran una tarea larga.
+    const h = await createHarness({ time: NIGHT });
+    settle(h);
+    let release: () => void = () => undefined;
+    h.renderer.compileGate = new Promise((resolve) => (release = resolve));
+    const compiles = h.renderer.compiles;
+    h.engine.setView('sky');
+    expect(h.renderer.compiles).toBe(compiles + 1);
+    const before = h.renderer.renders;
+    settle(h);
+    // Mientras se compilan, no se pinta: se queda la última imagen (bajo el fundido de la interfaz).
+    expect(h.renderer.renders).toBe(before);
+    release();
+    h.renderer.compileGate = null;
+    for (let k = 0; k < 3; k++) await flush();
+    settle(h);
+    expect(h.renderer.renders).toBeGreaterThan(before);
+    // Ya compilados: volver al cielo no los compila otra vez.
+    h.engine.setView('system');
+    settle(h);
+    h.engine.setView('sky');
+    expect(h.renderer.compiles).toBe(compiles + 1);
+    h.engine.dispose();
+  });
+
   it('del espacio al cielo y vuelta: sin vuelo ni motor nuevo, y las etiquetas de cada uno', async () => {
     const h = await createHarness({ time: NIGHT });
     settle(h);
@@ -1891,6 +1945,7 @@ describe('SceneEngine: la vista del cielo (fase 8)', () => {
     expect(h.engine.view).toBe('sky');
     expect(h.events.travel.filter((t) => t.active)).toHaveLength(0);
     const before = h.renderer.renders;
+    await flush();
     settle(h);
     expect(h.renderer.renders).toBeGreaterThan(before);
     expect(h.labels.querySelector<HTMLElement>('.scene-labels')?.hidden).toBe(true);

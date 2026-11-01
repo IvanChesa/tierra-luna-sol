@@ -1,4 +1,4 @@
-<section class="explorer" aria-label="Explorador">
+<section class="explorer" [class.explorer--sky]="view() === 'sky'" aria-label="Explorador">
   @if (!posterGone()) {
     <tls-viewer-poster class="explorer__poster" [view]="view()" />
   }

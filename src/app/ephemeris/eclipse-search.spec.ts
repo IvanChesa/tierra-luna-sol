@@ -1,5 +1,7 @@
 import { GeoObserver } from './coordinates';
+import { Body, MakeTime, Observer, SearchRiseSet } from 'astronomy-engine';
 import {
+  aboveHorizon,
   eclipsesBetween,
   globalEclipsesBetween,
   nextLunarEclipse,
@@ -153,5 +155,31 @@ describe('eclipse-search: los que se ven desde un lugar', () => {
       MONTSEC,
     );
     expect(eclipse).toBeNull();
+  });
+
+  it('si el borde del Sol ya ha salido al empezar, se ve desde el principio (no la salida de mañana)', () => {
+    // Revisión de la fase 8, hallazgo 9: con el centro bajo el horizonte y el borde ya fuera, se buscaba
+    // la salida desde el comienzo, se encontraba la del día siguiente y el eclipse se descartaba.
+    const observer = new Observer(MONTSEC.latDeg, MONTSEC.lonDeg, MONTSEC.altitudeM);
+    const rise = SearchRiseSet(
+      Body.Sun,
+      observer,
+      +1,
+      MakeTime(new Date('2026-11-01T00:00:00Z')),
+      1,
+    );
+    if (!rise) throw new Error('sin salida');
+    const from = new Date(rise.date.getTime() + 20_000);
+    const to = new Date(from.getTime() + 3_600_000);
+    expect(horizontalOf('sol', from, MONTSEC).altitudeDeg).toBeLessThan(0);
+    const sky = aboveHorizon('sol', { from, to }, MONTSEC);
+    expect(sky?.visible.from).toEqual(from);
+    expect(sky?.visible.to).toEqual(to);
+    expect(sky?.complete).toBe(true);
+    // Diez minutos antes de la salida, se ve desde la salida.
+    const early = new Date(rise.date.getTime() - 600_000);
+    const later = aboveHorizon('sol', { from: early, to }, MONTSEC);
+    expect(Math.abs((later?.visible.from.getTime() ?? 0) - rise.date.getTime())).toBeLessThan(1000);
+    expect(later?.complete).toBe(false);
   });
 });

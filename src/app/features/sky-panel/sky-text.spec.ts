@@ -5,6 +5,7 @@ import { skyPlaceOf } from '../../data/sky-place';
 import {
   clockAt,
   compassName,
+  lookLabel,
   moonNightText,
   nowCell,
   nowSpoken,
@@ -63,6 +64,12 @@ describe('sky-text: las horas en la zona de cada lugar', () => {
 });
 
 describe('sky-text: los rumbos y las frases', () => {
+  it('«Mirar»: con la contracción del artículo («al Sol»)', () => {
+    expect(lookLabel('sol')).toBe('Mirar al Sol');
+    expect(lookLabel('luna')).toBe('Mirar a la Luna');
+    expect(lookLabel('jupiter')).toBe('Mirar a Júpiter');
+  });
+
   it('el lugar con su artículo y el rumbo en palabras', () => {
     expect(placeTitle(skyPlaceOf('teide'))).toBe('El cielo desde el Observatorio del Teide');
     expect(placeTitle(skyPlaceOf('madrid'))).toBe('El cielo desde la Puerta del Sol');

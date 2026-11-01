@@ -55,6 +55,38 @@ test.describe('El cielo desde España (fase 8)', () => {
     await expect(page.locator('.time__play')).toHaveAccessibleName(/Reproducir/);
   });
 
+  test('la hora de la noche: Inicio y Fin llevan a sus extremos sin cambiar de noche', async ({
+    page,
+  }) => {
+    // Revisión de la fase 8, hallazgo 1: en la media hora que sigue a la salida del Sol, el panel saltaba
+    // a la noche siguiente y el pulgar volvía a 0.
+    await openExplorer(page, '/cielo?fecha=2026-11-01T21:00Z');
+    const slider = page.getByRole('slider', { name: 'Hora' });
+    const daytime = page.locator('.sky__day');
+    const dusk = page.locator('.sky__tonight .sky__text').first();
+    const duskText = (await dusk.textContent()) ?? '';
+    const max = Number(await slider.getAttribute('max'));
+    await slider.focus();
+    await page.keyboard.press('End');
+    await expect(slider).toHaveValue(String(max));
+    // La salida del Sol del 2-11 en el Montsec (las 07:5x) más media hora, como mucho.
+    await expect(slider).toHaveAttribute('aria-valuetext', /^08:\d\d, hora del lugar/);
+    await expect(daytime).toHaveCount(0);
+    await expect(dusk).toHaveText(duskText);
+    const end = await simTime(page);
+    await page.keyboard.press('ArrowLeft');
+    await expect.poll(() => simTime(page)).toBe(end - 5 * 60_000);
+    await expect(slider).toHaveValue(String(max - 5));
+    await page.keyboard.press('Home');
+    await expect(slider).toHaveValue('0');
+    await expect(daytime).toHaveCount(0);
+    await expect(dusk).toHaveText(duskText);
+    // De día, antes de la noche del deslizador, se dice (también en el móvil, hallazgo 3).
+    await openExplorer(page, '/cielo?fecha=2026-11-01T12:00Z');
+    await expect(daytime).toBeVisible();
+    await expect(daytime).toHaveText('Ahora es de día: arrastra para ver la noche.');
+  });
+
   test('«Mirar» lleva la cámara y lo anuncia; bajo el horizonte, lo dice', async ({ page }) => {
     // En captura: el motor se ve desde el test y los giros son directos.
     await openExplorer(page, '/cielo?captura=1&fecha=2026-11-01T21:00Z');
@@ -72,7 +104,7 @@ test.describe('El cielo desde España (fase 8)', () => {
     await expect(page.locator(live)).toContainText('Saturno, a 48° de altura, hacia el sur.');
     await expect.poll(async () => Math.round((await pose()).altitudeDeg)).toBe(48);
     expect(Math.abs((await pose()).azimuthDeg - 180)).toBeLessThan(22.5);
-    await page.getByRole('button', { name: 'Mirar a el Sol' }).click();
+    await page.getByRole('button', { name: 'Mirar al Sol' }).click();
     await expect(page.locator(live)).toContainText('El Sol está bajo el horizonte.');
   });
 
@@ -144,8 +176,12 @@ test.describe('Próximos eclipses (fase 8)', () => {
     await expect(page).toHaveURL(/lugar=teide/);
     await expect(page.locator('.eclipse').first()).toContainText('Atlantic/Canary');
     const solar = page.locator('.eclipse', { hasText: 'de Sol' }).first();
-    await solar.getByRole('link', { name: /^Ver en 3D el eclipse/ }).click();
-    await expect(page).toHaveURL(/\/explorar\/tierra\?fecha=.*&sombra=1/);
+    const link = solar.getByRole('link', { name: /^Ver en 3D el eclipse/ });
+    // El enlace lleva la sombra; el explorador la quita de la URL en cuanto apunta a ella (es de un
+    // solo uso), así que se mira en el enlace y no en la URL de llegada, que depende de la velocidad.
+    await expect(link).toHaveAttribute('href', /^\/explorar\/tierra\?fecha=[^&]+&sombra=1$/);
+    await link.click();
+    await expect(page).toHaveURL(/\/explorar\/tierra\?fecha=/);
     await expect(page.locator('tls-viewer-canvas')).toHaveClass(/is-ready/, { timeout: 90_000 });
     await expect(page.locator('canvas')).toHaveAccessibleName(/Vista 3D de la Tierra/);
     expect(problems).toEqual([]);

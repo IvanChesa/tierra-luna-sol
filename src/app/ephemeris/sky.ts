@@ -128,6 +128,22 @@ export function horizontalOf(
 }
 
 /**
+ * Altura del borde de arriba del Sol o de la Luna (grados, con la refracción): la del centro más su
+ * radio aparente. Es el criterio de las salidas y las puestas de astronomy-engine (`SearchRiseSet` da
+ * por salido el astro cuando asoma su borde), salvo la refracción en el horizonte: la `normal` es algo
+ * mayor que sus 34′ fijos, y el borde asoma con esta unos segundos antes (menos de 0,1°). Con ella se
+ * decide si un eclipse se ve (revisión de la fase 8, hallazgo 9).
+ */
+export function upperLimbAltitudeOf(id: 'sol' | 'luna', date: Date, place: GeoObserver): number {
+  const time = searchTime(date);
+  const observer = astronomyObserver(place);
+  const equator = Equator(SKY_BODIES[id], time, observer, true, true);
+  const apparent = Horizon(time, observer, equator.ra, equator.dec, 'normal');
+  const radiusKm = id === 'sol' ? SUN_RADIUS_KM : MOON_RADIUS_KM;
+  return apparent.altitude + Math.asin(radiusKm / (equator.dist * KM_PER_AU)) / DEG;
+}
+
+/**
  * Refracción atmosférica (grados) que levanta una estrella a esa altura geométrica: la `normal` de
  * astronomy-engine, la fórmula de Saemundsson (Meeus, «Astronomical Algorithms», cap. 16) acotada a −1°
  * y reducida linealmente hasta el nadir. La copia el shader de las estrellas del cielo
