@@ -917,7 +917,8 @@ export class SceneEngine implements SceneEngineApi {
       this.emit('ready', { startupMs: this.deps.now() - this.startMs });
       this.emitTime(true);
       // En el cielo no se ve el espacio: sin el primer plano del foco (y sin sus texturas grandes).
-      this.world.setFocus(this._view === 'sky' ? null : this.focusIndex);
+      if (this._view === 'sky') this.world.releaseCloseUps();
+      else this.world.setFocus(this.focusIndex);
       if (this._view === 'sky') this.enterSky();
       this.invalidate();
     } catch (error) {
@@ -1637,7 +1638,7 @@ export class SceneEngine implements SceneEngineApi {
     this.labels.setVisible(false);
     sky.setLabelsVisible(this.labelsWanted);
     sky.setActive(true);
-    this.world.setFocus(null);
+    this.world.releaseCloseUps();
     this.skyKey = '';
     this.exposure = -1;
     this.lastFrameMs = null;

@@ -1291,6 +1291,29 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     h.engine.dispose();
   });
 
+  it('C4 en el cielo (fase 8): al entrar desde las vistas Tierra o Luna se sueltan sus texturas de cerca', async () => {
+    for (const view of ['earth', 'moon'] as const) {
+      const fake = realisticTextures();
+      const h = await createHarness(
+        { reducedMotion: true, focus: view === 'earth' ? 'tierra' : 'luna', view },
+        { textures: fake.textures },
+      );
+      settle(h);
+      for (let k = 0; k < 5; k++) await flush();
+      const before = h.engine.stats().vramMB;
+      h.engine.setView('sky');
+      settle(h);
+      for (let k = 0; k < 5; k++) await flush();
+      const close =
+        view === 'earth' ? ['earth-day@8k', 'earth-night@2k'] : ['moon@8k', 'moon-normal@4k'];
+      for (const name of close) expect(fake.released, `${view}: ${name}`).toContain(name);
+      // El cielo, con las texturas de la vista general (la Luna del cielo usa la suya, de 1k).
+      expect(h.engine.stats().vramMB, view).toBeLessThan(before / 3);
+      expect(h.engine.stats().vramMB, view).toBeLessThan(60);
+      h.engine.dispose();
+    }
+  });
+
   it('las sombras que recibe Júpiter (sus cuatro galileanas) y la que recibe Ío (Júpiter), con la geometría de satelliteShadowPoint (fase 7)', async () => {
     // Durante el tránsito triple del 24-1-2015 que fotografió el Hubble (un tiempo de luz antes de las
     // 06:28 UT, cuando salió de Júpiter la luz que vio): las sombras de Ío, Europa y Calisto caen sobre

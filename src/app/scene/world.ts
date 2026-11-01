@@ -612,6 +612,16 @@ export class World {
   }
 
   /**
+   * Sin primer plano (la vista del cielo, fase 8): sin foco y sin nada que se vea grande. Vuelven las
+   * texturas de la vista general y se sueltan las grandes (la 8K de la Tierra, los mapas de la Luna),
+   * como al salir de las vistas Tierra y Luna (C4).
+   */
+  releaseCloseUps(): void {
+    this.large.fill(0);
+    this.setFocus(null);
+  }
+
+  /**
    * Pide las texturas que tocan: el nivel de la vista general para todos y el del foco para el
    * cuerpo enfocado (y su planeta, si es una luna). Lo que se sustituye se libera.
    */
