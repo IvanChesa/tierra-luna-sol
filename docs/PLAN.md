@@ -3,6 +3,7 @@
 > Documento maestro. Lo ejecuta Claude Code en el PC de Iván, por fases y en bloques autónomos. Otra sesión de Claude revisa cada bloque (`docs/revisiones/`).
 > Si este plan y el código no coinciden, manda el plan. Los cambios se proponen en el informe de fase y los aprueba Iván.
 > Revisión 2 del plan: 24-10-2026. Sustituye a la revisión 1. Incorpora la auditoría de las fases 2–10 (`docs/decisiones/auditoria-plan-v2.md`), lo aprendido en la fase 1 y la decisión de Iván de que el SEO sea secundario.
+> Actualizada el 01-11-2026 con la revisión del bloque D (`docs/revisiones/bloque-D.md`): el dominio pasa a **ivanchesa.com** (**D37**: `tierra-luna-sol.ivanchesa.com`, la fase 11 con el dominio personalizado sobre su zona de Cloudflare y los enlaces legales de la fase 9), y las propuestas de la fase 7: el terminador de Titán, la dicotomía de Jápeto y pedir la textura del planeta al enfocar una de sus lunas, a la **fase 10**; las lunas de Urano con los mapas del JPL y el anillo A con un perfil de I/F medido, al **backlog**.
 > Actualizada el 30-10-2026 con la revisión del bloque C (`docs/revisiones/bloque-C.md`): los tamaños de la vista general (**D35**: un 25 % más grandes, sin solapes y con un mínimo en pantalla), la VRAM de la fase 6 con la Tierra y la Luna juntas (C4), el NEL de Cloudflare en D24 y en las fases 9 y 11 (C8) y la 8K de la Tierra, más barata, en la fase 10; y con la mejora de los anillos de Saturno que pidió Iván (**D36**, `docs/decisiones/ANILLOS-SATURNO.md`), en la fase 7 junto a R2.
 > Actualizada el 27-10-2026 con la fase nueva **4b** (pulido de la vista del sistema solar, `docs/decisiones/FASE-4b-SISTEMA-SOLAR.md`): la velocidad según el contexto (D33, sustituye a la de entrada de D31), las estelas de color (D34) y planetas más visibles en la vista general, en el bloque **C**, antes de la fase 5.
 > Actualizada el 27-10-2026 con la revisión del bloque R (`docs/revisiones/bloque-R.md`): las propuestas aprobadas de las fases 3b y 3c (fases 5, 7 y 10, §5 y el backlog), la licencia MIT (D32) y el primer push autorizado; y con el cambio de hosting de Iván: **Cloudflare Pages** (plan gratuito) en lugar de Banahosting por FTPS (D9, D17, D23, D24, D26 y fases 4 y 11).
@@ -257,7 +258,7 @@ Cada fase va en su rama `fase-N-nombre`. Se trabaja en **modo autónomo por bloq
 | B | 2–3 | `max` | Arquitectura del motor (marcos, profundidad, texturas) y de la interfaz ✅ (revisado en `docs/revisiones/bloque-B.md`) |
 | R | 3b–3c | `max` | Realismo de los planetas e interfaz inmersiva: la base de iluminación que usan después la Tierra, la Luna y las lunas, y la cara del explorador ✅ (revisado en `docs/revisiones/bloque-R.md`) |
 | C | 4, 4b y 5 | `max` | Vista previa en Cloudflare Pages, la vista general del sistema solar pulida (4b) y la Tierra, primera pieza «guau» probada en móviles reales ✅ (revisado en `docs/revisiones/bloque-C.md`) |
-| D | 6–7 | `max` | La Luna, las lunas, las sombras y la escala real: lo más difícil |
+| D | 6–7 | `max` | La Luna, las lunas, las sombras y la escala real: lo más difícil ✅ (revisado en `docs/revisiones/bloque-D.md`) |
 | E | 8–9 | `high` | El cielo desde España, los eclipses y el contenido |
 | F | 10 | `max` | Pulido y calidad final |
 | — | 11 | `high` | Lanzamiento, con Iván |
@@ -706,6 +707,10 @@ Tareas:
    - con el fondo pintado dentro de la escena, no como color de borrado: si no, el `OutputPass` lo aclara (informe de la fase 3b, §4.1);
    - dentro de los FPS y la VRAM de §5.
    - Si no mejora lo que ya da el halo del Sol, se descarta y se anota.
+10. **Las lunas, con lo que dejó pendiente la fase 7** (propuestas de su informe, §10; revisión del bloque D):
+    - **el terminador de Titán**, suave por su neblina (en las fotos, un degradado; en la escena, un escalón): un parámetro de fotometría nuevo, una sombra suavizada por la atmósfera;
+    - **la dicotomía de Jápeto**: con su mosaico normalizado en brillo, la cara oscura sale a 0,58 de la clara, y la real es de 0,1 o menos. Es lo más característico de esa luna: su contraste, llevado a los albedos medidos de cada hemisferio, con su fuente;
+    - **pedir la textura del planeta al enfocar una de sus lunas**, si desde ella se ve grande (al enfocar Fobos, Marte pide su 4K la primera vez que entra en el encuadre, con un tirón al subirla).
 
 Criterios de aceptación:
 - [ ] Tabla con **todos** los presupuestos de §5 medidos y cumplidos.
@@ -778,3 +783,6 @@ Reglas:
 9. El relieve como mapa de alturas en gris, con las normales calculadas en el shader (informe de la fase 3b, §4.10).
 10. Unificar los colores de los planetas con la fotometría de Mallama et al. (2017) y las funciones de color de la CIE (informe de la fase 3b, §4.12).
 11. Las sombras que proyecta el relieve (mapas de horizonte): en el polo sur de la Luna, el interior de Shackleton saldría en sombra, como en las fotos (informe de la fase 6, §10.4).
+12. Las lunas de Urano con los mapas de textura del JPL, si su licencia se aclara (preguntándolo a la NASA o al JPL); hasta entonces, con su color esquemático (informe de la fase 7, §10.3; revisión del bloque D).
+13. El anillo A de Saturno con un perfil radial de I/F medido (por ejemplo, de Cassini ISS, en el PDS): su oscurecimiento hacia fuera y la zona de Encke; hoy sale más plano que en las fotos (informe de la fase 7, §10.4; revisión del bloque D).
+14. El brillo de los anillos a contraluz con una referencia medida: sin el realce de D36 (revisión del bloque D, D4) ya no salen quemados, pero el A sigue más claro que en PIA17172 (L* 90 frente a 32; la exposición del primer plano a 176° de fase y el lóbulo hacia delante de las partículas, igual en todos los anillos). Un perfil de I/F a fase alta (Cassini) y una función de fase por anillo (el C y la división de Cassini, polvorientos; el A y el B, de partículas grandes) lo dirían (informe de la fase 7, respuesta a la revisión).

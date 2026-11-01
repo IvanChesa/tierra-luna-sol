@@ -87,12 +87,13 @@ Decisiones y tareas que dependen de Iván. Claude Code añade aquí cada `TODO(i
 
 ## Bloque D (fase 7: lunas, sombras y escala real)
 - [ ] **Probar en tu móvil** (no bloquea), en la vista previa: los sistemas de lunas (`/?cuerpo=europa`, `/?cuerpo=fobos`: los FPS con los mosaicos) y la escala real («Controles +» → «Escala»).
-- [ ] **Las propuestas de la fase 7** (`docs/informes/fase-7.md`, §10), para decidir:
-  - el terminador de Titán, suave por su neblina (en la escena, un escalón): un parámetro de fotometría nuevo, en la fase 10 o en el backlog;
-  - la dicotomía de Jápeto, comprimida por la normalización de los mosaicos: el contraste de cada luna, llevado a su albedo medido (backlog);
-  - las lunas de Urano: el JPL tiene mapas de textura, con la licencia sin aclarar; preguntarlo o dejarlas con su color (backlog);
-  - el anillo A, más plano que en las fotos: un perfil radial de I/F de Cassini (backlog);
-  - pedir la textura del planeta al enfocar una de sus lunas, si se ve grande desde ella (fase 10).
+- [x] **Las propuestas de la fase 7** (`docs/informes/fase-7.md`, §10): decididas en la revisión del bloque D (01-11). El terminador de Titán, la dicotomía de Jápeto y pedir la textura del planeta al enfocar una luna, a la **fase 10** (tarea 10 del plan); las lunas de Urano con los mapas del JPL y el anillo A con un perfil de I/F, al **backlog** (12 y 13).
+
+## Revisión del bloque D (01-11, `docs/revisiones/bloque-D.md`)
+- [x] **D1–D5 aplicados** en `fase-7-lunas-escala-real` y fusionados (respuesta en `docs/informes/fase-7.md`): Ío con el mosaico en color del USGS; Tritón sin el corte del hueco; las órbitas casi rectas, desvanecidas; el realce de los anillos, solo en su cara iluminada; y el dominio, ivanchesa.com (D37).
+- [ ] **Fusionar el PR 1 de Dependabot** en GitHub (el de la revisión del bloque C, más abajo) y **reiniciar Claude Code** para instalar su actualización, antes de lanzar el bloque E.
+- [ ] (Para decidir, sin prisa) **Los anillos a contraluz**: sin el realce de D36 ya no salen quemados, pero el anillo A sigue más claro que en PIA17172 (L* 90 frente a 32). No es el realce: la exposición del primer plano a 176° de fase y el lóbulo hacia delante de las partículas, el mismo en todos los anillos. Va al backlog (14); si lo quieres antes, en la fase 10.
+- [ ] (Fuera del repo) `AGENTS.md`, tu copia local de `CLAUDE.md` para Codex, sigue con ivanchesa.es y «desarrollador web freelance»: no la he tocado.
 
 ## Decisiones
 - [x] **(Fase 6) `toktx` (KTX-Software): no hace falta.** Con WebP, la VRAM cabe en los 300 MB de §5 en el peor caso de las dos vistas (C4, con test): la vista Tierra, 278 MB, y la vista Luna, 265; y en el viaje entre las dos, como mucho 284 (revisión de la fase 6, hallazgo 4). La reevaluación de KTX2 queda para la fase 10 si hiciera falta en el móvil.
