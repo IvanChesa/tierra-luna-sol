@@ -258,9 +258,9 @@ export const VISUAL_CONFIG = {
     milkyWayIntensity: 0.75,
     milkyWayKnee: 0.12,
     constellations: [
-      [-12, 0.5],
-      [-6, 0.3],
-      [-2, 0],
+      [-15, 0.5],
+      [-9, 0.2],
+      [-5, 0],
     ] as readonly (readonly [number, number])[],
     extinction: 0.25,
     eclipse: { from: 0.96, altitudeDeg: -7 },

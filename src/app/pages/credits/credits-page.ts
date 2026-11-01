@@ -98,6 +98,14 @@ import { Component } from '@angular/core';
       derivado que usa el explorador (las estrellas hasta la magnitud 6,5) mantiene esa licencia.
     </p>
 
+    <h2>Constelaciones</h2>
+    <p>
+      Las líneas de las constelaciones del cielo desde España, de
+      <a href="https://github.com/ofrohn/d3-celestial">d3-celestial</a>, de Olaf Frohn (licencia BSD
+      de 3 cláusulas: © 2015, Olaf Frohn; su texto, junto al fichero), que siguen las cartas de las
+      constelaciones de la IAU. Sus nombres, los oficiales de la IAU, de astronomy-engine.
+    </p>
+
     <h2>Datos</h2>
     <ul>
       <li>
@@ -117,9 +125,17 @@ import { Component } from '@angular/core';
         <a href="https://www.iac.es/en/observatorios-de-canarias"
           >Instituto de Astrofísica de Canarias</a
         >; Calar Alto, del <a href="https://www.caha.es/">Observatorio de Calar Alto</a>; el
-        Montsec, del <a href="https://parcastronomic.cat/">Parc Astronòmic Montsec</a>, y la altitud
+        Montsec, del <a href="https://parcastronomic.cat/">Parc Astronòmic Montsec</a>; la altitud
         del Observatori Fabra, del
-        <a href="https://www.meteo.cat/">Servei Meteorològic de Catalunya</a>.
+        <a href="https://www.meteo.cat/">Servei Meteorològic de Catalunya</a>, y la del Montsec y la
+        de la Puerta del Sol, del modelo digital del terreno del IGN (MDT02, ©
+        <a href="https://www.ign.es/web/politica-datos">Instituto Geográfico Nacional</a>).
+      </li>
+      <li>
+        Comprobación de las salidas, las puestas y los crepúsculos: el
+        <a href="https://aa.usno.navy.mil/">USNO</a> en el Montsec y el Teide. Y de los eclipses:
+        los catálogos de cinco milenios de la NASA, de
+        <a href="https://eclipse.gsfc.nasa.gov/">Fred Espenak y Jean Meeus (NASA/GSFC)</a>.
       </li>
       <li>
         Brillo y color de los planetas: leyes de fase de Hilton (2005) y de astronomy-engine,

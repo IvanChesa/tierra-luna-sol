@@ -1952,3 +1952,37 @@ describe('SceneEngine: la vista del cielo (fase 8)', () => {
     expect(h.labels.querySelector('.sky-labels')).toBeNull();
   });
 });
+
+describe('SceneEngine: el cielo y su tabla dicen lo mismo (fase 8)', () => {
+  it('cada cuerpo sobre el horizonte está donde dice la tabla (`skyBodies`): mirando allí, es él', async () => {
+    const MONTSEC = { latDeg: 42.024637, lonDeg: 0.736936, altitudeM: 812 };
+    // La noche del 1 al 2 de noviembre de 2026, a las 05:00: la Luna, Marte y Júpiter, juntos al
+    // sureste; Saturno, ya puesto. A las 22:00 del 1, Saturno, Urano y Neptuno.
+    for (const iso of ['2026-11-02T04:00:00Z', '2026-11-01T21:00:00Z']) {
+      const time = new Date(iso);
+      const h = await createHarness({
+        view: 'sky',
+        time,
+        observer: MONTSEC,
+        capture: true,
+        skyView: { fovDeg: 6 },
+      });
+      const { skyBodies } = await import('../ephemeris/sky');
+      const above = skyBodies(time, MONTSEC).filter((body) => body.altitudeDeg > 1);
+      expect(above.length, iso).toBeGreaterThan(2);
+      for (const body of above) {
+        h.engine.lookAtSky(body.azimuthDeg, body.altitudeDeg);
+        settle(h);
+        h.events.bodyPicked.length = 0;
+        const at = { clientX: WIDTH / 2, clientY: HEIGHT / 2, pointerId: 1 };
+        h.canvas.dispatchEvent(new PointerEvent('pointerdown', at));
+        h.canvas.dispatchEvent(new PointerEvent('pointerup', at));
+        expect(
+          h.events.bodyPicked.map((e) => e.id),
+          `${iso} ${body.id}`,
+        ).toEqual([body.id]);
+      }
+      h.engine.dispose();
+    }
+  });
+});

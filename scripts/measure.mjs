@@ -272,6 +272,7 @@ try {
       ['sistema', '/'],
       ['tierra', '/explorar/tierra'],
       ['luna', '/explorar/luna'],
+      ['cielo', '/cielo'],
     ]) {
       const { page } = await openViewer(browser, `${path}?captura=1&calidad=${quality}`);
       const s = await stats(page);
@@ -325,7 +326,8 @@ try {
     const contexts = await liveContexts();
     const canvases = await page.evaluate(() => document.querySelectorAll('canvas').length);
     for (let k = 0; k < 10; k++) {
-      const view = ['/explorar/tierra', '/explorar/luna', '/'][k % 3];
+      // Desde la fase 8, también el cielo (su escena se crea una vez y se conserva).
+      const view = ['/explorar/tierra', '/explorar/luna', '/cielo', '/'][k % 4];
       await page.evaluate((url) => {
         history.pushState({}, '', url);
         dispatchEvent(new PopStateEvent('popstate'));

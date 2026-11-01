@@ -147,3 +147,15 @@ describe('sky-colors: la luz del cielo según la altura del Sol', () => {
     expect(eclipseSkyAltitude(-10, 1)).toBe(-10);
   });
 });
+
+describe('sky-scene: los planetas que se dibujan', () => {
+  it('con el límite de la luz del cielo; de noche cerrada, todos (Neptuno, tenue)', async () => {
+    const { planetPresence } = await import('./sky-scene');
+    expect(planetPresence(-4.5, -5)).toBe(0); // Venus, a pleno día no: el límite es más brillante
+    expect(planetPresence(-2, -5)).toBe(0);
+    expect(planetPresence(-2, 2)).toBe(1); // Júpiter, en el crepúsculo
+    expect(planetPresence(5.7, 2)).toBe(0); // Urano, en el crepúsculo, no
+    expect(planetPresence(7.8, 6.5)).toBe(0.6); // Neptuno, de noche, tenue
+    expect(planetPresence(5.7, 6.5)).toBe(1);
+  });
+});

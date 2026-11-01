@@ -135,6 +135,17 @@ const PLANET_IDS = [
   'neptuno',
 ] as const;
 
+/**
+ * Cuánto se dibuja un planeta (0–1) con la luz del cielo: los que llegan al límite de magnitud, del
+ * todo (con un paso suave); de noche cerrada (límite ≥ 6), también los que no se ven a simple vista
+ * (Neptuno, magnitud 7,8), tenues y con su nombre: la tabla del cielo los lista, y la vista enseña lo
+ * mismo que la tabla (con prismáticos o telescopio, lo dice su texto).
+ */
+export function planetPresence(magnitude: number, limit: number): number {
+  const fade = Math.min(Math.max(limit + 0.5 - magnitude, 0), 1);
+  return limit >= 6 ? Math.max(fade, 0.6) : fade;
+}
+
 /** El orden de las etiquetas de los cuerpos: el Sol, la Luna y los planetas (por brillo después). */
 const labelRank = (body: SkyBody): number => (body.id === 'sol' ? 0 : body.id === 'luna' ? 1 : 2);
 
@@ -503,8 +514,7 @@ export class SkyScene {
         body.direction.z * SKY_DISTANCE,
       );
       magnitude.setX(k, body.magnitude);
-      const fade = Math.min(Math.max(limit + 0.5 - body.magnitude, 0), 1);
-      visible.setX(k, body.altitudeDeg > -0.5 ? fade : 0);
+      visible.setX(k, body.altitudeDeg > -0.5 ? planetPresence(body.magnitude, limit) : 0);
     });
     position.needsUpdate = true;
     magnitude.needsUpdate = true;
@@ -632,7 +642,7 @@ export class SkyScene {
     for (const body of ordered) {
       if (body.altitudeDeg < -0.5) continue;
       const isDisc = body.id === 'sol' || body.id === 'luna';
-      if (!isDisc && body.magnitude > limit + 0.5) continue;
+      if (!isDisc && planetPresence(body.magnitude, limit) <= 0) continue;
       const at = this.project(body.direction, viewport);
       if (!at) continue;
       const radiusPx = isDisc ? Math.max(body.angularRadiusDeg * DEG, minRadius) * focalPx : 4;

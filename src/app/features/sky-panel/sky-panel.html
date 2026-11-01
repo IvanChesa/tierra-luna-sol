@@ -5,7 +5,7 @@
     <select id="sky-place" class="sky__select" (change)="choosePlace($event)">
       @for (option of places; track option.id) {
         <option [value]="option.id" [selected]="place().id === option.id">
-          {{ option.name }} ({{ option.province }})
+          {{ option.name }}, {{ option.province }}
         </option>
       }
       @if (place().id === 'user') {

@@ -77,6 +77,8 @@ const NO_INSETS: ViewInsets = { top: 0, right: 0, bottom: 0, left: 0 };
 /** «Ver en 3D» de un eclipse de Sol: la Tierra a 3,2 radios, con unos 50° de casquete a la vista. */
 const SHADOW_VIEW_RADII = 3.2;
 const SHADOW_VIEW_EXTENT_DEG = 50;
+/** La mirada de partida del cielo (la de `DEFAULT_SKY_POSE` del motor): al sur, a 25° de altura. */
+const SKY_HOME = { azimuthDeg: 180, altitudeDeg: 25 } as const;
 
 /**
  * La sesión del explorador: lee la URL una vez (PLAN 3.d.9), inicializa los stores, conecta el motor
@@ -229,6 +231,11 @@ export class ExplorerSession {
       this.sim.reflectSelection(id);
       this.explorer.panelOpen.set(id !== null);
       if (id) this.lookAtBody(id);
+      else {
+        // «Vista general» (o Inicio) en el cielo: la mirada de partida, al sur.
+        this.engine?.lookAtSky(SKY_HOME.azimuthDeg, SKY_HOME.altitudeDeg);
+        this.announce(`${placeTitle(this.explorer.skyPlace())}, mirando al sur.`);
+      }
       return;
     }
     if (view === 'system') {

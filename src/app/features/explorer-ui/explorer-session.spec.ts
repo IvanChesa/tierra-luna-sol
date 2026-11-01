@@ -459,6 +459,13 @@ describe('ExplorerSession: el cielo desde España (fase 8)', () => {
     session.select('sol');
     expect(engine.calls.some((call) => call.startsWith('lookAtSky'))).toBe(false);
     expect(session.announcement()).toBe('El Sol está bajo el horizonte.');
+    // «Vista general»: la mirada de partida, al sur.
+    session.overview();
+    expect(engine.calls.at(-1)).toBe('lookAtSky 180.0 25.0');
+    expect(explorer.panelOpen()).toBe(false);
+    expect(session.announcement()).toBe(
+      'El cielo desde el Parque Astronómico del Montsec, mirando al sur.',
+    );
     expect(navigations).toEqual([]);
   });
 

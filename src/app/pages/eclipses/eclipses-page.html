@@ -9,7 +9,7 @@
   <select id="eclipses-place" class="eclipses__select" (change)="choosePlace($event)">
     @for (option of places; track option.id) {
       <option [value]="option.id" [selected]="placeId() === option.id">
-        {{ option.name }} ({{ option.province }})
+        {{ option.name }}, {{ option.province }}
       </option>
     }
   </select>
