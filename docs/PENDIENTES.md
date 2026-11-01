@@ -96,6 +96,7 @@ Decisiones y tareas que dependen de Iván. Claude Code añade aquí cada `TODO(i
 - [ ] (Fuera del repo) `AGENTS.md`, tu copia local de `CLAUDE.md` para Codex, sigue con ivanchesa.es y «desarrollador web freelance»: no la he tocado.
 
 ## Decisiones
+- [x] **La revisión de los textos (fase 9)**, decidida al lanzar el bloque E (01-11): `docs/revision-textos.md` con cada texto, su fuente y un hueco para tus correcciones, agrupados por cuerpo y por vista. El bloque no te espera: la revisión queda apuntada abajo («Revisiones y pruebas de Iván») y se sigue.
 - [x] **(Fase 6) `toktx` (KTX-Software): no hace falta.** Con WebP, la VRAM cabe en los 300 MB de §5 en el peor caso de las dos vistas (C4, con test): la vista Tierra, 278 MB, y la vista Luna, 265; y en el viaje entre las dos, como mucho 284 (revisión de la fase 6, hallazgo 4). La reevaluación de KTX2 queda para la fase 10 si hiciera falta en el móvil.
 - [x] **Subdominio definitivo:** `tierra-luna-sol.ivanchesa.com` (decisión del 31-10: el dominio pasa de ivanchesa.es a ivanchesa.com; revisión del bloque D, D5, y D37). Ya en `src/app/core/site.config.ts`, con la URL del autor, `https://ivanchesa.com`.
 
