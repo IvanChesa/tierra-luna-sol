@@ -3,7 +3,7 @@
  * IANA) o la ubicación del navegador («Usar mi ubicación», con la zona del navegador). La ubicación
  * nunca sale del navegador: ni a la URL ni a `localStorage`.
  */
-import { DEFAULT_PLACE_ID, PlaceId, SKY_PLACES, findPlace } from '../data/places';
+import { DEFAULT_PLACE_ID, PlaceId, SKY_PLACES, findPlace } from './places';
 
 export interface SkyPlace {
   /** El del selector, o `user` para la ubicación del navegador. */

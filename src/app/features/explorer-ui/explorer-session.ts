@@ -13,8 +13,9 @@ import { SystemPositions } from '../../state/positions';
 import { SimulationEngine, SimulationStore } from '../../state/simulation.store';
 import { GuidedView, MoonStop, atSolarHour, localDay, utcDay } from '../../data/tours';
 import { nearestMoonPhase, nearestMoonSunElevation } from '../../ephemeris/moon-light';
+import { moonShadowAim } from '../../ephemeris/eclipse';
 import { SKY_BODY_IDS, SkyBodyId, horizontalOf } from '../../ephemeris/sky';
-import { SkyPlace, browserTimeZone, skyPlaceOf, userSkyPlace } from '../../state/sky-place';
+import { SkyPlace, browserTimeZone, skyPlaceOf, userSkyPlace } from '../../data/sky-place';
 import { DEFAULT_PLACE_ID } from '../../data/places';
 import { placeTitle, skyPositionText } from '../sky-panel/sky-text';
 import {
@@ -73,6 +74,9 @@ const VIEW_PATH: Readonly<Record<ExplorerView, string>> = {
 };
 
 const NO_INSETS: ViewInsets = { top: 0, right: 0, bottom: 0, left: 0 };
+/** «Ver en 3D» de un eclipse de Sol: la Tierra a 3,2 radios, con unos 50° de casquete a la vista. */
+const SHADOW_VIEW_RADII = 3.2;
+const SHADOW_VIEW_EXTENT_DEG = 50;
 
 /**
  * La sesión del explorador: lee la URL una vez (PLAN 3.d.9), inicializa los stores, conecta el motor
@@ -109,6 +113,8 @@ export class ExplorerSession {
   private lastView: ExplorerView | null = null;
   /** El contexto de la velocidad (D33): la vista general o un cuerpo. */
   private speedContextNow: SpeedContext = 'overview';
+  /** La cámara ya se llevó a la sombra del eclipse de la URL (solo al llegar). */
+  private shadowAimed = false;
 
   constructor() {
     const win = this.doc.defaultView;
@@ -190,6 +196,8 @@ export class ExplorerSession {
       this.sim.attach(engine),
       engine.on('bodyPicked', ({ id }) => this.select(id)),
       engine.on('travel', ({ active, kind }) => this.explorer.travelling.set(active ? kind : null)),
+      // «Ver en 3D» de un eclipse de Sol (`?sombra=1`): al estar lista la Tierra, sobre la sombra.
+      engine.on('ready', () => this.aimAtShadow()),
     ];
     engine.setSpeed(speed);
     engine.setPlaying(playing);
@@ -285,6 +293,17 @@ export class ExplorerSession {
     const where = horizontalOf(id, this.sim.time(), observerOf(place));
     if (where.altitudeDeg > -0.5) this.engine?.lookAtSky(where.azimuthDeg, where.altitudeDeg);
     this.announce(skyPositionText(id, where.azimuthDeg, where.altitudeDeg));
+  }
+
+  /**
+   * La cámara de la vista Tierra sobre la sombra de la Luna en la fecha de la URL (`?sombra=1`): su
+   * centro o, en un eclipse parcial, el punto donde es mayor. Una vez, al llegar.
+   */
+  private aimAtShadow(): void {
+    if (!this.params.shadow || this.shadowAimed || this.explorer.view() !== 'earth') return;
+    this.shadowAimed = true;
+    const aim = moonShadowAim(this.sim.time());
+    this.engine?.lookAtSurface(aim.latDeg, aim.lonDeg, SHADOW_VIEW_RADII, SHADOW_VIEW_EXTENT_DEG);
   }
 
   /** «Vista general»: todo el sistema solar a la vista. */

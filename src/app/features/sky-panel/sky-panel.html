@@ -41,7 +41,7 @@
     [attr.aria-valuetext]="valueText()"
     (input)="setHour($event)"
   />
-  <p class="sky__hint">
+  <p class="sky__hint sky__hour-hint">
     Hora del lugar ({{ zone() }}), de la puesta a la salida del Sol.
     @if (daytime()) {
       Ahora es de día: arrastra para ver la noche.
@@ -125,6 +125,12 @@
       Altura sobre el horizonte y rumbo (N, NE, E…) ahora. «Sale» y «Se pone», durante la noche, de
       la puesta a la salida del Sol; «—»: no sale o no se pone en ese tiempo.
     </p>
+
+    @if (place().id !== 'user') {
+      <a class="sky__eclipses" routerLink="/eclipses" [queryParams]="eclipsesQuery()"
+        >Próximos eclipses desde {{ placeLabel() }}</a
+      >
+    }
 
     <label class="sky__toggle">
       <input type="checkbox" [checked]="constellations()" (change)="toggleConstellations($event)" />

@@ -443,18 +443,18 @@ describe('ExplorerSession: el cielo desde España (fase 8)', () => {
   });
 
   it('elegir un cuerpo en el cielo lo mira (o dice que está bajo el horizonte), sin salir', async () => {
-    // El 1-11-2026 a las 21:00 UTC desde el Montsec: Saturno, a 36° hacia el oeste-suroeste; el
-    // Sol, bajo el horizonte.
+    // El 1-11-2026 a las 21:00 UTC desde el Montsec: Saturno, culminando a 48° al sur; el Sol, bajo
+    // el horizonte.
     const { session, sim, explorer, navigations } = await setup('?fecha=2026-11-01T21:00Z', 'sky');
     const engine = new FakeEngine();
     session.attachEngine(engine);
+    // El motor falso nace en otra fecha: la de la URL, como el real.
+    engine.setTime(new Date('2026-11-01T21:00:00Z'));
     session.select('saturno');
     expect(sim.selectedBodyId()).toBe('saturno');
     expect(explorer.panelOpen()).toBe(true);
-    expect(engine.calls.some((call) => call.startsWith('lookAtSky'))).toBe(true);
-    expect(session.announcement()).toMatch(
-      /^Saturno, a 36° de altura, hacia el (oeste|suroeste)\.$/,
-    );
+    expect(engine.calls).toContain('lookAtSky 161.1 47.6');
+    expect(session.announcement()).toBe('Saturno, a 48° de altura, hacia el sur.');
     engine.calls.length = 0;
     session.select('sol');
     expect(engine.calls.some((call) => call.startsWith('lookAtSky'))).toBe(false);
@@ -470,5 +470,32 @@ describe('ExplorerSession: el cielo desde España (fase 8)', () => {
     expect(session.announcement()).toBe(
       'El cielo desde el Parque Astronómico del Montsec. Velocidad: Tiempo real.',
     );
+  });
+});
+
+describe('ExplorerSession: «Ver en 3D» de un eclipse de Sol (fase 8)', () => {
+  it('con ?sombra=1, al estar lista la Tierra, la cámara va a la sombra de la Luna (una vez)', async () => {
+    const { session } = await setup('?fecha=2026-08-12T17:45:51Z&sombra=1', 'earth');
+    const engine = new FakeEngine();
+    session.attachEngine(engine);
+    // El motor falso nace en otra fecha: la de la URL, como el real.
+    engine.setTime(new Date('2026-08-12T17:45:51Z'));
+    engine.emit('ready', { startupMs: 10 });
+    const aim = engine.calls.filter((call) => call.startsWith('lookAtSurface'));
+    expect(aim).toHaveLength(1);
+    // El máximo del 12-08-2026: la sombra, al oeste de Islandia (NASA: 65,2° N, 25,2° O).
+    const [, lat, lon] = (aim[0] ?? '').split(' ').map(Number);
+    expect(Math.abs((lat ?? 0) - 65.2)).toBeLessThan(0.2);
+    expect(Math.abs((lon ?? 0) + 25.2)).toBeLessThan(0.2);
+    engine.emit('ready', { startupMs: 10 });
+    expect(engine.calls.filter((call) => call.startsWith('lookAtSurface'))).toHaveLength(1);
+  });
+
+  it('sin ?sombra=1, o en otra vista, la cámara no se toca', async () => {
+    const { session } = await setup('?fecha=2026-08-12T17:45:51Z', 'earth');
+    const engine = new FakeEngine();
+    session.attachEngine(engine);
+    engine.emit('ready', { startupMs: 10 });
+    expect(engine.calls.some((call) => call.startsWith('lookAtSurface'))).toBe(false);
   });
 });

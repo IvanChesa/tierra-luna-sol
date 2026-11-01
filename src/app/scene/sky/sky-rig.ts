@@ -7,8 +7,9 @@
  *   píxel, es el campo de visión entre el alto de la parte visible).
  * - El teclado, los botones y «Mirar a…» llevan la cámara con un giro suave (directo con movimiento
  *   reducido), por el camino más corto en rumbo.
- * - El campo de visión es el del lado más corto de la parte visible del lienzo: igual en un escritorio
- *   apaisado que en un móvil vertical.
+ * - El campo de visión es el vertical de la parte visible del lienzo. En un móvil vertical, aplicado
+ *   al ancho, el vertical pasaba de 110° y lo que no está en el centro salía deformado (la Luna, una
+ *   elipse): la perspectiva de una cámara normal estira lo que está a más de unos 40° del eje.
  */
 import { ViewProjection, sanitizeInsets, viewProjection } from '../view-insets';
 import type { ViewInsets } from '../types';
@@ -18,12 +19,12 @@ export interface SkyPose {
   readonly azimuthDeg: number;
   /** Altura sobre el horizonte. */
   readonly altitudeDeg: number;
-  /** Campo de visión del lado más corto de la parte visible. */
+  /** Campo de visión vertical de la parte visible. */
   readonly fovDeg: number;
 }
 
 /** Al entrar: mirando al sur, algo por encima del horizonte, con un gran angular. */
-export const DEFAULT_SKY_POSE: SkyPose = { azimuthDeg: 180, altitudeDeg: 25, fovDeg: 75 };
+export const DEFAULT_SKY_POSE: SkyPose = { azimuthDeg: 180, altitudeDeg: 25, fovDeg: 65 };
 
 /** Del teleobjetivo (la Luna llena ocupa un cuarto del campo) al ojo de pez. */
 export const SKY_FOV_LIMITS = { min: 2, max: 110 } as const;
@@ -133,14 +134,14 @@ export class SkyRig {
     return true;
   }
 
-  /** Grados que gira un arrastre de un píxel con este campo y esta parte visible (px). */
-  degreesPerPixel(visibleWidth: number, visibleHeight: number): number {
-    return this.fov / Math.max(1, Math.min(visibleWidth, visibleHeight));
+  /** Grados que gira un arrastre de un píxel con este campo y el alto de la parte visible (px). */
+  degreesPerPixel(visibleHeight: number): number {
+    return this.fov / Math.max(1, visibleHeight);
   }
 }
 
 /**
- * La proyección de la cámara del cielo: el campo del lado más corto de la parte visible (`fovDeg`),
+ * La proyección de la cámara del cielo: el campo vertical de la parte visible (`fovDeg`),
  * con los márgenes de la interfaz (`setViewOffset`, como en el espacio: el centro de la vista queda en
  * el centro de la parte visible).
  */
@@ -153,14 +154,9 @@ export function skyProjection(
   const w = Math.max(1, width);
   const h = Math.max(1, height);
   const clean = sanitizeInsets(insets, w, h);
-  const visibleWidth = Math.max(1, w - clean.left - clean.right);
   const visibleHeight = Math.max(1, h - clean.top - clean.bottom);
   const half = (fovDeg * Math.PI) / 360;
-  // El campo vertical de la parte visible: el pedido si es apaisada; si no, el que da ese horizontal.
-  const tanVisible =
-    visibleWidth >= visibleHeight
-      ? Math.tan(half)
-      : (Math.tan(half) * visibleHeight) / visibleWidth;
+  const tanVisible = Math.tan(half);
   // `viewProjection` pide el campo vertical del lienzo entero.
   const baseFovDeg = (2 * Math.atan((tanVisible * h) / visibleHeight) * 180) / Math.PI;
   return viewProjection(w, h, baseFovDeg, clean);

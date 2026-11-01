@@ -1,7 +1,7 @@
 import { formatClockInZone, isoDateInZone, utcOffsetLabelInZone } from '../../core/format';
 import { USNO_RISE_SET_SPAIN } from '../../ephemeris/fixtures/fixtures';
 import { nightSky } from '../../ephemeris/night';
-import { skyPlaceOf } from '../../state/sky-place';
+import { skyPlaceOf } from '../../data/sky-place';
 import {
   clockAt,
   compassName,

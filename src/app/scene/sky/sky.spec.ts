@@ -68,19 +68,21 @@ describe('sky-rig: la cámara del cielo', () => {
 
   it('un arrastre del alto de la parte visible gira su campo de visión', () => {
     const rig = new SkyRig({ azimuthDeg: 0, altitudeDeg: 0, fovDeg: 60 });
-    expect(rig.degreesPerPixel(1200, 600) * 600).toBeCloseTo(60, 9);
-    expect(rig.degreesPerPixel(400, 800) * 400).toBeCloseTo(60, 9);
+    expect(rig.degreesPerPixel(600) * 600).toBeCloseTo(60, 9);
+    expect(rig.degreesPerPixel(800) * 800).toBeCloseTo(60, 9);
   });
 
-  it('la proyección: el campo pedido en el lado más corto de la parte visible', () => {
+  it('la proyección: el campo pedido, el vertical de la parte visible', () => {
     const DEG = Math.PI / 180;
     // Apaisada, sin márgenes: el campo vertical es el pedido.
     const wide = skyProjection(1600, 800, NO_INSETS, 70);
     expect(wide.visibleFovDeg).toBeCloseTo(70, 6);
-    // Vertical: el horizontal es el pedido (el vertical, mayor).
+    // Vertical (un móvil): también el vertical; el horizontal, menor (sin la deformación de un campo
+    // vertical de más de 110°).
     const tall = skyProjection(400, 800, NO_INSETS, 70);
+    expect(tall.visibleFovDeg).toBeCloseTo(70, 6);
     const horizontal = 2 * Math.atan(Math.tan((tall.visibleFovDeg * DEG) / 2) * tall.visibleAspect);
-    expect(horizontal / DEG).toBeCloseTo(70, 6);
+    expect(horizontal / DEG).toBeLessThan(40);
     // Con un panel a la derecha, la parte visible sigue con el campo pedido.
     const panel = skyProjection(1600, 800, { top: 0, right: 400, bottom: 120, left: 0 }, 70);
     expect(panel.visibleFovDeg).toBeCloseTo(70, 6);

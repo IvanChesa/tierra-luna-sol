@@ -8,7 +8,7 @@ import { CONSTELLATION_NAMES } from '../../data/constellations';
 import type { MoonPhaseInfo } from '../../ephemeris/ephemeris';
 import type { NightBody, NightSky } from '../../ephemeris/night';
 import { CompassPoint, NAKED_EYE_MAGNITUDE, SkyBodyId, compassPoint } from '../../ephemeris/sky';
-import type { SkyPlace } from '../../state/sky-place';
+import type { SkyPlace } from '../../data/sky-place';
 
 export const BODY_NAMES: Readonly<Record<SkyBodyId, string>> = {
   sol: 'Sol',

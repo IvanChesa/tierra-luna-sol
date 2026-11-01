@@ -72,6 +72,12 @@ export const routes: Routes = [
   { path: 'sol', title: 'Sol', data: { name: 'Sol' }, loadComponent: loadBodyDetail },
   { path: 'luna', title: 'Luna', data: { name: 'Luna' }, loadComponent: loadBodyDetail },
   {
+    // Próximos eclipses visibles desde España (fase 8): el lugar, en la URL (`?lugar=teide`).
+    path: 'eclipses',
+    title: 'Próximos eclipses',
+    loadComponent: () => import('./pages/eclipses/eclipses-page').then((m) => m.EclipsesPage),
+  },
+  {
     path: 'creditos',
     title: 'Créditos',
     loadComponent: () => import('./pages/credits/credits-page').then((m) => m.CreditsPage),

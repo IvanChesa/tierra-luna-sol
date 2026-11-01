@@ -63,6 +63,27 @@ export function moonShadowCenter(date: Date): { latDeg: number; lonDeg: number }
   return { latDeg, lonDeg };
 }
 
+/**
+ * Hacia dónde mirar la sombra de la Luna (fase 8, «Ver en 3D» de un eclipse de Sol): su centro si el
+ * eje de la sombra corta la Tierra (`moonShadowCenter`); si no (un eclipse parcial, en el que solo
+ * roza la penumbra), el punto de la superficie más cercano al eje, donde el eclipse es mayor. Latitud
+ * geocéntrica en ese caso (basta para encuadrar).
+ */
+export function moonShadowAim(date: Date): { latDeg: number; lonDeg: number } {
+  const center = moonShadowCenter(date);
+  if (center) return center;
+  const toEarthFixed = eclToEarthFixed(date);
+  const moon = mulMat3Vec(toEarthFixed, moonGeocentric(date));
+  const sun = mulMat3Vec(toEarthFixed, sunApparentGeocentricEcl(date));
+  const axis = normalize(sub(moon, sun));
+  // El punto del eje más cercano al centro de la Tierra, y su dirección desde el centro.
+  const closest = sub(moon, scale(axis, dot(moon, axis)));
+  const latDeg = Math.atan2(closest.z, Math.hypot(closest.x, closest.y)) / DEG;
+  let lonDeg = Math.atan2(closest.y, closest.x) / DEG;
+  if (lonDeg <= -180) lonDeg += 360;
+  return { latDeg, lonDeg };
+}
+
 // --- Eclipses de Luna (fase 6) ---------------------------------------------------------------------
 
 /**

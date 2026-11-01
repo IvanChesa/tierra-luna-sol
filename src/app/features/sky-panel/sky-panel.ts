@@ -1,11 +1,12 @@
 import { Component, DOCUMENT, computed, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { formatNumber } from '../../core/format';
 import { SKY_PLACES } from '../../data/places';
 import { NightSky, nightSky } from '../../ephemeris/night';
 import { SKY_BODY_IDS, SkyBodyId, skyBodies } from '../../ephemeris/sky';
 import { ExplorerStore } from '../../state/explorer.store';
 import { SimulationStore } from '../../state/simulation.store';
-import type { SkyPlace } from '../../state/sky-place';
+import type { SkyPlace } from '../../data/sky-place';
 import { ExplorerSession, LocationResult } from '../explorer-ui/explorer-session';
 import { Icon } from '../viewer/icon';
 import {
@@ -58,7 +59,7 @@ interface TableRow {
  */
 @Component({
   selector: 'tls-sky-panel',
-  imports: [Icon],
+  imports: [Icon, RouterLink],
   templateUrl: './sky-panel.html',
   styleUrl: './sky-panel.css',
 })
@@ -101,7 +102,10 @@ export class SkyPanel {
   protected readonly range = computed(() => {
     const night = this.night();
     const t = this.sim.time().getTime();
-    const start = night.kind === 'night' ? night.sunset.getTime() - MARGIN_MS : t - 12 * HOUR_MS;
+    // Alineado a 5 minutos: cada paso del deslizador cae en una hora redonda (22:00, 22:05…).
+    const step = STEP_MINUTES * MINUTE_MS;
+    const from = night.kind === 'night' ? night.sunset.getTime() - MARGIN_MS : t - 12 * HOUR_MS;
+    const start = Math.floor(from / step) * step;
     const end = night.kind === 'night' ? night.sunrise.getTime() + MARGIN_MS : t + 12 * HOUR_MS;
     const max = Math.floor((end - start) / MINUTE_MS / STEP_MINUTES) * STEP_MINUTES;
     return { start, max };
@@ -121,6 +125,11 @@ export class SkyPanel {
   protected readonly valueText = computed(() => `${this.clock()}, hora del lugar (${this.zone()})`);
 
   protected readonly placeLabel = computed(() => placePhrase(this.place()));
+  /** `/eclipses?lugar=…` (sin el parámetro para el Montsec, el de por defecto). */
+  protected readonly eclipsesQuery = computed(() => {
+    const id = this.place().id;
+    return id === 'montsec' || id === 'user' ? {} : { lugar: id };
+  });
 
   protected readonly twilights = computed(() => {
     const night = this.night();

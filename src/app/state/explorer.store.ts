@@ -2,7 +2,7 @@ import { Service, Signal, computed, signal } from '@angular/core';
 import type { TimeZoneChoice } from '../core/format';
 import { DEFAULT_PLACE_ID } from '../data/places';
 import type { ExplorerView } from '../scene';
-import { SkyPlace, skyPlaceOf } from './sky-place';
+import { SkyPlace, skyPlaceOf } from '../data/sky-place';
 
 /** Estado de un recorrido guiado (fase 6). */
 export interface TourState {

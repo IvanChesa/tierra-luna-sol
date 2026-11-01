@@ -49,6 +49,12 @@ test.describe('Accesibilidad (axe)', () => {
     await expect(page.locator('tls-viewer-canvas')).toHaveClass(/is-ready/, { timeout: 90_000 });
     expect(await seriousViolations(page)).toEqual([]);
 
+    // El cielo desde España (fase 8), con «Esta noche» y su tabla.
+    await page.goto('/cielo?captura=1');
+    await expect(page.locator('tls-viewer-canvas')).toHaveClass(/is-ready/, { timeout: 90_000 });
+    await expect(page.locator('table.sky__table')).toBeAttached();
+    expect(await seriousViolations(page)).toEqual([]);
+
     // «Controles +» abierto y, dentro, el botón de los atajos.
     await openControls(page);
     expect(await seriousViolations(page)).toEqual([]);
@@ -65,7 +71,7 @@ test.describe('Accesibilidad (axe)', () => {
   test('el estado por defecto, con el sistema en marcha (D31), en las tres vistas', async ({
     page,
   }) => {
-    for (const path of ['/', '/explorar/tierra', '/explorar/luna']) {
+    for (const path of ['/', '/explorar/tierra', '/explorar/luna', '/cielo']) {
       await openExplorer(page, path);
       await expect(page.locator('.time__play')).toHaveAccessibleName(/Pausar/);
       expect(await seriousViolations(page), path).toEqual([]);

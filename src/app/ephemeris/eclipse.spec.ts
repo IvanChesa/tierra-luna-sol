@@ -8,7 +8,7 @@ import {
 } from 'astronomy-engine';
 import { KM_PER_AU } from './constants';
 import { sunApparentGeocentricEcl, sunGeocentricEcl } from './coordinates';
-import { earthShadow, moonShadowCenter, satelliteShadowPoint } from './eclipse';
+import { earthShadow, moonShadowAim, moonShadowCenter, satelliteShadowPoint } from './eclipse';
 import { planetHeliocentric } from './ephemeris';
 import { GalileanId } from './ids';
 import { galileanMoons } from './moons';
@@ -197,5 +197,26 @@ describe('sombras de las galileanas sobre Júpiter frente al Hubble (fase 7)', (
     // Entre el Sol y el planeta, en su recta: la sombra, en el punto subsolar.
     const point = satelliteShadowPoint({ x: -0.003, y: 0, z: 0 }, sun, JUPITER_EQUATORIAL_KM);
     expect(point?.x).toBeCloseTo(-JUPITER_EQUATORIAL_KM / KM_PER_AU, 12);
+  });
+});
+
+describe('eclipses: hacia dónde mirar la sombra de la Luna (fase 8, «Ver en 3D»)', () => {
+  it('en un eclipse central, su centro (el máximo del 12-08-2026, donde lo pone la NASA)', () => {
+    const greatest = new Date(NASA_ECLIPSE_2026_08_12.greatestEclipseUt);
+    const aim = moonShadowAim(greatest);
+    expect(aim).toEqual(moonShadowCenter(greatest));
+    expect(Math.abs(aim.latDeg - NASA_ECLIPSE_2026_08_12.latitudeDeg)).toBeLessThan(0.1);
+  });
+
+  it('en uno parcial, el punto de la Tierra más cercano al eje: allí el Sol, casi en el horizonte', () => {
+    // El parcial del 14-1-2029 (NASA: máximo a las 17:13:48 TD; ΔT ≈ 74 s), sin sombra central.
+    const peak = new Date('2029-01-14T17:12:34Z');
+    expect(moonShadowCenter(peak)).toBeNull();
+    const aim = moonShadowAim(peak);
+    // El punto del máximo de un parcial ve el Sol rasante: muy cerca del terminador.
+    const observer = new Observer(aim.latDeg, aim.lonDeg, 0);
+    const sun = Equator(Body.Sun, peak, observer, true, true);
+    const altitude = Horizon(peak, observer, sun.ra, sun.dec).altitude;
+    expect(Math.abs(altitude)).toBeLessThan(15);
   });
 });

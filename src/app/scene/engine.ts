@@ -1651,14 +1651,9 @@ export class SceneEngine implements SceneEngineApi {
     this.lastFrameMs = null;
   }
 
-  /** Grados que gira un arrastre de un píxel en el cielo (el campo entre el lado corto visible). */
+  /** Grados que gira un arrastre de un píxel en el cielo (el campo entre el alto visible). */
   private skyDegreesPerPixel(): number {
-    const { width, height } = this.viewport;
-    const insets = this.insets;
-    return this.skyRig.degreesPerPixel(
-      width - insets.left - insets.right,
-      height - insets.top - insets.bottom,
-    );
+    return this.skyRig.degreesPerPixel(this.viewport.height - this.insets.top - this.insets.bottom);
   }
 
   /**

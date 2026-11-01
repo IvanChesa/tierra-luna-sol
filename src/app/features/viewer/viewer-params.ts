@@ -20,6 +20,8 @@
  *   Montsec, que no se escribe). «Mi ubicación» nunca va a la URL: no sale del navegador.
  * - Solo en captura, la cámara del cielo (fase 8): `rumbo=180` (desde el norte, hacia el este),
  *   `altura=25` y `campo=75` (grados).
+ * - `sombra=1` (fase 8, «Ver en 3D» de un eclipse de Sol): con `fecha=`, la vista Tierra empieza con
+ *   la cámara sobre la sombra de la Luna.
  */
 import { findBody, isBodyId } from '../../data/body-index';
 import { DEFAULT_PLACE_ID, PlaceId, SKY_PLACES } from '../../data/places';
@@ -55,6 +57,8 @@ export interface ViewerParams {
   readonly place: PlaceId | null;
   /** Solo en captura: hacia dónde mira la cámara del cielo. */
   readonly skyView: Partial<SkyView> | null;
+  /** La cámara de la vista Tierra, sobre la sombra de la Luna (`sombra=1`, con fecha). */
+  readonly shadow: boolean;
   /** Avisos de los parámetros que se han ignorado, ya redactados para la interfaz. */
   readonly warnings: readonly string[];
 }
@@ -177,6 +181,7 @@ export function parseViewerParams(search: string): ViewerParams {
     isolate: capture && params.get('aislado') === '1',
     place: place as PlaceId | null,
     skyView: capture ? parseSkyView(params) : null,
+    shadow: params.get('sombra') === '1' && time !== null,
     warnings,
   };
 }
@@ -210,6 +215,8 @@ export function viewerQueryParams(state: UrlState): Record<string, string | null
     cuerpo: state.body && findBody(state.body) ? state.body : null,
     escala: state.scale === 'illustrative' ? null : SCALE_PARAM[state.scale],
     lugar: state.place && state.place !== DEFAULT_PLACE_ID ? state.place : null,
+    // Solo sirve al llegar: después, la cámara es de quien la mueve.
+    sombra: null,
     calidad: null,
   };
 }

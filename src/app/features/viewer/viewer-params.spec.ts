@@ -25,6 +25,7 @@ describe('parámetros del explorador', () => {
       isolate: false,
       place: null,
       skyView: null,
+      shadow: false,
       warnings: [],
     });
     expect(CAPTURE_DATE.toISOString()).toBe('2026-10-24T00:00:00.000Z');
@@ -79,6 +80,7 @@ describe('parámetros del explorador', () => {
       isolate: false,
       place: null,
       skyView: null,
+      shadow: false,
       warnings: [],
     });
     expect(params.warnings).toEqual([
@@ -102,6 +104,7 @@ describe('parámetros del explorador', () => {
       cuerpo: 'titan',
       escala: 'real',
       lugar: null,
+      sombra: null,
       calidad: null,
     });
     expect(viewerQueryParams({ time: null, body: null, scale: 'illustrative' })).toEqual({
@@ -109,6 +112,7 @@ describe('parámetros del explorador', () => {
       cuerpo: null,
       escala: null,
       lugar: null,
+      sombra: null,
       calidad: null,
     });
     // Ida y vuelta: lo que se escribe se vuelve a leer igual.
@@ -140,6 +144,15 @@ describe('parámetros del explorador', () => {
     expect(viewerQueryParams({ ...base, place: 'teide' })['lugar']).toBe('teide');
     expect(viewerQueryParams({ ...base, place: 'montsec' })['lugar']).toBeNull();
     expect(viewerQueryParams({ ...base, place: null })['lugar']).toBeNull();
+  });
+
+  it('«Ver en 3D» de un eclipse de Sol: la sombra, solo con fecha; y no se vuelve a escribir', () => {
+    expect(parseViewerParams('?fecha=2026-08-12T18:29:29Z&sombra=1').shadow).toBe(true);
+    expect(parseViewerParams('?sombra=1').shadow).toBe(false);
+    expect(parseViewerParams('?fecha=2026-08-12T18:29:29Z&sombra=si').shadow).toBe(false);
+    expect(
+      viewerQueryParams({ time: null, body: null, scale: 'illustrative' })['sombra'],
+    ).toBeNull();
   });
 
   it('la cámara del cielo, solo en captura (rumbo, altura y campo)', () => {
