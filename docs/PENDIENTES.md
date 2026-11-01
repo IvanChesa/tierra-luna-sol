@@ -57,7 +57,7 @@ Decisiones y tareas que dependen de Iván. Claude Code añade aquí cada `TODO(i
 - [x] **Web Analytics desactivado** en el proyecto de Cloudflare (D24): comprobado por Iván en el panel el 31-10.
 - [x] **Network Error Logging de Cloudflare (D24).** Decidido el 30-10 (revisión del bloque C, C8): se **acepta como telemetría del propio alojamiento** (solo informa de las peticiones que fallan) y se explica en la privacidad (fase 9); en la fase 11, con el dominio propio, se mira si la zona permite desactivarlo. `verify-pages` lo sigue marcando como aviso.
 - [ ] (Opcional) **Un entorno de GitHub para los secrets de Cloudflare**, que los limite al trabajo de despliegue (Settings → Environments). Hoy valen para todo el repositorio y solo los usan los pasos de wrangler.
-- [ ] (Fase 11) **¿Explorador incrustable en ivanchesa.es?** Hoy `frame-ancestors 'none'` y `X-Frame-Options: DENY` impiden incrustarlo en otra web. Si quieres una demo incrustada en el portfolio: `frame-ancestors https://ivanchesa.es` y sin `X-Frame-Options`.
+- [ ] (Fase 11) **¿Explorador incrustable en ivanchesa.com?** Hoy `frame-ancestors 'none'` y `X-Frame-Options: DENY` impiden incrustarlo en otra web. Si quieres una demo incrustada en el portfolio: `frame-ancestors https://ivanchesa.com` y sin `X-Frame-Options`.
 
 ## Bloque C (fase 4b: la vista general del sistema solar)
 - [x] **La vista general junto a tu captura de referencia:** decidido el 30-10 (revisión del bloque C, C2; D35): los planetas, **un 25 % más grandes** y sin solapes (solo esos dos encogen cuando se acercan). Hecho en la rama `revision-bloque-c`.
@@ -96,7 +96,7 @@ Decisiones y tareas que dependen de Iván. Claude Code añade aquí cada `TODO(i
 
 ## Decisiones
 - [x] **(Fase 6) `toktx` (KTX-Software): no hace falta.** Con WebP, la VRAM cabe en los 300 MB de §5 en el peor caso de las dos vistas (C4, con test): la vista Tierra, 278 MB, y la vista Luna, 265; y en el viaje entre las dos, como mucho 284 (revisión de la fase 6, hallazgo 4). La reevaluación de KTX2 queda para la fase 10 si hiciera falta en el móvil.
-- [ ] **Subdominio definitivo.** Propuesto: `tierra-luna-sol.ivanchesa.es`. Si cambia, se edita solo `src/app/core/site.config.ts`.
+- [x] **Subdominio definitivo:** `tierra-luna-sol.ivanchesa.com` (decisión del 31-10: el dominio pasa de ivanchesa.es a ivanchesa.com; revisión del bloque D, D5, y D37). Ya en `src/app/core/site.config.ts`, con la URL del autor, `https://ivanchesa.com`.
 
 ## Revisiones y pruebas de Iván
 - [ ] Textos de los 30 cuerpos (120 textos con `reviewed: false`): lista de revisión con las citas que los respaldan en `docs/datos/textos-cuerpos.md`. En la **fase 9** (decisión del 24-10; antes «al final de las fases 1 y 8»).
@@ -109,6 +109,6 @@ Decisiones y tareas que dependen de Iván. Claude Code añade aquí cada `TODO(i
 - [ ] Decidir si se aprueba `@lhci/cli` (Lighthouse en el CI).
 
 ## Fase 11 (manual; era la fase 10 del plan v1)
-- [ ] El dominio propio: en Cloudflare Pages, `tierra-luna-sol.ivanchesa.es` como dominio personalizado del proyecto, y su registro CNAME (a `tierra-luna-sol.pages.dev`) en el DNS de ivanchesa.es. Los secrets de Cloudflare ya sirven (fase 4).
+- [ ] El dominio propio (D37): en Cloudflare Pages → `tierra-luna-sol` → «Custom domains», `tierra-luna-sol.ivanchesa.com`. La zona de ivanchesa.com está en la misma cuenta de Cloudflare: el propio panel crea el registro DNS. Los secrets de Cloudflare ya sirven (fase 4).
 - [ ] Dar el OK a `indexable: true` y dar de alta el sitemap en Search Console. Con el plan v2 (D25) ya no se trabaja el sitemap: basta con el OK a `indexable: true`.
-- [ ] Añadir la ficha del proyecto en ivanchesa.es.
+- [ ] Añadir la ficha del proyecto en ivanchesa.com.

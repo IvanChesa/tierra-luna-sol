@@ -18,13 +18,14 @@ export interface SiteConfig {
 
 export const SITE_CONFIG: SiteConfig = {
   name: 'Tierra Luna Sol',
-  // TODO(ivan): confirmar el subdominio definitivo (docs/PENDIENTES.md).
-  baseUrl: 'https://tierra-luna-sol.ivanchesa.es',
+  // El dominio pasa de ivanchesa.es a ivanchesa.com (decisión de Iván del 31-10; revisión del bloque D,
+  // D5): el subdominio definitivo, en la zona de ivanchesa.com de Cloudflare (fase 11).
+  baseUrl: 'https://tierra-luna-sol.ivanchesa.com',
   lang: 'es',
   locale: 'es-ES',
   author: {
     name: 'Iván Chesa Lapena',
-    url: 'https://ivanchesa.es',
+    url: 'https://ivanchesa.com',
   },
   indexable: false,
 };

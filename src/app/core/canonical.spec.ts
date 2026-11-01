@@ -2,7 +2,7 @@ import { canonicalUrl, setCanonical } from './canonical';
 import { SITE_CONFIG } from './site.config';
 
 describe('canonicalUrl', () => {
-  const base = 'https://tierra-luna-sol.ivanchesa.es';
+  const base = 'https://tierra-luna-sol.ivanchesa.com';
 
   it('es la base y la ruta, sin barra final (D9)', () => {
     expect(canonicalUrl('/planetas/marte', base)).toBe(`${base}/planetas/marte`);

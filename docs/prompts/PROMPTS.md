@@ -13,7 +13,7 @@ Abre la terminal en la carpeta del proyecto y lanza **`claude`**, sin nada detr�
 | D | 6–7 | `fase-6-luna`, `fase-7-lunas-escala-real` | `max` | — |
 | E | 8–9 | `fase-8-cielo-eclipses`, `fase-9-contenido` | `high` | — |
 | F | 10 | `fase-10-pulido` | `max` | Un iPhone para probar; decisión sobre `@lhci/cli` |
-| — | 11 | `fase-11-lanzamiento` | `high` | El dominio propio en Cloudflare Pages (el CNAME en el DNS de ivanchesa.es) |
+| — | 11 | `fase-11-lanzamiento` | `high` | El dominio propio en Cloudflare Pages: `tierra-luna-sol.ivanchesa.com`, sobre la zona de ivanchesa.com (el panel crea el registro DNS; D37) |
 
 ## Prompts
 

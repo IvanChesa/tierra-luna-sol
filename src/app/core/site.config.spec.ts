@@ -14,7 +14,12 @@ describe('SITE_CONFIG', () => {
 
   it('está en español y enlaza con la web del autor', () => {
     expect(SITE_CONFIG.lang).toBe('es');
-    expect(SITE_CONFIG.author.url).toBe('https://ivanchesa.es');
+    expect(SITE_CONFIG.author.url).toBe('https://ivanchesa.com');
+  });
+
+  // El dominio pasa a ivanchesa.com (revisión del bloque D, D5): el subdominio del proyecto, en él.
+  it('se publica en tierra-luna-sol.ivanchesa.com', () => {
+    expect(SITE_CONFIG.baseUrl).toBe('https://tierra-luna-sol.ivanchesa.com');
   });
 
   // El idioma está en dos sitios (aquí y en el <html> estático de index.html): este test los
