@@ -44,6 +44,16 @@ export interface BodyPhotometry {
    */
   readonly contrast?: { readonly value: number; readonly note: string };
   /**
+   * El halo por encima del limbo, si no es como la neblina del disco (Titán, fase 7): su color
+   * (cromaticidad, RGB lineal / luminancia) y su intensidad respecto a la de la neblina, ajustados a
+   * una foto (el disco conserva `hazeColor`).
+   */
+  readonly halo?: {
+    readonly chromaticity: readonly [number, number, number];
+    readonly gain: number;
+    readonly source: string;
+  };
+  /**
    * ¿Se calibra el brillo con el albedo geométrico? En la Tierra, no hasta la fase 5: su albedo
    * (0,434) incluye las nubes, que todavía no se dibujan.
    */
@@ -108,46 +118,70 @@ const giant = (minnaertK: number): Photometry => ({
   ...NO_FORWARD,
 });
 
-/** Atmósfera: brillo en el limbo, exponente, crepúsculo (en μ₀) y refuerzo a contraluz. */
-const haze = (strength: number, limbExponent: number, twilight: number, forwardBoost: number) =>
-  ({ strength, limbExponent, twilight, forwardBoost, forwardAsymmetry: 0.7 }) as const;
+/**
+ * Atmósfera: brillo en el limbo, exponente, crepúsculo (en μ₀), refuerzo a contraluz y asimetría de
+ * ese refuerzo (g de Henyey–Greenstein: cuanto más cerca de 1, más estrecho y más a contraluz).
+ */
+const haze = (
+  strength: number,
+  limbExponent: number,
+  twilight: number,
+  forwardBoost: number,
+  forwardAsymmetry = 0.7,
+) => ({ strength, limbExponent, twilight, forwardBoost, forwardAsymmetry }) as const;
 
 /**
- * Partículas de los anillos de Saturno (solo cuenta su función de fase; la profundidad óptica y el
- * albedo de cada anillo salen de la ficha de la NASA, en la tira de los anillos): el pico de
- * oposición y la dispersión hacia atrás de la Luna, como unas partículas heladas y rugosas, y un
- * lóbulo hacia delante para el polvo fino que hace brillar los anillos tenues a contraluz.
- * Aproximación y ajuste visual, comparando con las fotos del Hubble y de Cassini.
+ * El anillo de luz del limbo de Saturno a contraluz (fase 7, R2 de la revisión del bloque R): la luz
+ * del Sol que la neblina de su alta atmósfera dispersa hacia delante, lo más reconocible de las fotos
+ * de Cassini con el Sol detrás del planeta (PIA17172, «The Day the Earth Smiled», con una fase de
+ * unos 176°; docs/realismo/referencias.md). Un lóbulo estrecho (g = 0,9) e intenso. Ajuste visual con
+ * esa foto, no una medida (`photometry.spec.ts` dice cuánto cambia con la fase).
+ */
+export const SATURN_FORWARD_HAZE = { forwardBoost: 60, forwardAsymmetry: 0.9 } as const;
+
+/**
+ * Reflectividad de los anillos de Saturno medida por el Hubble (WFPC2, 1996–2005) en cinco filtros:
+ * I/F a 6° de fase con los anillos abiertos 23,6°, del ajuste log-lineal de la tabla 5 de Salo y
+ * French (2010), «The opposition and tilt effects of Saturn's rings from HST observations», Icarus 210,
+ * 785 (https://arxiv.org/abs/1007.0349), en el anillo C (78 000–83 000 km), el B (100 000–107 000 km) y
+ * el A (127 000–129 000 km). Las longitudes de onda, las efectivas de cada filtro para la luz del Sol de
+ * la tabla II de Cuzzi, French y Dones (2002), Icarus 158, 199 (https://doi.org/10.1006/icar.2002.6851).
+ * Dan el color de cada anillo (fase 7, D36) y, en F555W, el brillo con el que se calibra su albedo.
+ */
+export const RING_SPECTRA = {
+  wavelengthsNm: [338, 434, 549, 672, 798],
+  C: [0.0313, 0.0409, 0.0437, 0.0485, 0.0523],
+  B: [0.1924, 0.3534, 0.465, 0.5354, 0.5519],
+  A: [0.1379, 0.2362, 0.297, 0.3327, 0.3442],
+  phaseDeg: 6,
+  openingDeg: 23.6,
+  /**
+   * De qué espectro sale el color de cada anillo (`bandChromaticity`, en la tira de los anillos): la
+   * división de Cassini no tiene valores publicados y toma el del anillo C, el más cercano documentado
+   * (Cuzzi et al., 2002, agrupan sus espectros; Hedman et al., 2013, https://arxiv.org/abs/1210.4727,
+   * los describen igual).
+   */
+  colorFrom: { C: 'C', B: 'B', Cassini: 'C', A: 'A' },
+  source:
+    'Salo y French (2010), Icarus 210, 785, tabla 5 (B_eff 23,6°, α 6°): https://arxiv.org/abs/1007.0349 · longitudes de onda efectivas: Cuzzi, French y Dones (2002), Icarus 158, 199, tabla II: https://doi.org/10.1006/icar.2002.6851',
+} as const;
+
+/**
+ * Partículas de los anillos de Saturno (solo cuenta su función de fase; la profundidad óptica sale de
+ * una ocultación de Cassini, y el color y el albedo de cada anillo, de `RING_SPECTRA` y de la ficha de la
+ * NASA, en la tira de los anillos): el pico de oposición y la dispersión hacia atrás de la Luna, como
+ * unas partículas heladas y rugosas, y un lóbulo hacia delante para el polvo fino que hace brillar los
+ * anillos tenues a contraluz. Aproximación y ajuste visual, comparando con las fotos del Hubble y de
+ * Cassini.
  */
 export const RING_PHOTOMETRY: {
   readonly photometry: Photometry;
   /** Luz de los anillos sobre el planeta (fracción de la del Sol): se ve en su lado nocturno. */
   readonly ringShine: number;
-  /**
-   * Color de cada anillo (RGB lineal / luminancia), medido en una foto en color real. La tira de los
-   * anillos (`scripts/build-textures.mjs`) conserva el brillo de la textura (su estructura radial, que
-   * modula el albedo de la ficha) y toma este color: el de la textura sale morado en los anillos
-   * tenues.
-   */
-  readonly chromaticity: {
-    readonly C: readonly [number, number, number];
-    readonly B: readonly [number, number, number];
-    readonly Cassini: readonly [number, number, number];
-    readonly A: readonly [number, number, number];
-    readonly source: string;
-  };
   readonly note: string;
 } = {
   photometry: { ...MOON, forwardFraction: 0.08, forwardAsymmetry: 0.75 },
   ringShine: 0.05,
-  chromaticity: {
-    C: [1.04, 0.96, 1.24],
-    B: [0.94, 1.01, 1.07],
-    Cassini: [0.92, 1.0, 1.24],
-    A: [0.99, 1.0, 1.09],
-    source:
-      'Media de cada anillo en el ansa derecha (a menos de 0,3 semiejes menores del eje mayor; C 80–90, B 95–115, Cassini 118,5–121,5 y A 124–135 mil km) de la foto del Hubble del 20-06-2019 (OPAL, NASA/ESA, A. Simon y M. H. Wong; https://esahubble.org/images/heic1917a/), con scripts/measure-reference-colors.mjs. El anillo B es blanco algo azulado (el balance de color de esa foto), no tostado.',
-  },
   note: 'Fase de la Luna y un lóbulo hacia delante (8 %, g = 0,75) para el polvo fino; luz de los anillos sobre el planeta, 0,05 de la del Sol por el seno de su elevación: aproximación y ajuste visual.',
 };
 
@@ -233,7 +267,13 @@ export const BODY_PHOTOMETRY: Readonly<Record<Exclude<BodyId, 'sol'>, BodyPhotom
   saturno: {
     kind: 'giant',
     photometry: giant(0.85),
-    haze: haze(0.02, 4, 0.07, 10),
+    haze: haze(
+      0.02,
+      4,
+      0.07,
+      SATURN_FORWARD_HAZE.forwardBoost,
+      SATURN_FORWARD_HAZE.forwardAsymmetry,
+    ),
     haloScaleHeight: 0.005,
     hazeColor: '#f0e2c4',
     chromaticity: {
@@ -282,6 +322,7 @@ export const BODY_PHOTOMETRY: Readonly<Record<Exclude<BodyId, 'sol'>, BodyPhotom
   },
   fobos: airless(),
   deimos: airless(),
+  // Ío, sin tinte: su mosaico es en color (revisión del bloque D, D1).
   io: airless(),
   europa: airless(),
   ganimedes: airless(),
@@ -296,9 +337,22 @@ export const BODY_PHOTOMETRY: Readonly<Record<Exclude<BodyId, 'sol'>, BodyPhotom
     photometry: giant(0.9),
     haze: haze(0.4, 2.5, 0.35, 3),
     hazeColor: '#e3a95c',
-    haloScaleHeight: 0.04,
+    // La caída del halo de PIA06230: diez veces menos brillo de 1,02–1,05 a 1,05–1,1 radios (fase 7).
+    haloScaleHeight: 0.017,
+    chromaticity: {
+      rgb: [1.478, 0.945, 0.137],
+      mix: 1,
+      source:
+        'Media del 60 % del disco en la foto en color natural de Cassini del 16-04-2005, con una fase de 56° (PIA06230, NASA/JPL/Space Science Institute; https://photojournal.jpl.nasa.gov/catalog/PIA06230), con scripts/measure-reference-colors.mjs',
+    },
+    halo: {
+      chromaticity: [0.97, 1.02, 0.85],
+      gain: 0.085,
+      source:
+        'PIA06230 (la foto de su color): por encima del limbo iluminado, una neblina tenue y casi neutra (de 1,02 a 1,05 radios, cromaticidad 0,97/1,02/0,85 y un 1 % del brillo del borde del disco; nada a partir de 1,05), no un halo naranja. Su intensidad, ajustada a esa proporción en la misma geometría (scripts/measure-titan-halo.mjs)',
+    },
     calibrateAlbedo: true,
-    note: 'Neblina espesa y anaranjada: Minnaert y atmósfera, ajuste visual (la fase 7 añade su textura).',
+    note: 'Neblina espesa y anaranjada: Minnaert y atmósfera, ajuste visual. Sin textura de superficie: el mosaico del USGS (ISS de Cassini, 938 nm) muestra la superficie en una ventana del metano, y en luz visible la neblina la oculta (PIA06230). Color y halo, de PIA06230 (fase 7).',
   },
   japeto: airless(),
   miranda: airless(),

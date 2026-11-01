@@ -1,4 +1,4 @@
-// GENERADO por scripts/build-textures.mjs el 2026-10-31. No se edita a mano.
+// GENERADO por scripts/build-textures.mjs el 2026-11-01. No se edita a mano.
 // WebP por niveles con hash (public/textures/), a partir de los originales de assets-src/textures/
 // (origen y licencia de cada uno en docs/FUENTES.md).
 import type { TextureFiles, TextureId } from './textures';
@@ -274,24 +274,31 @@ export const TEXTURE_FILES: TextureFiles = {
   'saturn-rings': [
     {
       level: '1k',
-      path: 'textures/1k/saturn-rings.c893f34265.webp',
+      path: 'textures/1k/saturn-rings.f4d39d20be.webp',
       width: 1024,
       height: 16,
-      bytes: 1780,
+      bytes: 1576,
     },
     {
       level: '2k',
-      path: 'textures/2k/saturn-rings.36e322029c.webp',
+      path: 'textures/2k/saturn-rings.b240eb6982.webp',
       width: 2048,
       height: 16,
-      bytes: 3050,
+      bytes: 2694,
     },
     {
       level: '4k',
-      path: 'textures/4k/saturn-rings.5b91fcc87f.webp',
+      path: 'textures/4k/saturn-rings.4485ff8518.webp',
       width: 4096,
       height: 16,
-      bytes: 5024,
+      bytes: 4470,
+    },
+    {
+      level: '8k',
+      path: 'textures/8k/saturn-rings.92950f22eb.webp',
+      width: 8192,
+      height: 16,
+      bytes: 7520,
     },
   ],
   'mercury-normal': [
@@ -388,6 +395,192 @@ export const TEXTURE_FILES: TextureFiles = {
       bytes: 218694,
     },
   ],
+  phobos: [
+    {
+      level: '1k',
+      path: 'textures/1k/phobos.2e6bff2683.webp',
+      width: 1024,
+      height: 512,
+      bytes: 86814,
+    },
+    {
+      level: '2k',
+      path: 'textures/2k/phobos.c75986cfab.webp',
+      width: 2048,
+      height: 1024,
+      bytes: 264724,
+    },
+  ],
+  io: [
+    { level: '1k', path: 'textures/1k/io.1661caba04.webp', width: 1024, height: 512, bytes: 49922 },
+    {
+      level: '2k',
+      path: 'textures/2k/io.0e496650dd.webp',
+      width: 2048,
+      height: 1024,
+      bytes: 135538,
+    },
+  ],
+  europa: [
+    {
+      level: '1k',
+      path: 'textures/1k/europa.921478a739.webp',
+      width: 1024,
+      height: 512,
+      bytes: 82824,
+    },
+    {
+      level: '2k',
+      path: 'textures/2k/europa.5c2de63bc2.webp',
+      width: 2048,
+      height: 1024,
+      bytes: 319886,
+    },
+  ],
+  ganymede: [
+    {
+      level: '1k',
+      path: 'textures/1k/ganymede.160ff1d2e9.webp',
+      width: 1024,
+      height: 512,
+      bytes: 48152,
+    },
+    {
+      level: '2k',
+      path: 'textures/2k/ganymede.7581914b57.webp',
+      width: 2048,
+      height: 1024,
+      bytes: 192246,
+    },
+  ],
+  callisto: [
+    {
+      level: '1k',
+      path: 'textures/1k/callisto.d37c424bc9.webp',
+      width: 1024,
+      height: 512,
+      bytes: 50476,
+    },
+    {
+      level: '2k',
+      path: 'textures/2k/callisto.6e30eb340a.webp',
+      width: 2048,
+      height: 1024,
+      bytes: 209686,
+    },
+  ],
+  mimas: [
+    {
+      level: '1k',
+      path: 'textures/1k/mimas.aad4ef0807.webp',
+      width: 1024,
+      height: 512,
+      bytes: 127158,
+    },
+    {
+      level: '2k',
+      path: 'textures/2k/mimas.6c22b2ac3e.webp',
+      width: 2048,
+      height: 1024,
+      bytes: 298022,
+    },
+  ],
+  enceladus: [
+    {
+      level: '1k',
+      path: 'textures/1k/enceladus.17c6f7988c.webp',
+      width: 1024,
+      height: 512,
+      bytes: 151828,
+    },
+    {
+      level: '2k',
+      path: 'textures/2k/enceladus.1cb8c97cd9.webp',
+      width: 2048,
+      height: 1024,
+      bytes: 583114,
+    },
+  ],
+  tethys: [
+    {
+      level: '1k',
+      path: 'textures/1k/tethys.ed5332891b.webp',
+      width: 1024,
+      height: 512,
+      bytes: 164288,
+    },
+    {
+      level: '2k',
+      path: 'textures/2k/tethys.182c707179.webp',
+      width: 2048,
+      height: 1024,
+      bytes: 524542,
+    },
+  ],
+  dione: [
+    {
+      level: '1k',
+      path: 'textures/1k/dione.297ada4522.webp',
+      width: 1024,
+      height: 512,
+      bytes: 174560,
+    },
+    {
+      level: '2k',
+      path: 'textures/2k/dione.6b5835cc11.webp',
+      width: 2048,
+      height: 1024,
+      bytes: 613704,
+    },
+  ],
+  rhea: [
+    {
+      level: '1k',
+      path: 'textures/1k/rhea.c15b4d6c00.webp',
+      width: 1024,
+      height: 512,
+      bytes: 103674,
+    },
+    {
+      level: '2k',
+      path: 'textures/2k/rhea.25d56195f4.webp',
+      width: 2048,
+      height: 1024,
+      bytes: 332470,
+    },
+  ],
+  iapetus: [
+    {
+      level: '1k',
+      path: 'textures/1k/iapetus.2447d3c2a0.webp',
+      width: 1024,
+      height: 512,
+      bytes: 135050,
+    },
+    {
+      level: '2k',
+      path: 'textures/2k/iapetus.47bbe1d2b0.webp',
+      width: 2048,
+      height: 1024,
+      bytes: 415570,
+    },
+  ],
+  triton: [
+    {
+      level: '1k',
+      path: 'textures/1k/triton.406792fbd1.webp',
+      width: 1024,
+      height: 512,
+      bytes: 32198,
+    },
+    {
+      level: '2k',
+      path: 'textures/2k/triton.92e914831a.webp',
+      width: 2048,
+      height: 1024,
+      bytes: 104064,
+    },
+  ],
   uranus: [
     {
       level: '1k',
@@ -451,15 +644,46 @@ export const TEXTURE_MEAN_LUMINANCE: Readonly<Partial<Record<TextureId, number>>
   mars: 0.1819,
   jupiter: 0.4093,
   saturn: 0.6154,
+  phobos: 0.2739,
+  io: 0.2629,
+  europa: 0.3133,
+  ganymede: 0.0754,
+  callisto: 0.0481,
+  mimas: 0.1852,
+  enceladus: 0.1431,
+  tethys: 0.2009,
+  dione: 0.2238,
+  rhea: 0.162,
+  iapetus: 0.1906,
+  triton: 0.3194,
   uranus: 0.5649,
   neptune: 0.1231,
 };
 
 /**
- * Radios (km) que cubre la tira de los anillos de Saturno, calibrada con los bordes exteriores de los
- * anillos B y A de la ficha de la NASA.
+ * Radios (km) que cubre la tira de los anillos de Saturno (fase 7, D36): de por dentro del anillo C a
+ * por fuera del F, con la τ de la ocultación de β Centauri de Cassini UVIS.
  */
-export const SATURN_RING_STRIP_KM = { inner: 69250, outer: 141048 } as const;
+export const SATURN_RING_STRIP_KM = { inner: 74000, outer: 141000 } as const;
+
+/**
+ * Lo medido en la tira más fina de los anillos al generarla (scripts/ring-profile.mjs): la τ mínima de
+ * cada división (y la mediana del anillo a sus lados) y el radio de los bordes de los anillos C, B y A
+ * y del núcleo del F. Un test lo compara con los radios publicados (data/saturn-rings.ts).
+ */
+export const SATURN_RING_FEATURES_MEASURED = {
+  gaps: {
+    colombo: { minTau: 0, sidesTau: 0.0338 },
+    maxwell: { minTau: 0, sidesTau: 0.0462 },
+    huygens: { minTau: 0, sidesTau: 0.1759 },
+    encke: { minTau: 0, sidesTau: 0.5611 },
+    keeler: { minTau: 0, sidesTau: 0.6161 },
+  },
+  cInnerKm: 74491,
+  bOuterKm: 117478,
+  aOuterKm: 136772,
+  fCoreKm: 140203,
+} as const;
 
 /**
  * Intervalo (m) de la elevación de la Luna empaquetada en 16 bits («moon-elevation», D15): un valor v

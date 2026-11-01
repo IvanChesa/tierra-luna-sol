@@ -4,6 +4,7 @@ import {
   PHASE_LAWS,
   Photometry,
   albedoScale,
+  bandChromaticity,
   discBrightness,
   discFactor,
   geometricFactor,
@@ -18,7 +19,6 @@ import {
   opticalDepth,
   phaseFunction,
   reflectance,
-  relativeDetail,
   ringCoverage,
   ringReflectance,
   smoothstep,
@@ -279,19 +279,45 @@ describe('fotometría: anillos (dispersión simple)', () => {
     expect(opticalDepth(1)).toBeCloseTo(-Math.log(0.005), 9);
   });
 
-  it('el detalle relativo vale 1 de media en su ventana y conserva los contrastes', () => {
-    const profile = [0.1, 0.2, 0.3, 0.6, 0.9, 0.3];
-    const [first, , third, fourth, fifth] = relativeDetail(profile, 2, 5);
-    // Media de la ventana [2, 5): (0,3 + 0,6 + 0,9) / 3 = 0,6.
-    expect(((third ?? 0) + (fourth ?? 0) + (fifth ?? 0)) / 3).toBeCloseTo(1, 12);
-    expect(first).toBeCloseTo(0.1 / 0.6, 12);
-    expect((fifth ?? 0) / (third ?? 1)).toBeCloseTo(3, 12);
-    expect(relativeDetail(profile, 2, 5).length).toBe(profile.length);
+  it('el color por bandas reproduce el de Venus (fase 3b): los albedos de Mallama et al. (2017), a 611, 549 y 464 nm', () => {
+    // g′ 0,664 (469 nm), V 0,689 (549 nm) y r′ 0,712 (616 nm): el azul, con la recta de las dos primeras.
+    const [r, g, b] = bandChromaticity([
+      { nm: 469, value: 0.664 },
+      { nm: 549, value: 0.689 },
+      { nm: 616, value: 0.712 },
+    ]);
+    expect(r).toBeCloseTo(1.027, 3);
+    expect(g).toBeCloseTo(0.996, 3);
+    expect(b).toBeCloseTo(0.958, 3);
+    expect(0.2126 * r + 0.7152 * g + 0.0722 * b).toBeCloseTo(1, 12);
   });
 
-  it('el detalle relativo no acepta una ventana vacía ni sin brillo', () => {
-    expect(() => relativeDetail([0.5, 0.5], 1, 1)).toThrow();
-    expect(() => relativeDetail([0, 0, 1], 0, 2)).toThrow();
+  it('el color por bandas interpola en línea recta, en cualquier orden, y no acepta menos de dos bandas', () => {
+    // Una reflectividad que crece en línea recta con la longitud de onda: interpolar es exacto.
+    const line = (nm: number) => 0.2 + 0.001 * (nm - 400);
+    const shuffled = [700, 400, 550].map((nm) => ({ nm, value: line(nm) }));
+    const [r, g, b] = bandChromaticity(shuffled);
+    expect(r / g).toBeCloseTo(line(611) / line(549), 12);
+    expect(b / g).toBeCloseTo(line(464) / line(549), 12);
+    // Un espectro plano es blanco.
+    const flat = bandChromaticity([
+      { nm: 430, value: 0.5 },
+      { nm: 680, value: 0.5 },
+    ]);
+    for (const v of flat) expect(v).toBeCloseTo(1, 12);
+    expect(() => bandChromaticity([{ nm: 550, value: 0.4 }])).toThrow();
+    expect(() =>
+      bandChromaticity([
+        { nm: 550, value: 0.4 },
+        { nm: 550, value: 0.5 },
+      ]),
+    ).toThrow();
+    expect(() =>
+      bandChromaticity([
+        { nm: 450, value: 0 },
+        { nm: 650, value: 0 },
+      ]),
+    ).toThrow();
   });
 });
 

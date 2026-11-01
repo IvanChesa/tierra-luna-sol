@@ -3,6 +3,7 @@
 > Documento maestro. Lo ejecuta Claude Code en el PC de Iván, por fases y en bloques autónomos. Otra sesión de Claude revisa cada bloque (`docs/revisiones/`).
 > Si este plan y el código no coinciden, manda el plan. Los cambios se proponen en el informe de fase y los aprueba Iván.
 > Revisión 2 del plan: 24-10-2026. Sustituye a la revisión 1. Incorpora la auditoría de las fases 2–10 (`docs/decisiones/auditoria-plan-v2.md`), lo aprendido en la fase 1 y la decisión de Iván de que el SEO sea secundario.
+> Actualizada el 01-11-2026 con la revisión del bloque D (`docs/revisiones/bloque-D.md`): el dominio pasa a **ivanchesa.com** (**D37**: `tierra-luna-sol.ivanchesa.com`, la fase 11 con el dominio personalizado sobre su zona de Cloudflare y los enlaces legales de la fase 9), y las propuestas de la fase 7: el terminador de Titán, la dicotomía de Jápeto y pedir la textura del planeta al enfocar una de sus lunas, a la **fase 10**; las lunas de Urano con los mapas del JPL y el anillo A con un perfil de I/F medido, al **backlog**.
 > Actualizada el 30-10-2026 con la revisión del bloque C (`docs/revisiones/bloque-C.md`): los tamaños de la vista general (**D35**: un 25 % más grandes, sin solapes y con un mínimo en pantalla), la VRAM de la fase 6 con la Tierra y la Luna juntas (C4), el NEL de Cloudflare en D24 y en las fases 9 y 11 (C8) y la 8K de la Tierra, más barata, en la fase 10; y con la mejora de los anillos de Saturno que pidió Iván (**D36**, `docs/decisiones/ANILLOS-SATURNO.md`), en la fase 7 junto a R2.
 > Actualizada el 27-10-2026 con la fase nueva **4b** (pulido de la vista del sistema solar, `docs/decisiones/FASE-4b-SISTEMA-SOLAR.md`): la velocidad según el contexto (D33, sustituye a la de entrada de D31), las estelas de color (D34) y planetas más visibles en la vista general, en el bloque **C**, antes de la fase 5.
 > Actualizada el 27-10-2026 con la revisión del bloque R (`docs/revisiones/bloque-R.md`): las propuestas aprobadas de las fases 3b y 3c (fases 5, 7 y 10, §5 y el backlog), la licencia MIT (D32) y el primer push autorizado; y con el cambio de hosting de Iván: **Cloudflare Pages** (plan gratuito) en lugar de Banahosting por FTPS (D9, D17, D23, D24, D26 y fases 4 y 11).
@@ -15,9 +16,9 @@
 
 Un **explorador 3D interactivo** del Sol, los 8 planetas, 21 lunas, la Tierra y la Luna, **en español**, con **posiciones y orientaciones reales para cualquier fecha entre 1900 y 2100**, calculadas en el navegador. Tiene **todas las funcionalidades** del proyecto que lo inspira (`ethanplusai/earth-moon-solar`) y **mejoras propias**. No se copia nada de él (ni código, ni textos, ni diseño): se escribe desde cero.
 
-**Objetivo:** pieza de portfolio de Iván Chesa Lapena (desarrollador web freelance, ivanchesa.es). Tiene que demostrar Angular moderno, 3D web de calidad profesional, rigor científico, rendimiento y accesibilidad. **El SEO es secundario**: se publica como subdominio de ivanchesa.es y lo que importa es que impresione al abrirla y se comparta bien.
+**Objetivo:** pieza de portfolio de Iván Chesa Lapena (desarrollador de software, ivanchesa.com). Tiene que demostrar Angular moderno, 3D web de calidad profesional, rigor científico, rendimiento y accesibilidad. **El SEO es secundario**: se publica como subdominio de ivanchesa.com y lo que importa es que impresione al abrirla y se comparta bien.
 
-**Dónde vive:** en **Cloudflare Pages** (plan gratuito; decisión de Iván del 27-10, antes Banahosting), con un subdominio de ivanchesa.es como dominio propio en la fase 11 (propuesto: `tierra-luna-sol.ivanchesa.es`). Desde la fase 4, una vista previa por rama en `*.tierra-luna-sol.pages.dev` (la de `main`, en `staging.tierra-luna-sol.pages.dev`). Proyecto y repositorio independientes.
+**Dónde vive:** en **Cloudflare Pages** (plan gratuito; decisión de Iván del 27-10, antes Banahosting), con **`tierra-luna-sol.ivanchesa.com`** como dominio propio en la fase 11 (D37: el dominio de Iván pasó de ivanchesa.es a ivanchesa.com el 31-10). Desde la fase 4, una vista previa por rama en `*.tierra-luna-sol.pages.dev` (la de `main`, en `staging.tierra-luna-sol.pages.dev`). Proyecto y repositorio independientes.
 
 ### 0.1 Paridad con el original (todo esto entra en la v1)
 
@@ -94,7 +95,7 @@ Un **explorador 3D interactivo** del Sol, los 8 planetas, 21 lunas, la Tierra y 
 | D22 | **Calidad adaptativa** (`low` / `medium` / `high`): detección inicial, bajada automática si los FPS no llegan y selector manual recordado | Funciona bien en cualquier dispositivo. |
 | D23 | **Vista previa por rama desde la fase 4** en Cloudflare Pages: cada rama, en `<rama>.tierra-luna-sol.pages.dev`, y `main`, en `staging.tierra-luna-sol.pages.dev`, todas con `X-Robots-Tag: noindex`. Producción en la fase 11, con una etiqueta de versión | Detectar pronto los problemas del hosting y probar en móviles reales por URL. Sustituye al staging de cPanel (cambio de Iván del 27-10). |
 | D24 | **Privacidad:** sin cookies, sin analítica (tampoco Cloudflare Web Analytics) y sin peticiones a terceros (todo autoalojado). El Network Error Logging de Cloudflare (Chrome y Edge envían a `a.nel.cloudflare.com` un informe de cada petición que falla) se acepta como telemetría del propio alojamiento, que ya sirve cada petición y solo informa de fallos, y se explica en la privacidad (fase 9); en la fase 11, con el dominio propio, se mira si la zona permite desactivarlo (revisión del bloque C, C8; decisión de Iván, 30-10) | Cumplimiento sin banner de cookies y una garantía visible de calidad. |
-| D25 | **SEO secundario** (decisión de Iván): title y description simples, una imagen Open Graph global y `robots.txt` básico. Sin JSON-LD ni sitemap trabajado | Es una pieza de portfolio dentro de ivanchesa.es. |
+| D25 | **SEO secundario** (decisión de Iván): title y description simples, una imagen Open Graph global y `robots.txt` básico. Sin JSON-LD ni sitemap trabajado | Es una pieza de portfolio dentro de ivanchesa.com (D37). |
 | D26 | **Despliegue:** GitHub Actions → **Cloudflare Pages** con `cloudflare/wrangler-action` fijado por SHA: `wrangler pages deploy` del build ya verificado en el CI, sin builds de Cloudflare, en el proyecto `tierra-luna-sol`. Cada push con el CI en verde publica la vista previa de su rama; la etiqueta `v*`, producción (fase 11). `_headers` y `_redirects` en lugar de `.htaccess` | Cambio de Iván del 27-10 (antes, FTPS a Banahosting, porque el SSH estaba bloqueado). Los secrets `CLOUDFLARE_API_TOKEN` (solo con permiso de Pages) y `CLOUDFLARE_ACCOUNT_ID` ya están en el repo. |
 | D27 | **Tests:** Vitest (unitarios) + Playwright (e2e y regresión visual) + axe (accesibilidad) | — |
 | D28 | **Solo español en la v1**; el inglés queda para después (`@angular/localize`) | — |
@@ -106,6 +107,7 @@ Un **explorador 3D interactivo** del Sol, los 8 planetas, 21 lunas, la Tierra y 
 | D34 | **Estelas de los planetas:** un arco **del color de cada cuerpo** (`scene/body-colors.ts`) sobre su órbita, **detrás** del cuerpo (delante, si la reproducción va hacia atrás), que se desvanece hasta desaparecer. Su longitud es una **fracción de la órbita** (~1/8 de vuelta, en `scene/visual-config.ts`), no un tiempo, para que se vea igual a cualquier velocidad; **visibles también en pausa**; más cortas y tenues en los sistemas de lunas; mezcla aditiva sutil | Petición de Iván (27-10), como en el original. Fase 4b. |
 | D35 | **Tamaños de la vista general** (revisión del bloque C, C2 y C3; decisiones de Iván del 30-10): los radios ilustrativos, **un 25 % más grandes** que en la fase 4b (`radiusFactor` 0,105: Júpiter, 9,1 unidades; el Sol, el mayor, sigue en 13); **sin solapes**: cuando dos cuerpos se acercan más que sus radios (o que los anillos de Saturno, como disco plano) más 1,5 unidades, solo esos dos encogen con un paso suave y recuperan el tamaño al separarse, con su sistema de lunas (`relieveOverlaps`, función pura con tests); y un **radio mínimo de 2 px en pantalla** para los planetas en la vista general (solo en la escala ilustrativa), sin cambiar posiciones ni órbitas y sin el anillo de marcador, porque ya se ven como discos. El alivio trabaja con los radios propios y el mínimo va después: no se deshace al alejarse, y con la cámara muy lejos los discos mínimos de los planetas interiores, a unos píxeles unos de otros, pueden tocarse | Iván quería los planetas «un poco más grandes» y que en el móvil no se vieran como marcadores. De 1900 a 2100 solo encogen Júpiter y Saturno, en sus conjunciones (un 3,2 % del tiempo, hasta ×0,79; muestreo de `scene/illustrative-layout.spec.ts`, también con el tamaño mínimo de un móvil de 390 px). |
 | D36 | **Anillos de Saturno** (decisión de Iván, 30-10; `docs/decisiones/ANILLOS-SATURNO.md`): el color de cada anillo, de **espectrofotometría publicada** (Voyager, Hubble o Cassini), no de fotos de prensa (sustituye al color medido en R1); la profundidad óptica τ(r), de un **perfil radial medido** (ocultaciones de Cassini o de Voyager del PDS Ring-Moon Systems Node), con sus divisiones en el radio publicado; un **realce moderado del brillo**, ilustrativo como el relleno de D21 (B / disco ≈ 1,0–1,1, entre la física, 0,77, y la foto de prensa, 1,44), que no toca la fotometría ni sus tests; y sin tono lavanda en los anillos tenues | Los anillos salían gris azulados, con poca estructura fina y apagados. Va en la fase 7, junto a R2, porque los dos tocan Saturno y su material. |
+| D37 | **Dominio: `tierra-luna-sol.ivanchesa.com`** (decisión de Iván del 31-10; revisión del bloque D, D5). El dominio de Iván pasa de ivanchesa.es a **ivanchesa.com** (comprado en Cloudflare Registrar; el .es se deja caducar y redirige al .com). `site.config.ts` (la URL base y la del autor) ya lo usa; en la fase 11, el dominio personalizado del proyecto en Pages sobre la zona de ivanchesa.com, en la misma cuenta de Cloudflare: el registro DNS lo crea el propio panel, y lo hace Iván. Los enlaces legales (fase 9) y la ficha del portfolio, a ivanchesa.com | Sustituye al subdominio provisional en ivanchesa.es. Los textos visibles no lo mencionan (comprobado en la revisión). |
 
 ### Dependencias permitidas (lista cerrada)
 Cualquier otro paquete → **preguntar a Iván antes de instalarlo**.
@@ -256,7 +258,7 @@ Cada fase va en su rama `fase-N-nombre`. Se trabaja en **modo autónomo por bloq
 | B | 2–3 | `max` | Arquitectura del motor (marcos, profundidad, texturas) y de la interfaz ✅ (revisado en `docs/revisiones/bloque-B.md`) |
 | R | 3b–3c | `max` | Realismo de los planetas e interfaz inmersiva: la base de iluminación que usan después la Tierra, la Luna y las lunas, y la cara del explorador ✅ (revisado en `docs/revisiones/bloque-R.md`) |
 | C | 4, 4b y 5 | `max` | Vista previa en Cloudflare Pages, la vista general del sistema solar pulida (4b) y la Tierra, primera pieza «guau» probada en móviles reales ✅ (revisado en `docs/revisiones/bloque-C.md`) |
-| D | 6–7 | `max` | La Luna, las lunas, las sombras y la escala real: lo más difícil |
+| D | 6–7 | `max` | La Luna, las lunas, las sombras y la escala real: lo más difícil ✅ (revisado en `docs/revisiones/bloque-D.md`) |
 | E | 8–9 | `high` | El cielo desde España, los eclipses y el contenido |
 | F | 10 | `max` | Pulido y calidad final |
 | — | 11 | `high` | Lanzamiento, con Iván |
@@ -678,9 +680,9 @@ Tareas:
    - migas de pan;
    - **sin Three.js**.
 3. **`/creditos`**: todas las licencias, una por una, y el aviso de que no hay respaldo de la NASA.
-4. **`/sobre-el-proyecto`** como **caso de estudio de portfolio**: qué es, stack, diagrama de arquitectura, marcos de escala, precisión medida (tablas de la fase 1), rendimiento medido, decisiones y autor con enlace a ivanchesa.es.
+4. **`/sobre-el-proyecto`** como **caso de estudio de portfolio**: qué es, stack, diagrama de arquitectura, marcos de escala, precisión medida (tablas de la fase 1), rendimiento medido, decisiones y autor con enlace a ivanchesa.com (D37).
 5. **Compartir (D25)**: title y description simples por página, **una imagen Open Graph global** (render del propio motor), `robots.txt` básico y `noindex` siempre en `/404`.
-6. **Legal y privacidad (D24)**: pie con enlaces al aviso legal y la privacidad de ivanchesa.es, y una nota visible: «Sin cookies, sin analítica y sin peticiones a terceros». En el texto de privacidad, una frase sobre el NEL de Cloudflare: el propio alojamiento recibe un informe de las peticiones que fallan (revisión del bloque C, C8).
+6. **Legal y privacidad (D24)**: pie con enlaces al aviso legal y la privacidad de ivanchesa.com (D37), y una nota visible: «Sin cookies, sin analítica y sin peticiones a terceros». En el texto de privacidad, una frase sobre el NEL de Cloudflare: el propio alojamiento recibe un informe de las peticiones que fallan (revisión del bloque C, C8).
 7. Textos repasados con `docs/ESTILO.md` y la lista final para la revisión de Iván.
 
 Criterios de aceptación:
@@ -705,6 +707,10 @@ Tareas:
    - con el fondo pintado dentro de la escena, no como color de borrado: si no, el `OutputPass` lo aclara (informe de la fase 3b, §4.1);
    - dentro de los FPS y la VRAM de §5.
    - Si no mejora lo que ya da el halo del Sol, se descarta y se anota.
+10. **Las lunas, con lo que dejó pendiente la fase 7** (propuestas de su informe, §10; revisión del bloque D):
+    - **el terminador de Titán**, suave por su neblina (en las fotos, un degradado; en la escena, un escalón): un parámetro de fotometría nuevo, una sombra suavizada por la atmósfera;
+    - **la dicotomía de Jápeto**: con su mosaico normalizado en brillo, la cara oscura sale a 0,58 de la clara, y la real es de 0,1 o menos. Es lo más característico de esa luna: su contraste, llevado a los albedos medidos de cada hemisferio, con su fuente;
+    - **pedir la textura del planeta al enfocar una de sus lunas**, si desde ella se ve grande (al enfocar Fobos, Marte pide su 4K la primera vez que entra en el encuadre, con un tirón al subirla).
 
 Criterios de aceptación:
 - [ ] Tabla con **todos** los presupuestos de §5 medidos y cumplidos.
@@ -713,14 +719,14 @@ Criterios de aceptación:
 
 ### Fase 11: Lanzamiento
 
-**Iván (manual):** el dominio propio en Cloudflare Pages (`tierra-luna-sol.ivanchesa.es` como dominio personalizado del proyecto, con su registro CNAME en el DNS de ivanchesa.es). Los secrets de Cloudflare ya están (fase 4) y la licencia, decidida (D32). Con el dominio propio, mirar si su zona permite desactivar el NEL de Cloudflare (D24, C8); si no, queda explicado en la privacidad (fase 9).
+**Iván (manual):** el dominio personalizado del proyecto en Cloudflare Pages, **`tierra-luna-sol.ivanchesa.com`** (D37), sobre la zona de ivanchesa.com, que está en la misma cuenta de Cloudflare: al añadirlo en Pages (proyecto `tierra-luna-sol` → «Custom domains»), el propio panel crea el registro DNS. Los secrets de Cloudflare ya están (fase 4) y la licencia, decidida (D32). Con el dominio propio, mirar si su zona permite desactivar el NEL de Cloudflare (D24, C8); si no, queda explicado en la privacidad (fase 9).
 
 **Claude Code:**
 1. **`deploy-production.yml`**: despliegue a producción de Cloudflare Pages al crear una etiqueta `v*` (o con lanzamiento manual), reutilizando el build verificado.
 2. **Verificación en producción** con `curl` y Lighthouse.
 3. **README de portfolio** (capturas, vídeo o GIF corto, stack, arquitectura, precisión y rendimiento medidos), **CHANGELOG** y etiqueta **`v1.0.0`** (el repo de GitHub ya es público y `LICENSE` existe desde la fase 4, D32).
 4. `indexable: true` con el OK de Iván.
-5. Lista para Iván: ficha del proyecto en ivanchesa.es (en su propio repo) y difusión.
+5. Lista para Iván: ficha del proyecto en ivanchesa.com (en su propio repo) y difusión.
 
 Criterios de aceptación:
 - [ ] `v1.0.0` publicada en producción con HTTPS, desplegada por etiqueta.
@@ -771,9 +777,12 @@ Reglas:
 3. Formas reales de las lunas irregulares (Fobos, Deimos, Proteo) con modelos 3D de dominio público.
 4. Planetas enanos (Plutón, Ceres), cinturón de asteroides y cometas.
 5. Satélites artificiales / Estación Espacial (requiere datos en vivo).
-6. Ficha del proyecto en ivanchesa.es (en su propio repo).
+6. Ficha del proyecto en ivanchesa.com (en su propio repo).
 7. El oscurecimiento del limbo del Sol por canal (informe de la fase 3b, §4.4).
 8. Un desvanecimiento elíptico de las órbitas sobre los anillos de Saturno (informe de la fase 3b, §4.12).
 9. El relieve como mapa de alturas en gris, con las normales calculadas en el shader (informe de la fase 3b, §4.10).
 10. Unificar los colores de los planetas con la fotometría de Mallama et al. (2017) y las funciones de color de la CIE (informe de la fase 3b, §4.12).
 11. Las sombras que proyecta el relieve (mapas de horizonte): en el polo sur de la Luna, el interior de Shackleton saldría en sombra, como en las fotos (informe de la fase 6, §10.4).
+12. Las lunas de Urano con los mapas de textura del JPL, si su licencia se aclara (preguntándolo a la NASA o al JPL); hasta entonces, con su color esquemático (informe de la fase 7, §10.3; revisión del bloque D).
+13. El anillo A de Saturno con un perfil radial de I/F medido (por ejemplo, de Cassini ISS, en el PDS): su oscurecimiento hacia fuera y la zona de Encke; hoy sale más plano que en las fotos (informe de la fase 7, §10.4; revisión del bloque D).
+14. El brillo de los anillos a contraluz con una referencia medida: sin el realce de D36 (revisión del bloque D, D4) ya no salen quemados, pero el A sigue más claro que en PIA17172 (L* 90 frente a 32; la exposición del primer plano a 176° de fase y el lóbulo hacia delante de las partículas, igual en todos los anillos). Un perfil de I/F a fase alta (Cassini) y una función de fase por anillo (el C y la división de Cassini, polvorientos; el A y el B, de partículas grandes) lo dirían (informe de la fase 7, respuesta a la revisión).

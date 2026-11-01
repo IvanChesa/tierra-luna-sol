@@ -289,4 +289,25 @@ test.describe('Tiempo y URL', () => {
     await page.getByRole('button', { name: 'Cerrar el aviso' }).click();
     await expect(page.locator('.notice')).toHaveCount(0);
   });
+
+  test('la escala real se elige en «Controles +»: se anuncia, va a la URL y un enlace la conserva (fase 7)', async ({
+    page,
+  }) => {
+    const problems = trackProblems(page);
+    await openExplorer(page, '/?fecha=2030-06-01T12:00Z');
+    await openControls(page);
+    const scale = page.locator('#time-scale');
+    await expect(scale).toHaveValue('illustrative');
+    await scale.selectOption('real');
+    await expect(page.locator('p[aria-live="polite"]')).toContainText('Escala real');
+    await expect(page).toHaveURL(/escala=real/);
+    // El enlace abre la escala real, y la ilustrativa la quita de la URL (es la de partida).
+    await openExplorer(page, new URL(page.url()).pathname + new URL(page.url()).search);
+    await openControls(page);
+    await expect(scale).toHaveValue('real');
+    await scale.selectOption('illustrative');
+    await expect(page.locator('p[aria-live="polite"]')).toContainText('Escala ilustrativa');
+    await expect(page).not.toHaveURL(/escala=/);
+    expect(problems).toEqual([]);
+  });
 });

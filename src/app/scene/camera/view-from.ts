@@ -2,7 +2,9 @@
  * Desde dónde se mira un cuerpo en las capturas comparables (fase 3b): la misma geometría que una
  * foto de referencia (docs/realismo/referencias.md).
  * - Desde la Tierra: la línea Tierra → cuerpo de la fecha (las fotos del Hubble).
- * - Con un ángulo de fase y una latitud sobre el ecuador del cuerpo (las fotos de sondas).
+ * - Con un ángulo de fase y una latitud sobre el ecuador del cuerpo (las fotos de sondas) o sobre la
+ *   eclíptica (las miniaturas de las lunas, fase 7: con el eje de Urano tumbado, 15° sobre el ecuador
+ *   de sus lunas dejaban un tercio del disco en sombra).
  */
 import { Vec3, cross, dot, normalize, scale, sub, vec3 } from '../../ephemeris/vec3';
 
@@ -12,8 +14,10 @@ export type ViewFrom =
       readonly kind: 'phase';
       /** Ángulo de fase Sol–cuerpo–cámara (grados). */
       readonly phaseDeg: number;
-      /** Latitud de la cámara sobre el ecuador del cuerpo (grados); por defecto, la del Sol. */
+      /** Latitud de la cámara (grados); por defecto, la del Sol. */
       readonly latitudeDeg?: number;
+      /** Sobre qué se mide la latitud: el ecuador del cuerpo (por defecto) o la eclíptica. */
+      readonly reference?: 'equator' | 'ecliptic';
     };
 
 const DEG = Math.PI / 180;

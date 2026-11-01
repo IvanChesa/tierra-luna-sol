@@ -11,8 +11,16 @@ import {
   earthFixedToEcl,
   geographicToEarthFixed,
 } from '../ephemeris/coordinates';
+import type { BodyId } from '../data/body.model';
 import { Mat3, mulMat3Vec, vec3 } from '../ephemeris/vec3';
-import { TEXTURE_FILES, SATURN_RING_STRIP_KM } from './texture-files';
+import { OrientationModel } from './orientations';
+import { SCENE_BODIES, createSolarSystemModel, sceneBody } from './system';
+import { SATURN_RING_FEATURES } from '../data/saturn-rings';
+import {
+  TEXTURE_FILES,
+  SATURN_RING_FEATURES_MEASURED,
+  SATURN_RING_STRIP_KM,
+} from './texture-files';
 import { TEXTURE_META } from './texture-meta';
 import {
   ManifestTextureSource,
@@ -105,11 +113,79 @@ describe('texturas: manifiesto y alineación del meridiano 0', () => {
     ).toBeLessThan(1e-9);
   });
 
-  it('la tira de los anillos cubre del interior del anillo C al exterior del A', () => {
-    // Bordes de la ficha de la NASA: anillo C desde 74 658 km; anillo A hasta 136 780 km.
-    expect(SATURN_RING_STRIP_KM.inner).toBeLessThan(74_658);
-    expect(SATURN_RING_STRIP_KM.outer).toBeGreaterThan(136_780);
+  it('las lunas con mosaico (fase 7): la longitud 0 del mapa mira a su planeta y el hemisferio delantero, a 90° O (en Tritón, retrógrada, a 90° E)', () => {
+    const model = createSolarSystemModel();
+    const orientations = new OrientationModel(SCENE_BODIES);
+    const moons = (Object.entries(BODY_TEXTURES) as [BodyId, TextureId][]).filter(
+      ([id]) => sceneBody(id).kind === 'moon' && id !== 'luna',
+    );
+    expect(moons.map(([id]) => id)).toContain('triton');
+    const angleDeg = (a: Vector3, b: Vector3) => (a.angleTo(b) * 180) / Math.PI;
+    const toThree = (v: { x: number; y: number; z: number }) => {
+      const t = eclToThree(v);
+      return new Vector3(t.x, t.y, t.z).normalize();
+    };
+    for (const date of [new Date('2026-10-31T00:00:00Z'), new Date('2000-01-01T12:00:00Z')]) {
+      const state = model.at(date);
+      const later = model.at(date.getTime() + 60_000);
+      const matrices = orientations.at(state);
+      for (const [id, texture] of moons) {
+        const body = sceneBody(id);
+        // El mosaico está centrado en su longitud 0 (usgs-mosaic.mjs): sin desplazamiento.
+        expect(meridianOffset(TEXTURE_META[texture]), id).toBe(0);
+        const toWorld = eclRotationToThree(matrices[body.index] as Mat3);
+        const offset = state.parentOffsetOf(id);
+        const toPlanet = toThree({ x: -offset.x, y: -offset.y, z: -offset.z });
+        expect(angleDeg(rotate(toWorld, vertexAt(0.5)), toPlanet), id).toBeLessThan(0.01);
+        // Hacia donde avanza la luna respecto a su planeta (un minuto después); la excentricidad lo
+        // separa unos grados de la perpendicular al radio.
+        const next = later.parentOffsetOf(id);
+        const ahead = toThree({ x: next.x - offset.x, y: next.y - offset.y, z: next.z - offset.z });
+        const leading = id === 'triton' ? 0.75 : 0.25;
+        expect(angleDeg(rotate(toWorld, vertexAt(leading)), ahead), id).toBeLessThan(3);
+      }
+    }
+  });
+
+  it('la tira de los anillos cubre del interior del anillo C al exterior del F', () => {
+    const f = SATURN_RING_FEATURES;
+    expect(SATURN_RING_STRIP_KM.inner).toBeLessThan(f.cInnerKm);
+    expect(SATURN_RING_STRIP_KM.outer).toBeGreaterThan(f.fToKm);
     expect(TEXTURE_META['saturn-rings'].ringRadiiKm).toEqual(SATURN_RING_STRIP_KM);
+  });
+
+  it('en la tira de los anillos, las divisiones están vacías y los bordes, en sus radios publicados (fase 7, D36)', () => {
+    const f = SATURN_RING_FEATURES;
+    const measured = SATURN_RING_FEATURES_MEASURED;
+    expect(f.source).toMatch(/https:\/\/pds-rings\.seti\.org\//);
+    // Cassini, Encke y Keeler (y las de Colombo, Maxwell y Huygens): sin anillo dentro de su intervalo
+    // publicado y con anillo a los lados (con la tira desplazada más que su anchura, fallaría).
+    for (const id of ['colombo', 'maxwell', 'huygens', 'encke', 'keeler'] as const) {
+      const gap = measured.gaps[id];
+      expect(gap.minTau, id).toBeLessThan(0.05);
+      expect(gap.minTau, id).toBeLessThan(0.25 * gap.sidesTau);
+    }
+    // El borde interior del C, a ±15 km; el exterior del A (7 lóbulos de 12,8 km), a ±20; el del B
+    // (no circular), a ±100; y el núcleo del F, dentro de su extensión.
+    expect(Math.abs(measured.cInnerKm - f.cInnerKm)).toBeLessThanOrEqual(15);
+    expect(Math.abs(measured.aOuterKm - f.aOuterKm)).toBeLessThanOrEqual(20);
+    expect(Math.abs(measured.bOuterKm - f.bOuterKm)).toBeLessThanOrEqual(100);
+    expect(measured.fCoreKm).toBeGreaterThanOrEqual(f.fFromKm);
+    expect(measured.fCoreKm).toBeLessThanOrEqual(f.fToKm);
+    // La división de Cassini empieza donde acaba el B: su hueco de Huygens, junto a ese borde.
+    expect(f.gaps.huygens.fromKm).toBeLessThanOrEqual(f.bOuterKm);
+  });
+
+  it('la tira de los anillos llega a unos 8 km por píxel en 8k (D36)', () => {
+    const files = TEXTURE_FILES['saturn-rings'] ?? [];
+    const finest = files.reduce((best, file) => (file.width > best.width ? file : best));
+    const kmPerPx = (SATURN_RING_STRIP_KM.outer - SATURN_RING_STRIP_KM.inner) / finest.width;
+    expect(finest.level).toBe('8k');
+    expect(kmPerPx).toBeGreaterThan(7);
+    expect(kmPerPx).toBeLessThan(10);
+    // Lo que se pide con cada calidad (los dispositivos sin 8192 px se quedan con el mayor que quepa).
+    expect(QUALITY_PROFILES.high.ringTexture).toBe('8k');
+    expect(chooseTextureFile(files, QUALITY_PROFILES.high.ringTexture, 4096)?.level).toBe('4k');
   });
 });
 
@@ -162,12 +238,16 @@ describe('texturas: nivel elegido y VRAM', () => {
     expect(textureVramBytes(1024, 512)).toBeCloseTo(1024 * 512 * 4 * (4 / 3), 6);
     expect(textureVramBytes(1024, 512, false)).toBe(1024 * 512 * 4);
     // Todos los cuerpos en su nivel general, la Vía Láctea en 2k y, como peor caso, la Tierra enfocada
-    // (fase 5): su textura de día (8k en alto) y sus nubes, noche, normales y máscara del océano.
+    // (fase 5): su textura de día (8k en alto) y sus nubes, noche, normales y máscara del océano. Las
+    // lunas con mosaico (fase 7) solo se cargan con su sistema enfocado: no con la Tierra.
     const level = (id: TextureId, wanted: TextureLevel) =>
       chooseTextureFile(TEXTURE_FILES[id], wanted, 16_384);
+    const withoutSatellites = (Object.entries(BODY_TEXTURES) as [BodyId, TextureId][])
+      .filter(([id]) => sceneBody(id).kind !== 'moon' || id === 'luna')
+      .map(([, texture]) => texture);
     for (const quality of ['high', 'medium', 'low'] as const) {
       const profile = QUALITY_PROFILES[quality];
-      const bodies = Object.values(BODY_TEXTURES).map((id) => level(id, profile.overviewTexture));
+      const bodies = withoutSatellites.map((id) => level(id, profile.overviewTexture));
       const sky = profile.milkyWayTexture ? level('milky-way', profile.milkyWayTexture) : null;
       const earth = [
         level('earth-day', profile.earthDayTexture),

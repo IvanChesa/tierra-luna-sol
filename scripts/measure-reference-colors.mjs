@@ -1,5 +1,6 @@
 // Colores medidos en fotos reales (fase 3b): repite las medidas que usan `data/photometry.ts`
-// (`chromaticity` de los planetas y de cada anillo de Saturno) y `scripts/reference-colors.mjs` (el
+// (`chromaticity` de los planetas y, como referencia, de cada anillo de Saturno, cuyo color sale
+// desde la fase 7 de `RING_SPECTRA`) y `scripts/reference-colors.mjs` (el
 // océano de la Tierra), con las regiones exactas de cada foto, y las compara con los valores en uso.
 // Uso: node scripts/measure-reference-colors.mjs
 //
@@ -11,7 +12,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
-import { BODY_PHOTOMETRY, RING_PHOTOMETRY } from '../src/app/data/photometry.ts';
+import { BODY_PHOTOMETRY, RING_SPECTRA } from '../src/app/data/photometry.ts';
+import { bandChromaticity } from '../src/app/ephemeris/photometry.ts';
 import { OCEAN_CHROMA } from './reference-colors.mjs';
 
 const CACHE = join(tmpdir(), 'tls-referencias');
@@ -56,6 +58,20 @@ const DISCS = [
     center: [976, 507],
     radius: 88,
     note: 'Irwin et al. (2024), imagen reprocesada (abajo a la derecha): el 60 % del disco (radio 147 px)',
+  },
+  {
+    id: 'io',
+    url: 'https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia02/pia02308/PIA02308.jpg',
+    center: [1397, 1397],
+    radius: 833,
+    note: 'Galileo, mosaico global en color real del 03-07-1999 (PIA02308, NASA/JPL/University of Arizona; fase 7): el 60 % del disco (radio 1389 px)',
+  },
+  {
+    id: 'titan',
+    url: 'https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia06/pia06230/PIA06230.jpg',
+    center: [380, 385],
+    radius: 163,
+    note: 'Cassini, 16-04-2005, color natural con una fase de 56° (PIA06230, NASA/JPL/Space Science Institute; fase 7): el 60 % del disco (radio 272 px)',
   },
 ];
 
@@ -154,6 +170,16 @@ for (const disc of DISCS) {
 }
 
 // --- Anillos -------------------------------------------------------------------------------------
+// Desde la fase 7 (D36), el color de los anillos ya no sale de esta foto (de prensa, equilibrada hacia
+// el blanco azulado), sino de su reflectividad por bandas medida por el Hubble (`RING_SPECTRA`): se
+// compara con ella, como referencia.
+const ringInUse = (name) =>
+  bandChromaticity(
+    RING_SPECTRA[RING_SPECTRA.colorFrom[name]].map((value, i) => ({
+      nm: RING_SPECTRA.wavelengthsNm[i],
+      value,
+    })),
+  );
 {
   const image = await rgbImage(await download(RINGS.url));
   const [cx, cy] = RINGS.center;
@@ -177,7 +203,7 @@ for (const disc of DISCS) {
     report(
       `anillo ${name}`,
       chroma(mean(samples)),
-      RING_PHOTOMETRY.chromaticity[name],
+      ringInUse(name),
       `heic1917a, ansa derecha, ${RINGS.bands[name].map((km) => km / 1000).join('–')} mil km (${samples.length} px)`,
     );
   }

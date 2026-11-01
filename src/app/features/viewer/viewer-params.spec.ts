@@ -42,6 +42,13 @@ describe('parámetros del explorador', () => {
       phaseDeg: 30,
     });
     expect(parseViewerParams('?captura=1&fase=200').viewFrom).toBeNull();
+    // La latitud sobre la eclíptica (las miniaturas de las lunas, fase 7).
+    expect(parseViewerParams('?captura=1&fase=30&latitud=15&sobre=ecliptica').viewFrom).toEqual({
+      kind: 'phase',
+      phaseDeg: 30,
+      latitudeDeg: 15,
+      reference: 'ecliptic',
+    });
     expect(parseViewerParams('?captura=1&tonemapping=agx').toneMapping).toBe('agx');
     expect(parseViewerParams('?captura=1&tonemapping=filmico').toneMapping).toBeNull();
     expect(parseViewerParams('?captura=1&cuerpo=jupiter&aislado=1').isolate).toBe(true);

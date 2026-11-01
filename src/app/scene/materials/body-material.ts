@@ -222,25 +222,21 @@ uniform vec3 uTwilightColor;
 // Tierras áridas: (rodilla de la compresión, calidez desde la que empieza, calidez a la que es entera).
 uniform vec3 uArid;
 #endif
-#if defined(TLS_EARTH) || defined(TLS_MOON)
-// Centros del cuerpo que puede tapar el Sol (la Luna sobre la Tierra; la Tierra sobre la Luna) y del
-// Sol (radios ecuatoriales, sistema propio) y sus radios: desde cada punto, las direcciones y los
-// radios aparentes de los dos (el paralaje del Sol mueve la sombra decenas de kilómetros si se toma
-// su dirección desde el centro del cuerpo).
-uniform vec4 uOccluderLocal;
-uniform vec4 uSunLocal;
-
-// La sombra en p (D20): x, la fracción del disco del Sol que se ve (el que tapa es un disco de radio
+#if defined(TLS_EARTH) || defined(TLS_MOON) || defined(TLS_SHADOWS)
+// La sombra en p (D20) de un cuerpo que tapa el Sol: occluder y sun, sus centros (radios
+// ecuatoriales, sistema propio) y sus radios; desde cada punto, sus direcciones y sus radios
+// aparentes (el paralaje del Sol mueve la sombra decenas de kilómetros si se toma su dirección desde
+// el centro del cuerpo). x, la fracción del disco del Sol que se ve (el que tapa es un disco de radio
 // angular aO a una separación d del centro del Sol, de radio aS: se resta el área común de los dos
 // círculos); y, lo hondo que está p en la umbra (0 en su borde, 1 en el eje). Ángulos pequeños: d es
 // la cuerda entre las direcciones, que en float32 no pierde precisión como acos.
-vec2 tlsShadow(vec3 p) {
-  vec3 toOccluder = uOccluderLocal.xyz - p;
-  vec3 toSun = uSunLocal.xyz - p;
+vec2 tlsShadowOf(vec3 p, vec4 occluder, vec4 sun) {
+  vec3 toOccluder = occluder.xyz - p;
+  vec3 toSun = sun.xyz - p;
   float occluderDistance = length(toOccluder);
   float sunDistance = length(toSun);
-  float aO = uOccluderLocal.w / occluderDistance;
-  float aS = uSunLocal.w / sunDistance;
+  float aO = occluder.w / occluderDistance;
+  float aS = sun.w / sunDistance;
   float d = length(toOccluder / occluderDistance - toSun / sunDistance);
   if (d >= aS + aO) return vec2(1.0, 0.0);
   if (d <= aO - aS) return vec2(0.0, 1.0 - d / (aO - aS));
@@ -249,6 +245,33 @@ vec2 tlsShadow(vec3 p) {
   float a2 = aO * aO * acos(clamp((d * d + aO * aO - aS * aS) / (2.0 * d * aO), -1.0, 1.0));
   float a3 = 0.5 * sqrt(max((-d + aS + aO) * (d + aS - aO) * (d - aS + aO) * (d + aS + aO), 0.0));
   return vec2(clamp(1.0 - (a1 + a2 - a3) / (3.14159265 * aS * aS), 0.0, 1.0), 0.0);
+}
+#endif
+#if defined(TLS_EARTH) || defined(TLS_MOON)
+// El cuerpo que puede tapar el Sol (la Luna sobre la Tierra; la Tierra sobre la Luna) y el Sol.
+uniform vec4 uOccluderLocal;
+uniform vec4 uSunLocal;
+
+vec2 tlsShadow(vec3 p) {
+  return tlsShadowOf(p, uOccluderLocal, uSunLocal);
+}
+#endif
+#ifdef TLS_SHADOWS
+// Las sombras de otros cuerpos (fase 7, D20): en un planeta, las de sus lunas más grandes (los
+// tránsitos de las sombras de las galileanas sobre Júpiter); en una luna, la de su planeta (sus
+// eclipses). Hasta cuatro, con sus centros y sus radios como los de tlsShadowOf.
+uniform vec4 uShadowCasters[4];
+uniform float uShadowCount;
+uniform vec4 uShadowSun;
+
+// La fracción del disco del Sol que se ve desde p con todas esas sombras.
+float tlsShadows(vec3 p) {
+  float visible = 1.0;
+  for (int i = 0; i < 4; i++) {
+    if (float(i) >= uShadowCount) break;
+    visible *= tlsShadowOf(p, uShadowCasters[i], uShadowSun).x;
+  }
+  return visible;
 }
 #endif
 #ifdef TLS_MOON
@@ -404,6 +427,14 @@ void main() {
     haze *= eclipse.x;
   }
 #endif
+#ifdef TLS_SHADOWS
+  // Las sombras de las lunas sobre su planeta, o la del planeta sobre una luna (fase 7).
+  if (uShadowCount > 0.0 && (light > 0.0 || haze > 0.0)) {
+    float sunVisible = tlsShadows(vLocal * vec3(1.0, uPolarScale, 1.0));
+    lit *= sunVisible;
+    haze *= sunVisible;
+  }
+#endif
   gl_FragColor = vec4(albedo * lit + uHazeColor.rgb * haze + fill, 1.0);
 #endif
   ${OUTPUT_FRAGMENT}
@@ -486,6 +517,22 @@ export interface MoonUniforms {
   readonly uHasPoleNormals: Uniform<number>;
 }
 
+/** Cuántas sombras de otros cuerpos recibe un cuerpo como mucho (`TLS_SHADOWS`, fase 7). */
+export const MAX_SHADOW_CASTERS = 4;
+
+/**
+ * Sombras de otros cuerpos (fase 7, D20): las de las lunas sobre su planeta y la del planeta sobre
+ * cada luna. Solo con `shadows: true`.
+ */
+export interface ShadowUniforms {
+  /** Centros (sistema propio de la malla, radios ecuatoriales) y radios (w) de los que tapan el Sol. */
+  readonly uShadowCasters: Uniform<Vector4[]>;
+  /** Cuántos de `uShadowCasters` cuentan (0 = ninguna sombra). */
+  readonly uShadowCount: Uniform<number>;
+  /** Centro y radio (w) del Sol, igual. */
+  readonly uShadowSun: Uniform<Vector4>;
+}
+
 export interface BodyMaterialOptions {
   readonly color: Color;
   readonly polarScale: number;
@@ -496,6 +543,8 @@ export interface BodyMaterialOptions {
   readonly earth?: boolean;
   /** La Luna: relieve desplazado y coordenadas de textura por píxel (`TLS_MOON`). */
   readonly moon?: boolean;
+  /** Recibe sombras de otros cuerpos (`TLS_SHADOWS`, fase 7): sus lunas o su planeta. */
+  readonly shadows?: boolean;
 }
 
 export function createBodyMaterial(options: BodyMaterialOptions) {
@@ -554,16 +603,26 @@ export function createBodyMaterial(options: BodyMaterialOptions) {
         uHasPoleNormals: new Uniform(0),
       }
     : null;
+  const shadows: ShadowUniforms | null = options.shadows
+    ? {
+        uShadowCasters: new Uniform(
+          Array.from({ length: MAX_SHADOW_CASTERS }, () => new Vector4(0, 0, 1e6, 0)),
+        ),
+        uShadowCount: new Uniform(0),
+        uShadowSun: new Uniform(new Vector4(1e4, 0, 0, 100)),
+      }
+    : null;
   const defines = {
     ...(options.earth ? { TLS_EARTH: '' } : {}),
     ...(options.moon ? { TLS_MOON: '' } : {}),
+    ...(options.shadows ? { TLS_SHADOWS: '' } : {}),
   };
   const material = sceneShaderMaterial({
     name: options.earth ? 'tls-earth' : options.moon ? 'tls-moon' : 'tls-body',
-    uniforms: { ...uniforms, ...earth, ...moon } as unknown as Record<string, Uniform>,
+    uniforms: { ...uniforms, ...earth, ...moon, ...shadows } as unknown as Record<string, Uniform>,
     vertexShader,
     fragmentShader,
     ...(Object.keys(defines).length > 0 ? { defines } : {}),
   });
-  return { material, uniforms, earth, moon };
+  return { material, uniforms, earth, moon, shadows };
 }

@@ -101,6 +101,17 @@
     </select>
   </div>
 
+  <div class="field">
+    <label class="field__label" for="time-scale">Escala</label>
+    <select id="time-scale" class="control" (change)="changeScale($event)">
+      @for (option of scales; track option.value) {
+        <option [value]="option.value" [selected]="sim.scaleFrame() === option.value">
+          {{ option.label }}
+        </option>
+      }
+    </select>
+  </div>
+
   <button
     type="button"
     class="control"

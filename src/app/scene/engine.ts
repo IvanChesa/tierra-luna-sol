@@ -1315,7 +1315,8 @@ export class SceneEngine implements SceneEngineApi {
 
   /**
    * Coloca la cámara con la geometría de una foto de referencia (modo de captura, fase 3b): desde la
-   * Tierra en la fecha, o con un ángulo de fase y una latitud sobre el ecuador del cuerpo.
+   * Tierra en la fecha, o con un ángulo de fase y una latitud sobre el ecuador del cuerpo o sobre la
+   * eclíptica.
    */
   private alignViewFrom(view: ViewFrom): void {
     const focus = this.focusIndex;
@@ -1335,7 +1336,11 @@ export class SceneEngine implements SceneEngineApi {
       const toSun = normalize(
         vec3(-(h[k] as number), -(h[k + 1] as number), -(h[k + 2] as number)),
       );
-      const pole = columnOf(this.orientations.at(state)[focus] as Mat3, 2);
+      // El polo del cuerpo o el de la eclíptica (ECL: +Z), según sobre qué se mida la latitud.
+      const pole =
+        view.reference === 'ecliptic'
+          ? vec3(0, 0, 1)
+          : columnOf(this.orientations.at(state)[focus] as Mat3, 2);
       direction = phaseViewDirection(toSun, pole, view.phaseDeg, view.latitudeDeg);
     }
     this.rig.setTarget(anglesFromEcl(direction), true);

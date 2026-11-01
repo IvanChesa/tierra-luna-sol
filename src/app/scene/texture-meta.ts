@@ -15,6 +15,9 @@ const surface = (alignment: string): TextureMeta => ({
   alignment,
 });
 
+/** Un mosaico en gris de una luna (fase 7): la escena lo tiñe con su color esquemático. */
+const grayMosaic = (alignment: string): TextureMeta => ({ ...surface(alignment), grayscale: true });
+
 const clouds = (alignment: string): TextureMeta => ({
   colorSpace: 'srgb',
   alpha: false,
@@ -56,7 +59,7 @@ export const TEXTURE_META: Readonly<Record<TextureId, TextureMeta>> = {
     primeMeridianU: null,
     ringRadiiKm: SATURN_RING_STRIP_KM,
     alignment:
-      'Radios calibrados con los bordes exteriores de los anillos B y A (ficha de la NASA); el borde interior del anillo C cae donde la textura empieza a ser opaca.',
+      'La τ de la ocultación de β Centauri de Cassini UVIS (COUVIS_8001) por radio, de 74 000 a 141 000 km: sus divisiones (Colombo, Maxwell, Huygens, Encke y Keeler) y los bordes de los anillos C, B y A y el núcleo del F, comprobados con sus radios publicados (PDS Ring-Moon Systems Node; data/saturn-rings.ts).',
   },
   uranus: clouds('Sin accidentes: color casi uniforme.'),
   neptune: clouds('Bandas de nubes: sin meridiano observable.'),
@@ -101,6 +104,46 @@ export const TEXTURE_META: Readonly<Record<TextureId, TextureMeta>> = {
     alignment:
       'Normales de los modelos polares del LOLA (PDS, estereográfica de 75° al polo, 240 m por píxel), en los ejes de su plano. build-textures.mjs elige la orientación de cada modelo comparando su elevación con la equirrectangular entre 76° y 79° (correlación de 0,999 en el sur y 0,993 en el norte), comprueba que sus normales, llevadas al este–norte como en el shader, casan con las equirrectangulares allí y que Shackleton (Gazetteer, IAU/USGS) sale como un hoyo con las paredes hacia dentro.',
   },
+  // Las lunas (fase 7): mosaicos globales del USGS Astrogeology, alineados con su georreferencia
+  // (scripts/usgs-mosaic.mjs) y comprobados con rasgos con nombre del Gazetteer (IAU/USGS).
+  phobos: grayMosaic(
+    'Mosaico Viking de Fobos del USGS (40 px/°, control del DLR), con longitudes este de −180° a 180°: alineado con su georreferencia. Sus rasgos se ven por el sombreado, no por el brillo: sin sondas.',
+  ),
+  // Ío, en color (revisión del bloque D, D1): sin tinte.
+  io: surface(
+    'Mosaico en color de Ío del USGS (Galileo SSI y Voyager, «Color Merged», 1 km), alineado con su georreferencia. Sonda: Loki Patera (Gazetteer, Feature/3459), más oscura que su entorno; con el mapa girado 180° o reflejado, falla.',
+  ),
+  europa: grayMosaic(
+    'Mosaico Voyager–Galileo SSI de Europa del USGS (500 m), alineado con su georreferencia. Sondas: Pwyll (Feature/4878), clara, y Thrace Macula (Feature/5984), oscura; con el mapa girado 180° o reflejado, falla alguna.',
+  ),
+  ganymede: grayMosaic(
+    'Mosaico Voyager–Galileo SSI de Ganímedes del USGS (1 km), alineado con su georreferencia. Sondas: Osiris (Feature/4509) y Tros (Feature/6091), claras; con el mapa girado 180° o reflejado, falla alguna.',
+  ),
+  callisto: grayMosaic(
+    'Mosaico Voyager–Galileo SSI de Calisto del USGS (1 km), alineado con su georreferencia. Sondas: Burr (Feature/927) y Lofn (Feature/3451), claras; con el mapa girado 180° o reflejado, falla alguna.',
+  ),
+  // Las de Saturno, normalizadas en brillo y dominadas por el sombreado: sondas de borde de cráteres.
+  mimas: grayMosaic(
+    'Mapa de Mimas del DLR (Cassini ISS, 16 px/°) en el PDS (COISS_3006), alineado con su etiqueta. Sondas de borde: Gareth (Feature/2106) e Iseult (Feature/2729); con el mapa girado 180° o reflejado, falla alguna.',
+  ),
+  enceladus: grayMosaic(
+    'Mosaico Cassini de Encélado del USGS (110 m), alineado con su georreferencia. Sondas de borde: Bahman (Feature/14604), Parwez (Feature/14615) y Marjanah (Feature/14235); con el mapa girado 180° o reflejado, falla alguna.',
+  ),
+  tethys: grayMosaic(
+    'Mosaico Cassini de Tetis del USGS (293 m), alineado con su georreferencia. Sondas de borde: Oenops (Feature/14427), Polyphemus (Feature/4788) y Philoetius (Feature/14429); con el mapa girado 180° o reflejado, falla alguna.',
+  ),
+  dione: grayMosaic(
+    'Mosaico Cassini–Voyager de Dione del USGS (154 m), alineado con su georreferencia. Sondas de borde: Catillus (Feature/1079), Halys (Feature/2335) y Eumelus (Feature/14352); con el mapa girado 180° o reflejado, falla alguna.',
+  ),
+  rhea: grayMosaic(
+    'Mosaico Cassini–Voyager de Rea del USGS (417 m), alineado con su georreferencia. Sondas de borde: Pachacamac (Feature/14683), Inmar (Feature/14672) y Pouliuli (Feature/14685); con el mapa girado 180° o reflejado, falla alguna.',
+  ),
+  iapetus: grayMosaic(
+    'Mosaico Cassini–Voyager de Jápeto del USGS (783 m), alineado con su georreferencia. Sondas de borde: Valdebron (Feature/14489) y Dapamort (Feature/14462); con el mapa girado 180° o reflejado, falla alguna.',
+  ),
+  triton: grayMosaic(
+    'Canal naranja del mosaico Voyager 2 de Tritón del USGS (600 m), alineado con su georreferencia; el norte que no vio Voyager 2 (38 %), con el gris de la franja vecina y el borde difuminado. Sondas: Doro Macula (Feature/1583), Namazu Macula (Feature/4125) y Kikimora Maculae (Feature/3029), oscuras; con el mapa girado 180° o reflejado, fallan.',
+  ),
   'milky-way': {
     colorSpace: 'srgb',
     alpha: false,

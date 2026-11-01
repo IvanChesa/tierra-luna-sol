@@ -5,7 +5,8 @@
 // - Reposo: frames pintados y llamadas a requestAnimationFrame en 3 s de pausa sin interacción.
 // - Reproducción: FPS y coste por frame a 1 día/s durante 6 s (por calidad).
 // - Contexto WebGL: WEBGL_lose_context.loseContext() y restoreContext().
-// - Memoria: 10 idas y vueltas explorador ↔ ficha, 10 cambios de vista y 6 cambios de calidad.
+// - Memoria: 10 idas y vueltas explorador ↔ ficha, 10 cambios de vista, 6 cambios de calidad y (fase 7)
+//   10 vueltas por los sistemas de lunas.
 //   Lo que demuestra cada cifra: el heap de JS (tras forzar el recolector) no crece; los contextos
 //   WebGL vivos (se cuentan envolviendo getContext y descontando los perdidos) siguen siendo uno; y
 //   renderer.info.memory del motor que queda no acumula geometrías ni texturas.
@@ -345,6 +346,16 @@ try {
     }
     const afterQuality = await memory();
     const heapQuality = await heap();
+    // Fase 7: 10 vueltas por los sistemas de lunas (sus mosaicos se cargan al enfocar el sistema y se
+    // sueltan al salir), de vuelta a la vista general.
+    for (let k = 0; k < 10; k++) {
+      for (const id of ['jupiter', 'europa', 'saturno', 'dione', 'neptuno', 'marte', null]) {
+        await page.evaluate((body) => window.__tlsViewer.engine.focus(body), id);
+        await waitForIdle(page);
+      }
+    }
+    const afterSystems = await memory();
+    const heapSystems = await heap();
     results.memoria = {
       inicio: { geometrias: first.geometries, texturas: first.textures, heapMB: heapStart },
       tras10IdasYVueltas: {
@@ -364,6 +375,12 @@ try {
         geometrias: afterQuality.geometries,
         texturas: afterQuality.textures,
         heapMB: heapQuality,
+        contextosWebGLVivos: await liveContexts(),
+      },
+      tras10VueltasPorLosSistemasDeLunas: {
+        geometrias: afterSystems.geometries,
+        texturas: afterSystems.textures,
+        heapMB: heapSystems,
         contextosWebGLVivos: await liveContexts(),
       },
     };

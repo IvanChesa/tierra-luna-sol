@@ -66,10 +66,18 @@ void main() {
     ? exp(-height / uScaleHeight)
     : exp(height / (0.35 * uScaleHeight));
   vec3 toSun = normalize(vSunDirection);
-  float lit = smoothstep(-uHaze.z, uHaze.z, dot(normalize(offset), toSun));
+  // Un observador lejano, como en el disco (body-material.ts: la distancia de la cámara es un recurso
+  // de encuadre): la normal del limbo, en el plano perpendicular a la línea de visión. Con la del punto
+  // del rayo más cercano al centro, a pocos radios se inclina hacia la cámara, y a contraluz (fase
+  // 7, R2) caía en el lado nocturno: el anillo de luz del limbo de Saturno no se veía.
+  vec3 toViewer = normalize(-vCenter);
+  vec3 limb = offset - dot(offset, toViewer) * toViewer;
+  float limbLength = length(limb);
+  vec3 normal = limbLength > 1e-6 * uRadius ? limb / limbLength : normalize(offset);
+  float lit = smoothstep(-uHaze.z, uHaze.z, dot(normal, toSun));
   float g = uHazeColor.w;
   // Ángulo de fase de un observador lejano, como en el disco (body-material.ts).
-  float cosAlpha = dot(toSun, normalize(-vCenter));
+  float cosAlpha = dot(toSun, toViewer);
   float forward = 1.0 + uHaze.w * tlsHenyeyGreenstein(cosAlpha, g) / tlsHenyeyGreenstein(-1.0, g);
   float glow = uHaze.x * density * lit * forward;
   gl_FragColor = vec4(uHazeColor.rgb * glow, 1.0);

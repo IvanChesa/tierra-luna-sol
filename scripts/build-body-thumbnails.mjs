@@ -1,8 +1,8 @@
 // Miniaturas de las fichas de cuerpos (fase 3c, tarea 1): cada cuerpo renderizado por el propio
 // motor, solo y centrado (modo de captura con `aislado=1`: sin estrellas, órbitas, etiquetas ni los
 // demás cuerpos), recortado alrededor de su disco y en WebP pequeño en public/img/cuerpos/<id>.webp.
-// Las texturas son las de siempre: nada nuevo que atribuir (docs/FUENTES.md). Las lunas sin textura
-// salen con su color esquemático hasta la fase 7.
+// Las texturas son las de la escena (docs/FUENTES.md): desde la fase 7, las lunas con mosaico global
+// salen con él; las demás (Deimos, Proteo y las de Urano), con su color esquemático.
 //
 // Uso: npm run build && node scripts/build-body-thumbnails.mjs [--swiftshader]
 import { mkdir, readFile } from 'node:fs/promises';
@@ -31,25 +31,32 @@ const THRESHOLD = 10;
 const CROP_RADII = 1.06;
 /**
  * Geometría de la luz: el cuerpo, con un ángulo de fase de 30° y visto desde 15° sobre su ecuador
- * (la parte de noche, una franja fina en un lado). Excepciones:
+ * (la parte de noche, una franja fina en un lado); las lunas, desde 15° sobre la eclíptica
+ * (`sobre=ecliptica`, fase 7): con su ecuador, las de Urano (tumbadas como su planeta) salían con un
+ * tercio del disco en sombra y Tritón, con la sombra al otro lado (informe de la fase 3c, §10.3).
+ * Excepciones:
  * - el Sol emite luz: sin fase, y alejado (seis pasos de «−») para que salga como en la vista
  *   general, con su halo, recortado por lo que se ve: así se lee como una estrella;
  * - la Tierra, a las 11:00 UTC del día de las capturas: Europa y África de cara (a las 00:00, el
  *   Pacífico);
- * - Saturno, desde 25°, con los anillos abiertos, y recortado a 1,7 radios: el círculo de la ficha
- *   corta las puntas de los anillos y el planeta se ve más grande.
+ * - Saturno, desde 25° al sur, con los anillos abiertos, y recortado a 1,7 radios: el círculo de la
+ *   ficha corta las puntas de los anillos y el planeta se ve más grande. Al sur porque, desde el
+ *   equinoccio de 2025, el Sol ilumina la cara sur de los anillos: desde el norte se veía su cara de
+ *   sombra, oscura (fase 7, D36).
  */
 const LIGHT = { phase: 30, latitude: 15 };
 const SPECIAL = {
   sol: { light: null, crop: 'visible', zoomOut: 6 },
   tierra: { date: '2026-10-24T11:00Z' },
-  saturno: { light: { phase: 30, latitude: 25 }, crop: 1.7 },
+  saturno: { light: { phase: 30, latitude: -25 }, crop: 1.7 },
 };
 
-/** Los ids del catálogo, del índice ligero (sin compilar TypeScript). */
+/** Los ids y el tipo de los cuerpos del catálogo, del índice ligero (sin compilar TypeScript). */
 async function bodyIds() {
   const source = await readFile(new URL('../src/app/data/body-index.ts', import.meta.url), 'utf8');
-  return [...source.matchAll(/\{ id: '([a-z]+)', name: '/g)].map((match) => match[1]);
+  return [...source.matchAll(/\{ id: '([a-z]+)', name: '[^']+', kind: '([a-z]+)'/g)].map(
+    ([, id, kind]) => ({ id, kind }),
+  );
 }
 
 /**
@@ -77,12 +84,13 @@ function visibleRadius(data, width, height, channels) {
 }
 
 await mkdir(OUT, { recursive: true });
-const ids = await bodyIds();
-if (ids.length !== 30) throw new Error(`Se esperaban 30 cuerpos en el índice y hay ${ids.length}.`);
+const bodies = await bodyIds();
+if (bodies.length !== 30)
+  throw new Error(`Se esperaban 30 cuerpos en el índice y hay ${bodies.length}.`);
 const { browser, close } = await openBrowser();
 let total = 0;
 try {
-  for (const id of ids) {
+  for (const { id, kind } of bodies) {
     const special = SPECIAL[id] ?? {};
     const light = special.light === undefined ? LIGHT : special.light;
     const query = new URLSearchParams({ captura: '1', aislado: '1', cuerpo: id });
@@ -90,6 +98,7 @@ try {
     if (light) {
       query.set('fase', String(light.phase));
       query.set('latitud', String(light.latitude));
+      if (kind === 'moon') query.set('sobre', 'ecliptica');
     }
     const { page, problems } = await openViewer(browser, `/?${query}`, VIEWPORT);
     for (let k = 0; k < (special.zoomOut ?? 0); k++) await page.keyboard.press('-');
@@ -142,4 +151,4 @@ try {
 } finally {
   await close();
 }
-console.log(`Total: ${(total / 1024).toFixed(1)} kB en ${ids.length} miniaturas.`);
+console.log(`Total: ${(total / 1024).toFixed(1)} kB en ${bodies.length} miniaturas.`);

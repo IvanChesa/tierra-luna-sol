@@ -129,6 +129,17 @@ export const VISUAL_CONFIG = {
      */
     umbraLight: { color: '#b8502e', intensity: 0.18, axis: 0.35 },
   },
+  /**
+   * Los anillos de Saturno (fase 7, D36; decisión de Iván del 30-10): un realce **ilustrativo** del
+   * brillo que reflejan (no de su opacidad), como el relleno de D21. Con su albedo calibrado con el
+   * Hubble, el anillo B brilla 0,8 veces el disco de Saturno en la geometría de la foto de 2019 (lo
+   * físico); en las fotos de prensa, 1,44, procesadas. Se lleva a un punto medio, B / disco ≈ 1,05,
+   * medido con `scripts/compare-rings.mjs`. No toca la fotometría ni sus tests. Solo en la cara
+   * iluminada: a contraluz, con la luz que los atraviesa, el anillo A salía casi blanco y la división
+   * de Cassini, quemada (revisión del bloque D, D4; `scripts/compare-rings-backlit.mjs`, frente a
+   * PIA17172).
+   */
+  rings: { brightness: 1.3 },
   /** Por debajo de este radio en pantalla (px CSS), el halo de una atmósfera no se dibuja: no se vería. */
   atmosphereMinRadiusPx: 2,
   /** Por debajo de este radio en pantalla (px CSS), un cuerpo no aparta las órbitas de su disco. */
@@ -146,6 +157,29 @@ export const VISUAL_CONFIG = {
   moonResolutionPx: { from: 10, to: 37.5 },
   /** Opacidad de las órbitas de los planetas en la vista general (la de las estelas completas). */
   overviewOrbitOpacity: 0.85,
+  /**
+   * Órbitas casi rectas (revisión del bloque D, D3): de cerca, una órbita mucho mayor que el encuadre
+   * se ve como una recta que cruza la pantalla. Se desvanece, con su estela, si lo que se ve de ella
+   * gira menos de `fadeBelowRad` (unos 7°) y se ve entera a partir de `fullAboveRad` (unos 20°), con
+   * un paso suave entre los dos; si se ven menos de `minLengthPx` px CSS de ella, no cambia. Una
+   * órbita entera en pantalla gira 2π; la de una luna vista en su sistema, de decenas de grados en
+   * adelante; la del propio planeta enfocado, nada (su tramo junto a él es recto). Un cambio de
+   * dirección de más de `cornerRad` (25°) entre dos tramos seguidos es una esquina entre rectas, no
+   * una curva (una órbita de 128 tramos gira 2,8° en cada uno; en perspectiva, hasta unos 15° en la
+   * punta de una elipse muy aplastada): no cuenta. Con la cámara fuera de la órbita, a más de
+   * `outsideTo` radios de su centro (y en parte desde `outsideFrom`), la órbita es una elipse entera,
+   * aunque se vea de canto y casi recta (las de las lunas en su sistema): se queda. Las rectas que no
+   * informan se ven desde dentro de la órbita o junto a ella: el trozo de una órbita enorme junto a su
+   * cuerpo o el horizonte de su plano (la de la Luna vista desde la Tierra).
+   */
+  straightOrbits: {
+    fadeBelowRad: 0.12,
+    fullAboveRad: 0.35,
+    minLengthPx: 40,
+    cornerRad: 0.44,
+    outsideFrom: 1.1,
+    outsideTo: 1.4,
+  },
   /**
    * Estelas de los cuerpos (D34, fase 4b): un arco de su color sobre su órbita, detrás de él, que se
    * desvanece hasta fundirse con ella. La longitud va en fracción de vuelta (no en tiempo: se ven

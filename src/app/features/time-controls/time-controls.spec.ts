@@ -217,4 +217,21 @@ describe('TimeControls: barra de tiempo', () => {
     expect(sim.playing()).toBe(true);
     expect(Math.abs(sim.time().getTime() - Date.now())).toBeLessThan(5000);
   });
+
+  it('la escala se elige en los controles: la real se refleja en el store y se anuncia (fase 7)', () => {
+    const { $, fixture, sim } = render();
+    const session = TestBed.inject(ExplorerSession);
+    const scale = $<HTMLSelectElement>('#time-scale');
+    expect(scale.value).toBe('illustrative');
+    expect([...scale.options].map((o) => o.text.trim())).toEqual(['Ilustrativa', 'Real']);
+    scale.value = 'real';
+    scale.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+    expect(sim.scaleFrame()).toBe('real');
+    expect(session.announcement()).toMatch(/^Escala real/);
+    // Volver a elegir la misma no repite el anuncio.
+    session.announce('');
+    scale.dispatchEvent(new Event('change'));
+    expect(session.announcement()).toBe('');
+  });
 });

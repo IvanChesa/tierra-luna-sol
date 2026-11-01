@@ -52,23 +52,23 @@ Decisiones y tareas que dependen de Iván. Claude Code añade aquí cada `TODO(i
 - [x] Primer push a `https://github.com/IvanChesa/tierra-luna-sol` (público): **autorizado** por Iván (revisión del bloque R). Si Git pide credenciales, Iván inicia sesión en la ventana que se abra.
 - [x] Licencia del código propio: **MIT** (D32).
 - [x] Secrets de Cloudflare en el repo: `CLOUDFLARE_API_TOKEN` (solo con permiso de Pages) y `CLOUDFLARE_ACCOUNT_ID` (27-10).
-- [ ] **Abrir la vista previa en tu móvil** (fase 4, no bloquea): https://fase-4-staging.tierra-luna-sol.pages.dev y, cuando la fase 4 esté en `main`, https://staging.tierra-luna-sol.pages.dev. Se recogen FPS y observaciones.
+- [x] **Abrir la vista previa en tu móvil** (fase 4): Iván probó staging (https://staging.tierra-luna-sol.pages.dev, `main` con la fase 6) en su móvil el 31-10 y va bien.
 - [ ] (Opcional) **Vistas previas privadas:** son públicas (con `noindex`). Si las quieres con acceso restringido, en el panel de Cloudflare: Pages → `tierra-luna-sol` → Settings → «Access policy» (Cloudflare Access, gratis hasta 50 usuarios).
-- [ ] Comprobar en el panel de Cloudflare que **Web Analytics** sigue desactivado en el proyecto (D24): el token del CI solo tiene permiso de Pages y no lo puede ver.
+- [x] **Web Analytics desactivado** en el proyecto de Cloudflare (D24): comprobado por Iván en el panel el 31-10.
 - [x] **Network Error Logging de Cloudflare (D24).** Decidido el 30-10 (revisión del bloque C, C8): se **acepta como telemetría del propio alojamiento** (solo informa de las peticiones que fallan) y se explica en la privacidad (fase 9); en la fase 11, con el dominio propio, se mira si la zona permite desactivarlo. `verify-pages` lo sigue marcando como aviso.
 - [ ] (Opcional) **Un entorno de GitHub para los secrets de Cloudflare**, que los limite al trabajo de despliegue (Settings → Environments). Hoy valen para todo el repositorio y solo los usan los pasos de wrangler.
-- [ ] (Fase 11) **¿Explorador incrustable en ivanchesa.es?** Hoy `frame-ancestors 'none'` y `X-Frame-Options: DENY` impiden incrustarlo en otra web. Si quieres una demo incrustada en el portfolio: `frame-ancestors https://ivanchesa.es` y sin `X-Frame-Options`.
+- [ ] (Fase 11) **¿Explorador incrustable en ivanchesa.com?** Hoy `frame-ancestors 'none'` y `X-Frame-Options: DENY` impiden incrustarlo en otra web. Si quieres una demo incrustada en el portfolio: `frame-ancestors https://ivanchesa.com` y sin `X-Frame-Options`.
 
 ## Bloque C (fase 4b: la vista general del sistema solar)
 - [x] **La vista general junto a tu captura de referencia:** decidido el 30-10 (revisión del bloque C, C2; D35): los planetas, **un 25 % más grandes** y sin solapes (solo esos dos encogen cuando se acercan). Hecho en la rama `revision-bloque-c`.
-- [ ] **Probar la vista general en tu móvil** (no bloquea). Desde la revisión del bloque C, ningún planeta mide menos de 2 px de radio (C3).
+- [x] **Probar la vista general en tu móvil:** va bien (staging, 31-10). Desde la revisión del bloque C, ningún planeta mide menos de 2 px de radio (C3).
 - [x] **Los planetas aún más grandes:** C2 (D35), sin solapes.
 - [x] **La vista general en el móvil:** **tamaño mínimo en pantalla** (C3, opción b de la 4b; D35).
 - [x] **De un cuerpo a otro se mantiene la velocidad elegida a mano** (D33): confirmado en la revisión del bloque C; el contexto «cuerpo enfocado» no cambia.
 
 ## Bloque C (fase 5: la Tierra)
-- [ ] **Probar la vista Tierra en tu móvil** (no bloquea), en https://staging.tierra-luna-sol.pages.dev/explorar/tierra: FPS y VRAM, las vistas guiadas (en «España» se tienen que ver los siete marcadores; en «El Himalaya», la cordillera) y el tamaño del panel.
-- [ ] **El panel de la Tierra en el móvil** (revisión del bloque C, C7): ocupa algo más de un tercio de la pantalla. Se decide cuando lo pruebes; si molesta, la opción natural es plegar «Luz del Sol» en el móvil (fase 10).
+- [x] **Probar la vista Tierra en tu móvil:** va bien (staging, 31-10).
+- [x] **El panel de la Tierra en el móvil** (revisión del bloque C, C7): decidido el 31-10, tras probarlo en el móvil: **se queda como está** (no se pliega «Luz del Sol»).
 - [x] **Las dos propuestas de la fase 5** (decididas el 30-10, revisión del bloque C):
   - las nubes del Himalaya: **atenuadas en los primeros planos ya** (C1), hecho en la rama `revision-bloque-c`;
   - la textura de día de 8K, más barata: en la **fase 10**.
@@ -85,14 +85,24 @@ Decisiones y tareas que dependen de Iván. Claude Code añade aquí cada `TODO(i
 - [x] **Los casquetes polares de la Luna** (propuesta 1 de la fase 6): hechos ya en la revisión de la fase 6 (hallazgo 1, era un Bloqueante): las normales de los modelos polares del LOLA por encima de 76°, sin el «sol de rayas» del polo.
 - [ ] **La luz de la umbra** (propuesta 2 de la fase 6): en los eclipses, la Luna se ve rojiza y bastante clara, más de lo real, para que no salga negra con la exposición de su primer plano (ilustrativo, `VISUAL_CONFIG.moon.umbraLight`). Si la prefieres más oscura y realista, es cambiar ese valor: dime cuál.
 
+## Bloque D (fase 7: lunas, sombras y escala real)
+- [ ] **Probar en tu móvil** (no bloquea), en la vista previa: los sistemas de lunas (`/?cuerpo=europa`, `/?cuerpo=fobos`: los FPS con los mosaicos) y la escala real («Controles +» → «Escala»).
+- [x] **Las propuestas de la fase 7** (`docs/informes/fase-7.md`, §10): decididas en la revisión del bloque D (01-11). El terminador de Titán, la dicotomía de Jápeto y pedir la textura del planeta al enfocar una luna, a la **fase 10** (tarea 10 del plan); las lunas de Urano con los mapas del JPL y el anillo A con un perfil de I/F, al **backlog** (12 y 13).
+
+## Revisión del bloque D (01-11, `docs/revisiones/bloque-D.md`)
+- [x] **D1–D5 aplicados** en `fase-7-lunas-escala-real` y fusionados (respuesta en `docs/informes/fase-7.md`): Ío con el mosaico en color del USGS; Tritón sin el corte del hueco; las órbitas casi rectas, desvanecidas; el realce de los anillos, solo en su cara iluminada; y el dominio, ivanchesa.com (D37).
+- [ ] **Fusionar el PR 1 de Dependabot** en GitHub (el de la revisión del bloque C, más abajo) y **reiniciar Claude Code** para instalar su actualización, antes de lanzar el bloque E.
+- [ ] (Para decidir, sin prisa) **Los anillos a contraluz**: sin el realce de D36 ya no salen quemados, pero el anillo A sigue más claro que en PIA17172 (L* 90 frente a 32). No es el realce: la exposición del primer plano a 176° de fase y el lóbulo hacia delante de las partículas, el mismo en todos los anillos. Va al backlog (14); si lo quieres antes, en la fase 10.
+- [ ] (Fuera del repo) `AGENTS.md`, tu copia local de `CLAUDE.md` para Codex, sigue con ivanchesa.es y «desarrollador web freelance»: no la he tocado.
+
 ## Decisiones
 - [x] **(Fase 6) `toktx` (KTX-Software): no hace falta.** Con WebP, la VRAM cabe en los 300 MB de §5 en el peor caso de las dos vistas (C4, con test): la vista Tierra, 278 MB, y la vista Luna, 265; y en el viaje entre las dos, como mucho 284 (revisión de la fase 6, hallazgo 4). La reevaluación de KTX2 queda para la fase 10 si hiciera falta en el móvil.
-- [ ] **Subdominio definitivo.** Propuesto: `tierra-luna-sol.ivanchesa.es`. Si cambia, se edita solo `src/app/core/site.config.ts`.
+- [x] **Subdominio definitivo:** `tierra-luna-sol.ivanchesa.com` (decisión del 31-10: el dominio pasa de ivanchesa.es a ivanchesa.com; revisión del bloque D, D5, y D37). Ya en `src/app/core/site.config.ts`, con la URL del autor, `https://ivanchesa.com`.
 
 ## Revisiones y pruebas de Iván
 - [ ] Textos de los 30 cuerpos (120 textos con `reviewed: false`): lista de revisión con las citas que los respaldan en `docs/datos/textos-cuerpos.md`. En la **fase 9** (decisión del 24-10; antes «al final de las fases 1 y 8»).
 - [ ] Textos de las vistas guiadas y de los recorridos (fases 5 y 6; en el plan v1, 4 y 5). En Shackleton, el subtítulo dice, como su fuente, que el interior está siempre en sombra, pero la escena no dibuja las sombras del relieve y se ve iluminada la pared interior que mira al Sol: matizarlo (segunda ronda de la revisión de la fase 6).
-- [ ] Pruebas en el móvil real: por la vista previa de Cloudflare Pages desde la fase 4 (`staging.tierra-luna-sol.pages.dev`, la de `main`) o por la red local (fases 4–10; en el plan v1, 4–9).
+- [ ] Pruebas en el móvil real: por la vista previa de Cloudflare Pages desde la fase 4 (`staging.tierra-luna-sol.pages.dev`, la de `main`) o por la red local (fases 4–10; en el plan v1, 4–9). La primera, el 31-10 en staging: va bien.
 - [ ] Visto bueno final en el móvil (fase 10; en el plan v1, la 9).
 
 ## Fase 10
@@ -100,6 +110,6 @@ Decisiones y tareas que dependen de Iván. Claude Code añade aquí cada `TODO(i
 - [ ] Decidir si se aprueba `@lhci/cli` (Lighthouse en el CI).
 
 ## Fase 11 (manual; era la fase 10 del plan v1)
-- [ ] El dominio propio: en Cloudflare Pages, `tierra-luna-sol.ivanchesa.es` como dominio personalizado del proyecto, y su registro CNAME (a `tierra-luna-sol.pages.dev`) en el DNS de ivanchesa.es. Los secrets de Cloudflare ya sirven (fase 4).
+- [ ] El dominio propio (D37): en Cloudflare Pages → `tierra-luna-sol` → «Custom domains», `tierra-luna-sol.ivanchesa.com`. La zona de ivanchesa.com está en la misma cuenta de Cloudflare: el propio panel crea el registro DNS. Los secrets de Cloudflare ya sirven (fase 4).
 - [ ] Dar el OK a `indexable: true` y dar de alta el sitemap en Search Console. Con el plan v2 (D25) ya no se trabaja el sitemap: basta con el OK a `indexable: true`.
-- [ ] Añadir la ficha del proyecto en ivanchesa.es.
+- [ ] Añadir la ficha del proyecto en ivanchesa.com.

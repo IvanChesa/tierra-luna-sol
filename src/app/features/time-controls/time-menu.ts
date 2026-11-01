@@ -1,7 +1,7 @@
 import { Component, DestroyRef, computed, inject, model, output, signal } from '@angular/core';
 import { TimeZoneChoice, utcOffsetLabel } from '../../core/format';
 import { MAX_DATE, MIN_DATE } from '../../ephemeris/constants';
-import type { QualitySetting } from '../../scene';
+import type { QualitySetting, ScaleMode } from '../../scene';
 import { ExplorerStore } from '../../state/explorer.store';
 import { SimulationStore } from '../../state/simulation.store';
 import { SPEED_STEPS } from '../../state/speeds';
@@ -25,11 +25,18 @@ const QUALITY_OPTIONS: readonly { readonly value: QualitySetting; readonly label
   { value: 'low', label: 'Baja' },
 ];
 
+/** La escala (fase 7): la ilustrativa, por defecto, o la real (`escala=real` en la URL). */
+const SCALE_OPTIONS: readonly { readonly value: ScaleMode; readonly label: string }[] = [
+  { value: 'illustrative', label: 'Ilustrativa' },
+  { value: 'real', label: 'Real' },
+];
+
 /**
  * «Controles +» (fase 3c, tarea 4): lo menos usado de la barra de tiempo, en un panel que se
  * despliega (un `popover` del navegador: se cierra con `Esc` o al pulsar fuera, y el foco vuelve a su
  * botón). La fecha y la hora con inputs nativos en la hora local con su zona o en UTC, «Ahora», la
- * calidad, la vista limpia y los atajos; en móvil, también la velocidad y la fuente de los datos.
+ * calidad, la escala (fase 7), la vista limpia y los atajos; en móvil, también la velocidad y la
+ * fuente de los datos.
  *
  * Los inputs no se actualizan mientras tienen el foco: se puede escribir aunque el tiempo corra.
  */
@@ -51,6 +58,7 @@ export class TimeMenu {
 
   protected readonly speeds = SPEED_STEPS;
   protected readonly qualities = QUALITY_OPTIONS;
+  protected readonly scales = SCALE_OPTIONS;
   /** Los límites del campo de fecha, en la zona elegida (el final de 2100 es 2101 en Madrid). */
   protected readonly minDate = computed(() => toDateInputValue(MIN_DATE, this.zone()));
   protected readonly maxDate = computed(() => toDateInputValue(MAX_DATE, this.zone()));
@@ -89,6 +97,12 @@ export class TimeMenu {
     const value = (event.target as HTMLSelectElement).value;
     const setting = QUALITY_OPTIONS.find((option) => option.value === value)?.value ?? 'auto';
     this.session.setQuality(setting);
+  }
+
+  protected changeScale(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    const mode = SCALE_OPTIONS.find((option) => option.value === value)?.value ?? 'illustrative';
+    this.session.setScale(mode);
   }
 
   protected cleanView(): void {

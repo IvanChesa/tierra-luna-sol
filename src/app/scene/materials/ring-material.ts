@@ -48,6 +48,9 @@ uniform vec3 uSunDirectionLocal;
 uniform vec3 uCameraLocal;
 uniform float uPolarScale;
 uniform float uFill;
+// Realce ilustrativo del brillo de los anillos (VISUAL_CONFIG.rings, D36): solo de la luz que refleja su
+// cara iluminada; la que los atraviesa (la cara oscura, a contraluz) va sin él (revisión del bloque D, D4).
+uniform float uBrightness;
 varying vec2 vUv;
 varying vec3 vLocal;
 
@@ -73,7 +76,7 @@ void main() {
   // fase en vez de a los 2° de una foto del Hubble y el pico de oposición las apagaría un 30 %.
   float cosAlpha = clamp(dot(s, normalize(uCameraLocal)), -1.0, 1.0);
   float phase = tlsPhase(acos(cosAlpha), cosAlpha) * uPhaseNorm;
-  float reflected = tlsRingReflectance(mu0, mu, tau, litSide) * phase;
+  float reflected = tlsRingReflectance(mu0, mu, tau, litSide) * phase * (litSide ? uBrightness : 1.0);
   // Sombra del planeta: el elipsoide x² + (y / c)² + z² = 1 se vuelve una esfera escalando y.
   vec3 ps = vec3(vLocal.x, vLocal.y / uPolarScale, vLocal.z);
   vec3 ss = normalize(vec3(s.x, s.y / uPolarScale, s.z));
@@ -89,6 +92,11 @@ void main() {
 
 export interface RingMaterialOptions {
   readonly polarScale: number;
+  /**
+   * Realce ilustrativo del brillo que refleja su cara iluminada (VISUAL_CONFIG.rings.brightness, D36);
+   * la luz que atraviesa los anillos va sin él (revisión del bloque D, D4).
+   */
+  readonly brightness: number;
   /** Función de fase de las partículas (solo cuentan sus términos de fase). */
   readonly photometry: Photometry;
 }
@@ -102,6 +110,7 @@ export function createRingMaterial(options: RingMaterialOptions) {
     uCameraLocal: new Uniform(new Vector3(0, 1, 5)),
     uPolarScale: new Uniform(options.polarScale),
     uFill: new Uniform(0),
+    uBrightness: new Uniform(options.brightness),
   };
   const material = sceneShaderMaterial({
     name: 'tls-rings',

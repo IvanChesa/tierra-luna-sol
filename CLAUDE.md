@@ -1,8 +1,8 @@
 # Tierra Luna Sol
 
 Explorador 3D interactivo del Sol, los 8 planetas, 21 lunas, la Tierra y la Luna, en español, con posiciones y orientaciones reales para cualquier fecha entre 1900 y 2100. La versión 1 tiene **todas las funcionalidades del proyecto que lo inspira (`ethanplusai/earth-moon-solar`) y además mejoras propias**, sin copiar nada de él.
-Es una pieza del portfolio de Iván Chesa Lapena (desarrollador web freelance, https://ivanchesa.es) y se publica en un subdominio de ivanchesa.es. **El SEO es secundario**; importan la calidad, el rigor, el rendimiento y la accesibilidad.
-Es un proyecto **independiente** del repo de ivanchesa.es: sus reglas (Astro, cero JS…) **no aplican aquí**.
+Es una pieza del portfolio de Iván Chesa Lapena (desarrollador de software, https://ivanchesa.com) y se publica en `tierra-luna-sol.ivanchesa.com` (el dominio pasó de ivanchesa.es a ivanchesa.com el 31-10). **El SEO es secundario**; importan la calidad, el rigor, el rendimiento y la accesibilidad.
+Es un proyecto **independiente** del repo de la web de Iván (ivanchesa.com): sus reglas (Astro, cero JS…) **no aplican aquí**.
 
 **Plan maestro: `docs/PLAN.md`.** Al empezar cada sesión, lee §0–§5, §7 y la sección de tu fase (el resto, si lo necesitas). Trabaja por fases, en orden, y solo en la fase actual.
 Buenas prácticas oficiales de Angular: @docs/angular-buenas-practicas.md
@@ -32,7 +32,7 @@ Los bloques y sus fases están en `docs/PLAN.md` §6 y las ramas, en `docs/promp
 - El cielo desde España (`/cielo`, fase 8): selector con el **Montsec por defecto**, el Observatori Fabra, el Roque de los Muchachos, el Teide, Calar Alto, Madrid y Fraga, más «usar mi ubicación»; cada lugar con su zona horaria (`docs/decisiones/CAMBIO-CIELO-ESPANA.md`).
 - El explorador arranca reproduciendo (D31) a la velocidad de su contexto (**D33**, fase 4b): **3 días/s en la vista general** y **1 hora/s con un cuerpo enfocado** o en las vistas Tierra y Luna; salvo con movimiento reducido o con `?fecha=`, que entran en pausa.
 - Constelaciones: solo con licencia CC0, CC BY, MIT, BSD o de dominio público; si no, se omiten y se apuntan.
-- Subdominio: el provisional de `site.config.ts`.
+- Subdominio: `tierra-luna-sol.ivanchesa.com`, el de `site.config.ts` (D5 de la revisión del bloque D; antes, el provisional en ivanchesa.es).
 - Textos: con fuente y `reviewed: false`; Iván los revisa en la fase 9.
 - Pruebas en el móvil: se recogen cuando Iván pueda; no bloquean.
 - Hosting: **Cloudflare Pages** (plan gratuito; cambio del 27-10, antes Banahosting): despliegue desde GitHub Actions con `wrangler pages deploy` del build del CI (D26), vista previa por rama (D23) y sin Cloudflare Web Analytics. Los secrets de Cloudflare ya están en el repo.
@@ -96,7 +96,7 @@ Los bloques y sus fases están en `docs/PLAN.md` §6 y las ramas, en `docs/promp
 - **Configuración del sitio:** en UN solo sitio, `src/app/core/site.config.ts`.
 - **Seguridad:** nunca subas credenciales ni las pidas por chat; los secrets los introduce Iván.
 - **Commits** pequeños en español: `feat:`, `fix:`, `test:`, `perf:`, `content:`, `docs:`, `chore:`.
-- **No toques** el repo de ivanchesa.es (la carpeta hermana `ivan-chesa-es`, antes `ivan-chesa.es`), ni DNS, ni cPanel, ni el WordPress de producción.
+- **No toques** el repo de la web de Iván (ivanchesa.com; la carpeta hermana `ivan-chesa-es`, antes `ivan-chesa.es`), ni DNS, ni cPanel, ni el WordPress de producción.
 
 ## Skills disponibles (`.claude/skills/`)
 Úsalas como referencia cuando toque, sin encadenarlas todas. Las reglas de este archivo mandan sobre cualquier skill.

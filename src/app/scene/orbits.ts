@@ -20,6 +20,13 @@
  * las de sus lunas) cruzaría su disco. El material recibe los discos en pantalla de los cuerpos más
  * grandes y desvanece las líneas sobre ellos y un poco más allá (`onBeforeCompile` del
  * `LineMaterial`, que ya lleva los chunks de profundidad de three).
+ *
+ * Casi rectas (revisión del bloque D, D3): de cerca, una órbita mucho mayor que lo que cabe en el
+ * encuadre (la del propio cuerpo alrededor del Sol, las de los demás planetas o la de la Luna vista
+ * desde la Tierra) se ve como una recta que cruza la pantalla: no dice nada y parece un fallo. Cada
+ * órbita (y su estela, que va en ella) se desvanece según lo que gira en pantalla su parte visible
+ * (`screenPath` y `straightOrbitFade`): el criterio es lo que se ve, no la vista. Las órbitas de las
+ * lunas en su sistema, que se ven curvas, se quedan.
  */
 import {
   AdditiveBlending,
@@ -75,6 +82,25 @@ export interface ScreenDisc {
   readonly radiusPx: number;
 }
 
+/** La cámara con la que se miden las órbitas en pantalla (D3). */
+export interface OrbitView {
+  /** Proyección × vista (por columnas, como `Matrix4.elements`), en los ejes de la escena. */
+  readonly matrix: ArrayLike<number>;
+  /** Tamaño del lienzo en píxeles CSS: los ángulos en pantalla dependen de su proporción. */
+  readonly width: number;
+  readonly height: number;
+  /** Posición de la cámara, en ejes de la escena. */
+  readonly camera: readonly [number, number, number];
+}
+
+/** Lo que se ve en pantalla de una polilínea (D3). */
+export interface ScreenPath {
+  /** Cuánto gira su parte visible (radianes): la suma de los cambios de dirección entre tramos. */
+  readonly turning: number;
+  /** Longitud de su parte visible (px CSS). */
+  readonly lengthPx: number;
+}
+
 const DISC_FADE_PARS = /* glsl */ `
 uniform vec4 uTlsDiscs[${ORBIT_FADE_DISCS}];
 uniform int uTlsDiscCount;
@@ -104,6 +130,13 @@ export class OrbitLines {
   private capacity: number;
   /** Color de la estela de cada fuente, en el orden de `sources`. */
   private trailColors: Color[];
+  /** Los puntos de una órbita en ejes de la escena (el cuerpo, sus muestras y el cuerpo otra vez). */
+  private points = new Float64Array(0);
+  /**
+   * Opacidad con la que se ha dibujado cada órbita en el último frame, en el orden de `sources`: la
+   * pedida por su desvanecimiento si se ve casi recta (D3); 0, si no se dibuja.
+   */
+  readonly drawnOpacity: number[] = [];
   private readonly discs = new Uniform(
     Array.from({ length: ORBIT_FADE_DISCS }, () => new Vector4()),
   );
@@ -229,6 +262,7 @@ if ( abs( vUv.y ) > 1.0 ) discard;`,
    *        muestreada se reutiliza más tiempo para no recalcular órbitas en cada frame.
    * @param direction sentido de las estelas (el de la reproducción, también en pausa).
    * @param aliased 1 en los cuerpos sustituidos por su órbita (velocidades altas).
+   * @param view la cámara del frame: con ella, las órbitas que se ven casi rectas se desvanecen (D3).
    */
   update(
     frames: FrameController,
@@ -238,14 +272,17 @@ if ( abs( vUv.y ) > 1.0 ) discard;`,
     speedDaysPerSecond: number,
     direction: TrailDirection = 1,
     aliased: Uint8Array | null = null,
+    view: OrbitView | null = null,
   ): void {
     const date = new Date(timeMs);
     const out = frames.output.position;
     const c = this.colors;
     const widths = this.widths;
     let segment = 0;
+    this.drawnOpacity.length = this.sources.length;
     this.sources.forEach((source, k) => {
-      const alpha = opacity[k] ?? 0;
+      this.drawnOpacity[k] = 0;
+      let alpha = opacity[k] ?? 0;
       if (alpha <= 0.002) return;
       const sampled = this.cache.sample({
         id: String(source.bodyIndex),
@@ -259,10 +296,33 @@ if ( abs( vUv.y ) > 1.0 ) discard;`,
       const periodMs = source.periodDays * 86_400_000;
       const phase = ((((timeMs - sampled.startMs) / periodMs) % 1) + 1) % 1;
       const behind = Math.floor(phase * n) % n;
+      // Los puntos: el propio cuerpo; después, las n muestras hacia atrás, y otra vez el cuerpo (el
+      // último tramo es la parte de la órbita que tiene justo delante, la más tenue).
+      const points = this.pointBuffer(n + 2);
+      const b = 3 * source.bodyIndex;
+      const head = vec3(out[b] as number, out[b + 1] as number, out[b + 2] as number);
+      setPoint(points, 0, head);
+      for (let step = 0; step < n; step++) {
+        const index = (((behind - step) % n) + n) % n;
+        setPoint(points, step + 1, this.place(frames, source, sampled.points, index));
+      }
+      setPoint(points, n + 1, head);
+      const replaced = aliased?.[source.bodyIndex] === 1;
+      // Casi recta en pantalla: se desvanece con su estela (D3). Una órbita que sustituye a su cuerpo
+      // (§4.5) se queda: es lo único que se ve de él.
+      if (view && !replaced) {
+        // Con la cámara bien fuera de la órbita, se ve entera: ni hace falta medirla en pantalla (la
+        // vista general, las lunas vistas desde fuera). Si no, la medida para en cuanto se ve curva.
+        const outside = this.outsideRatio(frames, source, points, n, view);
+        if (outside < VISUAL_CONFIG.straightOrbits.outsideTo) {
+          alpha *= straightOrbitFade(screenPath(points, n + 2, view, true), outside);
+        }
+      }
+      if (alpha <= 0.002) return;
+      this.drawnOpacity[k] = alpha;
       const isHighlighted = source.bodyIndex === highlighted;
       const base = isHighlighted ? HIGHLIGHT_COLOR : BASE_COLOR;
       const strength = isHighlighted ? Math.min(1, alpha * 1.4) : alpha;
-      const replaced = aliased?.[source.bodyIndex] === 1;
       const trail = source.parentIndex < 0 ? TRAILS.planet : TRAILS.moon;
       const tint = this.trailColors[k] as Color;
       const tintStrength = alpha * trail.intensity;
@@ -291,24 +351,12 @@ if ( abs( vUv.y ) > 1.0 ) discard;`,
         c[o + 2] = base.b * a + tint.b * t;
         widths[2 * seg + end] = 1 + widen * w;
       };
-      // El primer punto es el propio cuerpo; después, las n muestras hacia atrás, y un último tramo
-      // de vuelta al cuerpo (la parte de la órbita que tiene justo delante, la más tenue).
-      const b = 3 * source.bodyIndex;
-      const head = vec3(out[b] as number, out[b + 1] as number, out[b + 2] as number);
-      let previous = head;
-      for (let step = 0; step < n; step++) {
-        const index = (((behind - step) % n) + n) % n;
-        const current = this.place(frames, source, sampled.points, index);
-        this.write(segment, previous, current);
+      for (let step = 0; step <= n; step++) {
+        this.write(segment, points, step);
         shade(segment, 0, step / (n + 1));
         shade(segment, 1, (step + 1) / (n + 1));
         segment++;
-        previous = current;
       }
-      this.write(segment, previous, head);
-      shade(segment, 0, n / (n + 1));
-      shade(segment, 1, 1);
-      segment++;
     });
     this.geometry.instanceCount = segment;
     for (const name of ['instanceStart', 'instanceColorStart', 'instanceWidthStart']) {
@@ -344,22 +392,199 @@ if ( abs( vUv.y ) > 1.0 ) discard;`,
     this.geometry.setAttribute('instanceWidthEnd', new InterleavedBufferAttribute(buffer, 1, 1));
   }
 
-  /** Escribe las posiciones de un segmento en ejes de Three: ECL (x, y, z) → (x, z, −y). */
-  private write(segment: number, a: Vec3, b: Vec3): void {
+  /** Escribe las posiciones de un segmento, del punto `from` al siguiente (ya en ejes de Three). */
+  private write(segment: number, points: Float64Array, from: number): void {
     const o = 6 * segment;
     const p = this.positions;
-    p[o] = a.x;
-    p[o + 1] = a.z;
-    p[o + 2] = -a.y;
-    p[o + 3] = b.x;
-    p[o + 4] = b.z;
-    p[o + 5] = -b.y;
+    for (let i = 0; i < 6; i++) p[o + i] = points[3 * from + i] as number;
+  }
+
+  /**
+   * Lo lejos que está la cámara del centro de una órbita (el Sol o su planeta) en radios de la órbita
+   * (la distancia media de sus muestras al centro, en el marco que se ve). Más de 1: fuera de ella.
+   */
+  private outsideRatio(
+    frames: FrameController,
+    source: OrbitSource,
+    points: Float64Array,
+    n: number,
+    view: OrbitView,
+  ): number {
+    const origin = vec3(0, 0, 0);
+    const c =
+      source.parentIndex < 0
+        ? frames.helioPoint(origin)
+        : frames.moonPoint(source.parentIndex, origin);
+    // En ejes de Three, como los puntos: (x, z, −y).
+    const cx = c.x;
+    const cy = c.z;
+    const cz = -c.y;
+    // El radio, de unas 32 muestras repartidas por la vuelta (basta para una media).
+    const step = Math.max(1, Math.floor(n / 32));
+    let radius = 0;
+    let samples = 0;
+    for (let k = 1; k <= n; k += step) {
+      const dx = (points[3 * k] as number) - cx;
+      const dy = (points[3 * k + 1] as number) - cy;
+      const dz = (points[3 * k + 2] as number) - cz;
+      radius += Math.sqrt(dx * dx + dy * dy + dz * dz);
+      samples++;
+    }
+    radius /= samples;
+    const [x, y, z] = view.camera;
+    return radius > 0 ? Math.hypot(x - cx, y - cy, z - cz) / radius : Infinity;
+  }
+
+  /** El búfer de puntos, con sitio para `count` (se reutiliza entre órbitas y frames). */
+  private pointBuffer(count: number): Float64Array {
+    if (this.points.length < 3 * count) this.points = new Float64Array(3 * count);
+    return this.points;
   }
 
   private segmentCount(): number {
     return this.sources.reduce((sum, source) => sum + source.segments + 1, 0);
   }
 }
+
+/** Guarda un punto ECL en el búfer, en ejes de Three: (x, y, z) → (x, z, −y). */
+function setPoint(points: Float64Array, index: number, p: Vec3): void {
+  points[3 * index] = p.x;
+  points[3 * index + 1] = p.z;
+  points[3 * index + 2] = -p.y;
+}
+
+/**
+ * Lo que se ve de una polilínea en pantalla (D3): cada tramo se recorta por delante de la cámara y al
+ * lienzo (en coordenadas homogéneas, antes de dividir por w) y se pasa a píxeles; se suman la longitud
+ * de lo visible y los cambios de dirección entre tramos visibles seguidos (una parte que sale del
+ * lienzo y vuelve a entrar no se une con la anterior). Un cambio de más de `cornerRad` es una esquina,
+ * no una curva, y no suma: de cerca, la cuerda del cuerpo a su primera muestra (millones de km en una
+ * órbita de planeta) es una recta que se junta en ángulo con lo lejano de la órbita, otra recta.
+ * `points`: `count` puntos en ejes de la escena. Se llama en cada frame para cada órbita que no se ve
+ * desde fuera: sin crear objetos (todo en variables). Con `enough`, para en cuanto lo que gira y lo que
+ * mide bastan para que la órbita se vea entera (`straightOrbitFade` da 1): el resultado es entonces un
+ * mínimo de los dos.
+ */
+export function screenPath(
+  points: Float64Array,
+  count: number,
+  view: OrbitView,
+  enough = false,
+): ScreenPath {
+  const { cornerRad: corner, fullAboveRad, minLengthPx } = VISUAL_CONFIG.straightOrbits;
+  const m = view.matrix;
+  const m0 = m[0] as number;
+  const m1 = m[1] as number;
+  const m3 = m[3] as number;
+  const m4 = m[4] as number;
+  const m5 = m[5] as number;
+  const m7 = m[7] as number;
+  const m8 = m[8] as number;
+  const m9 = m[9] as number;
+  const m11 = m[11] as number;
+  const m12 = m[12] as number;
+  const m13 = m[13] as number;
+  const m15 = m[15] as number;
+  const halfW = view.width / 2;
+  const halfH = view.height / 2;
+  let turning = 0;
+  let lengthPx = 0;
+  let dirX = 0;
+  let dirY = 0;
+  let connected = false;
+  // El extremo anterior en coordenadas de recorte (x, y, w; la z no hace falta).
+  let ax = 0;
+  let ay = 0;
+  let aw = 0;
+  // La parte visible del tramo (Liang–Barsky): de t0 a t1.
+  let t0 = 0;
+  let t1 = 1;
+  // Recorta el tramo con un plano dada la distancia con signo de sus extremos; false si no queda nada.
+  const cut = (d0: number, d1: number): boolean => {
+    if (d0 < 0 && d1 < 0) return false;
+    if (d0 >= 0 && d1 >= 0) return true;
+    const t = d0 / (d0 - d1);
+    if (d0 < 0) t0 = Math.max(t0, t);
+    else t1 = Math.min(t1, t);
+    return t0 <= t1;
+  };
+  for (let i = 0; i < count; i++) {
+    const x = points[3 * i] as number;
+    const y = points[3 * i + 1] as number;
+    const z = points[3 * i + 2] as number;
+    const bx = m0 * x + m4 * y + m8 * z + m12;
+    const by = m1 * x + m5 * y + m9 * z + m13;
+    const bw = m3 * x + m7 * y + m11 * z + m15;
+    if (i > 0) {
+      t0 = 0;
+      t1 = 1;
+      // Por delante de la cámara (w > 0) y dentro del lienzo: −w ≤ x ≤ w y −w ≤ y ≤ w.
+      const inside =
+        cut(aw, bw) &&
+        cut(aw - ax, bw - bx) &&
+        cut(aw + ax, bw + bx) &&
+        cut(aw - ay, bw - by) &&
+        cut(aw + ay, bw + by);
+      const w0 = aw + (bw - aw) * t0;
+      const w1 = aw + (bw - aw) * t1;
+      // Justo en el plano de la cámara (w ≈ 0) no hay proyección.
+      if (!inside || w0 <= 1e-12 || w1 <= 1e-12) {
+        connected = false;
+      } else {
+        if (t0 > 0) connected = false;
+        const x0 = ((ax + (bx - ax) * t0) / w0 + 1) * halfW;
+        const y0 = (1 - (ay + (by - ay) * t0) / w0) * halfH;
+        const x1 = ((ax + (bx - ax) * t1) / w1 + 1) * halfW;
+        const y1 = (1 - (ay + (by - ay) * t1) / w1) * halfH;
+        const dx = x1 - x0;
+        const dy = y1 - y0;
+        const length = Math.sqrt(dx * dx + dy * dy);
+        lengthPx += length;
+        // Un tramo de menos de medio píxel no tiene una dirección fiable: se salta sin cortar.
+        if (length > 0.5) {
+          const ux = dx / length;
+          const uy = dy / length;
+          const bend = Math.abs(Math.atan2(dirX * uy - dirY * ux, dirX * ux + dirY * uy));
+          if (connected && bend <= corner) turning += bend;
+          dirX = ux;
+          dirY = uy;
+          connected = true;
+          if (enough && turning >= fullAboveRad && lengthPx >= minLengthPx) {
+            return { turning, lengthPx };
+          }
+        }
+        if (t1 < 1) connected = false;
+      }
+    }
+    ax = bx;
+    ay = by;
+    aw = bw;
+  }
+  return { turning, lengthPx };
+}
+
+/**
+ * Opacidad de una órbita según lo recta que se ve (D3): 0 si su parte visible apenas gira y 1 a partir
+ * de un giro claro (`VISUAL_CONFIG.straightOrbits`), con un paso suave entre los dos. No cambia si
+ * apenas se ve (unos píxeles) ni si la cámara está bien fuera de ella (`outsideRatio`: su distancia al
+ * centro de la órbita entre el radio): desde fuera, una órbita es una elipse entera, aunque se vea de
+ * canto y casi recta (las de las lunas en su sistema). Las rectas que no dicen nada se ven desde dentro
+ * de la órbita o junto a ella: un trozo de una órbita enorme junto a su cuerpo, o el horizonte de su
+ * plano (la de la Luna vista desde la Tierra).
+ */
+export function straightOrbitFade(path: ScreenPath, outsideRatio: number): number {
+  const { fadeBelowRad, fullAboveRad, minLengthPx, outsideFrom, outsideTo } =
+    VISUAL_CONFIG.straightOrbits;
+  const curved = smoothstep(fadeBelowRad, fullAboveRad, path.turning);
+  const seen = smoothstep(minLengthPx / 2, minLengthPx, path.lengthPx);
+  const outside = smoothstep(outsideFrom, outsideTo, outsideRatio);
+  return 1 - seen * (1 - curved) * (1 - outside);
+}
+
+const smoothstep = (from: number, to: number, x: number): number => {
+  const t = Math.min(Math.max((x - from) / (to - from), 0), 1);
+  return t * t * (3 - 2 * t);
+};
 
 /** Desvanecimiento a lo largo de la órbita: 1 en el cuerpo y `TAIL_ALPHA` al final. */
 const fade = (u: number): number => TAIL_ALPHA + (1 - TAIL_ALPHA) * (1 - u) ** 1.6;

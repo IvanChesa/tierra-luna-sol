@@ -1,13 +1,16 @@
 import starsBin from '../../../public/data/stars.bin' with { loader: 'binary' };
 import { Libration } from 'astronomy-engine';
 import { BackSide, FrontSide, Quaternion, Texture, Vector3, Vector4 } from 'three';
+import type { BodyId } from '../data/body.model';
+import { BODY_PHOTOMETRY } from '../data/photometry';
 import { KM_PER_AU } from '../ephemeris/constants';
 import { subsolarPoint } from '../ephemeris/coordinates';
-import { earthShadow, moonShadowCenter } from '../ephemeris/eclipse';
+import { earthShadow, moonShadowCenter, satelliteShadowPoint } from '../ephemeris/eclipse';
 import { NASA_ECLIPSE_2026_08_12, USNO_MOON_PHASES } from '../ephemeris/fixtures/fixtures';
 import { moonPhase } from '../ephemeris/ephemeris';
 import { illustrativeRadius } from '../ephemeris/scale';
 import { MAX_DATE, toAstroTime } from '../ephemeris/time';
+import { length, scale } from '../ephemeris/vec3';
 import {
   EngineDeps,
   FRAMING_FILL,
@@ -558,7 +561,9 @@ describe('SceneEngine: foco, marcos y selección', () => {
     settle(h);
     expect(h.engine.focusedBody).toBeNull();
     h.engine.dispose();
-  });
+    // La esfera cúbica de la Luna (unos 200 000 triángulos) se crea al entrar en su vista: con la suite
+    // entera en paralelo, rozaba los 5 s por defecto.
+  }, 20_000);
 });
 
 describe('SceneEngine: calidad adaptativa, contexto WebGL y limpieza', () => {
@@ -611,13 +616,20 @@ describe('SceneEngine: calidad adaptativa, contexto WebGL y limpieza', () => {
 
 describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas y aliasing)', () => {
   interface Internals {
-    screen: { index: number; x: number; y: number; radiusPx: number; occluded: boolean }[];
+    screen: {
+      index: number;
+      x: number;
+      y: number;
+      radiusPx: number;
+      occluded: boolean;
+      onScreen: boolean;
+    }[];
     rig: { distance: number; azimuth: number; elevation: number };
     look: unknown;
     frames: { output: { position: Float64Array; radius: Float64Array } };
     world: {
       scene: { getObjectByName(name: string): { visible: boolean } | undefined };
-      orbits: { colors: Float32Array; widths: Float32Array };
+      orbits: { colors: Float32Array; widths: Float32Array; drawnOpacity: readonly number[] };
       orbitSources: readonly { bodyIndex: number; segments: number }[];
     };
     labels: { visibleLayer: boolean };
@@ -711,18 +723,29 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     h.engine.dispose();
   });
 
-  it('con la cámara dentro del halo de Titán (1,2 radios), se pintan sus caras interiores', async () => {
+  it('el halo de Titán no desaparece al acercarse: con la cámara dentro de su esfera se pintarían sus caras interiores', async () => {
     const h = await createHarness({ reducedMotion: true, focus: 'titan' });
     settle(h);
     const shell = () =>
       internals(h).world.scene.getObjectByName('titan-atmosphere') as unknown as {
         material: { side: number };
+        visible: boolean;
+        scale: { x: number };
       };
     expect(shell().material.side).toBe(FrontSide);
-    // Lo más cerca que deja la cámara (1,12 radios): dentro de la esfera del halo.
+    // Lo más cerca que deja la cámara (1,12 radios). Desde la fase 7 (el halo de PIA06230), la esfera
+    // del halo mide 1,085 radios: la cámara se queda fuera y el halo, visible por delante.
     for (let k = 0; k < 40; k++) h.engine.zoomBy(0.5);
     settle(h);
-    expect(shell().material.side).toBe(BackSide);
+    const titan = internals(h).world.scene.getObjectByName('titan') as unknown as {
+      position: Vector3;
+      scale: Vector3;
+    };
+    const world = internals(h).world as unknown as { camera: { position: Vector3 } };
+    const distance = world.camera.position.distanceTo(titan.position);
+    const inside = distance < titan.scale.x * shell().scale.x;
+    expect(shell().visible).toBe(true);
+    expect(shell().material.side).toBe(inside ? BackSide : FrontSide);
     h.engine.dispose();
   });
 
@@ -1268,6 +1291,74 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     h.engine.dispose();
   });
 
+  it('las sombras que recibe Júpiter (sus cuatro galileanas) y la que recibe Ío (Júpiter), con la geometría de satelliteShadowPoint (fase 7)', async () => {
+    // Durante el tránsito triple del 24-1-2015 que fotografió el Hubble (un tiempo de luz antes de las
+    // 06:28 UT, cuando salió de Júpiter la luz que vio): las sombras de Ío, Europa y Calisto caen sobre
+    // Júpiter.
+    const date = new Date('2015-01-24T05:52:00Z');
+    const h = await createHarness({ reducedMotion: true, focus: 'jupiter', time: date });
+    settle(h);
+    interface ShadowVisual {
+      body: { id: string; index: number; radiusKm: number };
+      shadows: {
+        uShadowCasters: { value: { x: number; y: number; z: number; w: number }[] };
+        uShadowCount: { value: number };
+        uShadowSun: { value: { x: number; y: number; z: number; w: number } };
+      } | null;
+      shadowCasters: readonly number[];
+    }
+    const visuals = (internals(h).world as unknown as { visuals: ShadowVisual[] }).visuals;
+    const jupiter = visuals.find((v) => v.body.id === 'jupiter');
+    if (!jupiter?.shadows) throw new Error('Júpiter sin sombras');
+    expect(jupiter.shadows.uShadowCount.value).toBe(4);
+    const casters = jupiter.shadowCasters.map((index) => SCENE_BODIES[index]?.id);
+    expect([...casters].sort()).toEqual(['calisto', 'europa', 'ganimedes', 'io']);
+    // Lo que no depende de la orientación de la malla (distancias y ángulos), frente a la geometría
+    // del estado: la recta del Sol por cada luna corta el planeta si y solo si satelliteShadowPoint
+    // da un punto, y las tres del tránsito lo cortan.
+    const state = createSolarSystemModel().at(date.getTime());
+    const sunFromJupiter = scale(state.heliocentricOf('jupiter'), -1);
+    const sun = jupiter.shadows.uShadowSun.value;
+    const radiusAu = jupiter.body.radiusKm / KM_PER_AU;
+    expect(Math.hypot(sun.x, sun.y, sun.z)).toBeCloseTo(length(sunFromJupiter) / radiusAu, 3);
+    const onPlanet: string[] = [];
+    jupiter.shadowCasters.forEach((index, slot) => {
+      const id = SCENE_BODIES[index]?.id ?? '';
+      const caster = jupiter.shadows?.uShadowCasters.value[slot];
+      if (!caster) throw new Error('falta un caster');
+      const offset = state.parentOffsetOf(id);
+      expect(Math.hypot(caster.x, caster.y, caster.z), id).toBeCloseTo(
+        length(offset) / radiusAu,
+        6,
+      );
+      expect(caster.w, id).toBeCloseTo(
+        (SCENE_BODIES[index]?.radiusKm ?? 0) / jupiter.body.radiusKm,
+        9,
+      );
+      // La recta del Sol por la luna, en la malla: ¿corta la esfera unidad por detrás de la luna?
+      const dir = normalizeXyz(caster.x - sun.x, caster.y - sun.y, caster.z - sun.z);
+      const b = caster.x * dir.x + caster.y * dir.y + caster.z * dir.z;
+      const disc = b * b - (caster.x ** 2 + caster.y ** 2 + caster.z ** 2 - 1);
+      const hits = disc >= 0 && -b - Math.sqrt(disc) >= 0;
+      const expected = satelliteShadowPoint(offset, sunFromJupiter, jupiter.body.radiusKm) !== null;
+      expect(hits, id).toBe(expected);
+      if (hits) onPlanet.push(id);
+    });
+    expect(onPlanet.sort()).toEqual(['calisto', 'europa', 'io']);
+    // Ío recibe la sombra de Júpiter, con el radio de Júpiter en radios de Ío.
+    const io = visuals.find((v) => v.body.id === 'io');
+    expect(io?.shadows?.uShadowCount.value).toBe(1);
+    expect(io?.shadows?.uShadowCasters.value[0]?.w).toBeCloseTo(
+      jupiter.body.radiusKm / (io?.body.radiusKm ?? 1),
+      9,
+    );
+    // La Tierra y la Luna llevan las suyas (fases 5 y 6), y el Sol ninguna.
+    for (const id of ['sol', 'tierra', 'luna']) {
+      expect(visuals.find((v) => v.body.id === id)?.shadows ?? null, id).toBeNull();
+    }
+    h.engine.dispose();
+  });
+
   it('en la vista Luna, el punto de la malla que mira a la Tierra es el de la libración de astronomy-engine (fase 6)', async () => {
     // Los extremos de la libración en longitud de 2026 con la Luna gibosa (los de las capturas).
     for (const iso of ['2026-01-06T06:00:00Z', '2026-11-21T18:00:00Z']) {
@@ -1309,6 +1400,109 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     }
   });
 
+  it('las lunas con mosaico, solo con su sistema enfocado: a 1k con el planeta, a su nivel enfocadas y sueltas al salir, con su tinte (fase 7)', async () => {
+    const requests: string[] = [];
+    const released: string[] = [];
+    const source = {
+      load: (id: TextureId, level: TextureLevel): Promise<LoadedTexture> => {
+        const texture = new Texture();
+        texture.name = `${id}@${level}`;
+        texture.addEventListener('dispose', () => released.push(texture.name));
+        requests.push(texture.name);
+        return Promise.resolve({
+          texture,
+          file: { level, path: `${id}.webp`, width: 4, height: 2, bytes: 1 },
+          vramBytes: 32,
+        });
+      },
+    };
+    const h = await createHarness(
+      { reducedMotion: true },
+      { textures: () => ({ source, meta: TEXTURE_META }) },
+    );
+    const step = async () => {
+      for (let round = 0; round < 2; round++) {
+        settle(h);
+        for (let k = 0; k < 5; k++) await flush();
+      }
+    };
+    await step();
+    // En la vista general, ninguna luna con mosaico; la Luna, sí (su 1k).
+    expect(requests.filter((r) => r.startsWith('io@'))).toEqual([]);
+    expect(requests).toContain('moon@1k');
+    // Con Júpiter enfocado, sus galileanas a 1k; Fobos, no.
+    h.engine.focus('jupiter');
+    await step();
+    for (const id of ['io', 'europa', 'ganymede', 'callisto'])
+      expect(requests).toContain(`${id}@1k`);
+    expect(requests.filter((r) => r.startsWith('phobos@'))).toEqual([]);
+    interface TintVisual {
+      body: { id: string };
+      uniforms: { uHasMap: { value: number }; uChromaticity: { value: Vector4 } } | null;
+    }
+    const uniformsOf = (id: string) =>
+      (internals(h).world as unknown as { visuals: TintVisual[] }).visuals.find(
+        (v) => v.body.id === id,
+      )?.uniforms;
+    expect(uniformsOf('europa')?.uHasMap.value).toBe(1);
+    // El tinte del color esquemático (el mosaico es gris): Europa, beis (más rojo que azul).
+    const tint = uniformsOf('europa')?.uChromaticity.value;
+    expect(tint?.w).toBe(1);
+    expect(tint?.x ?? 0).toBeGreaterThan(tint?.z ?? 0);
+    // Ío, sin tinte: su mosaico es en color (revisión del bloque D, D1).
+    expect(uniformsOf('io')?.uHasMap.value).toBe(1);
+    expect(uniformsOf('io')?.uChromaticity.value.w).toBe(0);
+    expect(BODY_PHOTOMETRY.io.chromaticity).toBeUndefined();
+    // Ío enfocada: su nivel del primer plano.
+    h.engine.focus('io');
+    await step();
+    expect(requests).toContain(`io@${QUALITY_PROFILES.high.satelliteTexture}`);
+    // De vuelta a la vista general: sueltas, con su color esquemático, sin tinte.
+    h.engine.focus(null);
+    await step();
+    expect(released).toContain('io@1k');
+    expect(released).toContain('callisto@1k');
+    expect(uniformsOf('europa')?.uHasMap.value).toBe(0);
+    expect(uniformsOf('europa')?.uChromaticity.value.w).toBe(0);
+    expect(uniformsOf('io')?.uHasMap.value).toBe(0);
+    expect(uniformsOf('io')?.uChromaticity.value.w).toBe(0);
+    // Con Saturno, sus seis lunas heladas; Titán no lleva textura (la de su superficie no se ve en luz
+    // visible): su color, el medido en PIA06230.
+    h.engine.focus('saturno');
+    await step();
+    for (const id of ['mimas', 'enceladus', 'tethys', 'dione', 'rhea', 'iapetus'])
+      expect(requests).toContain(`${id}@1k`);
+    expect(requests.filter((r) => r.startsWith('titan@'))).toEqual([]);
+    h.engine.focus(null);
+    await step();
+    expect(released).toContain('rhea@1k');
+    h.engine.dispose();
+  });
+
+  it('el halo de Titán, con su propio color (casi neutro) y el disco, con el naranja de su neblina (fase 7)', async () => {
+    const h = await createHarness({ reducedMotion: true });
+    interface HaloVisual {
+      body: { id: string };
+      uniforms: { uHazeColor: { value: Vector4 }; uChromaticity: { value: Vector4 } } | null;
+      atmosphere: { uniforms: { uHazeColor: { value: Vector4 } } } | null;
+    }
+    const visuals = (internals(h).world as unknown as { visuals: HaloVisual[] }).visuals;
+    const titan = visuals.find((v) => v.body.id === 'titan');
+    const venus = visuals.find((v) => v.body.id === 'venus');
+    const halo = BODY_PHOTOMETRY.titan.halo;
+    expect(halo).toBeDefined();
+    const color = titan?.atmosphere?.uniforms.uHazeColor.value;
+    expect(color?.x).toBeCloseTo((halo?.chromaticity[0] ?? 0) * (halo?.gain ?? 0), 6);
+    expect(color?.z).toBeCloseTo((halo?.chromaticity[2] ?? 0) * (halo?.gain ?? 0), 6);
+    // La neblina del disco sigue siendo naranja (más rojo que azul), y su color, el de la foto.
+    const disk = titan?.uniforms?.uHazeColor.value;
+    expect(disk?.x ?? 0).toBeGreaterThan(3 * (disk?.z ?? 0));
+    expect(titan?.uniforms?.uChromaticity.value.w).toBe(1);
+    // Los demás comparten el color de su neblina con el halo (el mismo uniforme).
+    expect(venus?.atmosphere?.uniforms.uHazeColor).toBe(venus?.uniforms?.uHazeColor);
+    h.engine.dispose();
+  });
+
   it('C4: la VRAM de las vistas Tierra y Luna en su peor caso (cada una con la otra al fondo), dentro de §5 en alto y en bajo (fase 6)', async () => {
     const vram = async (view: 'earth' | 'moon', quality: 'high' | 'low') => {
       const fake = realisticTextures();
@@ -1333,6 +1527,33 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
       }
     }
   });
+
+  it('la VRAM con cada sistema de lunas cargado (el planeta o una de sus lunas enfocados), dentro de §5 en alto y en bajo (fase 7)', async () => {
+    const vram = async (focus: BodyId, quality: 'high' | 'low') => {
+      const fake = realisticTextures();
+      const h = await createHarness(
+        { reducedMotion: true, focus, quality },
+        { textures: fake.textures },
+      );
+      for (let round = 0; round < 3; round++) {
+        settle(h);
+        for (let k = 0; k < 5; k++) await flush();
+      }
+      const { vramMB } = h.engine.stats();
+      h.engine.dispose();
+      return vramMB;
+    };
+    const budgets = { high: 300, low: 120 } as const;
+    // Los sistemas con más lunas con mosaico: Saturno (seis) y Júpiter (cuatro), con el planeta o con
+    // la luna de mosaico más pesado enfocados; y Marte con Fobos, y Neptuno con Tritón.
+    for (const quality of ['high', 'low'] as const) {
+      for (const focus of ['saturno', 'dione', 'jupiter', 'europa', 'fobos', 'triton'] as const) {
+        expect(await vram(focus, quality), `${focus} ${quality}`).toBeLessThanOrEqual(
+          budgets[quality],
+        );
+      }
+    }
+  }, 60_000);
 
   it('C4: en el viaje entre las vistas Tierra y Luna, la VRAM no pasa de §5 en ningún frame (revisión de la fase 6)', async () => {
     const travel = async (from: 'earth' | 'moon', to: 'earth' | 'moon') => {
@@ -1394,8 +1615,12 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     expect(at(119)).toBe(0);
     expect(at(130)).toBe(0);
     expect(at(170)).toBe(1);
-    // Fuera de la pantalla no cuenta, aunque su radio sea enorme.
+    // Fuera de la pantalla no entra, aunque su radio sea enorme; el que ya se veía grande y sale del
+    // encuadre sin alejarse lo conserva (fase 7: Marte, con Fobos enfocado) hasta que se aleja.
+    expect(at(500, false)).toBe(1);
+    expect(at(119, false)).toBe(0);
     expect(at(500, false)).toBe(0);
+    expect(at(500)).toBe(1);
     h.engine.dispose();
   });
 
@@ -1552,11 +1777,62 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
   it('la estela de una órbita en segundo plano es más fina (D34)', async () => {
     const h = await createHarness({ reducedMotion: true, focus: 'mercurio' });
     settle(h);
-    // Con Mercurio enfocado, su órbita queda tenue (opacidad 0,3, `World.orbitOpacity`): su estela
-    // engorda en proporción a esa opacidad respecto a la de la vista general.
-    const head = internals(h).world.orbits.widths[0] as number;
+    // Con Mercurio enfocado, las órbitas de los planetas quedan tenues (`World.orbitOpacity`) y cada
+    // estela engorda en proporción a la opacidad con la que se dibuja su órbita respecto a la de la
+    // vista general. La primera órbita dibujada es la primera de los segmentos (la de Mercurio, de
+    // cerca, es recta y no se dibuja: D3).
+    const { orbits } = internals(h).world;
+    const first = orbits.drawnOpacity.findIndex((alpha) => alpha > 0);
+    const alpha = orbits.drawnOpacity[first] ?? 0;
+    expect(alpha).toBeGreaterThan(0);
+    expect(alpha).toBeLessThan(VISUAL_CONFIG.overviewOrbitOpacity);
     const widen = VISUAL_CONFIG.trails.planet.widthPx / ORBIT_WIDTH_PX - 1;
-    expect(head).toBeCloseTo(1 + (widen * 0.3) / VISUAL_CONFIG.overviewOrbitOpacity, 5);
+    expect(orbits.widths[0] as number).toBeCloseTo(
+      1 + (widen * alpha) / VISUAL_CONFIG.overviewOrbitOpacity,
+      5,
+    );
     h.engine.dispose();
   });
+
+  it('las órbitas que se ven casi rectas se apagan con su estela; las curvas se quedan (revisión del bloque D, D3)', async () => {
+    const drawn = (h: Harness, id: string): number => {
+      const { orbits, orbitSources } = internals(h).world;
+      const k = orbitSources.findIndex(
+        (source) => source.bodyIndex === sceneBody(id as never).index,
+      );
+      return orbits.drawnOpacity[k] ?? 0;
+    };
+    // En la vista general, las de los planetas se ven enteras: ninguna se toca.
+    const overview = await createHarness({ reducedMotion: true });
+    settle(overview);
+    for (const id of ['mercurio', 'tierra', 'jupiter', 'neptuno']) {
+      expect(drawn(overview, id), id).toBeCloseTo(VISUAL_CONFIG.overviewOrbitOpacity, 6);
+    }
+    overview.engine.dispose();
+    // Con Saturno enfocado: su órbita alrededor del Sol es la recta que lo atraviesa; las de las lunas
+    // que la cámara ve desde fuera (elipses, aunque de canto con los anillos de 2026) se quedan
+    // enteras. Las de Dione, Rea, Titán y Jápeto, con la cámara dentro y casi en su plano, son el
+    // horizonte de ese plano: rectas (las capturas de la revisión del bloque D lo enseñan).
+    const saturn = await createHarness({ reducedMotion: true, focus: 'saturno' });
+    settle(saturn);
+    expect(drawn(saturn, 'saturno')).toBe(0);
+    // Enteras: la opacidad de las órbitas de las lunas (0,7, `World.orbitOpacity`) por su presencia.
+    for (const id of ['mimas', 'encelado']) expect(drawn(saturn, id), id).toBeGreaterThan(0.6);
+    saturn.engine.dispose();
+    // En la vista Tierra, la órbita de la Tierra alrededor del Sol, que la atraviesa, es una recta. (La
+    // de la Luna, vista desde cerca de su centro, también, cuando cae en el encuadre: lo prueban
+    // `orbits.spec.ts` y las capturas; aquí queda fuera del lienzo del arnés.)
+    const earth = await createHarness({ reducedMotion: true });
+    earth.engine.setView('earth');
+    settle(earth);
+    expect(screenOf(earth, 'tierra')?.onScreen).toBe(true);
+    expect(drawn(earth, 'tierra')).toBe(0);
+    earth.engine.dispose();
+  });
 });
+
+/** Un vector normalizado (para los tests de las sombras). */
+function normalizeXyz(x: number, y: number, z: number): { x: number; y: number; z: number } {
+  const n = Math.hypot(x, y, z);
+  return { x: x / n, y: y / n, z: z / n };
+}

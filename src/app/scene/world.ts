@@ -29,6 +29,7 @@ import {
   Texture,
   Uniform,
   Vector3,
+  Vector4,
 } from 'three';
 import { BODY_DATA } from '../data/body-data';
 import type { BodyId } from '../data/body.model';
@@ -50,7 +51,9 @@ import {
 import {
   BodyMaterialUniforms,
   EarthUniforms,
+  MAX_SHADOW_CASTERS,
   MoonUniforms,
+  ShadowUniforms,
   createBodyMaterial,
 } from './materials/body-material';
 import { createCubeSphere } from './cube-sphere';
@@ -89,6 +92,19 @@ export const BODY_TEXTURES: Readonly<Partial<Record<BodyId, TextureId>>> = {
   urano: 'uranus',
   neptuno: 'neptune',
   luna: 'moon',
+  // Las lunas con mosaico global (fase 7, del USGS; Mimas, del PDS): solo con su sistema enfocado.
+  fobos: 'phobos',
+  io: 'io',
+  europa: 'europa',
+  ganimedes: 'ganymede',
+  calisto: 'callisto',
+  mimas: 'mimas',
+  encelado: 'enceladus',
+  tetis: 'tethys',
+  dione: 'dione',
+  rea: 'rhea',
+  japeto: 'iapetus',
+  triton: 'triton',
 };
 
 /**
@@ -230,6 +246,9 @@ interface BodyVisual {
   readonly earth: EarthUniforms | null;
   /** Uniformes propios de la Luna (fase 6); `null` en los demás cuerpos. */
   readonly moon: MoonUniforms | null;
+  /** Las sombras de otros cuerpos que recibe (fase 7) y quiénes las proyectan (sus índices). */
+  readonly shadows: ShadowUniforms | null;
+  readonly shadowCasters: readonly number[];
   readonly maps: readonly BodyMap[];
   /** Dónde van los mapas extra (los uniformes de la Tierra o de la Luna). */
   readonly mapUniforms: BodyMapUniforms | null;
@@ -251,6 +270,8 @@ interface BodyVisual {
 }
 
 const tmpMatrix = new Matrix4();
+/** Proyección × vista de la cámara del frame, para las órbitas casi rectas (D3). */
+const orbitViewMatrix = new Matrix4();
 const tmpQuaternion = new Quaternion();
 const tmpVector = new Vector3();
 const { halo: HALO, granulation: GRANULATION, intensity: SUN_INTENSITY } = VISUAL_CONFIG.sun;
@@ -266,7 +287,10 @@ const MIN_PRESENCE = 0.05;
  * Radio en pantalla (px CSS) a partir del cual un cuerpo que no es el foco se ve grande y lleva las
  * texturas del primer plano, y por debajo del cual las suelta (histéresis: no se piden y se sueltan
  * con un vaivén de la cámara). Revisión del bloque C, C4: en la vista Luna, la Tierra mide unos 20 px
- * y ya no pide su textura de 8K.
+ * y ya no pide su textura de 8K. Para entrar hay que estar en la pantalla; para salir, basta con
+ * alejarse: el que sale del encuadre sin alejarse conserva su primer plano (fase 7: con Fobos enfocado
+ * a 1 día/s, Marte entraba y salía del encuadre seis veces por segundo y cada vez se volvían a
+ * descodificar y a subir sus texturas de 4K, a 46–50 FPS).
  */
 const LARGE_ENTER_PX = 160;
 const LARGE_EXIT_PX = 120;
@@ -383,6 +407,7 @@ export class World {
 
     this.visuals = options.bodies.map((body) => {
       const photometry = body.id === 'sol' ? null : BODY_PHOTOMETRY[body.id];
+      const casters = shadowCasters(body, options.bodies);
       const color = new Color(SCHEMATIC_COLORS[body.id]);
       const bodyMaterial = photometry
         ? createBodyMaterial({
@@ -393,6 +418,7 @@ export class World {
             hazeColor: photometry.hazeColor,
             earth: body.id === 'tierra',
             moon: body.id === 'luna',
+            shadows: casters.length > 0,
           })
         : null;
       if (bodyMaterial?.earth) configureEarth(bodyMaterial.earth);
@@ -421,6 +447,8 @@ export class World {
         uniforms: bodyMaterial?.uniforms ?? null,
         earth: bodyMaterial?.earth ?? null,
         moon: bodyMaterial?.moon ?? null,
+        shadows: bodyMaterial?.shadows ?? null,
+        shadowCasters: bodyMaterial?.shadows ? casters : [],
         maps: (bodyMaterial?.earth ? EARTH_MAPS : bodyMaterial?.moon ? MOON_MAPS : []).map(
           (map) => ({ ...map, loaded: null, requested: null }),
         ),
@@ -447,6 +475,7 @@ export class World {
       this.ringMaterial = createRingMaterial({
         polarScale: 1 - saturn.body.flattening,
         photometry: RING_PHOTOMETRY.photometry,
+        brightness: VISUAL_CONFIG.rings.brightness,
       });
       this.rings = new Mesh(
         createRingGeometry(ringRadii.innerKm / radiusKm, ringRadii.outerKm / radiusKm, 256),
@@ -583,19 +612,32 @@ export class World {
           textureFailed('milky-way', error);
         });
     }
+    const focusSystem = focusIndex === null ? null : this.systemOf(focusIndex);
     for (const visual of this.visuals) {
       if (!visual.textureId) continue;
       // Las del primer plano, solo el cuerpo enfocado y los que se ven grandes (C4): el planeta de una
       // luna enfocada, solo si se ve grande.
       const index = visual.body.index;
       const near = index === focusIndex || this.large[index] === 1;
+      const satellite = visual.body.kind === 'moon' && !visual.moon;
       const focusLevel =
         visual.textureId === 'earth-day'
           ? this.profile.earthDayTexture
           : visual.moon
             ? this.profile.moonTexture
-            : this.profile.focusTexture;
-      const level = near ? focusLevel : this.profile.overviewTexture;
+            : satellite
+              ? this.profile.satelliteTexture
+              : this.profile.focusTexture;
+      // Las demás lunas (fase 7), solo con su sistema enfocado; si no, su color esquemático.
+      const level = near
+        ? focusLevel
+        : satellite && focusSystem !== this.systemOf(index)
+          ? null
+          : this.profile.overviewTexture;
+      if (level === null) {
+        this.releaseTexture(visual);
+        continue;
+      }
       if (visual.relief) {
         const reliefLevel = visual.earth
           ? this.profile.earthMapsTexture
@@ -607,6 +649,19 @@ export class World {
       for (const map of visual.maps) {
         const mapLevel = near ? this.profile[map.level] : this.profile.overviewTexture;
         this.requestMap(visual, map, near || !map.nearOnly ? mapLevel : null);
+      }
+      // La tira de los anillos, a su propio nivel (D36): pesa poco y lleva la estructura radial fina.
+      // Antes de comparar el nivel de Saturno: un cambio de calidad puede cambiar solo el de la tira.
+      const ringLevel = this.profile.ringTexture;
+      if (visual.body.id === 'saturno' && this.ringRequested !== ringLevel) {
+        this.ringRequested = ringLevel;
+        source
+          .load('saturn-rings', ringLevel)
+          .then((loaded) => this.assignRingTexture(ringLevel, loaded))
+          .catch((error: unknown) => {
+            if (this.ringRequested === ringLevel) this.ringRequested = null;
+            textureFailed('saturn-rings', error);
+          });
       }
       if (visual.requested === level) continue;
       visual.requested = level;
@@ -620,16 +675,6 @@ export class World {
           if (visual.requested === level) visual.requested = null;
           textureFailed(id, error);
         });
-      if (visual.body.id === 'saturno' && this.ringRequested !== level) {
-        this.ringRequested = level;
-        source
-          .load('saturn-rings', level)
-          .then((loaded) => this.assignRingTexture(level, loaded))
-          .catch((error: unknown) => {
-            if (this.ringRequested === level) this.ringRequested = null;
-            textureFailed('saturn-rings', error);
-          });
-      }
     }
   }
 
@@ -817,6 +862,43 @@ export class World {
     moon.uSunLocal.value.set(sun.x, sun.y, sun.z, SUN_RADIUS_KM / visual.body.radiusKm);
   }
 
+  /**
+   * Las sombras que recibe un cuerpo de otros (fase 7, D20): los que le tapan el Sol (sus lunas más
+   * grandes, o su planeta) y el Sol, en el sistema propio de la malla y en sus radios ecuatoriales,
+   * con la geometría real del estado (float64, heliocéntrica: la de la luz que le llega). Un planeta
+   * tapa con su radio ecuatorial, el que cruzan sus lunas, que orbitan cerca de su ecuador.
+   */
+  private updateShadows(visual: BodyVisual, frame: WorldFrame): void {
+    const shadows = visual.shadows;
+    if (!shadows) return;
+    const k = visual.body.index;
+    const toBody = transposeMat3(frame.orientations[k] as Mat3);
+    const radiusAu = visual.body.radiusKm / KM_PER_AU;
+    const helio = frame.state.heliocentric;
+    // Del centro del cuerpo a un punto (UA, ECL), en la malla (x, y, z → x, z, −y) y en sus radios.
+    const toMesh = (x: number, y: number, z: number): Vec3 => {
+      const b = mulMat3Vec(toBody, { x: x / radiusAu, y: y / radiusAu, z: z / radiusAu });
+      return { x: b.x, y: b.z, z: -b.y };
+    };
+    const hx = helio[3 * k] as number;
+    const hy = helio[3 * k + 1] as number;
+    const hz = helio[3 * k + 2] as number;
+    const sun = toMesh(-hx, -hy, -hz);
+    shadows.uShadowSun.value.set(sun.x, sun.y, sun.z, SUN_RADIUS_KM / visual.body.radiusKm);
+    visual.shadowCasters.forEach((index, slot) => {
+      const caster = this.visuals[index]?.body;
+      const target = shadows.uShadowCasters.value[slot];
+      if (!caster || !target) return;
+      const c = toMesh(
+        (helio[3 * index] as number) - hx,
+        (helio[3 * index + 1] as number) - hy,
+        (helio[3 * index + 2] as number) - hz,
+      );
+      target.set(c.x, c.y, c.z, caster.radiusKm / visual.body.radiusKm);
+    });
+    shadows.uShadowCount.value = visual.shadowCasters.length;
+  }
+
   /** Marcadores de los lugares del cielo desde España (la vista guiada «España»). */
   setSurfaceMarkers(visible: boolean): void {
     if (this.markers) this.markers.visible = visible;
@@ -879,6 +961,7 @@ export class World {
       }
       if (visual.earth) this.updateEclipse(visual, frame);
       if (visual.moon) this.updateEarthShadow(visual, frame);
+      if (visual.shadows) this.updateShadows(visual, frame);
       if (visual.atmosphere) {
         const onScreen = frame.screen[k];
         visual.atmosphere.uniforms.uRadius.value = r;
@@ -917,6 +1000,10 @@ export class World {
       camera.clearViewOffset();
     }
     camera.updateProjectionMatrix();
+    // La cámara de este frame, para medir las órbitas en pantalla (D3): el motor la ha colocado, pero
+    // su matriz se actualiza al pintar.
+    camera.updateMatrixWorld();
+    orbitViewMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
     const sky = Math.sqrt(near * far);
     this.stars?.setSkyDistance(sky);
     this.milkyWayMaterial.uniforms.uSkyDistance.value = sky;
@@ -929,6 +1016,12 @@ export class World {
       frame.speedDaysPerSecond,
       frame.trailDirection,
       frame.aliasedOrbit,
+      {
+        matrix: orbitViewMatrix.elements,
+        width: frame.viewport.width,
+        height: frame.viewport.height,
+        camera: [camera.position.x, camera.position.y, camera.position.z],
+      },
     );
     return { near, far };
   }
@@ -946,7 +1039,7 @@ export class World {
     for (const body of screen) {
       const was = this.large[body.index] === 1;
       const radius = Number.isFinite(body.radiusPx) ? body.radiusPx : Infinity;
-      const is = body.onScreen && radius >= (was ? LARGE_EXIT_PX : LARGE_ENTER_PX);
+      const is = was ? radius >= LARGE_EXIT_PX : body.onScreen && radius >= LARGE_ENTER_PX;
       if (is !== was) {
         this.large[body.index] = is ? 1 : 0;
         changed = true;
@@ -1078,11 +1171,23 @@ export class World {
   ): BodyVisual['atmosphere'] {
     const scaleHeight = photometry.haloScaleHeight;
     if (!photometry.haze || !scaleHeight) return null;
+    // El halo de Titán (fase 7) tiene su color y su intensidad; los demás, los de la neblina del disco.
+    const halo = photometry.halo;
+    const hazeColor = halo
+      ? new Uniform(
+          new Vector4(
+            halo.chromaticity[0] * halo.gain,
+            halo.chromaticity[1] * halo.gain,
+            halo.chromaticity[2] * halo.gain,
+            body.uHazeColor.value.w,
+          ),
+        )
+      : body.uHazeColor;
     const { material, uniforms } = createAtmosphereMaterial({
       uRadius: new Uniform(1),
       uScaleHeight: new Uniform(scaleHeight),
       uHaze: body.uHaze,
-      uHazeColor: body.uHazeColor,
+      uHazeColor: hazeColor,
       uSunDirection: body.uSunDirection,
     });
     const shell = new Mesh(this.coarseSphere, material);
@@ -1126,6 +1231,12 @@ export class World {
       visual.uniforms.uMeridianOffset.value = meta ? meridianOffset(meta) : 0;
       const luminance = visual.textureId ? TEXTURE_MEAN_LUMINANCE[visual.textureId] : undefined;
       if (luminance !== undefined) visual.uniforms.uMeanLuminance.value = luminance;
+      // Un mosaico en gris (las lunas, fase 7), con el tono de su color esquemático: un tinte de
+      // presentación, no una medida.
+      if (meta?.grayscale && !visual.photometry?.chromaticity) {
+        const [r, g, b] = chromaticityOf(visual.uniforms.uColor.value);
+        visual.uniforms.uChromaticity.value.set(r, g, b, 1);
+      }
       if (visual.photometry?.contrast)
         visual.uniforms.uContrast.value = visual.photometry.contrast.value;
       if (visual.photometry && luminance !== undefined) {
@@ -1138,6 +1249,40 @@ export class World {
     }
     if (previous && previous.texture !== loaded.texture) releaseTexture(previous.texture);
     this.options.invalidate();
+  }
+
+  /**
+   * Suelta la textura de un cuerpo (fase 7: una luna cuyo sistema ya no está enfocado): vuelve a su
+   * color esquemático, con su albedo.
+   */
+  private releaseTexture(visual: BodyVisual): void {
+    visual.requested = null;
+    const loaded = visual.loaded;
+    if (!loaded) return;
+    visual.loaded = null;
+    if (visual.uniforms) {
+      visual.uniforms.uMap.value = null;
+      visual.uniforms.uHasMap.value = 0;
+      // El contraste es el de la textura (Titán): con su color esquemático, el suyo.
+      visual.uniforms.uContrast.value = 1;
+      if (!visual.photometry?.chromaticity) visual.uniforms.uChromaticity.value.setW(0);
+      if (visual.photometry) {
+        visual.uniforms.uAlbedoScale.value = bodyAlbedoScale(
+          visual.body.id,
+          visual.photometry,
+          colorLuminance(visual.uniforms.uColor.value),
+        );
+      }
+    }
+    releaseTexture(loaded.texture);
+    this.options.invalidate();
+  }
+
+  /** El sistema de un cuerpo: el índice de su planeta si es una luna; si no, el suyo. */
+  private systemOf(index: number): number {
+    const body = this.visuals[index]?.body;
+    if (!body || body.kind !== 'moon') return index;
+    return this.visuals.find((visual) => visual.body.id === body.parent)?.body.index ?? index;
   }
 
   private assignRingTexture(level: TextureLevel, loaded: LoadedTexture | null): void {
@@ -1205,12 +1350,14 @@ export class World {
    * (`moonPresence`). La separación es la de su distancia real en el espacio a la escala del disco
    * en pantalla: no depende de por dónde pase la luna (delante del disco, la órbita no se apaga) y en
    * los sistemas compactos de la vista general (fase 4b) deja las órbitas ocultas hasta acercarse.
+   * Después, `OrbitLines` desvanece las que se ven casi rectas (revisión del bloque D, D3): de cerca,
+   * la del propio planeta enfocado, las de los demás o la de la Luna vista desde la Tierra.
    */
   private orbitOpacity(frame: WorldFrame): number[] {
     const physical = frame.frames.targetSpec.kind === 'physical';
     return this.orbitSources.map((source) => {
-      // En un marco físico, la órbita del propio planeta enfocado es casi una recta que lo
-      // atraviesa: se deja tenue (indica hacia dónde se mueve).
+      // En un marco físico, la órbita del propio planeta enfocado, más tenue que las demás: de lejos
+      // (el planeta pequeño en pantalla) se ve curva y dice hacia dónde se mueve.
       if (source.parentIndex < 0) {
         if (!physical) return VISUAL_CONFIG.overviewOrbitOpacity;
         if (frame.detail) return 0.12;
@@ -1245,6 +1392,32 @@ function configureMoon(moon: MoonUniforms, radiusKm: number): void {
   const { color, intensity, axis } = VISUAL_CONFIG.moon.umbraLight;
   moon.uUmbraLight.value.set(color).multiplyScalar(intensity);
   moon.uUmbraAxis.value = axis;
+}
+
+/**
+ * Quiénes proyectan su sombra sobre un cuerpo (fase 7, D20): sobre un planeta, sus lunas más grandes
+ * (hasta `MAX_SHADOW_CASTERS`, por radio: en Júpiter, las cuatro galileanas); sobre una luna, su
+ * planeta. La Tierra y la Luna tienen las suyas (fases 5 y 6), y el Sol no recibe ninguna.
+ */
+export function shadowCasters(body: SceneBody, bodies: readonly SceneBody[]): number[] {
+  if (body.id === 'sol' || body.id === 'tierra' || body.id === 'luna') return [];
+  if (body.kind === 'moon') {
+    const parent = bodies.find((other) => other.id === body.parent);
+    return parent ? [parent.index] : [];
+  }
+  return bodies
+    .filter((other) => other.parent === body.id)
+    .sort((a, b) => b.radiusKm - a.radiusKm)
+    .slice(0, MAX_SHADOW_CASTERS)
+    .map((other) => other.index);
+}
+
+/** Cromaticidad de un color (RGB lineal / su luminancia, Rec. 709): el tono, sin el brillo. */
+export function chromaticityOf(color: Color): [number, number, number] {
+  const luminance = colorLuminance(color);
+  return luminance > 0
+    ? [color.r / luminance, color.g / luminance, color.b / luminance]
+    : [1, 1, 1];
 }
 
 /** Una textura no ha llegado: no es un error fatal (queda el color esquemático), pero se anota. */

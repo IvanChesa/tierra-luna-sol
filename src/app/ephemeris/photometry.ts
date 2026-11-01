@@ -247,19 +247,41 @@ export const opticalDepth = (opacity: number): number =>
   Math.log(1 / (1 - Math.min(Math.max(opacity, 0), 0.995)));
 
 /**
- * Detalle relativo de un perfil (la luminancia de la tira de los anillos, columna a columna): cada
- * valor dividido por la media de los índices `[from, to)`. Con él se modula el albedo de un anillo:
- * recupera la estructura radial fina de la textura sin cambiar su brillo medio en esa ventana, que es
- * donde se calibra con una medida (revisión del bloque R, R1).
+ * Longitudes de onda dominantes de los primarios sRGB (nm): rojo, verde y azul. Ahí se lee la
+ * reflectividad por bandas de un cuerpo para darle color (`bandChromaticity`).
  */
-export function relativeDetail(values: ArrayLike<number>, from: number, to: number): Float64Array {
-  let sum = 0;
-  for (let i = from; i < to; i++) sum += values[i] as number;
-  const mean = sum / (to - from);
-  if (!(to > from) || !(mean > 0)) {
-    throw new Error(`Ventana sin brillo para el detalle relativo: [${from}, ${to})`);
+export const SRGB_PRIMARY_WAVELENGTHS_NM = [611, 549, 464] as const;
+
+/** Una medida de la reflectividad (I/F o albedo, a la luz del Sol) en una banda. */
+export interface BandReflectance {
+  /** Longitud de onda efectiva de la banda para la luz del Sol (nm). */
+  readonly nm: number;
+  readonly value: number;
+}
+
+/**
+ * Cromaticidad (RGB lineal / luminancia Rec. 709) de un cuerpo a partir de su reflectividad medida por
+ * bandas: interpolada en línea recta a las longitudes de onda dominantes de los primarios sRGB (fuera
+ * de lo medido, con la recta de las dos bandas más cercanas) y llevada a luminancia 1. Es el método de
+ * Venus (fase 3b, con los albedos de Mallama et al., 2017) y de los anillos de Saturno (fase 7, D36,
+ * con las I/F del Hubble de Salo y French, 2010). Hacen falta al menos dos bandas distintas.
+ */
+export function bandChromaticity(bands: readonly BandReflectance[]): [number, number, number] {
+  const sorted = [...bands].sort((a, b) => a.nm - b.nm);
+  if (sorted.length < 2 || sorted.some((band, i) => i > 0 && band.nm === sorted[i - 1]?.nm)) {
+    throw new Error('Hacen falta al menos dos bandas distintas');
   }
-  return Float64Array.from({ length: values.length }, (_, i) => (values[i] as number) / mean);
+  const at = (nm: number): number => {
+    let i = 0;
+    while (i < sorted.length - 2 && nm > (sorted[i + 1] as BandReflectance).nm) i++;
+    const a = sorted[i] as BandReflectance;
+    const b = sorted[i + 1] as BandReflectance;
+    return a.value + ((nm - a.nm) / (b.nm - a.nm)) * (b.value - a.value);
+  };
+  const [r, g, b] = SRGB_PRIMARY_WAVELENGTHS_NM.map(at) as [number, number, number];
+  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  if (!(luminance > 0)) throw new Error('Reflectividad sin brillo');
+  return [r / luminance, g / luminance, b / luminance];
 }
 
 /**
