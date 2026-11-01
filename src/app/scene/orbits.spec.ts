@@ -174,6 +174,22 @@ describe('órbitas casi rectas en pantalla (revisión del bloque D, D3)', () => 
     expect(straightOrbitFade(path, outside(view, 30))).toBe(1);
   });
 
+  it('con `enough`, la medida para en cuanto la órbita se ve entera: el mismo desvanecimiento', () => {
+    const { points, count } = circle(5);
+    const view = viewFrom([0, 30, 12], [0, 0, 0]);
+    const full = screenPath(points, count, view);
+    const quick = screenPath(points, count, view, true);
+    expect(quick.turning).toBeLessThan(full.turning);
+    expect(quick.turning).toBeGreaterThanOrEqual(VISUAL_CONFIG.straightOrbits.fullAboveRad);
+    expect(straightOrbitFade(quick, 0)).toBe(straightOrbitFade(full, 0));
+    // Una recta no para: la medida es la misma.
+    const line = circle(60);
+    const inside = viewFrom([2, 1, 2], [0, 0, -60]);
+    expect(screenPath(line.points, line.count, inside, true)).toEqual(
+      screenPath(line.points, line.count, inside),
+    );
+  });
+
   it('lo que queda detrás de la cámara no cuenta, sin NaN, y lo que no se ve no gira', () => {
     // La cámara sobre la propia órbita, mirando a lo largo de ella: la mitad queda detrás.
     const { points, count } = circle(10);

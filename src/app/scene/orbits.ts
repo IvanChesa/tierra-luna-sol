@@ -311,10 +311,12 @@ if ( abs( vUv.y ) > 1.0 ) discard;`,
       // Casi recta en pantalla: se desvanece con su estela (D3). Una órbita que sustituye a su cuerpo
       // (§4.5) se queda: es lo único que se ve de él.
       if (view && !replaced) {
-        alpha *= straightOrbitFade(
-          screenPath(points, n + 2, view),
-          this.outsideRatio(frames, source, points, n, view),
-        );
+        // Con la cámara bien fuera de la órbita, se ve entera: ni hace falta medirla en pantalla (la
+        // vista general, las lunas vistas desde fuera). Si no, la medida para en cuanto se ve curva.
+        const outside = this.outsideRatio(frames, source, points, n, view);
+        if (outside < VISUAL_CONFIG.straightOrbits.outsideTo) {
+          alpha *= straightOrbitFade(screenPath(points, n + 2, view, true), outside);
+        }
       }
       if (alpha <= 0.002) return;
       this.drawnOpacity[k] = alpha;
@@ -414,16 +416,21 @@ if ( abs( vUv.y ) > 1.0 ) discard;`,
         ? frames.helioPoint(origin)
         : frames.moonPoint(source.parentIndex, origin);
     // En ejes de Three, como los puntos: (x, z, −y).
-    const [cx, cy, cz] = [c.x, c.z, -c.y];
+    const cx = c.x;
+    const cy = c.z;
+    const cz = -c.y;
+    // El radio, de unas 32 muestras repartidas por la vuelta (basta para una media).
+    const step = Math.max(1, Math.floor(n / 32));
     let radius = 0;
-    for (let k = 1; k <= n; k++) {
-      radius += Math.hypot(
-        (points[3 * k] as number) - cx,
-        (points[3 * k + 1] as number) - cy,
-        (points[3 * k + 2] as number) - cz,
-      );
+    let samples = 0;
+    for (let k = 1; k <= n; k += step) {
+      const dx = (points[3 * k] as number) - cx;
+      const dy = (points[3 * k + 1] as number) - cy;
+      const dz = (points[3 * k + 2] as number) - cz;
+      radius += Math.sqrt(dx * dx + dy * dy + dz * dz);
+      samples++;
     }
-    radius /= n;
+    radius /= samples;
     const [x, y, z] = view.camera;
     return radius > 0 ? Math.hypot(x - cx, y - cy, z - cz) / radius : Infinity;
   }
@@ -446,9 +453,6 @@ function setPoint(points: Float64Array, index: number, p: Vec3): void {
   points[3 * index + 2] = -p.y;
 }
 
-/** Un punto en coordenadas de recorte: x, y y w (la z no hace falta). */
-type ClipPoint = readonly [number, number, number];
-
 /**
  * Lo que se ve de una polilínea en pantalla (D3): cada tramo se recorta por delante de la cámara y al
  * lienzo (en coordenadas homogéneas, antes de dividir por w) y se pasa a píxeles; se suman la longitud
@@ -456,99 +460,107 @@ type ClipPoint = readonly [number, number, number];
  * lienzo y vuelve a entrar no se une con la anterior). Un cambio de más de `cornerRad` es una esquina,
  * no una curva, y no suma: de cerca, la cuerda del cuerpo a su primera muestra (millones de km en una
  * órbita de planeta) es una recta que se junta en ángulo con lo lejano de la órbita, otra recta.
- * `points`: `count` puntos en ejes de la escena.
+ * `points`: `count` puntos en ejes de la escena. Se llama en cada frame para cada órbita que no se ve
+ * desde fuera: sin crear objetos (todo en variables). Con `enough`, para en cuanto lo que gira y lo que
+ * mide bastan para que la órbita se vea entera (`straightOrbitFade` da 1): el resultado es entonces un
+ * mínimo de los dos.
  */
-export function screenPath(points: Float64Array, count: number, view: OrbitView): ScreenPath {
-  const corner = VISUAL_CONFIG.straightOrbits.cornerRad;
-  const m = Array.from({ length: 16 }, (_, i) => view.matrix[i] as number);
+export function screenPath(
+  points: Float64Array,
+  count: number,
+  view: OrbitView,
+  enough = false,
+): ScreenPath {
+  const { cornerRad: corner, fullAboveRad, minLengthPx } = VISUAL_CONFIG.straightOrbits;
+  const m = view.matrix;
+  const m0 = m[0] as number;
+  const m1 = m[1] as number;
+  const m3 = m[3] as number;
+  const m4 = m[4] as number;
+  const m5 = m[5] as number;
+  const m7 = m[7] as number;
+  const m8 = m[8] as number;
+  const m9 = m[9] as number;
+  const m11 = m[11] as number;
+  const m12 = m[12] as number;
+  const m13 = m[13] as number;
+  const m15 = m[15] as number;
   const halfW = view.width / 2;
   const halfH = view.height / 2;
-  const clip = (i: number): ClipPoint => {
-    const x = points[3 * i] as number;
-    const y = points[3 * i + 1] as number;
-    const z = points[3 * i + 2] as number;
-    return [
-      (m[0] as number) * x + (m[4] as number) * y + (m[8] as number) * z + (m[12] as number),
-      (m[1] as number) * x + (m[5] as number) * y + (m[9] as number) * z + (m[13] as number),
-      (m[3] as number) * x + (m[7] as number) * y + (m[11] as number) * z + (m[15] as number),
-    ];
-  };
   let turning = 0;
   let lengthPx = 0;
   let dirX = 0;
   let dirY = 0;
   let connected = false;
-  let a = clip(0);
-  for (let i = 1; i < count; i++) {
-    const b = clip(i);
-    const range = clipSegment(a, b);
-    if (!range) {
-      connected = false;
-    } else {
-      const [t0, t1] = range;
-      if (t0 > 0) connected = false;
-      const [x0, y0] = toPixels(a, b, t0, halfW, halfH);
-      const [x1, y1] = toPixels(a, b, t1, halfW, halfH);
-      const length = Math.hypot(x1 - x0, y1 - y0);
-      lengthPx += length;
-      // Un tramo de menos de medio píxel no tiene una dirección fiable: se salta sin cortar.
-      if (length > 0.5) {
-        const ux = (x1 - x0) / length;
-        const uy = (y1 - y0) / length;
-        const bend = Math.abs(Math.atan2(dirX * uy - dirY * ux, dirX * ux + dirY * uy));
-        if (connected && bend <= corner) turning += bend;
-        dirX = ux;
-        dirY = uy;
-        connected = true;
-      }
-      if (t1 < 1) connected = false;
-    }
-    a = b;
-  }
-  return { turning, lengthPx };
-}
-
-/**
- * La parte de un tramo (de 0 a 1) por delante de la cámara y dentro del lienzo, en coordenadas de
- * recorte: −w ≤ x ≤ w, −w ≤ y ≤ w y w > 0 (Liang–Barsky). `null` si no se ve nada.
- */
-function clipSegment(a: ClipPoint, b: ClipPoint): [number, number] | null {
+  // El extremo anterior en coordenadas de recorte (x, y, w; la z no hace falta).
+  let ax = 0;
+  let ay = 0;
+  let aw = 0;
+  // La parte visible del tramo (Liang–Barsky): de t0 a t1.
   let t0 = 0;
   let t1 = 1;
-  // Distancia con signo de cada extremo a los planos: w, w − x, w + x, w − y y w + y.
-  const planes: readonly (readonly [number, number])[] = [
-    [a[2], b[2]],
-    [a[2] - a[0], b[2] - b[0]],
-    [a[2] + a[0], b[2] + b[0]],
-    [a[2] - a[1], b[2] - b[1]],
-    [a[2] + a[1], b[2] + b[1]],
-  ];
-  for (const [d0, d1] of planes) {
-    if (d0 < 0 && d1 < 0) return null;
-    if (d0 >= 0 && d1 >= 0) continue;
+  // Recorta el tramo con un plano dada la distancia con signo de sus extremos; false si no queda nada.
+  const cut = (d0: number, d1: number): boolean => {
+    if (d0 < 0 && d1 < 0) return false;
+    if (d0 >= 0 && d1 >= 0) return true;
     const t = d0 / (d0 - d1);
     if (d0 < 0) t0 = Math.max(t0, t);
     else t1 = Math.min(t1, t);
-    if (t0 > t1) return null;
+    return t0 <= t1;
+  };
+  for (let i = 0; i < count; i++) {
+    const x = points[3 * i] as number;
+    const y = points[3 * i + 1] as number;
+    const z = points[3 * i + 2] as number;
+    const bx = m0 * x + m4 * y + m8 * z + m12;
+    const by = m1 * x + m5 * y + m9 * z + m13;
+    const bw = m3 * x + m7 * y + m11 * z + m15;
+    if (i > 0) {
+      t0 = 0;
+      t1 = 1;
+      // Por delante de la cámara (w > 0) y dentro del lienzo: −w ≤ x ≤ w y −w ≤ y ≤ w.
+      const inside =
+        cut(aw, bw) &&
+        cut(aw - ax, bw - bx) &&
+        cut(aw + ax, bw + bx) &&
+        cut(aw - ay, bw - by) &&
+        cut(aw + ay, bw + by);
+      const w0 = aw + (bw - aw) * t0;
+      const w1 = aw + (bw - aw) * t1;
+      // Justo en el plano de la cámara (w ≈ 0) no hay proyección.
+      if (!inside || w0 <= 1e-12 || w1 <= 1e-12) {
+        connected = false;
+      } else {
+        if (t0 > 0) connected = false;
+        const x0 = ((ax + (bx - ax) * t0) / w0 + 1) * halfW;
+        const y0 = (1 - (ay + (by - ay) * t0) / w0) * halfH;
+        const x1 = ((ax + (bx - ax) * t1) / w1 + 1) * halfW;
+        const y1 = (1 - (ay + (by - ay) * t1) / w1) * halfH;
+        const dx = x1 - x0;
+        const dy = y1 - y0;
+        const length = Math.sqrt(dx * dx + dy * dy);
+        lengthPx += length;
+        // Un tramo de menos de medio píxel no tiene una dirección fiable: se salta sin cortar.
+        if (length > 0.5) {
+          const ux = dx / length;
+          const uy = dy / length;
+          const bend = Math.abs(Math.atan2(dirX * uy - dirY * ux, dirX * ux + dirY * uy));
+          if (connected && bend <= corner) turning += bend;
+          dirX = ux;
+          dirY = uy;
+          connected = true;
+          if (enough && turning >= fullAboveRad && lengthPx >= minLengthPx) {
+            return { turning, lengthPx };
+          }
+        }
+        if (t1 < 1) connected = false;
+      }
+    }
+    ax = bx;
+    ay = by;
+    aw = bw;
   }
-  // Justo en el plano de la cámara (w ≈ 0) no hay proyección.
-  const w0 = a[2] + (b[2] - a[2]) * t0;
-  const w1 = a[2] + (b[2] - a[2]) * t1;
-  return w0 > 1e-12 && w1 > 1e-12 ? [t0, t1] : null;
-}
-
-/** Un punto de un tramo (en t) en píxeles del lienzo. */
-function toPixels(
-  a: ClipPoint,
-  b: ClipPoint,
-  t: number,
-  halfW: number,
-  halfH: number,
-): [number, number] {
-  const x = a[0] + (b[0] - a[0]) * t;
-  const y = a[1] + (b[1] - a[1]) * t;
-  const w = a[2] + (b[2] - a[2]) * t;
-  return [(x / w + 1) * halfW, (1 - y / w) * halfH];
+  return { turning, lengthPx };
 }
 
 /**
