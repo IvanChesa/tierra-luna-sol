@@ -70,9 +70,11 @@ import { Component } from '@angular/core';
         DLR (T. Roatsch et al.). Mimas: mapa del DLR (Roatsch et al., 2018) en el
         <a href="https://pds-rings.seti.org/holdings/volumes/COISS_3xxx/COISS_3006/"
           >PDS de la NASA</a
-        >. Se han reducido y convertido a WebP y se muestran en gris con un tinte; el de Ío y el
-        color de Titán, medidos en fotos de la NASA en color real (PIA02308 y PIA06230). Sus rasgos
-        con nombre, del Gazetteer of Planetary Nomenclature (IAU y USGS).
+        >. Se han reducido y convertido a WebP. Los que son en gris se muestran con un tinte; el de
+        Ío es en color (Galileo y Voyager), con su color medio llevado al de una foto de la NASA en
+        color real (PIA02308), y el color de Titán está medido en otra (PIA06230). En Tritón, el
+        norte que no vio Voyager 2 (el 38 % del mapa) se rellena con un gris liso, sin inventar
+        relieve. Sus rasgos con nombre, del Gazetteer of Planetary Nomenclature (IAU y USGS).
       </li>
       <li>
         Vía Láctea: «The Milky Way panorama», de

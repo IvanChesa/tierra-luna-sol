@@ -10,9 +10,12 @@
 //   coordenadas proyectadas de GDAL lo hacen siempre, aunque la etiqueta del producto use longitudes
 //   positivas al oeste); si un mapa saliera reflejado, sus sondas lo dirían. En un IMG del PDS, la de
 //   su etiqueta (`SAMPLE_PROJECTION_OFFSET` y `MAP_RESOLUTION`, con las muestras hacia el este).
-// - Los huecos sin datos (valor 0; Voyager 2 solo vio el hemisferio sur de Tritón), con el gris medio
-//   de lo que sí hay: se ven como una zona lisa, sin inventar relieve. La imagen y su máscara se
-//   reducen por separado y se dividen: lo que hay no se mezcla con los huecos.
+// - Los huecos sin datos (valor 0; Voyager 2 solo vio el hemisferio sur de Tritón), con un gris liso,
+//   sin inventar relieve. La imagen y su máscara se reducen por separado y se dividen: lo que hay no
+//   se mezcla con los huecos. Sin corte duro en el borde (revisión del bloque D, D2): el gris es el de
+//   la franja vecina al hueco (no la media de toda la luna) y, junto al borde, el de lo que hay al otro
+//   lado (una media local), que se funde con él a lo largo de unos grados; lo que hay se funde con ese
+//   gris en el último grado y medio.
 // - Sin cargar el mosaico entero en memoria (algunos pasan de 190 Mpx): lo reduce sharp.
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -24,7 +27,8 @@ import { tiffGeoInfo } from './build-relief.mjs';
 /**
  * Lee un mosaico y lo deja a `width` × `width / 2` (RGB de 8 bits, sRGB), centrado en la longitud 0.
  * `band`: solo ese canal (Tritón: el naranja de un mosaico en falso color), en gris. Devuelve el
- * búfer, la fracción del mapa sin datos y un informe.
+ * búfer, su cobertura (de 0 a 1 por píxel: las sondas solo miden lo que hay), la fracción del mapa sin
+ * datos y un informe.
  */
 export async function loadMosaic(url, width, { band } = {}) {
   const path = fileURLToPath(url);
@@ -56,32 +60,16 @@ export async function loadMosaic(url, width, { band } = {}) {
       color[i * 3] = color[i * 3 + 1] = color[i * 3 + 2] = value;
     }
   }
-  // El gris medio de lo que hay, para los huecos.
-  let sum = 0;
-  let count = 0;
-  let empty = 0;
-  for (let i = 0; i < pixels; i++) {
-    const w = coverage[i] / 255;
-    if (w < 0.5) empty++;
-    if (w > 0.8) {
-      for (let c = 0; c < 3; c++) sum += color[i * 3 + c] / w;
-      count += 3;
-    }
-  }
-  const fill = count ? sum / count : 128;
-  const out = Buffer.alloc(pixels * 3);
+  const { data: out, empty, fill, mean } = fillGaps(color, coverage, width, height);
   // Columna del borde izquierdo: la de la longitud −180°.
   const shift = Math.round(((((-180 - firstLonDeg) % 360) + 360) % 360) / (360 / width)) % width;
+  const shifted = Buffer.alloc(pixels * 3);
+  const shiftedCoverage = new Float32Array(pixels);
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const i = y * width + ((x + shift) % width);
-      const o = (y * width + x) * 3;
-      const w = coverage[i] / 255;
-      for (let c = 0; c < 3; c++) {
-        // Dentro de lo que hay, su color; en el borde de un hueco, se funde con el gris medio.
-        const own = w > 0.02 ? color[i * 3 + c] / w : fill;
-        out[o + c] = Math.round(Math.min(255, own * w + fill * (1 - w)));
-      }
+      out.copy(shifted, (y * width + x) * 3, i * 3, i * 3 + 3);
+      shiftedCoverage[y * width + x] = coverage[i] / 255;
     }
   }
   const kind =
@@ -90,13 +78,154 @@ export async function loadMosaic(url, width, { band } = {}) {
       : source.channels === 1
         ? 'en gris'
         : 'en color';
+  const show = (rgb) => rgb.map((v) => v.toFixed(0)).join('/');
+  const gaps = empty
+    ? `sin datos, ${((100 * empty) / pixels).toFixed(1)} % (con el gris de la franja vecina, ${show(fill)}, frente a la media de lo que hay, ${show(mean)}, y su borde difuminado)`
+    : 'sin datos, 0,0 %';
   return {
-    data: out,
+    data: shifted,
+    coverage: shiftedCoverage,
     width,
     height,
     emptyFraction: empty / pixels,
-    report: `${source.width} × ${source.height}, ${kind}, el borde izquierdo en ${firstLonDeg.toFixed(2)}° E; sin datos, ${((100 * empty) / pixels).toFixed(1)} % (con el gris medio)`,
+    report: `${source.width} × ${source.height}, ${kind}, el borde izquierdo en ${firstLonDeg.toFixed(2)}° E; ${gaps}`,
   };
+}
+
+/**
+ * Anchos del relleno de los huecos (revisión del bloque D, D2), en grados del mapa: la franja vecina
+ * (de donde sale su gris), el alcance de la media local que lo continúa dentro del hueco y el fundido
+ * de lo que hay con ese gris junto al borde.
+ */
+export const GAP_FILL_DEG = { strip: 10, local: 5, feather: 1.5 };
+
+/**
+ * Rellena los huecos de un mosaico reducido (RGB de 8 bits; `coverage`, su máscara reducida, de 0 a
+ * 255) sin corte duro. Cada píxel con datos vale su color (dividido por su cobertura: la imagen y la
+ * máscara se reducen por separado); en el hueco:
+ * - lejos del borde, el gris medio de la franja vecina, lo que hay a menos de `strip` grados del hueco
+ *   (no la media de toda la luna: en Tritón, junto al hueco, el mosaico es más oscuro que su media);
+ * - junto al borde, la media local de lo que hay al otro lado (convolución normalizada, de unos
+ *   `local` grados), que se funde con ese gris hacia dentro del hueco;
+ * y lo que hay se funde con el relleno en sus últimos `feather` grados, para que el detalle no se corte
+ * en seco. Las distancias, en píxeles del mapa equirrectangular (en longitud, con la vuelta del
+ * antimeridiano). Devuelve el mapa, cuántos píxeles no tenían datos, el gris de la franja y la media de
+ * lo que hay (para el informe).
+ */
+export function fillGaps(color, coverage, width, height) {
+  const pixels = width * height;
+  const pxPerDeg = width / 360;
+  const cover = new Float32Array(pixels);
+  let empty = 0;
+  for (let i = 0; i < pixels; i++) {
+    cover[i] = coverage[i] / 255;
+    if (cover[i] < 0.5) empty++;
+  }
+  // El color de lo que hay (sin la mezcla con los huecos de la reducción) y premultiplicado.
+  const own = new Float32Array(pixels * 3);
+  const premultiplied = new Float32Array(pixels * 3);
+  for (let i = 0; i < pixels; i++) {
+    const w = cover[i];
+    for (let c = 0; c < 3; c++) {
+      own[i * 3 + c] = w > 0.02 ? color[i * 3 + c] / w : 0;
+      premultiplied[i * 3 + c] = own[i * 3 + c] * w;
+    }
+  }
+  // La media de lo que hay (cobertura > 0,8), solo para el informe.
+  const total = [0, 0, 0];
+  let valid = 0;
+  for (let i = 0; i < pixels; i++) {
+    if (cover[i] <= 0.8) continue;
+    for (let c = 0; c < 3; c++) total[c] += own[i * 3 + c];
+    valid++;
+  }
+  const mean = total.map((v) => (valid ? v / valid : 128));
+  if (!empty) {
+    const out = Buffer.alloc(pixels * 3);
+    for (let i = 0; i < pixels * 3; i++) out[i] = Math.round(Math.min(255, own[i]));
+    return { data: out, empty, fill: mean, mean };
+  }
+  // El gris de la franja vecina: lo que hay (cobertura > 0,8) cerca de un hueco.
+  const gap = new Float32Array(pixels);
+  for (let i = 0; i < pixels; i++) gap[i] = 1 - cover[i];
+  const nearGap = blur(gap, width, height, 1, (GAP_FILL_DEG.strip / 2) * pxPerDeg);
+  const sum = [0, 0, 0];
+  let count = 0;
+  for (let i = 0; i < pixels; i++) {
+    if (cover[i] <= 0.8 || nearGap[i] < 0.02) continue;
+    for (let c = 0; c < 3; c++) sum[c] += own[i * 3 + c];
+    count++;
+  }
+  const fill = sum.map((v) => (count ? v / count : 128));
+  // La media local de lo que hay (convolución normalizada) y lo cerca que está cada píxel de datos.
+  const localSigma = (GAP_FILL_DEG.local / 2) * pxPerDeg;
+  const localSum = blur(premultiplied, width, height, 3, localSigma);
+  const localWeight = blur(cover, width, height, 1, localSigma);
+  const edge = blur(cover, width, height, 1, (GAP_FILL_DEG.feather / 2) * pxPerDeg);
+  const smooth = (t) => {
+    const x = Math.min(Math.max(t, 0), 1);
+    return x * x * (3 - 2 * x);
+  };
+  const out = Buffer.alloc(pixels * 3);
+  for (let i = 0; i < pixels; i++) {
+    const weight = localWeight[i];
+    // Con datos a menos de unos grados, su media local; más adentro, el gris de la franja.
+    const near = smooth(weight / 0.25);
+    // Lo que hay, entero a partir de `feather` grados del borde.
+    const keep = cover[i] * smooth((edge[i] - 0.5) / 0.45);
+    for (let c = 0; c < 3; c++) {
+      const local = weight > 1e-4 ? localSum[i * 3 + c] / weight : fill[c];
+      const filled = fill[c] + (local - fill[c]) * near;
+      const value = own[i * 3 + c] * keep + filled * (1 - keep);
+      out[i * 3 + c] = Math.round(Math.min(Math.max(value, 0), 255));
+    }
+  }
+  return { data: out, empty, fill, mean };
+}
+
+/**
+ * Desenfoque casi gaussiano (tres pasadas de caja) de `sigma` píxeles de un campo de `channels`
+ * canales: en horizontal, con la vuelta del mapa (la longitud −180° sigue a la 180°); en vertical,
+ * sin pasar de los polos.
+ */
+function blur(field, width, height, channels, sigma) {
+  // Tres cajas de ancho 2r + 1 dan una varianza de 3 ((2r + 1)² − 1) / 12 = σ².
+  const radius = Math.max(1, Math.round((Math.sqrt(4 * sigma * sigma + 1) - 1) / 2));
+  let a = Float32Array.from(field);
+  let b = new Float32Array(field.length);
+  const span = 2 * radius + 1;
+  for (let pass = 0; pass < 3; pass++) {
+    // Horizontal, con la vuelta.
+    for (let y = 0; y < height; y++) {
+      for (let c = 0; c < channels; c++) {
+        let acc = 0;
+        for (let k = -radius; k <= radius; k++) {
+          acc += a[(y * width + ((k + width) % width)) * channels + c];
+        }
+        for (let x = 0; x < width; x++) {
+          b[(y * width + x) * channels + c] = acc / span;
+          const outX = (x - radius + width) % width;
+          const inX = (x + radius + 1) % width;
+          acc += a[(y * width + inX) * channels + c] - a[(y * width + outX) * channels + c];
+        }
+      }
+    }
+    [a, b] = [b, a];
+    // Vertical, repitiendo la fila del polo.
+    for (let x = 0; x < width; x++) {
+      for (let c = 0; c < channels; c++) {
+        const at = (y) => a[(Math.min(Math.max(y, 0), height - 1) * width + x) * channels + c];
+        let acc = 0;
+        for (let k = -radius; k <= radius; k++) acc += at(k);
+        for (let y = 0; y < height; y++) {
+          b[(y * width + x) * channels + c] = acc / span;
+          acc += at(y + radius + 1) - at(y - radius);
+        }
+      }
+    }
+    [a, b] = [b, a];
+  }
+  return a;
 }
 
 /** Un GeoTIFF del USGS: la longitud de su primera columna, de su georreferencia. */
@@ -181,7 +310,10 @@ async function pdsSource(path) {
  *   heladas de Saturno, normalizadas en brillo), el gradiente del brillo en el borde de un cráter (de
  *   0,8 a 1,2 radios; el radio angular, de ese diámetro y del radio del catálogo) frente al de su
  *   interior (hasta 0,5) y al de fuera (de 1,6 a 2,2 radios).
- * Se comprueban en el mapa de 2048 px: con él girado 180° o reflejado, alguna tiene que fallar. Se
+ * Se comprueban en el mapa de 2048 px, solo con lo que hay: las de brillo no cuentan los huecos
+ * rellenos (revisión del bloque D, D2: en Tritón, dos sondas junto al borde del hueco pasaban porque
+ * su corona caía en parte sobre el gris claro del relleno). Con el mapa girado 180° o reflejado,
+ * alguna tiene que fallar. Se
  * eligieron entre los rasgos del Gazetteer los que discriminan la orientación (informe de la fase 7):
  * en las lunas de Saturno, Herschel o un borde gastado como el de Odiseo no destacan entre tantos
  * cráteres. Fobos no lleva: es irregular (los radios angulares de sus cráteres no valen) y sus rasgos
@@ -229,12 +361,13 @@ export const MOSAIC_PROBES = {
     { name: 'Valdebron', lat: 29.6, lon: -104.4, diameterKm: 49, feature: 14489 },
     { name: 'Dapamort', lat: 36.6, lon: -84.9, diameterKm: 49, feature: 14462 },
   ],
-  // Tritón, en su canal naranja: una mancha oscura y dos depresiones oscuras del hemisferio que vio
-  // Voyager 2 (giradas o reflejadas caen en el hueco del norte o en terreno sin ellas).
+  // Tritón, en su canal naranja: tres manchas oscuras (maculae) del hemisferio sur que vio Voyager 2
+  // (giradas o reflejadas caen en terreno sin ellas). Kasu Patera y Ukupanio Cavus, las de antes, están
+  // a 3–4° del hueco del norte: sin contar el hueco no tienen contraste (revisión del bloque D, D2).
   triton: [
     { name: 'Doro Macula', lat: -27.5, lon: 31.7, radius: 1.5, sign: -1, feature: 1583 },
-    { name: 'Kasu Patera', lat: 39, lon: 14, radius: 3, sign: -1, feature: 2951 },
-    { name: 'Ukupanio Cavus', lat: 35, lon: 23, radius: 3, sign: -1, feature: 6196 },
+    { name: 'Namazu Macula', lat: -25.5, lon: 14, radius: 2, sign: -1, feature: 4125 },
+    { name: 'Kikimora Maculae', lat: -31, lon: 78, radius: 1, sign: -1, feature: 3029 },
   ],
 };
 
@@ -264,7 +397,7 @@ function probeRadiusDeg(id, probe) {
  * y devuelve un informe; falla si alguna no pasa o si el mapa girado 180° o reflejado también las pasa
  * todas (las sondas no distinguirían la orientación).
  */
-export function checkMosaicProbes(id, { data, width, height }) {
+export function checkMosaicProbes(id, { data, width, height, coverage }) {
   const probes = MOSAIC_PROBES[id];
   if (!probes) return null;
   const luminance = new Float32Array(width * height);
@@ -290,8 +423,9 @@ export function checkMosaicProbes(id, { data, width, height }) {
   }
   const pxPerDeg = width / 360;
   // Media de un campo en una corona de `r0` a `r1` grados de arco (en la esfera: el radio en
-  // longitud crece con 1/cos φ).
-  const annulus = (field, lat, lon, r0, r1) => {
+  // longitud crece con 1/cos φ), sin los huecos sin datos (`own`: solo lo que hay).
+  const covered = (x, y) => !coverage || at(coverage, x, y) >= 0.5;
+  const annulus = (field, lat, lon, r0, r1, own = false) => {
     const cx = (lon + 180) * pxPerDeg;
     const cy = (90 - lat) * pxPerDeg;
     const stretch = 1 / Math.max(Math.cos((lat * Math.PI) / 180), 0.2);
@@ -302,11 +436,14 @@ export function checkMosaicProbes(id, { data, width, height }) {
       for (let dx = -Math.ceil(reach * stretch); dx <= Math.ceil(reach * stretch); dx++) {
         const d = Math.hypot(dx / stretch, dy) / pxPerDeg;
         if (d < r0 || d > r1) continue;
-        sum += at(field, Math.round(cx + dx), Math.round(cy + dy));
+        const [x, y] = [Math.round(cx + dx), Math.round(cy + dy)];
+        if (own && !covered(x, y)) continue;
+        sum += at(field, x, y);
         count++;
       }
     }
-    return sum / count;
+    // Sin datos en la corona (una sonda girada que cae en un hueco): no hay rasgo que medir.
+    return count ? sum / count : NaN;
   };
   const measure = (probe, transform) => {
     const [lat, lon] = transform(probe.lat, probe.lon);
@@ -319,8 +456,8 @@ export function checkMosaicProbes(id, { data, width, height }) {
       return { ratio, ok: ratio >= RIM_RATIO };
     }
     const ratio =
-      annulus(luminance, lat, lon, 0, r) /
-      Math.max(annulus(luminance, lat, lon, 2 * r, 3 * r), 1e-6);
+      annulus(luminance, lat, lon, 0, r, true) /
+      Math.max(annulus(luminance, lat, lon, 2 * r, 3 * r, true), 1e-6);
     return { ratio, ok: probe.sign > 0 ? ratio > 1.08 : ratio < 0.92 };
   };
   const passes = (transform) => probes.map((probe) => ({ probe, ...measure(probe, transform) }));

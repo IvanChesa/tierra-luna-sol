@@ -14,3 +14,14 @@
  * no dibuja (fase 5).
  */
 export const OCEAN_CHROMA = [0.683, 1.029, 1.651];
+
+/**
+ * Balance de color del mosaico de Ío (revisión del bloque D, D1). El «Color Merged» del USGS lleva el
+ * color de Galileo (756 nm, verde y violeta, los filtros de PIA02308) con su propio procesado, más
+ * rojizo y menos saturado que PIA02308, el mosaico de Ío en color real de la misma sonda (NASA/JPL/
+ * University of Arizona; https://photojournal.jpl.nasa.gov/catalog/PIA02308). Ganancia por canal en
+ * RGB lineal, calibrada con `scripts/compare-io.mjs`: la escena con la geometría de la foto, en el 60 %
+ * central del disco, hasta que su color medio queda a ΔE*ab ≤ 4,6 del de la foto (CIELAB). A diferencia
+ * de un tinte, conserva las variaciones de color del mosaico: blancos, naranjas y manchas oscuras.
+ */
+export const IO_COLOR_GAIN = [0.871, 1.07, 0.643];

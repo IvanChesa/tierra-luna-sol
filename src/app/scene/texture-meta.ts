@@ -109,8 +109,9 @@ export const TEXTURE_META: Readonly<Record<TextureId, TextureMeta>> = {
   phobos: grayMosaic(
     'Mosaico Viking de Fobos del USGS (40 px/°, control del DLR), con longitudes este de −180° a 180°: alineado con su georreferencia. Sus rasgos se ven por el sombreado, no por el brillo: sin sondas.',
   ),
-  io: grayMosaic(
-    'Mosaico Voyager–Galileo SSI de Ío del USGS (1 km), alineado con su georreferencia. Sonda: Loki Patera (Gazetteer, Feature/3459), más oscura que su entorno; con el mapa girado 180° o reflejado, falla.',
+  // Ío, en color (revisión del bloque D, D1): sin tinte.
+  io: surface(
+    'Mosaico en color de Ío del USGS (Galileo SSI y Voyager, «Color Merged», 1 km), alineado con su georreferencia. Sonda: Loki Patera (Gazetteer, Feature/3459), más oscura que su entorno; con el mapa girado 180° o reflejado, falla.',
   ),
   europa: grayMosaic(
     'Mosaico Voyager–Galileo SSI de Europa del USGS (500 m), alineado con su georreferencia. Sondas: Pwyll (Feature/4878), clara, y Thrace Macula (Feature/5984), oscura; con el mapa girado 180° o reflejado, falla alguna.',
@@ -141,7 +142,7 @@ export const TEXTURE_META: Readonly<Record<TextureId, TextureMeta>> = {
     'Mosaico Cassini–Voyager de Jápeto del USGS (783 m), alineado con su georreferencia. Sondas de borde: Valdebron (Feature/14489) y Dapamort (Feature/14462); con el mapa girado 180° o reflejado, falla alguna.',
   ),
   triton: grayMosaic(
-    'Canal naranja del mosaico Voyager 2 de Tritón del USGS (600 m), alineado con su georreferencia; el norte que no vio Voyager 2 (38 %), con el gris medio. Sondas: Doro Macula (Feature/1583), Kasu Patera (Feature/2951) y Ukupanio Cavus (Feature/6196), oscuras; con el mapa girado 180° o reflejado, falla alguna.',
+    'Canal naranja del mosaico Voyager 2 de Tritón del USGS (600 m), alineado con su georreferencia; el norte que no vio Voyager 2 (38 %), con el gris de la franja vecina y el borde difuminado. Sondas: Doro Macula (Feature/1583), Namazu Macula (Feature/4125) y Kikimora Maculae (Feature/3029), oscuras; con el mapa girado 180° o reflejado, fallan.',
   ),
   'milky-way': {
     colorSpace: 'srgb',

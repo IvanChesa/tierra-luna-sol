@@ -322,16 +322,8 @@ export const BODY_PHOTOMETRY: Readonly<Record<Exclude<BodyId, 'sol'>, BodyPhotom
   },
   fobos: airless(),
   deimos: airless(),
-  io: {
-    ...airless(),
-    // Su mosaico es en gris (fase 7): toma este color en lugar del esquemático.
-    chromaticity: {
-      rgb: [1.154, 1.026, 0.284],
-      mix: 1,
-      source:
-        'Media del 60 % del disco en el mosaico global de Ío en color real de Galileo del 03-07-1999 (PIA02308, NASA/JPL/University of Arizona; https://photojournal.jpl.nasa.gov/catalog/PIA02308), con scripts/measure-reference-colors.mjs',
-    },
-  },
+  // Ío, sin tinte: su mosaico es en color (revisión del bloque D, D1).
+  io: airless(),
   europa: airless(),
   ganimedes: airless(),
   calisto: airless(),

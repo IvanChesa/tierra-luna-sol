@@ -32,7 +32,7 @@ import {
   phaseFunction,
   ringReflectance,
 } from '../src/app/ephemeris/photometry.ts';
-import { OCEAN_CHROMA } from './reference-colors.mjs';
+import { IO_COLOR_GAIN, OCEAN_CHROMA } from './reference-colors.mjs';
 import {
   DEMS,
   checkAlignmentWithColor,
@@ -72,7 +72,8 @@ const RING_HEIGHT = 16;
  * vértices (la Luna, fase 6). polar-relief: el atlas de normales de los casquetes polares de la Luna
  * (scripts/lola-polar.mjs; revisión de la fase 6): 2n × n px, el sur a la izquierda y el norte a la
  * derecha. mosaic: el mosaico global de una luna del USGS o del PDS (scripts/usgs-mosaic.mjs, fase 7),
- * con sondas de rasgos con nombre (`MOSAIC_PROBES`); `band`: solo ese canal, en gris.
+ * con sondas de rasgos con nombre (`MOSAIC_PROBES`); `band`: solo ese canal, en gris; `colorGain`:
+ * ganancia por canal en RGB lineal (el balance de color de Ío, revisión del bloque D).
  */
 const TEXTURES = {
   mercury: { file: '8k_mercury.jpg', kind: 'color', quality: 80 },
@@ -126,7 +127,14 @@ const TEXTURES = {
   // ≤ 300 kB por luna en el nivel bajo). Deimos, Proteo y las de Urano no tienen ninguno; el de Titán
   // (ISS, 938 nm) es su superficie bajo la neblina, que en luz visible no se ve: no se usa.
   phobos: { file: 'Phobos_Viking_Mosaic_40ppd_DLRcontrol.tif', kind: 'mosaic', quality: 80 },
-  io: { file: 'Io_GalileoSSI-Voyager_Global_Mosaic_1km.tif', kind: 'mosaic', quality: 80 },
+  // Ío, en color (revisión del bloque D, D1): el mosaico en gris con el color de Galileo superpuesto,
+  // con el balance de color de PIA02308 (`IO_COLOR_GAIN`).
+  io: {
+    file: 'Io_GalileoSSI-Voyager_Global_Mosaic_ClrMerge_1km.tif',
+    kind: 'mosaic',
+    quality: 80,
+    colorGain: IO_COLOR_GAIN,
+  },
   europa: { file: 'Europa_Voyager_GalileoSSI_global_mosaic_500m.tif', kind: 'mosaic', quality: 80 },
   ganymede: {
     file: 'Ganymede_Voyager_GalileoSSI_global_mosaic_1km.tif',
@@ -351,10 +359,18 @@ async function checkAlignment(id, file) {
  * Luminancia lineal media (Rec. 709) de un mapa equirrectangular de color, ponderada por el área de
  * cada fila (cos φ). Con ella, la escena lleva cada cuerpo a su albedo geométrico (D29).
  */
-async function meanLuminance(file) {
+async function meanLuminance(file, coverage = null) {
   const { data, info } = await sharp(fileURLToPath(new URL(file.path, PUBLIC)))
     .raw()
     .toBuffer({ resolveWithObject: true });
+  // Con la cobertura de un mosaico (de 0 a 1, a su tamaño), solo lo que hay: el gris de los huecos no
+  // cuenta para el albedo (revisión del bloque D, D2).
+  const covered = (x, y) => {
+    if (!coverage) return true;
+    const cx = Math.floor(((x + 0.5) / info.width) * coverage.width);
+    const cy = Math.floor(((y + 0.5) / info.height) * coverage.height);
+    return coverage.data[cy * coverage.width + cx] >= 0.5;
+  };
   const linear = (c) => {
     const v = c / 255;
     return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
@@ -365,6 +381,7 @@ async function meanLuminance(file) {
   for (let y = 0; y < info.height; y++) {
     const weight = Math.cos((((y + 0.5) / info.height) * 2 - 1) * (Math.PI / 2));
     for (let x = 0; x < info.width; x++) {
+      if (!covered(x, y)) continue;
       const k = (y * info.width + x) * info.channels;
       sum +=
         weight *
@@ -835,11 +852,27 @@ for (const [id, spec] of Object.entries(TEXTURES)) {
   }
   if (spec.kind === 'mosaic') {
     // El mosaico, a 2048 px y centrado en la longitud 0 (con sus huecos rellenos); sus sondas; y los
-    // niveles de 1k y 2k. La luminancia media, como la de los mapas de color, para el albedo (D29).
+    // niveles de 1k y 2k. La luminancia media, como la de los mapas de color, para el albedo (D29),
+    // solo de lo que hay: con los huecos, el gris del relleno movería el brillo de la luna entera.
     const mosaic = await loadMosaic(new URL(spec.file, SRC), 2048, { band: spec.band });
     reports.push(`${id}: ${mosaic.report}`);
     const probes = checkMosaicProbes(id, mosaic);
     if (probes) reports.push(probes);
+    if (spec.colorGain) {
+      // Después de las sondas (miden el mosaico tal como llega), en RGB lineal y sin pasar de 1.
+      const table = Float64Array.from({ length: 256 }, (_, c) => srgbToLinear(c / 255));
+      let clipped = 0;
+      for (let i = 0; i < mosaic.data.length; i += 3) {
+        for (let c = 0; c < 3; c++) {
+          const v = table[mosaic.data[i + c]] * spec.colorGain[c];
+          if (v > 1) clipped++;
+          mosaic.data[i + c] = Math.round(255 * linearToSrgb(Math.min(v, 1)));
+        }
+      }
+      reports.push(
+        `${id}: balance de color ${spec.colorGain.map((g) => g.toFixed(3)).join('/')} en RGB lineal (calibrado con compare-io.mjs frente a PIA02308); canales saturados: ${((100 * clipped) / mosaic.data.length).toFixed(2)} %`,
+      );
+    }
     const list = [];
     for (const [level, width] of LEVELS) {
       if (width > 2048) continue;
@@ -849,7 +882,15 @@ for (const [id, spec] of Object.entries(TEXTURES)) {
       list.push(await emit(id, level, pipeline, spec.quality));
     }
     files[id] = list;
-    luminance[id] = Number((await meanLuminance(list[0])).toFixed(4));
+    luminance[id] = Number(
+      (
+        await meanLuminance(list[0], {
+          data: mosaic.coverage,
+          width: mosaic.width,
+          height: mosaic.height,
+        })
+      ).toFixed(4),
+    );
     console.log(
       `${id}: ${list.map((f) => `${f.level} ${(f.bytes / 1024).toFixed(0)} kB`).join(' · ')}`,
     );

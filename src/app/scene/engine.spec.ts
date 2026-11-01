@@ -1442,15 +1442,15 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     const tint = uniformsOf('europa')?.uChromaticity.value;
     expect(tint?.w).toBe(1);
     expect(tint?.x ?? 0).toBeGreaterThan(tint?.z ?? 0);
-    // Ío, con el color medido en PIA02308 (data/photometry.ts), no con el esquemático.
-    const measured = BODY_PHOTOMETRY.io.chromaticity?.rgb ?? [0, 0, 0];
-    expect(uniformsOf('io')?.uChromaticity.value.x).toBeCloseTo(measured[0], 6);
+    // Ío, sin tinte: su mosaico es en color (revisión del bloque D, D1).
+    expect(uniformsOf('io')?.uHasMap.value).toBe(1);
+    expect(uniformsOf('io')?.uChromaticity.value.w).toBe(0);
+    expect(BODY_PHOTOMETRY.io.chromaticity).toBeUndefined();
     // Ío enfocada: su nivel del primer plano.
     h.engine.focus('io');
     await step();
     expect(requests).toContain(`io@${QUALITY_PROFILES.high.satelliteTexture}`);
-    // De vuelta a la vista general: sueltas, con su color esquemático, sin tinte (Europa) o con el
-    // color medido (Ío), que vale también para el color esquemático.
+    // De vuelta a la vista general: sueltas, con su color esquemático, sin tinte.
     h.engine.focus(null);
     await step();
     expect(released).toContain('io@1k');
@@ -1458,7 +1458,7 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     expect(uniformsOf('europa')?.uHasMap.value).toBe(0);
     expect(uniformsOf('europa')?.uChromaticity.value.w).toBe(0);
     expect(uniformsOf('io')?.uHasMap.value).toBe(0);
-    expect(uniformsOf('io')?.uChromaticity.value.w).toBe(1);
+    expect(uniformsOf('io')?.uChromaticity.value.w).toBe(0);
     // Con Saturno, sus seis lunas heladas; Titán no lleva textura (la de su superficie no se ve en luz
     // visible): su color, el medido en PIA06230.
     h.engine.focus('saturno');

@@ -83,7 +83,12 @@ const ASSETS = [
   // de Titán (ISS, 938 nm) es la superficie bajo su neblina, invisible en luz visible: no se usa.
   ...[
     ['Phobos_Viking_Mosaic_40ppd_DLRcontrol.tif', 'phobos_viking_global_mosaic_5m'],
-    ['Io_GalileoSSI-Voyager_Global_Mosaic_1km.tif', 'io_voyager_galileo_ssi_global_mosaic_1km'],
+    // Ío, en color (revisión del bloque D, D1): el mosaico en gris con el color de Galileo (756 nm,
+    // verde y violeta, los filtros de PIA02308) superpuesto por cocientes; sustituye al gris teñido.
+    [
+      'Io_GalileoSSI-Voyager_Global_Mosaic_ClrMerge_1km.tif',
+      'io_galileo_ssi_voyager_color_merged_global_mosaic_1km',
+    ],
     [
       'Europa_Voyager_GalileoSSI_global_mosaic_500m.tif',
       'europa_voyager_galileo_ssi_global_mosaic_500m',
