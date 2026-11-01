@@ -270,6 +270,8 @@ interface BodyVisual {
 }
 
 const tmpMatrix = new Matrix4();
+/** Proyección × vista de la cámara del frame, para las órbitas casi rectas (D3). */
+const orbitViewMatrix = new Matrix4();
 const tmpQuaternion = new Quaternion();
 const tmpVector = new Vector3();
 const { halo: HALO, granulation: GRANULATION, intensity: SUN_INTENSITY } = VISUAL_CONFIG.sun;
@@ -998,6 +1000,10 @@ export class World {
       camera.clearViewOffset();
     }
     camera.updateProjectionMatrix();
+    // La cámara de este frame, para medir las órbitas en pantalla (D3): el motor la ha colocado, pero
+    // su matriz se actualiza al pintar.
+    camera.updateMatrixWorld();
+    orbitViewMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
     const sky = Math.sqrt(near * far);
     this.stars?.setSkyDistance(sky);
     this.milkyWayMaterial.uniforms.uSkyDistance.value = sky;
@@ -1010,6 +1016,12 @@ export class World {
       frame.speedDaysPerSecond,
       frame.trailDirection,
       frame.aliasedOrbit,
+      {
+        matrix: orbitViewMatrix.elements,
+        width: frame.viewport.width,
+        height: frame.viewport.height,
+        camera: [camera.position.x, camera.position.y, camera.position.z],
+      },
     );
     return { near, far };
   }
@@ -1338,12 +1350,14 @@ export class World {
    * (`moonPresence`). La separación es la de su distancia real en el espacio a la escala del disco
    * en pantalla: no depende de por dónde pase la luna (delante del disco, la órbita no se apaga) y en
    * los sistemas compactos de la vista general (fase 4b) deja las órbitas ocultas hasta acercarse.
+   * Después, `OrbitLines` desvanece las que se ven casi rectas (revisión del bloque D, D3): de cerca,
+   * la del propio planeta enfocado, las de los demás o la de la Luna vista desde la Tierra.
    */
   private orbitOpacity(frame: WorldFrame): number[] {
     const physical = frame.frames.targetSpec.kind === 'physical';
     return this.orbitSources.map((source) => {
-      // En un marco físico, la órbita del propio planeta enfocado es casi una recta que lo
-      // atraviesa: se deja tenue (indica hacia dónde se mueve).
+      // En un marco físico, la órbita del propio planeta enfocado, más tenue que las demás: de lejos
+      // (el planeta pequeño en pantalla) se ve curva y dice hacia dónde se mueve.
       if (source.parentIndex < 0) {
         if (!physical) return VISUAL_CONFIG.overviewOrbitOpacity;
         if (frame.detail) return 0.12;

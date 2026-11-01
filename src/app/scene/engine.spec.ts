@@ -616,13 +616,20 @@ describe('SceneEngine: calidad adaptativa, contexto WebGL y limpieza', () => {
 
 describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas y aliasing)', () => {
   interface Internals {
-    screen: { index: number; x: number; y: number; radiusPx: number; occluded: boolean }[];
+    screen: {
+      index: number;
+      x: number;
+      y: number;
+      radiusPx: number;
+      occluded: boolean;
+      onScreen: boolean;
+    }[];
     rig: { distance: number; azimuth: number; elevation: number };
     look: unknown;
     frames: { output: { position: Float64Array; radius: Float64Array } };
     world: {
       scene: { getObjectByName(name: string): { visible: boolean } | undefined };
-      orbits: { colors: Float32Array; widths: Float32Array };
+      orbits: { colors: Float32Array; widths: Float32Array; drawnOpacity: readonly number[] };
       orbitSources: readonly { bodyIndex: number; segments: number }[];
     };
     labels: { visibleLayer: boolean };
@@ -1770,12 +1777,57 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
   it('la estela de una órbita en segundo plano es más fina (D34)', async () => {
     const h = await createHarness({ reducedMotion: true, focus: 'mercurio' });
     settle(h);
-    // Con Mercurio enfocado, su órbita queda tenue (opacidad 0,3, `World.orbitOpacity`): su estela
-    // engorda en proporción a esa opacidad respecto a la de la vista general.
-    const head = internals(h).world.orbits.widths[0] as number;
+    // Con Mercurio enfocado, las órbitas de los planetas quedan tenues (`World.orbitOpacity`) y cada
+    // estela engorda en proporción a la opacidad con la que se dibuja su órbita respecto a la de la
+    // vista general. La primera órbita dibujada es la primera de los segmentos (la de Mercurio, de
+    // cerca, es recta y no se dibuja: D3).
+    const { orbits } = internals(h).world;
+    const first = orbits.drawnOpacity.findIndex((alpha) => alpha > 0);
+    const alpha = orbits.drawnOpacity[first] ?? 0;
+    expect(alpha).toBeGreaterThan(0);
+    expect(alpha).toBeLessThan(VISUAL_CONFIG.overviewOrbitOpacity);
     const widen = VISUAL_CONFIG.trails.planet.widthPx / ORBIT_WIDTH_PX - 1;
-    expect(head).toBeCloseTo(1 + (widen * 0.3) / VISUAL_CONFIG.overviewOrbitOpacity, 5);
+    expect(orbits.widths[0] as number).toBeCloseTo(
+      1 + (widen * alpha) / VISUAL_CONFIG.overviewOrbitOpacity,
+      5,
+    );
     h.engine.dispose();
+  });
+
+  it('las órbitas que se ven casi rectas se apagan con su estela; las curvas se quedan (revisión del bloque D, D3)', async () => {
+    const drawn = (h: Harness, id: string): number => {
+      const { orbits, orbitSources } = internals(h).world;
+      const k = orbitSources.findIndex(
+        (source) => source.bodyIndex === sceneBody(id as never).index,
+      );
+      return orbits.drawnOpacity[k] ?? 0;
+    };
+    // En la vista general, las de los planetas se ven enteras: ninguna se toca.
+    const overview = await createHarness({ reducedMotion: true });
+    settle(overview);
+    for (const id of ['mercurio', 'tierra', 'jupiter', 'neptuno']) {
+      expect(drawn(overview, id), id).toBeCloseTo(VISUAL_CONFIG.overviewOrbitOpacity, 6);
+    }
+    overview.engine.dispose();
+    // Con Saturno enfocado: su órbita alrededor del Sol es la recta que lo atraviesa; las de las lunas
+    // que la cámara ve desde fuera (elipses, aunque de canto con los anillos de 2026) se quedan
+    // enteras. Las de Dione, Rea, Titán y Jápeto, con la cámara dentro y casi en su plano, son el
+    // horizonte de ese plano: rectas (las capturas de la revisión del bloque D lo enseñan).
+    const saturn = await createHarness({ reducedMotion: true, focus: 'saturno' });
+    settle(saturn);
+    expect(drawn(saturn, 'saturno')).toBe(0);
+    // Enteras: la opacidad de las órbitas de las lunas (0,7, `World.orbitOpacity`) por su presencia.
+    for (const id of ['mimas', 'encelado']) expect(drawn(saturn, id), id).toBeGreaterThan(0.6);
+    saturn.engine.dispose();
+    // En la vista Tierra, la órbita de la Tierra alrededor del Sol, que la atraviesa, es una recta. (La
+    // de la Luna, vista desde cerca de su centro, también, cuando cae en el encuadre: lo prueban
+    // `orbits.spec.ts` y las capturas; aquí queda fuera del lienzo del arnés.)
+    const earth = await createHarness({ reducedMotion: true });
+    earth.engine.setView('earth');
+    settle(earth);
+    expect(screenOf(earth, 'tierra')?.onScreen).toBe(true);
+    expect(drawn(earth, 'tierra')).toBe(0);
+    earth.engine.dispose();
   });
 });
 

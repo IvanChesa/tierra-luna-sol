@@ -1,7 +1,15 @@
-import { Color, ShaderLib, WebGLRenderer } from 'three';
+import { Color, Matrix4, PerspectiveCamera, ShaderLib, WebGLRenderer } from 'three';
 import type { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { SCHEMATIC_COLORS } from './body-colors';
-import { ORBIT_WIDTH_PX, OrbitLines, trailColor, trailWeight } from './orbits';
+import {
+  ORBIT_WIDTH_PX,
+  OrbitLines,
+  OrbitView,
+  screenPath,
+  straightOrbitFade,
+  trailColor,
+  trailWeight,
+} from './orbits';
 import { VISUAL_CONFIG } from './visual-config';
 
 describe('órbitas: desvanecimiento sobre los discos', () => {
@@ -77,5 +85,144 @@ describe('estelas de los cuerpos (D34)', () => {
     // Marte, rojizo; Neptuno, azul.
     expect(trailColor(SCHEMATIC_COLORS.marte).r).toBe(1);
     expect(trailColor(SCHEMATIC_COLORS.neptuno).b).toBe(1);
+  });
+});
+
+describe('órbitas casi rectas en pantalla (revisión del bloque D, D3)', () => {
+  const WIDTH = 1600;
+  const HEIGHT = 900;
+  /** La cámara de un frame: una de three de verdad, de 50° de campo vertical. */
+  const viewFrom = (
+    position: readonly [number, number, number],
+    target: readonly [number, number, number],
+  ): OrbitView => {
+    const camera = new PerspectiveCamera(50, WIDTH / HEIGHT, 1e-3, 1e12);
+    camera.position.set(...position);
+    camera.lookAt(...target);
+    camera.updateMatrixWorld();
+    const matrix = new Matrix4().multiplyMatrices(
+      camera.projectionMatrix,
+      camera.matrixWorldInverse,
+    );
+    return { matrix: matrix.elements, width: WIDTH, height: HEIGHT, camera: position };
+  };
+  /** La cámara, en radios de una órbita centrada en el origen. */
+  const outside = (view: OrbitView, r: number) => Math.hypot(...view.camera) / r;
+  /** El desvanecimiento de una órbita circular de radio r vista desde `view`. */
+  const fadeOf = (r: number, view: OrbitView) => {
+    const { points, count } = circle(r);
+    return straightOrbitFade(screenPath(points, count, view), outside(view, r));
+  };
+  /** Una órbita circular de radio r en el plano de la eclíptica (XZ de la escena), cerrada. */
+  const circle = (r: number, segments = 256): { points: Float64Array; count: number } => {
+    const count = segments + 1;
+    const points = new Float64Array(3 * count);
+    for (let k = 0; k < count; k++) {
+      const angle = (2 * Math.PI * k) / segments;
+      points[3 * k] = r * Math.cos(angle);
+      points[3 * k + 2] = -r * Math.sin(angle);
+    }
+    return { points, count };
+  };
+
+  it('una órbita entera en pantalla gira una vuelta y se ve entera (la vista general, un sistema)', () => {
+    const { points, count } = circle(5);
+    const view = viewFrom([0, 30, 12], [0, 0, 0]);
+    const path = screenPath(points, count, view);
+    // Una vuelta, menos el giro en el cuerpo (donde la polilínea empieza y acaba).
+    expect(path.turning).toBeGreaterThan(2 * Math.PI * (1 - 2 / 256));
+    expect(path.lengthPx).toBeGreaterThan(500);
+    expect(straightOrbitFade(path, outside(view, 5))).toBe(1);
+    // Aun con la cámara dentro de ella (no cuenta por estar fuera): se ve curva.
+    expect(straightOrbitFade(path, 0)).toBe(1);
+  });
+
+  it('de cerca, junto al cuerpo, una órbita enorme es una recta que cruza la pantalla: se apaga', () => {
+    // Saturno enfocado a unos radios: su órbita (9,5 UA) es el tramo recto que lo atraviesa.
+    const r = 1.4e9;
+    const { points, count } = circle(r);
+    const view = viewFrom([r + 2e5, 1e5, -3e5], [r, 0, 0]);
+    const path = screenPath(points, count, view);
+    // Lo que gira es lo lejano de la órbita, que se acerca al horizonte de su plano (unos 8°): la
+    // cuerda que lo atraviesa se junta con ello en una esquina, que no cuenta.
+    expect(path.lengthPx).toBeGreaterThan(WIDTH / 2);
+    expect(path.turning).toBeLessThan(0.15);
+    expect(outside(view, r)).toBeCloseTo(1, 3);
+    expect(straightOrbitFade(path, outside(view, r))).toBeLessThan(0.05);
+  });
+
+  it('vista desde cerca de su centro, una órbita es una recta (la de la Luna desde la Tierra): se apaga', () => {
+    // La Luna, a 60 radios terrestres; la cámara, a 3 radios de la Tierra, mirando hacia la órbita.
+    const { points, count } = circle(60);
+    const view = viewFrom([2, 1, 2], [0, 0, -60]);
+    const path = screenPath(points, count, view);
+    expect(path.lengthPx).toBeGreaterThan(WIDTH / 2);
+    expect(path.turning).toBeLessThan(VISUAL_CONFIG.straightOrbits.fadeBelowRad);
+    expect(straightOrbitFade(path, outside(view, 60))).toBe(0);
+  });
+
+  it('la órbita de una luna vista en su sistema, aunque no quepa entera, se ve curva y se queda', () => {
+    // Una órbita de 30 radios con la cámara a 20 del planeta y 25° sobre su plano.
+    const { points, count } = circle(30);
+    const elevation = (25 * Math.PI) / 180;
+    const view = viewFrom([0, 20 * Math.sin(elevation), 20 * Math.cos(elevation)], [0, 0, 0]);
+    const path = screenPath(points, count, view);
+    // La cámara, dentro de ella: lo que cuenta es lo que gira.
+    expect(outside(view, 30)).toBeLessThan(1);
+    expect(path.lengthPx).toBeGreaterThan(WIDTH / 2);
+    expect(path.turning).toBeGreaterThan(VISUAL_CONFIG.straightOrbits.fullAboveRad);
+    expect(straightOrbitFade(path, outside(view, 30))).toBe(1);
+  });
+
+  it('lo que queda detrás de la cámara no cuenta, sin NaN, y lo que no se ve no gira', () => {
+    // La cámara sobre la propia órbita, mirando a lo largo de ella: la mitad queda detrás.
+    const { points, count } = circle(10);
+    const along = screenPath(points, count, viewFrom([10, 0.2, 0], [10, 0.2, -1]));
+    expect(Number.isFinite(along.turning)).toBe(true);
+    expect(Number.isFinite(along.lengthPx)).toBe(true);
+    // Mirando hacia fuera, lejos de ella: nada en pantalla.
+    const away = screenPath(points, count, viewFrom([0, 50, 0], [0, 100, 0]));
+    expect(away).toEqual({ turning: 0, lengthPx: 0 });
+    expect(straightOrbitFade(away, 5)).toBe(1);
+    expect(straightOrbitFade(away, 0)).toBe(1);
+  });
+
+  it('vista de canto desde fuera, la órbita de una luna es una elipse casi recta pero entera: se queda', () => {
+    // Una órbita de 5 radios vista desde 12, a 2° sobre su plano (como las de Saturno en 2026).
+    const elevation = (2 * Math.PI) / 180;
+    const view = viewFrom([0, 12 * Math.sin(elevation), 12 * Math.cos(elevation)], [0, 0, 0]);
+    expect(outside(view, 5)).toBeGreaterThan(VISUAL_CONFIG.straightOrbits.outsideTo);
+    expect(fadeOf(5, view)).toBe(1);
+    // La misma cámara, dentro de una órbita de 60 radios: su horizonte es una recta y se apaga.
+    expect(fadeOf(60, view)).toBe(0);
+  });
+
+  it('el desvanecimiento sube sin saltos con el giro y no toca lo que apenas se ve', () => {
+    const { fadeBelowRad, fullAboveRad, minLengthPx, outsideFrom, outsideTo } =
+      VISUAL_CONFIG.straightOrbits;
+    const long = 10 * minLengthPx;
+    const piece = (turning: number, lengthPx = long, ratio = 0.5) =>
+      straightOrbitFade({ turning, lengthPx }, ratio);
+    expect(piece(0)).toBe(0);
+    expect(piece(fadeBelowRad)).toBe(0);
+    expect(piece(fullAboveRad)).toBe(1);
+    let previous = 0;
+    for (let turning = fadeBelowRad; turning <= fullAboveRad; turning += 0.01) {
+      const fade = piece(turning);
+      expect(fade).toBeGreaterThanOrEqual(previous);
+      expect(fade - previous).toBeLessThan(0.1);
+      previous = fade;
+    }
+    // Unos píxeles de recta no se tocan; entre medias, un paso suave.
+    expect(piece(0, minLengthPx / 2)).toBe(1);
+    const half = piece(0, (3 * minLengthPx) / 4);
+    expect(half).toBeGreaterThan(0);
+    expect(half).toBeLessThan(1);
+    // Lo mismo con la cámara fuera de la órbita: junto a ella, se apaga; bien fuera, se queda.
+    expect(piece(0, long, outsideFrom)).toBe(0);
+    expect(piece(0, long, outsideTo)).toBe(1);
+    const between = piece(0, long, (outsideFrom + outsideTo) / 2);
+    expect(between).toBeGreaterThan(0);
+    expect(between).toBeLessThan(1);
   });
 });
