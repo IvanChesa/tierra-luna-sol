@@ -33,13 +33,21 @@ export const SPEED_STEPS: readonly SpeedStep[] = [
   { id: 'year', seconds: JULIAN_YEAR_S, label: '1 año por segundo' },
 ];
 
-/** El contexto de la velocidad (D33): la vista general del sistema solar o un cuerpo. */
-export type SpeedContext = 'overview' | 'body';
+/**
+ * El contexto de la velocidad (D33): la vista general del sistema solar, un cuerpo o el cielo desde un
+ * lugar (fase 8).
+ */
+export type SpeedContext = 'overview' | 'body' | 'sky';
 
-/** Velocidad de cada contexto (D33): 3 días por segundo en la vista general y 1 hora con un cuerpo. */
+/**
+ * Velocidad de cada contexto (D33): 3 días por segundo en la vista general y 1 hora con un cuerpo. En
+ * el cielo (fase 8; el plan no la fija: propuesta del informe de la fase 8, §10), tiempo real: lo que se
+ * ve es lo que hay ahora, y la noche se recorre con su deslizador.
+ */
 export const CONTEXT_SPEED: Readonly<Record<SpeedContext, number>> = {
   overview: 3 * DAY_S,
   body: HOUR_S,
+  sky: 1,
 };
 
 /**
@@ -48,6 +56,7 @@ export const CONTEXT_SPEED: Readonly<Record<SpeedContext, number>> = {
  * no cambia el contexto (respeta una velocidad elegida a mano).
  */
 export function speedContext(view: ExplorerView, selected: BodyId | null): SpeedContext {
+  if (view === 'sky') return 'sky';
   return view === 'system' && selected === null ? 'overview' : 'body';
 }
 

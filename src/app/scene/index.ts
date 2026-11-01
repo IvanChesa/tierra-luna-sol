@@ -28,6 +28,8 @@ export type {
   SceneEngineEventName,
   SceneEngineEvents,
   SceneEngineOptions,
+  SkyObserver,
+  SkyView,
   ViewInsets,
 } from './types';
 

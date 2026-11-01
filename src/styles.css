@@ -466,3 +466,80 @@ select.control {
 .scene-label--marker .scene-label__marker {
   display: block;
 }
+
+/*
+ * Etiquetas de la vista del cielo (fase 8, scene/sky/sky-labels.ts): los puntos cardinales en el
+ * horizonte, los nombres del Sol, la Luna y los planetas, y los de las constelaciones, más tenues.
+ */
+.sky-labels {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.sky-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  will-change: transform;
+  text-shadow:
+    0 0 3px var(--color-bg),
+    0 0 1px var(--color-bg);
+}
+
+.sky-label--cardinal {
+  color: var(--color-accent);
+  font-size: 0.875rem;
+  font-weight: var(--font-weight-strong);
+}
+
+.sky-label--cardinal-minor {
+  color: var(--color-text-muted);
+  font-size: 0.6875rem;
+}
+
+.sky-label--body {
+  color: var(--color-text);
+  font-weight: var(--font-weight-strong);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.sky-label--constellation {
+  color: #8fa6c8;
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  opacity: 0.85;
+}
+
+/*
+ * El fundido entre el espacio y el cielo (fase 8; explorer-ui.html, aquí por el presupuesto de su CSS): un velo del color del fondo que se desvanece.
+ * Solo existe sin movimiento reducido (lo decide la interfaz); `prefers-reduced-motion`, por si acaso.
+ */
+.stage__fade {
+  position: absolute;
+  inset: 0;
+  background: var(--color-bg);
+  pointer-events: none;
+  animation: stage-fade 700ms var(--ease-standard) forwards;
+}
+
+@keyframes stage-fade {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage__fade {
+    display: none;
+  }
+}

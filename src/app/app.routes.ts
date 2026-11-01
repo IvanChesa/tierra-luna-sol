@@ -40,6 +40,14 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./pages/explore-moon/explore-moon-page').then((m) => m.ExploreMoonPage),
       },
+      {
+        // El cielo desde España (fase 8): el lugar va en la URL (`?lugar=teide`).
+        path: 'cielo',
+        title: 'El cielo desde España',
+        data: { view: 'sky' satisfies ExplorerView },
+        loadComponent: () =>
+          import('./pages/explore-sky/explore-sky-page').then((m) => m.ExploreSkyPage),
+      },
     ],
   },
   {

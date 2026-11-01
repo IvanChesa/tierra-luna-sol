@@ -16,6 +16,7 @@ export type ShortcutCommand =
   | 'view-system'
   | 'view-earth'
   | 'view-moon'
+  | 'view-sky'
   | 'clean-view'
   | 'index'
   | 'escape';
@@ -50,6 +51,7 @@ const GLOBAL_KEYS: Readonly<Record<string, ShortcutCommand>> = {
   '1': 'view-system',
   '2': 'view-earth',
   '3': 'view-moon',
+  '4': 'view-sky',
   v: 'clean-view',
   i: 'index',
   Escape: 'escape',
@@ -99,7 +101,7 @@ export const SHORTCUT_HELP: readonly {
   {
     title: 'Vistas e interfaz',
     items: [
-      { keys: ['1', '2', '3'], action: 'Sistema solar, Tierra o Luna' },
+      { keys: ['1', '2', '3', '4'], action: 'Sistema solar, Tierra, Luna o Cielo' },
       { keys: ['I'], action: 'Abrir o cerrar el índice de cuerpos' },
       { keys: ['V'], action: 'Vista limpia: ocultar la interfaz' },
       {

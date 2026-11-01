@@ -202,6 +202,70 @@ export const VISUAL_CONFIG = {
    * exposición del primer plano (`backgroundGain`): el fondo se ve igual en todas las vistas.
    */
   milkyWay: { intensity: 0.25, knee: 0.05 },
+  /**
+   * El cielo desde un lugar (fase 8). **Ilustrativo**: no es un modelo de la dispersión en la
+   * atmósfera, sino unos colores de referencia (sRGB) a varias alturas del Sol, entre los que se
+   * interpola: el cénit, el horizonte y el resplandor del lado del Sol. Siguen el orden de las fotos
+   * del crepúsculo: el día azul con el horizonte blanquecino; la puesta, con el horizonte anaranjado
+   * hacia el Sol; el crepúsculo civil, azul con la franja roja; el náutico, azul profundo; y la noche,
+   * casi negra (un azul muy oscuro, no negro: el resplandor natural del cielo).
+   * - `keyframes`: [altura del Sol (°), cénit, horizonte, resplandor hacia el Sol].
+   * - `glow`: lo concentrado que está el resplandor alrededor del Sol (exponente del coseno) y lo
+   *   que sube sobre el horizonte (exponente de la altura).
+   * - `ground`: el suelo, de noche y de día (una silueta, sin paisaje).
+   * - `starLimit`: la magnitud más débil que se ve según la altura del Sol: de día ninguna estrella;
+   *   en el civil, las más brillantes y Venus; de noche cerrada, hasta la 6,5 (el catálogo). Los
+   *   planetas siguen el mismo límite.
+   * - `milkyWay`: la ganancia de la Vía Láctea, que solo se ve con el cielo ya oscuro, y su intensidad
+   *   en el cielo (`milkyWayIntensity`): desde un lugar oscuro se ve bien, más que el fondo sutil del
+   *   espacio (`VISUAL_CONFIG.milkyWay`).
+   * - `constellations`: la opacidad de sus líneas según la altura del Sol: nada de día y del todo con
+   *   el cielo oscuro.
+   * - `extinction`: magnitudes que se pierden por masa de aire (≈ 0,25 en un buen observatorio; el
+   *   valor típico en el visible): las estrellas se apagan junto al horizonte.
+   * - `eclipse`: en un eclipse total de Sol el cielo se oscurece como en el crepúsculo civil tardío;
+   *   el oscurecimiento empieza cuando el Sol está tapado casi del todo (`from`, la fracción del
+   *   disco), no en los parciales poco profundos.
+   * - Los discos del Sol y de la Luna van a su tamaño real, con un mínimo en pantalla (`minDiscPx`,
+   *   radio en px CSS) para que no sean un punto con el gran angular; con un campo estrecho, el real.
+   */
+  sky: {
+    keyframes: [
+      [-18, '#060913', '#0d1322', '#0d1322'],
+      [-12, '#081024', '#121c33', '#18141f'],
+      [-6, '#0d1a36', '#24314d', '#4a2a24'],
+      [-3, '#1b2f5c', '#4a5470', '#a4532b'],
+      [0, '#2b4b8a', '#8c7f80', '#e07b38'],
+      [6, '#3b67b4', '#a7b6cb', '#f0c088'],
+      [20, '#3a72c9', '#b6cbe3', '#fff0d2'],
+    ] as readonly (readonly [number, string, string, string])[],
+    glow: { power: 6, rise: 3 },
+    ground: { night: '#020203', day: '#38372f' },
+    starLimit: [
+      [-18, 6.5],
+      [-12, 5],
+      [-9, 3.5],
+      [-6, 2],
+      [-3, 0.5],
+      [0, -1.5],
+      [3, -5],
+    ] as readonly (readonly [number, number])[],
+    milkyWay: [
+      [-18, 1],
+      [-15, 0.45],
+      [-12, 0],
+    ] as readonly (readonly [number, number])[],
+    milkyWayIntensity: 0.75,
+    milkyWayKnee: 0.12,
+    constellations: [
+      [-12, 0.5],
+      [-6, 0.3],
+      [-2, 0],
+    ] as readonly (readonly [number, number])[],
+    extinction: 0.25,
+    eclipse: { from: 0.96, altitudeDeg: -7 },
+    minDiscPx: 5,
+  },
 } as const;
 
 /**

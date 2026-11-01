@@ -8,11 +8,12 @@ interface ViewLink {
   readonly label: string;
 }
 
-/** Las vistas del explorador (el cielo desde España llega en la fase 8). */
+/** Las vistas del explorador: el sistema solar, la Tierra, la Luna y el cielo desde España (fase 8). */
 export const VIEW_LINKS: readonly ViewLink[] = [
   { view: 'system', path: '/', label: 'Sistema solar' },
   { view: 'earth', path: '/explorar/tierra', label: 'Tierra' },
   { view: 'moon', path: '/explorar/luna', label: 'Luna' },
+  { view: 'sky', path: '/cielo', label: 'Cielo' },
 ];
 
 /**

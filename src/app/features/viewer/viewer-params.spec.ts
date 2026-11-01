@@ -23,6 +23,8 @@ describe('parámetros del explorador', () => {
       viewFrom: null,
       toneMapping: null,
       isolate: false,
+      place: null,
+      skyView: null,
       warnings: [],
     });
     expect(CAPTURE_DATE.toISOString()).toBe('2026-10-24T00:00:00.000Z');
@@ -75,6 +77,8 @@ describe('parámetros del explorador', () => {
       viewFrom: null,
       toneMapping: null,
       isolate: false,
+      place: null,
+      skyView: null,
       warnings: [],
     });
     expect(params.warnings).toEqual([
@@ -93,11 +97,18 @@ describe('parámetros del explorador', () => {
     expect(formatUtcParam(new Date('2030-01-01T10:20:30Z'))).toBe('2030-01-01T10:20:30Z');
     expect(
       viewerQueryParams({ time: new Date('2030-01-01T00:00:00Z'), body: 'titan', scale: 'real' }),
-    ).toEqual({ fecha: '2030-01-01T00:00Z', cuerpo: 'titan', escala: 'real', calidad: null });
+    ).toEqual({
+      fecha: '2030-01-01T00:00Z',
+      cuerpo: 'titan',
+      escala: 'real',
+      lugar: null,
+      calidad: null,
+    });
     expect(viewerQueryParams({ time: null, body: null, scale: 'illustrative' })).toEqual({
       fecha: null,
       cuerpo: null,
       escala: null,
+      lugar: null,
       calidad: null,
     });
     // Ida y vuelta: lo que se escribe se vuelve a leer igual.
@@ -113,6 +124,33 @@ describe('parámetros del explorador', () => {
     expect(read.body).toBe('luna');
     expect(read.scale).toBe('real');
     expect(read.warnings).toEqual([]);
+  });
+
+  it('el lugar del cielo (fase 8): los del selector; el Montsec, por defecto, no se escribe', () => {
+    expect(parseViewerParams('?lugar=teide').place).toBe('teide');
+    expect(parseViewerParams('?lugar=roque-de-los-muchachos').place).toBe('roque-de-los-muchachos');
+    // Lleida está en los datos, pero no en el selector; un lugar que no existe, tampoco.
+    const lleida = parseViewerParams('?lugar=lleida');
+    expect(lleida.place).toBeNull();
+    expect(lleida.warnings).toEqual([
+      'El lugar «lleida» no está en el selector del cielo y se muestra el del Montsec.',
+    ]);
+    expect(parseViewerParams('?lugar=marte').place).toBeNull();
+    const base = { time: null, body: null, scale: 'illustrative' as const };
+    expect(viewerQueryParams({ ...base, place: 'teide' })['lugar']).toBe('teide');
+    expect(viewerQueryParams({ ...base, place: 'montsec' })['lugar']).toBeNull();
+    expect(viewerQueryParams({ ...base, place: null })['lugar']).toBeNull();
+  });
+
+  it('la cámara del cielo, solo en captura (rumbo, altura y campo)', () => {
+    expect(parseViewerParams('?captura=1&rumbo=119&altura=51.4&campo=2').skyView).toEqual({
+      azimuthDeg: 119,
+      altitudeDeg: 51.4,
+      fovDeg: 2,
+    });
+    expect(parseViewerParams('?captura=1&rumbo=90').skyView).toEqual({ azimuthDeg: 90 });
+    expect(parseViewerParams('?captura=1&altura=95').skyView).toBeNull();
+    expect(parseViewerParams('?rumbo=90&altura=20').skyView).toBeNull();
   });
 
   it('solo admite fechas UTC de 1900 a 2100', () => {

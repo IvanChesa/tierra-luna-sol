@@ -1836,3 +1836,119 @@ function normalizeXyz(x: number, y: number, z: number): { x: number; y: number; 
   const n = Math.hypot(x, y, z);
   return { x: x / n, y: y / n, z: z / n };
 }
+
+describe('SceneEngine: la vista del cielo (fase 8)', () => {
+  const MONTSEC = { latDeg: 42.024637, lonDeg: 0.736936, altitudeM: 812 };
+  const NIGHT = new Date('2026-11-02T04:00:00Z');
+
+  it('entra por el cielo: compila su escena, la pinta sin el espacio y sin sus etiquetas', async () => {
+    const h = await createHarness({ view: 'sky', time: NIGHT, observer: MONTSEC });
+    expect(h.events.ready).toHaveLength(1);
+    // Dos compilaciones: el espacio (por si se cambia de vista) y el cielo.
+    expect(h.renderer.compiles).toBe(2);
+    const spaceLabels = h.labels.querySelector<HTMLElement>('.scene-labels');
+    const skyLabels = h.labels.querySelector<HTMLElement>('.sky-labels');
+    expect(spaceLabels?.hidden).toBe(true);
+    expect(skyLabels?.hidden).toBe(false);
+    // Los puntos cardinales que caen en el campo (mirando al sur, a 25° de altura).
+    settle(h);
+    const shown = [...(skyLabels?.querySelectorAll<HTMLElement>('.sky-label') ?? [])].filter(
+      (el) => !el.hidden,
+    );
+    expect(shown.map((el) => el.textContent)).toContain('S');
+    // La exposición de la escena del cielo es la neutra.
+    expect(h.renderer.exposure).toBe(1);
+    h.engine.dispose();
+  });
+
+  it('del espacio al cielo y vuelta: sin vuelo ni motor nuevo, y las etiquetas de cada uno', async () => {
+    const h = await createHarness({ time: NIGHT });
+    settle(h);
+    h.engine.setView('sky');
+    expect(h.engine.view).toBe('sky');
+    expect(h.events.travel.filter((t) => t.active)).toHaveLength(0);
+    const before = h.renderer.renders;
+    settle(h);
+    expect(h.renderer.renders).toBeGreaterThan(before);
+    expect(h.labels.querySelector<HTMLElement>('.scene-labels')?.hidden).toBe(true);
+    h.engine.setView('earth');
+    expect(h.engine.view).toBe('earth');
+    expect(h.labels.querySelector<HTMLElement>('.sky-labels')?.hidden).toBe(true);
+    expect(h.labels.querySelector<HTMLElement>('.scene-labels')?.hidden).toBe(false);
+    // Desde el cielo se llega a la Tierra de un corte: ningún viaje en curso.
+    expect(h.engine.focusedBody).toBe('tierra');
+    h.engine.dispose();
+  });
+
+  it('en el cielo, el teclado y el zoom mueven la cámara del cielo, no la del espacio', async () => {
+    const h = await createHarness({ view: 'sky', time: NIGHT, reducedMotion: true });
+    const start = h.engine.skyView;
+    h.engine.orbitBy((6 * Math.PI) / 180, 0);
+    expect(h.engine.skyView.azimuthDeg).toBeCloseTo(start.azimuthDeg + 6, 6);
+    h.engine.orbitBy(0, (6 * Math.PI) / 180);
+    expect(h.engine.skyView.altitudeDeg).toBeCloseTo(start.altitudeDeg + 6, 6);
+    h.engine.zoomBy(0.5);
+    expect(h.engine.skyView.fovDeg).toBeCloseTo(start.fovDeg / 2, 6);
+    // «Mirar a…»: directo con movimiento reducido.
+    h.engine.lookAtSky(119, 51);
+    expect(h.engine.skyView).toMatchObject({ azimuthDeg: 119, altitudeDeg: 51 });
+    h.engine.dispose();
+  });
+
+  it('un clic sobre la Luna en el cielo la elige', async () => {
+    const h = await createHarness({
+      view: 'sky',
+      time: NIGHT,
+      observer: MONTSEC,
+      capture: true,
+      // La Luna a las 04:00 UTC del 2-11-2026, desde el Montsec (rumbo 119°, altura 51,4°).
+      skyView: { azimuthDeg: 119.05, altitudeDeg: 51.42, fovDeg: 20 },
+    });
+    settle(h);
+    // En el centro de la parte visible (sin márgenes, el del lienzo).
+    h.canvas.dispatchEvent(
+      new PointerEvent('pointerdown', { clientX: WIDTH / 2, clientY: HEIGHT / 2, pointerId: 1 }),
+    );
+    h.canvas.dispatchEvent(
+      new PointerEvent('pointerup', { clientX: WIDTH / 2, clientY: HEIGHT / 2, pointerId: 1 }),
+    );
+    expect(h.events.bodyPicked.map((e) => e.id)).toContain('luna');
+    h.engine.dispose();
+  });
+
+  it('cambiar de lugar recalcula el cielo (otro frame), y un lugar imposible se ignora', async () => {
+    const h = await createHarness({ view: 'sky', time: NIGHT, observer: MONTSEC });
+    settle(h);
+    const before = h.renderer.renders;
+    h.engine.setObserver({ latDeg: 28.30111, lonDeg: -16.51056, altitudeM: 2390 });
+    settle(h);
+    expect(h.renderer.renders).toBeGreaterThan(before);
+    const after = h.renderer.renders;
+    h.engine.setObserver({ latDeg: 123, lonDeg: 0, altitudeM: 0 });
+    settle(h);
+    expect(h.renderer.renders).toBe(after);
+    h.engine.dispose();
+  });
+
+  it('las constelaciones llegan al abrir el cielo y se pueden ocultar; su memoria se cuenta', async () => {
+    const data = {
+      constellations: [
+        { id: 'Ori', name: 'Orion', label: [83.8, 5], lines: [[88.79, 7.41, 81.28, 6.35]] },
+      ],
+    };
+    const loadConstellations = vi.fn(() => Promise.resolve(data as unknown));
+    const h = await createHarness({ view: 'sky', time: NIGHT }, { loadConstellations });
+    await flush();
+    expect(loadConstellations).toHaveBeenCalledTimes(1);
+    expect(h.engine.stats().vramMB).toBeGreaterThan(0);
+    h.engine.setConstellationsVisible(false);
+    settle(h);
+    expect(
+      [...h.labels.querySelectorAll<HTMLElement>('.sky-label--constellation')].every(
+        (el) => el.hidden,
+      ),
+    ).toBe(true);
+    h.engine.dispose();
+    expect(h.labels.querySelector('.sky-labels')).toBeNull();
+  });
+});

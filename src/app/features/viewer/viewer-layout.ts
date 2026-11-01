@@ -6,12 +6,12 @@ import { ExplorerUi } from '../explorer-ui/explorer-ui';
 import { ViewSwitcher } from '../view-switcher/view-switcher';
 import { ViewerPoster } from './viewer-poster';
 
-const VIEWS: readonly ExplorerView[] = ['system', 'earth', 'moon'];
+const VIEWS: readonly ExplorerView[] = ['system', 'earth', 'moon', 'sky'];
 /** El póster se quita cuando el lienzo ya se ve (su fundido dura `--duration-base`). */
 const POSTER_FADE_MS = 400;
 
 /**
- * Layout del explorador (D10): ruta padre de `/`, `/explorar/tierra` y `/explorar/luna`. Conserva el
+ * Layout del explorador (D10): ruta padre de `/`, `/explorar/tierra`, `/explorar/luna` y `/cielo`. Conserva el
  * lienzo, el motor y la interfaz mientras se cambia de vista; las páginas hijas solo ponen su texto y
  * su vista va en los datos de la ruta (`data.view`).
  *

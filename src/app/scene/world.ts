@@ -531,6 +531,23 @@ export class World {
     this.scene.add(this.milkyWay);
   }
 
+  /** La textura de la Vía Láctea ya cargada (la comparte la vista del cielo, fase 8), o `null`. */
+  milkyWayMap(): Texture | null {
+    return this.milkyWayTexture?.texture ?? null;
+  }
+
+  /**
+   * La textura de color ya cargada de un cuerpo y su meridiano 0 (la Luna de la vista del cielo, que la
+   * comparte: no ocupa más memoria de vídeo), o `null`.
+   */
+  colorMapOf(index: number): { texture: Texture; meridianOffset: number } | null {
+    const visual = this.visuals[index];
+    const loaded = visual?.loaded;
+    if (!visual || !loaded) return null;
+    const meta = visual.textureId ? this.options.textureMeta?.[visual.textureId] : undefined;
+    return { texture: loaded.texture, meridianOffset: meta ? meridianOffset(meta) : 0 };
+  }
+
   /** Añade el cielo de estrellas cuando llega el catálogo. */
   setStars(stars: StarField): void {
     this.stars?.dispose();

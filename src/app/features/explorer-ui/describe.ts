@@ -95,6 +95,7 @@ const VIEW_NAMES: Readonly<Record<ExplorerView, string>> = {
   system: 'Vista del sistema solar',
   earth: 'Vista de la Tierra',
   moon: 'Vista de la Luna',
+  sky: 'Vista del cielo',
 };
 
 export const viewName = (view: ExplorerView): string => VIEW_NAMES[view];

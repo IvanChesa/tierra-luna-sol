@@ -25,6 +25,7 @@ import { BodyPanel } from '../body-panel/body-panel';
 import { CameraControls, ZOOM_STEP } from '../camera-controls/camera-controls';
 import { EarthPanel } from '../earth-panel/earth-panel';
 import { MoonPanel } from '../moon-panel/moon-panel';
+import { SkyPanel } from '../sky-panel/sky-panel';
 import { ShortcutCommand, globalCommand, isTextField, repeats } from '../shortcuts/shortcuts';
 import { ShortcutsDialog } from '../shortcuts/shortcuts-dialog';
 import { closePopover, isPopoverOpen } from '../time-controls/popover';
@@ -36,6 +37,16 @@ import { ViewerCanvas } from '../viewer/viewer-canvas';
 import { ExplorerSession } from './explorer-session';
 import { IndexPanel } from './index-panel';
 import { Notices } from './notices';
+
+/** La vista de cada atajo de vista (1–4). */
+const VIEW_OF_COMMAND: Readonly<
+  Record<'view-system' | 'view-earth' | 'view-moon' | 'view-sky', ExplorerView>
+> = {
+  'view-system': 'system',
+  'view-earth': 'earth',
+  'view-moon': 'moon',
+  'view-sky': 'sky',
+};
 
 /** Deslizar la ficha hacia abajo más que esto la cierra (móvil). */
 const SWIPE_CLOSE_PX = 72;
@@ -101,6 +112,7 @@ function offsetWithin(element: HTMLElement, root: HTMLElement): { left: number; 
     CameraControls,
     EarthPanel,
     MoonPanel,
+    SkyPanel,
     Notices,
     ShortcutsDialog,
     Icon,
@@ -166,6 +178,19 @@ export class ExplorerUi {
     },
   );
   private readonly restoreButton = viewChild<ElementRef<HTMLElement>>('restore');
+  /**
+   * Un fundido por cada paso entre el espacio y el cielo (la pista del `@for`): cada uno crea el
+   * velo de nuevo y su animación CSS lo desvanece. Con movimiento reducido, ninguno (un corte).
+   */
+  protected readonly skyFades = linkedSignal<ExplorerView, number[]>({
+    source: this.view,
+    computation: (view, previous) => {
+      const crossed = previous !== undefined && (view === 'sky') !== (previous.source === 'sky');
+      if (!crossed || this.session.reducedMotion || this.session.capture)
+        return previous?.value ?? [];
+      return [(previous.value[0] ?? 0) + 1];
+    },
+  });
   /** El último elemento con el foco que no es de quita y pon (la ficha, «Mostrar la interfaz»). */
   private lastFocus: HTMLElement | null = null;
 
@@ -299,9 +324,8 @@ export class ExplorerUi {
       case 'view-system':
       case 'view-earth':
       case 'view-moon':
-        this.goTo(
-          command === 'view-system' ? 'system' : command === 'view-earth' ? 'earth' : 'moon',
-        );
+      case 'view-sky':
+        this.goTo(VIEW_OF_COMMAND[command]);
         return true;
       case 'clean-view':
         this.session.setCleanView(!this.explorer.cleanView());
