@@ -1,0 +1,278 @@
+{
+ "description": "Eclipses de Sol y de Luna de 2026 a 2035: fecha, instante del máximo (TD) y tipo del catálogo (Sol: T total, A anular, H híbrido, P parcial; Luna: T total, P parcial, N penumbral).",
+ "source": "NASA Eclipse Web Site, «Five Millennium Catalog of Solar Eclipses» y «… of Lunar Eclipses» (Fred Espenak y Jean Meeus, NASA/GSFC), https://eclipse.gsfc.nasa.gov/",
+ "retrieved": "2026-11-01",
+ "queries": ["https://eclipse.gsfc.nasa.gov/SEcat5/SE2001-2100.html", "https://eclipse.gsfc.nasa.gov/LEcat5/LE2001-2100.html"],
+ "eclipses": [
+  {
+   "kind": "solar",
+   "date": "2026-02-17",
+   "greatestEclipseTd": "2026-02-17T12:13:06Z",
+   "type": "A"
+  },
+  {
+   "kind": "lunar",
+   "date": "2026-03-03",
+   "greatestEclipseTd": "2026-03-03T11:34:52Z",
+   "type": "T"
+  },
+  {
+   "kind": "solar",
+   "date": "2026-08-12",
+   "greatestEclipseTd": "2026-08-12T17:47:06Z",
+   "type": "T"
+  },
+  {
+   "kind": "lunar",
+   "date": "2026-08-28",
+   "greatestEclipseTd": "2026-08-28T04:14:04Z",
+   "type": "P"
+  },
+  {
+   "kind": "solar",
+   "date": "2027-02-06",
+   "greatestEclipseTd": "2027-02-06T16:00:48Z",
+   "type": "A"
+  },
+  {
+   "kind": "lunar",
+   "date": "2027-02-20",
+   "greatestEclipseTd": "2027-02-20T23:14:06Z",
+   "type": "N"
+  },
+  {
+   "kind": "lunar",
+   "date": "2027-07-18",
+   "greatestEclipseTd": "2027-07-18T16:04:09Z",
+   "type": "Ne"
+  },
+  {
+   "kind": "solar",
+   "date": "2027-08-02",
+   "greatestEclipseTd": "2027-08-02T10:07:50Z",
+   "type": "T"
+  },
+  {
+   "kind": "lunar",
+   "date": "2027-08-17",
+   "greatestEclipseTd": "2027-08-17T07:14:59Z",
+   "type": "N"
+  },
+  {
+   "kind": "lunar",
+   "date": "2028-01-12",
+   "greatestEclipseTd": "2028-01-12T04:14:13Z",
+   "type": "P"
+  },
+  {
+   "kind": "solar",
+   "date": "2028-01-26",
+   "greatestEclipseTd": "2028-01-26T15:08:59Z",
+   "type": "A"
+  },
+  {
+   "kind": "lunar",
+   "date": "2028-07-06",
+   "greatestEclipseTd": "2028-07-06T18:20:57Z",
+   "type": "P"
+  },
+  {
+   "kind": "solar",
+   "date": "2028-07-22",
+   "greatestEclipseTd": "2028-07-22T02:56:40Z",
+   "type": "T"
+  },
+  {
+   "kind": "lunar",
+   "date": "2028-12-31",
+   "greatestEclipseTd": "2028-12-31T16:53:15Z",
+   "type": "T"
+  },
+  {
+   "kind": "solar",
+   "date": "2029-01-14",
+   "greatestEclipseTd": "2029-01-14T17:13:48Z",
+   "type": "P"
+  },
+  {
+   "kind": "solar",
+   "date": "2029-06-12",
+   "greatestEclipseTd": "2029-06-12T04:06:13Z",
+   "type": "P"
+  },
+  {
+   "kind": "lunar",
+   "date": "2029-06-26",
+   "greatestEclipseTd": "2029-06-26T03:23:22Z",
+   "type": "T+"
+  },
+  {
+   "kind": "solar",
+   "date": "2029-07-11",
+   "greatestEclipseTd": "2029-07-11T15:37:19Z",
+   "type": "P"
+  },
+  {
+   "kind": "solar",
+   "date": "2029-12-05",
+   "greatestEclipseTd": "2029-12-05T15:03:58Z",
+   "type": "P"
+  },
+  {
+   "kind": "lunar",
+   "date": "2029-12-20",
+   "greatestEclipseTd": "2029-12-20T22:43:12Z",
+   "type": "T"
+  },
+  {
+   "kind": "solar",
+   "date": "2030-06-01",
+   "greatestEclipseTd": "2030-06-01T06:29:13Z",
+   "type": "A"
+  },
+  {
+   "kind": "lunar",
+   "date": "2030-06-15",
+   "greatestEclipseTd": "2030-06-15T18:34:34Z",
+   "type": "P"
+  },
+  {
+   "kind": "solar",
+   "date": "2030-11-25",
+   "greatestEclipseTd": "2030-11-25T06:51:37Z",
+   "type": "T"
+  },
+  {
+   "kind": "lunar",
+   "date": "2030-12-09",
+   "greatestEclipseTd": "2030-12-09T22:28:51Z",
+   "type": "N"
+  },
+  {
+   "kind": "lunar",
+   "date": "2031-05-07",
+   "greatestEclipseTd": "2031-05-07T03:52:02Z",
+   "type": "N"
+  },
+  {
+   "kind": "solar",
+   "date": "2031-05-21",
+   "greatestEclipseTd": "2031-05-21T07:16:04Z",
+   "type": "A"
+  },
+  {
+   "kind": "lunar",
+   "date": "2031-06-05",
+   "greatestEclipseTd": "2031-06-05T11:45:17Z",
+   "type": "N"
+  },
+  {
+   "kind": "lunar",
+   "date": "2031-10-30",
+   "greatestEclipseTd": "2031-10-30T07:46:45Z",
+   "type": "N"
+  },
+  {
+   "kind": "solar",
+   "date": "2031-11-14",
+   "greatestEclipseTd": "2031-11-14T21:07:31Z",
+   "type": "H"
+  },
+  {
+   "kind": "lunar",
+   "date": "2032-04-25",
+   "greatestEclipseTd": "2032-04-25T15:14:51Z",
+   "type": "T"
+  },
+  {
+   "kind": "solar",
+   "date": "2032-05-09",
+   "greatestEclipseTd": "2032-05-09T13:26:42Z",
+   "type": "A"
+  },
+  {
+   "kind": "lunar",
+   "date": "2032-10-18",
+   "greatestEclipseTd": "2032-10-18T19:03:40Z",
+   "type": "T"
+  },
+  {
+   "kind": "solar",
+   "date": "2032-11-03",
+   "greatestEclipseTd": "2032-11-03T05:34:13Z",
+   "type": "P"
+  },
+  {
+   "kind": "solar",
+   "date": "2033-03-30",
+   "greatestEclipseTd": "2033-03-30T18:02:36Z",
+   "type": "T"
+  },
+  {
+   "kind": "lunar",
+   "date": "2033-04-14",
+   "greatestEclipseTd": "2033-04-14T19:13:51Z",
+   "type": "T"
+  },
+  {
+   "kind": "solar",
+   "date": "2033-09-23",
+   "greatestEclipseTd": "2033-09-23T13:54:31Z",
+   "type": "P"
+  },
+  {
+   "kind": "lunar",
+   "date": "2033-10-08",
+   "greatestEclipseTd": "2033-10-08T10:56:23Z",
+   "type": "T"
+  },
+  {
+   "kind": "solar",
+   "date": "2034-03-20",
+   "greatestEclipseTd": "2034-03-20T10:18:45Z",
+   "type": "T"
+  },
+  {
+   "kind": "lunar",
+   "date": "2034-04-03",
+   "greatestEclipseTd": "2034-04-03T19:06:59Z",
+   "type": "N"
+  },
+  {
+   "kind": "solar",
+   "date": "2034-09-12",
+   "greatestEclipseTd": "2034-09-12T16:19:28Z",
+   "type": "A"
+  },
+  {
+   "kind": "lunar",
+   "date": "2034-09-28",
+   "greatestEclipseTd": "2034-09-28T02:47:37Z",
+   "type": "P"
+  },
+  {
+   "kind": "lunar",
+   "date": "2035-02-22",
+   "greatestEclipseTd": "2035-02-22T09:06:12Z",
+   "type": "N"
+  },
+  {
+   "kind": "solar",
+   "date": "2035-03-09",
+   "greatestEclipseTd": "2035-03-09T23:05:54Z",
+   "type": "A"
+  },
+  {
+   "kind": "lunar",
+   "date": "2035-08-19",
+   "greatestEclipseTd": "2035-08-19T01:12:15Z",
+   "type": "P"
+  },
+  {
+   "kind": "solar",
+   "date": "2035-09-02",
+   "greatestEclipseTd": "2035-09-02T01:56:46Z",
+   "type": "T"
+  }
+ ]
+}

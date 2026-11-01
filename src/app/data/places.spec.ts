@@ -34,7 +34,9 @@ describe('places', () => {
       'fraga',
     ]);
     expect(place('lleida').sky).toBe(false);
-    expect(findPlace(DEFAULT_PLACE_ID)?.name).toBe('Fraga');
+    // El Montsec, por defecto (decisión de Iván del 26-10).
+    expect(DEFAULT_PLACE_ID).toBe('montsec');
+    expect(findPlace(DEFAULT_PLACE_ID)?.name).toBe('Parque Astronómico del Montsec');
     expect(findPlace('huesca')).toBeUndefined();
     expect(PLACES_LICENSE_URL).toMatch(/^https:\/\/www\.ign\.es\//);
   });
@@ -42,10 +44,34 @@ describe('places', () => {
   it('cada lugar tiene su fuente oficial: el IGN o la web del observatorio', () => {
     const official =
       /^https:\/\/(api-features\.ign\.es\/collections\/(nuc|namedplace)\/items\/\d+\?f=json|www\.iac\.es\/|www\.caha\.es\/|parcastronomic\.cat\/)/;
+    // La altitud que no da la fuente del lugar: la estación del Servei Meteorològic de Catalunya o
+    // el modelo digital del terreno del IGN (MDT02), consultado en ese mismo punto.
+    const altitudeOfficial =
+      /^https:\/\/(www\.meteo\.cat\/|servicios\.idee\.es\/wms-inspire\/mdt\?.*REQUEST=GetFeatureInfo.*LAYERS=EL\.ElevationGridCoverage)/;
     for (const p of PLACES as readonly Place[]) {
       expect(p.source, p.id).toMatch(official);
-      if (p.altitudeSource) expect(p.altitudeSource).toMatch(/^https:\/\/www\.meteo\.cat\//);
+      if (p.altitudeSource) expect(p.altitudeSource, p.id).toMatch(altitudeOfficial);
     }
+  });
+
+  it('todos tienen altitud con fuente; la del MDT02, consultada justo en el punto del lugar', () => {
+    for (const p of PLACES as readonly Place[]) {
+      expect(p.altitudeM, p.id).not.toBeNull();
+      // Sin fuente propia de la altitud, la da la del lugar (el IGN o la web del observatorio).
+      if (!p.altitudeSource) {
+        expect(p.source, p.id).toMatch(/ign\.es|iac\.es|caha\.es/);
+        continue;
+      }
+      if (!p.altitudeSource.includes('servicios.idee.es')) continue;
+      // La caja de la consulta (EPSG:4326 en WMS 1.3.0: latitud y longitud), centrada en el lugar.
+      const box = new URL(p.altitudeSource).searchParams.get('BBOX')?.split(',').map(Number) ?? [];
+      expect(box, p.id).toHaveLength(4);
+      const [lat1, lon1, lat2, lon2] = box as [number, number, number, number];
+      expect((lat1 + lat2) / 2, p.id).toBeCloseTo(p.latitudeDeg, 8);
+      expect((lon1 + lon2) / 2, p.id).toBeCloseTo(p.longitudeDeg, 8);
+    }
+    expect(place('montsec').altitudeM).toBe(812);
+    expect(place('madrid').altitudeM).toBe(649);
   });
 
   it('las Canarias, una hora por detrás: su zona horaria; la Península, la de Madrid', () => {

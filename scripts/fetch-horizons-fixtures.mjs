@@ -241,6 +241,231 @@ async function usnoSeasons(year) {
   };
 }
 
+// --- Fase 8: el cielo desde España ----------------------------------------------------------------
+
+/**
+ * Los lugares de los fixtures de salidas y puestas (fase 8, tarea 4): uno peninsular y uno canario,
+ * para probar las dos zonas horarias. Las coordenadas, las de `src/app/data/places.ts`.
+ */
+const USNO_PLACES = [
+  { id: 'montsec', latDeg: 42.024637, lonDeg: 0.736936, timeZone: 'Europe/Madrid', tz: 1 },
+  {
+    id: 'teide',
+    latDeg: 28 + 18 / 60 + 4 / 3600,
+    lonDeg: -(16 + 30 / 60 + 38 / 3600),
+    timeZone: 'Atlantic/Canary',
+    tz: 0,
+  },
+];
+/** El equinoccio de marzo y los dos solsticios de 2026; en junio, con el horario de verano. */
+const USNO_DATES = [
+  { date: '2026-03-20', dst: false },
+  { date: '2026-06-21', dst: true },
+  { date: '2026-12-21', dst: false },
+];
+
+/** «HH:MM» de un día local (con la hora de su zona y el verano) → instante UT ISO 8601. */
+function localToUt(date, time, tz, dst) {
+  const [h, m] = time.split(':').map(Number);
+  const [y, mo, d] = date.split('-').map(Number);
+  const ms = Date.UTC(y, mo - 1, d, h, m) - (tz + (dst ? 1 : 0)) * 3_600_000;
+  return new Date(ms).toISOString().replace(':00.000Z', 'Z');
+}
+
+/**
+ * Las horas del crepúsculo náutico (`task` 3) o astronómico (4) de un día, de la tabla anual del USNO
+ * (en la hora estándar de la zona, sin el horario de verano: «Add one hour for daylight time»).
+ */
+async function usnoTwilightTable(place, year, task) {
+  const query =
+    `https://aa.usno.navy.mil/calculated/rstt/year?ID=AA&year=${year}&task=${task}` +
+    `&lat=${place.latDeg.toFixed(6)}&lon=${place.lonDeg.toFixed(6)}&label=${place.id}` +
+    `&tz=${place.tz}&tz_sign=1&submit=Get+Data`;
+  const html = await fetchText(query);
+  const pre = html.match(/<pre[^>]*>([\s\S]*?)<\/pre>/)?.[1];
+  if (!pre) throw new Error(`Sin tabla del USNO: ${query}`);
+  const rows = new Map(
+    pre
+      .split('\n')
+      .filter((line) => /^\d{2} {2}/.test(line))
+      .map((line) => [Number(line.slice(0, 2)), line]),
+  );
+  /** Comienzo y final del día `day` del mes `month` (1–12), «HH:MM», o `null` si no hay. */
+  const at = (month, day) => {
+    const line = rows.get(day) ?? '';
+    const cell = (offset) => {
+      const raw = line.slice(offset, offset + 4);
+      return /^\d{4}$/.test(raw) ? `${raw.slice(0, 2)}:${raw.slice(2)}` : null;
+    };
+    const base = 4 + 11 * (month - 1);
+    return { begin: cell(base), end: cell(base + 5) };
+  };
+  return { query, at };
+}
+
+/**
+ * Salidas, puestas y crepúsculos del USNO (fase 8): el Sol y la Luna (salida, culminación y puesta) y
+ * el crepúsculo civil, de la API `rstt/oneday` en la hora local del lugar (con su zona y su horario de
+ * verano, como las daría un reloj allí); el náutico y el astrónomico, de las tablas anuales.
+ */
+async function usnoRiseSetSpain() {
+  const PHEN = {
+    'Begin Civil Twilight': 'civilDawn',
+    Rise: 'rise',
+    'Upper Transit': 'transit',
+    Set: 'set',
+    'End Civil Twilight': 'civilDusk',
+  };
+  const series = [];
+  for (const place of USNO_PLACES) {
+    const nautical = await usnoTwilightTable(place, 2026, 3);
+    await sleep(500);
+    const astronomical = await usnoTwilightTable(place, 2026, 4);
+    await sleep(500);
+    for (const { date, dst } of USNO_DATES) {
+      const query = `${USNO_API}/rstt/oneday?date=${date}&coords=${place.latDeg.toFixed(6)},${place.lonDeg.toFixed(6)}&tz=${place.tz}&dst=${dst}`;
+      const data = JSON.parse(await fetchText(query)).properties.data;
+      if (data.isdst !== dst)
+        throw new Error(`El USNO no da el horario de verano pedido: ${query}`);
+      const events = (list) =>
+        Object.fromEntries(
+          list
+            .filter((e) => PHEN[e.phen])
+            .map((e) => {
+              const local = e.time.replace(/\s+DT$/, '').trim();
+              return [PHEN[e.phen], { local, ut: localToUt(date, local, place.tz, dst) }];
+            }),
+        );
+      const [, month, day] = date.split('-').map(Number);
+      const twilight = (table) => {
+        const { begin, end } = table.at(month, day);
+        // Las tablas anuales van en la hora estándar: sin el horario de verano.
+        return {
+          dawn: begin ? localToUt(date, begin, place.tz, false) : null,
+          dusk: end ? localToUt(date, end, place.tz, false) : null,
+        };
+      };
+      series.push({
+        place: place.id,
+        latDeg: place.latDeg,
+        lonDeg: place.lonDeg,
+        timeZone: place.timeZone,
+        date,
+        utcOffsetHours: place.tz + (dst ? 1 : 0),
+        query,
+        sun: events(data.sundata),
+        moon: events(data.moondata),
+        nautical: { query: nautical.query, ...twilight(nautical) },
+        astronomical: { query: astronomical.query, ...twilight(astronomical) },
+      });
+      await sleep(500);
+    }
+  }
+  return {
+    description:
+      'Salidas, culminaciones y puestas del Sol y de la Luna y crepúsculos civil, náutico y astronómico, al minuto, en un lugar peninsular (el Montsec) y uno canario (el Teide). `local`: la hora del reloj del lugar ese día (con su zona y su horario de verano); `ut`: el mismo instante en UT. Los crepúsculos náutico y astronómico, de las tablas anuales (en hora estándar), ya en UT.',
+    source:
+      'U.S. Naval Observatory, Astronomical Applications API (https://aa.usno.navy.mil/data/api) y «Rise/Set/Twilight Table for an Entire Year» (https://aa.usno.navy.mil/data/RS_OneYear)',
+    retrieved: new Date().toISOString().slice(0, 10),
+    series,
+  };
+}
+
+const NASA_MONTHS = {
+  Jan: 1,
+  Feb: 2,
+  Mar: 3,
+  Apr: 4,
+  May: 5,
+  Jun: 6,
+  Jul: 7,
+  Aug: 8,
+  Sep: 9,
+  Oct: 10,
+  Nov: 11,
+  Dec: 12,
+};
+
+/**
+ * Los eclipses de Sol y de Luna de unos años (fase 8): la fecha, el instante del máximo (TD) y el tipo,
+ * de los catálogos de cinco milenios de la NASA (Fred Espenak y Jean Meeus, GSFC), tabla de 2001–2100.
+ * Tipos de Sol: T total, A anular, H híbrido, P parcial; de Luna: T total, P parcial, N penumbral (la
+ * primera letra; las siguientes, del catálogo, matizan el tipo).
+ */
+async function nasaEclipseCatalog(fromYear, toYear) {
+  const parse = async (query, kind) => {
+    const text = (await fetchText(query)).replace(/<[^>]+>/g, '');
+    const rows = [];
+    const pattern =
+      /\d{5}\s+(\d{4}) ([A-Z][a-z]{2}) (\d{2})\s+(\d{2}:\d{2}:\d{2})\s+-?\d+\s+-?\d+\s+\d+\s+(\S+)/g;
+    for (const match of text.matchAll(pattern)) {
+      const year = Number(match[1]);
+      if (year < fromYear || year > toYear) continue;
+      const month = String(NASA_MONTHS[match[2]]).padStart(2, '0');
+      rows.push({
+        kind,
+        date: `${year}-${month}-${match[3]}`,
+        greatestEclipseTd: `${year}-${month}-${match[3]}T${match[4]}Z`,
+        type: match[5],
+      });
+    }
+    return rows;
+  };
+  const solarQuery = 'https://eclipse.gsfc.nasa.gov/SEcat5/SE2001-2100.html';
+  const lunarQuery = 'https://eclipse.gsfc.nasa.gov/LEcat5/LE2001-2100.html';
+  const solar = await parse(solarQuery, 'solar');
+  await sleep(500);
+  const lunar = await parse(lunarQuery, 'lunar');
+  if (solar.length === 0 || lunar.length === 0) throw new Error('Catálogos de la NASA vacíos');
+  return {
+    description: `Eclipses de Sol y de Luna de ${fromYear} a ${toYear}: fecha, instante del máximo (TD) y tipo del catálogo (Sol: T total, A anular, H híbrido, P parcial; Luna: T total, P parcial, N penumbral).`,
+    source:
+      'NASA Eclipse Web Site, «Five Millennium Catalog of Solar Eclipses» y «… of Lunar Eclipses» (Fred Espenak y Jean Meeus, NASA/GSFC), https://eclipse.gsfc.nasa.gov/',
+    retrieved: new Date().toISOString().slice(0, 10),
+    queries: [solarQuery, lunarQuery],
+    eclipses: [...solar, ...lunar].sort((a, b) =>
+      a.greatestEclipseTd.localeCompare(b.greatestEclipseTd),
+    ),
+  };
+}
+
+/**
+ * Puntos de la línea central de un eclipse total o anular (fase 8): el instante (UT) y la latitud y la
+ * longitud del centro de la sombra, con la duración de la fase central allí, de la tabla del camino de
+ * la NASA (`page`, por ejemplo `SE2026Aug12T`), en las horas pedidas.
+ */
+async function nasaCentralLine(page, date, times) {
+  const query = `https://eclipse.gsfc.nasa.gov/SEpath/SEpath2001/${page}path.html`;
+  const text = (await fetchText(query)).replace(/<[^>]+>/g, '');
+  const angle = (deg, min, hemisphere) =>
+    (Number(deg) + Number(min) / 60) * (hemisphere === 'S' || hemisphere === 'W' ? -1 : 1);
+  const points = times.map((time) => {
+    const line = text.split('\n').find((l) => l.trim().startsWith(time));
+    if (!line) throw new Error(`No está la hora ${time} en ${query}`);
+    // Tres pares (límite norte, límite sur, línea central) de «gg mm.mN ggg mm.mE»: la central, la
+    // última; luego la razón de diámetros, la altura y el acimut del Sol, el ancho y la duración.
+    const pairs = [...line.matchAll(/(\d{1,2}) (\d{2}\.\d)([NS])\s+(\d{3}) (\d{2}\.\d)([EW])/g)];
+    const central = pairs.at(-1);
+    const duration = line.match(/(\d{2})m(\d{2}\.\d)s\s*$/);
+    if (!central || !duration) throw new Error(`No se entiende la fila ${time} de ${query}`);
+    return {
+      ut: `${date}T${time}:00Z`,
+      latitudeDeg: Number(angle(central[1], central[2], central[3]).toFixed(5)),
+      longitudeDeg: Number(angle(central[4], central[5], central[6]).toFixed(5)),
+      centralDurationSeconds: Number(duration[1]) * 60 + Number(duration[2]),
+    };
+  });
+  return {
+    description:
+      'Puntos de la línea central del eclipse: instante (UT), latitud norte y longitud este (grados, de los grados y minutos de la tabla) y duración de la totalidad allí (s).',
+    source:
+      "NASA Eclipse Web Site, «Eclipse Predictions by Fred Espenak, NASA's GSFC», https://eclipse.gsfc.nasa.gov/",
+    retrieved: new Date().toISOString().slice(0, 10),
+    query,
+    points,
+  };
+}
+
 /**
  * Máximo de un eclipse solar del catálogo de eclipses de la NASA (Fred Espenak, GSFC): el instante
  * (UT y TDT), ΔT, el lugar del máximo y la altura del Sol allí, de la ficha del eclipse (`id`:
@@ -441,6 +666,14 @@ const JOBS = [
   // Fase 6: el total del 3-3-2026 (el de las capturas), el total del 7-9-2025 y el parcial del
   // 28-8-2026.
   ['nasa-lunar-eclipses.json', () => nasaLunarEclipses(['2026-03-03', '2025-09-07', '2026-08-28'])],
+  // Fase 8: el cielo desde España (salidas, puestas y crepúsculos) y los próximos eclipses.
+  ['usno-rise-set-spain.json', () => usnoRiseSetSpain()],
+  ['nasa-eclipses-2026-2035.json', () => nasaEclipseCatalog(2026, 2035)],
+  [
+    'nasa-eclipse-2026-08-12-path.json',
+    // Las dos horas en que la línea central cruza la Península (Asturias y Burgos).
+    () => nasaCentralLine('SE2026Aug12T', '2026-08-12', ['18:28', '18:30']),
+  ],
 ];
 
 const wanted = process.argv.slice(2);

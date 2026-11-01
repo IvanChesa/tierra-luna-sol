@@ -12,7 +12,10 @@
  * - Instituto de Astrofísica de Canarias (el Roque de los Muchachos y el Teide), el Observatorio de
  *   Calar Alto (CAHA) y el Parc Astronòmic Montsec (en Àger: el punto de su enlace al mapa), en sus
  *   webs. La altitud del Observatori Fabra, de su estación del Servei Meteorològic de Catalunya.
- * La altitud de los lugares cuya fuente no la da queda en `null` (la fase 8 la busca).
+ * La altitud de los dos lugares cuya fuente no la da (el Montsec y la Puerta del Sol) es la del
+ * modelo digital del terreno de 2 m del IGN (MDT02) en ese mismo punto, consultada el 2026-11-01 en su
+ * servicio WMS oficial (`GetFeatureInfo`, con la URL de la consulta) y redondeada al metro. En el
+ * Observatori Fabra, el mismo servicio da 410,2 m: lo que dice su estación meteorológica.
  */
 export interface Place {
   readonly id: string;
@@ -21,7 +24,7 @@ export interface Place {
   readonly province: string;
   readonly latitudeDeg: number;
   readonly longitudeDeg: number;
-  /** Altitud (m), o `null` si su fuente no la da. */
+  /** Altitud (m), o `null` si no hay una fuente oficial que la dé. */
   readonly altitudeM: number | null;
   /** Zona horaria IANA: las Canarias van una hora por detrás de la Península. */
   readonly timeZone: string;
@@ -43,10 +46,12 @@ export const PLACES = [
     province: 'Lleida',
     latitudeDeg: 42.024637,
     longitudeDeg: 0.736936,
-    altitudeM: null,
+    altitudeM: 812,
     timeZone: 'Europe/Madrid',
     sky: true,
     source: 'https://parcastronomic.cat/en/prepare-your-visit/location/',
+    altitudeSource:
+      'https://servicios.idee.es/wms-inspire/mdt?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&LAYERS=EL.ElevationGridCoverage&QUERY_LAYERS=EL.ElevationGridCoverage&STYLES=&INFO_FORMAT=text/plain&CRS=EPSG:4326&BBOX=42.024137,0.736436,42.025137,0.737436&WIDTH=101&HEIGHT=101&I=50&J=50',
   },
   {
     id: 'observatori-fabra',
@@ -101,10 +106,12 @@ export const PLACES = [
     province: 'Madrid',
     latitudeDeg: 40.417114428,
     longitudeDeg: -3.703307681,
-    altitudeM: null,
+    altitudeM: 649,
     timeZone: 'Europe/Madrid',
     sky: true,
     source: 'https://api-features.ign.es/collections/namedplace/items/2085074?f=json',
+    altitudeSource:
+      'https://servicios.idee.es/wms-inspire/mdt?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&LAYERS=EL.ElevationGridCoverage&QUERY_LAYERS=EL.ElevationGridCoverage&STYLES=&INFO_FORMAT=text/plain&CRS=EPSG:4326&BBOX=40.416614428,-3.703807681,40.417614428,-3.702807681&WIDTH=101&HEIGHT=101&I=50&J=50',
   },
   {
     id: 'fraga',
@@ -133,10 +140,10 @@ export const PLACES = [
 export type PlaceId = (typeof PLACES)[number]['id'];
 
 /**
- * Observador por defecto hasta la fase 8, que añade el selector de los lugares del cielo desde España
- * con el Montsec por defecto (docs/decisiones/CAMBIO-CIELO-ESPANA.md).
+ * El lugar del cielo desde España por defecto: el Parque Astronómico del Montsec (decisión de Iván del
+ * 26-10, docs/decisiones/CAMBIO-CIELO-ESPANA.md).
  */
-export const DEFAULT_PLACE_ID: PlaceId = 'fraga';
+export const DEFAULT_PLACE_ID: PlaceId = 'montsec';
 
 /** Los lugares del cielo desde España (los del selector y los marcadores de la vista «España»). */
 export const SKY_PLACES: readonly Place[] = PLACES.filter((place) => place.sky);
