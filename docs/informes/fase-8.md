@@ -2,7 +2,7 @@
 
 - **Rama:** `fase-8-cielo-eclipses`
 - **Fecha:** 2026-11-01
-- **Estado:** en curso (8.a)
+- **Estado:** listo para revisión (revisión por subagente, abajo)
 
 ## Plan
 Bloque E, modo autónomo. La fase es grande: va por entregas, con este informe al día al final de cada una. Lo que ya existe y se reutiliza:
@@ -53,3 +53,107 @@ Bloque E, modo autónomo. La fase es grande: va por entregas, con este informe a
 **8.e · Cierre**
 - Capturas (`?captura=1`, escritorio y móvil): el cielo del Montsec de noche, en el crepúsculo y de día, el del Teide, la tabla, las constelaciones, `/eclipses` y las sombras de «Ver en 3D».
 - `FUENTES.md` y `/creditos` (las líneas de las constelaciones, el MDT02 del IGN y los fixtures), `ESTILO.md` (los textos del cielo), `PENDIENTES.md`, este informe y la revisión por subagente.
+
+## 1. Resumen
+- **El cielo desde España** (`/cielo`, `?lugar=teide`): una vista más del explorador, en el mismo lienzo (D10), con su cámara (rumbo, altura y campo; arrastrar «agarra el cielo»), desde el Montsec por defecto, los otros seis lugares o tu ubicación (que no sale del navegador). La luz del cielo según la altura del Sol (día, crepúsculos y noche; ilustrativa), el suelo, los puntos cardinales, las 8920 estrellas HYG con la refracción de astronomy-engine y la extinción, la Vía Láctea, las constelaciones (d3-celestial, BSD), el Sol, la Luna con su fase, su orientación real y la sombra de la Tierra, y los planetas. En un eclipse total de Sol, el cielo se oscurece y se ve la corona.
+- **«Esta noche»:** los crepúsculos, la Luna y su fase, qué planetas se ven y hacia dónde mirar, y la tabla equivalente con «Mirar», en la hora del lugar con su zona. Salidas, puestas y crepúsculos a ±2 min del USNO en el Montsec y el Teide (con la hora canaria).
+- **Próximos eclipses** (`/eclipses`): los de los próximos diez años que se ven desde el lugar, prerenderizados y recalculados en el navegador, con «Ver en 3D» (la Tierra con la sombra de la Luna o la Luna eclipsada). Los 45 eclipses de 2026 a 2035, con la fecha y el tipo exactos de los catálogos de la NASA; en la línea central del 12-08-2026 en la Península, total, con el máximo a menos de 1 min y la duración a ±3 s.
+- **Rendimiento:** la vista del cielo, a 59–60 FPS en los tres niveles con 0,6–0,8 ms de CPU por frame y 5–8 llamadas de dibujo; con 38–39 MB de VRAM (sus texturas son las del espacio, compartidas, y al entrar el espacio suelta las de su primer plano). La memoria no crece al entrar y salir del cielo (§6).
+
+## 2. Criterios de aceptación
+
+| Criterio | ✅/❌ | Evidencia |
+|---|---|---|
+| Salidas, puestas y crepúsculos ±2 min frente al USNO; eclipses con fecha y tipo exactos | ✅ | `ephemeris/night.spec.ts`, frente a `usno-rise-set-spain.json` (el Montsec y el Teide, el 20-3, el 21-6 y el 21-12-2026): la puesta y la salida del Sol, el final y el comienzo de los crepúsculos civil, náutico y astronómico, y la salida, la culminación y la puesta de la Luna, todos a ≤ 2 min (18 tests). `ephemeris/eclipse-search.spec.ts`: los 45 eclipses de 2026 a 2035 de los catálogos de la NASA (Espenak y Meeus), en el mismo orden, con la fecha (en TD) y el tipo exactos y el máximo a < 2 min; en los dos puntos de la línea central del 12-08-2026 en la Península (Asturias y Burgos), total, con el máximo a < 1 min y la duración de la totalidad a ±3 s (109,3 s y 104,6 s) |
+| La vista del cielo y la tabla dan la misma información | ✅ | Las dos salen de la misma función, `skyBodies(instante, lugar)` (`ephemeris/sky.ts`): la escena coloca con ella el Sol, la Luna y los planetas, y la tabla da su altura y su rumbo. Test de `engine.spec.ts` («el cielo y su tabla dicen lo mismo»): en dos instantes, para cada cuerpo sobre el horizonte, la cámara mira al rumbo y la altura de la tabla, y un clic en el centro de la imagen elige ese cuerpo. El test encontró una diferencia, ya corregida: de noche, Neptuno (magnitud 7,8) estaba en la tabla y no se dibujaba (§4.5). e2e (`cielo.spec.ts`): «Mirar a Saturno» anuncia «Saturno, a 48° de altura, hacia el sur.» y la cámara queda a 48°, a menos de 22,5° del sur |
+| La geolocalización solo se pide tras una acción del usuario y todo funciona si se rechaza | ✅ | Solo la pide «Usar mi ubicación» (`ExplorerSession.useMyLocation`). Tests de la sesión: no se pide al entrar; rechazada, el lugar sigue (el Montsec); concedida, «Tu ubicación», que no va a la URL. e2e con un contexto sin permiso («No has dado permiso… Sigues viendo el cielo desde el Parque Astronómico del Montsec») y con permiso y una ubicación (Barcelona): el selector dice «Tu ubicación» y la URL no lleva ni el lugar ni las coordenadas. La zona horaria, la del navegador; nada va a `localStorage` |
+| «Ver en 3D» muestra la sombra del eclipse correspondiente | ✅ | Los de Sol llevan a `/explorar/tierra?fecha=…&sombra=1`: al estar lista la Tierra, la cámara va al centro de la sombra (`moonShadowAim`; en un parcial, al punto de la Tierra más cercano a su eje). Test de la sesión: en el máximo del 12-08-2026, a 0,2° del punto de la NASA (65,2° N, 25,2° O). Tests de `moonShadowAim` (un central y un parcial). e2e: desde `/eclipses` del Teide, el enlace abre la vista Tierra con la sombra. Capturas `escritorio-ver-en-3d-sol` (el 12-08-2026 desde Fraga: la sombra sobre la Península al ponerse el Sol) y `escritorio-ver-en-3d-luna` (el total del 20-12-2029: la Luna enrojecida) |
+| Cambiar de lugar recalcula el cielo y el panel «Esta noche», y la URL lo refleja (`?lugar=`) | ✅ | e2e: del Montsec al Teide, la URL lleva `lugar=teide`, la tabla dice «el Observatorio del Teide» y «Atlantic/Canary, UTC», y se anuncia «El cielo desde el Observatorio del Teide»; la URL con `lugar=teide` abre ese cielo. Tests: el motor repinta al cambiar de observador (`engine.spec.ts`) y la sesión pasa el lugar al motor y a la URL (sin escribir el Montsec, el de por defecto, ni «Mi ubicación») |
+| En el Teide y el Roque de los Muchachos, las horas salen en la hora canaria (test con un fixture del USNO) | ✅ | `features/sky-panel/sky-text.spec.ts`: las horas de «Esta noche» en el Teide, escritas en su zona (`Atlantic/Canary`), salen como el reloj del USNO allí (`local` del fixture, con el horario de verano en junio) a ±2 min, y las del Montsec, en la de Madrid. El Roque lleva la misma zona (`places.spec.ts`) |
+| Las coordenadas de cada lugar tienen fuente oficial (test de campos) | ✅ | `data/places.spec.ts`: cada lugar con su fuente (IGN, IAC, CAHA o el Parc Astronòmic) y, desde esta fase, todos con altitud y fuente: la del Montsec (812 m) y la de la Puerta del Sol (649 m), del MDT02 del IGN consultado justo en el punto del lugar (el test comprueba que la caja de la consulta está centrada en él) |
+
+## 3. Tareas del plan
+
+| Tarea | Estado | Notas |
+|---|---|---|
+| 8.1 Vista `/cielo` | hecha | Selector con los siete lugares (el Montsec por defecto) y «Usar mi ubicación»; `lleida` sigue en los datos, fuera del selector. `data/places.ts` con su fuente y su zona IANA. La cúpula: horizonte, puntos cardinales, estrellas, Vía Láctea, planetas, Luna y Sol con la refracción; el color del cielo por la altura del Sol; el deslizador de la noche en la hora del lugar con su zona; y las constelaciones (d3-celestial, BSD de 3 cláusulas: entra en la lista de licencias de Iván) |
+| 8.2 «Esta noche» | hecha | Qué planetas se ven, su salida, culminación y puesta (`SearchRiseSet`, `SearchHourAngle`), los crepúsculos (`SearchAltitude` a −6°, −12° y −18°) y la fase de la Luna, «hacia dónde mirar» en frases y la tabla equivalente |
+| 8.3 Eclipses | hecha | `SearchLocalSolarEclipse` y `SearchLunarEclipse` (y sus `Next…`) desde el lugar, con la parte que se ve. `/eclipses`: la lista prerenderizada «calculado el…» (`data/eclipses.ts`, generada) y recalculada en el navegador, con «Ver en 3D» |
+| 8.4 Fixtures | hecha | USNO del Montsec y del Teide en tres fechas (las dos zonas horarias, con el verano); eclipses de la NASA con sus URL (los catálogos de 2001–2100 y la línea central del 12-08-2026) |
+| 8.5 Textos | hecha | La vista se llama «El cielo desde España» y el panel nombra el lugar elegido («El cielo desde el Observatorio del Teide»). `ESTILO.md` §6, con los textos del cielo y de los eclipses. Los textos nuevos entran en la revisión de la fase 9 |
+
+## 4. Desviaciones del plan y motivo
+1. **La velocidad del cielo** (el plan no la fija; D33 habla de la vista general y de los cuerpos): en `/cielo`, **tiempo real**. Lo que se ve es lo que hay ahora; la noche se recorre con su deslizador, y el selector de velocidad sigue ahí (a 1 h/s, el cielo gira 15° por segundo). Con movimiento reducido o con `?fecha=`, en pausa, como siempre. Propuesta en §10.
+2. **Los nombres de las constelaciones, los oficiales de la IAU en latín** (Gemini, Ursa Major). d3-celestial trae nombres en español, pero son traducciones del nombre inglés («Gemelos», «Carnero», «Toro»), no los de la astronomía en español: no se usan. Los de la IAU los da `Constellation` de astronomy-engine en la posición del nombre, lo que comprueba de paso cada símbolo. Donde astronomy-engine se aparta de la IAU («Antila», «Camelopardis», «Pisces Austrinus»), queda el de d3-celestial. Si Iván los quiere en español, hace falta una lista con licencia compatible (`PENDIENTES.md`).
+3. **Entre el espacio y el cielo, un fundido** (el plan no lo detalla). Sin vuelo de cámara, porque se viene del suelo: un velo del color del fondo que se desvanece en 0,7 s, solo al cruzar entre el espacio y el cielo; con movimiento reducido, un corte.
+4. **La luz del cielo, ilustrativa** (como la de D21): no es un modelo de dispersión, sino colores de referencia a siete alturas del Sol (`VISUAL_CONFIG.sky`, con el motivo de cada valor). Igual el límite de magnitud con cada luz, la extinción (0,25 mag por masa de aire), la corona (sin las serpentinas de cada eclipse) y el tamaño mínimo del Sol y de la Luna en pantalla (5 px de radio con el gran angular; con un campo estrecho, el real).
+5. **De noche, todos los planetas, aunque no se vean a simple vista** (Neptuno, magnitud 7,8): tenues y con su nombre, porque la tabla los lista. Su frase lo dice: «Con prismáticos o telescopio».
+6. **`/eclipses`, con el selector de los mismos lugares y sin «Usar mi ubicación»** (el plan pedía los visibles «desde España»). La lista prerenderizada lleva los siete lugares (43 kB sin comprimir, 4,9 kB comprimida en su chunk) y el navegador recalcula la del elegido. «Se ve» es con el astro sobre el horizonte en alguna parte de la fase principal, sin el relieve.
+
+## 5. Decisiones técnicas nuevas
+- **Una escena del cielo dentro del motor** (`scene/sky/`): con su propia `Scene` y su cámara, que el motor pinta en lugar del espacio en la vista `sky` (un solo renderer). Se crea la primera vez que se abre la vista y se conserva. Sus texturas (la Vía Láctea y el color de la Luna) son las del espacio, compartidas. Al entrar, el espacio suelta las texturas de su primer plano (`world.setFocus(null)`), como al salir de las vistas Tierra y Luna (C4).
+- **El orden de pintado sigue a la luz:** primero lo de fuera de la atmósfera, sobre negro; después, la luz del cielo **sumada**, y por último el suelo, opaco. Así la cara oscura de la Luna se ve del color del cielo, de día no hay estrellas, la Luna tapa al Sol en un eclipse y el suelo tapa lo que queda bajo el horizonte.
+- **La refracción de astronomy-engine en todas partes:** el Sol, la Luna y los planetas, con `Horizon(…, 'normal')`; las estrellas y las líneas, con la misma fórmula en el shader (`refractionDeg`, igual a `Refraction('normal')` en todo el rango: test).
+- **Las conversiones al horizonte, en `ephemeris/coordinates.ts`** (regla permanente): `eclToHorizontal` (`Rotation_EQJ_HOR`), `eclThreeToSkyThree`, `horizontalToSkyThree` y su inversa. Tests: la rotación de las estrellas lleva el Sol a donde lo pone `skyBodies` (< 0,01°) y la Polar queda a la altura de la latitud.
+- **El campo de la cámara del cielo, el vertical de la parte visible.** Aplicado al ancho, en un móvil vertical el vertical pasaba de 110° y la Luna salía como una elipse (la perspectiva estira lo que está lejos del eje). 65° por defecto, de 2° a 110°.
+- **La Luna del cielo, con su orientación real:** la de `OrientationModel` (la IAU, con la libración) llevada al horizonte. Iluminada con Lommel–Seeliger (D29), apagada en el limbo rasante (si no, en un eclipse de Sol salía un anillo de puntos) y con la sombra de la Tierra de `earthShadow` (umbra rojiza y penumbra), la misma para cualquier observador.
+- **«Esta noche», una vez por noche y lugar** (unos 8 ms en Node); la tabla, con cada tic del reloj (≤ 5 por segundo), con 9 posiciones (0,14 ms).
+- **`/eclipses` sin astronomy-engine en su JS inicial:** la lista prerenderizada sale de `data/eclipses.ts`, generado por `scripts/build-eclipses.mjs` con las mismas funciones que la página. El navegador recalcula con un `import()` dinámico, un eclipse cada vez, cediendo el hilo entre uno y otro.
+- **Los scripts de Node importan módulos TS de `src/`** con el compilador de TypeScript del proyecto (`scripts/lib/ts-resolve.mjs` y `ts-hooks.mjs`, sin dependencias nuevas): el «type stripping» de Node no sabe qué imports son solo de tipos.
+- **`data/sky-place.ts`** (el lugar del cielo, de la lista o del navegador), en `data/` y no en `state/`: la página de eclipses lo usa en su JS inicial, y la comprobación del bundle no admite nada de `state/` ahí.
+
+## 6. Salida de los checks
+```
+npm run check  → código 0
+- lint y Prettier: limpios
+- tests: 663/663 en 71 ficheros (cobertura de ephemeris/: 99,08 % de sentencias, 94,24 % de ramas, 100 % de funciones, 99,76 % de líneas)
+- build: 19 rutas prerenderizadas (nuevas: /cielo y /eclipses); JS inicial 300,17 kB (aviso a 320), 82,72 kB comprimido
+- check-initial-bundle: ninguna de las 19 páginas lleva three, astronomy-engine, los stores ni los controles del visor en su JS inicial; código propio inicial 12,62 kB de 15
+- diferidos: three 743,27 kB (aviso a 900); interfaz del explorador 242,22 kB; astronomy-engine, en su propio chunk (84,46 kB); /eclipses, 36,78 kB (4,89 kB comprimido) con su lista
+```
+
+**e2e** (`npx playwright test`, Chromium con la GPU del equipo): 81 de 81, con los 7 nuevos de `cielo.spec.ts`, y `/cielo` y `/eclipses` en los de accesibilidad (axe) y de privacidad (0 cookies, 0 peticiones a terceros).
+
+**Rendimiento (RTX 3060, `measure-views.mjs` y `measure.mjs`):**
+| Vista | Alto: FPS mín/medio · CPU por frame · VRAM | Medio | Bajo | Descarga |
+|---|---|---|---|---|
+| Cielo, desde la vista Luna (con su arreglo) | 60/60 · 0,67 ms · 39 MB | — | — | 19 kB (las constelaciones) |
+| Cielo (antes del arreglo de su VRAM) | 59/60 · 0,76 ms · 262 MB | 60/60 · 0,73 ms · 102 MB | 59/60 · 0,59 ms · 62 MB | 19 kB |
+| Sistema solar (sin cambios) | 59–60/60 · 1,4 ms · 38 MB | 60/60 · 1,2 ms · 38 MB | 59/60 · 1,3 ms · 38 MB | 513 kB |
+| Tierra / Luna (sin cambios) | 59–60/60 · 278 / 266 MB | 86 / 103 MB | 86 / 62 MB | — |
+
+- La medida de cada vista reproduce a 1 día/s (el cielo gira entero cada segundo: el peor caso de la escena del cielo), con 5–8 llamadas de dibujo. La primera medida del cielo (fila de «antes») venía de la vista Luna y conservaba sus mapas de cerca (262 MB en alto): el espacio no los soltaba al entrar. Con `releaseCloseUps`, el cielo se queda con las texturas de la vista general (39 MB; test en `engine.spec.ts` desde las vistas Tierra y Luna). Entrando directamente en `/cielo`, 38–39 MB en los tres niveles (`measure.mjs`).
+- **Memoria** (`measure.mjs`, con `/cielo` en los 10 cambios de vista): tras 10 idas y vueltas a una ficha, 7 geometrías, 12 texturas y 11 MB de heap; tras los 10 cambios de vista, 14 geometrías (las 7 de la escena del cielo, que se crea una vez y se conserva), 12 texturas y 11 MB; y así sigue tras 6 cambios de calidad y 10 vueltas por los sistemas de lunas. Un solo contexto WebGL y un lienzo.
+- **Primera vista** (`/`, sin cambios): el LCP, el póster (192 ms en alto); una tarea larga de 84 ms en alto, ninguna en bajo.
+- **Cálculo** (Node, `ephemeris/`): «Esta noche», unos 8 ms por noche; el cielo de un instante (`skyBodies`), 0,14 ms; diez años de eclipses de un lugar, 61 ms en Node (en el navegador, un eclipse cada vez, cediendo el hilo).
+
+## 7. Capturas
+En `docs/informes/img/fase-8/` (`node scripts/capture-sky.mjs docs/informes/img/fase-8`, con `?captura=1`):
+- `escritorio-cielo-montsec-noche` y `movil-cielo-montsec-noche`: el Montsec el 1-11-2026 a las 22:00, con el panel (Saturno al sur, en su culminación); en el móvil, el panel compacto.
+- `escritorio-cielo-via-lactea`: a las 21:00, hacia el noroeste: la Vía Láctea del Cisne al Águila, con el triángulo de verano.
+- `escritorio-cielo-crepusculo`, `escritorio-cielo-nautico` y `escritorio-cielo-dia`: la puesta del Sol, el crepúsculo náutico y el mediodía.
+- `escritorio-cielo-teide`: el Teide a la misma hora UTC: «Atlantic/Canary, UTC», una hora menos en el reloj.
+- `escritorio-cielo-luna-cerca`: la Luna en cuarto menguante, con un campo de 2°: su fase y sus mares.
+- `escritorio-cielo-eclipse-fraga` y `…-cerca`: el eclipse total del 12-08-2026 desde Fraga, en la franja de la totalidad (el Montsec y Madrid lo ven parcial, al 99,7 % y al 99,97 %): el cielo oscurecido, Júpiter y la corona.
+- `escritorio-ver-en-3d-sol` y `escritorio-ver-en-3d-luna`: «Ver en 3D».
+- `escritorio-eclipses` y `movil-eclipses`: `/eclipses`, recalculada en el navegador.
+- Los pósters de `/cielo` (`public/img/poster-sky-*.webp`).
+
+## 8. Dependencias añadidas
+Ninguna. Las constelaciones son datos (d3-celestial, BSD de 3 cláusulas), descargados por `download-assets.mjs` y fijados a un commit, como las texturas.
+
+## 9. Pendientes y `TODO(ivan)`
+En `PENDIENTES.md`, «Bloque E (fase 8)»:
+- los nombres de las constelaciones (en latín, o una fuente para los españoles);
+- la velocidad del cielo (tiempo real, propuesta);
+- probar `/cielo` y `/eclipses` en el móvil (no bloquea).
+
+## 10. Propuestas de cambio al plan
+1. **D33, con el cielo:** en `/cielo`, tiempo real (§4.1). Hoy, `CONTEXT_SPEED.sky` = 1 s/s.
+2. **Los nombres de las constelaciones en español,** si Iván los quiere, con una fuente de licencia compatible (§4.2).
+
+## 11. Cómo probarlo
+- `npm start` y abrir `http://localhost:4200/cielo` (o la pestaña «Cielo», o la tecla 4). Arrastrar para mirar alrededor, la rueda para el campo y las flechas con el foco en el lienzo.
+- Cambiar de lugar (el Teide: las horas, en la de Canarias), «Usar mi ubicación», mover la hora de la noche, abrir «Esta noche» y pulsar «Mirar».
+- `/cielo?lugar=fraga&fecha=2026-08-12T18:29:29Z`, mirando al Sol (al oeste, bajo): el eclipse total.
+- `/eclipses`: el selector, la lista y «Ver en 3D».
