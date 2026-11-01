@@ -16,6 +16,7 @@ Una línea por cada fase cerrada en modo autónomo por bloques y, al terminar ca
 | 5 · La Tierra | 2026-10-30 | CAMBIOS NECESARIOS: 0 bloqueantes, 6 importantes (las vistas guiadas cambiaban la fecha que se ve; la VRAM del motor no contaba los mapas de la Tierra; el reloj de «Luz del Sol» era una región viva; el relieve, con el norte y el sur cambiados; R3, sin medir; y «España», que no se veía en el móvil), 9 menores y 5 sugerencias. Corregido todo salvo parte de una sugerencia (las nubes del Himalaya, a §10 del informe), más 2 fallos propios (una franja de nubes estiradas que crecía con el tiempo y el panel de la Tierra fuera de los márgenes del encuadre al entrar en su vista). Fusionada con `--no-ff` (`5d9a5a2`) | 514 tests · cobertura de `ephemeris/` del 99,5 % · 70 e2e · JS inicial de 298,23 kB (código propio 12,13 de 15) · vista Tierra a 60 FPS en los tres niveles, con 278/86/85 MB de VRAM (de 300 y 120) y 3,34 MB de texturas en alto · R3 medido: océano / desierto 0,189 (EPIC, 0,178) y nubes a menos del 3 % · sombra del eclipse a 2,7 km del punto de la NASA · tareas largas ≤ 110 ms |
 | Revisión del bloque C aplicada (rama `revision-bloque-c`) | 2026-10-30 | Bloque C **APROBADO** (`docs/revisiones/bloque-C.md`). Hecho: C1 (las nubes se atenúan en los primeros planos: el Himalaya se ve y EPIC sale idéntica), C2 (planetas un 25 % más grandes y sin solapes: solo encogen Júpiter y Saturno en sus conjunciones), C3 (2 px de radio mínimo en la vista general, sin anillo de marcador), C5 (e2e sin `networkidle`) y C6 (PR 2 cerrado e `ignore` de `@types/node`; el PR 1, rebasado y en verde, **sin fusionar**: el clasificador de permisos del modo automático bloqueó `gh pr merge`). Al plan: C4 (fase 6), C8 (D24, fases 9 y 11), la 8K más barata (fase 10), D35 y, por decisión nueva de Iván, los anillos de Saturno (D36, fase 7). Revisión por subagente (`docs/revisiones/revision-bloque-C.md`): CAMBIOS NECESARIOS, 0 bloqueantes, 1 importante (los rocosos del móvil seguían con su anillo de marcador), 4 menores y 3 sugerencias, todo corregido. Hallazgo propio: el póster de la vista Tierra era el de la fase 4b. Fusionada con `--no-ff` (`d9e2c89`) | 526 tests · cobertura de `ephemeris/` del 99,42 % · e2e en verde en el CI · JS inicial de 298,23 kB (código propio 12,13 de 15) · Júpiter, 16–21 px de radio en escritorio (13–17 antes) · en el móvil, ningún planeta por debajo de 2 px (Mercurio, 1,2 antes) · vista general a 60 FPS, 21 llamadas de dibujo y 38 MB de VRAM · nubes a 0,3 en «El Himalaya» y a 1 con el disco a la vista |
 | 6 · La Luna | 2026-10-31 | Dos rondas. La primera, CAMBIOS NECESARIOS: 1 bloqueante (el polo sur, de cerca, salía como un «sol de rayas»: los datos equirrectangulares del LOLA no dan para el polo), 2 importantes (`nearestMoonPhase` saltaba un mes justo después de una fase; un aviso de presupuesto del CSS), 8 menores y 5 sugerencias. Corregido todo: casquetes polares con los modelos polares del LOLA (PDS, 240 m por píxel) por encima de 76°; las texturas del primer plano esperan al final de los viajes (el viaje Tierra → Luna llegaba a 337 MB) y un fallo propio (con el motor en reposo, la Luna conservaba su 8K en la vista general). La segunda, APROBADA CON CAMBIOS MENORES: 4 menores y 4 sugerencias, aplicados o anotados (la cola de subidas, para la fase 10; las sombras del relieve, al backlog). Fusionada con `--no-ff` (`e321a85`) | 555 tests · cobertura de `ephemeris/` del 99,47 % · JS inicial de 298,66 kB (código propio 12,13 de 15) · vista Luna a 59,8 FPS con 265 / 102 / 61 MB de VRAM (alto, medio y bajo) y 5,1 MiB de texturas en alto (de 10) · el viaje Tierra ↔ Luna, como mucho 284 MB · la sombra de la Tierra frente al catálogo de la NASA: gamma a ≤ 0,0010 y magnitudes a ≤ 0,001 en tres eclipses · la libración de la malla, a < 0,1° de `Libration` |
+| 7 · Lunas, sombras y escala real | 2026-11-01 | La revisión del bloque D (`docs/revisiones/bloque-D.md`) hizo también de revisión de la fase: la sesión se paró por el límite de uso antes del subagente. APROBADA CON CAMBIOS MENORES: 0 bloqueantes, 3 importantes (Ío verde lima, D1; las órbitas y estelas que de cerca se ven como rectas que cruzan la pantalla, D3; el dominio pasa a ivanchesa.com, D5) y 2 menores (el corte duro del hueco de Tritón, D2; el realce de los anillos también a contraluz, D4), todos atendidos. Tres fallos propios encontrados al corregir, antes de llegar a `main`: dos sondas de Tritón que pasaban por el relleno del hueco, el albedo de los mosaicos calibrado con ese relleno y los dos primeros criterios de D3 (las esquinas entre rectas contaban como curva; el horizonte de una órbita vista desde dentro se quedaba). Fusionada con `--no-ff` (`d2a0c9e`) | 578 tests · cobertura de `ephemeris/` del 99,48 % · 74 e2e en el CI · JS inicial de 298,65 kB (código propio 12,12 de 15) · three 705,73 kB · 12 lunas con su mosaico (Ío en color, a ΔE\*ab 2,6 de PIA02308) · sistemas de lunas a 58–60 FPS en los tres niveles y VRAM ≤ 278 MB en alto y ≤ 86 en bajo · escala real sin temblor (0 px) · las sombras del tránsito triple del Hubble (24-1-2015) donde las fotografió · anillos (D36): B / disco 1,03, el B tostado y sin lavanda; a contraluz, nada quemado (antes, el 36 % de la división de Cassini) · en las cinco vistas de D3, ninguna recta, con 0,10 ms por frame en el peor caso |
 ---
 
 ## Resumen del bloque «fases 1 a 1» (2026-10-24)
@@ -281,3 +282,85 @@ No se activó ninguna:
    - el n.º 2, `@types/node` 24.19.2 → 26.6.5 (salto de versión mayor: el proyecto usa Node 24).
 
 El bloque termina aquí. No se ha empezado el bloque D: antes lo revisa la sesión de revisión.
+
+## Resumen del bloque D, fases 6 y 7 (2026-11-01)
+
+### Sesiones
+1. **Fase 6 y comienzo de la 7** (30-10 por la noche y 31-10 de madrugada): la fase 6 entera, con dos rondas de revisión por subagente, sus correcciones y su fusión; de la fase 7, su plan, la escala real, las sombras generalizadas y R2.
+2. **Fase 7** (31-10 por la tarde): las lunas con su mosaico, los anillos (D36), las mediciones, las capturas y el informe, con los 74 e2e del CI en verde. La sesión se paró por el límite de uso antes de lanzar la revisión por subagente.
+3. **Revisión del bloque D** (01-11, sesión de revisión): hizo también de revisión de la fase 7, para ahorrar el subagente. Aprobado el bloque; la fase 7, con cambios menores.
+4. **Esta sesión** (01-11): la revisión aplicada en la rama de la fase 7 (D1–D5 y el plan), `npm run check` y e2e en verde, fusión y este resumen.
+
+### Qué se ha hecho
+- **Fase 6, la Luna** (detalle en su informe):
+  - el color del LROC en 8K y el relieve del LOLA en 16 bits sin pérdidas, con una esfera cúbica sin costuras y los casquetes polares con los modelos polares del LOLA;
+  - la libración real (a menos de 0,1° de `Libration`) y la sombra de la Tierra en los eclipses, frente al catálogo de la NASA (gamma a ≤ 0,0010);
+  - las vistas (cara visible, cara oculta, polo sur y luz rasante) y el recorrido guiado, con teclado y paso a paso con movimiento reducido;
+  - la VRAM del peor caso, la Tierra con la Luna, dentro de §5 (C4).
+- **Fase 7, lunas, sombras y escala real** (detalle en su informe):
+  - 12 de las 20 lunas con su mosaico global (USGS y, Mimas, el PDS), comprobados con rasgos del Gazetteer, cargados solo con su sistema enfocado; Titán, con el color y el halo de PIA06230;
+  - las sombras analíticas generalizadas (D20): las lunas sobre su planeta y el planeta sobre sus lunas, comprobadas con el tránsito triple que fotografió el Hubble en 2015;
+  - la escala real en «Controles +» y en la URL, sin temblores (medido);
+  - los anillos de Saturno nuevos (D36): la τ de una ocultación de Cassini, comprobada con los radios del PDS, y el color de la reflectividad del Hubble; y el limbo a contraluz (R2).
+- **La revisión del bloque D, aplicada** (respuesta en el informe de la fase 7):
+  - **D1:** Ío con el mosaico en color del USGS y un balance calibrado con PIA02308 (ΔE\*ab 2,6): blancos, naranjas y manchas oscuras en lugar del verde lima;
+  - **D2:** Tritón sin el corte del hueco: el gris de la franja vecina y el borde difuminado;
+  - **D3:** las órbitas y estelas que se ven casi rectas se desvanecen, según lo que se ve: fuera las rectas de las cinco vistas señaladas; se quedan las órbitas curvas y las de las lunas vistas desde fuera;
+  - **D4:** el realce de los anillos, solo en su cara iluminada: a contraluz ya no salen quemados;
+  - **D5:** el dominio pasa a ivanchesa.com (D37): `tierra-luna-sol.ivanchesa.com`;
+  - el plan, con las propuestas de la fase 7 (fase 10 y backlog) y la fase 11 con el dominio nuevo.
+
+### Métricas al cerrar el bloque
+- **Tests:** 578 unitarios (cobertura de `ephemeris/` del 99,48 %) y 74 e2e, en verde en el CI de la rama (ejecución 41338922899) y de `main` tras la fusión (ejecución 41340414237, que desplegó staging y lo comprobó).
+- **Bundle:** JS inicial de 298,65 kB (aviso a 320), con 12,12 kB de código propio de 15; three, 705,73 kB (aviso a 900); interfaz diferida, 285,35 kB.
+- **Rendimiento (RTX 3060):**
+  - vista general a 1 día/s: 60 FPS en los tres niveles, con 1,3–1,4 ms de CPU por frame, 21 llamadas de dibujo y 38 MB de VRAM;
+  - vista Tierra, 278 / 86 / 86 MB de VRAM, y vista Luna, 266 / 103 / 62 (alto, medio y bajo; de 300 y 120); el viaje Tierra ↔ Luna, como mucho 284;
+  - sistemas de lunas: 58–60 FPS en los tres niveles, con 124 MB como mucho en alto (Marte) y 62 en bajo;
+  - memoria estable tras 10 idas y vueltas a una ficha, 10 cambios de vista, 6 de calidad y 10 vueltas por los sistemas de lunas;
+  - primera vista: el LCP, el póster (212 ms en alto); una tarea larga de 84 ms.
+- **Precisión:**
+  - la libración de la malla de la Luna, a menos de 0,1° de `Libration`;
+  - la sombra de la Tierra en tres eclipses de Luna, con gamma a ≤ 0,0010 y las magnitudes a ≤ 0,001 del catálogo de la NASA;
+  - las sombras de Ío, Europa y Calisto donde las fotografió el Hubble el 24-1-2015;
+  - la escala real, sin temblor del cuerpo enfocado (0 px).
+- **Realismo:**
+  - anillos (D36): B / disco de 1,03, el B tostado (C\* 9,5, h 94°), sin lavanda (el C, C\* 2,7; la división de Cassini, 4,3; umbral, 4,6) y las divisiones en su radio publicado; a contraluz, nada quemado (antes del D4, el 36 % de la división de Cassini);
+  - Ío, a ΔE\*ab 2,6 de PIA02308 en su geometría, con la variedad de color de su mosaico;
+  - en las cinco vistas de D3, ninguna órbita recta, con 0,10 ms por frame en el peor caso.
+
+### Desviaciones importantes (detalle en los informes, §4)
+- **Fase 6:** los casquetes polares, con los modelos polares del LOLA (los equirrectangulares no dan para el polo); las texturas del primer plano esperan al final de los viajes; KTX2 sigue descartado (con WebP, la VRAM cabe).
+- **Fase 7:**
+  - Titán, sin superficie: en luz visible, su neblina la tapa;
+  - Mimas, del PDS (Astropedia no la tiene); Deimos, Proteo y las de Urano, con su color esquemático (no hay mosaico global con licencia clara);
+  - las predicciones del IMCCE, descartadas como fuente del tránsito por su aviso legal: la fuente es la foto del Hubble;
+  - el detalle del brillo del anillo B, de la textura de antes, registrado con la ocultación.
+- **Respuesta a la revisión:**
+  - Ío ya no lleva el color medio de la foto como tinte, sino su mosaico en color con un balance por canal;
+  - las órbitas: el criterio es lo que gira su parte visible, con dos matices medidos (las esquinas entre rectas no cuentan; con la cámara fuera de la órbita, se queda). Con Saturno enfocado en 2026, las órbitas de Dione, Rea, Titán y Jápeto se ven como el horizonte de su plano y se van;
+  - a contraluz, el anillo A sigue más claro que en PIA17172: no es el realce, sino la exposición y la función de fase de las partículas (backlog 14).
+
+### Incidencias
+- **La revisión de la fase 7 no la hizo un subagente**: la sesión se paró por el límite de uso. La sesión de revisión la hizo dentro de la del bloque.
+- **Tres fallos propios encontrados al aplicar la revisión, antes de llegar a `main`:**
+  - dos de las tres sondas de Tritón (Kasu Patera y Ukupanio Cavus) pasaban gracias al relleno del hueco, no a los datos: ahora las sondas de brillo solo miden lo que hay, y Tritón tiene tres manchas oscuras del hemisferio sur;
+  - con el relleno nuevo, la calibración del albedo habría aclarado Tritón un 24 %: el brillo de los mosaicos se mide ya solo sobre lo que hay;
+  - el primer criterio de D3 (el giro total) contaba como curva las rectas que se juntan en esquina, y el segundo (la parte visible de la órbita) dejaba el horizonte de una órbita vista desde dentro: los tests lo enseñaron antes de las capturas.
+- **Otra sesión en la máquina al medir:** la primera medición de esta respuesta dio 2,5 ms de CPU por frame y un mínimo de 41 FPS en medio, con la primera versión de D3 (que creaba objetos en cada tramo y medía también la vista general) y con un proyecto vecino (`torno`) pasando sus capturas a la vez. Con D3 reescrito y la máquina libre: 60 FPS y 1,3 ms.
+
+### Condiciones de parada
+No se activó ninguna:
+- no quedó ningún bloqueante;
+- no hizo falta ninguna dependencia ni herramienta nueva;
+- los datos nuevos tienen licencia compatible: el mosaico de Ío en color es de dominio público (USGS); las fotos de referencia (PIA02308 y PIA17172) solo se enlazan y se miden en una carpeta temporal;
+- todos los criterios se cumplen. Las pruebas en el móvil de Iván no bloquean.
+
+### Pendiente para Iván (`PENDIENTES.md`)
+1. **Antes del bloque E:** fusionar el PR 1 de Dependabot en GitHub (`typescript-eslint` 8.71.0 → 8.72.0) y reiniciar Claude Code para instalar su actualización.
+2. **Probar en tu móvil** (no bloquea), en la vista previa: la vista Luna (fase 6), los sistemas de lunas y la escala real (fase 7), y Ío en color.
+3. **Para decidir, sin prisa:** la luz de la umbra de la Luna en los eclipses (fase 6) y los anillos a contraluz (backlog 14, o la fase 10 si lo quieres antes).
+4. **Fase 11:** el dominio personalizado en Pages, `tierra-luna-sol.ivanchesa.com` (la zona está en la misma cuenta: el panel crea el registro DNS).
+5. `AGENTS.md`, tu copia local de `CLAUDE.md` para Codex (fuera del repo), sigue con el dominio y el oficio de antes.
+
+El bloque D termina aquí, ya revisado y con su revisión aplicada. No se ha empezado el bloque E: antes, Iván fusiona el PR 1 de Dependabot y reinicia Claude Code.
