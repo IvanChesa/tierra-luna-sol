@@ -98,9 +98,16 @@ Decisiones y tareas que dependen de Iván. Claude Code añade aquí cada `TODO(i
 ## Bloque E (fase 8: el cielo desde España y los eclipses)
 - [x] **La altitud del Montsec y de la Puerta del Sol** (pendiente desde la fase 5): del modelo digital del terreno del IGN (MDT02) en el mismo punto, con la URL de la consulta: 812 m y 649 m. El mismo servicio da 410 m en el Observatori Fabra, como su estación meteorológica.
 - [x] **Constelaciones:** d3-celestial, con licencia BSD de 3 cláusulas (entra en tu lista). Las líneas siguen las cartas de la IAU.
-- [ ] (Para decidir, sin prisa) **Los nombres de las constelaciones.** Hoy, los oficiales de la IAU, en latín (Gemini, Ursa Major, Orion). Si los quieres en español (Géminis, Osa Mayor, Orión), hace falta una lista con licencia compatible: d3-celestial trae una, pero son traducciones del nombre inglés («Gemelos», «Carnero», «Toro») y no se usan. Dime la fuente (o si los escribo y los revisas con los demás textos).
-- [ ] (Para decidir) **La velocidad del cielo** (propuesta del informe de la fase 8, §10): D33 no la fijaba. En `/cielo`, **tiempo real** (lo que se ve es lo que hay ahora; la noche se recorre con su deslizador).
+- [x] **Los nombres de las constelaciones**, decidido el 03-11 (D38): **en español** (Osa Mayor, Géminis, Orión) y el **oficial de la IAU en latín como secundario**, cada uno comprobado con una fuente española publicada (en `FUENTES.md`) y la lista en `docs/revision-textos.md`, que revisa la sesión de revisión del bloque E. Se hace en la fase 9.
+- [x] **La velocidad del cielo**, decidido el 03-11: **tiempo real**, como se proponía (D33). Ya era así en el código (`CONTEXT_SPEED.sky`); queda en el plan.
 - [ ] **Probar el cielo en tu móvil** (no bloquea), en la vista previa: `/cielo` con el panel compacto, «Usar mi ubicación» (pide permiso solo al pulsarlo) y el deslizador de la hora; y `/eclipses` con «Ver en 3D».
+
+## Decisiones del 03-11 (durante la fase 9)
+- [x] Las constelaciones en español con el latín como secundario (D38) y el cielo en tiempo real (D33): arriba, en «Bloque E (fase 8)», y en el plan.
+- [ ] **Una fase propia antes de la fase 10** (en el plan, §6; **no se hace en la fase 9**: la prepara la sesión de revisión con la revisión del bloque E):
+  - **el Sol**, con un diseño mejor, en un estilo «real y luminoso»;
+  - **acabar las lunas**: las formas reales de Fobos, Deimos y Proteo (hoy, esferas; en el backlog, 3), y una superficie para Deimos, Proteo y las lunas de Urano (hoy, su color esquemático; backlog 12);
+  - **los sistemas de lunas de la vista general**: las lunas se ven demasiado grandes respecto a su planeta, las galileanas se atraviesan entre ellas y las de Saturno orbitan dentro de los anillos.
 
 ## Decisiones
 - [x] **La revisión de los textos (fase 9)**, decidida al lanzar el bloque E (01-11): `docs/revision-textos.md` con cada texto, su fuente y un hueco para tus correcciones, agrupados por cuerpo y por vista. El bloque no te espera: la revisión queda apuntada abajo («Revisiones y pruebas de Iván») y se sigue.

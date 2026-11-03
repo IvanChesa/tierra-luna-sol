@@ -41,8 +41,8 @@ export type SpeedContext = 'overview' | 'body' | 'sky';
 
 /**
  * Velocidad de cada contexto (D33): 3 días por segundo en la vista general y 1 hora con un cuerpo. En
- * el cielo (fase 8; el plan no la fija: propuesta del informe de la fase 8, §10), tiempo real: lo que se
- * ve es lo que hay ahora, y la noche se recorre con su deslizador.
+ * el cielo (fase 8), tiempo real (decisión de Iván del 03-11, en D33): lo que se ve es lo que hay
+ * ahora, y la noche se recorre con su deslizador.
  */
 export const CONTEXT_SPEED: Readonly<Record<SpeedContext, number>> = {
   overview: 3 * DAY_S,
