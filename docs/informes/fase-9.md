@@ -2,7 +2,7 @@
 
 - **Rama:** `fase-9-contenido`
 - **Fecha:** 2026-11-03
-- **Estado:** en curso (9.a)
+- **Estado:** en curso: hechas 9.a, 9.b, 9.c y 9.d y las decisiones de Iván del 03-11; queda 9.e (textos, criterios y cierre)
 
 ## Plan
 Bloque E, modo autónomo; la fase 8 ya está en `main` (`358ae6b`). La fase es grande: va por entregas, con este informe al día al final de cada una. Lo que ya existe y se reutiliza:
@@ -53,3 +53,12 @@ Hoy las fichas (`/planetas/:id`, `/sol`, `/luna`) son un H1 y «Ficha en prepara
   - **Sin cifras sin fuente y sin enlaces rotos:** el test de las filas de la ficha y `scripts/check-links.mjs` (los internos, con sus anclas, en `npm run check`; los externos, en el informe, y los de ivanchesa.com, pendientes del dominio).
 - Capturas (`?captura=1`, escritorio y móvil): una ficha de planeta, de luna, del Sol y de la Luna, los índices, `/creditos`, `/sobre-el-proyecto`, el pie y la vista previa simulada.
 - `FUENTES.md`, `PENDIENTES.md`, este informe, la revisión por subagente, las correcciones, la fusión, el diario y el resumen del bloque E. **Después, parar**: no se empieza el bloque F.
+
+**Decisiones de Iván del 03-11, durante la fase** (en el plan y en `PENDIENTES.md`):
+- **Las constelaciones, en español** con el oficial de la IAU en latín como secundario (D38), comprobadas con una fuente española publicada: hecho (§3, tarea 8).
+- **El cielo, en tiempo real** (D33): ya era así en el código; queda en el plan y en ESTILO.
+- **Una fase propia antes de la 10** (el Sol, las lunas que faltan, los sistemas de lunas de la vista general y el lado nocturno de la Tierra): no se hace aquí; la prepara la sesión de revisión con la del bloque E.
+
+## Progreso (al final de cada entrega)
+- **9.a, 9.b, 9.c y 9.d, hechas** (commits de `ef506e4` a `0939e78`): las constelaciones en español, las fichas y sus índices, las imágenes del motor y la de compartir, las etiquetas, el pie legal, la privacidad, `/creditos` y `/sobre-el-proyecto`. Tests unitarios (707) y e2e de contenido (10) en verde; código propio inicial, 14,32 kB de 15.
+- **Queda 9.e:** el repaso de los textos con ESTILO, `docs/revision-textos.md`, los enlaces, las métricas de las fichas, la vista previa del enlace, las capturas, el informe completo y la revisión.
