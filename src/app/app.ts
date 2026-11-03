@@ -17,12 +17,15 @@ import { SITE_CONFIG } from './core/site.config';
 })
 export class App {
   protected readonly site = SITE_CONFIG;
-  /** La navegación principal; las de `extra`, solo en el menú del móvil. */
+  /**
+   * La navegación principal; las de `extra`, solo en el menú del móvil. «Cielo» en lugar de «Luna»
+   * (decisión de Iván del 03-11): la Luna, la primera de /lunas.
+   */
   protected readonly links = [
     { path: '/planetas', label: 'Planetas', extra: false },
     { path: '/lunas', label: 'Lunas', extra: false },
     { path: '/sol', label: 'Sol', extra: false },
-    { path: '/luna', label: 'Luna', extra: false },
+    { path: '/cielo', label: 'Cielo', extra: false },
     { path: '/eclipses', label: 'Eclipses', extra: false },
     { path: '/sobre-el-proyecto', label: 'Sobre el proyecto', extra: false },
     { path: '/creditos', label: 'Créditos', extra: true },

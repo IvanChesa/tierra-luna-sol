@@ -183,6 +183,15 @@ test.describe('Móvil', () => {
     await page.getByRole('button', { name: 'Menú' }).tap();
     const menu = page.getByRole('navigation', { name: 'Principal' });
     await expect(menu).toBeVisible();
+    // «Cielo» en lugar de «Luna» (decisión de Iván del 03-11).
+    await expect(menu.locator('li:not(.site-nav__extra) a')).toHaveText([
+      'Planetas',
+      'Lunas',
+      'Sol',
+      'Cielo',
+      'Eclipses',
+      'Sobre el proyecto',
+    ]);
     // En el móvil, el explorador no tiene pie: la nota de privacidad y los enlaces legales, aquí (fase 9).
     await expect(menu).toContainText('Sin cookies, sin analítica y sin peticiones a terceros');
     await expect(menu.getByRole('link', { name: 'Aviso legal' })).toBeVisible();

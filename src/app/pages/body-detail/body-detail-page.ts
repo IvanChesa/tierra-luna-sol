@@ -1,4 +1,4 @@
-import { IMAGE_LOADER, ImageLoaderConfig, NgOptimizedImage } from '@angular/common';
+import { IMAGE_LOADER, NgOptimizedImage } from '@angular/common';
 import { Component, afterNextRender, computed, input, resource, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CAPTURE_DATE, isCaptureQuery } from '../../core/capture';
@@ -6,18 +6,12 @@ import { getBody } from '../../data/bodies';
 import { findBody } from '../../data/body-index';
 import { bodyPagePath, explorerLinkOf } from '../../data/body-links';
 import type { BodyId } from '../../data/body.model';
+import { bodyImageLoader } from '../shared/body-images';
 import { Breadcrumbs, Crumb } from '../shared/breadcrumbs';
 import { moonsByDistance } from '../shared/moons';
 import { bodyFacts, citations } from './body-facts';
 import { accessedText, imageAltOf, kindLineOf, textSourceName, urlText } from './body-labels';
 import { PENDING_NOTE, pendingRows, positionNote } from './today-text';
-
-/**
- * La imagen de la ficha, renderizada por el propio motor (`scripts/render-body-images.mjs`, fase 9) en
- * dos tamaños: `ngSrc` es el id del cuerpo y el ancho pedido elige el fichero.
- */
-export const bodyImageLoader = ({ src, width }: ImageLoaderConfig): string =>
-  `/img/fichas/${src}-${width !== undefined && width > 360 ? 720 : 360}.webp`;
 
 /**
  * Ficha completa de un cuerpo (fase 9, tarea 2): la usan /sol, /luna, /planetas/:id y /lunas/:id. Sin

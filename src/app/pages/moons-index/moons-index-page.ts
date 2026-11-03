@@ -1,5 +1,4 @@
 import { Component } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { getBody } from '../../data/bodies';
 import { PLANETS } from '../../data/body-index';
 import { moonsByDistance } from '../shared/moons';
@@ -7,20 +6,23 @@ import { BodyCard } from '../shared/body-card';
 import { Breadcrumbs } from '../shared/breadcrumbs';
 
 /**
- * Índice de las lunas (fase 9): las 20 que tienen ficha en /lunas/:id, por planeta y de dentro afuera.
- * La nuestra tiene la suya en /luna.
+ * Índice de las lunas (fase 9): primero la nuestra, destacada (su ficha es /luna: decisión de Iván del
+ * 03-11), y después las 20 que tienen ficha en /lunas/:id, por planeta y de dentro afuera.
  */
 @Component({
   selector: 'tls-moons-index-page',
   host: { class: 'page' },
-  imports: [BodyCard, Breadcrumbs, RouterLink],
+  imports: [BodyCard, Breadcrumbs],
   template: `
     <tls-breadcrumbs [crumbs]="crumbs" />
     <h1>Lunas</h1>
     <p class="lead">
-      Las veinte lunas del explorador, por planeta y de la más cercana a la más lejana. La nuestra,
-      el satélite de la Tierra, tiene su propia ficha: <a routerLink="/luna">la Luna</a>.
+      La Luna y las otras veinte lunas del explorador: primero la nuestra y, después, las de cada
+      planeta, de la más cercana a la más lejana.
     </p>
+    <div class="featured">
+      <tls-body-card [body]="moon" [level]="2" featured />
+    </div>
     @for (system of systems; track system.id) {
       <section [attr.aria-labelledby]="'sistema-' + system.id">
         <h2 [id]="'sistema-' + system.id">{{ system.title }}</h2>
@@ -36,6 +38,7 @@ import { Breadcrumbs } from '../shared/breadcrumbs';
 })
 export class MoonsIndexPage {
   protected readonly crumbs = [{ label: 'Inicio', link: '/' }, { label: 'Lunas' }];
+  protected readonly moon = getBody('luna');
   protected readonly systems = PLANETS.map((planet) => ({
     id: planet.id,
     title: `Las lunas de ${planet.name}`,

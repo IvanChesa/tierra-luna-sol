@@ -119,7 +119,7 @@ test.describe('Fichas de los cuerpos (fase 9)', () => {
     await context.close();
   });
 
-  test('los índices: los 8 planetas y las 20 lunas, por planeta, con la Luna aparte', async ({
+  test('los índices: los 8 planetas y, en /lunas, la Luna la primera y destacada y las 20 por planeta', async ({
     page,
   }) => {
     await page.goto('/planetas');
@@ -134,15 +134,28 @@ test.describe('Fichas de los cuerpos (fase 9)', () => {
       .getByRole('link', { name: 'Lunas' })
       .click();
     await expect(page).toHaveURL(/\/lunas$/);
-    await expect(page.locator('tls-body-card')).toHaveCount(20);
+    // La Luna, la primera y destacada (decisión de Iván del 03-11), con su ficha de siempre.
+    await expect(page.locator('tls-body-card')).toHaveCount(21);
+    const featured = page.locator('.featured .card--featured');
+    await expect(featured).toContainText('Satélite de la Tierra');
+    await expect(featured.getByRole('link', { name: 'Luna', exact: true })).toHaveAttribute(
+      'href',
+      '/luna',
+    );
     await expect(page.getByRole('heading', { level: 2 })).toHaveText([
+      'Luna',
       'Las lunas de Marte',
       'Las lunas de Júpiter',
       'Las lunas de Saturno',
       'Las lunas de Urano',
       'Las lunas de Neptuno',
     ]);
-    await expect(page.getByRole('link', { name: 'la Luna' })).toHaveAttribute('href', '/luna');
+    // En el menú, «Cielo» en lugar de «Luna».
+    const nav = page.getByRole('navigation', { name: 'Principal' });
+    await expect(nav.getByRole('link', { name: 'Luna', exact: true })).toHaveCount(0);
+    await nav.getByRole('link', { name: 'Cielo' }).click();
+    await expect(page).toHaveURL(/\/cielo$/);
+    await expect(page.locator('h1')).toHaveText('El cielo desde España');
   });
 
   test('desde el explorador, la ficha completa de una luna lleva a /lunas/:id', async ({

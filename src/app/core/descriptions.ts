@@ -14,7 +14,7 @@ export const DESCRIPTIONS: Readonly<Record<string, string>> = {
   planetas:
     'Los ocho planetas del sistema solar, con sus datos y sus fuentes, tres curiosidades de cada uno y su distancia de hoy.',
   lunas:
-    'Las veinte lunas del explorador, por planeta: sus datos con sus fuentes, tres curiosidades de cada una y su distancia de hoy.',
+    'La Luna y las veinte lunas de los demás planetas del explorador: sus datos con sus fuentes, tres curiosidades de cada una y su distancia de hoy.',
   eclipses:
     'Los eclipses de Sol y de Luna de los próximos diez años que se ven desde España, con la hora del lugar y «Ver en 3D».',
   creditos:

@@ -1,13 +1,13 @@
-import { IMAGE_LOADER, ImageLoaderConfig, NgOptimizedImage } from '@angular/common';
-import { Component, computed, input } from '@angular/core';
+import { IMAGE_LOADER, NgOptimizedImage } from '@angular/common';
+import { Component, booleanAttribute, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { formatExact } from '../../core/format';
+import { firstSentence } from '../../data/body-description';
 import type { Body } from '../../data/body.model';
 import { bodyPagePath } from '../../data/body-links';
 import { periodCells } from '../body-detail/body-facts';
-
-/** Las miniaturas del motor (fase 3c, `public/img/cuerpos/`): 96 px, una por cuerpo. */
-const thumbnailLoader = ({ src }: ImageLoaderConfig): string => `/img/cuerpos/${src}.webp`;
+import { kindLineOf } from '../body-detail/body-labels';
+import { cardImageLoader } from './body-images';
 
 /** Espacio duro entre la cifra y la unidad (ESTILO §3). */
 const NBSP = ' ';
@@ -15,15 +15,24 @@ const NBSP = ' ';
 /**
  * Una tarjeta de los índices de cuerpos (fase 9): la miniatura, el nombre (el enlace a su ficha, que
  * ocupa toda la tarjeta) y dos datos con su fuente en la ficha: el radio y el periodo de la órbita.
+ * La destacada (`featured`; la Luna, la primera de /lunas: decisión de Iván del 03-11) lleva además
+ * su tipo, la primera frase de su resumen y una imagen más grande, la de su ficha.
  */
 @Component({
   selector: 'tls-body-card',
   imports: [RouterLink, NgOptimizedImage],
-  providers: [{ provide: IMAGE_LOADER, useValue: thumbnailLoader }],
+  providers: [{ provide: IMAGE_LOADER, useValue: cardImageLoader }],
   template: `
-    <article class="card">
-      <img [ngSrc]="body().id" width="56" height="56" alt="" />
+    <article class="card" [class.card--featured]="featured()">
+      @if (featured()) {
+        <img [ngSrc]="body().id" width="112" height="112" alt="" [loaderParams]="ficha" priority />
+      } @else {
+        <img [ngSrc]="body().id" width="56" height="56" alt="" />
+      }
       <div>
+        @if (featured()) {
+          <p class="card__kind">{{ kind() }}</p>
+        }
         @if (level() === 2) {
           <h2 class="card__name">
             <a [routerLink]="link()">{{ body().name }}</a>
@@ -32,6 +41,9 @@ const NBSP = ' ';
           <h3 class="card__name">
             <a [routerLink]="link()">{{ body().name }}</a>
           </h3>
+        }
+        @if (featured()) {
+          <p class="card__summary">{{ summary() }}</p>
         }
         <dl>
           @for (fact of facts(); track fact.label) {
@@ -60,6 +72,36 @@ const NBSP = ' ';
 
     .card:hover {
       border-color: var(--color-control);
+    }
+
+    /* La destacada: más grande, con el borde de los controles y la imagen a su columna. */
+    .card--featured {
+      grid-template-columns: clamp(4.5rem, 22vw, 7rem) minmax(0, 1fr);
+      padding: var(--space-4) var(--space-6);
+      border-color: var(--color-control);
+    }
+
+    .card--featured img {
+      width: 100%;
+      height: auto;
+    }
+
+    .card--featured .card__name {
+      font-size: var(--text-2xl);
+    }
+
+    .card__kind {
+      margin: 0 0 var(--space-1);
+      color: var(--color-text-muted);
+      font-size: var(--text-sm);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .card__summary {
+      max-width: 40rem;
+      margin: 0 0 var(--space-3);
+      color: var(--color-text-muted);
     }
 
     .card__name {
@@ -114,7 +156,17 @@ export class BodyCard {
   readonly body = input.required<Body>();
   /** El nivel del título: 2 bajo el H1 de la página, 3 bajo el título de su grupo. */
   readonly level = input<2 | 3>(3);
+  /** La tarjeta destacada, con su tipo, su primera frase y la imagen de su ficha. */
+  readonly featured = input(false, { transform: booleanAttribute });
+
+  protected readonly ficha = { ficha: true };
   protected readonly link = computed(() => bodyPagePath(this.body().id));
+  /** «Satélite de la Tierra», sin el enlace de la ficha: toda la tarjeta es ya un enlace. */
+  protected readonly kind = computed(() => {
+    const kind = kindLineOf(this.body());
+    return kind.parent ? `${kind.text} ${kind.parent.name}` : kind.text;
+  });
+  protected readonly summary = computed(() => firstSentence(this.body().summary.text));
   protected readonly facts = computed(() => {
     const body = this.body();
     const facts = [

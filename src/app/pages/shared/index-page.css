@@ -18,3 +18,8 @@ h2 {
   padding: 0;
   list-style: none;
 }
+
+/* La tarjeta destacada de /lunas (la Luna), antes de los grupos. */
+.featured {
+  margin: 0 0 var(--space-8);
+}
