@@ -4,6 +4,7 @@
 // Uso: npm run build && node scripts/capture-pages.mjs docs/informes/img/fase-9 [--solo=a,b]
 import { mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
+import sharp from 'sharp';
 import { BASE, openBrowser, pageOptions } from './capture-lib.mjs';
 
 const out = process.argv[2];
@@ -57,9 +58,14 @@ try {
       );
     }
     await page.evaluate(() => document.fonts.ready);
-    await page.screenshot({ path: file(`${name}.png`), fullPage: full });
+    // En WebP (las de página entera, en PNG, pasaban de 1 MB).
+    const png = await page.screenshot({ fullPage: full });
+    await sharp(png)
+      .webp({ quality: 86 })
+      .toFile(file(`${name}.webp`));
     await page.close();
-    const real = problems.filter((p) => !(path === '/no-existe' && p.startsWith('[404]')));
+    // En la 404, su propio 404 es lo esperado.
+    const real = problems.filter((p) => !(path === '/no-existe' && /404/.test(p)));
     console.log(`${name}${real.length ? `\n  ${real.join('\n  ')}` : ''}`);
   }
 } finally {
