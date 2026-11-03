@@ -529,7 +529,19 @@ select.control {
   color: var(--color-sky-constellation);
   font-size: 0.6875rem;
   letter-spacing: 0.04em;
+  text-align: center;
   opacity: 0.85;
+}
+
+/*
+ * Debajo del nombre español, el oficial de la IAU en latín, más pequeño y en cursiva (D38); con el
+ * mismo color, que da 5,7:1 sobre el fondo de la noche con la opacidad de la etiqueta.
+ */
+.sky-label__secondary {
+  display: block;
+  font-size: 0.5625rem;
+  font-style: italic;
+  letter-spacing: 0.02em;
 }
 
 /*

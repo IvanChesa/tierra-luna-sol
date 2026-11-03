@@ -2011,7 +2011,13 @@ describe('SceneEngine: la vista del cielo (fase 8)', () => {
   it('las constelaciones llegan al abrir el cielo y se pueden ocultar; su memoria se cuenta', async () => {
     const data = {
       constellations: [
-        { id: 'Ori', name: 'Orion', label: [83.8, 5], lines: [[88.79, 7.41, 81.28, 6.35]] },
+        {
+          id: 'Ori',
+          name: 'Orion',
+          es: 'Orión',
+          label: [83.8, 5],
+          lines: [[88.79, 7.41, 81.28, 6.35]],
+        },
       ],
     };
     const loadConstellations = vi.fn(() => Promise.resolve(data as unknown));
@@ -2019,6 +2025,11 @@ describe('SceneEngine: la vista del cielo (fase 8)', () => {
     await flush();
     expect(loadConstellations).toHaveBeenCalledTimes(1);
     expect(h.engine.stats().vramMB).toBeGreaterThan(0);
+    // El nombre en español y, debajo, el oficial de la IAU en latín (D38).
+    const label = h.labels.querySelector<HTMLElement>('.sky-label--constellation');
+    expect(label?.firstChild?.textContent).toBe('Orión');
+    expect(label?.querySelector('.sky-label__secondary')?.textContent).toBe('Orion');
+    expect(label?.querySelector('.sky-label__secondary')?.getAttribute('lang')).toBe('la');
     h.engine.setConstellationsVisible(false);
     settle(h);
     expect(

@@ -11,6 +11,11 @@ export interface SkyLabelSpec {
   readonly key: string;
   readonly text: string;
   readonly kind: 'cardinal' | 'cardinal-minor' | 'body' | 'constellation';
+  /**
+   * Un nombre secundario, debajo y más pequeño: el oficial de la IAU, en latín, de las constelaciones
+   * (D38). Va con `lang="la"`.
+   */
+  readonly secondary?: string;
   /** El cuerpo que elige un clic en la etiqueta. */
   readonly body?: SkyBodyId;
 }
@@ -53,6 +58,13 @@ export class SkyLabels {
       el.className = `sky-label sky-label--${spec.kind}`;
       if (spec.body) el.dataset['body'] = spec.body;
       el.textContent = spec.text;
+      if (spec.secondary) {
+        const secondary = doc.createElement('span');
+        secondary.className = 'sky-label__secondary';
+        secondary.lang = 'la';
+        secondary.textContent = spec.secondary;
+        el.append(secondary);
+      }
       el.hidden = true;
       this.root.append(el);
       this.elements.set(spec.key, el);

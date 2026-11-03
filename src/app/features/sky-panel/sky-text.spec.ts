@@ -5,6 +5,7 @@ import { skyPlaceOf } from '../../data/sky-place';
 import {
   clockAt,
   compassName,
+  constellationName,
   lookLabel,
   moonNightText,
   nowCell,
@@ -109,5 +110,16 @@ describe('sky-text: los rumbos y las frases', () => {
     for (const planet of night.planets.filter((p) => !p.visible)) {
       expect(planetNightText(planet, place)).toBeNull();
     }
+  });
+
+  it('las constelaciones, en español y con el nombre de la IAU como secundario (D38)', () => {
+    expect(constellationName('Gem')).toBe('Géminis (Gemini)');
+    expect(constellationName('UMa')).toBe('Osa Mayor (Ursa Major)');
+    expect(constellationName('Ori')).toBe('Orión (Orion)');
+    // Si coinciden, una vez.
+    expect(constellationName('Leo')).toBe('Leo');
+    expect(constellationName('Vir')).toBe('Virgo');
+    // Un símbolo que no existe, tal cual (no rompe el texto).
+    expect(constellationName('Xyz')).toBe('Xyz');
   });
 });

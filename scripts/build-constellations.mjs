@@ -5,8 +5,8 @@
 //   su nombre; lo carga la escena del cielo al abrir la vista;
 // - public/data/constellations.LICENSE.txt: la licencia BSD, que pide reproducir su aviso, y la
 //   atribución de las cartas de la IAU de las que salen las figuras (CC BY 4.0);
-// - src/app/data/constellations.ts: el nombre de cada una por su símbolo de la IAU, para la tabla del
-//   cielo («Júpiter, en Gemini»).
+// - src/app/data/constellations.ts: el nombre de cada una por su símbolo de la IAU, el oficial (en
+//   latín) y el español (D38), para los textos del cielo («Júpiter, en Géminis (Gemini)»).
 //
 // Las líneas de d3-celestial son las figuras (de Alan MacRobert) de las cartas de las constelaciones de
 // la IAU, hechas con Sky & Telescope (Roger Sinnott y Rick Fienberg) y publicadas con licencia CC BY 4.0
@@ -15,8 +15,10 @@
 // (revisión de la fase 8, hallazgo 5). Los nombres son los oficiales de la IAU, en latín: los que da
 // `Constellation` de astronomy-engine (licencia MIT) en el punto donde d3-celestial pone el nombre, lo
 // que comprueba de paso que su símbolo es el de esa región del cielo. Los nombres «es» de d3-celestial
-// no se usan: son traducciones del nombre inglés («Gemelos», «Carnero», «Toro»), no los de la
-// astronomía en español.
+// no se usan. Los españoles (D38, decisión de Iván del 03-11) salen de
+// scripts/content/constellations-es.json: los de la tabla «Constelaciones» del Anuario del Real
+// Observatorio de Madrid para 2019 (IGN) y, en el zodiaco, los que usa el mismo Anuario para esas
+// constelaciones; los comprueba con los PDF del IGN scripts/check-constellation-names.mjs.
 // Uso: node scripts/build-constellations.mjs
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
@@ -44,6 +46,10 @@ async function source(file) {
   return bytes.toString('utf8');
 }
 
+const spanish = JSON.parse(
+  await readFile(new URL('scripts/content/constellations-es.json', ROOT), 'utf8'),
+);
+const SPANISH = new Map(spanish.constellations.map((c) => [c.id, c.es]));
 const lines = JSON.parse(await source('constellations.lines.json'));
 const names = JSON.parse(await source('constellations.json'));
 const license = await source('LICENSE');
@@ -89,9 +95,12 @@ const constellations = lines.features
     if (iau.symbol !== feature.id) {
       throw new Error(`${feature.id}: su nombre cae en ${iau.symbol} según la IAU`);
     }
+    const es = SPANISH.get(feature.id);
+    if (!es) throw new Error(`${feature.id}: sin nombre en español (constellations-es.json)`);
     return {
       id: feature.id,
       name: officialName(info.properties, iau.name),
+      es,
       // La parte (en la Serpiente, Serpens Caput y Serpens Cauda), para el orden.
       part: info.properties.name,
       // La posición del nombre (ascensión recta y declinación, grados, J2000).
@@ -124,11 +133,12 @@ const data = {
   source: SOURCE,
   license:
     'BSD de 3 cláusulas (d3-celestial) y CC BY 4.0 (las cartas de la IAU): constellations.LICENSE.txt',
-  basis: `Las figuras de las cartas de las constelaciones de la IAU (${IAU_CHARTS.credit}; CC BY 4.0, ${IAU_CHARTS.url}), con retoques de Olaf Frohn (README de d3-celestial, fuente [3]). Nombres oficiales de la IAU, de astronomy-engine.`,
+  basis: `Las figuras de las cartas de las constelaciones de la IAU (${IAU_CHARTS.credit}; CC BY 4.0, ${IAU_CHARTS.url}), con retoques de Olaf Frohn (README de d3-celestial, fuente [3]). Nombres oficiales de la IAU, de astronomy-engine; en español (es), los del Anuario del Real Observatorio de Madrid para 2019 (IGN): ${spanish.table.url}.`,
   frame: 'J2000: ascensión recta y declinación en grados',
-  constellations: constellations.map(({ id, name, label, lines: polylines }) => ({
+  constellations: constellations.map(({ id, name, es, label, lines: polylines }) => ({
     id,
     name,
+    es,
     label,
     lines: polylines,
   })),
@@ -140,7 +150,8 @@ await writeFile(
     'Líneas de las constelaciones (constellations.json), preparadas por',
     'scripts/build-constellations.mjs de Tierra Luna Sol a partir de d3-celestial:',
     `${PAGE} (commit ${commit}).`,
-    'Los nombres son los oficiales de la IAU, de astronomy-engine (licencia MIT).',
+    'Los nombres son los oficiales de la IAU, de astronomy-engine (licencia MIT), y en español, los del',
+    `Anuario del Real Observatorio de Madrid para 2019 (© Instituto Geográfico Nacional): ${spanish.table.url}.`,
     '',
     'Las líneas son las figuras de las cartas de las constelaciones de la IAU (las de Alan MacRobert),',
     'con algún retoque de Olaf Frohn en d3-celestial:',
@@ -156,12 +167,12 @@ await writeFile(
   ].join('\n'),
 );
 
+const quote = (text) => `'${text.replace(/'/g, "\\'")}'`;
 const entries = symbols
-  .map((id) => {
-    const name = constellations.find((c) => c.id === id)?.name ?? '';
-    return `  ${id}: '${name.replace(/'/g, "\\'")}',`;
-  })
+  .map((id) => `  ${id}: ${quote(constellations.find((c) => c.id === id)?.name ?? '')},`)
   .join('\n');
+const spanishEntries = symbols.map((id) => `  ${id}: ${quote(SPANISH.get(id) ?? '')},`).join('\n');
+const spanishSource = `${spanish.table.title}, ${spanish.table.publisher}: ${spanish.table.url}`;
 const doc = [
   '/**',
   ' * Los nombres oficiales de la IAU (en latín) de las 88 constelaciones, por su símbolo (el que da',
@@ -175,6 +186,17 @@ ${doc}
 export const CONSTELLATION_NAMES: Readonly<Record<string, string>> = {
 ${entries}
 };
+
+/**
+ * Los nombres en español (D38): los del Anuario del Real Observatorio de Madrid (IGN), comprobados con
+ * sus PDF por scripts/check-constellation-names.mjs (la lista y sus citas, en
+ * scripts/content/constellations-es.json).
+ */
+export const CONSTELLATION_NAMES_ES: Readonly<Record<string, string>> = {
+${spanishEntries}
+};
+
+export const CONSTELLATION_NAMES_ES_SOURCE = ${quote(spanishSource)};
 
 export const CONSTELLATIONS_SOURCE = '${SOURCE}';
 export const CONSTELLATIONS_LICENSE = 'BSD de 3 cláusulas (d3-celestial) y CC BY 4.0 (las cartas de la IAU)';

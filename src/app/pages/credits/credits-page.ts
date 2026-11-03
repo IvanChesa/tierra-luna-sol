@@ -108,7 +108,11 @@ import { Component } from '@angular/core';
       con licencia <a href="https://creativecommons.org/licenses/by/4.0/deed.es">CC BY 4.0</a>, tal
       como las prepara <a href="https://github.com/ofrohn/d3-celestial">d3-celestial</a>, de Olaf
       Frohn (licencia BSD de 3 cláusulas: © 2015, Olaf Frohn; su texto y la atribución, junto al
-      fichero). Sus nombres, los oficiales de la IAU, de astronomy-engine.
+      fichero). Sus nombres oficiales de la IAU, de astronomy-engine; en español, los del
+      <a href="https://www.ign.es/web/resources/acercaDe/libDigPub/Anuario2019.pdf"
+        >Anuario del Real Observatorio de Madrid</a
+      >
+      (© Instituto Geográfico Nacional).
     </p>
 
     <h2>Datos</h2>

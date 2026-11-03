@@ -70,7 +70,10 @@ const DEG = Math.PI / 180;
 export interface ConstellationData {
   readonly constellations: readonly {
     readonly id: string;
+    /** El nombre oficial de la IAU, en latín: el secundario de la etiqueta (D38). */
     readonly name: string;
+    /** El nombre en español (D38): el de la etiqueta. */
+    readonly es: string;
     /** Ascensión recta y declinación J2000 (grados) donde va su nombre. */
     readonly label: readonly number[];
     /** Polilíneas: [α₁, δ₁, α₂, δ₂, …] en grados J2000. */
@@ -363,10 +366,16 @@ export class SkyScene {
       }
       const [ra = 0, dec = 0] = constellation.label;
       const key = `constellation-${constellation.id}-${k}`;
-      specs.push({ key, text: constellation.name, kind: 'constellation' });
+      // El nombre en español y, debajo y más pequeño, el oficial de la IAU en latín (D38).
+      specs.push({
+        key,
+        text: constellation.es,
+        secondary: constellation.name,
+        kind: 'constellation',
+      });
       this.constellationLabels.push({
         key,
-        text: constellation.name,
+        text: constellation.es,
         direction: equatorialToEclThree(ra, dec),
       });
     });
@@ -635,13 +644,15 @@ export class SkyScene {
     }
     // Las etiquetas no se pisan: se colocan por orden (el Sol, la Luna, los planetas del más brillante
     // al más débil y las constelaciones) y se salta la que caería encima de otra ya puesta. Las cajas,
-    // estimadas por el número de letras (unos 7 px por letra y 16 px de alto).
-    const boxes: { x: number; y: number; w: number }[] = [];
-    const free = (x: number, y: number, text: string): boolean => {
+    // estimadas por el número de letras (unos 7 px por letra y 16 px de alto por línea; las de las
+    // constelaciones, de dos líneas: el nombre español y, debajo, el latino, D38).
+    const boxes: { x: number; y: number; w: number; h: number }[] = [];
+    const free = (x: number, y: number, text: string, lines = 1): boolean => {
       const w = 7 * text.length + 8;
-      if (boxes.some((b) => Math.abs(b.x - x) < (b.w + w) / 2 && Math.abs(b.y - y) < 16))
+      const h = 16 * lines;
+      if (boxes.some((b) => Math.abs(b.x - x) < (b.w + w) / 2 && Math.abs(b.y - y) < (b.h + h) / 2))
         return false;
-      boxes.push({ x, y, w });
+      boxes.push({ x, y, w, h });
       return true;
     };
     this.screenBodies = [];
@@ -668,7 +679,7 @@ export class SkyScene {
         const direction = mulMat3Vec(rotation, label.direction);
         if (direction.y < 0.03) continue;
         const at = this.project(direction, viewport);
-        if (at && visible(at) && free(at.x, at.y, label.text)) placements.set(label.key, at);
+        if (at && visible(at) && free(at.x, at.y, label.text, 2)) placements.set(label.key, at);
       }
     }
     this.labels.update(placements);
