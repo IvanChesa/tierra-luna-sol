@@ -1,0 +1,48 @@
+<h1>Próximos eclipses visibles desde España</h1>
+<p class="eclipses__intro">
+  Los eclipses de Sol y de Luna de los próximos diez años que se ven desde el lugar elegido, con la
+  hora del lugar. Un eclipse de Sol solo se mira con filtros homologados, nunca a simple vista.
+</p>
+
+<div class="eclipses__controls">
+  <label class="eclipses__label" for="eclipses-place">Lugar</label>
+  <select id="eclipses-place" class="eclipses__select" (change)="choosePlace($event)">
+    @for (option of places; track option.id) {
+      <option [value]="option.id" [selected]="placeId() === option.id">
+        {{ optionLabel(option) }}
+      </option>
+    }
+  </select>
+  <p class="eclipses__note" role="status" [attr.aria-busy]="busy() || null">{{ calculated() }}</p>
+</div>
+
+@if (rows().length > 0) {
+  <ol class="eclipses__list">
+    @for (row of rows(); track row.key) {
+      <li class="eclipse">
+        <h2 class="eclipse__title">
+          <span class="eclipse__date">{{ row.date }}</span>
+          {{ row.title }}
+        </h2>
+        <p>{{ row.amount }}</p>
+        <p>{{ row.peak }}. {{ row.visibility }}</p>
+        <a
+          class="eclipse__link"
+          [routerLink]="row.link.path"
+          [queryParams]="row.link.queryParams"
+          [attr.aria-label]="row.label"
+          >Ver en 3D</a
+        >
+      </li>
+    }
+  </ol>
+} @else {
+  <p>Desde este lugar no se ve ningún eclipse en los próximos diez años.</p>
+}
+
+<p class="eclipses__sources">
+  Calculados con astronomy-engine y comprobados con los catálogos de eclipses de la NASA (Fred
+  Espenak y Jean Meeus): las fechas y los tipos de 2026 a 2035, y la línea central del eclipse total
+  del 12 de agosto de 2026 a su paso por la Península. La parte que se ve, con el astro sobre el
+  horizonte (sin montañas ni edificios).
+</p>

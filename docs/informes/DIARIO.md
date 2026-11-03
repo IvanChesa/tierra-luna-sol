@@ -364,3 +364,46 @@ No se activó ninguna:
 5. `AGENTS.md`, tu copia local de `CLAUDE.md` para Codex (fuera del repo), sigue con el dominio y el oficio de antes.
 
 El bloque D termina aquí, ya revisado y con su revisión aplicada. No se ha empezado el bloque E: antes, Iván fusiona el PR 1 de Dependabot y reinicia Claude Code.
+
+## Bloque E, en curso: dónde se queda (2026-11-01, sesión cerrada por Iván)
+
+Iván cerró la sesión con la fase 8 en su respuesta a la revisión. Se ha terminado ese paso, sin fusionar nada en `main`.
+
+### Fase 8 (El cielo desde España y los eclipses): hecha y revisada, sin fusionar
+- **Rama `fase-8-cielo-eclipses`**, en GitHub (push sin `--force`). Informe completo en `docs/informes/fase-8.md`, con su «Respuesta a la revisión».
+- **Revisión por subagente** (`docs/revisiones/fase-8.md`): CAMBIOS NECESARIOS, con 0 bloqueantes, 2 importantes, 9 menores y 5 sugerencias. Corregidos los 2 importantes y los 9 menores:
+  - el deslizador de la noche, que en su última media hora saltaba a la noche siguiente;
+  - `/eclipses`, que en el móvil se salía por la derecha (WCAG 1.4.10).
+
+  De las sugerencias, hechas dos y media; el resto, como propuestas para la fase 10. Sin bloqueantes, no hace falta una segunda ronda. Un fallo propio encontrado al comprobarlo: de día, la entradilla del cielo no se leía sobre el resplandor; corregido.
+- **Métricas:**
+  - `npm run check` en verde: 678 tests, cobertura de `ephemeris/` del 98,9 %, JS inicial de 300,40 kB y 12,62 kB de código propio.
+  - e2e: en la ronda completa, 85 de 87. Los 2 que fallaron eran de los propios tests y están corregidos; `cielo.spec.ts` pasa entero (8 de 8).
+  - Vista del cielo: 59–60 FPS en los tres niveles y 39 MB de VRAM.
+  - Contra sus fuentes: salidas, puestas y crepúsculos a ±2 min del USNO; los 45 eclipses de 2026 a 2035, con la fecha y el tipo de la NASA.
+
+### Lo que queda del bloque E
+1. **Fusionar la fase 8** en `main` con `--no-ff`, hacer push y añadir su fila en la tabla de este diario. Ya está lista: el check está en verde y no quedan bloqueantes.
+2. **La fase 9 entera** (Contenido y compartir), en `fase-9-contenido` desde `main`, con su plan al principio de `docs/informes/fase-9.md`. Hay que hacer:
+   - el render de las imágenes de los cuerpos y la imagen Open Graph;
+   - las fichas de los 30 cuerpos y sus índices (`/planetas`, `/lunas`, `/lunas/:id`, `/sol` y `/luna`), sin three y con los datos «de hoy» por `import()` dinámico;
+   - `/creditos` completa y `/sobre-el-proyecto` como caso de estudio;
+   - para compartir: el title y la description de cada página, `robots.txt` y `noindex` en `/404`;
+   - el pie legal con los enlaces a ivanchesa.com y la nota del NEL;
+   - el repaso de los textos con ESTILO;
+   - **`docs/revision-textos.md`**, por tu decisión de este bloque: cada texto con su fuente y un hueco para tus correcciones, por cuerpo y por vista, y su entrada en `PENDIENTES.md`.
+
+   Luego vienen la revisión, las correcciones y la fusión.
+
+   Decisiones previstas, sin herramientas nuevas:
+   - Lighthouse no se ejecuta (`@lhci/cli` espera tu decisión de la fase 10). Se miden sus métricas con Playwright (LCP, CLS, tareas largas, axe) y se dice así.
+   - La vista previa del enlace se simula en local con las etiquetas del HTML. La de una app real, cuando el dominio exista.
+   - Los enlaces legales, a `https://ivanchesa.com/aviso-legal/` y `/privacidad/`, con `TODO(ivan)` hasta que el dominio responda.
+3. **Al terminar el bloque:** el resumen del bloque E en este diario, y parar. No se empieza el bloque F.
+
+### Pendiente para Iván
+Lo de la fase 8 está en `PENDIENTES.md`:
+- los nombres de las constelaciones;
+- la velocidad del cielo (se propone tiempo real);
+- probar `/cielo` y `/eclipses` en tu móvil (no bloquea).
+

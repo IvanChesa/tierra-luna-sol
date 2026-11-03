@@ -65,6 +65,15 @@ class FakeEngine implements ExplorerEngine {
   setSurfaceMarkers(visible: boolean) {
     this.calls.push(`setSurfaceMarkers ${visible}`);
   }
+  setObserver(observer: { latDeg: number; lonDeg: number }) {
+    this.calls.push(`setObserver ${observer.latDeg.toFixed(3)} ${observer.lonDeg.toFixed(3)}`);
+  }
+  lookAtSky(azimuthDeg: number, altitudeDeg: number) {
+    this.calls.push(`lookAtSky ${azimuthDeg.toFixed(1)} ${altitudeDeg.toFixed(1)}`);
+  }
+  setConstellationsVisible(visible: boolean) {
+    this.calls.push(`setConstellationsVisible ${visible}`);
+  }
   on<K extends SceneEngineEventName>(type: K, listener: (event: SceneEngineEvents[K]) => void) {
     const set = this.listeners.get(type) ?? new Set();
     set.add(listener as (event: unknown) => void);
@@ -179,6 +188,9 @@ describe('ExplorerSession: la URL, la selección y el motor', () => {
       'setPlaying false',
       'setViewInsets 320',
       'setLabelsVisible true',
+      // El lugar del cielo (el Montsec, por defecto) y las constelaciones (fase 8).
+      'setObserver 42.025 0.737',
+      'setConstellationsVisible true',
     ]);
     engine.emit('bodyPicked', { id: 'jupiter' });
     expect(sim.selectedBodyId()).toBe('jupiter');
@@ -363,5 +375,134 @@ describe('ExplorerSession: la URL, la selección y el motor', () => {
     session.announce('Vista de la Tierra.');
     expect(session.announcement()).not.toBe(first);
     expect(session.announcement().trim()).toBe('Vista de la Tierra.');
+  });
+});
+
+describe('ExplorerSession: el cielo desde España (fase 8)', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('el lugar de la URL llega al motor; sin él, el Montsec', async () => {
+    const teide = await setup('?fecha=2026-11-01T21:00Z&lugar=teide', 'sky');
+    expect(teide.explorer.skyPlace().id).toBe('teide');
+    expect(teide.session.engineOptions().observer).toEqual({
+      latDeg: teide.explorer.skyPlace().latDeg,
+      lonDeg: teide.explorer.skyPlace().lonDeg,
+      altitudeM: 2390,
+    });
+    TestBed.resetTestingModule();
+    const montsec = await setup('?fecha=2026-11-01T21:00Z', 'sky');
+    expect(montsec.explorer.skyPlace().id).toBe('montsec');
+    const engine = new FakeEngine();
+    montsec.session.attachEngine(engine);
+    // Al cambiar de lugar, el motor lo sabe y se anuncia.
+    montsec.session.setSkyPlace('calar-alto');
+    await montsec.settle();
+    expect(engine.calls).toContain('setObserver 37.224 -2.546');
+    expect(montsec.session.announcement()).toBe('El cielo desde el Observatorio de Calar Alto.');
+  });
+
+  it('la URL dice el lugar en el cielo (en pausa); el Montsec y «Mi ubicación», nunca', async () => {
+    const { session, router, settle } = await setup('?fecha=2026-11-01T21:00Z', 'sky');
+    session.setSkyPlace('roque-de-los-muchachos');
+    await settle();
+    expect(router.url).toContain('lugar=roque-de-los-muchachos');
+    session.setSkyPlace('montsec');
+    await settle();
+    expect(router.url).not.toContain('lugar=');
+  });
+
+  it('«Usar mi ubicación»: solo tras pulsarlo; si se rechaza, sigue el lugar elegido', async () => {
+    const { session, explorer, router, settle } = await setup('?fecha=2026-11-01T21:00Z', 'sky');
+    const geolocation = {
+      getCurrentPosition: vi.fn(
+        (_ok: PositionCallback, fail: PositionErrorCallback | null | undefined) =>
+          fail?.({ code: 1, PERMISSION_DENIED: 1 } as GeolocationPositionError),
+      ),
+    };
+    // jsdom no tiene geolocalización: se pone una falsa (y se quita al final).
+    Object.defineProperty(window.navigator, 'geolocation', {
+      value: geolocation,
+      configurable: true,
+    });
+    // Nada la pide al entrar.
+    expect(geolocation.getCurrentPosition).not.toHaveBeenCalled();
+    expect(await session.useMyLocation()).toBe('denied');
+    expect(explorer.skyPlace().id).toBe('montsec');
+    // Concedida: la ubicación del navegador, que no va a la URL.
+    geolocation.getCurrentPosition.mockImplementation((ok: PositionCallback) =>
+      ok({
+        coords: { latitude: 41.39, longitude: 2.17, altitude: null },
+      } as GeolocationPosition),
+    );
+    expect(await session.useMyLocation()).toBe('ok');
+    await settle();
+    expect(explorer.skyPlace()).toMatchObject({ id: 'user', latDeg: 41.39, lonDeg: 2.17 });
+    expect(router.url).not.toContain('lugar=');
+    expect(router.url).not.toContain('41.39');
+    Reflect.deleteProperty(window.navigator, 'geolocation');
+  });
+
+  it('elegir un cuerpo en el cielo lo mira (o dice que está bajo el horizonte), sin salir', async () => {
+    // El 1-11-2026 a las 21:00 UTC desde el Montsec: Saturno, culminando a 48° al sur; el Sol, bajo
+    // el horizonte.
+    const { session, sim, explorer, navigations } = await setup('?fecha=2026-11-01T21:00Z', 'sky');
+    const engine = new FakeEngine();
+    session.attachEngine(engine);
+    // El motor falso nace en otra fecha: la de la URL, como el real.
+    engine.setTime(new Date('2026-11-01T21:00:00Z'));
+    session.select('saturno');
+    expect(sim.selectedBodyId()).toBe('saturno');
+    expect(explorer.panelOpen()).toBe(true);
+    expect(engine.calls).toContain('lookAtSky 161.1 47.6');
+    expect(session.announcement()).toBe('Saturno, a 48° de altura, hacia el sur.');
+    engine.calls.length = 0;
+    session.select('sol');
+    expect(engine.calls.some((call) => call.startsWith('lookAtSky'))).toBe(false);
+    expect(session.announcement()).toBe('El Sol está bajo el horizonte.');
+    // «Vista general»: la mirada de partida, al sur.
+    session.overview();
+    expect(engine.calls.at(-1)).toBe('lookAtSky 180.0 25.0');
+    expect(explorer.panelOpen()).toBe(false);
+    expect(session.announcement()).toBe(
+      'El cielo desde el Parque Astronómico del Montsec, mirando al sur.',
+    );
+    expect(navigations).toEqual([]);
+  });
+
+  it('en el cielo, tiempo real (propuesta de la fase 8 a D33)', async () => {
+    const { session, sim, viewSignal, settle } = await setup('?fecha=2026-11-01T21:00Z');
+    viewSignal.set('sky');
+    await settle();
+    expect(sim.speed()).toBe(CONTEXT_SPEED.sky);
+    expect(session.announcement()).toBe(
+      'El cielo desde el Parque Astronómico del Montsec. Velocidad: Tiempo real.',
+    );
+  });
+});
+
+describe('ExplorerSession: «Ver en 3D» de un eclipse de Sol (fase 8)', () => {
+  it('con ?sombra=1, al estar lista la Tierra, la cámara va a la sombra de la Luna (una vez)', async () => {
+    const { session } = await setup('?fecha=2026-08-12T17:45:51Z&sombra=1', 'earth');
+    const engine = new FakeEngine();
+    session.attachEngine(engine);
+    // El motor falso nace en otra fecha: la de la URL, como el real.
+    engine.setTime(new Date('2026-08-12T17:45:51Z'));
+    engine.emit('ready', { startupMs: 10 });
+    const aim = engine.calls.filter((call) => call.startsWith('lookAtSurface'));
+    expect(aim).toHaveLength(1);
+    // El máximo del 12-08-2026: la sombra, al oeste de Islandia (NASA: 65,2° N, 25,2° O).
+    const [, lat, lon] = (aim[0] ?? '').split(' ').map(Number);
+    expect(Math.abs((lat ?? 0) - 65.2)).toBeLessThan(0.2);
+    expect(Math.abs((lon ?? 0) + 25.2)).toBeLessThan(0.2);
+    engine.emit('ready', { startupMs: 10 });
+    expect(engine.calls.filter((call) => call.startsWith('lookAtSurface'))).toHaveLength(1);
+  });
+
+  it('sin ?sombra=1, o en otra vista, la cámara no se toca', async () => {
+    const { session } = await setup('?fecha=2026-08-12T17:45:51Z', 'earth');
+    const engine = new FakeEngine();
+    session.attachEngine(engine);
+    engine.emit('ready', { startupMs: 10 });
+    expect(engine.calls.some((call) => call.startsWith('lookAtSurface'))).toBe(false);
   });
 });

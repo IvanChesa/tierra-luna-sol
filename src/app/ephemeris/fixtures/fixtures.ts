@@ -10,10 +10,13 @@ import moonIllumination from './horizons-moon-illumination.json';
 import moons2020To2035 from './horizons-moons-2020-2035.json';
 import planDates from './horizons-plan-dates.json';
 import nasaEclipse20260812 from './nasa-eclipse-2026-08-12.json';
+import nasaEclipse20260812Path from './nasa-eclipse-2026-08-12-path.json';
+import nasaEclipses2026To2035 from './nasa-eclipses-2026-2035.json';
 import nasaLunarEclipses from './nasa-lunar-eclipses.json';
 import moonPhases from './usno-moon-phases.json';
 import seasons from './usno-seasons-2026.json';
 import siderealTimes from './usno-sidereal-time.json';
+import riseSetSpain from './usno-rise-set-spain.json';
 import { KM_PER_AU } from '../constants';
 import { Vec3, angleBetweenDeg, length, sub, vec3 } from '../vec3';
 
@@ -142,4 +145,63 @@ export const NASA_ECLIPSE_2026_08_12 = nasaEclipse20260812 as {
   readonly latitudeDeg: number;
   readonly longitudeDeg: number;
   readonly sunAltitudeDeg: number;
+};
+
+/** Una hora del USNO: la del reloj del lugar ese día («HH:MM») y el mismo instante en UT. */
+export interface UsnoEvent {
+  readonly local: string;
+  readonly ut: string;
+}
+
+/**
+ * Salidas, culminaciones, puestas y crepúsculos del USNO en el Montsec y el Teide (fase 8), en tres
+ * fechas de 2026: el Sol y la Luna, y el crepúsculo civil, con la hora local del lugar; el náutico y el
+ * astronómico, de las tablas anuales, en UT.
+ */
+export const USNO_RISE_SET_SPAIN = riseSetSpain as {
+  readonly series: readonly {
+    readonly place: string;
+    readonly latDeg: number;
+    readonly lonDeg: number;
+    readonly timeZone: string;
+    readonly date: string;
+    readonly utcOffsetHours: number;
+    readonly query: string;
+    readonly sun: Readonly<
+      Record<'civilDawn' | 'rise' | 'transit' | 'set' | 'civilDusk', UsnoEvent>
+    >;
+    readonly moon: Readonly<Partial<Record<'rise' | 'transit' | 'set', UsnoEvent>>>;
+    readonly nautical: {
+      readonly query: string;
+      readonly dawn: string | null;
+      readonly dusk: string | null;
+    };
+    readonly astronomical: {
+      readonly query: string;
+      readonly dawn: string | null;
+      readonly dusk: string | null;
+    };
+  }[];
+};
+
+/** Los eclipses de 2026 a 2035 de los catálogos de la NASA (fase 8): fecha, máximo (TD) y tipo. */
+export const NASA_ECLIPSES_2026_2035 = nasaEclipses2026To2035 as {
+  readonly queries: readonly string[];
+  readonly eclipses: readonly {
+    readonly kind: 'solar' | 'lunar';
+    readonly date: string;
+    readonly greatestEclipseTd: string;
+    readonly type: string;
+  }[];
+};
+
+/** Dos puntos de la línea central del eclipse del 12-08-2026 en la Península (fase 8). */
+export const NASA_ECLIPSE_2026_08_12_PATH = nasaEclipse20260812Path as {
+  readonly query: string;
+  readonly points: readonly {
+    readonly ut: string;
+    readonly latitudeDeg: number;
+    readonly longitudeDeg: number;
+    readonly centralDurationSeconds: number;
+  }[];
 };

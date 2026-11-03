@@ -13,7 +13,17 @@ import type { Texture } from 'three';
 import { decodeStarCatalog } from '../ephemeris/stars';
 import type { SystemState } from '../ephemeris/system-state';
 import type { OverviewScreen, PlacementInput, RingReach } from '../ephemeris/scale';
-import { Mat3, Vec3, columnOf, mulMat3Vec, normalize, vec3 } from '../ephemeris/vec3';
+import {
+  Mat3,
+  Vec3,
+  angleBetweenDeg,
+  columnOf,
+  mulMat3,
+  mulMat3Vec,
+  normalize,
+  scale as scaleVec,
+  vec3,
+} from '../ephemeris/vec3';
 import { AliasingState, MotionBody } from './aliasing';
 import { FOCUS_FLIGHT_MS, FRAME_START, Flight, VIEW_TRIP_MS, flightFrame } from './camera/flight';
 import { ViewFrom, anglesFromEcl, phaseViewDirection } from './camera/view-from';
@@ -81,7 +91,22 @@ import {
 import { illustrativeDistance } from '../ephemeris/scale';
 import { BODY_DATA } from '../data/body-data';
 import { BODY_PHOTOMETRY } from '../data/photometry';
+import { DEFAULT_PLACE_ID, findPlace } from '../data/places';
 import { discFactor, interpolateLitBrightness, litBrightnessTable } from '../ephemeris/photometry';
+import type { StarCatalog } from '../ephemeris/stars';
+import {
+  ECL_TO_THREE,
+  eclRotationToThree,
+  eclThreeToSkyThree,
+  sunApparentGeocentricEcl,
+} from '../ephemeris/coordinates';
+import { earthShadow } from '../ephemeris/eclipse';
+import { moonGeocentric } from '../ephemeris/ephemeris';
+import { SkyBody, skyBodies } from '../ephemeris/sky';
+import { discOverlapFraction } from './sky/sky-colors';
+import { DEFAULT_SKY_POSE, SkyRig, skyProjection } from './sky/sky-rig';
+import { ConstellationData, SkyFrame, SkyScene } from './sky/sky-scene';
+import type { SkyObserver, SkyView } from './types';
 
 /** Profundidad elegida en la fase 2 (D13); ver docs/informes/fase-2.md. */
 export const DEFAULT_DEPTH: ResolvedDepthMode = 'logarithmic';
@@ -217,6 +242,36 @@ export interface EngineDeps {
   readonly visibility: PageVisibility;
   /** Cede el hilo principal entre pasos del arranque (PLAN §4.7). */
   readonly yieldToMain: () => Promise<void>;
+  /**
+   * Las líneas de las constelaciones (`public/data/constellations.json`, fase 8): se piden al abrir la
+   * vista del cielo. Sin ellas (en los tests, o si fallan), el cielo se ve sin constelaciones.
+   */
+  readonly loadConstellations?: () => Promise<unknown>;
+}
+
+/** El lugar del cielo por defecto (el Montsec, decisión de Iván del 26-10). */
+const DEFAULT_OBSERVER: SkyObserver = (() => {
+  const place = findPlace(DEFAULT_PLACE_ID);
+  return {
+    latDeg: place?.latitudeDeg ?? 0,
+    lonDeg: place?.longitudeDeg ?? 0,
+    altitudeM: place?.altitudeM ?? 0,
+  };
+})();
+
+/** ¿Tiene la forma de `public/data/constellations.json`? */
+function isConstellationData(value: unknown): value is ConstellationData {
+  const list = (value as { constellations?: unknown } | null)?.constellations;
+  return (
+    Array.isArray(list) &&
+    list.every(
+      (c: { id?: unknown; name?: unknown; label?: unknown; lines?: unknown }) =>
+        typeof c.id === 'string' &&
+        typeof c.name === 'string' &&
+        Array.isArray(c.label) &&
+        Array.isArray(c.lines),
+    )
+  );
 }
 
 type CameraFraming =
@@ -247,6 +302,8 @@ const MOON_PARENT = SCENE_BODIES.map((body) =>
 const NEPTUNE_INDEX = SCENE_BODIES.findIndex((body) => body.id === 'neptuno');
 const EARTH_INDEX = SCENE_BODIES.findIndex((body) => body.id === 'tierra');
 const SATURN_INDEX = SCENE_BODIES.findIndex((body) => body.id === 'saturno');
+const MOON_INDEX = SCENE_BODIES.findIndex((body) => body.id === 'luna');
+const DEG = Math.PI / 180;
 
 /**
  * Albedo con el que se compensa la exposición del primer plano de cada cuerpo (configuración visual),
@@ -374,6 +431,27 @@ export class SceneEngine implements SceneEngineApi {
   private ready = false;
   private disposed = false;
   private readonly startMs: number;
+  /** La capa HTML de las etiquetas (las del espacio y las del cielo). */
+  private readonly labelLayer: HTMLElement;
+  // --- La vista del cielo (fase 8) ---
+  /** La escena del cielo: se crea la primera vez que se abre la vista (con las estrellas ya cargadas). */
+  private sky: SkyScene | null = null;
+  private readonly skyRig: SkyRig;
+  private observer: SkyObserver;
+  private starCatalog: StarCatalog | null = null;
+  private constellationsRequested = false;
+  private constellationsVisible = true;
+  /** Las etiquetas que pide la interfaz (la vista limpia las quita), en el espacio y en el cielo. */
+  private labelsWanted = true;
+  /** Los sombreados del cielo ya están compilados; `skyCompiling`, mientras se compilan. */
+  private skyCompiled = false;
+  private skyCompiling = false;
+  /** El instante y el lugar del último cálculo del cielo (no se repite si no cambian). */
+  private skyKey = '';
+  private skyState: Omit<
+    SkyFrame,
+    'pose' | 'projection' | 'insets' | 'viewport' | 'pixelRatio' | 'qualityMagnitudeLimit'
+  > | null = null;
 
   constructor(
     options: SceneEngineOptions,
@@ -385,6 +463,12 @@ export class SceneEngine implements SceneEngineApi {
     this.clock = new SimClock(options.time);
     this._view = options.view;
     this._scale = options.scale ?? 'illustrative';
+    this.observer = options.observer ?? DEFAULT_OBSERVER;
+    this.labelLayer = options.labelLayer;
+    this.skyRig = new SkyRig({
+      ...DEFAULT_SKY_POSE,
+      ...(this.captureMode ? options.skyView : undefined),
+    });
     this.renderer = deps.createRenderer(options.canvas, {
       depth: resolveDepth(options.depth ?? 'auto'),
       antialias: true,
@@ -457,17 +541,30 @@ export class SceneEngine implements SceneEngineApi {
     this.unsubscribe.push(
       attachPointerControls(options.canvas, {
         rotate: (dAz, dEl) => {
+          if (this._view === 'sky') {
+            // «Agarrar el cielo»: el puntero gira π por alto del lienzo; en el cielo, lo que quepa
+            // en el campo de visión por píxel (lo que hay bajo el dedo se queda bajo el dedo).
+            const k = (this.viewport.height / Math.PI) * this.skyDegreesPerPixel();
+            this.skyRig.rotate(dAz * k, dEl * k);
+            this.invalidate();
+            return;
+          }
           this.takeControl();
           this.rig.rotate(dAz, dEl);
           this.invalidate();
         },
         fling: (vAz, vEl) => {
-          if (this.instant()) return;
+          if (this.instant() || this._view === 'sky') return;
           this.rig.fling(vAz, vEl);
           this.invalidate();
         },
         zoom: (factor) => this.zoomBy(factor),
         pick: (x, y) => {
+          if (this._view === 'sky') {
+            const id = this.sky?.pick(x, y) ?? null;
+            if (id) this.emit('bodyPicked', { id });
+            return;
+          }
           // Ni los cuerpos sustituidos por su órbita ni las lunas de un sistema que no se distingue.
           const visible = this.screen.filter(
             (body) =>
@@ -508,6 +605,9 @@ export class SceneEngine implements SceneEngineApi {
   }
   get qualityLevel(): QualityLevel {
     return this.level;
+  }
+  get skyView(): SkyView {
+    return this.skyRig.pose;
   }
 
   // --- Órdenes --------------------------------------------------------------------------------
@@ -551,6 +651,8 @@ export class SceneEngine implements SceneEngineApi {
       'focus',
       null,
     );
+    // Desde el cielo no se ve el espacio: el foco queda puesto, sin vuelo, para cuando se vuelva.
+    if (this._view === 'sky') this.skipTransition();
   }
 
   setScaleFrame(mode: ScaleMode): void {
@@ -575,10 +677,47 @@ export class SceneEngine implements SceneEngineApi {
 
   setView(view: ExplorerView): void {
     if (this.disposed || view === this._view) return;
+    const fromSky = this._view === 'sky';
     this._view = view;
+    if (view === 'sky') {
+      this.enterSky();
+      return;
+    }
+    if (fromSky) this.leaveSky();
     const setup = this.viewSetup(view);
     // Un viaje entre vistas (~3 s): la cámara gira hacia la pose de la vista mientras se acerca.
+    // Desde el cielo, un corte (se viene del suelo): la interfaz funde la imagen.
     this.changeFocus(setup.focus, setup.framing, 'view', this.viewAngles(view));
+    if (fromSky) {
+      this.skipTransition();
+      this.snapCamera = true;
+    }
+  }
+
+  setObserver(observer: SkyObserver): void {
+    if (this.disposed) return;
+    const valid =
+      Number.isFinite(observer.latDeg) &&
+      Number.isFinite(observer.lonDeg) &&
+      Math.abs(observer.latDeg) <= 90 &&
+      Number.isFinite(observer.altitudeM);
+    if (!valid) return;
+    this.observer = { ...observer };
+    this.skyKey = '';
+    if (this._view === 'sky') this.invalidate();
+  }
+
+  lookAtSky(azimuthDeg: number, altitudeDeg: number): void {
+    if (this.disposed || !Number.isFinite(azimuthDeg) || !Number.isFinite(altitudeDeg)) return;
+    this.skyRig.lookAt(azimuthDeg, altitudeDeg, this.instant());
+    if (this._view === 'sky') this.invalidate();
+  }
+
+  setConstellationsVisible(visible: boolean): void {
+    if (this.disposed) return;
+    this.constellationsVisible = visible;
+    this.sky?.setConstellationsVisible(visible);
+    if (this._view === 'sky') this.invalidate();
   }
 
   resize(width: number, height: number, devicePixelRatio: number): void {
@@ -608,6 +747,13 @@ export class SceneEngine implements SceneEngineApi {
 
   orbitBy(deltaAzimuth: number, deltaElevation: number): void {
     if (this.disposed) return;
+    if (this._view === 'sky') {
+      // El paso del teclado (6°), proporcional al campo: con el teleobjetivo, pasos finos.
+      const k = Math.min(Math.max(this.skyRig.pose.fovDeg / DEFAULT_SKY_POSE.fovDeg, 0.15), 1.4);
+      this.skyRig.nudge((deltaAzimuth / DEG) * k, (deltaElevation / DEG) * k, this.instant());
+      this.invalidate();
+      return;
+    }
     this.takeControl();
     this.rig.nudge(deltaAzimuth, deltaElevation, this.instant());
     this.invalidate();
@@ -646,6 +792,11 @@ export class SceneEngine implements SceneEngineApi {
 
   zoomBy(factor: number): void {
     if (this.disposed || !(factor > 0)) return;
+    if (this._view === 'sky') {
+      this.skyRig.zoom(factor, this.instant());
+      this.invalidate();
+      return;
+    }
     this.takeControl();
     const [min, max] = this.framing.kind === 'body' ? [0.05, 2e5] : [0.02, 4];
     this.framing.zoom = Math.min(Math.max(this.framing.zoom * factor, min), max);
@@ -664,7 +815,11 @@ export class SceneEngine implements SceneEngineApi {
 
   setLabelsVisible(visible: boolean): void {
     if (this.disposed) return;
-    this.labels.setVisible(visible && !this.isolated);
+    this.labelsWanted = visible;
+    const sky = this._view === 'sky';
+    this.labels.setVisible(visible && !this.isolated && !sky);
+    this.sky?.setLabelsVisible(visible);
+    this.sky?.setActive(sky);
     this.invalidate();
   }
 
@@ -688,7 +843,7 @@ export class SceneEngine implements SceneEngineApi {
       triangles: info.triangles,
       geometries: info.geometries,
       textures: info.textures,
-      vramMB: this.world.vramBytes() / 1_048_576,
+      vramMB: (this.world.vramBytes() + (this.sky?.vramBytes() ?? 0)) / 1_048_576,
       renderedFrames: this.renderedFrames,
       aliased: SCENE_BODIES.filter((body) => this.aliasing.orbit[body.index] === 1).map(
         (body) => body.id,
@@ -713,6 +868,8 @@ export class SceneEngine implements SceneEngineApi {
     for (const off of this.unsubscribe.splice(0)) off();
     for (const upload of this.uploads.splice(0)) upload.resolve();
     this.labels.dispose();
+    this.sky?.dispose();
+    this.sky = null;
     this.world.dispose();
     this.renderer.dispose();
     this.listeners.clear();
@@ -738,15 +895,24 @@ export class SceneEngine implements SceneEngineApi {
       await this.deps.yieldToMain();
       if (this.disposed) return;
       this.emit('progress', { loaded: 1, total, step: 'Cargando estrellas' });
-      const stars = new StarField(decodeStarCatalog(await this.deps.loadStars()));
+      const catalog = decodeStarCatalog(await this.deps.loadStars());
+      const stars = new StarField(catalog);
       if (this.disposed) {
         stars.dispose();
         return;
       }
+      this.starCatalog = catalog;
       stars.setPixelRatio(this.pixelRatio());
       this.world.setStars(stars);
       this.emit('progress', { loaded: 2, total, step: 'Compilando sombreados' });
       await this.renderer.compile(this.world.scene, this.world.camera);
+      // Si se entra por la vista del cielo, su escena también, antes del primer frame.
+      if (this._view === 'sky') {
+        const sky = this.ensureSky();
+        if (sky) await this.renderer.compile(sky.scene, sky.camera);
+        if (this.disposed) return;
+        this.skyCompiled = sky !== null;
+      }
       if (this.disposed) return;
       this.emit('progress', { loaded: 3, total, step: 'Primer fotograma' });
       this.renderFrame(this.deps.now());
@@ -754,7 +920,10 @@ export class SceneEngine implements SceneEngineApi {
       this.emit('progress', { loaded: total, total, step: 'Listo' });
       this.emit('ready', { startupMs: this.deps.now() - this.startMs });
       this.emitTime(true);
-      this.world.setFocus(this.focusIndex);
+      // En el cielo no se ve el espacio: sin el primer plano del foco (y sin sus texturas grandes).
+      if (this._view === 'sky') this.world.releaseCloseUps();
+      else this.world.setFocus(this.focusIndex);
+      if (this._view === 'sky') this.enterSky();
       this.invalidate();
     } catch (error) {
       if (this.disposed) return;
@@ -851,6 +1020,7 @@ export class SceneEngine implements SceneEngineApi {
    * Calcula y (si `paint`) pinta un frame. Devuelve si la cámara sigue moviéndose.
    */
   private renderFrame(timeMs: number, paint = true, dtMs = 0): boolean {
+    if (this._view === 'sky' && this.sky) return this.renderSkyFrame(timeMs, paint, dtMs);
     const cpuStart = this.deps.now();
     const state = this.system.at(this.clock.timeMsValue);
     const orientations = this.orientations.at(state);
@@ -1365,7 +1535,7 @@ export class SceneEngine implements SceneEngineApi {
    * (su cara visible, con la libración del momento).
    */
   private viewAngles(view: ExplorerView): { azimuth: number; elevation: number } | null {
-    if (view === 'system') return null;
+    if (view === 'system' || view === 'sky') return null;
     const state = this.system.at(this.clock.timeMsValue);
     let ecl;
     let lift = 0;
@@ -1425,6 +1595,181 @@ export class SceneEngine implements SceneEngineApi {
 
   private transitionMs(): number {
     return this.instant() ? 0 : FRAME_TRANSITION_MS;
+  }
+
+  // --- La vista del cielo (fase 8) -----------------------------------------------------------------
+
+  /** Crea la escena del cielo si no existe (hace falta el catálogo de estrellas). */
+  private ensureSky(): SkyScene | null {
+    if (this.sky) return this.sky;
+    if (!this.starCatalog || this.disposed) return null;
+    const sky = new SkyScene({
+      labelLayer: this.labelLayer,
+      onPick: (id) => this.emit('bodyPicked', { id }),
+    });
+    sky.setStars(this.starCatalog);
+    sky.setConstellationsVisible(this.constellationsVisible);
+    sky.setLabelsVisible(this.labelsWanted);
+    this.sky = sky;
+    if (!this.constellationsRequested && this.deps.loadConstellations) {
+      this.constellationsRequested = true;
+      this.deps
+        .loadConstellations()
+        .then((data) => {
+          if (this.disposed || !isConstellationData(data)) return;
+          sky.setConstellations(data);
+          if (this._view === 'sky') this.invalidate();
+        })
+        .catch(() => {
+          // Sin constelaciones, el cielo sigue: se puede volver a pedir al reabrir la vista.
+          this.constellationsRequested = false;
+        });
+    }
+    return sky;
+  }
+
+  /**
+   * Entra en la vista del cielo: el espacio deja de pintarse (sus etiquetas se ocultan y sus texturas
+   * del primer plano se sueltan, como al salir de las vistas Tierra o Luna) y la cámara del cielo
+   * empieza donde se dejó. Sin vuelo: la interfaz funde la imagen (un corte con movimiento reducido).
+   */
+  private enterSky(): void {
+    if (!this.ready) return;
+    const sky = this.ensureSky();
+    if (!sky) return;
+    if (this.flight) this.endFlight();
+    this.frames.finish();
+    this.labels.setVisible(false);
+    sky.setLabelsVisible(this.labelsWanted);
+    sky.setActive(true);
+    this.world.releaseCloseUps();
+    this.skyKey = '';
+    this.exposure = -1;
+    this.lastFrameMs = null;
+    if (!this.skyCompiled) this.compileSky(sky);
+    this.invalidate();
+  }
+
+  /**
+   * La primera vez que se entra en el cielo desde otra vista, sus sombreados se compilan sin bloquear
+   * (`compileAsync`) y no se pinta hasta que están: se queda la última imagen, bajo el fundido de la
+   * interfaz. Compilados en el primer `render`, eran una tarea larga de 61 ms con una RTX 3060 (revisión
+   * de la fase 8, sugerencia 12). Entrando por /cielo se compilan en el arranque, con los del espacio.
+   */
+  private compileSky(sky: SkyScene): void {
+    if (this.skyCompiling) return;
+    this.skyCompiling = true;
+    this.renderer
+      .compile(sky.scene, sky.camera)
+      .catch(() => undefined)
+      .then(() => {
+        this.skyCompiling = false;
+        this.skyCompiled = true;
+        if (!this.disposed && this._view === 'sky') this.invalidate();
+      });
+  }
+
+  private leaveSky(): void {
+    this.sky?.setActive(false);
+    this.labels.setVisible(this.labelsWanted && !this.isolated);
+    this.exposure = -1;
+    this.lastFrameMs = null;
+  }
+
+  /** Grados que gira un arrastre de un píxel en el cielo (el campo entre el alto visible). */
+  private skyDegreesPerPixel(): number {
+    return this.skyRig.degreesPerPixel(this.viewport.height - this.insets.top - this.insets.bottom);
+  }
+
+  /**
+   * El cielo del instante y el lugar: el Sol, la Luna y los planetas (`ephemeris/sky.ts`), la rotación
+   * de las estrellas, la orientación de la Luna (con su libración) y la sombra de la Tierra en ella.
+   * Solo se recalcula si cambian el instante o el lugar.
+   */
+  private skyFrameState(): NonNullable<typeof this.skyState> {
+    const ms = this.clock.timeMsValue;
+    const { latDeg, lonDeg, altitudeM } = this.observer;
+    const key = `${ms}|${latDeg}|${lonDeg}|${altitudeM}`;
+    if (this.skyState && key === this.skyKey) return this.skyState;
+    const date = new Date(ms);
+    const place = { latDeg, lonDeg, altitudeM };
+    const bodies: SkyBody[] = skyBodies(date, place);
+    const eclThreeToSky = eclThreeToSkyThree(date, place);
+    const state = this.system.at(ms);
+    const moonOrientation = this.orientations.at(state)[MOON_INDEX];
+    const toSky = (ecl: { x: number; y: number; z: number }) =>
+      mulMat3Vec(eclThreeToSky, normalize(mulMat3Vec(ECL_TO_THREE, ecl)));
+    const shadow = earthShadow(date);
+    const sun = bodies.find((b) => b.id === 'sol');
+    const moon = bodies.find((b) => b.id === 'luna');
+    const obscuration =
+      sun && moon
+        ? discOverlapFraction(
+            angleBetweenDeg(sun.direction, moon.direction),
+            sun.angularRadiusDeg,
+            moon.angularRadiusDeg,
+          )
+        : 0;
+    this.skyState = {
+      bodies,
+      eclThreeToSky,
+      sunAltitudeDeg: sun?.geometricAltitudeDeg ?? -90,
+      obscuration,
+      moonOrientation: moonOrientation
+        ? mulMat3(eclThreeToSky, eclRotationToThree(moonOrientation))
+        : null,
+      moonShadow: {
+        moonGeocentric: toSky(moonGeocentric(date)),
+        antisolar: toSky(scaleVec(sunApparentGeocentricEcl(date), -1)),
+        moonRadiusRad: shadow.moonDeg * DEG,
+        umbraRad: shadow.umbraDeg * DEG,
+        penumbraRad: shadow.penumbraDeg * DEG,
+      },
+    };
+    this.skyKey = key;
+    return this.skyState;
+  }
+
+  /** Calcula y (si `paint`) pinta un frame del cielo. Devuelve si la cámara sigue moviéndose. */
+  private renderSkyFrame(timeMs: number, paint: boolean, dtMs: number): boolean {
+    const sky = this.sky;
+    if (!sky || !this.skyCompiled) return false;
+    const cpuStart = this.deps.now();
+    const state = this.skyFrameState();
+    this.ephemerisMs = 0.9 * this.ephemerisMs + 0.1 * (this.deps.now() - cpuStart);
+    const insets = approachInsets(this.insets, this.insetsTarget, dtMs, INSETS_SMOOTHING_MS);
+    this.insets = insets.insets;
+    const moving =
+      (this.instant() ? (this.skyRig.snap(), false) : this.skyRig.update(dtMs)) || !insets.settled;
+    const { width, height } = this.viewport;
+    const pose = this.skyRig.pose;
+    const projection = skyProjection(width, height, this.insets, pose.fovDeg);
+    sky.setMilkyWayTexture(this.world.milkyWayMap());
+    sky.setMoonTexture(this.world.colorMapOf(MOON_INDEX));
+    sky.update({
+      ...state,
+      pose,
+      projection,
+      insets: this.insets,
+      viewport: this.viewport,
+      pixelRatio: this.pixelRatio(),
+      qualityMagnitudeLimit: this.profile.starMagnitudeLimit,
+    });
+    if (this.exposure !== 1) {
+      this.exposure = 1;
+      this.renderer.setExposure(1);
+    }
+    if (!paint) return moving;
+    this.renderer.render(sky.scene, sky.camera);
+    this.renderedFrames++;
+    this.frameTimes.push(timeMs);
+    if (this.frameTimes.length > 240) this.frameTimes.splice(0, this.frameTimes.length - 240);
+    this.cpuMs = 0.9 * this.cpuMs + 0.1 * (this.deps.now() - cpuStart);
+    if (timeMs - this.lastStatsMs >= STATS_INTERVAL_MS) {
+      this.lastStatsMs = timeMs;
+      this.emit('frameStats', this.stats());
+    }
+    return moving;
   }
 
   // --- Calidad y tamaño ------------------------------------------------------------------------

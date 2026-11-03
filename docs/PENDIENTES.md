@@ -73,7 +73,7 @@ Decisiones y tareas que dependen de Iván. Claude Code añade aquí cada `TODO(i
   - las nubes del Himalaya: **atenuadas en los primeros planos ya** (C1), hecho en la rama `revision-bloque-c`;
   - la textura de día de 8K, más barata: en la **fase 10**.
 - [ ] **Revisar los textos de las vistas guiadas** (`data/tours.ts`, `reviewed: false`; fase 9).
-- [ ] La altitud del Parque Astronómico del Montsec y de la Puerta del Sol, que sus fuentes no dan (`data/places.ts`). Sigue en `null` hasta la fase 8, que la busca en una fuente oficial (el IGN o la web de cada observatorio), nunca estimada.
+- [x] La altitud del Parque Astronómico del Montsec y de la Puerta del Sol, que sus fuentes no dan (`data/places.ts`): hecha en la fase 8, con el MDT02 del IGN (812 m y 649 m; abajo, «Bloque E»).
 
 ## Revisión del bloque C (30-10, `docs/revisiones/bloque-C.md`)
 - [ ] **Fusionar el PR 1 de Dependabot** (`typescript-eslint` 8.71.0 → 8.72.0). Pedido su rebase sobre el `main` actual: el CI está en verde (lint, tests, build y e2e). La revisión autorizaba fusionarlo, pero el clasificador de permisos del modo automático no me dejó hacerlo en GitHub: fusiónalo tú (un clic en GitHub) o dame permiso para `gh pr merge`.
@@ -95,7 +95,15 @@ Decisiones y tareas que dependen de Iván. Claude Code añade aquí cada `TODO(i
 - [ ] (Para decidir, sin prisa) **Los anillos a contraluz**: sin el realce de D36 ya no salen quemados, pero el anillo A sigue más claro que en PIA17172 (L* 90 frente a 32). No es el realce: la exposición del primer plano a 176° de fase y el lóbulo hacia delante de las partículas, el mismo en todos los anillos. Va al backlog (14); si lo quieres antes, en la fase 10.
 - [ ] (Fuera del repo) `AGENTS.md`, tu copia local de `CLAUDE.md` para Codex, sigue con ivanchesa.es y «desarrollador web freelance»: no la he tocado.
 
+## Bloque E (fase 8: el cielo desde España y los eclipses)
+- [x] **La altitud del Montsec y de la Puerta del Sol** (pendiente desde la fase 5): del modelo digital del terreno del IGN (MDT02) en el mismo punto, con la URL de la consulta: 812 m y 649 m. El mismo servicio da 410 m en el Observatori Fabra, como su estación meteorológica.
+- [x] **Constelaciones:** d3-celestial, con licencia BSD de 3 cláusulas (entra en tu lista). Las líneas siguen las cartas de la IAU.
+- [ ] (Para decidir, sin prisa) **Los nombres de las constelaciones.** Hoy, los oficiales de la IAU, en latín (Gemini, Ursa Major, Orion). Si los quieres en español (Géminis, Osa Mayor, Orión), hace falta una lista con licencia compatible: d3-celestial trae una, pero son traducciones del nombre inglés («Gemelos», «Carnero», «Toro») y no se usan. Dime la fuente (o si los escribo y los revisas con los demás textos).
+- [ ] (Para decidir) **La velocidad del cielo** (propuesta del informe de la fase 8, §10): D33 no la fijaba. En `/cielo`, **tiempo real** (lo que se ve es lo que hay ahora; la noche se recorre con su deslizador).
+- [ ] **Probar el cielo en tu móvil** (no bloquea), en la vista previa: `/cielo` con el panel compacto, «Usar mi ubicación» (pide permiso solo al pulsarlo) y el deslizador de la hora; y `/eclipses` con «Ver en 3D».
+
 ## Decisiones
+- [x] **La revisión de los textos (fase 9)**, decidida al lanzar el bloque E (01-11): `docs/revision-textos.md` con cada texto, su fuente y un hueco para tus correcciones, agrupados por cuerpo y por vista. El bloque no te espera: la revisión queda apuntada abajo («Revisiones y pruebas de Iván») y se sigue.
 - [x] **(Fase 6) `toktx` (KTX-Software): no hace falta.** Con WebP, la VRAM cabe en los 300 MB de §5 en el peor caso de las dos vistas (C4, con test): la vista Tierra, 278 MB, y la vista Luna, 265; y en el viaje entre las dos, como mucho 284 (revisión de la fase 6, hallazgo 4). La reevaluación de KTX2 queda para la fase 10 si hiciera falta en el móvil.
 - [x] **Subdominio definitivo:** `tierra-luna-sol.ivanchesa.com` (decisión del 31-10: el dominio pasa de ivanchesa.es a ivanchesa.com; revisión del bloque D, D5, y D37). Ya en `src/app/core/site.config.ts`, con la URL del autor, `https://ivanchesa.com`.
 

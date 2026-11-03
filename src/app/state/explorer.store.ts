@@ -1,6 +1,8 @@
 import { Service, Signal, computed, signal } from '@angular/core';
 import type { TimeZoneChoice } from '../core/format';
+import { DEFAULT_PLACE_ID } from '../data/places';
 import type { ExplorerView } from '../scene';
+import { SkyPlace, skyPlaceOf } from '../data/sky-place';
 
 /** Estado de un recorrido guiado (fase 6). */
 export interface TourState {
@@ -42,6 +44,10 @@ export class ExplorerStore {
    */
   readonly timeZone = signal<TimeZoneChoice>('local');
   readonly tour = signal<TourState | null>(null);
+  /** El lugar de la vista del cielo (fase 8): el Montsec por defecto, o el de la URL (`?lugar=`). */
+  readonly skyPlace = signal<SkyPlace>(skyPlaceOf(DEFAULT_PLACE_ID));
+  /** Las líneas y los nombres de las constelaciones en el cielo. */
+  readonly constellations = signal(true);
 
   /** La vista la decide la ruta: el layout del explorador pasa aquí la señal que la lleva. */
   connectView(source: Signal<ExplorerView>): void {

@@ -51,6 +51,8 @@ class FakeRenderer implements RendererPort {
   };
   renders = 0;
   compiles = 0;
+  /** Si se pone, las compilaciones esperan a esta promesa (para ver qué pasa mientras compilan). */
+  compileGate: Promise<void> | null = null;
   uploads: Texture[] = [];
   exposure = 1;
   size = { width: 0, height: 0, pixelRatio: 0 };
@@ -68,7 +70,7 @@ class FakeRenderer implements RendererPort {
   }
   compile(): Promise<void> {
     this.compiles++;
-    return Promise.resolve();
+    return this.compileGate ?? Promise.resolve();
   }
   initTexture(texture: Texture): void {
     this.uploads.push(texture);
@@ -1291,6 +1293,29 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     h.engine.dispose();
   });
 
+  it('C4 en el cielo (fase 8): al entrar desde las vistas Tierra o Luna se sueltan sus texturas de cerca', async () => {
+    for (const view of ['earth', 'moon'] as const) {
+      const fake = realisticTextures();
+      const h = await createHarness(
+        { reducedMotion: true, focus: view === 'earth' ? 'tierra' : 'luna', view },
+        { textures: fake.textures },
+      );
+      settle(h);
+      for (let k = 0; k < 5; k++) await flush();
+      const before = h.engine.stats().vramMB;
+      h.engine.setView('sky');
+      settle(h);
+      for (let k = 0; k < 5; k++) await flush();
+      const close =
+        view === 'earth' ? ['earth-day@8k', 'earth-night@2k'] : ['moon@8k', 'moon-normal@4k'];
+      for (const name of close) expect(fake.released, `${view}: ${name}`).toContain(name);
+      // El cielo, con las texturas de la vista general (la Luna del cielo usa la suya, de 1k).
+      expect(h.engine.stats().vramMB, view).toBeLessThan(before / 3);
+      expect(h.engine.stats().vramMB, view).toBeLessThan(60);
+      h.engine.dispose();
+    }
+  });
+
   it('las sombras que recibe Júpiter (sus cuatro galileanas) y la que recibe Ío (Júpiter), con la geometría de satelliteShadowPoint (fase 7)', async () => {
     // Durante el tránsito triple del 24-1-2015 que fotografió el Hubble (un tiempo de luz antes de las
     // 06:28 UT, cuando salió de Júpiter la luz que vio): las sombras de Ío, Europa y Calisto caen sobre
@@ -1836,3 +1861,206 @@ function normalizeXyz(x: number, y: number, z: number): { x: number; y: number; 
   const n = Math.hypot(x, y, z);
   return { x: x / n, y: y / n, z: z / n };
 }
+
+describe('SceneEngine: la vista del cielo (fase 8)', () => {
+  const MONTSEC = { latDeg: 42.024637, lonDeg: 0.736936, altitudeM: 812 };
+  const NIGHT = new Date('2026-11-02T04:00:00Z');
+
+  it('entra por el cielo: compila su escena, la pinta sin el espacio y sin sus etiquetas', async () => {
+    const h = await createHarness({ view: 'sky', time: NIGHT, observer: MONTSEC });
+    expect(h.events.ready).toHaveLength(1);
+    // Dos compilaciones: el espacio (por si se cambia de vista) y el cielo.
+    expect(h.renderer.compiles).toBe(2);
+    const spaceLabels = h.labels.querySelector<HTMLElement>('.scene-labels');
+    const skyLabels = h.labels.querySelector<HTMLElement>('.sky-labels');
+    expect(spaceLabels?.hidden).toBe(true);
+    expect(skyLabels?.hidden).toBe(false);
+    // Los puntos cardinales que caen en el campo (mirando al sur, a 25° de altura).
+    settle(h);
+    const shown = [...(skyLabels?.querySelectorAll<HTMLElement>('.sky-label') ?? [])].filter(
+      (el) => !el.hidden,
+    );
+    expect(shown.map((el) => el.textContent)).toContain('S');
+    // La exposición de la escena del cielo es la neutra.
+    expect(h.renderer.exposure).toBe(1);
+    h.engine.dispose();
+  });
+
+  it('las etiquetas del cielo, solo en la parte visible: ninguna bajo los márgenes de la interfaz', async () => {
+    // Revisión de la fase 8, hallazgo 6: en el móvil, los nombres de las constelaciones pisaban el
+    // texto de arriba, que es un margen del encuadre.
+    const h = await createHarness({ view: 'sky', time: NIGHT, observer: MONTSEC });
+    const placed = () =>
+      [...h.labels.querySelectorAll<HTMLElement>('.sky-label')]
+        .filter((el) => !el.hidden)
+        .map((el) => {
+          const [, x = 'NaN', y = 'NaN'] =
+            /translate\(([-\d.]+)px, ([-\d.]+)px\)/.exec(el.style.transform) ?? [];
+          return { text: el.textContent ?? '', x: Number(x), y: Number(y) };
+        });
+    const insets = { top: 300, right: 0, bottom: 150, left: 250 };
+    const covered = (label: { x: number; y: number }) =>
+      label.x < insets.left || label.y < insets.top || label.y > HEIGHT - insets.bottom;
+    settle(h);
+    // Sin márgenes, alguna etiqueta cae donde luego habrá interfaz.
+    expect(placed().some(covered)).toBe(true);
+    h.engine.setViewInsets(insets);
+    settle(h);
+    const after = placed();
+    expect(after.length).toBeGreaterThan(0);
+    expect(after.filter(covered)).toEqual([]);
+    h.engine.dispose();
+  });
+
+  it('del espacio al cielo: sus sombreados se compilan sin bloquear, una vez, y se pinta después', async () => {
+    // Revisión de la fase 8, sugerencia 12: compilados en el primer render, eran una tarea larga.
+    const h = await createHarness({ time: NIGHT });
+    settle(h);
+    let release: () => void = () => undefined;
+    h.renderer.compileGate = new Promise((resolve) => (release = resolve));
+    const compiles = h.renderer.compiles;
+    h.engine.setView('sky');
+    expect(h.renderer.compiles).toBe(compiles + 1);
+    const before = h.renderer.renders;
+    settle(h);
+    // Mientras se compilan, no se pinta: se queda la última imagen (bajo el fundido de la interfaz).
+    expect(h.renderer.renders).toBe(before);
+    release();
+    h.renderer.compileGate = null;
+    for (let k = 0; k < 3; k++) await flush();
+    settle(h);
+    expect(h.renderer.renders).toBeGreaterThan(before);
+    // Ya compilados: volver al cielo no los compila otra vez.
+    h.engine.setView('system');
+    settle(h);
+    h.engine.setView('sky');
+    expect(h.renderer.compiles).toBe(compiles + 1);
+    h.engine.dispose();
+  });
+
+  it('del espacio al cielo y vuelta: sin vuelo ni motor nuevo, y las etiquetas de cada uno', async () => {
+    const h = await createHarness({ time: NIGHT });
+    settle(h);
+    h.engine.setView('sky');
+    expect(h.engine.view).toBe('sky');
+    expect(h.events.travel.filter((t) => t.active)).toHaveLength(0);
+    const before = h.renderer.renders;
+    await flush();
+    settle(h);
+    expect(h.renderer.renders).toBeGreaterThan(before);
+    expect(h.labels.querySelector<HTMLElement>('.scene-labels')?.hidden).toBe(true);
+    h.engine.setView('earth');
+    expect(h.engine.view).toBe('earth');
+    expect(h.labels.querySelector<HTMLElement>('.sky-labels')?.hidden).toBe(true);
+    expect(h.labels.querySelector<HTMLElement>('.scene-labels')?.hidden).toBe(false);
+    // Desde el cielo se llega a la Tierra de un corte: ningún viaje en curso.
+    expect(h.engine.focusedBody).toBe('tierra');
+    h.engine.dispose();
+  });
+
+  it('en el cielo, el teclado y el zoom mueven la cámara del cielo, no la del espacio', async () => {
+    const h = await createHarness({ view: 'sky', time: NIGHT, reducedMotion: true });
+    const start = h.engine.skyView;
+    h.engine.orbitBy((6 * Math.PI) / 180, 0);
+    expect(h.engine.skyView.azimuthDeg).toBeCloseTo(start.azimuthDeg + 6, 6);
+    h.engine.orbitBy(0, (6 * Math.PI) / 180);
+    expect(h.engine.skyView.altitudeDeg).toBeCloseTo(start.altitudeDeg + 6, 6);
+    h.engine.zoomBy(0.5);
+    expect(h.engine.skyView.fovDeg).toBeCloseTo(start.fovDeg / 2, 6);
+    // «Mirar a…»: directo con movimiento reducido.
+    h.engine.lookAtSky(119, 51);
+    expect(h.engine.skyView).toMatchObject({ azimuthDeg: 119, altitudeDeg: 51 });
+    h.engine.dispose();
+  });
+
+  it('un clic sobre la Luna en el cielo la elige', async () => {
+    const h = await createHarness({
+      view: 'sky',
+      time: NIGHT,
+      observer: MONTSEC,
+      capture: true,
+      // La Luna a las 04:00 UTC del 2-11-2026, desde el Montsec (rumbo 119°, altura 51,4°).
+      skyView: { azimuthDeg: 119.05, altitudeDeg: 51.42, fovDeg: 20 },
+    });
+    settle(h);
+    // En el centro de la parte visible (sin márgenes, el del lienzo).
+    h.canvas.dispatchEvent(
+      new PointerEvent('pointerdown', { clientX: WIDTH / 2, clientY: HEIGHT / 2, pointerId: 1 }),
+    );
+    h.canvas.dispatchEvent(
+      new PointerEvent('pointerup', { clientX: WIDTH / 2, clientY: HEIGHT / 2, pointerId: 1 }),
+    );
+    expect(h.events.bodyPicked.map((e) => e.id)).toContain('luna');
+    h.engine.dispose();
+  });
+
+  it('cambiar de lugar recalcula el cielo (otro frame), y un lugar imposible se ignora', async () => {
+    const h = await createHarness({ view: 'sky', time: NIGHT, observer: MONTSEC });
+    settle(h);
+    const before = h.renderer.renders;
+    h.engine.setObserver({ latDeg: 28.30111, lonDeg: -16.51056, altitudeM: 2390 });
+    settle(h);
+    expect(h.renderer.renders).toBeGreaterThan(before);
+    const after = h.renderer.renders;
+    h.engine.setObserver({ latDeg: 123, lonDeg: 0, altitudeM: 0 });
+    settle(h);
+    expect(h.renderer.renders).toBe(after);
+    h.engine.dispose();
+  });
+
+  it('las constelaciones llegan al abrir el cielo y se pueden ocultar; su memoria se cuenta', async () => {
+    const data = {
+      constellations: [
+        { id: 'Ori', name: 'Orion', label: [83.8, 5], lines: [[88.79, 7.41, 81.28, 6.35]] },
+      ],
+    };
+    const loadConstellations = vi.fn(() => Promise.resolve(data as unknown));
+    const h = await createHarness({ view: 'sky', time: NIGHT }, { loadConstellations });
+    await flush();
+    expect(loadConstellations).toHaveBeenCalledTimes(1);
+    expect(h.engine.stats().vramMB).toBeGreaterThan(0);
+    h.engine.setConstellationsVisible(false);
+    settle(h);
+    expect(
+      [...h.labels.querySelectorAll<HTMLElement>('.sky-label--constellation')].every(
+        (el) => el.hidden,
+      ),
+    ).toBe(true);
+    h.engine.dispose();
+    expect(h.labels.querySelector('.sky-labels')).toBeNull();
+  });
+});
+
+describe('SceneEngine: el cielo y su tabla dicen lo mismo (fase 8)', () => {
+  it('cada cuerpo sobre el horizonte está donde dice la tabla (`skyBodies`): mirando allí, es él', async () => {
+    const MONTSEC = { latDeg: 42.024637, lonDeg: 0.736936, altitudeM: 812 };
+    // La noche del 1 al 2 de noviembre de 2026, a las 05:00: la Luna, Marte y Júpiter, juntos al
+    // sureste; Saturno, ya puesto. A las 22:00 del 1, Saturno, Urano y Neptuno.
+    for (const iso of ['2026-11-02T04:00:00Z', '2026-11-01T21:00:00Z']) {
+      const time = new Date(iso);
+      const h = await createHarness({
+        view: 'sky',
+        time,
+        observer: MONTSEC,
+        capture: true,
+        skyView: { fovDeg: 6 },
+      });
+      const { skyBodies } = await import('../ephemeris/sky');
+      const above = skyBodies(time, MONTSEC).filter((body) => body.altitudeDeg > 1);
+      expect(above.length, iso).toBeGreaterThan(2);
+      for (const body of above) {
+        h.engine.lookAtSky(body.azimuthDeg, body.altitudeDeg);
+        settle(h);
+        h.events.bodyPicked.length = 0;
+        const at = { clientX: WIDTH / 2, clientY: HEIGHT / 2, pointerId: 1 };
+        h.canvas.dispatchEvent(new PointerEvent('pointerdown', at));
+        h.canvas.dispatchEvent(new PointerEvent('pointerup', at));
+        expect(
+          h.events.bodyPicked.map((e) => e.id),
+          `${iso} ${body.id}`,
+        ).toEqual([body.id]);
+      }
+      h.engine.dispose();
+    }
+  });
+});

@@ -1,6 +1,7 @@
 // Póster provisional del explorador (PLAN, fase 2, 2.c.17): una captura del propio motor en modo de
 // captura por vista, en escritorio (ventana de 1600 × 900) y móvil (360 × 760 a 2×), a WebP en
 // public/img/. La fase 9 lo sustituye por el definitivo. Uso: npm run build && node scripts/build-poster.mjs
+// [vista…] (por defecto, todas: system, earth, moon y sky).
 //
 // Sale al tamaño del lienzo (el explorador, sin la cabecera), sin escalar: en esa ventana, el póster
 // y el 3D coinciden píxel a píxel. Si cambia su tamaño, hay que cambiar el `width` y el `height` de
@@ -18,7 +19,10 @@ const VIEWS = [
   ['system', '/'],
   ['earth', '/explorar/tierra'],
   ['moon', '/explorar/luna'],
+  // El cielo desde el Montsec (fase 8), en la fecha de las capturas: el 24-10-2026 a las 02:00.
+  ['sky', '/cielo'],
 ];
+const wanted = process.argv.slice(2).filter((arg) => !arg.startsWith('--'));
 const FORMATS = [
   // [nombre, ventana CSS, densidad, teléfono (táctil)]
   ['escritorio', 1600, 900, 1, false],
@@ -29,6 +33,7 @@ await mkdir(OUT, { recursive: true });
 const { browser, close } = await openBrowser();
 try {
   for (const [view, path] of VIEWS) {
+    if (wanted.length > 0 && !wanted.includes(view)) continue;
     for (const [format, width, height, scale, mobile] of FORMATS) {
       const { page, problems } = await openViewer(browser, `${path}?captura=1`, {
         width,

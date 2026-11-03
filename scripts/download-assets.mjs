@@ -16,6 +16,9 @@
 // - Lunas (fase 7): mosaicos globales de Astropedia (USGS Astrogeology; en su ficha, «Public domain»
 //   o sin restricciones, y «Please cite authors») y, Mimas, el mapa del DLR archivado en el PDS
 //   (COISS_3006: datos de la NASA, dominio público en EE. UU.).
+// - Constelaciones (fase 8): las líneas y los nombres de d3-celestial (Olaf Frohn), con licencia BSD
+//   de 3 cláusulas (su LICENSE, que se descarga con ellos), sobre las cartas de las constelaciones de
+//   la IAU; fijados a un commit.
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 
@@ -131,6 +134,16 @@ const RINGS = ['TAB', 'LBL'].map((ext) => [
   UVIS_PAGE,
 ]);
 
+/** Constelaciones (fase 8): d3-celestial, fijado a su último commit (2022-07-05). */
+const D3_CELESTIAL_COMMIT = '7e720a3de062059d4c5400a379146a601d9010e0';
+const D3_CELESTIAL = `https://raw.githubusercontent.com/ofrohn/d3-celestial/${D3_CELESTIAL_COMMIT}/`;
+const D3_CELESTIAL_PAGE = 'https://github.com/ofrohn/d3-celestial';
+const CONSTELLATIONS_OUT = new URL('assets-src/constellations/', ROOT);
+const CONSTELLATIONS = [
+  ['constellations.lines.json', `${D3_CELESTIAL}data/constellations.lines.json`, D3_CELESTIAL_PAGE],
+  ['constellations.json', `${D3_CELESTIAL}data/constellations.json`, D3_CELESTIAL_PAGE],
+  ['LICENSE', `${D3_CELESTIAL}LICENSE`, D3_CELESTIAL_PAGE],
+];
 /** Modelos de elevación (fase 3b): a assets-src/elevation/, con su propio manifiesto. */
 const ELEVATION_OUT = new URL('assets-src/elevation/', ROOT);
 const ELEVATION = [
@@ -222,6 +235,14 @@ const ringsManifest = (await exists(ringsManifestUrl))
 await downloadAll(RINGS, RINGS_OUT, ringsManifest);
 await writeFile(ringsManifestUrl, JSON.stringify(ringsManifest, null, 2) + '\n');
 
+await mkdir(CONSTELLATIONS_OUT, { recursive: true });
+const constellationsManifestUrl = new URL('manifest.json', CONSTELLATIONS_OUT);
+const constellationsManifest = (await exists(constellationsManifestUrl))
+  ? JSON.parse(await readFile(constellationsManifestUrl, 'utf8'))
+  : {};
+await downloadAll(CONSTELLATIONS, CONSTELLATIONS_OUT, constellationsManifest);
+await writeFile(constellationsManifestUrl, `${JSON.stringify(constellationsManifest, null, 2)}\n`);
+
 for (const [file, url] of KTX2) {
   const target = new URL(file, KTX2_OUT);
   if (!FORCE && (await exists(target))) continue;
@@ -229,5 +250,5 @@ for (const [file, url] of KTX2) {
   console.log(`↓ ktx2/${file} (${bytes.byteLength} B)`);
 }
 console.log(
-  'Listo: assets-src/textures/, assets-src/elevation/, assets-src/rings/ y assets-src/ktx2/',
+  'Listo: assets-src/textures/, assets-src/elevation/, assets-src/rings/, assets-src/constellations/ y assets-src/ktx2/',
 );

@@ -13,6 +13,11 @@ import { SystemPositions } from '../../state/positions';
 import { SimulationEngine, SimulationStore } from '../../state/simulation.store';
 import { GuidedView, MoonStop, atSolarHour, localDay, utcDay } from '../../data/tours';
 import { nearestMoonPhase, nearestMoonSunElevation } from '../../ephemeris/moon-light';
+import { moonShadowAim } from '../../ephemeris/eclipse';
+import { SKY_BODY_IDS, SkyBodyId, horizontalOf } from '../../ephemeris/sky';
+import { SkyPlace, browserTimeZone, skyPlaceOf, userSkyPlace } from '../../data/sky-place';
+import { DEFAULT_PLACE_ID } from '../../data/places';
+import { placeTitle, skyPositionText } from '../sky-panel/sky-text';
 import {
   CONTEXT_SPEED,
   SpeedContext,
@@ -42,7 +47,15 @@ export type ExplorerEngine = SimulationEngine &
     | 'setLabelsVisible'
     | 'lookAtSurface'
     | 'setSurfaceMarkers'
+    | 'setObserver'
+    | 'lookAtSky'
+    | 'setConstellationsVisible'
   >;
+
+/** El resultado de pedir la ubicación del navegador («Usar mi ubicación»). */
+export type LocationResult = 'ok' | 'denied' | 'unavailable' | 'unsupported';
+
+const isSkyBody = (id: BodyId): id is SkyBodyId => (SKY_BODY_IDS as readonly string[]).includes(id);
 
 /** El cuerpo de cada vista de detalle y la vista propia de cada cuerpo que la tiene. */
 const VIEW_BODY: Readonly<Partial<Record<ExplorerView, BodyId>>> = {
@@ -57,9 +70,15 @@ const VIEW_PATH: Readonly<Record<ExplorerView, string>> = {
   system: '/',
   earth: '/explorar/tierra',
   moon: '/explorar/luna',
+  sky: '/cielo',
 };
 
 const NO_INSETS: ViewInsets = { top: 0, right: 0, bottom: 0, left: 0 };
+/** «Ver en 3D» de un eclipse de Sol: la Tierra a 3,2 radios, con unos 50° de casquete a la vista. */
+const SHADOW_VIEW_RADII = 3.2;
+const SHADOW_VIEW_EXTENT_DEG = 50;
+/** La mirada de partida del cielo (la de `DEFAULT_SKY_POSE` del motor): al sur, a 25° de altura. */
+const SKY_HOME = { azimuthDeg: 180, altitudeDeg: 25 } as const;
 
 /**
  * La sesión del explorador: lee la URL una vez (PLAN 3.d.9), inicializa los stores, conecta el motor
@@ -96,6 +115,8 @@ export class ExplorerSession {
   private lastView: ExplorerView | null = null;
   /** El contexto de la velocidad (D33): la vista general o un cuerpo. */
   private speedContextNow: SpeedContext = 'overview';
+  /** La cámara ya se llevó a la sombra del eclipse de la URL (solo al llegar). */
+  private shadowAimed = false;
 
   constructor() {
     const win = this.doc.defaultView;
@@ -120,6 +141,17 @@ export class ExplorerSession {
     });
     this.explorer.panelOpen.set(this.params.body !== null);
     this.explorer.singleKeyShortcuts.set(readSingleKeyShortcuts(this.storage));
+    this.explorer.skyPlace.set(skyPlaceOf(this.params.place ?? DEFAULT_PLACE_ID));
+
+    // El lugar y las constelaciones del cielo, al motor (sistema externo).
+    effect(() => {
+      const place = this.explorer.skyPlace();
+      untracked(() => this.engine?.setObserver(observerOf(place)));
+    });
+    effect(() => {
+      const visible = this.explorer.constellations();
+      untracked(() => this.engine?.setConstellationsVisible(visible));
+    });
 
     // La vista sale de la ruta: el motor y la selección la siguen (sistema externo).
     effect(() => {
@@ -150,6 +182,8 @@ export class ExplorerSession {
       viewFrom: this.params.viewFrom ?? undefined,
       toneMapping: this.params.toneMapping ?? undefined,
       isolate: this.params.isolate || undefined,
+      observer: observerOf(this.explorer.skyPlace()),
+      skyView: this.params.skyView ?? undefined,
     };
   }
 
@@ -164,11 +198,15 @@ export class ExplorerSession {
       this.sim.attach(engine),
       engine.on('bodyPicked', ({ id }) => this.select(id)),
       engine.on('travel', ({ active, kind }) => this.explorer.travelling.set(active ? kind : null)),
+      // «Ver en 3D» de un eclipse de Sol (`?sombra=1`): al estar lista la Tierra, sobre la sombra.
+      engine.on('ready', () => this.aimAtShadow()),
     ];
     engine.setSpeed(speed);
     engine.setPlaying(playing);
     engine.setViewInsets(this.insets);
     engine.setLabelsVisible(!this.explorer.cleanView());
+    engine.setObserver(observerOf(this.explorer.skyPlace()));
+    engine.setConstellationsVisible(this.explorer.constellations());
   }
 
   detachEngine(engine?: ExplorerEngine): void {
@@ -187,6 +225,19 @@ export class ExplorerSession {
    */
   select(id: BodyId | null): void {
     const view = this.explorer.view();
+    // En el cielo, el Sol, la Luna y los planetas abren su ficha y la cámara los mira (si están sobre
+    // el horizonte); los demás llevan a su vista, como desde la Tierra o la Luna.
+    if (view === 'sky' && (id === null || isSkyBody(id))) {
+      this.sim.reflectSelection(id);
+      this.explorer.panelOpen.set(id !== null);
+      if (id) this.lookAtBody(id);
+      else {
+        // «Vista general» (o Inicio) en el cielo: la mirada de partida, al sur.
+        this.engine?.lookAtSky(SKY_HOME.azimuthDeg, SKY_HOME.altitudeDeg);
+        this.announce(`${placeTitle(this.explorer.skyPlace())}, mirando al sur.`);
+      }
+      return;
+    }
     if (view === 'system') {
       this.sim.select(id);
       this.explorer.panelOpen.set(id !== null);
@@ -203,6 +254,63 @@ export class ExplorerSession {
     const target = id === null ? 'system' : (BODY_VIEW[id] ?? 'system');
     this.pendingFocus = target === 'system' ? id : null;
     void this.router.navigate([VIEW_PATH[target]], { queryParamsHandling: 'preserve' });
+  }
+
+  // --- El cielo desde España (fase 8) --------------------------------------------------------------
+
+  /** Elige un lugar del selector (y lo anuncia). */
+  setSkyPlace(id: string): void {
+    const place = skyPlaceOf(id);
+    this.explorer.skyPlace.set(place);
+    this.announce(`${placeTitle(place)}.`);
+  }
+
+  /**
+   * «Usar mi ubicación»: la pide al navegador solo ahora, tras pulsar el botón; si se rechaza o falla,
+   * todo sigue con el lugar elegido. Nunca sale del navegador (ni a la URL ni a `localStorage`).
+   */
+  useMyLocation(): Promise<LocationResult> {
+    const geolocation = this.doc.defaultView?.navigator?.geolocation;
+    if (!geolocation) return Promise.resolve('unsupported');
+    return new Promise((resolve) => {
+      geolocation.getCurrentPosition(
+        (position) => {
+          const place = userSkyPlace(position.coords, browserTimeZone());
+          this.explorer.skyPlace.set(place);
+          this.announce(`${placeTitle(place)}.`);
+          resolve('ok');
+        },
+        (error) => resolve(error.code === error.PERMISSION_DENIED ? 'denied' : 'unavailable'),
+        { enableHighAccuracy: false, timeout: 15_000, maximumAge: 600_000 },
+      );
+    });
+  }
+
+  /** Muestra u oculta las constelaciones. */
+  setConstellations(visible: boolean): void {
+    this.explorer.constellations.set(visible);
+  }
+
+  /**
+   * «Mirar»: la cámara del cielo hacia un cuerpo, si está sobre el horizonte; si no, lo dice. Siempre
+   * anuncia dónde está.
+   */
+  lookAtBody(id: SkyBodyId): void {
+    const place = this.explorer.skyPlace();
+    const where = horizontalOf(id, this.sim.time(), observerOf(place));
+    if (where.altitudeDeg > -0.5) this.engine?.lookAtSky(where.azimuthDeg, where.altitudeDeg);
+    this.announce(skyPositionText(id, where.azimuthDeg, where.altitudeDeg));
+  }
+
+  /**
+   * La cámara de la vista Tierra sobre la sombra de la Luna en la fecha de la URL (`?sombra=1`): su
+   * centro o, en un eclipse parcial, el punto donde es mayor. Una vez, al llegar.
+   */
+  private aimAtShadow(): void {
+    if (!this.params.shadow || this.shadowAimed || this.explorer.view() !== 'earth') return;
+    this.shadowAimed = true;
+    const aim = moonShadowAim(this.sim.time());
+    this.engine?.lookAtSurface(aim.latDeg, aim.lonDeg, SHADOW_VIEW_RADII, SHADOW_VIEW_EXTENT_DEG);
   }
 
   /** «Vista general»: todo el sistema solar a la vista. */
@@ -338,7 +446,9 @@ export class ExplorerSession {
       return;
     }
     const speed = this.applySpeedContext();
-    if (!first) this.announce(`${viewName(view)}.${speed}`);
+    if (first) return;
+    if (view === 'sky') this.announce(`${placeTitle(this.explorer.skyPlace())}.${speed}`);
+    else this.announce(`${viewName(view)}.${speed}`);
   }
 
   /**
@@ -361,10 +471,13 @@ export class ExplorerSession {
     if (this.router.currentNavigation()) return;
     const view = this.explorer.view();
     const playing = this.sim.playing();
+    const place = this.explorer.skyPlace();
     const state = {
       time: playing ? null : this.sim.time(),
       body: view === 'system' ? this.sim.selectedBodyId() : null,
       scale: this.sim.scaleFrame(),
+      // El lugar, solo en el cielo; «Mi ubicación», nunca.
+      place: view === 'sky' && place.id !== 'user' ? place.id : null,
     };
     untracked(() => {
       const wanted = viewerQueryParams(state);
@@ -383,6 +496,11 @@ export class ExplorerSession {
     if (!findBody(id)) return;
     this.announce(`${describeBody(id, this.positions.distances(id))}${suffix}`);
   }
+}
+
+/** El observador del motor para un lugar del cielo. */
+function observerOf(place: SkyPlace): { latDeg: number; lonDeg: number; altitudeM: number } {
+  return { latDeg: place.latDeg, lonDeg: place.lonDeg, altitudeM: place.altitudeM };
 }
 
 function safeLocalStorage(win: Window | null): Storage | undefined {

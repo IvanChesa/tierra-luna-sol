@@ -132,6 +132,22 @@
   gap: 0 var(--space-4);
 }
 
+/*
+ * En el cielo, de día y en los crepúsculos, el fondo es claro: con el velo de las otras vistas, que se
+ * desvanece, la entradilla quedaba a unos 2:1 sobre el resplandor del Sol. Aquí, casi opaco en toda la
+ * caja del texto (92 %: más de 6:1 con el texto apagado aunque detrás haya blanco), y se desvanece
+ * fuera de ella.
+ */
+.explorer--sky > .explorer__lead::before {
+  inset: 0 -3rem -1.5rem 0;
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--color-bg) 92%, transparent) calc(100% - 3rem),
+    transparent
+  );
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 1.5rem), transparent);
+}
+
 /* La vista limpia oculta el marco (la interfaz diferida pone la clase en su anfitrión). */
 .explorer:has(> tls-explorer-ui.is-clean) > :is(.explorer__lead, .explorer__dock, .explorer__foot) {
   display: none;
@@ -172,6 +188,16 @@
       color-mix(in srgb, var(--color-bg) 85%, transparent) 40%,
       transparent
     );
+  }
+
+  .explorer--sky > .explorer__lead::before {
+    inset: 0 0 -1.5rem;
+    background: linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--color-bg) 92%, transparent) calc(100% - 1.5rem),
+      transparent
+    );
+    mask-image: none;
   }
 
   /* Los créditos están en el menú del sitio; las pistas no caben. */

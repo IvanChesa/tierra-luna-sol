@@ -16,14 +16,22 @@
  *   `tonemapping=neutral|agx|aces`.
  * - Solo en captura, para las miniaturas de las fichas (fase 3c): `aislado=1`, el cuerpo de
  *   `cuerpo=` solo y centrado.
+ * - `lugar=teide` (fase 8): el lugar del cielo desde España (los del selector; por defecto, el
+ *   Montsec, que no se escribe). «Mi ubicación» nunca va a la URL: no sale del navegador.
+ * - Solo en captura, la cámara del cielo (fase 8): `rumbo=180` (desde el norte, hacia el este),
+ *   `altura=25` y `campo=75` (grados).
+ * - `sombra=1` (fase 8, «Ver en 3D» de un eclipse de Sol): con `fecha=`, la vista Tierra empieza con
+ *   la cámara sobre la sombra de la Luna.
  */
 import { findBody, isBodyId } from '../../data/body-index';
+import { DEFAULT_PLACE_ID, PlaceId, SKY_PLACES } from '../../data/places';
 import { MAX_DATE, MIN_DATE } from '../../ephemeris/constants';
 import type {
   BodyId,
   DepthMode,
   QualitySetting,
   ScaleMode,
+  SkyView,
   ToneMappingMode,
   ViewFrom,
 } from '../../scene';
@@ -45,6 +53,12 @@ export interface ViewerParams {
   readonly toneMapping: ToneMappingMode | null;
   /** Solo en captura: el cuerpo, solo y centrado (miniaturas). */
   readonly isolate: boolean;
+  /** El lugar del cielo desde España (`lugar=`), o `null` (el de por defecto). */
+  readonly place: PlaceId | null;
+  /** Solo en captura: hacia dónde mira la cámara del cielo. */
+  readonly skyView: Partial<SkyView> | null;
+  /** La cámara de la vista Tierra, sobre la sombra de la Luna (`sombra=1`, con fecha). */
+  readonly shadow: boolean;
   /** Avisos de los parámetros que se han ignorado, ya redactados para la interfaz. */
   readonly warnings: readonly string[];
 }
@@ -146,6 +160,13 @@ export function parseViewerParams(search: string): ViewerParams {
       `La calidad ${quoted(rawQuality)} no existe y se ha ignorado. Puede ser «alta», «media», «baja» o «auto».`,
     );
 
+  const rawPlace = params.get('lugar');
+  const place = SKY_PLACES.find((candidate) => candidate.id === rawPlace)?.id ?? null;
+  if (rawPlace !== null && !place)
+    warnings.push(
+      `El lugar ${quoted(rawPlace)} no está en el selector del cielo y se muestra el del Montsec.`,
+    );
+
   const background = capture ? params.get('detras') : null;
   return {
     capture,
@@ -158,8 +179,23 @@ export function parseViewerParams(search: string): ViewerParams {
     viewFrom: capture ? parseViewFrom(params) : null,
     toneMapping: capture ? (TONE_MAPPING[params.get('tonemapping') ?? ''] ?? null) : null,
     isolate: capture && params.get('aislado') === '1',
+    place: place as PlaceId | null,
+    skyView: capture ? parseSkyView(params) : null,
+    shadow: params.get('sombra') === '1' && time !== null,
     warnings,
   };
+}
+
+/** La cámara del cielo de una captura: `rumbo`, `altura` y `campo` (grados), los que vengan. */
+function parseSkyView(params: URLSearchParams): Partial<SkyView> | null {
+  const azimuthDeg = numberParam(params.get('rumbo'), 0, 360);
+  const altitudeDeg = numberParam(params.get('altura'), -10, 90);
+  const fovDeg = numberParam(params.get('campo'), 1, 180);
+  const view: { azimuthDeg?: number; altitudeDeg?: number; fovDeg?: number } = {};
+  if (azimuthDeg !== null) view.azimuthDeg = azimuthDeg;
+  if (altitudeDeg !== null) view.altitudeDeg = altitudeDeg;
+  if (fovDeg !== null) view.fovDeg = fovDeg;
+  return Object.keys(view).length > 0 ? view : null;
 }
 
 /** Lo que se guarda en la URL del explorador (PLAN §4.5). `null` quita el parámetro. */
@@ -168,6 +204,8 @@ export interface UrlState {
   readonly time: Date | null;
   readonly body: BodyId | null;
   readonly scale: ScaleMode;
+  /** El lugar del cielo, solo en la vista del cielo y si no es el de por defecto (`null`: sin él). */
+  readonly place?: PlaceId | null;
 }
 
 /** `calidad` siempre sale: si no, la URL pisaría la preferencia guardada al recargar. */
@@ -176,6 +214,9 @@ export function viewerQueryParams(state: UrlState): Record<string, string | null
     fecha: state.time ? formatUtcParam(state.time) : null,
     cuerpo: state.body && findBody(state.body) ? state.body : null,
     escala: state.scale === 'illustrative' ? null : SCALE_PARAM[state.scale],
+    lugar: state.place && state.place !== DEFAULT_PLACE_ID ? state.place : null,
+    // Solo sirve al llegar: después, la cámara es de quien la mueve.
+    sombra: null,
     calidad: null,
   };
 }

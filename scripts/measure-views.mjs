@@ -32,6 +32,8 @@ const STEPS = [
   ['sol (primer plano)', { focus: 'sol' }],
   ['tierra (vista)', { route: '/explorar/tierra' }],
   ['luna (vista)', { route: '/explorar/luna' }],
+  // Fase 8: el cielo desde el Montsec (a 1 día/s, el cielo gira entero cada segundo).
+  ['cielo (vista)', { route: '/cielo' }],
 ];
 
 /** FPS y coste por frame durante 4 s de reproducción a 1 día/s (tras 1 s de arranque). */
@@ -70,7 +72,8 @@ try {
     page.on('response', async (response) => {
       const url = new URL(response.url());
       if (url.origin !== BASE) return;
-      if (!url.pathname.startsWith('/textures/') && !url.pathname.endsWith('.bin')) return;
+      // Las texturas, el catálogo de estrellas y, desde la fase 8, las constelaciones (`/data/`).
+      if (!url.pathname.startsWith('/textures/') && !url.pathname.startsWith('/data/')) return;
       if (requested.has(url.pathname)) return;
       requested.add(url.pathname);
       const size = await stat(join(DIST, decodeURIComponent(url.pathname)))

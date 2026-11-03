@@ -26,11 +26,13 @@ import {
 const vertexShader = /* glsl */ `
 ${DEPTH_VERTEX_PARS}
 uniform float uSkyDistance;
+// La vista del cielo (fase 8) la gira al horizonte del lugar; en el espacio, la identidad.
+uniform mat3 uSkyRotation;
 varying vec3 vDirection;
 
 void main() {
   vDirection = position;
-  vec3 direction = mat3(viewMatrix) * position;
+  vec3 direction = mat3(viewMatrix) * (uSkyRotation * position);
   gl_Position = projectionMatrix * vec4(direction * uSkyDistance, 1.0);
   ${DEPTH_VERTEX}
 }
@@ -83,12 +85,13 @@ export function createMilkyWayMaterial() {
   const uniforms = {
     uMap: new Uniform<Texture | null>(null),
     uHasMap: new Uniform(0),
-    uIntensity: new Uniform(VISUAL_CONFIG.milkyWay.intensity),
-    uKnee: new Uniform(VISUAL_CONFIG.milkyWay.knee),
+    uIntensity: new Uniform<number>(VISUAL_CONFIG.milkyWay.intensity),
+    uKnee: new Uniform<number>(VISUAL_CONFIG.milkyWay.knee),
     /** Ganancia del fondo (configuración visual): compensa la exposición del primer plano. */
     uGain: new Uniform(1),
     uSkyDistance: new Uniform(1),
     uEclToGalactic: new Uniform(eclToGalacticMatrix()),
+    uSkyRotation: new Uniform(new Matrix3()),
   };
   const material = sceneShaderMaterial({
     name: 'tls-milky-way',

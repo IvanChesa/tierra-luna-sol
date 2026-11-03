@@ -1,0 +1,256 @@
+/*
+ * Panel de la vista del cielo (fase 8), como los de la Tierra y la Luna: bloques opacos sobre el lienzo.
+ * En escritorio, en la columna de la presentación, debajo de ella (si no cabe, se desplaza); en móvil,
+ * al pie del lienzo, encima de las fichas, con «Esta noche» plegado.
+ */
+:host {
+  --chrome-edge: none;
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-area: index;
+  grid-template-columns: minmax(0, 1fr);
+  align-self: start;
+  align-content: start;
+  gap: var(--space-2);
+  max-height: 100%;
+  margin: var(--space-2) var(--space-4) 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+@media (max-width: 63.99rem) {
+  :host {
+    --chrome-edge: bottom;
+    grid-area: view;
+    align-self: end;
+    max-height: 58%;
+    margin: 0 var(--space-4) var(--space-2);
+  }
+}
+
+.sky {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-line);
+  border-radius: var(--radius-md);
+}
+
+.sky__title {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-strong);
+  letter-spacing: 0.02em;
+}
+
+.sky__subtitle {
+  margin: var(--space-1) 0 0;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-strong);
+  color: var(--color-text-muted);
+}
+
+.sky__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.sky__place {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.sky__select {
+  width: 100%;
+  min-height: 2.25rem;
+  padding: 0 var(--space-2);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--text-sm);
+  background: var(--color-surface-raised);
+  border: var(--border-width) solid var(--color-control);
+  border-radius: var(--radius-sm);
+}
+
+.sky__locate {
+  justify-self: start;
+  gap: var(--space-1);
+  padding-inline: var(--space-2);
+}
+
+.sky__note:empty {
+  display: none;
+}
+
+.sky__note,
+.sky__hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs, 0.75rem);
+  line-height: 1.4;
+}
+
+.sky__clock {
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-sm);
+}
+
+/* La zona junto al reloj, solo en el móvil (en escritorio la dice la nota de la hora). */
+.sky__zone {
+  display: none;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs, 0.75rem);
+}
+
+.sky__slider {
+  width: 100%;
+  accent-color: var(--color-accent);
+}
+
+.sky__summary {
+  cursor: pointer;
+  list-style-position: inside;
+}
+
+.sky__tonight {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.sky__text {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: 1.45;
+}
+
+.sky__planets {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: var(--text-sm);
+  line-height: 1.45;
+}
+
+/* La tabla, si no cabe (con letra grande), se desplaza en horizontal dentro de su caja. */
+.sky__scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.sky__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.sky__table caption {
+  margin-bottom: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--text-xs, 0.75rem);
+  text-align: left;
+}
+
+.sky__table th,
+.sky__table td {
+  padding: 0.3rem 0.25rem;
+  text-align: left;
+  border-bottom: var(--border-width) solid var(--color-line);
+  white-space: nowrap;
+}
+
+.sky__table thead th {
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-strong);
+}
+
+.sky__table tbody th {
+  font-weight: var(--font-weight-strong);
+}
+
+/* Lo que está bajo el horizonte, atenuado (sin perder el contraste mínimo: el color del texto apagado). */
+.sky__table tr.is-down td,
+.sky__table tr.is-down th {
+  color: var(--color-text-muted);
+}
+
+.sky__look {
+  min-width: 2rem;
+  min-height: 2rem;
+}
+
+.sky__eclipses {
+  justify-self: start;
+  font-size: var(--text-sm);
+}
+
+.sky__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.sky__toggle input {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--color-accent);
+}
+
+@media (pointer: coarse) {
+  .sky__select,
+  .sky__look {
+    min-height: var(--tap-target);
+  }
+
+  .sky__look {
+    min-width: var(--tap-target);
+  }
+}
+
+/*
+ * En móvil, compacto, para que el cielo se vea por encima: los rótulos «Lugar» y «Hora» solo para los
+ * lectores de pantalla (el selector y el reloj ya dicen qué son), la nota de la hora cambiada por la zona
+ * junto al reloj (revisión de la fase 8, hallazgo 3: la hora del lugar, siempre con su zona), el aviso
+ * de día a la vista, el lugar y «Usar mi ubicación» en una fila, y «Esta noche» plegado (la interfaz lo
+ * pliega al entrar).
+ */
+@media (max-width: 63.99rem) {
+  :host {
+    gap: var(--space-1);
+  }
+
+  .sky {
+    gap: var(--space-1);
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .sky__place {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .sky__zone {
+    display: inline;
+  }
+
+  #sky-place-title,
+  .sky__hour-hint {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}

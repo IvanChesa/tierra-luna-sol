@@ -135,3 +135,74 @@ export function utcOffsetLabel(date: Date): string {
   if (s !== 0) return `UTC${sign}${h}:${pad(m)}:${pad(s)}`;
   return m === 0 ? `UTC${sign}${h}` : `UTC${sign}${h}:${pad(m)}`;
 }
+
+// --- Horas en la zona de un lugar (fase 8: el cielo desde España) ---------------------------------
+
+const zoneFormats = new Map<string, Intl.DateTimeFormat>();
+
+function zoneFormat(timeZone: string, options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+  const key = `${timeZone}|${JSON.stringify(options)}`;
+  let format = zoneFormats.get(key);
+  if (!format) {
+    format = new Intl.DateTimeFormat(LOCALE, { timeZone, ...options });
+    zoneFormats.set(key, format);
+  }
+  return format;
+}
+
+/** «22:40»: la hora del reloj de un lugar (su zona IANA), con el reloj de 24 horas (ESTILO §4). */
+export function formatClockInZone(date: Date, timeZone: string): string {
+  if (Number.isNaN(date.getTime())) return '—';
+  return zoneFormat(timeZone, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(
+    date,
+  );
+}
+
+/** «1 de noviembre de 2026» en la zona de un lugar. */
+export function formatLongDateInZone(date: Date, timeZone: string): string {
+  return zoneFormat(timeZone, { day: 'numeric', month: 'long', year: 'numeric' }).format(date);
+}
+
+/** La fecha de un lugar como «AAAA-MM-DD» (para saber de qué noche es un instante). */
+export function isoDateInZone(date: Date, timeZone: string): string {
+  const parts = zoneFormat(timeZone, {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? '';
+  return `${get('year')}-${get('month')}-${get('day')}`;
+}
+
+/** Minutos que la zona va por delante de UTC en ese instante (con su horario de verano). */
+export function utcOffsetMinutesInZone(date: Date, timeZone: string): number {
+  const parts = zoneFormat(timeZone, {
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric',
+    hourCycle: 'h23',
+  }).formatToParts(date);
+  const get = (type: string) => Number(parts.find((part) => part.type === type)?.value ?? 0);
+  const asUtc = Date.UTC(
+    get('year'),
+    get('month') - 1,
+    get('day'),
+    get('hour'),
+    get('minute'),
+    get('second'),
+  );
+  return Math.round((asUtc - Math.floor(date.getTime() / 1000) * 1000) / 60_000);
+}
+
+/** «UTC+1», «UTC» o «UTC−3:30»: el desfase de la zona de un lugar en ese instante. */
+export function utcOffsetLabelInZone(date: Date, timeZone: string): string {
+  const minutes = utcOffsetMinutesInZone(date, timeZone);
+  if (minutes === 0) return 'UTC';
+  const sign = minutes > 0 ? '+' : MINUS;
+  const h = Math.floor(Math.abs(minutes) / 60);
+  const m = Math.abs(minutes) % 60;
+  return m === 0 ? `UTC${sign}${h}` : `UTC${sign}${h}:${String(m).padStart(2, '0')}`;
+}

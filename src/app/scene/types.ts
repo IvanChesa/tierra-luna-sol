@@ -10,8 +10,22 @@ export type { BodyId } from '../data/body.model';
 export type { ViewFrom } from './camera/view-from';
 export type { ToneMappingMode } from './visual-config';
 
-/** Vistas del explorador (D10). El cielo desde España llega en la fase 8. */
-export type ExplorerView = 'system' | 'earth' | 'moon';
+/** Vistas del explorador (D10): el sistema solar, la Tierra, la Luna y el cielo desde España (fase 8). */
+export type ExplorerView = 'system' | 'earth' | 'moon' | 'sky';
+
+/** Un lugar de la Tierra para la vista del cielo: latitud y longitud (grados, este positivo) y altitud (m). */
+export interface SkyObserver {
+  readonly latDeg: number;
+  readonly lonDeg: number;
+  readonly altitudeM: number;
+}
+
+/** Hacia dónde mira la cámara del cielo: rumbo (desde el norte, hacia el este), altura y campo (grados). */
+export interface SkyView {
+  readonly azimuthDeg: number;
+  readonly altitudeDeg: number;
+  readonly fovDeg: number;
+}
 
 /** Escala base: la ilustrativa o la real global (D12). El sistema local físico es automático. */
 export type ScaleMode = 'illustrative' | 'real';
@@ -77,6 +91,10 @@ export interface SceneEngineOptions {
   readonly isolate?: boolean;
   /** Base de las URL de los recursos (por defecto, la raíz del sitio). */
   readonly assetsBaseUrl?: string;
+  /** El lugar de la vista del cielo (fase 8); por defecto, el Montsec. */
+  readonly observer?: SkyObserver;
+  /** Solo en captura: hacia dónde mira la cámara del cielo (`?rumbo=`, `?altura=`, `?campo=`). */
+  readonly skyView?: Partial<SkyView>;
 }
 
 /** Cifras de rendimiento para el indicador de desarrollo y las mediciones de los informes. */
@@ -174,6 +192,15 @@ export interface SceneEngineApi {
   lookAtSurface(latDeg: number, lonDeg: number, distanceRadii: number, extentDeg?: number): void;
   /** Muestra u oculta los marcadores de los lugares del cielo desde España sobre la Tierra. */
   setSurfaceMarkers(visible: boolean): void;
+  /** El lugar desde el que se ve el cielo (fase 8). */
+  setObserver(observer: SkyObserver): void;
+  /**
+   * En la vista del cielo, lleva la cámara a un rumbo y una altura (grados), con un giro suave o
+   * directo con movimiento reducido: «Mirar» de la tabla del cielo.
+   */
+  lookAtSky(azimuthDeg: number, altitudeDeg: number): void;
+  /** Muestra u oculta las líneas y los nombres de las constelaciones en la vista del cielo. */
+  setConstellationsVisible(visible: boolean): void;
   /** Termina ya el viaje de cámara o la transición de marco en curso («Saltar», `Esc`). */
   skipTransition(): void;
   /** Muestra u oculta las etiquetas de los cuerpos (la vista limpia las oculta). */
@@ -200,4 +227,6 @@ export interface SceneEngineApi {
   readonly view: ExplorerView;
   readonly scaleMode: ScaleMode;
   readonly qualityLevel: QualityLevel;
+  /** Hacia dónde mira la cámara del cielo. */
+  readonly skyView: SkyView;
 }

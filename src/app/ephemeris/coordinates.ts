@@ -7,13 +7,17 @@
  * - Three: Y hacia arriba. ECL (x, y, z) → Three (x, z, −y).
  * - Terrestre: fijo a la Tierra. X hacia el meridiano de Greenwich en el ecuador, Z hacia el polo norte.
  * - Galácticas (fase 3b, Vía Láctea): X hacia el centro galáctico, Z hacia el polo norte galáctico.
+ * - Horizontales (fase 8, el cielo desde un lugar): las de astronomy-engine (x al norte, y al oeste, z al
+ *   cénit) y, en la escena del cielo, los ejes de Three (X al este, Y al cénit, Z al sur).
  */
 import {
   Body,
   GeoVector,
+  Observer,
   RotateVector,
   Rotation_EQD_EQJ,
   Rotation_EQJ_ECL,
+  Rotation_EQJ_HOR,
   RotationMatrix,
   SiderealTime,
   Vector,
@@ -182,4 +186,61 @@ export function sunApparentGeocentricEcl(date: Date): Vec3 {
  */
 export function subsolarPoint(date: Date): { latDeg: number; lonDeg: number } {
   return earthFixedToGeographic(mulMat3Vec(eclToEarthFixed(date), sunGeocentricEcl(date)));
+}
+
+// --- El horizonte de un lugar (fase 8: el cielo desde España) --------------------------------------
+
+/**
+ * Un lugar de la Tierra: latitud y longitud geográficas (grados, este positivo) y altitud sobre el
+ * nivel del mar (m).
+ */
+export interface GeoObserver {
+  readonly latDeg: number;
+  readonly lonDeg: number;
+  readonly altitudeM: number;
+}
+
+export const astronomyObserver = (place: GeoObserver): Observer =>
+  new Observer(place.latDeg, place.lonDeg, place.altitudeM);
+
+/**
+ * ECL → horizontales del lugar (HOR de astronomy-engine: x al norte, y al oeste y z al cénit), con la
+ * precesión y la nutación de la fecha y el giro de la Tierra (`Rotation_EQJ_HOR`). Sin refracción ni
+ * aberración: la refracción la pone quien dibuja (`ephemeris/sky.ts` y el shader de las estrellas).
+ */
+export function eclToHorizontal(date: Date, place: GeoObserver): Mat3 {
+  const eqjToHor = fromAstronomyRotation(
+    Rotation_EQJ_HOR(toAstroTime(date), astronomyObserver(place)),
+  );
+  return mulMat3(eqjToHor, ECL_TO_EQJ);
+}
+
+/**
+ * Horizontales (x al norte, y al oeste, z al cénit) → los ejes del cielo en Three: X al este, Y al
+ * cénit y Z al sur (dextrógiro: este × cénit = sur). Mirar al norte es mirar hacia −Z.
+ */
+export const HORIZONTAL_TO_SKY_THREE: Mat3 = [0, -1, 0, 0, 0, 1, -1, 0, 0];
+
+/**
+ * La rotación de las estrellas y la Vía Láctea en la vista del cielo: sus direcciones, en ECL con los
+ * ejes de Three (`eclToThree`), al cielo del lugar en los ejes de Three.
+ */
+export const eclThreeToSkyThree = (date: Date, place: GeoObserver): Mat3 =>
+  mulMat3(
+    mulMat3(HORIZONTAL_TO_SKY_THREE, eclToHorizontal(date, place)),
+    transposeMat3(ECL_TO_THREE),
+  );
+
+/** Rumbo (desde el norte, hacia el este) y altura (grados) → dirección en los ejes del cielo en Three. */
+export function horizontalToSkyThree(azimuthDeg: number, altitudeDeg: number): Vec3 {
+  const az = azimuthDeg * DEG;
+  const alt = altitudeDeg * DEG;
+  return vec3(Math.sin(az) * Math.cos(alt), Math.sin(alt), -Math.cos(az) * Math.cos(alt));
+}
+
+/** Inversa de {@link horizontalToSkyThree}: el rumbo en [0, 360). */
+export function skyThreeToHorizontal(v: Vec3): { azimuthDeg: number; altitudeDeg: number } {
+  const n = normalize(v);
+  const azimuthDeg = (Math.atan2(n.x, -n.z) / DEG + 360) % 360;
+  return { azimuthDeg, altitudeDeg: Math.asin(Math.min(Math.max(n.y, -1), 1)) / DEG };
 }

@@ -79,6 +79,12 @@ export function browserEngineDeps(options: SceneEngineOptions): EngineDeps {
         throw new Error(`No se ha podido cargar el catálogo de estrellas (${response.status}).`);
       return response.arrayBuffer();
     },
+    loadConstellations: async () => {
+      const response = await view.fetch(new URL('data/constellations.json', base));
+      if (!response.ok)
+        throw new Error(`No se han podido cargar las constelaciones (${response.status}).`);
+      return (await response.json()) as unknown;
+    },
     textures: ({ maxTextureSize, anisotropy, upload }) => ({
       source: new ManifestTextureSource({
         files: TEXTURE_FILES,

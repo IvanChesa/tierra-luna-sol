@@ -1,0 +1,20 @@
+{
+ "description": "Puntos de la línea central del eclipse: instante (UT), latitud norte y longitud este (grados, de los grados y minutos de la tabla) y duración de la totalidad allí (s).",
+ "source": "NASA Eclipse Web Site, «Eclipse Predictions by Fred Espenak, NASA's GSFC», https://eclipse.gsfc.nasa.gov/",
+ "retrieved": "2026-11-01",
+ "query": "https://eclipse.gsfc.nasa.gov/SEpath/SEpath2001/SE2026Aug12Tpath.html",
+ "points": [
+  {
+   "ut": "2026-08-12T18:28:00Z",
+   "latitudeDeg": 43.37167,
+   "longitudeDeg": -6.18833,
+   "centralDurationSeconds": 109.3
+  },
+  {
+   "ut": "2026-08-12T18:30:00Z",
+   "latitudeDeg": 41.81667,
+   "longitudeDeg": -3.185,
+   "centralDurationSeconds": 104.6
+  }
+ ]
+}

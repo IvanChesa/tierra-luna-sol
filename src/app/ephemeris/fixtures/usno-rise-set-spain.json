@@ -1,0 +1,337 @@
+{
+ "description": "Salidas, culminaciones y puestas del Sol y de la Luna y crepúsculos civil, náutico y astronómico, al minuto, en un lugar peninsular (el Montsec) y uno canario (el Teide). `local`: la hora del reloj del lugar ese día (con su zona y su horario de verano); `ut`: el mismo instante en UT. Los crepúsculos náutico y astronómico, de las tablas anuales (en hora estándar), ya en UT.",
+ "source": "U.S. Naval Observatory, Astronomical Applications API (https://aa.usno.navy.mil/data/api) y «Rise/Set/Twilight Table for an Entire Year» (https://aa.usno.navy.mil/data/RS_OneYear)",
+ "retrieved": "2026-11-01",
+ "series": [
+  {
+   "place": "montsec",
+   "latDeg": 42.024637,
+   "lonDeg": 0.736936,
+   "timeZone": "Europe/Madrid",
+   "date": "2026-03-20",
+   "utcOffsetHours": 1,
+   "query": "https://aa.usno.navy.mil/api/rstt/oneday?date=2026-03-20&coords=42.024637,0.736936&tz=1&dst=false",
+   "sun": {
+    "civilDawn": {
+     "local": "06:33",
+     "ut": "2026-03-20T05:33Z"
+    },
+    "rise": {
+     "local": "07:01",
+     "ut": "2026-03-20T06:01Z"
+    },
+    "transit": {
+     "local": "13:04",
+     "ut": "2026-03-20T12:04Z"
+    },
+    "set": {
+     "local": "19:09",
+     "ut": "2026-03-20T18:09Z"
+    },
+    "civilDusk": {
+     "local": "19:37",
+     "ut": "2026-03-20T18:37Z"
+    }
+   },
+   "moon": {
+    "rise": {
+     "local": "07:26",
+     "ut": "2026-03-20T06:26Z"
+    },
+    "transit": {
+     "local": "14:12",
+     "ut": "2026-03-20T13:12Z"
+    },
+    "set": {
+     "local": "21:12",
+     "ut": "2026-03-20T20:12Z"
+    }
+   },
+   "nautical": {
+    "query": "https://aa.usno.navy.mil/calculated/rstt/year?ID=AA&year=2026&task=3&lat=42.024637&lon=0.736936&label=montsec&tz=1&tz_sign=1&submit=Get+Data",
+    "dawn": "2026-03-20T05:00Z",
+    "dusk": "2026-03-20T19:10Z"
+   },
+   "astronomical": {
+    "query": "https://aa.usno.navy.mil/calculated/rstt/year?ID=AA&year=2026&task=4&lat=42.024637&lon=0.736936&label=montsec&tz=1&tz_sign=1&submit=Get+Data",
+    "dawn": "2026-03-20T04:27Z",
+    "dusk": "2026-03-20T19:43Z"
+   }
+  },
+  {
+   "place": "montsec",
+   "latDeg": 42.024637,
+   "lonDeg": 0.736936,
+   "timeZone": "Europe/Madrid",
+   "date": "2026-06-21",
+   "utcOffsetHours": 2,
+   "query": "https://aa.usno.navy.mil/api/rstt/oneday?date=2026-06-21&coords=42.024637,0.736936&tz=1&dst=true",
+   "sun": {
+    "civilDawn": {
+     "local": "05:47",
+     "ut": "2026-06-21T03:47Z"
+    },
+    "rise": {
+     "local": "06:22",
+     "ut": "2026-06-21T04:22Z"
+    },
+    "transit": {
+     "local": "13:59",
+     "ut": "2026-06-21T11:59Z"
+    },
+    "set": {
+     "local": "21:36",
+     "ut": "2026-06-21T19:36Z"
+    },
+    "civilDusk": {
+     "local": "22:11",
+     "ut": "2026-06-21T20:11Z"
+    }
+   },
+   "moon": {
+    "set": {
+     "local": "01:26",
+     "ut": "2026-06-20T23:26Z"
+    },
+    "rise": {
+     "local": "13:37",
+     "ut": "2026-06-21T11:37Z"
+    },
+    "transit": {
+     "local": "19:48",
+     "ut": "2026-06-21T17:48Z"
+    }
+   },
+   "nautical": {
+    "query": "https://aa.usno.navy.mil/calculated/rstt/year?ID=AA&year=2026&task=3&lat=42.024637&lon=0.736936&label=montsec&tz=1&tz_sign=1&submit=Get+Data",
+    "dawn": "2026-06-21T03:03Z",
+    "dusk": "2026-06-21T20:55Z"
+   },
+   "astronomical": {
+    "query": "https://aa.usno.navy.mil/calculated/rstt/year?ID=AA&year=2026&task=4&lat=42.024637&lon=0.736936&label=montsec&tz=1&tz_sign=1&submit=Get+Data",
+    "dawn": "2026-06-21T02:09Z",
+    "dusk": "2026-06-21T21:49Z"
+   }
+  },
+  {
+   "place": "montsec",
+   "latDeg": 42.024637,
+   "lonDeg": 0.736936,
+   "timeZone": "Europe/Madrid",
+   "date": "2026-12-21",
+   "utcOffsetHours": 1,
+   "query": "https://aa.usno.navy.mil/api/rstt/oneday?date=2026-12-21&coords=42.024637,0.736936&tz=1&dst=false",
+   "sun": {
+    "civilDawn": {
+     "local": "07:50",
+     "ut": "2026-12-21T06:50Z"
+    },
+    "rise": {
+     "local": "08:22",
+     "ut": "2026-12-21T07:22Z"
+    },
+    "transit": {
+     "local": "12:55",
+     "ut": "2026-12-21T11:55Z"
+    },
+    "set": {
+     "local": "17:29",
+     "ut": "2026-12-21T16:29Z"
+    },
+    "civilDusk": {
+     "local": "18:00",
+     "ut": "2026-12-21T17:00Z"
+    }
+   },
+   "moon": {
+    "set": {
+     "local": "05:24",
+     "ut": "2026-12-21T04:24Z"
+    },
+    "rise": {
+     "local": "14:47",
+     "ut": "2026-12-21T13:47Z"
+    },
+    "transit": {
+     "local": "22:40",
+     "ut": "2026-12-21T21:40Z"
+    }
+   },
+   "nautical": {
+    "query": "https://aa.usno.navy.mil/calculated/rstt/year?ID=AA&year=2026&task=3&lat=42.024637&lon=0.736936&label=montsec&tz=1&tz_sign=1&submit=Get+Data",
+    "dawn": "2026-12-21T06:15Z",
+    "dusk": "2026-12-21T17:36Z"
+   },
+   "astronomical": {
+    "query": "https://aa.usno.navy.mil/calculated/rstt/year?ID=AA&year=2026&task=4&lat=42.024637&lon=0.736936&label=montsec&tz=1&tz_sign=1&submit=Get+Data",
+    "dawn": "2026-12-21T05:41Z",
+    "dusk": "2026-12-21T18:10Z"
+   }
+  },
+  {
+   "place": "teide",
+   "latDeg": 28.301111111111112,
+   "lonDeg": -16.510555555555555,
+   "timeZone": "Atlantic/Canary",
+   "date": "2026-03-20",
+   "utcOffsetHours": 0,
+   "query": "https://aa.usno.navy.mil/api/rstt/oneday?date=2026-03-20&coords=28.301111,-16.510556&tz=0&dst=false",
+   "sun": {
+    "civilDawn": {
+     "local": "06:47",
+     "ut": "2026-03-20T06:47Z"
+    },
+    "rise": {
+     "local": "07:10",
+     "ut": "2026-03-20T07:10Z"
+    },
+    "transit": {
+     "local": "13:13",
+     "ut": "2026-03-20T13:13Z"
+    },
+    "set": {
+     "local": "19:17",
+     "ut": "2026-03-20T19:17Z"
+    },
+    "civilDusk": {
+     "local": "19:41",
+     "ut": "2026-03-20T19:41Z"
+    }
+   },
+   "moon": {
+    "rise": {
+     "local": "07:50",
+     "ut": "2026-03-20T07:50Z"
+    },
+    "transit": {
+     "local": "14:23",
+     "ut": "2026-03-20T14:23Z"
+    },
+    "set": {
+     "local": "21:04",
+     "ut": "2026-03-20T21:04Z"
+    }
+   },
+   "nautical": {
+    "query": "https://aa.usno.navy.mil/calculated/rstt/year?ID=AA&year=2026&task=3&lat=28.301111&lon=-16.510556&label=teide&tz=0&tz_sign=1&submit=Get+Data",
+    "dawn": "2026-03-20T06:19Z",
+    "dusk": "2026-03-20T20:08Z"
+   },
+   "astronomical": {
+    "query": "https://aa.usno.navy.mil/calculated/rstt/year?ID=AA&year=2026&task=4&lat=28.301111&lon=-16.510556&label=teide&tz=0&tz_sign=1&submit=Get+Data",
+    "dawn": "2026-03-20T05:52Z",
+    "dusk": "2026-03-20T20:36Z"
+   }
+  },
+  {
+   "place": "teide",
+   "latDeg": 28.301111111111112,
+   "lonDeg": -16.510555555555555,
+   "timeZone": "Atlantic/Canary",
+   "date": "2026-06-21",
+   "utcOffsetHours": 1,
+   "query": "https://aa.usno.navy.mil/api/rstt/oneday?date=2026-06-21&coords=28.301111,-16.510556&tz=0&dst=true",
+   "sun": {
+    "civilDawn": {
+     "local": "06:43",
+     "ut": "2026-06-21T05:43Z"
+    },
+    "rise": {
+     "local": "07:10",
+     "ut": "2026-06-21T06:10Z"
+    },
+    "transit": {
+     "local": "14:08",
+     "ut": "2026-06-21T13:08Z"
+    },
+    "set": {
+     "local": "21:06",
+     "ut": "2026-06-21T20:06Z"
+    },
+    "civilDusk": {
+     "local": "21:33",
+     "ut": "2026-06-21T20:33Z"
+    }
+   },
+   "moon": {
+    "set": {
+     "local": "01:32",
+     "ut": "2026-06-21T00:32Z"
+    },
+    "rise": {
+     "local": "13:49",
+     "ut": "2026-06-21T12:49Z"
+    },
+    "transit": {
+     "local": "19:59",
+     "ut": "2026-06-21T18:59Z"
+    }
+   },
+   "nautical": {
+    "query": "https://aa.usno.navy.mil/calculated/rstt/year?ID=AA&year=2026&task=3&lat=28.301111&lon=-16.510556&label=teide&tz=0&tz_sign=1&submit=Get+Data",
+    "dawn": "2026-06-21T05:10Z",
+    "dusk": "2026-06-21T21:06Z"
+   },
+   "astronomical": {
+    "query": "https://aa.usno.navy.mil/calculated/rstt/year?ID=AA&year=2026&task=4&lat=28.301111&lon=-16.510556&label=teide&tz=0&tz_sign=1&submit=Get+Data",
+    "dawn": "2026-06-21T04:36Z",
+    "dusk": "2026-06-21T21:40Z"
+   }
+  },
+  {
+   "place": "teide",
+   "latDeg": 28.301111111111112,
+   "lonDeg": -16.510555555555555,
+   "timeZone": "Atlantic/Canary",
+   "date": "2026-12-21",
+   "utcOffsetHours": 0,
+   "query": "https://aa.usno.navy.mil/api/rstt/oneday?date=2026-12-21&coords=28.301111,-16.510556&tz=0&dst=false",
+   "sun": {
+    "civilDawn": {
+     "local": "07:28",
+     "ut": "2026-12-21T07:28Z"
+    },
+    "rise": {
+     "local": "07:54",
+     "ut": "2026-12-21T07:54Z"
+    },
+    "transit": {
+     "local": "13:04",
+     "ut": "2026-12-21T13:04Z"
+    },
+    "set": {
+     "local": "18:14",
+     "ut": "2026-12-21T18:14Z"
+    },
+    "civilDusk": {
+     "local": "18:40",
+     "ut": "2026-12-21T18:40Z"
+    }
+   },
+   "moon": {
+    "set": {
+     "local": "04:59",
+     "ut": "2026-12-21T04:59Z"
+    },
+    "rise": {
+     "local": "15:39",
+     "ut": "2026-12-21T15:39Z"
+    },
+    "transit": {
+     "local": "22:52",
+     "ut": "2026-12-21T22:52Z"
+    }
+   },
+   "nautical": {
+    "query": "https://aa.usno.navy.mil/calculated/rstt/year?ID=AA&year=2026&task=3&lat=28.301111&lon=-16.510556&label=teide&tz=0&tz_sign=1&submit=Get+Data",
+    "dawn": "2026-12-21T06:59Z",
+    "dusk": "2026-12-21T19:10Z"
+   },
+   "astronomical": {
+    "query": "https://aa.usno.navy.mil/calculated/rstt/year?ID=AA&year=2026&task=4&lat=28.301111&lon=-16.510556&label=teide&tz=0&tz_sign=1&submit=Get+Data",
+    "dawn": "2026-12-21T06:30Z",
+    "dusk": "2026-12-21T19:39Z"
+   }
+  }
+ ]
+}

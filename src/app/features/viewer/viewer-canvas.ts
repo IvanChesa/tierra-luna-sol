@@ -37,6 +37,7 @@ const VIEW_LABELS: Readonly<Record<ExplorerView, string>> = {
   system: 'Vista 3D del sistema solar',
   earth: 'Vista 3D de la Tierra',
   moon: 'Vista 3D de la Luna',
+  sky: 'Vista 3D del cielo desde el lugar elegido',
 };
 
 /** Giro por pulsación de una flecha en el lienzo (rad); con Mayús, el triple. */

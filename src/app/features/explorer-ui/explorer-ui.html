@@ -1,5 +1,12 @@
 <div class="stage">
   <tls-viewer-canvas [view]="view()" (ready)="sceneReady()" />
+  <!--
+    Al pasar del espacio al cielo, o al revés, la imagen se funde desde el fondo (un corte con
+    movimiento reducido): un velo que se crea en cada cambio y se desvanece solo.
+  -->
+  @for (fade of skyFades(); track fade) {
+    <div class="stage__fade" aria-hidden="true"></div>
+  }
 </div>
 
 <!--
@@ -62,6 +69,11 @@
 <!-- La vista Luna (fase 6): sus vistas, el recorrido y la fase. -->
 @if (view() === 'moon') {
   <tls-moon-panel class="view-panel" data-chrome />
+}
+
+<!-- El cielo desde España (fase 8): el lugar, la hora de la noche, «Esta noche» y su tabla. -->
+@if (view() === 'sky') {
+  <tls-sky-panel class="view-panel" data-chrome />
 }
 
 <tls-body-chips class="chips" />

@@ -17,7 +17,9 @@ export type IconName =
   | 'list'
   | 'calendar'
   | 'sliders'
-  | 'alert';
+  | 'alert'
+  | 'locate'
+  | 'target';
 
 /**
  * Iconos propios (ESTILO §6; `craft-floor`: un solo trazo, nada de emojis ni glifos). SVG de 24×24
@@ -101,6 +103,17 @@ export type IconName =
           <circle cx="14" cy="6.5" r="2.25" />
           <circle cx="9" cy="12" r="2.25" />
           <circle cx="17" cy="17.5" r="2.25" />
+        }
+        @case ('locate') {
+          <!-- Mi ubicación: una diana con su centro (el lugar). -->
+          <circle cx="12" cy="12" r="6.5" />
+          <circle class="fill" cx="12" cy="12" r="2" />
+          <path d="M12 2.75v3M12 18.25v3M2.75 12h3M18.25 12h3" />
+        }
+        @case ('target') {
+          <!-- Mirar a un cuerpo: el visor de un telescopio. -->
+          <circle cx="12" cy="12" r="8" />
+          <path d="M12 4v4.5M12 15.5V20M4 12h4.5M15.5 12H20" />
         }
         @case ('alert') {
           <path

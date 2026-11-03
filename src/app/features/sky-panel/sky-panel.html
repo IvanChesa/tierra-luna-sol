@@ -1,0 +1,141 @@
+<section class="sky" aria-labelledby="sky-place-title">
+  <h2 id="sky-place-title" class="sky__title">Lugar</h2>
+  <div class="sky__place">
+    <label class="visually-hidden" for="sky-place">Lugar desde el que ves el cielo</label>
+    <select id="sky-place" class="sky__select" (change)="choosePlace($event)">
+      @for (option of places; track option.id) {
+        <option [value]="option.id" [selected]="place().id === option.id">
+          {{ optionLabel(option) }}
+        </option>
+      }
+      @if (place().id === 'user') {
+        <option value="user" selected>Tu ubicación</option>
+      }
+    </select>
+    <button
+      type="button"
+      class="control sky__locate"
+      [attr.aria-busy]="locating() || null"
+      (click)="locate()"
+    >
+      <tls-icon name="locate" />
+      Usar mi ubicación
+    </button>
+  </div>
+  <p class="sky__note" role="status">{{ locationMessage() }}</p>
+</section>
+
+<section class="sky" aria-labelledby="sky-hour-title">
+  <div class="sky__row">
+    <label id="sky-hour-title" class="sky__title" for="sky-hour">Hora</label>
+    <span class="sky__clock"
+      >{{ clock() }}<span class="sky__zone" aria-hidden="true"> · {{ zone() }}</span></span
+    >
+  </div>
+  <input
+    id="sky-hour"
+    class="sky__slider"
+    type="range"
+    min="0"
+    [max]="range().max"
+    step="5"
+    [value]="minutes()"
+    [attr.aria-valuetext]="valueText()"
+    (input)="setHour($event)"
+  />
+  <p class="sky__hint sky__hour-hint">
+    Hora del lugar ({{ zone() }}), de la puesta a la salida del Sol.
+  </p>
+  @if (daytime()) {
+    <p class="sky__hint sky__day">Ahora es de día: arrastra para ver la noche.</p>
+  }
+</section>
+
+<details class="sky sky--tonight" [open]="tonightOpen()" (toggle)="toggleTonight($event)">
+  <summary class="sky__title sky__summary">Esta noche</summary>
+  <div class="sky__tonight">
+    @if (polarText(); as text) {
+      <p class="sky__text">{{ text }}</p>
+    }
+    @for (line of twilights(); track $index) {
+      <p class="sky__text">{{ line }}</p>
+    }
+    @if (moonText(); as text) {
+      <p class="sky__text">{{ text }}</p>
+    }
+
+    <!-- Un rótulo, no un encabezado: «Esta noche» es un summary, y un h3 colgaría de «Lugar». -->
+    <p class="sky__subtitle">Qué planetas se ven y hacia dónde mirar</p>
+    @if (planetTexts().length > 0) {
+      <ul class="sky__planets">
+        @for (planet of planetTexts(); track planet.id) {
+          <li>{{ planet.text }}</li>
+        }
+      </ul>
+    } @else {
+      <p class="sky__text">Ningún planeta se ve esta noche con el cielo oscuro.</p>
+    }
+
+    <div class="sky__scroll">
+      <table class="sky__table">
+        <caption>
+          {{
+            tableCaption()
+          }}
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Cuerpo</th>
+            <th scope="col">Ahora</th>
+            <th scope="col">Sale</th>
+            <th scope="col">Se pone</th>
+            <th scope="col"><span class="visually-hidden">Mirar</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of rows(); track row.id) {
+            <tr [class.is-down]="!row.up">
+              <th scope="row">{{ row.name }}</th>
+              <td>
+                @if (row.up) {
+                  <span aria-hidden="true">{{ row.now }}</span>
+                  <span class="visually-hidden">{{ row.nowSpoken }}</span>
+                } @else {
+                  {{ row.now }}
+                }
+              </td>
+              <td>{{ row.rise }}</td>
+              <td>{{ row.set }}</td>
+              <td>
+                <button
+                  type="button"
+                  class="control control--icon sky__look"
+                  [attr.aria-label]="row.look"
+                  [title]="row.look"
+                  (click)="lookAt(row.id)"
+                >
+                  <tls-icon name="target" />
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <p class="sky__hint">
+      Altura sobre el horizonte y rumbo (N, NE, E…) ahora. «Sale» y «Se pone», durante la noche, de
+      la puesta a la salida del Sol; «—»: no sale o no se pone en ese tiempo.
+    </p>
+
+    @if (place().id !== 'user') {
+      <a class="sky__eclipses" routerLink="/eclipses" [queryParams]="eclipsesQuery()"
+        >Próximos eclipses desde {{ placeLabel() }}</a
+      >
+    }
+
+    <label class="sky__toggle">
+      <input type="checkbox" [checked]="constellations()" (change)="toggleConstellations($event)" />
+      Constelaciones
+    </label>
+  </div>
+</details>
