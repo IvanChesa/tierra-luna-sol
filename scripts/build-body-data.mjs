@@ -108,7 +108,7 @@ const data = {};
         radiusKm: q(
           exact(num(cell('Diameter', name)) / 2),
           S,
-          'Radio ecuatorial: la mitad del diámetro de la ficha.',
+          'La mitad del diámetro ecuatorial que da la NASA.',
         ),
         massKg: q(exact(num(cell('Mass', name)) * 1e24), S),
         densityKgM3: q(num(cell('Density', name)), S),
@@ -134,7 +134,7 @@ const data = {};
     };
   }
   // La Luna: la columna MOON de la misma tabla (sus distancias y su periodo son respecto a la Tierra).
-  const moonNote = 'Respecto a la Tierra (nota * de la ficha).';
+  const moonNote = 'Respecto a la Tierra.';
   data.luna = {
     physical: {
       massKg: q(exact(num(cell('Mass', 'MOON')) * 1e24), S),
@@ -257,7 +257,7 @@ const MOON_NAMES = {
         physical.geometricAlbedo = q(
           dark,
           S,
-          `Cara oscura; la clara llega a ${String(bright).replace('.', ',')} (la ficha da «${albedo}»).`,
+          `Cara oscura; la clara llega a ${String(bright).replace('.', ',')} (la NASA da «${albedo}»).`,
         );
       } else if (albedo) {
         physical.geometricAlbedo = q(num(albedo), S);
@@ -276,10 +276,10 @@ const MOON_NAMES = {
         eccentricity: q(num(eccentricityCell), S),
       };
       if (periodCell.endsWith('R'))
-        orbit.retrograde = q(true, S, 'La ficha marca el periodo con «R».');
+        orbit.retrograde = q(true, S, 'La NASA lo marca como retrógrado («R»).');
       data[id].orbit = orbit;
       if (rotationCell === 'S')
-        physical.synchronousRotation = q(true, S, 'La ficha marca la rotación con «S».');
+        physical.synchronousRotation = q(true, S, 'La NASA la marca como síncrona («S»).');
     }
   }
 }
@@ -383,7 +383,7 @@ const MOON_NAMES = {
     const range = (text) => text.split(' - ').map(num);
     return {
       opticalDepth: q(range(ranges[0]), S, `Profundidad óptica normal ${name}.`),
-      albedo: q(range(ranges[1]), S, `Albedo ${name} (columna «Albedo» de la ficha).`),
+      albedo: q(range(ranges[1]), S, `Albedo ${name}.`),
     };
   };
   data.saturno.rings = {
