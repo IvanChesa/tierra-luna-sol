@@ -2,7 +2,7 @@
 
 - **Rama:** `fase-9-contenido`
 - **Fecha:** 2026-11-03
-- **Estado:** lista para revisión (las cinco entregas y las decisiones de Iván del 03-11)
+- **Estado:** revisión aplicada («Respuesta a la revisión», al final); segunda ronda de revisión, por el bloqueante
 
 ## Plan
 Bloque E, modo autónomo; la fase 8 ya está en `main` (`358ae6b`). La fase es grande: va por entregas, con este informe al día al final de cada una. Lo que ya existe y se reutiliza:
@@ -58,47 +58,59 @@ Hoy las fichas (`/planetas/:id`, `/sol`, `/luna`) son un H1 y «Ficha en prepara
 - **Las constelaciones, en español** con el oficial de la IAU en latín como secundario (D38), comprobadas con una fuente española publicada: hecho (§3, tarea 8).
 - **El cielo, en tiempo real** (D33): ya era así en el código; queda en el plan y en ESTILO.
 - **Una fase propia antes de la 10** (el Sol, las lunas que faltan, los sistemas de lunas de la vista general y el lado nocturno de la Tierra): no se hace aquí; la prepara la sesión de revisión con la del bloque E.
+- **El menú**, al final de la fase: «Cielo» en lugar de «Luna» (Planetas · Lunas · Sol · Cielo · Eclipses · Sobre el proyecto, también en el móvil) y, en `/lunas`, la Luna la primera y destacada (enlaza a `/luna`, que no cambia) y después las demás por planeta: hecho (§3, tarea 9).
+- **La medida del rendimiento**: vale la limpia; las hechas con otros procesos en el PC, no, y se apunta su ruido; la definitiva, la de la fase 10 (Lighthouse en el CI) y la de producción, la de la fase 11 (§4.1).
 
 ## 1. Resumen
-- **Las fichas de los 30 cuerpos** (`/planetas/:id`, `/lunas/:id`, `/sol` y `/luna`) y sus índices (`/planetas` y `/lunas`, nueva), prerenderizadas y sin `three` ni astronomy-engine en su JS inicial: las migas de pan, el tipo, el resumen, «Ver en 3D», la imagen del propio motor, «Hoy» (las distancias del día y la fase de la Luna, calculadas en el navegador con un `import()` después de pintar), las tablas de datos con los decimales de su fuente y una nota numerada a ella, las tres curiosidades con su fuente, las lunas del sistema y la lista de fuentes.
+- **Las fichas de los 30 cuerpos** (`/planetas/:id`, `/lunas/:id`, `/sol` y `/luna`) y sus índices (`/planetas` y `/lunas`, nueva), prerenderizadas y sin `three` ni astronomy-engine en su JS inicial: las migas de pan, el tipo, el resumen, «Ver en 3D», la imagen del propio motor, «Hoy» (las distancias del día y la fase de la Luna, calculadas en el navegador con un `import()` después de pintar), las tablas de datos con los decimales de su fuente y una nota numerada a ella, las tres curiosidades con su fuente, las lunas del sistema (por su distancia al planeta) y la lista de fuentes.
 - **Las imágenes del motor**: 60 en WebP (360 y 720 px, 1,4 MB) y la imagen para compartir, «Tierra Luna Sol» (el Sol, la Tierra y la Luna), en JPEG de 34 kB.
-- **Compartir, legal y privacidad**: la description de cada página, Open Graph con la imagen global, la tarjeta grande, `noindex` en todas (y siempre en `/404`) y `robots.txt`; el pie con «Sin cookies, sin analítica y sin peticiones a terceros» y el aviso legal y la privacidad de ivanchesa.com; la privacidad en detalle, con la frase del NEL de Cloudflare, en `/sobre-el-proyecto#privacidad`.
+- **Compartir, legal y privacidad**: la description de cada página, Open Graph con la imagen global, la tarjeta grande, `noindex` en todas (y siempre en `/404`) y `robots.txt`; la nota «Sin cookies, sin analítica y sin peticiones a terceros» y el aviso legal y la privacidad de ivanchesa.com en el pie, en el pie del explorador y en el menú del móvil; la privacidad en detalle, con la frase del NEL de Cloudflare, en `/sobre-el-proyecto#privacidad`.
 - **`/creditos`**, recurso a recurso y con las licencias una por una, y **`/sobre-el-proyecto`** como caso de estudio (el diagrama de las capas, la precisión y el rendimiento medidos con el enlace a su informe, las decisiones y lo que es ilustrativo).
-- **Decisiones de Iván del 03-11**: las constelaciones en español con el latín de la IAU debajo (D38), comprobadas en el Anuario del Real Observatorio de Madrid (IGN); el cielo en tiempo real (D33), y la fase propia de antes de la 10, apuntada.
-- **Textos**: repasados con ESTILO y en `docs/revision-textos.md` para Iván (262 textos con su fuente y su hueco, y las 88 constelaciones para la sesión de revisión).
+- **Decisiones de Iván del 03-11**: las constelaciones en español con el latín de la IAU debajo (D38), comprobadas en el Anuario del Real Observatorio de Madrid (IGN); el cielo en tiempo real (D33); la fase propia de antes de la 10, apuntada; **el menú**, con «Cielo» en lugar de «Luna» (Planetas · Lunas · Sol · Cielo · Eclipses · Sobre el proyecto, también en el móvil) y, en `/lunas`, la Luna la primera y destacada; y, sobre la medida del rendimiento, la limpia vale para esta fase: la definitiva es la de la fase 10 (Lighthouse en el CI) y la de producción, la de la fase 11 (§4.1).
+- **Textos**: repasados con ESTILO y en `docs/revision-textos.md` para Iván (360 textos con su fuente y su hueco, también los fijos de las fichas, del pie y del menú, y las 88 constelaciones para la sesión de revisión).
+- **La revisión** (`docs/revisiones/fase-9.md`, cambios necesarios): un bloqueante (las notas de las fichas y «Saltar al contenido» llevaban a la portada), dos importantes y diecisiete menores y sugerencias, aplicados salvo dos propuestas para la fase 10 («Respuesta a la revisión», al final).
 
 ## 2. Criterios de aceptación
 | Criterio | ✅/❌ | Evidencia (comando + salida, cifra, captura) |
 |---|---|---|
-| Lighthouse móvil ≥ 95 en rendimiento, accesibilidad y buenas prácticas en una muestra de fichas | ✅ en lo medido, sin Lighthouse | **Lighthouse no se ha ejecutado**: `@lhci/cli` espera la decisión de Iván (fase 10) y otra herramienta sería una condición de parada (§4.1). En su lugar, `node scripts/measure-pages.mjs`: Playwright y el protocolo de DevTools en las condiciones del móvil de Lighthouse con su estrangulamiento de DevTools (CPU ×4, 562,5 ms de RTT, 1,47 Mbit/s; 412 × 823 a 1,75x; sin caché), la mediana de 3 cargas. **Rendimiento**, con las curvas y los pesos públicos de Lighthouse 12 (el SI, que no se mide, tomado como el LCP: la estimación sale a la baja): las cinco fichas de la muestra, de **95 a 97** (tabla de §6). **Accesibilidad**: axe sin violaciones graves ni críticas en las 40 rutas (`e2e/accesibilidad.spec.ts`, «todas las páginas del sitio», también en su proyecto móvil). **Buenas prácticas**, lo que se puede medir: 0 errores de consola y todas las imágenes cargadas y a su proporción, en las 9 páginas medidas; HTTPS, la CSP y las cabeceras, las de la fase 4 |
-| e2e de privacidad: 0 cookies y 0 peticiones a terceros en todas las rutas | ✅ | `e2e/privacidad.spec.ts` recorre ahora las 40 rutas prerenderizadas (antes, 11), después del recorrido con clics: 0 peticiones a otros dominios, 0 cookies y `localStorage` solo con claves `tls.*` (§6) |
-| La vista previa del enlace (Open Graph) se ve bien | ✅ simulada | `node scripts/preview-og.mjs`: las etiquetas del HTML del build de cuatro páginas, pintadas como las tarjetas de una app (la grande y la compacta): `compartir-inicio`, `compartir-planetas-marte`, `compartir-lunas-titan` y `compartir-cielo` (§7). `e2e/contenido.spec.ts`: en el HTML de las 40 rutas, title, description (distinta en cada una), `og:title`, `og:description`, `og:image` absoluta con su texto alternativo, `og:url` (salvo en la 404) y la tarjeta grande. **La de una app real**, cuando el dominio exista (fase 11; `PENDIENTES.md`): la imagen es una URL absoluta del dominio, que aún no resuelve |
-| Sin cifras sin fuente y sin enlaces rotos | ✅ | **Cifras:** `body-facts.spec.ts`, en los 30 cuerpos, cada fila de datos con una fuente de `SOURCES` y su número en la lista del final; los textos, con su página (las 120 citas, verificadas otra vez por `build-body-texts.mjs`); las cifras de `/sobre-el-proyecto`, cada una con el enlace al informe donde se midió; los datos «de hoy», con «calculado con astronomy-engine». **Enlaces:** `node scripts/check-links.mjs` (ahora en `npm run check` y en el CI): los **1121 internos** de las 40 páginas (rutas, ficheros y anclas), bien; con `--externos`, los **107 externos**, bien, salvo los 3 de ivanchesa.com, pendientes del dominio (no resuelve; `TODO(ivan)`) |
+| Lighthouse móvil ≥ 95 en rendimiento, accesibilidad y buenas prácticas en una muestra de fichas | ⚠️ pendiente: Lighthouse, en la fase 10 (en el CI) y en producción en la fase 11 | **Lighthouse no se ha ejecutado** (§4.1). Lo medido, `node scripts/measure-pages.mjs`: Playwright y el protocolo de DevTools con el estrangulamiento del móvil de Lighthouse (CPU ×4, 562,5 ms de RTT, 1,47 Mbit/s; 412 × 823 a 1,75x; sin caché), la mediana de 3 cargas. **Rendimiento**, estimado con las curvas y los pesos de Lighthouse 12 (el SI, que no se mide, tomado como el LCP: la estimación sale a la baja), en la pasada con el PC libre: **99 en las nueve páginas** (las cinco fichas de la muestra, los índices, los créditos y «Sobre el proyecto»; tabla de §6). Con otras sesiones en marcha en el PC, la cifra no es fiable (§4.1). **Accesibilidad**: axe sin violaciones graves ni críticas en las 40 rutas (`e2e/accesibilidad.spec.ts`, «todas las páginas del sitio», en escritorio y en móvil); la revisión, con todas las severidades en 11 páginas: 0. **Buenas prácticas**, lo que se puede medir: 0 errores de consola y todas las imágenes cargadas y a su proporción, en las 9 páginas medidas; HTTPS, la CSP y las cabeceras, las de la fase 4 |
+| e2e de privacidad: 0 cookies y 0 peticiones a terceros en todas las rutas | ✅ | `e2e/privacidad.spec.ts` recorre ahora las 40 rutas prerenderizadas (antes, 11), después del recorrido con clics: 0 peticiones a otros dominios, 0 cookies y `localStorage` solo con claves `tls.*` (§6; lo repitió la revisión) |
+| La vista previa del enlace (Open Graph) se ve bien | ⚠️ simulada; la de una app real, en la fase 11 | `node scripts/preview-og.mjs`: las etiquetas del HTML del build de cuatro páginas, pintadas como las tarjetas de una app (la grande y la compacta): `compartir-inicio`, `compartir-planetas-marte`, `compartir-lunas-titan` y `compartir-cielo` (§7). Es nuestro propio script, no un validador ni una app. `e2e/contenido.spec.ts`: en el HTML de las 40 rutas, title, description (distinta en cada una), `og:title`, `og:description`, `og:image` absoluta con su texto alternativo, `og:url` (salvo en la 404) y la tarjeta grande; al navegar en el cliente, también al reutilizarse la ficha (de Fobos a Deimos). **La de una app real**, cuando el dominio exista (fase 11; `PENDIENTES.md`): la imagen es una URL absoluta del dominio, que aún no resuelve |
+| Sin cifras sin fuente y sin enlaces rotos | ✅ | **Cifras:** `body-facts.spec.ts`, en los 30 cuerpos, cada fila de datos con una fuente de `SOURCES` y su número en la lista del final; los textos, con su página (las 120 citas, verificadas otra vez por `build-body-texts.mjs`); las cifras de `/sobre-el-proyecto`, cada una con el enlace al informe (o a la revisión) donde se midió; los datos «de hoy», con «calculado con astronomy-engine». **Enlaces:** `node scripts/check-links.mjs` (en `npm run check` y en el CI) resuelve cada enlace contra el `<base href>` de su página, como el navegador, y da por roto un ancla que lleve a otra página: los **1161 internos** de las 40 páginas (rutas, ficheros y anclas), bien. Las notas de las fichas y «Saltar al contenido» llevaban a la portada (hallazgo 1 de la revisión): ahora llevan la ruta de su página, y un e2e los pulsa. Con `--externos`, los **108 externos**, bien, salvo los 3 de ivanchesa.com, pendientes del dominio (no resuelve; `TODO(ivan)`) |
 
 ## 3. Tareas del plan
 | Tarea | Estado | Notas |
 |---|---|---|
 | 9.1 `render-body-images.mjs` | hecha | Con la luz y el recorte de las miniaturas (`scripts/lib/body-shots.mjs`, común a los dos scripts): el mismo estilo. La imagen para compartir, una composición de tres renders (§4.2) |
-| 9.2 Fichas e índices | hecha | §1. «Hoy» con `resource()` (API pública de Angular 22) y la imagen con `NgOptimizedImage` (cargador propio, `srcset` 1x/2x, `priority`: en el HTML, su `preload` y `fetchpriority`). Las filas, en funciones puras con tests. `/lunas` y `/lunas/:id`, nuevas, y «Lunas» en la cabecera; desde el explorador, «Ficha completa» de las lunas |
+| 9.2 Fichas e índices | hecha | §1. «Hoy» con `resource()` (API pública de Angular 22) y la imagen con `NgOptimizedImage` (cargador propio, `srcset` 1x/2x, `priority`: en el HTML, su `preload` y `fetchpriority`). Las filas, en funciones puras con tests. `/lunas` y `/lunas/:id`, nuevas, y «Lunas» en la cabecera; desde el explorador, «Ficha completa» de las lunas. Las lunas, por su distancia al planeta (`pages/shared/moons.ts`) |
 | 9.3 `/creditos` | hecha | Recurso a recurso (`FUENTES.md`), las licencias una por una y el aviso de la NASA (y del resto de instituciones) |
 | 9.4 `/sobre-el-proyecto` | hecha | Caso de estudio: qué hace, cómo está hecho, el diagrama (SVG accesible y desplazable en el móvil), los marcos de escala, la precisión y el rendimiento con su informe, las decisiones, lo ilustrativo, la privacidad y el autor |
-| 9.5 Compartir | hecha | La description, la registra cada página (en su chunk diferido); las vistas del explorador, en su ruta (§5.2). `robots.txt` sin bloquear el rastreo. `noindex`: todas mientras `indexable` sea `false`, y `/404` y `**` siempre |
-| 9.6 Legal y privacidad | hecha | El pie, el pie del explorador y el menú del móvil. Los enlaces, en `site.config.ts` (la fuente única): ivanchesa.com aún no resuelve (`TODO(ivan)`) |
-| 9.7 Textos | hecha | Repaso con ESTILO: 8 cifras con el espacio de millares, ya con punto, en el JSON y regeneradas; las aclaraciones de los datos, para quien lee la ficha («la NASA», no «la ficha»), en su generador y regeneradas (solo cambian las notas). `docs/revision-textos.md` (§1) |
-| 9.8 Constelaciones en español (D38) y el cielo en tiempo real | hecha | §4.3 |
+| 9.5 Compartir | hecha | La description, de un resolver en cada ruta, en un chunk diferido (§5.2). `robots.txt` sin bloquear el rastreo. `noindex`: todas mientras `indexable` sea `false`, y `/404` y `**` siempre |
+| 9.6 Legal y privacidad | hecha | La nota y los enlaces legales en el pie, en el pie del explorador y en el menú del móvil (en el móvil, el explorador no tiene pie). Los enlaces, en `site.config.ts` (la fuente única): ivanchesa.com aún no resuelve (`TODO(ivan)`) |
+| 9.7 Textos | hecha | Repaso con ESTILO: 8 cifras con el espacio de millares, ya con punto, en el JSON y regeneradas; las aclaraciones de los datos, para quien lee la ficha («la NASA», no «la ficha»), en su generador y regeneradas; los anglicismos de «Sobre el proyecto» («pintado bajo demanda», «bibliotecas», «pruebas»). `docs/revision-textos.md` (§1) |
+| 9.8 Constelaciones en español (D38) y el cielo en tiempo real | hecha | §4.3. Si el nombre en español y el latino coinciden (Leo, Libra, Virgo…), una vez |
+| 9.9 El menú (decisión de Iván del 03-11) | hecha | «Cielo» (`/cielo`) en lugar de «Luna», en la cabecera y en el menú del móvil (la misma lista, `app.ts`). En `/lunas`, la Luna la primera, en una tarjeta destacada (`featured` en `BodyCard`: «Satélite de la Tierra», la primera frase de su resumen y la imagen de su ficha, con `priority`), que enlaza a `/luna`; después, las demás por planeta. La entradilla y la description de `/lunas`, reescritas. Tests: el orden del menú (`app.spec.ts` y el menú del móvil), la tarjeta y el enlace al cielo (`contenido.spec.ts`), «Cielo» marcado en las dos navegaciones (`cielo.spec.ts`) |
 
 ## 4. Desviaciones del plan y motivo
 ### 4.1 Lighthouse, medido sin Lighthouse
-El criterio pide Lighthouse. No se ha ejecutado: `@lhci/cli` espera la decisión de Iván (fase 10, §1 del plan) y usar otra herramienta (`npx lighthouse`) es una condición de parada. Se miden sus métricas con Playwright en sus condiciones de móvil (`scripts/measure-pages.mjs`) y se estima la nota con sus curvas públicas; la accesibilidad, con axe (lo que usa Lighthouse), y de buenas prácticas, lo que se puede medir. La medida con Lighthouse queda para la fase 10.
+El criterio pide Lighthouse. No se ha ejecutado: `@lhci/cli` espera la decisión de Iván (fase 10, §1 del plan) y usar otra herramienta (`npx lighthouse`) es una condición de parada. Se miden sus métricas con Playwright en sus condiciones de móvil (`scripts/measure-pages.mjs`) y se estima la nota con sus curvas públicas; la accesibilidad, con axe (el motor que usa Lighthouse), y de buenas prácticas, lo que se puede medir. Por eso el criterio queda en ⚠️: **la medida definitiva es la de la fase 10 (Lighthouse en el CI) y la de producción, la de la fase 11** (Iván, 03-11).
+
+**Las condiciones y el ruido de la medida.** La CPU ×4 multiplica lo que haga el resto del PC: con otras tareas en marcha, el tiempo de bloqueo (TBT) se dispara y la nota estimada no es fiable.
+- La primera medida de este informe (de 95 a 97, con un TBT de 144 a 274 ms) se hizo con una tarea mía olvidada en segundo plano: un `python` que extraía el texto de un PDF del IGN, casi tres horas con un núcleo entero. Es el proceso de Python que vio la revisión al 88 % de CPU, junto a `torno`.
+- Parada esa tarea, y con el PC comprobado antes de medir (ningún proceso con más de 0,15 s de CPU en 3 s), las nueve páginas dan **99**, con un TBT de 95 a 135 ms (§6). Es la medida que vale (Iván, 03-11).
+- En dos pasadas más del mismo build, con otras sesiones abiertas en el PC (en la lista de procesos, Codex, el `wrangler` de torno y un `ng serve`), el TBT fue de 119 a 570 ms y de 164 a 1181 ms, y la nota, de 86 a 99 y de 76 a 98 (Saturno, 86; `/planetas`, 76). No se usan.
+- Lo que queda de TBT con el PC libre es una tarea de unos 145 ms con la CPU ×4: la evaluación del bundle y la hidratación. Para ganar margen, la hidratación incremental de la fase 10 (hallazgo 20, §10).
 
 ### 4.2 La imagen para compartir: una composición, en JPEG
 El plan pide un render del motor. Las vistas del explorador encuadran dejando sitio a sus paneles: el cuerpo nunca queda centrado (la Tierra salía arriba y pequeña). Es una composición de tres renders del propio motor, los de las fichas: el Sol a la izquierda (de donde les llega la luz), la Tierra en el centro y la Luna a su escala respecto a la Tierra (no a su distancia), con el halo del Sol difuminado. En JPEG y no en WebP: todas las apps de mensajería leen JPEG; WebP, no todas. 34 kB (WhatsApp no enseña las de más de 300 kB).
 
 ### 4.3 Las constelaciones en español (D38): de dónde salen
-Fuente: la tabla «Constelaciones» del **Anuario del Real Observatorio de Madrid para 2019** (IGN; «la traducción más habitual del nombre»), para las 88. La tabla traduce el zodiaco palabra por palabra («Gemelos», «Toro», «Carnero»), e Iván quería «Géminis»: en las nueve que cambian, el nombre que usa el propio Anuario para esas constelaciones cuando las recorren los planetas («Constelaciones recorridas», 2014–2019: «Geminis/Cancer», «Leo/Virgo», «Virgo/Libra», «Libra/Escorpio», «Sagitario/Escorpio», «Piscis/Aries») o en su texto («la constelación de Tauro», 2019). Además, dos tildes que faltan en la tabla («Aguila», «Ave del Paraiso»), una mayúscula de la Ortografía («Horno Químico») y dos formas cortas («Cisne», «Escultor»). Lo comprueba `scripts/check-constellation-names.mjs` con los PDF del IGN (con su SHA-256; un lector de texto de PDF propio, `scripts/lib/pdf-text.mjs`, sin dependencias: hace falta para leer la tabla). En el cielo, «Osa Mayor» con «Ursa Major» debajo, en cursiva y más pequeño; en los textos, «en Géminis (Gemini)». La lista, en `docs/revision-textos.md`, para la sesión de revisión. El Diccionario de la RAE habría sido la otra fuente para el zodiaco, pero su web rechaza las peticiones automáticas.
+Fuente: la tabla «Constelaciones» del **Anuario del Real Observatorio de Madrid para 2019** (IGN; «la traducción más habitual del nombre»), para las 88. La tabla traduce el zodiaco palabra por palabra («Gemelos», «Toro», «Carnero»), e Iván quería «Géminis»: en las nueve que cambian, el nombre que usa el propio Anuario para esas constelaciones cuando las recorren los planetas («Constelaciones recorridas», 2014–2019: «Geminis/Cancer», «Leo/Virgo», «Virgo/Libra», «Libra/Escorpio», «Sagitario/Escorpio», «Piscis/Aries») o en su texto («la constelación de Tauro», 2019). Además, dos tildes que faltan en la tabla («Aguila», «Ave del Paraiso»), una mayúscula de la Ortografía («Horno Químico») y dos formas cortas («Cisne», «Escultor»). Lo comprueba `scripts/check-constellation-names.mjs` con los PDF del IGN (con su SHA-256; un lector de texto de PDF propio, `scripts/lib/pdf-text.mjs`, sin dependencias: hace falta para leer la tabla). En el cielo, «Osa Mayor» con «Ursa Major» debajo, en cursiva y más pequeño (si coinciden, como Leo, una vez); en los textos, «en Géminis (Gemini)». La lista, en `docs/revision-textos.md`, para la sesión de revisión. El Diccionario de la RAE habría sido la otra fuente para el zodiaco, pero su web rechaza las peticiones automáticas.
 
 ### 4.4 Las fuentes tipográficas, precargadas (adelantado de la fase 10)
-Al medir las páginas largas de esta fase con la red lenta, el CLS llegaba a 0,2 en `/creditos` (presupuesto, 0,05). La causa: el CSS crítico que el build mete en el HTML no lleva las `@font-face`, y la hoja entera llegaba a los 1,8 s; hasta entonces, el texto salía con la fuente del sistema y se recolocaba. Ahora: las `@font-face`, en `index.html`; los woff2 de Fontsource, copiados a `/fonts/` con su nombre (angular.json) y precargados; unas fuentes de reserva del mismo ancho medio (`size-adjust` sobre Arial y Georgia, medido en el navegador), y el texto con `font-display: optional` (los títulos, con `swap`). CLS de las 9 páginas medidas: 0. La fase 10 tenía «precarga de la fuente del H1»: hecha aquí. Donde no hay Arial (Android), la de reserva es la del sistema: medirlo allí (`PENDIENTES.md`).
+Al medir las páginas largas de esta fase con la red lenta, el CLS llegaba a 0,2 en `/creditos` (presupuesto, 0,05). La causa: el CSS crítico que el build mete en el HTML no lleva las `@font-face`, y la hoja entera llegaba a los 1,8 s; hasta entonces, el texto salía con la fuente del sistema y se recolocaba. Ahora: las `@font-face`, en `index.html`; los woff2 de Fontsource, copiados a `/fonts/` con su nombre (angular.json) y precargados; unas fuentes de reserva del mismo ancho medio (`size-adjust` sobre Arial y Georgia, medido en el navegador), y el texto con `font-display: optional` (los títulos, con `swap`). CLS de las 9 páginas medidas: 0. La fase 10 tenía «precarga de la fuente del H1»: hecha aquí.
+
+El precio (hallazgo 15 de la revisión): con `optional`, el navegador solo usa Public Sans si llega en los primeros instantes; si no, la de reserva se queda toda esa visita (en la siguiente ya está en la caché, un día). Con la red lenta de la medida, la revisión vio Arial en todo el texto de `/creditos` y de `/planetas/marte` durante la primera visita; Newsreader, con `swap`, sí entra en los títulos. Las reservas tienen el mismo ancho (a menos de un 0,5 %), así que no se mueve nada, pero en un móvil con mala red la página puede verse sin su tipografía. En la fase 10, en un móvil real: si Public Sans no llega a tiempo, valorar `swap` con `ascent-override`, `descent-override` y `line-gap-override` además de `size-adjust`. Donde no hay Arial (Android), la de reserva es la del sistema: medirlo allí también (`PENDIENTES.md`).
 
 ### 4.5 El presupuesto del código propio inicial (15 kB)
 Lo que va en el bundle inicial de esta fase (las etiquetas, el pie, la navegación y las rutas nuevas) lo llevó a 16,5 kB. Para bajarlo, sin tocar el presupuesto:
@@ -106,64 +118,69 @@ Lo que va en el bundle inicial de esta fase (las etiquetas, el pie, la navegaci�
 - la navegación de la cabecera, con un `@for`;
 - el desplazamiento al navegar (cada página empieza arriba o en su ancla), con unas líneas en `app.ts` en lugar de `withInMemoryScrolling` (4 kB de Angular).
 
-Queda en **14,32 kB de 15**: poco margen (§10).
+Las correcciones de la revisión (el salto al contenido con la ruta, el desplazamiento solo al cambiar de ruta y la description al reutilizarse la ficha) lo subieron a 15,23 kB. Las descriptions, en resolvers con su `import()` en lugar del registro de `core/page-meta.ts`, lo dejan en **14,70 kB de 15**: poco margen (§10).
 
 ### 4.6 Otras
-- **La privacidad, en `/sobre-el-proyecto#privacidad`**: el plan no tiene una ruta para ella; el pie lleva a esa sección, que enlaza la política de ivanchesa.com.
+- **La privacidad, en `/sobre-el-proyecto#privacidad`**: el plan no tiene una ruta para ella; las notas de privacidad llevan a esa sección, que enlaza la política de ivanchesa.com.
 - **`npm run check` comprueba también los enlaces internos** (`check-links.mjs`), y el CI: `CLAUDE.md` describe el `check` sin él (§10).
 - **La ficha resume las fuentes de los textos** al final («Los textos, de science.nasa.gov/mars/facts…»), además de la de cada curiosidad.
+- **La órbita y la presión de la Luna, de su propia ficha** (la Moon Fact Sheet de la NASA; hallazgo 18): la tabla comparada, de la que salen los datos de los planetas, las redondea (384.000 km, 1 km/s, 0 bar), y su curiosidad dice 384.400 km. Ahora, 384.400 km, 1,022 km/s, el perigeo y el apogeo medios con su aclaración y 3 × 10⁻¹⁵ bar de noche (se cambia el generador, `build-body-data.mjs`, y se regenera). Sus datos físicos siguen en la tabla comparada, como los de los planetas.
+- **Los periodos, con la cifra de su fuente** (hallazgo 18): «15,9 días» con «15,945421 días» debajo; el año de la Tierra, «365,2 días» (antes, «365 días»). Las cifras de la fuente que acaban en cero siguen saliendo sin él («5 km/s» por «5,0»): propuesta en §10.
 
 ## 5. Decisiones técnicas nuevas
-1. **«Hoy», con `resource()`**: sus parámetros son `undefined` hasta `afterNextRender` (en el servidor, no carga nada) y el cargador hace el `import()`; con `?captura=1`, en la fecha fija de las capturas (`core/capture.ts`). La nota del cálculo tiene la longitud de la de antes y el hueco de sus filas está reservado: no se mueve nada al llegar (CLS 0 medido).
-2. **La description**: la registra cada página en su constructor (`describePage`, `core/page-meta.ts`) y la lee `SiteTitleStrategy` al acabar la navegación, que es después de crear la página. Las vistas del explorador se crean después (su `router-outlet` aparece al pintar el layout): la suya va en `data.description`. Así los textos van en el chunk de cada página y no en el bundle inicial.
-3. **Las cifras con los decimales de su fuente** (`formatExact` y `formatScientific`, en `core/format.ts`): «3396 km», «0,00589», «6,42 × 10²³ kg»; los periodos y las distancias, con las reglas de ESTILO §3.
+1. **«Hoy», con `resource()`**: sus parámetros son `undefined` hasta `afterNextRender` (en el servidor, no carga nada) y el cargador hace el `import()`; con `?captura=1`, en la fecha fija de las capturas (`core/capture.ts`). La nota del cálculo tiene la longitud de la de antes y el hueco de sus filas está reservado: no se mueve nada al llegar (CLS 0 medido). Sin `aria-live`: las cifras ya están en su sitio al leer la sección.
+2. **La description, con un resolver en cada ruta**: `describe(clave)` importa `core/descriptions.ts` y, en las fichas, `bodyDescription` saca la primera frase de su resumen (`data/body-description.ts`); `SiteTitleStrategy` la lee de `route.data` al acabar la navegación. Así está al día también cuando el router reutiliza la ficha (de Fobos a Deimos) y en las vistas del explorador, que se crean después; y los textos van en chunks diferidos, no en el bundle inicial.
+3. **Las cifras con los decimales de su fuente** (`formatExact` y `formatScientific`, en `core/format.ts`): «3396 km», «0,00589», «6,42 × 10²³ kg»; los periodos y las distancias, con las reglas de ESTILO §3, y la cifra de la fuente al lado si es otra.
 4. **Las imágenes de las fichas con `NgOptimizedImage`** y un cargador propio (`ngSrc` es el id del cuerpo; el ancho pedido elige 360 o 720); las miniaturas de los índices, igual.
 5. **`/404`**: `data.noindex` en la ruta, también en el cliente; mientras el sitio no sea indexable, todas llevan `noindex`.
+6. **Los enlaces de una página a sí misma llevan su ruta** (`/planetas/marte#fuente-1`; «Saltar al contenido», la ruta actual): con `<base href="/">`, un `#fuente-1` suelto se resuelve contra `/` y lleva a la portada. `check-links.mjs` los resuelve como el navegador.
+7. **El desplazamiento al navegar**: arriba, o a su ancla, solo si cambia la ruta o hay fragmento; si solo cambia la consulta (el lugar de `/eclipses`), la página no se mueve; al volver atrás, el navegador restaura la posición.
 
 ## 6. Salida de los checks
 ```
 npm run check   → salida 0, sin avisos de presupuesto
 - lint y Prettier: limpios
-- tests: 707 de 707 en 74 ficheros (cobertura de ephemeris/: 98,9 % de sentencias, 93,85 % de ramas,
+- tests: 713 de 713 en 75 ficheros (cobertura de ephemeris/: 98,9 % de sentencias, 93,85 % de ramas,
   100 % de funciones y 99,76 % de líneas)
 - build: 40 rutas prerenderizadas (antes, 19: /lunas y las 20 fichas de las lunas, nuevas)
-  JS inicial 305,42 kB (main) · 313,74 kB con los estilos (aviso a 320) · 86,91 kB comprimido
-  diferidos: la ficha 19,74 kB, «Sobre el proyecto» 19,67, los créditos 14,44, el índice de lunas 2,14
+  JS inicial 305,73 kB (main) · 314,05 kB con los estilos (aviso a 320) · 86,79 kB comprimido
+  diferidos: «Sobre el proyecto» 19,60 kB, los créditos 14,30, la ficha 13,41; los textos de los
+  cuerpos (36,99) y sus datos con sus fuentes (31,48), en chunks que la ficha comparte con los índices
 - check-initial-bundle: ninguna de las 40 páginas lleva three, astronomy-engine, los stores ni los
-  controles del visor en su JS inicial; código propio inicial, 14,32 kB de 15
-  three 743,94 kB · astronomy-engine 83,33 kB · interfaz del explorador 156,96 kB, diferidos
-- check-links: 1121 enlaces internos bien (rutas, ficheros y anclas) en las 40 páginas
+  controles del visor en su JS inicial; código propio inicial, 14,70 kB de 15
+  three 743,98 kB · astronomy-engine 83,33 kB · interfaz del explorador 157,01 kB, diferidos
+- check-links: 1161 enlaces internos bien (rutas, ficheros y anclas) en las 40 páginas
 ```
 
-**e2e** (`npx playwright test`, Chromium con SwiftShader, en local): 97 de 97. En la ronda completa, la de axe en las 40 rutas se quedó sin tiempo (2 minutos por test: con las 30 fichas, más páginas que antes); con su propio tiempo máximo, pasa en escritorio y en móvil (44 y 39 s). Los 10 nuevos de `e2e/contenido.spec.ts`, el de privacidad en las 40 rutas y los de antes, en verde. El CI de la rama (lint, tests, build y e2e), en verde con las entregas 9.a a 9.d.
+**e2e** (`npx playwright test`, Chromium con SwiftShader, en local): **103 de 103** (6,1 min), con el build final. Entre ellos, los 14 de `e2e/contenido.spec.ts`; los nuevos de la revisión: las notas y «Saltar al contenido» se quedan en la página, la Luna es «Satélite de la Tierra», la description cambia de Fobos a Deimos, la nota de privacidad está en el pie del explorador, el desplazamiento al navegar y, del menú del 03-11, la Luna destacada en `/lunas` y «Cielo» en el menú. También el de privacidad y el de axe en las 40 rutas (en escritorio y en móvil; axe, con su propio tiempo máximo: con las 30 fichas, más de 2 minutos) y los de antes. Una ronda anterior dio 102 y un fallo: el test de las notas de Marte esperaba aún `#fuente-1`; corregido. El CI de la rama, en verde con las entregas 9.a a 9.d; el de estas correcciones, al subirlas.
 
-**Comprobaciones con la red** (a demanda): `node scripts/check-links.mjs --externos`, los 107 enlaces externos bien, salvo los 3 de ivanchesa.com (no resuelve: pendientes del dominio); `node scripts/check-constellation-names.mjs`, las 88 constelaciones en la tabla del IGN y los 14 cambios con su motivo comprobado en los PDF.
+**Comprobaciones con la red** (a demanda): `node scripts/check-links.mjs --externos`, los 108 enlaces externos bien, salvo los 3 de ivanchesa.com (no resuelve: pendientes del dominio); `node scripts/check-constellation-names.mjs`, las 88 constelaciones en la tabla del IGN y los 14 cambios con su motivo comprobado en los PDF.
 
-**Métricas de las páginas** (`node scripts/measure-pages.mjs`, en las condiciones del móvil de Lighthouse; la mediana de 3 cargas, en el PC de Iván):
+**Métricas de las páginas** (`node scripts/measure-pages.mjs`, en las condiciones del móvil de Lighthouse; la mediana de 3 cargas; el build final, en el PC de Iván comprobado sin otras tareas antes de medir: §4.1):
 
 | Página | FCP | LCP | CLS | TBT | Tarea más larga | Nota estimada | Errores de consola | Imágenes |
 |---|---|---|---|---|---|---|---|---|
-| /planetas/marte | 1,10 s | 1,10 s | 0,000 | 274 ms | 228 ms | 95 | 0 | bien |
-| /planetas/saturno | 1,04 s | 1,04 s | 0,000 | 220 ms | 196 ms | 96 | 0 | bien |
-| /lunas/titan | 1,04 s | 1,04 s | 0,000 | 236 ms | 225 ms | 96 | 0 | bien |
-| /sol | 1,13 s | 1,13 s | 0,000 | 201 ms | 205 ms | 97 | 0 | bien |
-| /luna | 1,04 s | 1,04 s | 0,000 | 208 ms | 205 ms | 97 | 0 | bien |
-| /planetas | 1,05 s | 1,05 s | 0,000 | 214 ms | 235 ms | 97 | 0 | bien |
-| /lunas | 0,95 s | 0,95 s | 0,000 | 225 ms | 197 ms | 96 | 0 | bien |
-| /sobre-el-proyecto | 1,10 s | 1,10 s | 0,000 | 181 ms | 230 ms | 98 | 0 | bien |
-| /creditos | 1,08 s | 1,08 s | 0,000 | 144 ms | 194 ms | 99 | 0 | bien |
+| /planetas/marte | 0,98 s | 0,98 s | 0,000 | 124 ms | 141 ms | 99 | 0 | bien |
+| /planetas/saturno | 0,96 s | 0,96 s | 0,000 | 132 ms | 143 ms | 99 | 0 | bien |
+| /lunas/titan | 0,99 s | 0,99 s | 0,000 | 123 ms | 143 ms | 99 | 0 | bien |
+| /sol | 0,97 s | 0,97 s | 0,000 | 126 ms | 153 ms | 99 | 0 | bien |
+| /luna | 1,00 s | 1,00 s | 0,000 | 127 ms | 150 ms | 99 | 0 | bien |
+| /planetas | 0,98 s | 0,98 s | 0,000 | 111 ms | 148 ms | 99 | 0 | bien |
+| /lunas | 0,89 s | 0,89 s | 0,000 | 135 ms | 149 ms | 99 | 0 | bien |
+| /sobre-el-proyecto | 1,00 s | 1,00 s | 0,000 | 98 ms | 148 ms | 99 | 0 | bien |
+| /creditos | 0,98 s | 0,98 s | 0,000 | 95 ms | 145 ms | 99 | 0 | bien |
 
-Antes del arreglo de las fuentes (§4.4): CLS de 0,198 en `/creditos` y de 0,055 en `/sobre-el-proyecto`. El tiempo de bloqueo es sobre todo una tarea de unos 200 ms con la CPU ×4: la evaluación del bundle y la hidratación.
+El ruido, en §4.1: con otras sesiones en el PC, el mismo build dio de 86 a 99 y de 76 a 98. Antes del arreglo de las fuentes (§4.4): CLS de 0,198 en `/creditos` y de 0,055 en `/sobre-el-proyecto`.
 
 **Pesos**: cada ficha pide su imagen (de 2 a 35 kB la de 360 px y de 5 a 119 kB la de 720); las 60, 1,4 MB en el repositorio. Las tres fuentes, 53 kB. La imagen para compartir, 34 kB.
 
 ## 7. Capturas
-En `docs/informes/img/fase-9/` (WebP; `node scripts/capture-pages.mjs`, `node scripts/preview-og.mjs` y `node scripts/capture-sky.mjs`):
-- **Fichas**: `escritorio-ficha-marte` y `movil-ficha-marte`, `escritorio-ficha-saturno` (los anillos enteros y su tabla), `escritorio-ficha-titan` y `movil-ficha-titan`, `escritorio-ficha-sol` y `escritorio-ficha-luna` (con su fase), a página entera y con los datos «de hoy» en la fecha de las capturas.
-- **Índices**: `escritorio-planetas`, `movil-planetas`, `escritorio-lunas` y `movil-lunas`.
-- **Páginas**: `escritorio-creditos`, `escritorio-sobre-el-proyecto` y `movil-sobre-el-proyecto` (el diagrama, desplazable), y `escritorio-404` (con el pie y su nota).
+En `docs/informes/img/fase-9/` (WebP; `node scripts/capture-pages.mjs`, `node scripts/preview-og.mjs` y `node scripts/capture-sky.mjs`), regeneradas del build final, con las correcciones de la revisión y el menú nuevo (Planetas · Lunas · Sol · Cielo · Eclipses · Sobre el proyecto):
+- **Fichas**: `escritorio-ficha-marte` y `movil-ficha-marte`, `escritorio-ficha-saturno` (los anillos enteros y su tabla), `escritorio-ficha-titan` y `movil-ficha-titan`, `escritorio-ficha-sol` y `escritorio-ficha-luna` («Satélite de la Tierra», su fase y su órbita de la Moon Fact Sheet), a página entera y con los datos «de hoy» en la fecha de las capturas.
+- **Índices**: `escritorio-planetas`, `movil-planetas`, `escritorio-lunas` y `movil-lunas` (la Luna, la primera y destacada; Proteo antes que Tritón).
+- **Páginas**: `escritorio-creditos`, `escritorio-sobre-el-proyecto` y `movil-sobre-el-proyecto` (el diagrama, desplazable, con una flecha por línea), y `escritorio-404` (con el pie y su nota).
 - **La vista previa del enlace**, simulada: `compartir-inicio`, `compartir-planetas-marte`, `compartir-lunas-titan` y `compartir-cielo`.
-- **El cielo con las constelaciones en español** (D38): `escritorio-cielo-montsec-noche` y `movil-cielo-montsec-noche` (con el pie del explorador y sus enlaces legales), y `escritorio-cielo-via-lactea` (el lienzo).
+- **El cielo con las constelaciones en español** (D38): `escritorio-cielo-montsec-noche` (con el pie del explorador, su nota de privacidad y sus enlaces legales) y `movil-cielo-montsec-noche`, y `escritorio-cielo-via-lactea` (el lienzo).
 
 ## 8. Dependencias añadidas
 Ninguna. Los PDF del IGN se descargan a `assets-src/anuarios/` (ignorado por git) y se leen con un lector propio.
@@ -173,17 +190,45 @@ En `PENDIENTES.md`, «Bloque E (fase 9)» y «Revisiones y pruebas de Iván»:
 - **revisar los textos** en `docs/revision-textos.md`;
 - los enlaces a ivanchesa.com, cuando el dominio responda (`TODO(ivan)` en `site.config.ts`);
 - la vista previa en una app real, con el dominio (fase 11);
-- Lighthouse, con `@lhci/cli` si lo apruebas (fase 10);
-- la fuente de reserva en Android (fase 10);
+- Lighthouse en el CI (fase 10; `@lhci/cli`, por aprobar) y la medida en producción (fase 11);
+- la fuente en un móvil real: si Public Sans llega a tiempo con `optional` y la de reserva en Android (fase 10);
 - (opcional) si «Sobre el proyecto» cuenta cómo se ha hecho.
 
 ## 10. Propuestas de cambio al plan
 1. **`CLAUDE.md`, «Comandos»**: `npm run check` hace también `scripts/check-links.mjs` (los enlaces internos). Que la línea lo diga.
-2. **El presupuesto del código propio inicial** (15 kB): queda en 14,32. Si la fase 10 necesita más en el bundle inicial, dos caminos: el pie y la cabecera en un bloque con hidratación incremental (su código saldría del bundle inicial) o subir el presupuesto (decisión de Iván).
-3. **Fase 10**: medir con Lighthouse (si se aprueba `@lhci/cli`) la misma muestra de `measure-pages.mjs`, y el CLS en Android.
+2. **El presupuesto del código propio inicial** (15 kB): queda en 14,70. Si la fase 10 necesita más en el bundle inicial, dos caminos: el pie y la cabecera en un bloque con hidratación incremental (su código saldría del bundle inicial) o subir el presupuesto (decisión de Iván).
+3. **Fase 10**: medir con Lighthouse (si se aprueba `@lhci/cli`) la misma muestra de `measure-pages.mjs`, en el CI (sin otras tareas en la máquina), y el CLS y la fuente en Android.
+4. **Fase 10, la hidratación incremental de las fichas** (hallazgo 20): `@defer (hydrate on viewport)` en las secciones que quedan bajo el pliegue (los datos, las curiosidades, las fuentes), para bajar la tarea larga de la hidratación y ganar margen de TBT.
+5. **Los ceros finales de las fuentes** (hallazgo 18): el dato generado guarda el número, y «5.0 km/s» de la NASA sale «5 km/s» (la velocidad de escape de Marte; la gravedad de Saturno, «9 m/s²»). Propuesta: que `build-body-data.mjs` guarde también los decimales de la fuente (`digits`) y que `formatExact` los use. Para el backlog (§9 del plan) o la fase 10.
 
 ## 11. Cómo probarlo
-- `npm run build` y `node scripts/serve-dist.mjs`, y abrir `http://127.0.0.1:4340/planetas/marte`, `/lunas/titan`, `/sol`, `/luna`, `/planetas`, `/lunas`, `/creditos` y `/sobre-el-proyecto` (sin JavaScript, las fichas se leen enteras; «Hoy», con «—»).
+- `npm run build` y `node scripts/serve-dist.mjs`, y abrir `http://127.0.0.1:4340/planetas/marte`, `/lunas/titan`, `/sol`, `/luna`, `/planetas`, `/lunas`, `/creditos` y `/sobre-el-proyecto` (sin JavaScript, las fichas se leen enteras; «Hoy», con «—»). Pulsar una nota de una tabla: baja a su fuente, en la misma ficha.
 - En el explorador, una luna y «Ficha completa»; en el cielo, las constelaciones en español.
-- `node scripts/measure-pages.mjs`, `node scripts/check-links.mjs --externos`, `node scripts/check-constellation-names.mjs` y `node scripts/preview-og.mjs <carpeta>`.
+- `node scripts/measure-pages.mjs` (con el PC sin otras tareas), `node scripts/check-links.mjs --externos`, `node scripts/check-constellation-names.mjs` y `node scripts/preview-og.mjs <carpeta>`.
 - `node scripts/build-text-review.mjs` regenera `docs/revision-textos.md` (no lo hace si ya tiene correcciones).
+
+## Respuesta a la revisión
+Revisión: `docs/revisiones/fase-9.md` (cambios necesarios: 1 bloqueante, 2 importantes, 11 menores y 6 sugerencias).
+
+| # | Severidad | Qué se ha hecho |
+|---|---|---|
+| 1 | Bloqueante | **Hecho.** Las notas llevan la ruta de la ficha (`[href]="pagePath(bodyId()) + '#fuente-' + n"`: en el HTML, `/planetas/marte#fuente-1`, que funciona también sin JavaScript) y «Saltar al contenido», la de la página (`skipHref` en `app.ts`, al día en cada `NavigationEnd`, también en el servidor). `check-links.mjs` resuelve cada `href` contra el `<base href>` de la página y da por roto un ancla que lleve a otra página: con el código de antes, falla. Un e2e nuevo pulsa la nota 1 de Marte (sigue en la ficha, con la fuente a la vista) y, con el teclado, «Saltar al contenido» (sigue en la ficha) |
+| 2 | Importante | **Hecho.** `kindLineOf` (`pages/body-detail/body-labels.ts`, con tests): la Luna, «Satélite de la Tierra», con el enlace a la Tierra; las demás, «Luna de Saturno». e2e en `/luna`; captura `escritorio-ficha-luna` |
+| 3 | Importante | **Hecho.** La nota, en el pie del explorador («Un proyecto de Iván Chesa Lapena · Aviso legal · Sin cookies, sin analítica y sin peticiones a terceros · Créditos», con su enlace a `#privacidad`) y, en el móvil, donde el explorador no tiene pie, en el menú, con los dos enlaces legales. Un e2e en `/` y otro en el menú del móvil. El informe y ESTILO, corregidos; captura `escritorio-cielo-montsec-noche` |
+| 4 | Menor | **Hecho, de otra forma**: en lugar de leer el id de `ActivatedRoute`, la description sale de un resolver de cada ruta (`route.data`), que ya está al día al acabar la navegación, también al reutilizarse la ficha. Fuera el registro de `page-meta.ts` (y su comentario). e2e de Fobos a Deimos: el título, la description y `og:description` de Deimos |
+| 5 | Menor | **Hecho.** El desplazamiento, solo si cambia la ruta (sin la consulta ni el fragmento) o si hay fragmento; nunca al volver atrás. e2e: en `/eclipses`, cambiar el lugar no mueve la página; una página nueva empieza arriba |
+| 6 | Menor | **Hecho.** Las lunas, por su semieje (`moonsByDistance`, `pages/shared/moons.ts`) en `/lunas` y en la familia de cada ficha: Proteo antes que Tritón. La description de `/lunas`, reescrita sin «de Fobos a Proteo» |
+| 7 | Menor | **Hecho.** El latín, solo si es otro nombre; la caja de la etiqueta, de dos líneas solo entonces (test en `engine.spec.ts`: «Orión» con «Orion»; «Leo», una vez). ESTILO ya lo decía |
+| 8 | Menor | **Hecho.** Un texto por lo que se ve (`imageAltOf`, con tests): «su superficie real», «sus nubes» (Venus y los gigantes), «sus nubes y sus anillos», «sus continentes, sus océanos y sus nubes», «su neblina» (Titán) o «su color esquemático (no hay un mapa de su superficie)». En ESTILO |
+| 9 | Menor | **Hecho.** Las migas se quitan antes de contar los bloques (ya salen las entradillas de `/planetas` y de `/lunas`), y una sección nueva, «Los textos fijos de las fichas, del pie y del menú»: el tipo, los títulos, las etiquetas y sus aclaraciones, las notas de «Hoy», los textos alternativos, la nota de las fuentes, el pie, el pie del explorador y el menú. Regenerado: 360 textos |
+| 10 | Menor | **Hecho.** Todas las capturas de la fase, regeneradas del build final (§7) |
+| 11 | Menor | **Hecho.** Los dos criterios, en ⚠️ con la fase en la que se medirán (Lighthouse, en la fase 10, en el CI, y en producción en la 11; la vista previa real, en la 11). La nota de Marte, que estaba en el límite (94,5), salía de una medida con una tarea mía olvidada en segundo plano (el proceso de Python que vio la revisión); con el PC libre, 99. Las condiciones y el ruido, en §4.1. Iván (03-11): se queda la medida limpia |
+| 12 | Menor | **Hecho.** Sin el espacio de la plantilla: «3396 km» con el espacio duro del `span`, como «6,42 × 10²³ kg» |
+| 13 | Menor | **Hecho.** El mismo relleno en el enlace y en la página actual: en la misma línea de base |
+| 14 | Menor | **Hecho.** La fila de la libración y los anillos enlaza a `docs/revisiones/fase-2.md`, donde se midieron esas cifras |
+| 15 | Sugerencia | **Hecho en el informe** (§4.4) y en `PENDIENTES.md`: mirarlo en un móvil real en la fase 10 y, si hace falta, `swap` con los `*-override` |
+| 16 | Sugerencia | **Hecho.** Fuera el `aria-live` de la nota de «Hoy» |
+| 17 | Sugerencia | **Hecho.** «Pintado bajo demanda», «el análisis estático del código (ESLint)», «bibliotecas», «Pruebas con Vitest» |
+| 18 | Sugerencia | **En parte.** Los periodos, con un decimal y la cifra de la fuente al lado (el año de la Tierra, «365,2 días»; Titán, «15,9 días» con «15,945421 días»). La órbita y la presión de la Luna, de su Moon Fact Sheet (384.400 km, 1,022 km/s, 3 × 10⁻¹⁵ bar). Los ceros finales («5,0 km/s»), propuesta 5 de §10. Y un arreglo que salió al comprobarlo: `formatExact` quita el ruido de la coma flotante (el periodo de la Luna salía «27,321700 días») |
+| 19 | Sugerencia | **Hecho.** En «Hoy», las lunas a su planeta en km enteros, como en la tabla («1.221.870 km»); el Sol y los planetas, en UA |
+| 20 | Sugerencia | **Para la fase 10** (propuesta 4 de §10): la hidratación incremental de las secciones de la ficha bajo el pliegue |

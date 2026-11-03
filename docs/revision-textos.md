@@ -13,7 +13,7 @@
 
 1. [Por cuerpo](#por-cuerpo): los 30, con su resumen y sus tres curiosidades (120 textos).
 2. [Por vista](#por-vista): el sistema solar, la Tierra y sus vistas guiadas, la Luna, sus vistas y su recorrido, y el cielo.
-3. [Las páginas](#las-paginas): los índices, los eclipses, «Sobre el proyecto», los créditos y la 404.
+3. [Las páginas](#las-paginas): los índices, los eclipses, «Sobre el proyecto», los créditos y la 404; y [los textos fijos](#los-textos-fijos) de las fichas, del pie y del menú.
 4. [Las descriptions](#las-descriptions): lo que se ve al compartir cada página.
 5. [Los nombres de las constelaciones](#los-nombres-de-las-constelaciones).
 
@@ -1231,11 +1231,23 @@ Corrección:
 
 Corrección:
 
+**Párrafo 1**
+
+> Los ocho planetas del sistema solar, del más cercano al Sol al más lejano. Cada ficha tiene sus datos con su fuente, tres curiosidades y su distancia de hoy.
+
+Corrección:
+
 ### Lunas (`/lunas`)
 
 **Título**
 
 > Lunas
+
+Corrección:
+
+**Párrafo 1**
+
+> La Luna y las otras veinte lunas del explorador: primero la nuestra y, después, las de cada planeta, de la más cercana a la más lejana.
 
 Corrección:
 
@@ -1250,12 +1262,6 @@ Corrección:
 **Párrafo 1**
 
 > Los eclipses de Sol y de Luna de los próximos diez años que se ven desde el lugar elegido, con la hora del lugar. Un eclipse de Sol solo se mira con filtros homologados, nunca a simple vista.
-
-Corrección:
-
-**Párrafo 2**
-
-> Calculado el 1 de noviembre de 2026 con astronomy-engine.
 
 Corrección:
 
@@ -1327,13 +1333,13 @@ Corrección:
 
 **Párrafo 10**
 
-> TypeScript estricto y CSS propio, sin librerías de interfaz.
+> TypeScript estricto y CSS propio, sin bibliotecas de interfaz.
 
 Corrección:
 
 **Párrafo 11**
 
-> Tests con Vitest (unitarios), Playwright (de extremo a extremo y capturas) y axe (accesibilidad). Se publica en Cloudflare Pages desde GitHub Actions.
+> Pruebas con Vitest (unitarias), Playwright (de extremo a extremo y capturas) y axe (accesibilidad). Se publica en Cloudflare Pages desde GitHub Actions.
 
 Corrección:
 
@@ -1341,7 +1347,7 @@ Corrección:
 
 **Párrafo 12**
 
-> Cada capa solo usa las de debajo; el lint lo vigila. three solo se importa en el motor.
+> Cada capa solo usa las de debajo; el análisis estático del código (ESLint) lo vigila. three solo se importa en el motor.
 
 Corrección:
 
@@ -1353,7 +1359,7 @@ Corrección:
 
 **Párrafo 14**
 
-> Render bajo demanda: sin movimiento, no se pinta ningún frame. Los cálculos del motor van fuera de Angular, y la interfaz se actualiza como mucho cinco veces por segundo.
+> Pintado bajo demanda: sin movimiento, no se pinta ninguna imagen. Los cálculos del motor van fuera de Angular, y la interfaz se actualiza como mucho cinco veces por segundo.
 
 Corrección:
 
@@ -1767,6 +1773,608 @@ Corrección:
 
 Corrección:
 
+<a id="los-textos-fijos"></a>
+
+## 3 bis. Los textos fijos de las fichas, del pie y del menú
+
+Los que se repiten en las 30 fichas (cambia el cuerpo, no la frase) y los del pie del sitio, del pie del explorador y del menú del móvil. Cada uno sale de su función (`pages/body-detail/`) o de su plantilla.
+
+#### El tipo, encima del título
+
+**En el Sol**
+
+> Estrella
+
+Corrección:
+
+**En Marte**
+
+> Planeta
+
+Corrección:
+
+**En la Luna**
+
+> Satélite de la Tierra
+
+Corrección:
+
+**En Titán**
+
+> Luna de Saturno
+
+Corrección:
+
+#### Los títulos de la ficha
+
+**Apartado**
+
+> Hoy
+
+Corrección:
+
+**Apartado**
+
+> Datos
+
+Corrección:
+
+**Apartado**
+
+> Curiosidades
+
+Corrección:
+
+**Apartado**
+
+> Las lunas de Marte
+
+Corrección:
+
+**Apartado**
+
+> Fuentes
+
+Corrección:
+
+**El enlace al explorador**
+
+> Ver en 3D
+
+Corrección:
+
+**Las tablas de «Datos»**
+
+> Datos físicos · Órbita alrededor del Sol · Anillos · Órbita alrededor de la Tierra · Órbita alrededor de Marte · Órbita alrededor de Júpiter · Órbita alrededor de Saturno · Órbita alrededor de Urano · Órbita alrededor de Neptuno
+
+Corrección:
+
+#### Las etiquetas y las aclaraciones de los datos
+
+**Radio**
+
+> Radio. Aclaraciones: «Radio medio volumétrico.»
+
+Corrección:
+
+**Masa**
+
+> Masa
+
+Corrección:
+
+**Densidad media**
+
+> Densidad media
+
+Corrección:
+
+**Gravedad en la superficie**
+
+> Gravedad en la superficie. Aclaraciones: «En el ecuador.»
+
+Corrección:
+
+**Velocidad de escape**
+
+> Velocidad de escape
+
+Corrección:
+
+**Periodo de rotación**
+
+> Periodo de rotación. Aclaraciones: «A 16° de latitud: el Sol no gira como un sólido.»
+
+Corrección:
+
+**Inclinación del eje**
+
+> Inclinación del eje. Aclaraciones: «Respecto a la eclíptica.»
+
+Corrección:
+
+**Temperatura efectiva**
+
+> Temperatura efectiva
+
+Corrección:
+
+**Luminosidad**
+
+> Luminosidad
+
+Corrección:
+
+**Tipo espectral**
+
+> Tipo espectral
+
+Corrección:
+
+**Radio ecuatorial**
+
+> Radio ecuatorial. Aclaraciones: «La mitad del diámetro ecuatorial que da la NASA.»
+
+Corrección:
+
+**Día solar**
+
+> Día solar
+
+Corrección:
+
+**Achatamiento**
+
+> Achatamiento. Aclaraciones: «Achatamiento f = (a − c) / a (radios ecuatorial y polar).»
+
+Corrección:
+
+**Temperatura media**
+
+> Temperatura media
+
+Corrección:
+
+**Presión en la superficie**
+
+> Presión en la superficie. Aclaraciones: «De noche.»
+
+Corrección:
+
+**Albedo geométrico**
+
+> Albedo geométrico. Aclaraciones: «Albedo geométrico (visual).», «Cara oscura; la clara llega a 0,5 (la NASA da «0.05 / 0.5»).»
+
+Corrección:
+
+**Campo magnético global**
+
+> Campo magnético global
+
+Corrección:
+
+**Anillos**
+
+> Anillos
+
+Corrección:
+
+**Distancia media**
+
+> Distancia media
+
+Corrección:
+
+**Perihelio**
+
+> Perihelio
+
+Corrección:
+
+**Afelio**
+
+> Afelio
+
+Corrección:
+
+**Año (periodo orbital)**
+
+> Año (periodo orbital)
+
+Corrección:
+
+**Velocidad orbital media**
+
+> Velocidad orbital media
+
+Corrección:
+
+**Inclinación de la órbita**
+
+> Inclinación de la órbita. Aclaraciones: «Respecto a la eclíptica.», «Respecto al ecuador de Marte.», «Respecto al ecuador del planeta.»
+
+Corrección:
+
+**Excentricidad**
+
+> Excentricidad
+
+Corrección:
+
+**Borde interior del anillo C**
+
+> Borde interior del anillo C
+
+Corrección:
+
+**Borde interior del anillo B**
+
+> Borde interior del anillo B. Aclaraciones: «Borde interior del anillo B (exterior del C).»
+
+Corrección:
+
+**Borde exterior del anillo B**
+
+> Borde exterior del anillo B. Aclaraciones: «Borde exterior del anillo B (empieza la división de Cassini).»
+
+Corrección:
+
+**Borde interior del anillo A**
+
+> Borde interior del anillo A. Aclaraciones: «Borde interior del anillo A (acaba la división de Cassini).»
+
+Corrección:
+
+**Borde exterior del anillo A**
+
+> Borde exterior del anillo A
+
+Corrección:
+
+**Profundidad óptica normal del anillo C**
+
+> Profundidad óptica normal del anillo C
+
+Corrección:
+
+**Albedo del anillo C**
+
+> Albedo del anillo C
+
+Corrección:
+
+**Profundidad óptica normal del anillo B**
+
+> Profundidad óptica normal del anillo B
+
+Corrección:
+
+**Albedo del anillo B**
+
+> Albedo del anillo B
+
+Corrección:
+
+**Profundidad óptica normal del división de Cassini**
+
+> Profundidad óptica normal del división de Cassini. Aclaraciones: «Profundidad óptica normal de la división de Cassini.»
+
+Corrección:
+
+**Albedo del división de Cassini**
+
+> Albedo del división de Cassini. Aclaraciones: «Albedo de la división de Cassini.»
+
+Corrección:
+
+**Profundidad óptica normal del anillo A**
+
+> Profundidad óptica normal del anillo A
+
+Corrección:
+
+**Albedo del anillo A**
+
+> Albedo del anillo A
+
+Corrección:
+
+**Radio medio**
+
+> Radio medio
+
+Corrección:
+
+**Perigeo**
+
+> Perigeo. Aclaraciones: «El medio: a lo largo del año, la distancia a la Tierra va de unos 357.000 a 407.000 km.»
+
+Corrección:
+
+**Apogeo**
+
+> Apogeo. Aclaraciones: «El medio.»
+
+Corrección:
+
+**Periodo orbital**
+
+> Periodo orbital
+
+Corrección:
+
+**Rotación**
+
+> Rotación. Aclaraciones: «Periodo de rotación igual al orbital.», «La NASA la marca como síncrona («S»).»
+
+Corrección:
+
+**Sentido de la órbita**
+
+> Sentido de la órbita. Aclaraciones: «La NASA lo marca como retrógrado («R»).»
+
+Corrección:
+
+#### «Hoy»
+
+**Antes del cálculo (y sin JavaScript)**
+
+> Las distancias de hoy las calcula tu navegador con astronomy-engine al abrir la página (hace falta JavaScript).
+
+Corrección:
+
+**Después del cálculo (ejemplo)**
+
+> Calculado en tu navegador el 3 de noviembre de 2026 a las 19:40, hora local (Europe/Madrid, UTC+1), con astronomy-engine.
+
+Corrección:
+
+**En las lunas de elementos medios (ejemplo, Titán)**
+
+> La posición de Titán respecto a Saturno sale de elementos orbitales ajustados a las efemérides del JPL.
+
+Corrección:
+
+**La fase de la Luna (ejemplo)**
+
+> Gibosa menguante · 87 % iluminada
+
+Corrección:
+
+**Si falla el cálculo**
+
+> No se han podido calcular las distancias de hoy.
+
+Corrección:
+
+#### Los textos alternativos de las imágenes
+
+**Sol**
+
+> El Sol, con su halo: imagen del propio explorador.
+
+Corrección:
+
+**Mercurio**
+
+> Mercurio, con la luz del Sol de lado y su superficie real: imagen del propio explorador.
+
+Corrección:
+
+**Venus**
+
+> Venus, con la luz del Sol de lado y sus nubes: imagen del propio explorador.
+
+Corrección:
+
+**Tierra**
+
+> La Tierra, con la luz del Sol de lado y sus continentes, sus océanos y sus nubes: imagen del propio explorador.
+
+Corrección:
+
+**Marte**
+
+> Marte, con la luz del Sol de lado y su superficie real: imagen del propio explorador.
+
+Corrección:
+
+**Júpiter**
+
+> Júpiter, con la luz del Sol de lado y sus nubes: imagen del propio explorador.
+
+Corrección:
+
+**Saturno**
+
+> Saturno, con la luz del Sol de lado y sus nubes y sus anillos: imagen del propio explorador.
+
+Corrección:
+
+**Urano**
+
+> Urano, con la luz del Sol de lado y sus nubes: imagen del propio explorador.
+
+Corrección:
+
+**Neptuno**
+
+> Neptuno, con la luz del Sol de lado y sus nubes: imagen del propio explorador.
+
+Corrección:
+
+**Luna**
+
+> La Luna, con la luz del Sol de lado y su superficie real: imagen del propio explorador.
+
+Corrección:
+
+**Fobos**
+
+> Fobos, con la luz del Sol de lado y su superficie real: imagen del propio explorador.
+
+Corrección:
+
+**Deimos**
+
+> Deimos, con la luz del Sol de lado y su color esquemático (no hay un mapa de su superficie): imagen del propio explorador.
+
+Corrección:
+
+**Ío**
+
+> Ío, con la luz del Sol de lado y su superficie real: imagen del propio explorador.
+
+Corrección:
+
+**Europa**
+
+> Europa, con la luz del Sol de lado y su superficie real: imagen del propio explorador.
+
+Corrección:
+
+**Ganímedes**
+
+> Ganímedes, con la luz del Sol de lado y su superficie real: imagen del propio explorador.
+
+Corrección:
+
+**Calisto**
+
+> Calisto, con la luz del Sol de lado y su superficie real: imagen del propio explorador.
+
+Corrección:
+
+**Mimas**
+
+> Mimas, con la luz del Sol de lado y su superficie real: imagen del propio explorador.
+
+Corrección:
+
+**Encélado**
+
+> Encélado, con la luz del Sol de lado y su superficie real: imagen del propio explorador.
+
+Corrección:
+
+**Tetis**
+
+> Tetis, con la luz del Sol de lado y su superficie real: imagen del propio explorador.
+
+Corrección:
+
+**Dione**
+
+> Dione, con la luz del Sol de lado y su superficie real: imagen del propio explorador.
+
+Corrección:
+
+**Rea**
+
+> Rea, con la luz del Sol de lado y su superficie real: imagen del propio explorador.
+
+Corrección:
+
+**Titán**
+
+> Titán, con la luz del Sol de lado y su neblina: imagen del propio explorador.
+
+Corrección:
+
+**Jápeto**
+
+> Jápeto, con la luz del Sol de lado y su superficie real: imagen del propio explorador.
+
+Corrección:
+
+**Miranda**
+
+> Miranda, con la luz del Sol de lado y su color esquemático (no hay un mapa de su superficie): imagen del propio explorador.
+
+Corrección:
+
+**Ariel**
+
+> Ariel, con la luz del Sol de lado y su color esquemático (no hay un mapa de su superficie): imagen del propio explorador.
+
+Corrección:
+
+**Umbriel**
+
+> Umbriel, con la luz del Sol de lado y su color esquemático (no hay un mapa de su superficie): imagen del propio explorador.
+
+Corrección:
+
+**Titania**
+
+> Titania, con la luz del Sol de lado y su color esquemático (no hay un mapa de su superficie): imagen del propio explorador.
+
+Corrección:
+
+**Oberón**
+
+> Oberón, con la luz del Sol de lado y su color esquemático (no hay un mapa de su superficie): imagen del propio explorador.
+
+Corrección:
+
+**Tritón**
+
+> Tritón, con la luz del Sol de lado y su superficie real: imagen del propio explorador.
+
+Corrección:
+
+**Proteo**
+
+> Proteo, con la luz del Sol de lado y su color esquemático (no hay un mapa de su superficie): imagen del propio explorador.
+
+Corrección:
+
+#### Las fuentes, al final de la ficha (ejemplo, Marte)
+
+**La nota de los textos**
+
+> Los textos, de science.nasa.gov/mars/facts (traducidos y resumidos). La NASA no respalda este proyecto.
+
+Corrección:
+
+#### El pie y el menú
+
+**El pie de las páginas**
+
+> Sin cookies, sin analítica y sin peticiones a terceros: tu privacidad, en detalle.
+
+Corrección:
+
+**El pie de las páginas**
+
+> Un proyecto de Iván Chesa Lapena · Aviso legal · Política de privacidad · Créditos
+
+Corrección:
+
+**El pie del explorador: la ayuda**
+
+> Arrastra para girar · usa la rueda o pellizca para acercarte · elige un cuerpo
+
+Corrección:
+
+**El pie del explorador: los créditos**
+
+> 1900–2100 · NASA/JPL · astronomy-engine
+
+Corrección:
+
+**El pie del explorador: los créditos**
+
+> Un proyecto de Iván Chesa Lapena · Aviso legal · Sin cookies, sin analítica y sin peticiones a terceros · Créditos
+
+Corrección:
+
+**El menú del móvil**
+
+> Sin cookies, sin analítica y sin peticiones a terceros: tu privacidad.
+
+Corrección:
+
 <a id="las-descriptions"></a>
 
 ## 4. Las descriptions
@@ -1823,7 +2431,7 @@ Corrección:
 
 **Lunas · Tierra Luna Sol (`/lunas`)**
 
-> Las veinte lunas del explorador, de Fobos a Proteo, por planeta: sus datos con sus fuentes, tres curiosidades de cada una y su distancia de hoy.
+> La Luna y las veinte lunas de los demás planetas del explorador: sus datos con sus fuentes, tres curiosidades de cada una y su distancia de hoy.
 
 Corrección:
 
@@ -1847,7 +2455,7 @@ Corrección:
 
 **Dione · Tierra Luna Sol (`/lunas/dione`)**
 
-> Dione es una pequeña luna que orbita Saturno a 377 400 km, más o menos la distancia a la que la Luna orbita la Tierra.
+> Dione es una pequeña luna que orbita Saturno a 377.400 km, más o menos la distancia a la que la Luna orbita la Tierra.
 
 Corrección:
 
