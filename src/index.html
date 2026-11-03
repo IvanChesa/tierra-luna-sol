@@ -6,6 +6,81 @@
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <!-- Las fuentes, precargadas: sin esperar al CSS, llegan antes de pintar el texto (CLS, fase 9). -->
+    <link
+      rel="preload"
+      href="/fonts/public-sans-latin-400-normal.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/newsreader-latin-500-normal.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/public-sans-latin-600-normal.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <!--
+      Las fuentes, aquí y no en styles.css: el build mete en el HTML solo el CSS crítico y carga la hoja
+      entera después (a los 1,8 s con la red lenta del móvil de Lighthouse), y sin sus @font-face el
+      texto salía con la fuente del sistema y se recolocaba al llegar (CLS de 0,2 en /creditos, fase 9).
+      - Las de verdad (Fontsource, copiadas a /fonts/ por angular.json y precargadas arriba). El texto
+        (Public Sans), con `optional`: si no ha llegado al pintar, se queda la de reserva y nada se
+        mueve; los títulos (Newsreader), con `swap`: son cortos.
+      - Las de reserva, con su mismo ancho medio (`size-adjust`, medido en el navegador con un párrafo
+        de los créditos): Public Sans, un 2,8 % más ancha que Arial, y su seminegrita, un 2,2 % más
+        estrecha que Arial Bold; Newsreader, un 2,1 % más estrecha que Georgia. Donde no hay Arial
+        (Android), la del sistema (fase 10: medirlo en el móvil).
+    -->
+    <style>
+      @font-face {
+        font-family: 'Newsreader';
+        font-style: normal;
+        font-display: swap;
+        font-weight: 500;
+        src: url('/fonts/newsreader-latin-500-normal.woff2') format('woff2');
+      }
+      @font-face {
+        font-family: 'Public Sans';
+        font-style: normal;
+        font-display: optional;
+        font-weight: 400;
+        src: url('/fonts/public-sans-latin-400-normal.woff2') format('woff2');
+      }
+      @font-face {
+        font-family: 'Public Sans';
+        font-style: normal;
+        font-display: optional;
+        font-weight: 600;
+        src: url('/fonts/public-sans-latin-600-normal.woff2') format('woff2');
+      }
+      @font-face {
+        font-family: 'Public Sans Reserva';
+        font-weight: 400;
+        src: local('Arial'), local('ArialMT');
+        size-adjust: 102.8%;
+      }
+      @font-face {
+        font-family: 'Public Sans Reserva';
+        font-weight: 600;
+        src: local('Arial Bold'), local('Arial-BoldMT');
+        size-adjust: 97.8%;
+      }
+      @font-face {
+        font-family: 'Newsreader Reserva';
+        font-weight: 500;
+        src: local('Georgia');
+        size-adjust: 97.9%;
+      }
+    </style>
   </head>
   <body>
     <tls-root></tls-root>

@@ -4,11 +4,10 @@
  * Contrastes AA comprobados en docs/DISENO.md.
  */
 
-/* Fuentes self-hosted: solo el subconjunto latino y los pesos que se usan. */
-@import '@fontsource/newsreader/latin-500.css';
-@import '@fontsource/public-sans/latin-400.css';
-@import '@fontsource/public-sans/latin-600.css';
-
+/*
+ * Las fuentes (self-hosted, en /fonts/) y sus reservas del mismo ancho: sus @font-face van en
+ * `index.html`, para que estén desde el primer pintado (fase 9; el motivo, allí).
+ */
 :root {
   color-scheme: dark;
 
@@ -26,8 +25,9 @@
   --color-sky-constellation: #8fa6c8;
 
   /* Tipografía */
-  --font-display: 'Newsreader', 'Iowan Old Style', Georgia, serif;
-  --font-body: 'Public Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Newsreader', 'Newsreader Reserva', 'Iowan Old Style', Georgia, serif;
+  --font-body:
+    'Public Sans', 'Public Sans Reserva', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-weight-regular: 400;
   --font-weight-strong: 600;
   --font-weight-display: 500;
