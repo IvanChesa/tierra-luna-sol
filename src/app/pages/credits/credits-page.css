@@ -1,0 +1,40 @@
+/* Créditos: una columna de lectura, como «Sobre el proyecto». */
+:host > * {
+  max-width: 52rem;
+}
+
+.lead {
+  color: var(--color-text-muted);
+  font-size: var(--text-lg);
+}
+
+section {
+  margin-top: var(--space-8);
+}
+
+h2 {
+  font-size: var(--text-xl);
+}
+
+ul {
+  max-width: var(--measure);
+  padding-left: var(--space-6);
+}
+
+li + li {
+  margin-top: var(--space-3);
+}
+
+.licenses {
+  max-width: var(--measure);
+}
+
+.licenses dt {
+  margin-top: var(--space-4);
+  font-weight: var(--font-weight-strong);
+}
+
+.licenses dd {
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-muted);
+}
