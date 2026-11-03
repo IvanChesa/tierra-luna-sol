@@ -48,8 +48,10 @@ describe('BodyPanel: ficha resumida', () => {
     const link = root.querySelector<HTMLAnchorElement>('.card__foot .card__link');
     expect(link?.textContent?.trim()).toBe('Ficha completa de Saturno');
     expect(root.querySelector('.card__body .card__link')).toBeNull();
-    // Las lunas aún no tienen ficha completa (fase 9): sin pie.
-    expect(render('titan').querySelector('.card__foot')).toBeNull();
+    // Desde la fase 9, también las lunas tienen ficha completa: /lunas/:id.
+    const moon = render('titan').querySelector<HTMLAnchorElement>('.card__foot .card__link');
+    expect(moon?.textContent?.trim()).toBe('Ficha completa de Titán');
+    expect(moon?.getAttribute('href')).toBe('/lunas/titan');
   });
 
   it('cita la fuente de cada dato de la ficha y, si son varias, qué respalda cada una', () => {

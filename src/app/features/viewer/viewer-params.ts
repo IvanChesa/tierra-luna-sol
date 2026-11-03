@@ -36,8 +36,8 @@ import type {
   ViewFrom,
 } from '../../scene';
 
-/** Fecha fija del modo de captura cuando la URL no trae otra. */
-export const CAPTURE_DATE = new Date('2026-10-24T00:00:00Z');
+/** Fecha fija del modo de captura cuando la URL no trae otra (en `core/capture.ts`: la usan también las fichas). */
+export { CAPTURE_DATE } from '../../core/capture';
 const MIN_MS = MIN_DATE.getTime();
 const MAX_MS = MAX_DATE.getTime();
 

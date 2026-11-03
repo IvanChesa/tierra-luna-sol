@@ -19,13 +19,8 @@ export function bodyKindLabel(id: BodyId): string {
   return parent ? `Luna de ${parent.name}` : 'Luna';
 }
 
-/** Ruta de la ficha completa, si ya existe (las de las lunas llegan en la fase 9). */
-export function bodyPagePath(id: BodyId): string | null {
-  if (id === 'sol') return '/sol';
-  if (id === 'luna') return '/luna';
-  // TODO(fase-9): enlazar /lunas/:id cuando existan sus fichas.
-  return findBody(id)?.kind === 'planet' ? `/planetas/${id}` : null;
-}
+/** Ruta de la ficha completa: desde la fase 9, todas (las lunas, en /lunas/:id). */
+export { bodyPagePath } from '../../data/body-links';
 
 /** «del Sol», «de la Tierra», «de Saturno»… (con el artículo que lleva cada nombre). */
 export function ofBody(id: BodyId): string {

@@ -1,0 +1,154 @@
+<tls-breadcrumbs [crumbs]="crumbs()" />
+
+<article class="body" aria-labelledby="body-title">
+  <header class="body__head">
+    <div class="body__intro">
+      <p class="body__kind">
+        @if (parent(); as planet) {
+          Luna de <a [routerLink]="pagePath(planet.id)">{{ planet.name }}</a>
+        } @else {
+          {{ kind() }}
+        }
+      </p>
+      <h1 id="body-title">{{ body().name }}</h1>
+      <p class="body__summary">{{ body().summary.text }}</p>
+      <a class="body__view" [routerLink]="explorer().path" [queryParams]="explorer().query"
+        >Ver en 3D</a
+      >
+    </div>
+    <img
+      class="body__image"
+      [ngSrc]="bodyId()"
+      ngSrcset="1x, 2x"
+      width="360"
+      height="360"
+      priority
+      [alt]="imageAlt()"
+    />
+  </header>
+
+  <section class="body__today" aria-labelledby="today-title">
+    <h2 id="today-title">Hoy</h2>
+    <dl class="today">
+      @for (row of todayRows(); track row.key) {
+        <div class="today__row">
+          <dt>{{ row.label }}</dt>
+          <dd>
+            <span class="today__value">{{ row.value }}</span>
+            <span class="today__detail">{{ row.detail }}</span>
+          </dd>
+        </div>
+      }
+    </dl>
+    <p class="body__note today__note" aria-live="polite">{{ todayNote() }}</p>
+    @if (positionNote(); as note) {
+      <p class="body__note">{{ note }}</p>
+    }
+  </section>
+
+  <section aria-labelledby="data-title">
+    <h2 id="data-title">Datos</h2>
+    @for (group of groups(); track group.id) {
+      <table class="facts">
+        <caption>
+          {{
+            group.title
+          }}
+        </caption>
+        <thead class="visually-hidden">
+          <tr>
+            <th scope="col">Dato</th>
+            <th scope="col">Valor</th>
+            <th scope="col">Fuente</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of group.rows; track row.key) {
+            <tr>
+              <th scope="row">
+                {{ row.label }}
+                @if (row.note) {
+                  <span class="facts__note">{{ row.note }}</span>
+                }
+              </th>
+              <td class="facts__value">
+                @if (row.value.spoken) {
+                  <span aria-hidden="true"
+                    >{{ row.value.number }} × 10<sup>{{ row.value.exponent }}</sup></span
+                  ><span class="visually-hidden">{{ row.value.spoken }}</span>
+                } @else {
+                  {{ row.value.number }}
+                }
+                @if (row.value.unit && !row.value.spoken) {
+                  <span class="facts__unit">&nbsp;{{ row.value.unit }}</span>
+                } @else if (row.value.unit) {
+                  <span class="facts__unit" aria-hidden="true">&nbsp;{{ row.value.unit }}</span>
+                }
+                @if (row.detail) {
+                  <span class="facts__detail">{{ row.detail }}</span>
+                }
+              </td>
+              <td class="facts__ref">
+                <a [href]="'#fuente-' + refs().get(row.source)"
+                  ><span class="visually-hidden">Fuente </span>{{ refs().get(row.source) }}</a
+                >
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </section>
+
+  <section aria-labelledby="facts-title">
+    <h2 id="facts-title">Curiosidades</h2>
+    <ul class="curiosities">
+      @for (fact of body().facts; track fact.text) {
+        <li>
+          <p>{{ fact.text }}</p>
+          <p class="body__note">
+            Fuente: <a [href]="fact.source" hreflang="en">{{ textSourceName(fact.source) }}</a>
+          </p>
+        </li>
+      }
+    </ul>
+  </section>
+
+  @if (family(); as list) {
+    <section aria-labelledby="family-title">
+      <h2 id="family-title">{{ list.title }}</h2>
+      <ul class="family">
+        @for (moon of list.moons; track moon.id) {
+          <li>
+            @if (moon.id === bodyId()) {
+              <span aria-current="page">{{ moon.name }}</span>
+            } @else {
+              <a [routerLink]="pagePath(moon.id)">{{ moon.name }}</a>
+            }
+          </li>
+        }
+      </ul>
+    </section>
+  }
+
+  <section aria-labelledby="sources-title">
+    <h2 id="sources-title">Fuentes</h2>
+    <ol class="sources">
+      @for (citation of citations(); track citation.id) {
+        <li [id]="'fuente-' + citation.number">
+          {{ citation.source.publisher }}:
+          <a [href]="citation.source.url" hreflang="en">{{ citation.source.title }}</a>
+          (consultada el {{ accessedText(citation.source.accessed) }}).
+        </li>
+      }
+    </ol>
+    <p class="body__note">
+      Los textos, de
+      @for (url of textSources(); track url; let last = $last) {
+        <a [href]="url" hreflang="en">{{ urlText(url) }}</a
+        >{{ last ? '' : ', ' }}
+      }
+      (traducidos y resumidos). La NASA no respalda este proyecto.
+    </p>
+  </section>
+</article>

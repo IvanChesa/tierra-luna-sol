@@ -1,5 +1,5 @@
 import { CanMatchFn, ResolveFn, Routes } from '@angular/router';
-import { findPlanet } from './data/body-index';
+import { OTHER_MOONS, findPlanet } from './data/body-index';
 import type { ExplorerView } from './scene';
 
 /** Solo casan los ids del catálogo; el resto cae en la 404. */
@@ -8,6 +8,12 @@ const planetExists: CanMatchFn = (_route, segments) =>
 
 const planetName: ResolveFn<string> = (route) =>
   findPlanet(route.paramMap.get('id') ?? '')?.name ?? '';
+
+/** Las 20 lunas con ficha en /lunas/:id (la nuestra está en /luna). */
+const findMoon = (id: string) => OTHER_MOONS.find((moon) => moon.id === id);
+const moonExists: CanMatchFn = (_route, segments) =>
+  findMoon(segments[0]?.path ?? '') !== undefined;
+const moonName: ResolveFn<string> = (route) => findMoon(route.paramMap.get('id') ?? '')?.name ?? '';
 
 const loadBodyDetail = () =>
   import('./pages/body-detail/body-detail-page').then((m) => m.BodyDetailPage);
@@ -64,13 +70,31 @@ export const routes: Routes = [
         path: ':id',
         canMatch: [planetExists],
         title: planetName,
-        resolve: { name: planetName },
         loadComponent: loadBodyDetail,
       },
     ],
   },
-  { path: 'sol', title: 'Sol', data: { name: 'Sol' }, loadComponent: loadBodyDetail },
-  { path: 'luna', title: 'Luna', data: { name: 'Luna' }, loadComponent: loadBodyDetail },
+  {
+    path: 'lunas',
+    children: [
+      {
+        path: '',
+        pathMatch: 'full',
+        title: 'Lunas',
+        loadComponent: () =>
+          import('./pages/moons-index/moons-index-page').then((m) => m.MoonsIndexPage),
+      },
+      {
+        path: ':id',
+        canMatch: [moonExists],
+        title: moonName,
+        loadComponent: loadBodyDetail,
+      },
+    ],
+  },
+  // Las fichas del Sol y de la Luna: el cuerpo, en `data.id` (el mismo input que el parámetro `:id`).
+  { path: 'sol', title: 'Sol', data: { id: 'sol' }, loadComponent: loadBodyDetail },
+  { path: 'luna', title: 'Luna', data: { id: 'luna' }, loadComponent: loadBodyDetail },
   {
     // Próximos eclipses visibles desde España (fase 8): el lugar, en la URL (`?lugar=teide`).
     path: 'eclipses',

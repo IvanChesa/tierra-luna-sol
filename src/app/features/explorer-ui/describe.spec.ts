@@ -24,7 +24,7 @@ describe('describe: textos de la interfaz sobre los cuerpos y las vistas', () =>
     expect(bodyPagePath('marte')).toBe('/planetas/marte');
     expect(bodyPagePath('sol')).toBe('/sol');
     expect(bodyPagePath('luna')).toBe('/luna');
-    expect(bodyPagePath('titan')).toBeNull();
+    expect(bodyPagePath('titan')).toBe('/lunas/titan');
   });
 
   it('los artículos de cada nombre: «del Sol», «a la Tierra», «a Saturno»', () => {

@@ -34,6 +34,53 @@ export function formatNumber(value: number, digits = 0, fixed = false): string {
     .replace('-', MINUS);
 }
 
+/**
+ * Los decimales con los que está escrita una cifra (`1407.6` → 1, `0.0009` → 4, `6e-5` → 5): los de
+ * su fuente, que las fichas copian sin redondear.
+ */
+export function decimalsOf(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  const [mantissa = '', exponent = '0'] = String(Math.abs(value)).split('e');
+  const decimals = mantissa.split('.')[1]?.length ?? 0;
+  return Math.max(0, decimals - Number(exponent));
+}
+
+/** La cifra con los decimales con los que está escrita (como mucho, `maxDigits`). */
+export function formatExact(value: number, maxDigits = 6): string {
+  return formatNumber(value, Math.min(decimalsOf(value), maxDigits), true);
+}
+
+/** Una cifra en notación científica, por partes: «6,4171 × 10²³» (ESTILO §3). */
+export interface ScientificNumber {
+  /** «6,4171». */
+  readonly mantissa: string;
+  /** «23» o «−5» (el superíndice). */
+  readonly exponent: string;
+  /** Para el lector de pantalla: «6,4171 por 10 elevado a 23». */
+  readonly spoken: string;
+}
+
+/**
+ * Notación científica con los decimales de la fuente (las masas: 6,4171 × 10²³ kg). La mantisa sale
+ * redondeada a 12 cifras significativas, que quita el ruido de la división en coma flotante
+ * (6,4171e23 / 1e23 = 6,417100000000001) sin tocar ninguna cifra de los datos.
+ */
+export function formatScientific(value: number): ScientificNumber {
+  if (!Number.isFinite(value) || value === 0) {
+    const text = formatNumber(value);
+    return { mantissa: text, exponent: '0', spoken: text };
+  }
+  let exponent = Math.floor(Math.log10(Math.abs(value)));
+  let mantissa = Number((value / 10 ** exponent).toPrecision(12));
+  if (Math.abs(mantissa) >= 10) {
+    mantissa /= 10;
+    exponent += 1;
+  }
+  const m = formatExact(mantissa);
+  const e = formatNumber(exponent);
+  return { mantissa: m, exponent: e, spoken: `${m} por 10 elevado a ${e}` };
+}
+
 /** Distancia en km según el rango (ESTILO §3): km, millones con un decimal o sin decimales. */
 export function formatDistanceKm(km: number): string {
   if (!Number.isFinite(km)) return '—';
