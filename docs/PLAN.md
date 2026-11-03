@@ -700,7 +700,8 @@ Criterios de aceptación:
 La prepara la sesión de revisión con la revisión del bloque E (no se hace en la fase 9):
 - **el Sol**, con un diseño mejor, en un estilo «real y luminoso»;
 - **acabar las lunas**: las formas reales de Fobos, Deimos y Proteo, y una superficie para Deimos, Proteo y las lunas de Urano (hoy, con su color esquemático);
-- **los sistemas de lunas de la vista general**: las lunas, demasiado grandes respecto a su planeta; las galileanas se atraviesan entre ellas, y las de Saturno orbitan dentro de los anillos.
+- **los sistemas de lunas de la vista general**: las lunas, demasiado grandes respecto a su planeta; las galileanas se atraviesan entre ellas, y las de Saturno orbitan dentro de los anillos;
+- **el lado nocturno de la Tierra**, que sale azul marino: la textura de noche trae una base azul y la exposición del primer plano la multiplica por 6.
 
 ### Fase 10: Pulido y calidad
 

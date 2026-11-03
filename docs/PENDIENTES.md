@@ -107,7 +107,8 @@ Decisiones y tareas que dependen de Iván. Claude Code añade aquí cada `TODO(i
 - [ ] **Una fase propia antes de la fase 10** (en el plan, §6; **no se hace en la fase 9**: la prepara la sesión de revisión con la revisión del bloque E):
   - **el Sol**, con un diseño mejor, en un estilo «real y luminoso»;
   - **acabar las lunas**: las formas reales de Fobos, Deimos y Proteo (hoy, esferas; en el backlog, 3), y una superficie para Deimos, Proteo y las lunas de Urano (hoy, su color esquemático; backlog 12);
-  - **los sistemas de lunas de la vista general**: las lunas se ven demasiado grandes respecto a su planeta, las galileanas se atraviesan entre ellas y las de Saturno orbitan dentro de los anillos.
+  - **los sistemas de lunas de la vista general**: las lunas se ven demasiado grandes respecto a su planeta, las galileanas se atraviesan entre ellas y las de Saturno orbitan dentro de los anillos;
+  - **el lado nocturno de la Tierra sale azul marino**: la textura de noche trae una base azul y la exposición del primer plano la multiplica por 6.
 
 ## Decisiones
 - [x] **La revisión de los textos (fase 9)**, decidida al lanzar el bloque E (01-11): `docs/revision-textos.md` con cada texto, su fuente y un hueco para tus correcciones, agrupados por cuerpo y por vista. El bloque no te espera: la revisión queda apuntada abajo («Revisiones y pruebas de Iván») y se sigue.
