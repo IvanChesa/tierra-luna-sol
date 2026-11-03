@@ -102,6 +102,13 @@ Decisiones y tareas que dependen de Iván. Claude Code añade aquí cada `TODO(i
 - [x] **La velocidad del cielo**, decidido el 03-11: **tiempo real**, como se proponía (D33). Ya era así en el código (`CONTEXT_SPEED.sky`); queda en el plan.
 - [ ] **Probar el cielo en tu móvil** (no bloquea), en la vista previa: `/cielo` con el panel compacto, «Usar mi ubicación» (pide permiso solo al pulsarlo) y el deslizador de la hora; y `/eclipses` con «Ver en 3D».
 
+## Bloque E (fase 9: contenido y compartir)
+- [ ] **Los enlaces legales y el del autor, a ivanchesa.com** (D37): `https://ivanchesa.com/aviso-legal/` y `/privacidad/` (como en ivanchesa.es), en `site.config.ts`. Hoy ivanchesa.com no resuelve (NXDOMAIN, 03-11); cuando responda, comprobar que esas páginas existen: `node scripts/check-links.mjs --externos` (los marca como pendientes del dominio, no como rotos). `TODO(ivan)` en `site.config.ts`.
+- [ ] **La vista previa del enlace en una app real** (WhatsApp, Telegram, Slack…): cuando exista el dominio (fase 11). Hoy, simulada con las etiquetas del HTML (`scripts/preview-og.mjs`, capturas en `docs/informes/img/fase-9/compartir-*.webp`): la imagen es una URL absoluta del dominio y no se puede pedir desde fuera.
+- [ ] **Lighthouse**: no se ha ejecutado (`@lhci/cli` espera tu decisión, fase 10). Sus métricas, medidas con `scripts/measure-pages.mjs` en las condiciones de su móvil: las fichas, de 95 a 97 de nota estimada; todas las páginas de contenido, con CLS 0.
+- [ ] (Fase 10) **La fuente de reserva en Android**: las de reserva del mismo ancho son Arial y Georgia, que Android no tiene; medir allí el desplazamiento al cargar (en tu móvil).
+- [ ] (Opcional) **«Sobre el proyecto» no cuenta cómo se ha hecho** (con Claude Code, en fases y con revisiones): si quieres que lo diga, dímelo y lo escribo para que lo revises.
+
 ## Decisiones del 03-11 (durante la fase 9)
 - [x] Las constelaciones en español con el latín como secundario (D38) y el cielo en tiempo real (D33): arriba, en «Bloque E (fase 8)», y en el plan.
 - [ ] **Una fase propia antes de la fase 10** (en el plan, §6; **no se hace en la fase 9**: la prepara la sesión de revisión con la revisión del bloque E):
