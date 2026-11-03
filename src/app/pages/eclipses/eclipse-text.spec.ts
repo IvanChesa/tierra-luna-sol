@@ -38,11 +38,11 @@ describe('eclipse-text: los textos de /eclipses', () => {
   });
 
   it('cuánto se tapa y lo que se ve', () => {
-    expect(amountText(entry({}))).toBe('La Luna tapa el 100 % del Sol.');
-    expect(amountText(entry({ obscuration: 0.791 }))).toBe('La Luna tapa el 79 % del Sol.');
+    expect(amountText(entry({}))).toBe('La Luna tapa el 100\u00a0% del Sol.');
+    expect(amountText(entry({ obscuration: 0.791 }))).toBe('La Luna tapa el 79\u00a0% del Sol.');
     expect(amountText(entry({ type: 'total' }))).toBe('La Luna tapa el Sol del todo.');
     expect(amountText(entry({ kind: 'lunar', type: 'partial', obscuration: 0.47 }))).toBe(
-      'La sombra de la Tierra cubre el 47 % de la Luna.',
+      'La sombra de la Tierra cubre el 47\u00a0% de la Luna.',
     );
     expect(visibilityText(entry({}), 'Europe/Madrid')).toBe(
       'Se ve en parte: de 19:31 a 21:02, con el Sol sobre el horizonte.',

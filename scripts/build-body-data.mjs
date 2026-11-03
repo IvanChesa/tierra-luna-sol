@@ -133,8 +133,20 @@ const data = {};
       },
     };
   }
-  // La Luna: la columna MOON de la misma tabla (sus distancias y su periodo son respecto a la Tierra).
+  // La Luna: sus datos físicos, de la columna MOON de la misma tabla, como los planetas. Su órbita y
+  // su presión, de su propia ficha (revisión de la fase 9, hallazgo 18): la tabla las redondea
+  // (384.000 km, 1 km/s, 0 bar) y su ficha da 384.400 km, como su texto.
   const moonNote = 'Respecto a la Tierra.';
+  const M = 'nssdc-moon';
+  const moonSheet = await page(M);
+  const moonTable = rows(moonSheet);
+  const moon = (label) => {
+    const r = moonTable.find((cells) => cells[0]?.startsWith(label));
+    if (!r) throw new Error(`Falta la fila ${label} de la Luna`);
+    return num(r[1]);
+  };
+  const night = /Surface pressure \(night\): ([\d.]+) x 10 (-?\d+) bar/.exec(clean(moonSheet));
+  if (!night) throw new Error('Falta la presión de la Luna en su ficha');
   data.luna = {
     physical: {
       massKg: q(exact(num(cell('Mass', 'MOON')) * 1e24), S),
@@ -145,17 +157,22 @@ const data = {};
       lengthOfDayH: q(num(cell('Length of Day', 'MOON')), S),
       axialTiltDeg: q(num(cell('Obliquity to Orbit', 'MOON')), S),
       meanTemperatureC: q(num(cell('Mean Temperature', 'MOON')), S),
-      surfacePressureBar: q(num(cell('Surface Pressure', 'MOON')), S),
+      surfacePressureBar: q(exact(num(night[1]) * 10 ** num(night[2])), M, 'De noche.'),
       globalMagneticField: q(yes(cell('Global Magnetic Field', 'MOON')), S),
     },
     orbit: {
-      semiMajorAxisKm: q(exact(num(cell('Distance from Sun', 'MOON')) * 1e6), S, moonNote),
-      periapsisKm: q(exact(num(cell('Perihelion', 'MOON')) * 1e6), S, moonNote),
-      apoapsisKm: q(exact(num(cell('Aphelion', 'MOON')) * 1e6), S, moonNote),
-      periodDays: q(num(cell('Orbital Period', 'MOON')), S, moonNote),
-      meanOrbitalVelocityKmS: q(num(cell('Orbital Velocity', 'MOON')), S, moonNote),
-      inclinationDeg: q(num(cell('Orbital Inclination', 'MOON')), S, 'Respecto a la eclíptica.'),
-      eccentricity: q(num(cell('Orbital Eccentricity', 'MOON')), S),
+      semiMajorAxisKm: q(exact(moon('Semimajor axis') * 1e6), M, moonNote),
+      // La ficha da el perigeo y el apogeo medios, y que la distancia va de 357.000 a 407.000 km.
+      periapsisKm: q(
+        exact(moon('Perigee') * 1e6),
+        M,
+        'El medio: a lo largo del año, la distancia a la Tierra va de unos 357.000 a 407.000 km.',
+      ),
+      apoapsisKm: q(exact(moon('Apogee') * 1e6), M, 'El medio.'),
+      periodDays: q(moon('Revolution period'), M, moonNote),
+      meanOrbitalVelocityKmS: q(moon('Mean orbital velocity'), M, moonNote),
+      inclinationDeg: q(moon('Inclination to ecliptic'), M, 'Respecto a la eclíptica.'),
+      eccentricity: q(moon('Orbit eccentricity'), M),
     },
   };
 }

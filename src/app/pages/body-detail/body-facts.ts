@@ -5,7 +5,8 @@
  * tests: ninguna cifra sin fuente.
  *
  * Las cifras se copian con los decimales de su fuente (`formatExact`); las masas y la luminosidad, en
- * notación científica; los periodos, en horas, días o años (ESTILO §3); las distancias de los planetas,
+ * notación científica; los periodos, en horas, días o años con un decimal (ESTILO §3) y la cifra de la
+ * fuente al lado si se ha convertido; las distancias de los planetas,
  * en millones de km con las UA al lado, y las de las lunas, en km enteros.
  */
 import {
@@ -13,7 +14,6 @@ import {
   formatDistanceKm,
   formatExact,
   formatNumber,
-  formatPeriodHours,
   formatScientific,
 } from '../../core/format';
 import { findBody } from '../../data/body-index';
@@ -100,6 +100,36 @@ const range = ([min, max]: Range): FactValue => ({
   unit: '',
 });
 
+/**
+ * Un periodo con las reglas de ESTILO §3, con un decimal: horas hasta 48 h; después, días y, desde
+ * 1000 días, años. Si la cifra que se ve no es la de la fuente (convertida o redondeada), la de la
+ * fuente va al lado («58,7 días» y «1407,6 h»; «11,9 años» y «4331 días»): así no se pierden sus
+ * decimales (revisión de la fase 9, sugerencia 18).
+ */
+export function periodCells(
+  hours: number,
+  sourceUnit: 'h' | 'días',
+): {
+  value: FactValue;
+  source?: string;
+} {
+  const h = Math.abs(hours);
+  const days = h / 24;
+  const text =
+    h < 48
+      ? `${formatNumber(h, 1, true)}${NBSP}h`
+      : days < 1000
+        ? `${formatNumber(days, 1, true)}${NBSP}días`
+        : `${formatNumber(days / 365.25, 1, true)}${NBSP}años`;
+  const original =
+    sourceUnit === 'h' ? `${formatExact(h)}${NBSP}h` : `${formatExact(days)}${NBSP}días`;
+  return { value: split(text), source: text === original ? undefined : original };
+}
+
+/** «5832,5 h · retrógrada»: lo que va al lado de la cifra, sin lo que falte. */
+const detailOf = (...parts: (string | undefined)[]): string | undefined =>
+  parts.filter(Boolean).join(' · ') || undefined;
+
 /** El radio: ecuatorial en los planetas (la mitad del diámetro de la ficha), medio en el resto. */
 function radiusLabel(body: Body): string {
   if (body.kind === 'planet') return 'Radio ecuatorial';
@@ -135,13 +165,14 @@ function physicalRows(body: Body): FactRow[] {
   }
   if (p.rotationPeriodH) {
     const hours = p.rotationPeriodH.value;
+    const cells = periodCells(hours, 'h');
     rows.push(
       row(
         'rotationPeriodH',
         'Periodo de rotación',
         p.rotationPeriodH,
-        split(formatPeriodHours(hours)),
-        hours < 0 ? 'retrógrada' : undefined,
+        cells.value,
+        detailOf(cells.source, hours < 0 ? 'retrógrada' : undefined),
       ),
     );
   }
@@ -154,14 +185,8 @@ function physicalRows(body: Body): FactRow[] {
     );
   }
   if (p.lengthOfDayH) {
-    rows.push(
-      row(
-        'lengthOfDayH',
-        'Día solar',
-        p.lengthOfDayH,
-        split(formatPeriodHours(p.lengthOfDayH.value)),
-      ),
-    );
+    const cells = periodCells(p.lengthOfDayH.value, 'h');
+    rows.push(row('lengthOfDayH', 'Día solar', p.lengthOfDayH, cells.value, cells.source));
   }
   if (p.axialTiltDeg) {
     rows.push(
@@ -202,7 +227,10 @@ function physicalRows(body: Body): FactRow[] {
         'surfacePressureBar',
         'Presión en la superficie',
         p.surfacePressureBar,
-        exact(p.surfacePressureBar.value, 'bar'),
+        // La de la Luna, 3 × 10⁻¹⁵ bar: en notación científica, como las masas.
+        p.surfacePressureBar.value > 0 && p.surfacePressureBar.value < 1e-3
+          ? scientific(p.surfacePressureBar.value, 'bar', 'bares')
+          : exact(p.surfacePressureBar.value, 'bar'),
       ),
     );
   }
@@ -272,12 +300,14 @@ function orbitRows(body: Body): FactRow[] {
   const rows: FactRow[] = [distance('semiMajorAxisKm', 'Distancia media', o.semiMajorAxisKm)];
   if (o.periapsisKm) rows.push(distance('periapsisKm', near, o.periapsisKm));
   if (o.apoapsisKm) rows.push(distance('apoapsisKm', far, o.apoapsisKm));
+  const period = periodCells(o.periodDays.value * 24, 'días');
   rows.push(
     row(
       'periodDays',
       planet ? 'Año (periodo orbital)' : 'Periodo orbital',
       o.periodDays,
-      split(formatPeriodHours(o.periodDays.value * 24)),
+      period.value,
+      period.source,
     ),
   );
   if (o.meanOrbitalVelocityKmS) {

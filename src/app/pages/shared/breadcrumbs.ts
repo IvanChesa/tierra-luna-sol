@@ -44,7 +44,9 @@ export interface Crumb {
       color: var(--color-text-muted);
     }
 
-    a {
+    /* El enlace y la página actual, con el mismo relleno: en la misma línea de base. */
+    a,
+    span {
       display: inline-block;
       padding-block: var(--space-1);
     }

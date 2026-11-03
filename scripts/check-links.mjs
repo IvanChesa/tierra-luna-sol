@@ -26,6 +26,8 @@ const ids = new Map(
   ]),
 );
 
+/** Un origen cualquiera para resolver las direcciones como el navegador. */
+const ORIGIN = 'https://sitio.invalid';
 const failures = [];
 const outside = new Map();
 let internal = 0;
@@ -40,12 +42,27 @@ for (const [route, source] of html) {
     }
     if (/^(mailto|tel):/.test(href)) continue;
     internal++;
-    const [pathAndQuery, fragment] = href.split('#');
-    const path = (pathAndQuery ?? '').split('?')[0] || route;
-    const target = path.replace(/\/+$/, '') || '/';
+    // Como el navegador: contra el `<base href>` de la página (con «/», un «#ancla» suelto lleva a la
+    // portada: revisión de la fase 9, hallazgo 1) o, si no lo hay, contra la propia página.
+    const base = /<base\s[^>]*href="([^"]*)"/.exec(source)?.[1];
+    const pageUrl = new URL(route, ORIGIN);
+    const resolved = new URL(href, base === undefined ? pageUrl : new URL(base, pageUrl));
+    if (resolved.origin !== ORIGIN) {
+      failures.push(`${route}: «${href}» sale del sitio`);
+      continue;
+    }
+    const fragment = decodeURIComponent(resolved.hash.slice(1));
+    const target = resolved.pathname.replace(/\/+$/, '') || '/';
+    // Un ancla suelta es de la propia página: si acaba en otra (por el `<base>`), está mal.
+    if (href.startsWith('#') && target !== route) {
+      failures.push(`${route}: «${href}» lleva a ${target}, no a un ancla de esta página`);
+      continue;
+    }
     if (html.has(target)) {
       if (fragment && !ids.get(target)?.has(fragment)) {
-        failures.push(`${route}: «${href}» lleva a un ancla que no existe en ${target}`);
+        failures.push(
+          `${route}: «${href}» lleva a ${target}#${fragment}, un ancla que no existe en esa página`,
+        );
       }
       continue;
     }

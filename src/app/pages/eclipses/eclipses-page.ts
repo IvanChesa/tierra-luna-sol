@@ -1,7 +1,6 @@
 import { Component, DestroyRef, afterNextRender, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { formatLongDateInZone } from '../../core/format';
-import { describePage } from '../../core/page-meta';
 import { EclipseEntry, toEclipseEntry } from '../../data/eclipse-entry';
 import { ECLIPSES_BY_PLACE, ECLIPSES_FROM } from '../../data/eclipses';
 import { DEFAULT_PLACE_ID, SKY_PLACES, placeOptionLabel } from '../../data/places';
@@ -81,9 +80,6 @@ export class EclipsesPage {
   });
 
   constructor() {
-    describePage(
-      'Los eclipses de Sol y de Luna de los próximos diez años que se ven desde España, con la hora del lugar y «Ver en 3D».',
-    );
     inject(DestroyRef).onDestroy(() => this.run++);
     afterNextRender(() => {
       // Lo que ya ha pasado sale de la lista ya; después, la lista nueva.

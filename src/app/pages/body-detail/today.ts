@@ -6,7 +6,14 @@
 import type { BodyId } from '../../data/body.model';
 import { bodyDistances, createSolarSystemModel } from '../../data/solar-system';
 import { moonPhase } from '../../ephemeris/ephemeris';
-import { TodayRow, calculatedNote, distanceCells, illuminatedText, todayKeys } from './today-text';
+import {
+  TodayRow,
+  calculatedNote,
+  distanceCells,
+  illuminatedText,
+  parentDistanceCells,
+  todayKeys,
+} from './today-text';
 
 export interface Today {
   readonly rows: readonly TodayRow[];
@@ -29,9 +36,8 @@ export function todayOf(id: BodyId, date: Date): Today {
         : key === 'toEarth'
           ? distances.toEarthKm
           : distances.toParentKm;
-    return km === null
-      ? { key, label, value: '—', detail: '' }
-      : { key, label, ...distanceCells(km) };
+    if (km === null) return { key, label, value: '—', detail: '' };
+    return { key, label, ...(key === 'toParent' ? parentDistanceCells(km) : distanceCells(km)) };
   });
   return { rows, note: calculatedNote(date) };
 }

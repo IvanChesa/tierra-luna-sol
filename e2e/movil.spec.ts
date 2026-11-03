@@ -183,6 +183,10 @@ test.describe('Móvil', () => {
     await page.getByRole('button', { name: 'Menú' }).tap();
     const menu = page.getByRole('navigation', { name: 'Principal' });
     await expect(menu).toBeVisible();
+    // En el móvil, el explorador no tiene pie: la nota de privacidad y los enlaces legales, aquí (fase 9).
+    await expect(menu).toContainText('Sin cookies, sin analítica y sin peticiones a terceros');
+    await expect(menu.getByRole('link', { name: 'Aviso legal' })).toBeVisible();
+    await expect(menu.getByRole('link', { name: 'Política de privacidad' })).toBeVisible();
     await menu.getByRole('link', { name: 'Créditos' }).tap();
     await expect(page).toHaveURL(/\/creditos$/);
     await expect(menu).toBeHidden();
@@ -190,7 +194,15 @@ test.describe('Móvil', () => {
 
   // WCAG 1.4.10: a 320 px de ancho, nada obliga a desplazarse en horizontal (revisión de la fase 8,
   // hallazgo 2: el selector de /eclipses ensanchaba la página hasta 625 px).
-  for (const path of ['/eclipses', '/creditos', '/sobre-el-proyecto', '/planetas', '/sol']) {
+  for (const path of [
+    '/eclipses',
+    '/creditos',
+    '/sobre-el-proyecto',
+    '/planetas',
+    '/lunas',
+    '/planetas/saturno',
+    '/sol',
+  ]) {
     test(`${path}: a 320 px de ancho, sin desplazamiento horizontal`, async ({ page }) => {
       await page.setViewportSize({ width: 320, height: 640 });
       await page.goto(path);

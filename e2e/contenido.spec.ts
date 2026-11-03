@@ -24,13 +24,15 @@ test.describe('Fichas de los cuerpos (fase 9)', () => {
     const crumbs = page.getByRole('navigation', { name: 'Migas de pan' });
     await expect(crumbs.getByRole('link')).toHaveText(['Inicio', 'Planetas']);
     await expect(crumbs.locator('[aria-current="page"]')).toHaveText('Marte');
-    // Cada fila de datos enlaza a su fuente, que está en la lista del final.
+    // Cada fila de datos enlaza a su fuente, que está en la lista del final de la misma página (con
+    // la ruta delante: con <base href="/">, un «#fuente-1» suelto llevaría a la portada).
     const refs = page.locator('table.facts td.facts__ref a');
     expect(await refs.count()).toBeGreaterThan(15);
     for (const href of await refs.evaluateAll((links) =>
-      links.map((a) => a.getAttribute('href')),
+      links.map((a) => a.getAttribute('href') ?? ''),
     )) {
-      await expect(page.locator(href ?? '#nada')).toHaveCount(1);
+      expect(href).toMatch(/^\/planetas\/marte#fuente-\d+$/);
+      await expect(page.locator(href.slice(href.indexOf('#')))).toHaveCount(1);
     }
     // La masa, en notación científica, con su lectura para el lector de pantalla.
     await expect(page.locator('td.facts__value .visually-hidden').first()).toHaveText(
@@ -46,6 +48,40 @@ test.describe('Fichas de los cuerpos (fase 9)', () => {
     await expect(page.locator('tls-viewer-canvas')).toHaveClass(/is-ready/, { timeout: 90_000 });
     await expect(page.locator('#card-title')).toHaveText('Marte');
     expect(problems).toEqual([]);
+  });
+
+  test('las notas de las tablas y «Saltar al contenido» se quedan en la página (con <base href="/">)', async ({
+    page,
+  }) => {
+    await page.goto('/planetas/marte');
+    // La nota 1 baja a su fuente, en la misma ficha (no a la portada: revisión, hallazgo 1).
+    await page.locator('table.facts td.facts__ref a').first().click();
+    await expect(page).toHaveURL(/\/planetas\/marte#fuente-1$/);
+    await expect(page.locator('h1')).toHaveText('Marte');
+    await expect(page.locator('#fuente-1')).toBeInViewport();
+    // «Saltar al contenido», lo primero con el teclado.
+    await page.goto('/planetas/marte');
+    await page.keyboard.press('Tab');
+    const skip = page.getByRole('link', { name: 'Saltar al contenido' });
+    await expect(skip).toBeFocused();
+    await expect(skip).toHaveAttribute('href', '/planetas/marte#contenido');
+    await page.keyboard.press('Enter');
+    await expect(page).toHaveURL(/\/planetas\/marte#contenido$/);
+    await expect(page.locator('h1')).toHaveText('Marte');
+  });
+
+  test('la Luna es el satélite de la Tierra, y la description cambia al ir de una luna a otra', async ({
+    page,
+  }) => {
+    await page.goto('/luna');
+    await expect(page.locator('.body__kind')).toHaveText(/^\s*Satélite de\s+la Tierra\s*$/);
+    await page.goto('/lunas/fobos');
+    expect(await meta(page, 'name="description"')).toMatch(/^Fobos/);
+    // La misma ficha, reutilizada (revisión, hallazgo 4).
+    await page.getByRole('link', { name: 'Deimos', exact: true }).click();
+    await expect(page).toHaveTitle('Deimos · Tierra Luna Sol');
+    await expect.poll(() => meta(page, 'name="description"')).toMatch(/^Deimos/);
+    expect(await meta(page, 'property="og:description"')).toMatch(/^Deimos/);
   });
 
   test('las 30 fichas responden, cada una con su imagen, sus tablas y sus fuentes', async ({
@@ -206,6 +242,26 @@ test.describe('Compartir, legal y privacidad (fase 9)', () => {
     await expect(page.locator('section[aria-labelledby="privacidad"]')).toContainText(
       'Network Error Logging',
     );
+  });
+
+  test('la nota de privacidad, también en el pie del explorador', async ({ page }) => {
+    await page.goto('/');
+    const foot = page.locator('footer.explorer__foot');
+    await expect(
+      foot.getByRole('link', { name: 'Sin cookies, sin analítica y sin peticiones a terceros' }),
+    ).toBeVisible();
+    await expect(foot.getByRole('link', { name: 'Aviso legal' })).toBeVisible();
+  });
+
+  test('si solo cambia la consulta (el lugar de /eclipses), la página no se mueve', async ({
+    page,
+  }) => {
+    await page.goto('/eclipses');
+    await page.evaluate(() => window.scrollTo(0, 200));
+    await page.locator('#eclipses-place').selectOption('teide');
+    await expect(page).toHaveURL(/lugar=teide/);
+    await page.waitForTimeout(300);
+    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(150);
   });
 
   test('una página nueva empieza arriba, aunque vengas de abajo de otra', async ({ page }) => {

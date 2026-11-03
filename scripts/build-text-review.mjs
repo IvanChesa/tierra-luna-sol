@@ -109,7 +109,7 @@ push(
   '',
   '1. [Por cuerpo](#por-cuerpo): los 30, con su resumen y sus tres curiosidades (120 textos).',
   '2. [Por vista](#por-vista): el sistema solar, la Tierra y sus vistas guiadas, la Luna, sus vistas y su recorrido, y el cielo.',
-  '3. [Las páginas](#las-paginas): los índices, los eclipses, «Sobre el proyecto», los créditos y la 404.',
+  '3. [Las páginas](#las-paginas): los índices, los eclipses, «Sobre el proyecto», los créditos y la 404; y [los textos fijos](#los-textos-fijos) de las fichas, del pie y del menú.',
   '4. [Las descriptions](#las-descriptions): lo que se ve al compartir cada página.',
   '5. [Los nombres de las constelaciones](#los-nombres-de-las-constelaciones).',
   '',
@@ -160,13 +160,15 @@ const pages = [
 ];
 for (const [route, name] of pages) {
   push(`### ${name} (\`${route}\`)`, '');
-  let all = blocks(mainOf(await page(route)));
-  // En los índices y en los eclipses, solo el texto fijo (no las tarjetas ni la lista de eclipses).
+  // Sin las migas de pan (antes de nada: si no, ocupaban el sitio de la entradilla).
+  let all = blocks(mainOf(await page(route))).filter(
+    (b) => b.kind !== 'li' || !/^(Inicio|Planetas|Lunas)$/.test(b.value),
+  );
+  // En los índices y en los eclipses, solo el texto fijo: el título y la entradilla (no las tarjetas
+  // ni la lista de eclipses).
   if (route === '/planetas' || route === '/lunas' || route === '/eclipses') {
-    all = all.filter((b, k) => k < 3 && (b.kind === 'h1' || b.kind === 'p'));
+    all = all.filter((b) => b.kind === 'h1' || b.kind === 'p').slice(0, 2);
   }
-  // Sin las migas de pan.
-  all = all.filter((b) => b.kind !== 'li' || !/^(Inicio|Planetas|Lunas)$/.test(b.value));
   let n = 0;
   for (const block of all) {
     const label =
@@ -179,6 +181,80 @@ for (const [route, name] of pages) {
     else entry(label, block.value);
   }
 }
+
+// --- 3 bis. Las fichas y el pie: los textos fijos ------------------------------------------------------
+push(
+  '<a id="los-textos-fijos"></a>',
+  '',
+  '## 3 bis. Los textos fijos de las fichas, del pie y del menú',
+  '',
+  'Los que se repiten en las 30 fichas (cambia el cuerpo, no la frase) y los del pie del sitio, del pie del explorador y del menú del móvil. Cada uno sale de su función (`pages/body-detail/`) o de su plantilla.',
+  '',
+);
+const { BODIES } = await import('../src/app/data/bodies.ts');
+const { bodyFacts } = await import('../src/app/pages/body-detail/body-facts.ts');
+const { imageAltOf, kindLineOf } = await import('../src/app/pages/body-detail/body-labels.ts');
+const todayText = await import('../src/app/pages/body-detail/today-text.ts');
+push('#### El tipo, encima del título', '');
+for (const id of ['sol', 'marte', 'luna', 'titan']) {
+  const kind = kindLineOf(BODIES.find((b) => b.id === id));
+  entry(
+    `En ${id === 'sol' ? 'el Sol' : id === 'luna' ? 'la Luna' : BODIES.find((b) => b.id === id).name}`,
+    kind.parent ? `${kind.text} ${kind.parent.name}` : kind.text,
+  );
+}
+push('#### Los títulos de la ficha', '');
+const ficha = await page('/planetas/marte');
+for (const block of blocks(mainOf(ficha)).filter((b) => b.kind === 'h2'))
+  entry('Apartado', block.value);
+entry('El enlace al explorador', 'Ver en 3D');
+const grupos = new Set();
+for (const body of BODIES) for (const group of bodyFacts(body)) grupos.add(group.title);
+entry('Las tablas de «Datos»', [...grupos].join(' · '));
+push('#### Las etiquetas y las aclaraciones de los datos', '');
+const labels = new Map();
+for (const body of BODIES) {
+  for (const row of bodyFacts(body).flatMap((g) => g.rows)) {
+    if (!labels.has(row.label)) labels.set(row.label, new Set());
+    if (row.note) labels.get(row.label).add(row.note);
+  }
+}
+for (const [label, notes] of labels) {
+  entry(
+    label,
+    notes.size ? `${label}. Aclaraciones: ${[...notes].map((n) => `«${n}»`).join(', ')}` : label,
+  );
+}
+push('#### «Hoy»', '');
+entry('Antes del cálculo (y sin JavaScript)', todayText.PENDING_NOTE);
+entry('Después del cálculo (ejemplo)', todayText.calculatedNote(new Date('2026-11-03T18:40:00Z')));
+entry('En las lunas de elementos medios (ejemplo, Titán)', todayText.positionNote('titan'));
+entry('La fase de la Luna (ejemplo)', `Gibosa menguante · ${todayText.illuminatedText(0.87)}`);
+entry('Si falla el cálculo', 'No se han podido calcular las distancias de hoy.');
+push('#### Los textos alternativos de las imágenes', '');
+for (const body of BODIES) entry(body.name, imageAltOf(body));
+push('#### Las fuentes, al final de la ficha (ejemplo, Marte)', '');
+const notes = [...ficha.matchAll(/<p[^>]*class="body__note"[^>]*>([\s\S]*?)<\/p>/g)].map((m) =>
+  text(m[1]),
+);
+const last = notes.at(-1);
+if (last) entry('La nota de los textos', last);
+push('#### El pie y el menú', '');
+const footer =
+  /<footer[^>]*class="site-footer"[^>]*>([\s\S]*?)<\/footer>/.exec(await page('/creditos'))?.[1] ??
+  '';
+for (const block of blocks(footer)) entry('El pie de las páginas', block.value);
+const explorerFoot =
+  /<footer[^>]*class="explorer__foot"[^>]*>([\s\S]*?)<\/footer>/.exec(await page('/'))?.[1] ?? '';
+// La ayuda y, en los créditos, cada línea por separado (son dos <span> en el mismo párrafo).
+const hints = /<p[^>]*class="explorer__hints"[^>]*>([\s\S]*?)<\/p>/.exec(explorerFoot)?.[1];
+if (hints) entry('El pie del explorador: la ayuda', text(hints));
+for (const m of explorerFoot.matchAll(/<span\b[^>]*>([\s\S]*?)<\/span>/g))
+  entry('El pie del explorador: los créditos', text(m[1]));
+const menuNote = /<p[^>]*class="site-nav__extra site-nav__privacy"[^>]*>([\s\S]*?)<\/p>/.exec(
+  await page('/'),
+)?.[1];
+if (menuNote) entry('El menú del móvil', text(menuNote));
 
 // --- 4. Las descriptions ----------------------------------------------------------------------------
 push(

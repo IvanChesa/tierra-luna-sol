@@ -1,5 +1,4 @@
 import { Component } from '@angular/core';
-import { describePage } from '../../core/page-meta';
 import { SITE_CONFIG } from '../../core/site.config';
 
 /** El texto de cada licencia (en español, donde lo hay). */
@@ -25,10 +24,4 @@ export class CreditsPage {
   protected readonly site = SITE_CONFIG;
   protected readonly licenses = LICENSES;
   protected readonly sources = `${SITE_CONFIG.repository}/blob/main/docs/FUENTES.md`;
-
-  constructor() {
-    describePage(
-      'Las fuentes y las licencias de las texturas, los datos, los catálogos y el software del explorador, una a una.',
-    );
-  }
 }

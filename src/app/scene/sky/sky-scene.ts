@@ -197,7 +197,7 @@ export class SkyScene {
   private readonly planetGeometry = new BufferGeometry();
   private stars: Points | null = null;
   private constellations: LineSegments | null = null;
-  private constellationLabels: { key: string; text: string; direction: Vec3 }[] = [];
+  private constellationLabels: { key: string; text: string; lines: number; direction: Vec3 }[] = [];
   private constellationsVisible = true;
   /** Las líneas se ven con esta luz (de día no): sus nombres, igual. */
   private constellationLinesVisible = true;
@@ -366,16 +366,14 @@ export class SkyScene {
       }
       const [ra = 0, dec = 0] = constellation.label;
       const key = `constellation-${constellation.id}-${k}`;
-      // El nombre en español y, debajo y más pequeño, el oficial de la IAU en latín (D38).
-      specs.push({
-        key,
-        text: constellation.es,
-        secondary: constellation.name,
-        kind: 'constellation',
-      });
+      // El nombre en español y, debajo y más pequeño, el oficial de la IAU en latín (D38); si son el
+      // mismo (Leo, Libra, Vela), una vez.
+      const secondary = constellation.es === constellation.name ? undefined : constellation.name;
+      specs.push({ key, text: constellation.es, secondary, kind: 'constellation' });
       this.constellationLabels.push({
         key,
         text: constellation.es,
+        lines: secondary ? 2 : 1,
         direction: equatorialToEclThree(ra, dec),
       });
     });
@@ -679,7 +677,8 @@ export class SkyScene {
         const direction = mulMat3Vec(rotation, label.direction);
         if (direction.y < 0.03) continue;
         const at = this.project(direction, viewport);
-        if (at && visible(at) && free(at.x, at.y, label.text, 2)) placements.set(label.key, at);
+        if (at && visible(at) && free(at.x, at.y, label.text, label.lines))
+          placements.set(label.key, at);
       }
     }
     this.labels.update(placements);

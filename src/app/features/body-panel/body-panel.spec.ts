@@ -33,7 +33,7 @@ describe('BodyPanel: ficha resumida', () => {
       row.textContent?.includes('Radio ecuatorial'),
     );
     expect(radius?.querySelector('.card__number')?.textContent).toBe('71.492');
-    expect(radius?.querySelector('.card__unit')?.textContent).toBe(' km');
+    expect(radius?.querySelector('.card__unit')?.textContent).toBe('\u00a0km');
     // La rotación síncrona no tiene unidad.
     const moon = render('io');
     const rotation = [...moon.querySelectorAll('.card__row')].find((row) =>

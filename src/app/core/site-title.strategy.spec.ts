@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, TitleStrategy, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { describePage, pageMetaTags } from './page-meta';
+import { pageMetaTags } from './page-meta';
 import { SITE_CONFIG } from './site.config';
 import { SiteTitleStrategy, formatPageTitle } from './site-title.strategy';
 
@@ -19,14 +19,6 @@ describe('formatPageTitle', () => {
 
 @Component({ template: '' })
 class Blank {}
-
-/** Una página que dice su description, como las de verdad. */
-@Component({ template: '' })
-class Described {
-  constructor() {
-    describePage('Marte, el cuarto planeta desde el Sol.');
-  }
-}
 
 describe('pageMetaTags (D25)', () => {
   const page = {
@@ -72,7 +64,17 @@ describe('SiteTitleStrategy', () => {
         provideRouter([
           {
             path: 'planetas',
-            children: [{ path: ':id', title: 'Marte', component: Described }],
+            children: [
+              {
+                path: ':id',
+                title: 'Marte',
+                // Como las de verdad: la description, de un resolver de la ruta.
+                resolve: {
+                  description: () => Promise.resolve('Marte, el cuarto planeta desde el Sol.'),
+                },
+                component: Blank,
+              },
+            ],
           },
           { path: 'creditos', title: 'Créditos', component: Blank },
           {
@@ -119,14 +121,13 @@ describe('SiteTitleStrategy', () => {
     expect(canonical()).toBe(`${SITE_CONFIG.baseUrl}/planetas/marte`);
   });
 
-  it('la description de la página activa y, si no dice ninguna, la del sitio', async () => {
-    // Con un router-outlet (el arnés): la página se crea al activarse la ruta, antes del título.
+  it('la description de la página (la de su resolver) y, si no tiene, la del sitio', async () => {
     const harness = await RouterTestingHarness.create();
     await harness.navigateByUrl('/planetas/marte');
     expect(meta('name', 'description')).toBe('Marte, el cuarto planeta desde el Sol.');
     expect(meta('property', 'og:description')).toBe('Marte, el cuarto planeta desde el Sol.');
     expect(meta('property', 'og:url')).toBe(`${SITE_CONFIG.baseUrl}/planetas/marte`);
-    // Al salir, la página deja de decirla (al destruirse): la siguiente no hereda la de Marte.
+    // La siguiente no hereda la de Marte.
     await harness.navigateByUrl('/creditos');
     expect(meta('name', 'description')).toBe(SITE_CONFIG.description);
   });

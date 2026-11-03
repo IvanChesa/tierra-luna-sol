@@ -15,7 +15,8 @@ describe('App', () => {
     await fixture.whenStable();
     const root = fixture.nativeElement as HTMLElement;
     const skipLink = root.querySelector('a');
-    expect(skipLink?.getAttribute('href')).toBe('#contenido');
+    // Con la ruta delante: con <base href="/">, un «#contenido» suelto llevaría a la portada.
+    expect(skipLink?.getAttribute('href')).toBe('/#contenido');
     expect(root.querySelector('main#contenido')).not.toBeNull();
   });
 

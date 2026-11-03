@@ -1,9 +1,10 @@
 import { IMAGE_LOADER, ImageLoaderConfig, NgOptimizedImage } from '@angular/common';
 import { Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { formatExact, formatPeriodHours } from '../../core/format';
+import { formatExact } from '../../core/format';
 import type { Body } from '../../data/body.model';
 import { bodyPagePath } from '../../data/body-links';
+import { periodCells } from '../body-detail/body-facts';
 
 /** Las miniaturas del motor (fase 3c, `public/img/cuerpos/`): 96 px, una por cuerpo. */
 const thumbnailLoader = ({ src }: ImageLoaderConfig): string => `/img/cuerpos/${src}.webp`;
@@ -113,7 +114,6 @@ export class BodyCard {
   readonly body = input.required<Body>();
   /** El nivel del título: 2 bajo el H1 de la página, 3 bajo el título de su grupo. */
   readonly level = input<2 | 3>(3);
-
   protected readonly link = computed(() => bodyPagePath(this.body().id));
   protected readonly facts = computed(() => {
     const body = this.body();
@@ -123,7 +123,9 @@ export class BodyCard {
     if (body.orbit) {
       facts.push({
         label: body.kind === 'planet' ? 'Año' : 'Órbita',
-        value: formatPeriodHours(body.orbit.periodDays.value * 24),
+        value: ((v) => `${v.number}${NBSP}${v.unit}`)(
+          periodCells(body.orbit.periodDays.value * 24, 'días').value,
+        ),
       });
     }
     return facts;

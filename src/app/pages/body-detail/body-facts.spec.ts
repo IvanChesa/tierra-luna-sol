@@ -1,6 +1,6 @@
 import { BODIES, getBody } from '../../data/bodies';
 import { SOURCES } from '../../data/sources';
-import { FactGroup, bodyFacts, citations } from './body-facts';
+import { FactGroup, bodyFacts, citations, periodCells } from './body-facts';
 
 const rowOf = (groups: readonly FactGroup[], key: string) =>
   groups.flatMap((group) => group.rows).find((row) => row.key === key);
@@ -42,6 +42,8 @@ describe('body-facts: las tablas de datos de las fichas (fase 9)', () => {
     // Las distancias de las lunas, en km enteros; los periodos, en días (ESTILO §3).
     expect(rowOf(titan, 'semiMajorAxisKm')?.value).toEqual({ number: '1.221.870', unit: 'km' });
     expect(rowOf(titan, 'periodDays')?.value).toEqual({ number: '15,9', unit: 'días' });
+    // El periodo, con un decimal (ESTILO §3) y, al lado, la cifra de la fuente con los suyos.
+    expect(rowOf(titan, 'periodDays')?.detail).toBe('15,945421\u00a0días');
     expect(rowOf(titan, 'synchronousRotation')?.value.number).toBe('Síncrona');
   });
 
@@ -54,8 +56,16 @@ describe('body-facts: las tablas de datos de las fichas (fase 9)', () => {
     // La Luna, alrededor de la Tierra: perigeo y apogeo, en km.
     const moon = bodyFacts(getBody('luna'));
     expect(rowOf(moon, 'periapsisKm')?.label).toBe('Perigeo');
-    expect(rowOf(moon, 'semiMajorAxisKm')?.value).toEqual({ number: '384.000', unit: 'km' });
+    // Su órbita, de su propia ficha (la tabla comparada de la NASA la redondea a 384.000 km).
+    expect(rowOf(moon, 'semiMajorAxisKm')?.value).toEqual({ number: '384.400', unit: 'km' });
+    expect(rowOf(moon, 'semiMajorAxisKm')?.source).toBe('nssdc-moon');
+    expect(rowOf(moon, 'periodDays')?.detail).toBe('27,3217 días');
     expect(moon.find((g) => g.id === 'orbita')?.title).toBe('Órbita alrededor de la Tierra');
+    // Su presión, de noche, en notación científica (no «0 bar»).
+    const pressure = rowOf(moon, 'surfacePressureBar');
+    expect(pressure?.value).toMatchObject({ number: '3', unit: 'bar' });
+    expect(pressure?.value.spoken).toMatch(/^3 por 10 elevado a .15 bares$/);
+    expect(pressure?.note).toBe('De noche.');
   });
 
   it('la aclaración de cada dato, salvo si repite la etiqueta', () => {
@@ -80,9 +90,23 @@ describe('body-facts: las tablas de datos de las fichas (fase 9)', () => {
 
   it('los sentidos retrógrados, dichos: Venus gira al revés y Tritón orbita al revés', () => {
     const venus = bodyFacts(getBody('venus'));
-    expect(rowOf(venus, 'rotationPeriodH')?.detail).toBe('retrógrada');
-    expect(rowOf(venus, 'rotationPeriodH')?.value.number).not.toMatch(/−/);
+    expect(rowOf(venus, 'rotationPeriodH')?.value).toEqual({ number: '243,0', unit: 'días' });
+    expect(rowOf(venus, 'rotationPeriodH')?.detail).toBe('5832,5\u00a0h · retrógrada');
     expect(rowOf(bodyFacts(getBody('triton')), 'retrograde')?.value.number).toBe('Retrógrado');
+  });
+
+  it('los periodos: con un decimal y la cifra de la fuente si cambia (365,2 días, no 365)', () => {
+    const earth = bodyFacts(getBody('tierra'));
+    expect(rowOf(earth, 'periodDays')?.value).toEqual({ number: '365,2', unit: 'días' });
+    expect(rowOf(earth, 'periodDays')?.detail).toBeUndefined();
+    expect(rowOf(earth, 'rotationPeriodH')?.value).toEqual({ number: '23,9', unit: 'h' });
+    const jupiter = bodyFacts(getBody('jupiter'));
+    expect(rowOf(jupiter, 'periodDays')?.value).toEqual({ number: '11,9', unit: 'años' });
+    expect(rowOf(jupiter, 'periodDays')?.detail).toBe('4331\u00a0días');
+    expect(periodCells(1407.6, 'h')).toEqual({
+      value: { number: '58,7', unit: 'días' },
+      source: '1407,6\u00a0h',
+    });
   });
 
   it('el Sol: sin órbita, con su luminosidad y su tipo espectral', () => {

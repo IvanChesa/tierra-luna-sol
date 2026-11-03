@@ -13,7 +13,7 @@ export function bodyPagePath(id: BodyId): string {
   return findBody(id)?.kind === 'planet' ? `/planetas/${id}` : `/lunas/${id}`;
 }
 
-/** Las lunas de un planeta, en el orden del catálogo (de dentro afuera). */
+/** Las lunas de un planeta, en el orden del catálogo (las fichas las ordenan por su distancia). */
 export const moonsOf = (id: BodyId): readonly BodyIndexEntry[] =>
   BODY_INDEX.filter((body) => body.kind === 'moon' && body.parent === id);
 

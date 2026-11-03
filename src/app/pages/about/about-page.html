@@ -51,7 +51,7 @@
       orientación de los cuerpos, las salidas y puestas, los crepúsculos y los eclipses. Las otras
       dieciséis lunas, con elementos orbitales ajustados a las efemérides del JPL.
     </li>
-    <li>TypeScript estricto y CSS propio, sin librerías de interfaz.</li>
+    <li>TypeScript estricto y CSS propio, sin bibliotecas de interfaz.</li>
     <li>
       Pruebas con Vitest (unitarias), Playwright (de extremo a extremo y capturas) y axe
       (accesibilidad). Se publica en Cloudflare Pages desde GitHub Actions.
@@ -122,7 +122,8 @@
       </svg>
     </div>
     <figcaption>
-      Cada capa solo usa las de debajo; el lint lo vigila. three solo se importa en el motor.
+      Cada capa solo usa las de debajo; el análisis estático del código (ESLint) lo vigila. three
+      solo se importa en el motor.
     </figcaption>
   </figure>
   <ul>
@@ -131,8 +132,9 @@
       vista general a la Tierra, a la Luna o al cielo, y los viajes de cámara son continuos.
     </li>
     <li>
-      <strong>Render bajo demanda</strong>: sin movimiento, no se pinta ninguna imagen. Los cálculos
-      del motor van fuera de Angular, y la interfaz se actualiza como mucho cinco veces por segundo.
+      <strong>Pintado bajo demanda</strong>: sin movimiento, no se pinta ninguna imagen. Los
+      cálculos del motor van fuera de Angular, y la interfaz se actualiza como mucho cinco veces por
+      segundo.
     </li>
     <li>
       <strong>Nada pesado en el JS inicial</strong>: three y astronomy-engine se cargan después,
@@ -212,7 +214,7 @@
           <th scope="row">La libración de la Luna y la apertura de los anillos</th>
           <td>JPL Horizons</td>
           <td class="number">0,005° y 0,004°</td>
-          <td><a [href]="report('2')">Fase 2</a></td>
+          <td><a [href]="review('2')">Revisión de la fase 2</a></td>
         </tr>
         <tr>
           <th scope="row">El centro de la sombra del eclipse del 12 de agosto de 2026</th>

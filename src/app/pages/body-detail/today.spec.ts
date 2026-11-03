@@ -45,10 +45,8 @@ describe('today: los datos «de hoy» de las fichas (fase 9)', () => {
     expect(km).toBeGreaterThan(355_000);
     expect(km).toBeLessThan(407_000);
     expect(moon.rows[1]?.detail).toMatch(/^\d{1,3}\u00a0% iluminada$/);
-    // Titán, a 1,2 millones de km de Saturno.
-    expect(todayOf('titan', DATE).rows[0]?.value).toMatch(
-      /^1,2\u00a0millones de km$|^1,1\u00a0millones de km$/,
-    );
+    // Titán, a su planeta en km enteros (de 1.186.000 a 1.257.000 km), como en su tabla.
+    expect(todayOf('titan', DATE).rows[0]?.value).toMatch(/^1\.(1[89]|2[0-5])\d\.\d{3}\u00a0km$/);
   });
 
   it('dice cuándo y con qué se ha calculado; las lunas de elementos medios, de dónde sale su posición', () => {

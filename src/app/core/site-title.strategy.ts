@@ -2,7 +2,7 @@ import { DOCUMENT, inject, Injectable } from '@angular/core';
 import { Meta, Title } from '@angular/platform-browser';
 import { RouterStateSnapshot, TitleStrategy } from '@angular/router';
 import { canonicalUrl, setCanonical } from './canonical';
-import { PageDescription, pageMetaTags } from './page-meta';
+import { pageMetaTags } from './page-meta';
 import { SITE_CONFIG } from './site.config';
 
 /** «Página · Tierra Luna Sol»; sin título de ruta, solo el nombre del sitio. */
@@ -12,9 +12,8 @@ export function formatPageTitle(pageTitle: string | undefined): string {
 
 /**
  * El título, la URL canónica y las etiquetas para compartir de cada página (D25). Se ejecuta al acabar
- * cada navegación, después de crear la página (que ha registrado su description, `describePage`; las
- * vistas del explorador, que se crean después, la dicen en `data.description`), y también al
- * prerenderizar: todo va en el HTML estático. Las rutas con `data.canonical: false` (las
+ * cada navegación, con la description que ha dejado en `data.description` el resolver de la ruta, y
+ * también al prerenderizar: todo va en el HTML estático. Las rutas con `data.canonical: false` (las
  * páginas de error) no llevan canonical; con `data.noindex: true`, ni la 404 se indexa aunque el sitio
  * sí lo sea (revisión de la fase 0, hallazgo 5). Mientras `indexable` sea `false`, ninguna página.
  */
@@ -23,7 +22,6 @@ export class SiteTitleStrategy extends TitleStrategy {
   private readonly title = inject(Title);
   private readonly meta = inject(Meta);
   private readonly doc = inject(DOCUMENT);
-  private readonly description = inject(PageDescription);
 
   override updateTitle(snapshot: RouterStateSnapshot): void {
     const title = formatPageTitle(this.buildTitle(snapshot));
@@ -34,7 +32,8 @@ export class SiteTitleStrategy extends TitleStrategy {
     setCanonical(this.doc, canonical);
     const { tags, remove } = pageMetaTags({
       title,
-      description: (route.data['description'] as string | undefined) ?? this.description.current(),
+      // La de la página, de su resolver (`app.routes.ts`); si no tiene, la del sitio.
+      description: (route.data['description'] as string | undefined) || SITE_CONFIG.description,
       canonical,
       noindex: !SITE_CONFIG.indexable || route.data['noindex'] === true,
     });

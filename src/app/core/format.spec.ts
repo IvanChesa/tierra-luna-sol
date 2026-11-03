@@ -65,6 +65,8 @@ describe('format: las cifras de las fichas, con los decimales de su fuente (fase
     expect(formatExact(1221870)).toBe('1.221.870');
     expect(formatExact(-173)).toBe('−173');
     expect(formatExact(15.945421)).toBe('15,945421');
+    // Sin el ruido de la coma flotante de pasar de días a horas y volver.
+    expect(formatExact((27.3217 * 24) / 24)).toBe('27,3217');
   });
 
   it('notación científica: mantisa con los decimales de la fuente y su lectura', () => {

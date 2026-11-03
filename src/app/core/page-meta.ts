@@ -1,33 +1,4 @@
-import { DestroyRef, Service, inject, signal } from '@angular/core';
 import { SITE_CONFIG } from './site.config';
-
-/**
- * La description de la página activa (fase 9, D25). La registra cada página al crearse, con su texto
- * (que así va en su chunk diferido, no en el bundle inicial), y la lee `SiteTitleStrategy` al acabar
- * cada navegación, que es después de crear la página, también al prerenderizar. Si la página se
- * reutiliza con otros datos (de /planetas/marte a /planetas/jupiter), la función se vuelve a evaluar.
- */
-@Service()
-export class PageDescription {
-  private readonly source = signal<(() => string) | null>(null);
-
-  /** La description de la página, o la del sitio si la página no ha dicho ninguna. */
-  current(): string {
-    return this.source()?.() ?? SITE_CONFIG.description;
-  }
-
-  set(text: () => string, destroyRef: DestroyRef): void {
-    this.source.set(text);
-    destroyRef.onDestroy(() => {
-      if (this.source() === text) this.source.set(null);
-    });
-  }
-}
-
-/** Registra la description de la página (en su constructor o en un campo: contexto de inyección). */
-export function describePage(text: string | (() => string)): void {
-  inject(PageDescription).set(typeof text === 'string' ? () => text : text, inject(DestroyRef));
-}
 
 /** Una etiqueta `<meta>`: por `name` o por `property` (Open Graph). */
 export interface MetaTag {

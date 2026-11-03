@@ -134,7 +134,8 @@
     display: block;
   }
 
-  .site-nav__author {
+  .site-nav__author,
+  .site-nav__privacy {
     margin: var(--space-2) 0 0;
     padding-top: var(--space-3);
     border-top: var(--border-width) solid var(--color-line);
@@ -142,8 +143,14 @@
     font-size: var(--text-sm);
   }
 
+  .site-nav__privacy {
+    border-top: 0;
+    padding-top: 0;
+  }
+
   /* Dentro de una frase: subrayado, no solo el color (WCAG 1.4.1). */
-  .site-nav__author a {
+  .site-nav__author a,
+  .site-nav__privacy a {
     display: inline;
     min-height: 0;
     color: var(--color-accent);

@@ -85,6 +85,16 @@ export function distanceCells(km: number): { value: string; detail: string } {
     : { value: formatAu(km), detail: formatDistanceKm(km) };
 }
 
+/**
+ * La distancia de una luna a su planeta: en km enteros, como en la tabla de su ficha y en el índice del
+ * explorador (ESTILO §3; revisión de la fase 9, sugerencia 19): con un decimal en millones no se ve
+ * cómo varía.
+ */
+export const parentDistanceCells = (km: number): { value: string; detail: string } => ({
+  value: `${formatNumber(km, 0)}${NBSP}km`,
+  detail: '',
+});
+
 /** Lo que dice el HTML antes del cálculo (y sin JavaScript). */
 export const PENDING_NOTE =
   'Las distancias de hoy las calcula tu navegador con astronomy-engine al abrir la página (hace falta JavaScript).';

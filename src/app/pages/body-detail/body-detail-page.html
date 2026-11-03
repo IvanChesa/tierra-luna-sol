@@ -4,10 +4,10 @@
   <header class="body__head">
     <div class="body__intro">
       <p class="body__kind">
-        @if (parent(); as planet) {
-          Luna de <a [routerLink]="pagePath(planet.id)">{{ planet.name }}</a>
+        @if (kind().parent; as parent) {
+          {{ kind().text }} <a [routerLink]="parent.path">{{ parent.name }}</a>
         } @else {
-          {{ kind() }}
+          {{ kind().text }}
         }
       </p>
       <h1 id="body-title">{{ body().name }}</h1>
@@ -40,7 +40,8 @@
         </div>
       }
     </dl>
-    <p class="body__note today__note" aria-live="polite">{{ todayNote() }}</p>
+    <!-- Sin región viva: las cifras están en su sitio al leer la sección (revisión, hallazgo 16). -->
+    <p class="body__note today__note">{{ todayNote() }}</p>
     @if (positionNote(); as note) {
       <p class="body__note">{{ note }}</p>
     }
@@ -71,25 +72,27 @@
                   <span class="facts__note">{{ row.note }}</span>
                 }
               </th>
+              <!-- La cifra y su unidad, juntas: un solo espacio duro entre ellas (ESTILO §3). -->
               <td class="facts__value">
                 @if (row.value.spoken) {
                   <span aria-hidden="true"
-                    >{{ row.value.number }} × 10<sup>{{ row.value.exponent }}</sup></span
+                    >{{ row.value.number }} × 10<sup>{{ row.value.exponent }}</sup
+                    ><span class="facts__unit">&nbsp;{{ row.value.unit }}</span></span
                   ><span class="visually-hidden">{{ row.value.spoken }}</span>
-                } @else {
-                  {{ row.value.number }}
-                }
-                @if (row.value.unit && !row.value.spoken) {
-                  <span class="facts__unit">&nbsp;{{ row.value.unit }}</span>
                 } @else if (row.value.unit) {
-                  <span class="facts__unit" aria-hidden="true">&nbsp;{{ row.value.unit }}</span>
+                  <span
+                    >{{ row.value.number
+                    }}<span class="facts__unit">&nbsp;{{ row.value.unit }}</span></span
+                  >
+                } @else {
+                  <span>{{ row.value.number }}</span>
                 }
                 @if (row.detail) {
                   <span class="facts__detail">{{ row.detail }}</span>
                 }
               </td>
               <td class="facts__ref">
-                <a [href]="'#fuente-' + refs().get(row.source)"
+                <a [href]="pagePath(bodyId()) + '#fuente-' + refs().get(row.source)"
                   ><span class="visually-hidden">Fuente </span>{{ refs().get(row.source) }}</a
                 >
               </td>
