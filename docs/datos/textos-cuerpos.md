@@ -1,4 +1,4 @@
-# Textos de los cuerpos: lista de revisión (generada el 2026-10-23)
+# Textos de los cuerpos: lista de revisión (generada el 2026-11-03)
 
 Generada por `scripts/build-body-texts.mjs` a partir de `scripts/content/body-texts.json`. Cada texto
 lleva su fuente y las citas literales en inglés que lo respaldan; el script comprueba que cada cita
@@ -14,7 +14,7 @@ está en su página. Revisados: **0 de 120**. Para dar uno por revisado, pon
   - > It is the center of our solar system, and its gravity holds the solar system together.
   - > Most of the nebula's material was pulled toward the center to form our Sun, which accounts for 99.8% of our solar system’s mass.
   - > Without the Sun’s energy, life as we know it could not exist on our home planet.
-- [ ] **Curiosidad 1.** La energía del núcleo viaja hacia fuera en forma de radiación, que rebota por la zona radiativa y tarda unos 170 000 años en llegar desde el núcleo hasta la parte superior de la zona de convección.
+- [ ] **Curiosidad 1.** La energía del núcleo viaja hacia fuera en forma de radiación, que rebota por la zona radiativa y tarda unos 170.000 años en llegar desde el núcleo hasta la parte superior de la zona de convección.
   - Fuente: <https://science.nasa.gov/sun/facts/>
   - > Energy from the core is carried outward by radiation.
   - > This radiation bounces around the radiative zone, taking about 170,000 years to get from the core to the top of the convection zone.
@@ -87,7 +87,7 @@ _Nota de redacción:_ La página llama «día» a la rotación (243 días terres
   - Fuente: <https://science.nasa.gov/earth/facts/>
   - > Earth's longest mountain range is also underwater, at the bottom of the Arctic and Atlantic oceans.
   - > It is four times longer than the Andes, Rockies and Himalayas combined.
-- [ ] **Curiosidad 2.** El campo magnético de la Tierra se invierte de media cada 300 000 años aproximadamente, aunque a intervalos muy irregulares. Al completarse una inversión, las brújulas pasan a señalar el sur en lugar del norte.
+- [ ] **Curiosidad 2.** El campo magnético de la Tierra se invierte de media cada 300.000 años aproximadamente, aunque a intervalos muy irregulares. Al completarse una inversión, las brújulas pasan a señalar el sur en lugar del norte.
   - Fuente: <https://science.nasa.gov/earth/facts/>
   - > But the magnetic polarity of Earth can change, flipping the direction of the magnetic field.
   - > The geologic record tells scientists that a magnetic reversal takes place about every 300,000 years on average, but the timing is very irregular.
@@ -159,11 +159,11 @@ _Nota de redacción:_ «El planeta más antiguo» lo afirma la propia página en
   - Fuente: <https://science.nasa.gov/saturn/facts/>
   - > It's hard to imagine, but Saturn is the only planet in our solar system with an average density that is less than water.
   - > The giant gas planet could float in a bathtub if such a colossal thing existed.
-- [ ] **Curiosidad 2.** Los anillos se extienden hasta 282 000 km del planeta, pero los principales suelen tener solo unos 10 m de grosor. La mayoría de sus partículas van desde diminutos granos de hielo hasta trozos del tamaño de una casa.
+- [ ] **Curiosidad 2.** Los anillos se extienden hasta 282.000 km del planeta, pero los principales suelen tener solo unos 10 m de grosor. La mayoría de sus partículas van desde diminutos granos de hielo hasta trozos del tamaño de una casa.
   - Fuente: <https://science.nasa.gov/saturn/facts/>
   - > Saturn's ring system extends up to 175,000 miles (282,000 kilometers) from the planet, yet the vertical height is typically about 30 feet (10 meters) in the main rings.
   - > The ring particles mostly range from tiny, dust-sized icy grains to chunks as big as a house.
-- [ ] **Curiosidad 3.** En su polo norte hay una corriente en chorro de seis lados: un hexágono de unos 30 000 km de ancho, con vientos de unos 322 km/h y una enorme tormenta giratoria en el centro.
+- [ ] **Curiosidad 3.** En su polo norte hay una corriente en chorro de seis lados: un hexágono de unos 30.000 km de ancho, con vientos de unos 322 km/h y una enorme tormenta giratoria en el centro.
   - Fuente: <https://science.nasa.gov/saturn/facts/>
   - > Saturn's north pole has an interesting atmospheric feature – a six-sided jet stream.
   - > Spanning about 20,000 miles (30,000 kilometers) across, the hexagon is a wavy jet stream of 200-mile-per-hour winds (about 322 kilometers per hour) with a massive, rotating storm at the center.
@@ -234,7 +234,7 @@ _Nota de redacción:_ Se han evitado el número de lunas y de anillos (cifras qu
 - [ ] **Curiosidad 2.** La Luna comparte nombre con todas las lunas porque no se sabía que existieran otras hasta que, en 1610, Galileo Galilei descubrió cuatro lunas en órbita alrededor de Júpiter.
   - Fuente: <https://science.nasa.gov/moon/facts/>
   - > Our Moon shares a name with all moons simply because people didn't know other moons existed until Galileo Galilei discovered four moons orbiting Jupiter in 1610.
-- [ ] **Curiosidad 3.** La Luna está, de media, a 384 400 km de la Tierra: en ese espacio cabrían 30 planetas del tamaño de la Tierra. Además, se aleja lentamente, un poco más cada año.
+- [ ] **Curiosidad 3.** La Luna está, de media, a 384.400 km de la Tierra: en ese espacio cabrían 30 planetas del tamaño de la Tierra. Además, se aleja lentamente, un poco más cada año.
   - Fuente: <https://science.nasa.gov/moon/facts/>
   - > The Moon is an average of 238,855 miles (384,400 kilometers) away.
   - > That means 30 Earth-sized planets could fit in between Earth and the Moon.
@@ -309,7 +309,7 @@ _Nota de redacción:_ La primera curiosidad procede de https://science.nasa.gov/
   - > These forces cause Io's surface to bulge up and down (or in and out) by as much as 330 feet (100 meters).
   - > Compare these tides on Io's solid surface to the tides on Earth's oceans.
   - > On Earth, in the place where tides are highest, the difference between low and high tides is only 60 feet (18 meters), and this is for water, not solid ground.
-- [ ] **Curiosidad 3.** Al cruzar las líneas del campo magnético de Júpiter, Ío se convierte en un generador eléctrico de 400 000 voltios y 3 millones de amperios. Esa corriente provoca relámpagos en la alta atmósfera del planeta.
+- [ ] **Curiosidad 3.** Al cruzar las líneas del campo magnético de Júpiter, Ío se convierte en un generador eléctrico de 400.000 voltios y 3 millones de amperios. Esa corriente provoca relámpagos en la alta atmósfera del planeta.
   - Fuente: <https://science.nasa.gov/jupiter/jupiter-moons/io/facts/>
   - > cuts across the planet's powerful magnetic lines of force, thus turning Io into a electric generator.
   - > Io can develop 400,000 volts across itself and create an electric current of 3 million amperes.
@@ -400,7 +400,7 @@ _Nota de redacción:_ La ficha «Facts» matiza que el océano podría estar má
   - Fuente: <https://science.nasa.gov/saturn/moons/mimas/>
   - > It is not quite big enough to hold a round shape, so it is somewhat ovoid with dimensions of 129 x 122 x 119 miles (207 x 197 x 191 kilometers, respectively).
   - > Its low density suggests that it consists almost entirely of water ice, which is the only substance ever detected on Mimas.
-- [ ] **Curiosidad 3.** El astrónomo inglés William Herschel descubrió Mimas el 17 de septiembre de 1789 con su telescopio reflector. A unos 186 000 km de Saturno, tarda solo 22 horas y 36 minutos en completar una órbita.
+- [ ] **Curiosidad 3.** El astrónomo inglés William Herschel descubrió Mimas el 17 de septiembre de 1789 con su telescopio reflector. A unos 186.000 km de Saturno, tarda solo 22 horas y 36 minutos en completar una órbita.
   - Fuente: <https://science.nasa.gov/saturn/moons/mimas/>
   - > Mimas was discovered on Sept. 17, 1789, by English astronomer William Herschel, using his 40-foot reflector telescope.
   - > At a mean distance just over 115,000 miles (186,000 kilometers) from the massive planet, Mimas takes only 22 hours and 36 minutes to complete an orbit.
@@ -460,7 +460,7 @@ _Nota de redacción:_ «Odiseo» traduce el nombre oficial «Odysseus»; «Ithac
 
 ## Dione (`dione`)
 
-- [ ] **Resumen.** Dione es una pequeña luna que orbita Saturno a 377 400 km, más o menos la distancia a la que la Luna orbita la Tierra. Su densidad sugiere que cerca de un tercio de Dione es un núcleo denso, probablemente de roca, y el resto, hielo. A su temperatura media, de −186 °C, ese hielo es muy duro y se comporta como roca.
+- [ ] **Resumen.** Dione es una pequeña luna que orbita Saturno a 377.400 km, más o menos la distancia a la que la Luna orbita la Tierra. Su densidad sugiere que cerca de un tercio de Dione es un núcleo denso, probablemente de roca, y el resto, hielo. A su temperatura media, de −186 °C, ese hielo es muy duro y se comporta como roca.
   - Fuente: <https://science.nasa.gov/saturn/moons/dione/>
   - > Dione is a small moon of 349 miles (562 km) in mean radius orbiting Saturn every 2.7 days at a distance of 234,500 miles (377,400 km), which is roughly the same distance that our Moon orbits Earth.
   - > Dione's density is 1.48 times that of liquid water, suggesting that about a third of Dione is made up of a dense core (probably silicate rock) with the remainder of its material being ice.
