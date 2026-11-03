@@ -408,3 +408,46 @@ Lo de la fase 8 está en `PENDIENTES.md`:
 - la velocidad del cielo (se propone tiempo real);
 - probar `/cielo` y `/eclipses` en tu móvil (no bloquea).
 
+## Bloque E, en curso: dónde se queda (2026-11-03, sesión cerrada por Iván)
+
+Iván tenía que apagar el PC. La segunda ronda de revisión de la fase 9 se ha parado antes de terminar, sin escribir nada. No se ha fusionado nada en `main`.
+
+### Fase 8: fusionada
+En `main` con `--no-ff` (`358ae6b`), con su fila en la tabla (`0e17571`).
+
+### Fase 9 (Contenido y compartir): hecha y con su revisión aplicada, sin fusionar
+- **Rama `fase-9-contenido`**, en GitHub (push sin `--force`; el último commit es el de esta nota). Informe completo en `docs/informes/fase-9.md`, con su «Respuesta a la revisión».
+- **Primera ronda** (`docs/revisiones/fase-9.md`): CAMBIOS NECESARIOS, con 1 bloqueante, 2 importantes, 11 menores y 6 sugerencias.
+  - El bloqueante: las notas numeradas de las fichas y «Saltar al contenido» llevaban a la portada, por `<base href="/">`. Ahora llevan la ruta de su página, `check-links.mjs` resuelve los enlaces como el navegador y un e2e los pulsa.
+  - Los importantes: la Luna salía «Luna de Tierra», y la nota de privacidad no estaba en el explorador.
+  - Corregidos todos, salvo dos propuestas para la fase 10: los ceros finales de las cifras de la fuente y la hidratación incremental de las fichas.
+- **Los commits de la respuesta:** `671ca5e` (las correcciones), `039fd7a` (el menú), `169962b` (los documentos) y `a784c22` (las capturas).
+- **Decisiones de Iván del 03-11, aplicadas en la fase:**
+  - las constelaciones en español con el latín de la IAU (D38) y el cielo en tiempo real (D33);
+  - la fase propia antes de la 10, apuntada en el plan;
+  - el menú: «Cielo» en lugar de «Luna», y la Luna la primera y destacada en `/lunas`;
+  - la medida del rendimiento: vale la limpia; la definitiva, en las fases 10 y 11.
+- **Métricas** (el build final, en local):
+  - `npm run check` en verde: 713 tests, cobertura de `ephemeris/` del 98,9 % y 40 rutas prerenderizadas; JS inicial de 305,73 kB (314,05 con los estilos), con 14,70 kB de código propio de 15;
+  - e2e: 103 de 103;
+  - las métricas de Lighthouse en su móvil, sin Lighthouse y con el PC libre: 99 de nota estimada en las nueve páginas de la muestra, con CLS 0;
+  - enlaces: 1161 internos y 108 externos bien (los 3 de ivanchesa.com, pendientes del dominio); 0 cookies y 0 peticiones a terceros en las 40 rutas.
+- **El CI de `a784c22`** (ejecución 41722077403) seguía en marcha al cerrar: mirarlo al retomar (`gh run list --branch fase-9-contenido`).
+
+### Lo que queda del bloque E
+1. **Repetir la segunda ronda de revisión** de la fase 9: la pide `CLAUDE.md` porque la primera tuvo un bloqueante.
+   - Un subagente sin el contexto de la sesión. Lee `CLAUDE.md`, el plan, `docs/revisiones/README.md`, la primera ronda, el informe y `git diff 6279a89..fase-9-contenido` (`6279a89` es lo que revisó la primera ronda).
+   - Ejecuta él mismo `npm run check` y los e2e, y mira las capturas.
+   - Revisa también el menú nuevo, que es posterior a la primera ronda.
+   - Añade `## Segunda ronda` al final de `docs/revisiones/fase-9.md`.
+2. **Corregir lo que encuentre.** Si después de esa ronda quedara un bloqueante, es condición de parada.
+3. **Fusionar** `fase-9-contenido` en `main` con `--no-ff`, hacer push y añadir la fila de la fase 9 en la tabla de este diario.
+4. **Escribir el resumen del bloque E** en este diario, y **parar**: no se empieza el bloque F.
+
+### Pendiente para Iván
+Está en `PENDIENTES.md` («Bloque E (fase 9)», «Decisiones del 03-11» y «Revisiones y pruebas de Iván»):
+- revisar los textos en `docs/revision-textos.md`;
+- los enlaces a ivanchesa.com, cuando el dominio responda;
+- confirmar `@lhci/cli` en la fase 10;
+- probar en tu móvil (no bloquea);
+- los PR 1 y 3 de Dependabot, que siguen abiertos.
