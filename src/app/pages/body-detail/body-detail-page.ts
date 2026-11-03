@@ -3,6 +3,7 @@ import { Component, afterNextRender, computed, input, resource, signal } from '@
 import { RouterLink } from '@angular/router';
 import { CAPTURE_DATE, isCaptureQuery } from '../../core/capture';
 import { formatLongDate } from '../../core/format';
+import { describePage } from '../../core/page-meta';
 import { getBody } from '../../data/bodies';
 import { findBody } from '../../data/body-index';
 import { bodyPagePath, explorerLinkOf, moonsOf } from '../../data/body-links';
@@ -149,8 +150,16 @@ export class BodyDetailPage {
   );
 
   constructor() {
+    // La description: la primera frase del resumen (con su fuente, como el resumen).
+    describePage(() => firstSentence(this.body().summary.text));
     afterNextRender(() => this.browser.set(true));
   }
+}
+
+/** La primera frase de un texto (hasta un punto seguido de espacio y mayúscula). */
+export function firstSentence(text: string): string {
+  const end = text.search(/\.\s+(?=[A-ZÁÉÍÓÚÑ¿¡])/u);
+  return end < 0 ? text : text.slice(0, end + 1);
 }
 
 /** «de Saturno», «de la Tierra». */

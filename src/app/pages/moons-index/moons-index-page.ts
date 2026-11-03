@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { describePage } from '../../core/page-meta';
 import { getBody } from '../../data/bodies';
 import { OTHER_MOONS, PLANETS } from '../../data/body-index';
 import { BodyCard } from '../shared/body-card';
@@ -40,4 +41,10 @@ export class MoonsIndexPage {
     title: `Las lunas de ${planet.name}`,
     moons: OTHER_MOONS.filter((moon) => moon.parent === planet.id).map((moon) => getBody(moon.id)),
   })).filter((system) => system.moons.length > 0);
+
+  constructor() {
+    describePage(
+      'Las veinte lunas del explorador, de Fobos a Proteo, por planeta: sus datos con sus fuentes, tres curiosidades de cada una y su distancia de hoy.',
+    );
+  }
 }

@@ -174,3 +174,7 @@ main:focus {
 .site-footer p {
   margin: 0;
 }
+
+.site-footer p + p {
+  margin-top: var(--space-1);
+}

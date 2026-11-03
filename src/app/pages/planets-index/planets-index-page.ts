@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { describePage } from '../../core/page-meta';
 import { getBody } from '../../data/bodies';
 import { PLANETS } from '../../data/body-index';
 import { BodyCard } from '../shared/body-card';
@@ -27,4 +28,10 @@ import { Breadcrumbs } from '../shared/breadcrumbs';
 export class PlanetsIndexPage {
   protected readonly crumbs = [{ label: 'Inicio', link: '/' }, { label: 'Planetas' }];
   protected readonly planets = PLANETS.map((planet) => getBody(planet.id));
+
+  constructor() {
+    describePage(
+      'Los ocho planetas del sistema solar, con sus datos y sus fuentes, tres curiosidades de cada uno y su distancia de hoy.',
+    );
+  }
 }
