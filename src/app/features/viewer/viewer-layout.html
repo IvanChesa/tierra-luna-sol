@@ -32,7 +32,11 @@
       <span>1900–2100 · NASA/JPL · astronomy-engine</span>
       <span>
         Un proyecto de <a [href]="site.author.url">{{ site.author.name }}</a> ·
-        <a routerLink="/creditos">Créditos</a>
+        <a [href]="site.legal.notice">Aviso legal</a> ·
+        <a routerLink="/sobre-el-proyecto" fragment="privacidad"
+          >Sin cookies, sin analítica y sin peticiones a terceros</a
+        >
+        · <a routerLink="/creditos">Créditos</a>
       </span>
     </p>
   </footer>

@@ -1,0 +1,25 @@
+/* Los índices de cuerpos (/planetas y /lunas): una rejilla de tarjetas. */
+.lead {
+  margin-bottom: var(--space-8);
+  color: var(--color-text-muted);
+  font-size: var(--text-lg);
+}
+
+h2 {
+  margin-top: var(--space-8);
+  font-size: var(--text-xl);
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+  gap: var(--space-4);
+  margin: 0 0 var(--space-6);
+  padding: 0;
+  list-style: none;
+}
+
+/* La tarjeta destacada de /lunas (la Luna), antes de los grupos. */
+.featured {
+  margin: 0 0 var(--space-8);
+}

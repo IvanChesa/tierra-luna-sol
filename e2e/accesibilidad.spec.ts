@@ -79,6 +79,8 @@ test.describe('Accesibilidad (axe)', () => {
   });
 
   test('todas las páginas del sitio', async ({ page }) => {
+    // Desde la fase 9, 40 rutas (con las 30 fichas): más que el tiempo por defecto de un test.
+    test.setTimeout(600_000);
     // Con movimiento reducido, el explorador arranca en pausa (D31): sus tres rutas no tienen la CPU
     // ocupada pintando con SwiftShader mientras axe las analiza. El explorador en marcha lo mira la
     // prueba de arriba.

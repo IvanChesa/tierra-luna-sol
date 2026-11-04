@@ -1,7 +1,8 @@
 Líneas de las constelaciones (constellations.json), preparadas por
 scripts/build-constellations.mjs de Tierra Luna Sol a partir de d3-celestial:
 https://github.com/ofrohn/d3-celestial (commit 7e720a3de062059d4c5400a379146a601d9010e0).
-Los nombres son los oficiales de la IAU, de astronomy-engine (licencia MIT).
+Los nombres son los oficiales de la IAU, de astronomy-engine (licencia MIT), y en español, los del
+Anuario del Real Observatorio de Madrid para 2019 (© Instituto Geográfico Nacional): https://www.ign.es/web/resources/acercaDe/libDigPub/Anuario2019.pdf.
 
 Las líneas son las figuras de las cartas de las constelaciones de la IAU (las de Alan MacRobert),
 con algún retoque de Olaf Frohn en d3-celestial:

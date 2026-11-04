@@ -98,9 +98,27 @@ Decisiones y tareas que dependen de Iván. Claude Code añade aquí cada `TODO(i
 ## Bloque E (fase 8: el cielo desde España y los eclipses)
 - [x] **La altitud del Montsec y de la Puerta del Sol** (pendiente desde la fase 5): del modelo digital del terreno del IGN (MDT02) en el mismo punto, con la URL de la consulta: 812 m y 649 m. El mismo servicio da 410 m en el Observatori Fabra, como su estación meteorológica.
 - [x] **Constelaciones:** d3-celestial, con licencia BSD de 3 cláusulas (entra en tu lista). Las líneas siguen las cartas de la IAU.
-- [ ] (Para decidir, sin prisa) **Los nombres de las constelaciones.** Hoy, los oficiales de la IAU, en latín (Gemini, Ursa Major, Orion). Si los quieres en español (Géminis, Osa Mayor, Orión), hace falta una lista con licencia compatible: d3-celestial trae una, pero son traducciones del nombre inglés («Gemelos», «Carnero», «Toro») y no se usan. Dime la fuente (o si los escribo y los revisas con los demás textos).
-- [ ] (Para decidir) **La velocidad del cielo** (propuesta del informe de la fase 8, §10): D33 no la fijaba. En `/cielo`, **tiempo real** (lo que se ve es lo que hay ahora; la noche se recorre con su deslizador).
+- [x] **Los nombres de las constelaciones**, decidido el 03-11 (D38): **en español** (Osa Mayor, Géminis, Orión) y el **oficial de la IAU en latín como secundario**, cada uno comprobado con una fuente española publicada (en `FUENTES.md`) y la lista en `docs/revision-textos.md`, que revisa la sesión de revisión del bloque E. Se hace en la fase 9.
+- [x] **La velocidad del cielo**, decidido el 03-11: **tiempo real**, como se proponía (D33). Ya era así en el código (`CONTEXT_SPEED.sky`); queda en el plan.
 - [ ] **Probar el cielo en tu móvil** (no bloquea), en la vista previa: `/cielo` con el panel compacto, «Usar mi ubicación» (pide permiso solo al pulsarlo) y el deslizador de la hora; y `/eclipses` con «Ver en 3D».
+
+## Bloque E (fase 9: contenido y compartir)
+- [ ] **Los enlaces legales y el del autor, a ivanchesa.com** (D37): `https://ivanchesa.com/aviso-legal/` y `/privacidad/` (como en ivanchesa.es), en `site.config.ts`. Hoy ivanchesa.com no resuelve (NXDOMAIN, 03-11); cuando responda, comprobar que esas páginas existen: `node scripts/check-links.mjs --externos` (los marca como pendientes del dominio, no como rotos). `TODO(ivan)` en `site.config.ts`.
+- [ ] **La vista previa del enlace en una app real** (WhatsApp, Telegram, Slack…): cuando exista el dominio (fase 11). Hoy, simulada con las etiquetas del HTML (`scripts/preview-og.mjs`, capturas en `docs/informes/img/fase-9/compartir-*.webp`): la imagen es una URL absoluta del dominio y no se puede pedir desde fuera.
+- [ ] **Lighthouse**: no se ha ejecutado. Sus métricas, medidas con `scripts/measure-pages.mjs` en las condiciones de su móvil y con el PC sin otras tareas: 99 de nota estimada en las nueve páginas de la muestra (las cinco fichas, los índices, los créditos y «Sobre el proyecto»), con CLS 0. La definitiva, en la fase 10 (Lighthouse en el CI: `@lhci/cli`, abajo) y en producción, en la fase 11.
+- [ ] (Fase 10) **La fuente en un móvil real**: con `font-display: optional`, en una primera visita con la red lenta el texto se queda en la fuente de reserva toda la visita (revisión de la fase 9, hallazgo 15): mirar si Public Sans llega a tiempo y, si no, valorar `swap` con `ascent-override`, `descent-override` y `line-gap-override`. Y las de reserva del mismo ancho son Arial y Georgia, que Android no tiene: medir allí el desplazamiento al cargar (en tu móvil).
+- [ ] (Opcional) **«Sobre el proyecto» no cuenta cómo se ha hecho** (con Claude Code, en fases y con revisiones): si quieres que lo diga, dímelo y lo escribo para que lo revises.
+- [ ] (Para decidir) **`/luna` en el menú y en las migas** (segunda ronda de la revisión de la fase 9, sugerencia 24): con el menú nuevo, la Luna es la primera de `/lunas`, pero en `/luna` no se marca ningún enlace del menú y las migas dicen «Inicio › Luna». La propuesta: «Inicio › Lunas › Luna» y «Lunas» marcado también en `/luna`, con la misma URL. El plan dice que `/luna` «no cambia», así que lo decides tú.
+
+## Decisiones del 03-11 (durante la fase 9)
+- [x] Las constelaciones en español con el latín como secundario (D38) y el cielo en tiempo real (D33): arriba, en «Bloque E (fase 8)», y en el plan.
+- [x] **El menú**: «Cielo» (`/cielo`) en lugar de «Luna» (Planetas · Lunas · Sol · Cielo · Eclipses · Sobre el proyecto), también en el móvil; y en `/lunas`, la Luna la primera y destacada (enlaza a `/luna`, que no cambia) y después las demás por planeta. Hecho en la fase 9 (tarea 9 del plan).
+- [x] **La medida del rendimiento de la fase 9**: vale la limpia (el PC sin otras tareas: 99 en las nueve páginas de la muestra); las que se hicieron con otros procesos en marcha no son fiables y solo se apuntan en el informe (§4.1). La definitiva, la de la fase 10 (Lighthouse en el CI) y la de producción, la de la fase 11.
+- [ ] **Una fase propia antes de la fase 10** (en el plan, §6; **no se hace en la fase 9**: la prepara la sesión de revisión con la revisión del bloque E):
+  - **el Sol**, con un diseño mejor, en un estilo «real y luminoso»;
+  - **acabar las lunas**: las formas reales de Fobos, Deimos y Proteo (hoy, esferas; en el backlog, 3), y una superficie para Deimos, Proteo y las lunas de Urano (hoy, su color esquemático; backlog 12);
+  - **los sistemas de lunas de la vista general**: las lunas se ven demasiado grandes respecto a su planeta, las galileanas se atraviesan entre ellas y las de Saturno orbitan dentro de los anillos;
+  - **el lado nocturno de la Tierra sale azul marino**: la textura de noche trae una base azul y la exposición del primer plano la multiplica por 6.
 
 ## Decisiones
 - [x] **La revisión de los textos (fase 9)**, decidida al lanzar el bloque E (01-11): `docs/revision-textos.md` con cada texto, su fuente y un hueco para tus correcciones, agrupados por cuerpo y por vista. El bloque no te espera: la revisión queda apuntada abajo («Revisiones y pruebas de Iván») y se sigue.
@@ -108,14 +126,15 @@ Decisiones y tareas que dependen de Iván. Claude Code añade aquí cada `TODO(i
 - [x] **Subdominio definitivo:** `tierra-luna-sol.ivanchesa.com` (decisión del 31-10: el dominio pasa de ivanchesa.es a ivanchesa.com; revisión del bloque D, D5, y D37). Ya en `src/app/core/site.config.ts`, con la URL del autor, `https://ivanchesa.com`.
 
 ## Revisiones y pruebas de Iván
-- [ ] Textos de los 30 cuerpos (120 textos con `reviewed: false`): lista de revisión con las citas que los respaldan en `docs/datos/textos-cuerpos.md`. En la **fase 9** (decisión del 24-10; antes «al final de las fases 1 y 8»).
+- [ ] **Revisar los textos en `docs/revision-textos.md`** (fase 9; tu decisión al lanzar el bloque E): 360 textos, cada uno con su fuente y su línea «Corrección:», por cuerpo (los 120 de los cuerpos), por vista (las entradillas, las vistas guiadas de la Tierra, las vistas y el recorrido de la Luna), las páginas (los índices, los eclipses, «Sobre el proyecto», los créditos y la 404), los textos fijos de las fichas, del pie y del menú, y las descriptions de las 40 páginas. Las citas de los textos de los cuerpos, en `docs/datos/textos-cuerpos.md`. Lo regenera `node scripts/build-text-review.mjs` (no lo reescribe si ya tiene correcciones). Los nombres de las 88 constelaciones, al final, los revisa la sesión de revisión del bloque E.
+- [x] Textos de los 30 cuerpos (120 textos con `reviewed: false`): ahora en `docs/revision-textos.md` (arriba), con las citas en `docs/datos/textos-cuerpos.md`. En la **fase 9** (decisión del 24-10; antes «al final de las fases 1 y 8»).
 - [ ] Textos de las vistas guiadas y de los recorridos (fases 5 y 6; en el plan v1, 4 y 5). En Shackleton, el subtítulo dice, como su fuente, que el interior está siempre en sombra, pero la escena no dibuja las sombras del relieve y se ve iluminada la pared interior que mira al Sol: matizarlo (segunda ronda de la revisión de la fase 6).
 - [ ] Pruebas en el móvil real: por la vista previa de Cloudflare Pages desde la fase 4 (`staging.tierra-luna-sol.pages.dev`, la de `main`) o por la red local (fases 4–10; en el plan v1, 4–9). La primera, el 31-10 en staging: va bien.
 - [ ] Visto bueno final en el móvil (fase 10; en el plan v1, la 9).
 
 ## Fase 10
 - [ ] Conseguir un iPhone para probar (aunque sea prestado).
-- [ ] Decidir si se aprueba `@lhci/cli` (Lighthouse en el CI).
+- [ ] Decidir si se aprueba `@lhci/cli` (Lighthouse en el CI). Tu mensaje del 03-11 dice que «la medición definitiva es la de la fase 10 (Lighthouse en el CI)»: lo confirmo contigo al empezar la fase 10 (es una dependencia fuera de la lista cerrada).
 
 ## Fase 11 (manual; era la fase 10 del plan v1)
 - [ ] El dominio propio (D37): en Cloudflare Pages → `tierra-luna-sol` → «Custom domains», `tierra-luna-sol.ivanchesa.com`. La zona de ivanchesa.com está en la misma cuenta de Cloudflare: el propio panel crea el registro DNS. Los secrets de Cloudflare ya sirven (fase 4).

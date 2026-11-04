@@ -1,0 +1,231 @@
+<h1>Créditos</h1>
+<p class="lead">
+  Este explorador usa texturas, datos y programas de terceros. Cada recurso, con su autor, su
+  licencia y lo que se le ha cambiado; el detalle, fichero a fichero, en
+  <a [href]="sources">FUENTES.md</a>.
+</p>
+
+<section aria-labelledby="texturas">
+  <h2 id="texturas">Texturas y relieve</h2>
+  <ul>
+    <li>
+      <strong
+        >Los planetas, la Tierra (día, noche, nubes, relieve y océanos) y el detalle del brillo de
+        los anillos de Saturno</strong
+      >
+      (el Sol no tiene textura: lo dibuja el propio shader):
+      <a href="https://www.solarsystemscope.com/textures/">Solar System Scope</a>, con
+      <a [href]="licenses.ccBy">CC BY 4.0</a>. Reducidas y en WebP; el color de algunos planetas,
+      corregido con fotos del Hubble (NASA/ESA), y el del océano de la Tierra, con fotos de
+      <a href="https://epic.gsfc.nasa.gov/">EPIC (DSCOVR), del NASA EPIC Team</a>.
+    </li>
+    <li>
+      <strong>Los anillos de Saturno</strong>: su opacidad, de la ocultación de β Centauri de
+      Cassini UVIS (Colwell et al., 2020), en el
+      <a href="https://pds-rings.seti.org/holdings/volumes/COUVIS_8xxx/COUVIS_8001/"
+        >PDS Ring-Moon Systems Node</a
+      >
+      (dominio público); su color y su brillo, de las medidas del Hubble de
+      <a href="https://arxiv.org/abs/1007.0349">Salo y French (2010)</a> y de Cuzzi, French y Dones
+      (2002), con la ficha de los anillos de la NASA; los radios de sus divisiones, de la
+      <a href="https://pds-rings.seti.org/saturn/saturn_tables.html">tabla del PDS</a>.
+    </li>
+    <li>
+      <strong>La Luna</strong>: CGI Moon Kit del
+      <a href="https://svs.gsfc.nasa.gov/4720">Scientific Visualization Studio de la NASA</a>, con
+      datos de LRO/LROC (el color) y LRO/LOLA (el relieve); junto a los polos, el relieve de los
+      <a href="https://pds-geosciences.wustl.edu/missions/lro/lola.htm">modelos polares del LOLA</a>
+      (NASA/GSFC, en el PDS). Material de la NASA, con su crédito.
+    </li>
+    <li>
+      <strong>El relieve de Mercurio</strong>: el modelo de elevación global de MESSENGER del
+      <a href="https://astrogeology.usgs.gov/search/map/mercury_messenger_global_dem_665m"
+        >USGS Astrogeology</a
+      >
+      (Becker et al., 2016), de dominio público. <strong>El de Marte</strong>: el altímetro MOLA de
+      la Mars Global Surveyor (NASA), en el
+      <a href="https://pds-geosciences.wustl.edu/missions/mgs/megdr.html">PDS</a>, de dominio
+      público.
+    </li>
+    <li>
+      <strong>Las lunas</strong>: los mosaicos globales del
+      <a href="https://astrogeology.usgs.gov/search">USGS Astrogeology</a>, de dominio público, con
+      imágenes de Viking (Fobos), Voyager y Galileo (Ío, en color, y las demás de Júpiter), Cassini
+      (las de Saturno; los de Tetis y Rea, del DLR, T. Roatsch et al.) y Voyager 2 (Tritón, del
+      Lunar and Planetary Institute, P. Schenk). Mimas, con el mapa del DLR (Roatsch et al., 2018)
+      en el
+      <a href="https://pds-rings.seti.org/holdings/volumes/COISS_3xxx/COISS_3006/">PDS de la NASA</a
+      >. Reducidos y en WebP; los que son en gris, con un tinte. En Tritón, el norte que no vio
+      Voyager 2 se rellena con un gris liso. Deimos, Proteo y las lunas de Urano, con un color
+      esquemático (no hay un mapa completo con una licencia clara).
+    </li>
+    <li>
+      <strong>Los lugares con nombre</strong> de las vistas y el recorrido de la Luna, y los rasgos
+      con los que se comprueba la alineación de los mosaicos: el
+      <a href="https://planetarynames.wr.usgs.gov/">Gazetteer of Planetary Nomenclature</a> (IAU y
+      USGS), de dominio público.
+    </li>
+  </ul>
+</section>
+
+<section aria-labelledby="cielo">
+  <h2 id="cielo">Estrellas, Vía Láctea y constelaciones</h2>
+  <ul>
+    <li>
+      <strong>Las estrellas</strong>: HYG Database v4.1, de David Nash (<a
+        href="https://github.com/astronexus/HYG-Database"
+        >Astronomy Nexus</a
+      >), con <a [href]="licenses.ccBySa">CC BY-SA 4.0</a>. El catálogo derivado del explorador (las
+      estrellas hasta la magnitud 6,5) mantiene esa licencia.
+    </li>
+    <li>
+      <strong>La Vía Láctea</strong>: «The Milky Way panorama», de
+      <a href="https://www.eso.org/public/images/eso0932a/">ESO/S. Brunier</a>, con
+      <a [href]="licenses.ccBy">CC BY 4.0</a>. Sin sus estrellas (las pone el catálogo), reducida,
+      suavizada y en WebP.
+    </li>
+    <li>
+      <strong>Las líneas de las constelaciones</strong>: las figuras de las
+      <a href="https://www.iau.org/IAU/IAU/Astronomy-FAQs/Constellations.aspx"
+        >cartas de las constelaciones de la IAU</a
+      >
+      (IAU y Sky &amp; Telescope: Roger Sinnott y Rick Fienberg; las figuras, de Alan MacRobert),
+      con
+      <a [href]="licenses.ccBy">CC BY 4.0</a>, tal como las prepara
+      <a href="https://github.com/ofrohn/d3-celestial">d3-celestial</a>, de Olaf Frohn (BSD de 3
+      cláusulas, © 2015 Olaf Frohn; su texto y la atribución, junto al fichero).
+    </li>
+    <li>
+      <strong>Los nombres de las constelaciones</strong>: los oficiales de la IAU, de
+      astronomy-engine, y en español, los del
+      <a href="https://www.ign.es/web/resources/acercaDe/libDigPub/Anuario2019.pdf"
+        >Anuario del Real Observatorio de Madrid</a
+      >
+      (© Instituto Geográfico Nacional).
+    </li>
+  </ul>
+</section>
+
+<section aria-labelledby="datos">
+  <h2 id="datos">Datos</h2>
+  <ul>
+    <li>
+      <strong>Los datos de los cuerpos</strong>: las fichas de la
+      <a href="https://nssdc.gsfc.nasa.gov/planetary/factsheet/">NASA (NSSDCA)</a> y los parámetros
+      de los satélites de la <a href="https://ssd.jpl.nasa.gov/sats/phys_par/">NASA/JPL</a>; cada
+      cifra, con su fuente en su ficha.
+    </li>
+    <li>
+      <strong>Las órbitas de las lunas</strong>: elementos propios, ajustados a
+      <a href="https://ssd.jpl.nasa.gov/horizons/">JPL Horizons</a>, con los planos de Laplace del
+      <a href="https://ssd.jpl.nasa.gov/sats/elem/">JPL</a> y los polos de Urano y Neptuno de la IAU
+      (WGCCRE, 2015). La unidad astronómica, la de la IAU (2012).
+    </li>
+    <li>
+      <strong>Los lugares del cielo desde España</strong>: Fraga, Lleida, el Observatori Fabra y la
+      Puerta del Sol, y las altitudes del Montsec y de la Puerta del Sol (MDT02), ©
+      <a href="https://www.ign.es/web/politica-datos">Instituto Geográfico Nacional</a>; el Roque de
+      los Muchachos y el Teide, del
+      <a href="https://www.iac.es/en/observatorios-de-canarias"
+        >Instituto de Astrofísica de Canarias</a
+      >; Calar Alto, del <a href="https://www.caha.es/">Observatorio de Calar Alto</a>; el Montsec,
+      del <a href="https://parcastronomic.cat/">Parc Astronòmic Montsec</a>, y la altitud del Fabra,
+      del <a href="https://www.meteo.cat/">Servei Meteorològic de Catalunya</a>.
+    </li>
+    <li>
+      <strong>El brillo y el color de los planetas</strong>: las leyes de fase de Hilton (2005) y de
+      astronomy-engine, colores medidos en fotos del Hubble (NASA/ESA) y la reconstrucción de Urano
+      y Neptuno de <a href="https://doi.org/10.1093/mnras/stad3761">Irwin et al. (2024)</a>.
+    </li>
+    <li>
+      <strong>Las comprobaciones</strong>: las posiciones, con
+      <a href="https://ssd.jpl.nasa.gov/horizons/">JPL Horizons</a>; las fases, las salidas, las
+      puestas y los crepúsculos, con el <a href="https://aa.usno.navy.mil/">USNO</a>; y los
+      eclipses, con los catálogos de cinco milenios de la NASA, de
+      <a href="https://eclipse.gsfc.nasa.gov/">Fred Espenak y Jean Meeus (NASA/GSFC)</a>.
+    </li>
+  </ul>
+</section>
+
+<section aria-labelledby="textos">
+  <h2 id="textos">Textos</h2>
+  <p>
+    Los resúmenes y las curiosidades de los cuerpos son textos propios, traducidos y resumidos de
+    páginas de <a href="https://science.nasa.gov/">NASA Science</a>: cada uno, con su página en su
+    ficha.
+  </p>
+</section>
+
+<section aria-labelledby="imagenes">
+  <h2 id="imagenes">Las imágenes del propio explorador</h2>
+  <p>
+    Los pósters del explorador, las miniaturas y las imágenes de las fichas, y la imagen para
+    compartir, son capturas del propio motor con estas texturas: mantienen sus licencias y sus
+    atribuciones.
+  </p>
+</section>
+
+<section aria-labelledby="software">
+  <h2 id="software">Programas y tipografías</h2>
+  <ul>
+    <li>
+      <a href="https://github.com/cosinekitty/astronomy">astronomy-engine</a>, de Don Cross, con
+      <a [href]="licenses.mit">MIT</a>.
+    </li>
+    <li>
+      <a href="https://threejs.org">three.js</a> y <a href="https://angular.dev">Angular</a>, con
+      <a [href]="licenses.mit">MIT</a>.
+    </li>
+    <li>
+      Las tipografías Newsreader (Production Type) y Public Sans (USWDS), con la
+      <a [href]="licenses.ofl">SIL Open Font License 1.1</a>.
+    </li>
+  </ul>
+</section>
+
+<section aria-labelledby="licencias">
+  <h2 id="licencias">Las licencias, una por una</h2>
+  <dl class="licenses">
+    <dt><a [href]="licenses.ccBy">Creative Commons Atribución 4.0 (CC BY 4.0)</a></dt>
+    <dd>
+      Las texturas de Solar System Scope, la Vía Láctea de ESO/S. Brunier y las figuras de las
+      cartas de la IAU. Permite usar y cambiar, citando al autor y diciendo los cambios.
+    </dd>
+    <dt>
+      <a [href]="licenses.ccBySa">Creative Commons Atribución-CompartirIgual 4.0 (CC BY-SA 4.0)</a>
+    </dt>
+    <dd>
+      El catálogo de estrellas HYG y el fichero derivado del explorador, que se distribuye con la
+      misma licencia y su aviso.
+    </dd>
+    <dt><a href="https://opensource.org/license/bsd-3-clause">BSD de 3 cláusulas</a></dt>
+    <dd>d3-celestial, de Olaf Frohn (las líneas de las constelaciones), con su aviso.</dd>
+    <dt><a [href]="licenses.mit">MIT</a></dt>
+    <dd>astronomy-engine, three.js, Angular y el código propio del explorador.</dd>
+    <dt><a [href]="licenses.ofl">SIL Open Font License 1.1</a></dt>
+    <dd>Las tipografías Newsreader y Public Sans.</dd>
+    <dt>Dominio público</dt>
+    <dd>Los mosaicos y el relieve del USGS, los datos del PDS de la NASA y las tablas del USNO.</dd>
+    <dt>Material de la NASA</dt>
+    <dd>
+      El CGI Moon Kit, las fichas de la NSSDCA, los datos del JPL y las predicciones de eclipses,
+      que se pueden usar citando su origen y sin dar a entender que la NASA respalda el proyecto.
+    </dd>
+    <dt><a href="https://www.ign.es/web/politica-datos">Datos del IGN</a></dt>
+    <dd>Uso libre compatible con CC BY 4.0, con la cita «© Instituto Geográfico Nacional».</dd>
+  </dl>
+</section>
+
+<section aria-labelledby="codigo">
+  <h2 id="codigo">El código del explorador</h2>
+  <p>
+    El código propio tiene licencia MIT (© 2026 {{ site.author.name }}) y está en
+    <a [href]="site.repository">GitHub</a>. Las texturas, los datos y los catálogos de terceros
+    conservan sus propias licencias, las de esta página: en particular, el catálogo de estrellas, CC
+    BY-SA 4.0.
+  </p>
+  <p>
+    La NASA no respalda este proyecto ni participa en él, como tampoco ninguna de las demás
+    instituciones citadas.
+  </p>
+</section>

@@ -1,6 +1,9 @@
 import {
+  decimalsOf,
   formatAu,
   formatDateTime,
+  formatExact,
+  formatScientific,
   formatDistanceKm,
   formatLongDate,
   formatLongDateTime,
@@ -43,6 +46,41 @@ describe('format: cifras con Intl es-ES (ESTILO §3)', () => {
     expect(plain(formatPeriodHours(27.3217 * 24))).toBe('27,3 días');
     expect(plain(formatPeriodHours(365.256 * 24))).toBe('365 días');
     expect(plain(formatPeriodHours(10_755.7 * 24))).toBe('29,4 años');
+  });
+});
+
+describe('format: las cifras de las fichas, con los decimales de su fuente (fase 9)', () => {
+  it('cuántos decimales tiene una cifra, también en notación exponencial', () => {
+    expect(decimalsOf(1407.6)).toBe(1);
+    expect(decimalsOf(0.0009)).toBe(4);
+    expect(decimalsOf(6e-5)).toBe(5);
+    expect(decimalsOf(695700)).toBe(0);
+    expect(decimalsOf(-65)).toBe(0);
+    expect(decimalsOf(Number.NaN)).toBe(0);
+  });
+
+  it('sin redondear ni añadir decimales', () => {
+    expect(formatExact(3396.2)).toBe('3396,2');
+    expect(formatExact(0.0009)).toBe('0,0009');
+    expect(formatExact(1221870)).toBe('1.221.870');
+    expect(formatExact(-173)).toBe('−173');
+    expect(formatExact(15.945421)).toBe('15,945421');
+    // Sin el ruido de la coma flotante de pasar de días a horas y volver.
+    expect(formatExact((27.3217 * 24) / 24)).toBe('27,3217');
+  });
+
+  it('notación científica: mantisa con los decimales de la fuente y su lectura', () => {
+    expect(formatScientific(6.4171e23)).toEqual({
+      mantissa: '6,4171',
+      exponent: '23',
+      spoken: '6,4171 por 10 elevado a 23',
+    });
+    expect(formatScientific(1.9884e30).mantissa).toBe('1,9884');
+    expect(formatScientific(3.3e23)).toMatchObject({ mantissa: '3,3', exponent: '23' });
+    expect(formatScientific(3.828e26)).toMatchObject({ mantissa: '3,828', exponent: '26' });
+    // Una mantisa que, con el redondeo, llega a 10.
+    expect(formatScientific(9.99999999999999e5)).toMatchObject({ mantissa: '1', exponent: '6' });
+    expect(formatScientific(2.5e-5)).toMatchObject({ mantissa: '2,5', exponent: '−5' });
   });
 });
 

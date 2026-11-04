@@ -119,7 +119,7 @@ Disposición inmersiva de D30 (fase 3c): el lienzo a sangre bajo la cabecera y l
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────┐
-│ Tierra Luna Sol                  Planetas  Sol  Luna  Sobre el proyecto        │ ← cabecera fina
+│ Tierra Luna Sol       Planetas  Lunas  Sol  Cielo  Eclipses  Sobre el proyecto │ ← cabecera fina (menú del 03-11)
 ├────────────────────────────────────────────────────────────────────────────────┤
 │ Sistema solar  Tierra  Luna                              ┌───────────────────┐ │ ← vistas y texto de presentación
 │ Título (H1, Newsreader)                                  │ SATURNO         × │ │ ← tarjeta flotante (al elegir

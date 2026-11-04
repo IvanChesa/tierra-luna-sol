@@ -1,0 +1,123 @@
+/* «Sobre el proyecto»: una columna de lectura, con el diagrama y las tablas a lo ancho. */
+:host > * {
+  max-width: 52rem;
+}
+
+.lead {
+  color: var(--color-text-muted);
+  font-size: var(--text-lg);
+}
+
+section {
+  margin-top: var(--space-12);
+}
+
+h2 {
+  font-size: var(--text-2xl);
+}
+
+ul,
+ol {
+  max-width: var(--measure);
+  padding-left: var(--space-6);
+}
+
+li + li {
+  margin-top: var(--space-2);
+}
+
+code {
+  font-size: 0.9em;
+}
+
+/* El diagrama: los colores de la paleta, con el texto de la página. */
+.diagram {
+  margin: 0 0 var(--space-6);
+}
+
+.diagram__scroll {
+  overflow-x: auto;
+}
+
+.diagram svg {
+  display: block;
+  width: 100%;
+  min-width: 34rem;
+  height: auto;
+}
+
+.diagram__box {
+  fill: var(--color-surface);
+  stroke: var(--color-control);
+}
+
+.diagram__box--engine {
+  stroke: var(--color-accent);
+}
+
+.diagram__name {
+  fill: var(--color-text);
+  font-family: var(--font-display);
+  font-size: 17px;
+  text-anchor: middle;
+}
+
+.diagram__note {
+  fill: var(--color-text-muted);
+  font-size: 13px;
+  text-anchor: middle;
+}
+
+.diagram__line {
+  fill: none;
+  stroke: var(--color-text-muted);
+  stroke-width: 1.5;
+}
+
+.diagram__arrow {
+  fill: var(--color-text-muted);
+}
+
+.diagram figcaption {
+  margin-top: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+/* Las tablas se desplazan en horizontal si no caben (WCAG 1.4.10: la página, no). */
+.table {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+th,
+td {
+  padding: var(--space-2) var(--space-3) var(--space-2) 0;
+  border-top: var(--border-width) solid var(--color-line);
+  text-align: left;
+  vertical-align: top;
+}
+
+thead th {
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-regular);
+  border-top: 0;
+}
+
+tbody th {
+  font-weight: var(--font-weight-regular);
+}
+
+.number {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+#privacidad {
+  scroll-margin-top: var(--space-8);
+}

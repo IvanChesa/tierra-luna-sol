@@ -1,0 +1,196 @@
+/* Ficha completa (DISENO.md, «Ficha completa»): una columna de lectura; la imagen, al lado en escritorio. */
+.body {
+  max-width: 52rem;
+}
+
+.body__head {
+  display: grid;
+  gap: var(--space-6);
+  align-items: center;
+  margin-bottom: var(--space-8);
+}
+
+@media (min-width: 48rem) {
+  .body__head {
+    grid-template-columns: minmax(0, 1fr) 15rem;
+  }
+}
+
+.body__kind {
+  margin: 0 0 var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.body__summary {
+  color: var(--color-text-muted);
+  font-size: var(--text-lg);
+}
+
+/* El enlace principal, con forma de botón (fondo sobre acento: 9,67:1). */
+.body__view {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-target);
+  padding: 0 var(--space-4);
+  background: var(--color-accent);
+  color: var(--color-bg);
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-strong);
+  text-decoration: none;
+}
+
+.body__view:hover {
+  background: var(--color-focus);
+}
+
+.body__image {
+  justify-self: center;
+  width: min(100%, 15rem);
+  height: auto;
+}
+
+.body section {
+  margin-bottom: var(--space-8);
+}
+
+.body h2 {
+  font-size: var(--text-xl);
+}
+
+.body__note {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+/* «Hoy»: dos líneas por fila (la cifra y, debajo, los km o la fase) desde el HTML: nada se mueve. */
+.today {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--space-2) var(--space-6);
+  margin: 0 0 var(--space-3);
+}
+
+.today__row {
+  display: contents;
+}
+
+.today dt {
+  color: var(--color-text-muted);
+}
+
+.today dd {
+  display: grid;
+  min-height: 3.2em;
+  margin: 0;
+}
+
+.today__detail {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+/* La nota del cálculo cambia al llegar las cifras: el sitio de tres líneas, reservado. */
+.today__note {
+  min-height: 4.8em;
+}
+
+@media (min-width: 48rem) {
+  .today__note {
+    min-height: 3.2em;
+  }
+}
+
+/* Tablas de datos (DISENO.md): cifras tabulares a la derecha y la unidad en el color secundario. */
+.facts {
+  width: 100%;
+  margin-bottom: var(--space-6);
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.facts caption {
+  margin-bottom: var(--space-2);
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  text-align: left;
+}
+
+.facts th,
+.facts td {
+  padding: var(--space-2) var(--space-2) var(--space-2) 0;
+  border-top: var(--border-width) solid var(--color-line);
+  vertical-align: top;
+}
+
+.facts th {
+  font-weight: var(--font-weight-regular);
+  text-align: left;
+}
+
+.facts__note,
+.facts__detail {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+}
+
+.facts__value {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.facts__unit {
+  color: var(--color-text-muted);
+}
+
+.facts__ref {
+  width: 2.75rem;
+  text-align: center;
+}
+
+.facts__ref a {
+  display: inline-block;
+  min-width: 1.5rem;
+}
+
+.curiosities,
+.sources {
+  max-width: var(--measure);
+  padding-left: var(--space-6);
+}
+
+.curiosities li + li,
+.sources li + li {
+  margin-top: var(--space-3);
+}
+
+.curiosities p {
+  margin-bottom: var(--space-1);
+}
+
+.family {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-6);
+  padding: 0;
+  list-style: none;
+}
+
+.family a,
+.family span {
+  display: inline-block;
+  padding-block: var(--space-2);
+}
+
+.family [aria-current] {
+  color: var(--color-text-muted);
+}
+
+/* Los números de la lista de fuentes, como anclas: que no queden bajo la cabecera al saltar. */
+.sources li {
+  scroll-margin-top: var(--space-16);
+}

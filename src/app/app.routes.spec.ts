@@ -27,6 +27,10 @@ describe('rutas', () => {
     ['/planetas/marte', 'Marte', 'Marte · Tierra Luna Sol'],
     ['/planetas/jupiter', 'Júpiter', 'Júpiter · Tierra Luna Sol'],
     ['/planetas/neptuno', 'Neptuno', 'Neptuno · Tierra Luna Sol'],
+    ['/lunas', 'Lunas', 'Lunas · Tierra Luna Sol'],
+    ['/lunas/titan', 'Titán', 'Titán · Tierra Luna Sol'],
+    ['/lunas/io', 'Ío', 'Ío · Tierra Luna Sol'],
+    ['/lunas/proteo', 'Proteo', 'Proteo · Tierra Luna Sol'],
     ['/sol', 'Sol', 'Sol · Tierra Luna Sol'],
     ['/luna', 'Luna', 'Luna · Tierra Luna Sol'],
     ['/creditos', 'Créditos', 'Créditos · Tierra Luna Sol'],
@@ -38,12 +42,18 @@ describe('rutas', () => {
     expect(title()).toBe(pageTitle);
   });
 
-  it.each(['/no-existe', '/planetas/pluton', '/planetas/luna', '/planetas/marte/extra'])(
-    '%s muestra la página 404 en el cliente',
-    async (url) => {
-      await harness.navigateByUrl(url);
-      expect(h1()).toBe('Página no encontrada');
-      expect(title()).toBe('Página no encontrada · Tierra Luna Sol');
-    },
-  );
+  it.each([
+    '/no-existe',
+    '/planetas/pluton',
+    '/planetas/luna',
+    '/planetas/marte/extra',
+    // La nuestra tiene su ficha en /luna; los planetas, en /planetas.
+    '/lunas/luna',
+    '/lunas/marte',
+    '/lunas/caronte',
+  ])('%s muestra la página 404 en el cliente', async (url) => {
+    await harness.navigateByUrl(url);
+    expect(h1()).toBe('Página no encontrada');
+    expect(title()).toBe('Página no encontrada · Tierra Luna Sol');
+  });
 });

@@ -1,4 +1,4 @@
-// GENERADO por scripts/build-body-texts.mjs el 2026-10-23 a partir de scripts/content/body-texts.json.
+// GENERADO por scripts/build-body-texts.mjs el 2026-11-03 a partir de scripts/content/body-texts.json.
 // No se edita a mano: se cambia el JSON y se vuelve a generar. Las citas que respaldan cada texto
 // están en docs/datos/textos-cuerpos.md.
 import type { BodyId, BodyTexts } from './body.model';
@@ -12,7 +12,7 @@ export const BODY_TEXTS: Record<BodyId, BodyTexts> = {
     },
     facts: [
       {
-        text: 'La energía del núcleo viaja hacia fuera en forma de radiación, que rebota por la zona radiativa y tarda unos 170 000 años en llegar desde el núcleo hasta la parte superior de la zona de convección.',
+        text: 'La energía del núcleo viaja hacia fuera en forma de radiación, que rebota por la zona radiativa y tarda unos 170.000 años en llegar desde el núcleo hasta la parte superior de la zona de convección.',
         source: 'https://science.nasa.gov/sun/facts/',
         reviewed: false,
       },
@@ -89,7 +89,7 @@ export const BODY_TEXTS: Record<BodyId, BodyTexts> = {
         reviewed: false,
       },
       {
-        text: 'El campo magnético de la Tierra se invierte de media cada 300 000 años aproximadamente, aunque a intervalos muy irregulares. Al completarse una inversión, las brújulas pasan a señalar el sur en lugar del norte.',
+        text: 'El campo magnético de la Tierra se invierte de media cada 300.000 años aproximadamente, aunque a intervalos muy irregulares. Al completarse una inversión, las brújulas pasan a señalar el sur en lugar del norte.',
         source: 'https://science.nasa.gov/earth/facts/',
         reviewed: false,
       },
@@ -161,12 +161,12 @@ export const BODY_TEXTS: Record<BodyId, BodyTexts> = {
         reviewed: false,
       },
       {
-        text: 'Los anillos se extienden hasta 282 000 km del planeta, pero los principales suelen tener solo unos 10 m de grosor. La mayoría de sus partículas van desde diminutos granos de hielo hasta trozos del tamaño de una casa.',
+        text: 'Los anillos se extienden hasta 282.000 km del planeta, pero los principales suelen tener solo unos 10 m de grosor. La mayoría de sus partículas van desde diminutos granos de hielo hasta trozos del tamaño de una casa.',
         source: 'https://science.nasa.gov/saturn/facts/',
         reviewed: false,
       },
       {
-        text: 'En su polo norte hay una corriente en chorro de seis lados: un hexágono de unos 30 000 km de ancho, con vientos de unos 322 km/h y una enorme tormenta giratoria en el centro.',
+        text: 'En su polo norte hay una corriente en chorro de seis lados: un hexágono de unos 30.000 km de ancho, con vientos de unos 322 km/h y una enorme tormenta giratoria en el centro.',
         source: 'https://science.nasa.gov/saturn/facts/',
         reviewed: false,
       },
@@ -238,7 +238,7 @@ export const BODY_TEXTS: Record<BodyId, BodyTexts> = {
         reviewed: false,
       },
       {
-        text: 'La Luna está, de media, a 384 400 km de la Tierra: en ese espacio cabrían 30 planetas del tamaño de la Tierra. Además, se aleja lentamente, un poco más cada año.',
+        text: 'La Luna está, de media, a 384.400 km de la Tierra: en ese espacio cabrían 30 planetas del tamaño de la Tierra. Además, se aleja lentamente, un poco más cada año.',
         source: 'https://science.nasa.gov/moon/facts/',
         reviewed: false,
       },
@@ -310,7 +310,7 @@ export const BODY_TEXTS: Record<BodyId, BodyTexts> = {
         reviewed: false,
       },
       {
-        text: 'Al cruzar las líneas del campo magnético de Júpiter, Ío se convierte en un generador eléctrico de 400 000 voltios y 3 millones de amperios. Esa corriente provoca relámpagos en la alta atmósfera del planeta.',
+        text: 'Al cruzar las líneas del campo magnético de Júpiter, Ío se convierte en un generador eléctrico de 400.000 voltios y 3 millones de amperios. Esa corriente provoca relámpagos en la alta atmósfera del planeta.',
         source: 'https://science.nasa.gov/jupiter/jupiter-moons/io/facts/',
         reviewed: false,
       },
@@ -406,7 +406,7 @@ export const BODY_TEXTS: Record<BodyId, BodyTexts> = {
         reviewed: false,
       },
       {
-        text: 'El astrónomo inglés William Herschel descubrió Mimas el 17 de septiembre de 1789 con su telescopio reflector. A unos 186 000 km de Saturno, tarda solo 22 horas y 36 minutos en completar una órbita.',
+        text: 'El astrónomo inglés William Herschel descubrió Mimas el 17 de septiembre de 1789 con su telescopio reflector. A unos 186.000 km de Saturno, tarda solo 22 horas y 36 minutos en completar una órbita.',
         source: 'https://science.nasa.gov/saturn/moons/mimas/',
         reviewed: false,
       },
@@ -462,7 +462,7 @@ export const BODY_TEXTS: Record<BodyId, BodyTexts> = {
   },
   dione: {
     summary: {
-      text: 'Dione es una pequeña luna que orbita Saturno a 377 400 km, más o menos la distancia a la que la Luna orbita la Tierra. Su densidad sugiere que cerca de un tercio de Dione es un núcleo denso, probablemente de roca, y el resto, hielo. A su temperatura media, de −186 °C, ese hielo es muy duro y se comporta como roca.',
+      text: 'Dione es una pequeña luna que orbita Saturno a 377.400 km, más o menos la distancia a la que la Luna orbita la Tierra. Su densidad sugiere que cerca de un tercio de Dione es un núcleo denso, probablemente de roca, y el resto, hielo. A su temperatura media, de −186 °C, ese hielo es muy duro y se comporta como roca.',
       source: 'https://science.nasa.gov/saturn/moons/dione/',
       reviewed: false,
     },

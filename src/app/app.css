@@ -109,10 +109,16 @@
     display: none;
   }
 
+  /* Cabe en la pantalla y se desplaza por dentro: en horizontal o con el zoom al 200 %, lo último (los
+     enlaces legales y la nota de privacidad, que en el explorador del móvil solo están aquí) quedaría
+     fuera (WCAG 1.4.4 y 1.4.10; revisión de la fase 9, segunda ronda, hallazgo 22). */
   .site-nav:popover-open {
     position: fixed;
     inset: 3.5rem var(--space-2) auto auto;
     width: min(18rem, calc(100vw - 2 * var(--space-2)));
+    max-height: calc(100dvh - 3.5rem - var(--space-2));
+    overflow-y: auto;
+    overscroll-behavior: contain;
     padding: var(--space-2) var(--space-4) var(--space-4);
     background: var(--color-surface);
     border: var(--border-width) solid var(--color-control);
@@ -134,7 +140,8 @@
     display: block;
   }
 
-  .site-nav__author {
+  .site-nav__author,
+  .site-nav__privacy {
     margin: var(--space-2) 0 0;
     padding-top: var(--space-3);
     border-top: var(--border-width) solid var(--color-line);
@@ -142,8 +149,14 @@
     font-size: var(--text-sm);
   }
 
+  .site-nav__privacy {
+    border-top: 0;
+    padding-top: 0;
+  }
+
   /* Dentro de una frase: subrayado, no solo el color (WCAG 1.4.1). */
-  .site-nav__author a {
+  .site-nav__author a,
+  .site-nav__privacy a {
     display: inline;
     min-height: 0;
     color: var(--color-accent);
@@ -173,4 +186,8 @@ main:focus {
 
 .site-footer p {
   margin: 0;
+}
+
+.site-footer p + p {
+  margin-top: var(--space-1);
 }

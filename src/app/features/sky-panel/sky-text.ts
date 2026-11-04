@@ -4,7 +4,7 @@
  * en la hora local del lugar (con su zona) y los grados de altura, pegados a la cifra (35°).
  */
 import { formatClockInZone, formatNumber, utcOffsetLabelInZone } from '../../core/format';
-import { CONSTELLATION_NAMES } from '../../data/constellations';
+import { CONSTELLATION_NAMES, CONSTELLATION_NAMES_ES } from '../../data/constellations';
 import type { MoonPhaseInfo } from '../../ephemeris/ephemeris';
 import type { NightBody, NightSky } from '../../ephemeris/night';
 import { CompassPoint, NAKED_EYE_MAGNITUDE, SkyBodyId, compassPoint } from '../../ephemeris/sky';
@@ -80,8 +80,15 @@ export const clockAt = (date: Date, place: SkyPlace): string =>
 export const zoneText = (date: Date, place: SkyPlace): string =>
   `${place.timeZone}, ${utcOffsetLabelInZone(date, place.timeZone)}`;
 
-/** La constelación por su símbolo de la IAU («Gemini»). */
-export const constellationName = (symbol: string): string => CONSTELLATION_NAMES[symbol] ?? symbol;
+/**
+ * La constelación por su símbolo de la IAU, con su nombre en español y, como secundario, el oficial de
+ * la IAU en latín (D38): «Géminis (Gemini)». Si los dos son iguales («Leo»), una vez.
+ */
+export function constellationName(symbol: string): string {
+  const latin = CONSTELLATION_NAMES[symbol] ?? symbol;
+  const spanish = CONSTELLATION_NAMES_ES[symbol] ?? latin;
+  return spanish === latin ? spanish : `${spanish} (${latin})`;
+}
 
 /** «Júpiter, a 35° de altura, hacia el sureste.» o «Júpiter está bajo el horizonte.» */
 export function skyPositionText(id: SkyBodyId, azimuthDeg: number, altitudeDeg: number): string {
@@ -154,7 +161,7 @@ export function twilightTexts(
 
 /**
  * «Hacia dónde mirar» un planeta: «Júpiter: de 20:15 a 06:30. Lo más alto, a las 01:10, hacia el sur,
- * a 62°. Magnitud −2,4, en Gemini.». Si no se ve de noche, `null`.
+ * a 62°. Magnitud −2,4, en Géminis (Gemini).». Si no se ve de noche, `null`.
  */
 export function planetNightText(body: NightBody, place: SkyPlace): string | null {
   if (!body.visible) return null;

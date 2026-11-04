@@ -10,7 +10,12 @@ test.describe('El cielo desde España (fase 8)', () => {
   }) => {
     const problems = trackProblems(page);
     await openExplorer(page, '/cielo?fecha=2026-11-01T21:00Z');
-    await expect(page.getByRole('link', { name: 'Cielo' })).toHaveAttribute('aria-current', 'page');
+    // «Cielo», en las vistas del explorador y en el menú del sitio (decisión de Iván del 03-11).
+    for (const nav of ['Vistas del explorador', 'Principal']) {
+      await expect(
+        page.getByRole('navigation', { name: nav }).getByRole('link', { name: 'Cielo' }),
+      ).toHaveAttribute('aria-current', 'page');
+    }
     await expect(page.locator('h1')).toHaveText('El cielo desde España');
     const select = page.getByLabel('Lugar desde el que ves el cielo');
     await expect(select).toHaveValue('montsec');

@@ -27,6 +27,10 @@ declare global {
     __e2eUrlChanges?: number;
     /** Cambios de la fecha de la barra de tiempo desde que se empezó a contar. */
     __e2eTimeChanges?: number;
+    /** Los valores que ha tenido el `href` de «Saltar al contenido», antes de cada cambio. */
+    __e2eSkipHrefs?: string[];
+    /** Una marca en el documento: si se carga otro, desaparece. */
+    __e2eSameDocument?: boolean;
   }
 }
 

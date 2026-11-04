@@ -265,9 +265,10 @@ function isConstellationData(value: unknown): value is ConstellationData {
   return (
     Array.isArray(list) &&
     list.every(
-      (c: { id?: unknown; name?: unknown; label?: unknown; lines?: unknown }) =>
+      (c: { id?: unknown; name?: unknown; es?: unknown; label?: unknown; lines?: unknown }) =>
         typeof c.id === 'string' &&
         typeof c.name === 'string' &&
+        typeof c.es === 'string' &&
         Array.isArray(c.label) &&
         Array.isArray(c.lines),
     )

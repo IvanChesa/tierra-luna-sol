@@ -24,6 +24,16 @@
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "public-sans-latin-{400,600}-normal.woff2",
+                "input": "node_modules/@fontsource/public-sans/files",
+                "output": "fonts"
+              },
+              {
+                "glob": "newsreader-latin-500-normal.woff2",
+                "input": "node_modules/@fontsource/newsreader/files",
+                "output": "fonts"
               }
             ],
             "styles": ["src/styles.css"],

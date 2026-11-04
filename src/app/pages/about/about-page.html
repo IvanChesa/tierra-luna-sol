@@ -1,0 +1,384 @@
+<h1>Sobre el proyecto</h1>
+<p class="lead">
+  Tierra Luna Sol es un explorador 3D del Sol, los ocho planetas y veintiuna lunas, con sus
+  posiciones y orientaciones reales para cualquier fecha entre 1900 y 2100, calculadas en el
+  navegador. Es una pieza del portfolio de {{ site.author.name }}, desarrollador de software.
+</p>
+
+<section aria-labelledby="que-hace">
+  <h2 id="que-hace">Qué hace</h2>
+  <ul>
+    <li>
+      <a routerLink="/">El sistema solar</a> en movimiento, con viajes de cámara continuos entre la
+      vista general, <a routerLink="/explorar/tierra">la Tierra</a>,
+      <a routerLink="/explorar/luna">la Luna</a> y <a routerLink="/cielo">el cielo</a>.
+    </li>
+    <li>
+      La Tierra con su relieve, sus nubes y las luces de la noche; la Luna con el relieve del
+      altímetro LOLA y su libración; las lunas principales con sus mosaicos del USGS; las sombras de
+      las lunas sobre Júpiter, y los anillos de Saturno con su opacidad medida por Cassini.
+    </li>
+    <li>
+      El cielo desde España, con el Montsec por defecto: los crepúsculos, la refracción, las
+      constelaciones y qué planetas se ven esta noche. Y los
+      <a routerLink="/eclipses">próximos eclipses visibles desde España</a>.
+    </li>
+    <li>
+      Las fichas de los 30 cuerpos (<a routerLink="/planetas">planetas</a>,
+      <a routerLink="/lunas">lunas</a>, <a routerLink="/sol">el Sol</a> y
+      <a routerLink="/luna">la Luna</a>), con sus datos y sus fuentes.
+    </li>
+    <li>
+      Todo se puede usar con el teclado y tiene su equivalente sin 3D: listas, tablas y fichas.
+    </li>
+  </ul>
+</section>
+
+<section aria-labelledby="como">
+  <h2 id="como">Cómo está hecho</h2>
+  <ul>
+    <li>
+      <strong>Angular 22</strong> con componentes independientes, signals y sin zone.js. Las páginas
+      se prerenderizan: el HTML llega completo y se lee sin JavaScript.
+    </li>
+    <li>
+      <strong>Three.js 0.186</strong>, directo, con shaders propios: sombreado por tipo de cuerpo,
+      atmósferas, sombras de eclipses y de anillos calculadas en el propio shader y profundidad
+      logarítmica.
+    </li>
+    <li>
+      <strong>astronomy-engine</strong> para el Sol, los planetas, la Luna, las lunas de Júpiter, la
+      orientación de los cuerpos, las salidas y puestas, los crepúsculos y los eclipses. Las otras
+      dieciséis lunas, con elementos orbitales ajustados a las efemérides del JPL.
+    </li>
+    <li>TypeScript estricto y CSS propio, sin bibliotecas de interfaz.</li>
+    <li>
+      Pruebas con Vitest (unitarias), Playwright (de extremo a extremo y capturas) y axe
+      (accesibilidad). Se publica en Cloudflare Pages desde GitHub Actions.
+    </li>
+  </ul>
+</section>
+
+<section aria-labelledby="arquitectura">
+  <h2 id="arquitectura">Arquitectura</h2>
+  <figure class="diagram">
+    <!-- En las pantallas estrechas, el diagrama no encoge más: se desplaza (y se enfoca con el teclado). -->
+    <div class="diagram__scroll" tabindex="0" role="group" aria-label="Diagrama de las capas">
+      <svg
+        viewBox="0 0 640 330"
+        role="img"
+        aria-labelledby="diagram-title diagram-desc"
+        focusable="false"
+      >
+        <title id="diagram-title">Las capas del explorador</title>
+        <desc id="diagram-desc">
+          De arriba abajo: las páginas, la interfaz del explorador y el estado, el motor 3D, y las
+          efemérides y los datos. Cada capa solo usa las de debajo.
+        </desc>
+        <defs>
+          <marker id="arrow" viewBox="0 0 8 8" refX="4" refY="4" markerWidth="8" markerHeight="8">
+            <path d="M0 0 L8 4 L0 8 z" class="diagram__arrow" />
+          </marker>
+        </defs>
+        <rect x="10" y="10" width="620" height="54" rx="4" class="diagram__box" />
+        <text x="320" y="34" class="diagram__name">Páginas y vistas</text>
+        <text x="320" y="53" class="diagram__note">
+          Angular, prerenderizadas: fichas, índices, eclipses
+        </text>
+
+        <rect x="10" y="94" width="300" height="54" rx="4" class="diagram__box" />
+        <text x="160" y="118" class="diagram__name">Interfaz del explorador</text>
+        <text x="160" y="137" class="diagram__note">features/, diferida</text>
+        <rect x="330" y="94" width="300" height="54" rx="4" class="diagram__box" />
+        <text x="480" y="118" class="diagram__name">Estado</text>
+        <text x="480" y="137" class="diagram__note">state/, signals</text>
+
+        <rect
+          x="10"
+          y="178"
+          width="620"
+          height="54"
+          rx="4"
+          class="diagram__box diagram__box--engine"
+        />
+        <text x="320" y="202" class="diagram__name">Motor 3D: SceneEngine</text>
+        <text x="320" y="221" class="diagram__note">
+          scene/, Three.js sin Angular: un lienzo, tres marcos de escala
+        </text>
+
+        <rect x="10" y="262" width="300" height="54" rx="4" class="diagram__box" />
+        <text x="160" y="286" class="diagram__name">Efemérides</text>
+        <text x="160" y="305" class="diagram__note">ephemeris/, TypeScript puro</text>
+        <rect x="330" y="262" width="300" height="54" rx="4" class="diagram__box" />
+        <text x="480" y="286" class="diagram__name">Datos</text>
+        <text x="480" y="305" class="diagram__note">data/, cada cifra con su fuente</text>
+
+        <path d="M160 64 V90" class="diagram__line" marker-end="url(#arrow)" />
+        <path d="M480 64 V90" class="diagram__line" marker-end="url(#arrow)" />
+        <path d="M160 148 V174" class="diagram__line" marker-end="url(#arrow)" />
+        <path d="M480 148 V174" class="diagram__line" marker-end="url(#arrow)" />
+        <path d="M160 232 V258" class="diagram__line" marker-end="url(#arrow)" />
+        <path d="M480 232 V258" class="diagram__line" marker-end="url(#arrow)" />
+      </svg>
+    </div>
+    <figcaption>
+      Cada capa solo usa las de debajo; el análisis estático del código (ESLint) lo vigila. three
+      solo se importa en el motor.
+    </figcaption>
+  </figure>
+  <ul>
+    <li>
+      <strong>Un solo lienzo 3D</strong> para todas las vistas: el motor no se recrea al pasar de la
+      vista general a la Tierra, a la Luna o al cielo, y los viajes de cámara son continuos.
+    </li>
+    <li>
+      <strong>Pintado bajo demanda</strong>: sin movimiento, no se pinta ninguna imagen. Los
+      cálculos del motor van fuera de Angular, y la interfaz se actualiza como mucho cinco veces por
+      segundo.
+    </li>
+    <li>
+      <strong>Nada pesado en el JS inicial</strong>: three y astronomy-engine se cargan después,
+      cuando hacen falta; en las fichas, los datos de hoy se calculan con un
+      <code>import()</code> dinámico después de pintar.
+    </li>
+    <li>
+      <strong>Texturas por niveles de calidad</strong>, decodificadas fuera del hilo principal y
+      subidas a la GPU poco a poco; el nivel baja solo si el dispositivo no llega.
+    </li>
+  </ul>
+</section>
+
+<section aria-labelledby="escalas">
+  <h2 id="escalas">Marcos de escala</h2>
+  <p>
+    Las distancias del sistema solar van de unos cientos de kilómetros a miles de millones: en la
+    precisión de la GPU (32 bits) no caben a la vez. Por eso las posiciones se calculan con 64 bits
+    en JavaScript y pasan a la GPU relativas al cuerpo enfocado (un origen flotante), en tres
+    marcos:
+  </p>
+  <ol>
+    <li>
+      <strong>La vista general, ilustrativa</strong>: las distancias, en una escala logarítmica, y
+      los tamaños, agrandados, sin solapes y con un mínimo en pantalla.
+    </li>
+    <li>
+      <strong>El sistema local, físico</strong>: al enfocar un planeta, él y sus lunas pasan a su
+      escala real entre ellos.
+    </li>
+    <li><strong>La escala real</strong>: todo en kilómetros, con marcas para lo que no se ve.</li>
+  </ol>
+  <p>Los cambios de marco se animan; con movimiento reducido, son directos.</p>
+</section>
+
+<section aria-labelledby="precision">
+  <h2 id="precision">Precisión medida</h2>
+  <div class="table">
+    <table>
+      <caption class="visually-hidden">
+        Error máximo de cada cálculo frente a su referencia
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col">Qué</th>
+          <th scope="col">Frente a</th>
+          <th scope="col">Error máximo</th>
+          <th scope="col">Informe</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th scope="row">Planetas, de 1900 a 2100</th>
+          <td>JPL Horizons</td>
+          <td class="number">0,008°</td>
+          <td><a [href]="report('1')">Fase 1</a></td>
+        </tr>
+        <tr>
+          <th scope="row">La Luna</th>
+          <td>JPL Horizons</td>
+          <td class="number">0,002°</td>
+          <td><a [href]="report('1')">Fase 1</a></td>
+        </tr>
+        <tr>
+          <th scope="row">Las lunas de Júpiter</th>
+          <td>JPL Horizons</td>
+          <td class="number">0,06°</td>
+          <td><a [href]="report('1')">Fase 1</a></td>
+        </tr>
+        <tr>
+          <th scope="row">Las otras 16 lunas, de 1900 a 2100</th>
+          <td>JPL Horizons</td>
+          <td class="number">0,38°</td>
+          <td><a [href]="report('1')">Fase 1</a></td>
+        </tr>
+        <tr>
+          <th scope="row">La libración de la Luna y la apertura de los anillos</th>
+          <td>JPL Horizons</td>
+          <td class="number">0,005° y 0,004°</td>
+          <td><a [href]="review('2')">Revisión de la fase 2</a></td>
+        </tr>
+        <tr>
+          <th scope="row">El centro de la sombra del eclipse del 12 de agosto de 2026</th>
+          <td>NASA</td>
+          <td class="number">2,7&nbsp;km</td>
+          <td><a [href]="report('5')">Fase 5</a></td>
+        </tr>
+        <tr>
+          <th scope="row">La sombra de la Tierra en tres eclipses de Luna</th>
+          <td>NASA</td>
+          <td class="number">0,001 de magnitud</td>
+          <td><a [href]="report('6')">Fase 6</a></td>
+        </tr>
+        <tr>
+          <th scope="row">Salidas, puestas y crepúsculos en el Montsec y el Teide</th>
+          <td>USNO</td>
+          <td class="number">2&nbsp;min</td>
+          <td><a [href]="report('8')">Fase 8</a></td>
+        </tr>
+        <tr>
+          <th scope="row">Los 45 eclipses de 2026 a 2035</th>
+          <td>NASA</td>
+          <td class="number">Fecha y tipo exactos</td>
+          <td><a [href]="report('8')">Fase 8</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section aria-labelledby="rendimiento">
+  <h2 id="rendimiento">Rendimiento medido</h2>
+  <p>En un ordenador de escritorio con una tarjeta gráfica RTX 3060.</p>
+  <div class="table">
+    <table>
+      <caption class="visually-hidden">
+        Rendimiento medido y su presupuesto
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col">Qué</th>
+          <th scope="col">Medido</th>
+          <th scope="col">Presupuesto</th>
+          <th scope="col">Informe</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th scope="row">Imágenes por segundo, en todas las vistas y niveles</th>
+          <td class="number">58–60</td>
+          <td class="number">≥ 55</td>
+          <td><a [href]="report('7')">Fase 7</a></td>
+        </tr>
+        <tr>
+          <th scope="row">Memoria de vídeo de la vista Tierra (alto y bajo)</th>
+          <td class="number">278 y 85&nbsp;MB</td>
+          <td class="number">300 y 120&nbsp;MB</td>
+          <td><a [href]="report('5')">Fase 5</a></td>
+        </tr>
+        <tr>
+          <th scope="row">Las posiciones de los 30 cuerpos, por imagen</th>
+          <td class="number">0,16&nbsp;ms</td>
+          <td class="number">2&nbsp;ms</td>
+          <td><a [href]="report('2')">Fase 2</a></td>
+        </tr>
+        <tr>
+          <th scope="row">Desplazamiento de la página al cargar (CLS), en tres móviles</th>
+          <td class="number">0</td>
+          <td class="number">0,05</td>
+          <td><a [href]="report('3c')">Fase 3c</a></td>
+        </tr>
+        <tr>
+          <th scope="row">Imágenes pintadas en reposo</th>
+          <td class="number">0</td>
+          <td class="number">—</td>
+          <td><a [href]="report('2')">Fase 2</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section aria-labelledby="decisiones">
+  <h2 id="decisiones">Decisiones</h2>
+  <ul>
+    <li>
+      <strong>Las dieciséis lunas que astronomy-engine no calcula</strong>, con elementos orbitales
+      ajustados por mínimos cuadrados a las efemérides del JPL: la tabla de elementos medios del
+      JPL, medida, daba errores de 10° a 170° en 2026.
+    </li>
+    <li>
+      <strong>Las texturas, en WebP por niveles</strong>: KTX2 se midió y pesaba cuatro veces más;
+      con WebP, la memoria de vídeo cabe en el presupuesto.
+    </li>
+    <li>
+      <strong>La profundidad, logarítmica</strong>, elegida con capturas frente a las otras dos: en
+      la prueba, el halo del Sol tapaba su disco desde Fobos con la profundidad invertida.
+    </li>
+    <li>
+      <strong>Las sombras, calculadas en los shaders</strong> (las de los eclipses, las lunas y los
+      anillos), sin mapas de sombras: son exactas y estables a cualquier escala.
+    </li>
+  </ul>
+  <p>Todas, con su motivo, en el <a [href]="plan">plan del proyecto</a>.</p>
+</section>
+
+<section aria-labelledby="ilustrativo">
+  <h2 id="ilustrativo">Lo que es ilustrativo</h2>
+  <ul>
+    <li>
+      La vista general: las distancias, en escala logarítmica, y los tamaños, agrandados (al enfocar
+      un planeta y en la escala real, todo vuelve a su tamaño).
+    </li>
+    <li>
+      La luz del Sol no se atenúa con la distancia (si no, los planetas exteriores no se verían), y
+      cada vista tiene su exposición.
+    </li>
+    <li>El brillo de los anillos de Saturno, con un realce moderado.</li>
+    <li>El color del cielo desde España según la altura del Sol.</li>
+    <li>
+      En los eclipses de Luna, la luz rojiza de la sombra de la Tierra, más clara que la real para
+      que la Luna no salga negra.
+    </li>
+    <li>
+      Deimos, Proteo y las lunas de Urano, con un color esquemático: no hay un mapa completo de su
+      superficie con una licencia clara.
+    </li>
+  </ul>
+</section>
+
+<section aria-labelledby="privacidad">
+  <h2 id="privacidad">Privacidad</h2>
+  <ul>
+    <li>Sin cookies y sin analítica (tampoco la del alojamiento).</li>
+    <li>
+      Todo se sirve desde este mismo sitio: ni fuentes, ni scripts, ni imágenes, ni datos de otros
+      dominios.
+    </li>
+    <li>
+      Tu navegador guarda solo dos preferencias, en su almacenamiento local: el nivel de calidad del
+      3D y si quieres los atajos de una sola tecla.
+    </li>
+    <li>
+      «Usar mi ubicación», en el cielo, solo pide tu ubicación cuando lo pulsas, y no sale de tu
+      navegador: no va a la dirección de la página ni se guarda.
+    </li>
+    <li>
+      El alojamiento, Cloudflare Pages, pide a algunos navegadores (Chrome y Edge) que le envíen un
+      informe cuando una petición a este sitio falla (Network Error Logging). Lo recibe el propio
+      alojamiento, que ya sirve cada página, y solo informa de los fallos.
+    </li>
+  </ul>
+  <p>
+    La <a [href]="site.legal.privacy">política de privacidad</a> y el
+    <a [href]="site.legal.notice">aviso legal</a> son los de la web del autor.
+  </p>
+</section>
+
+<section aria-labelledby="autor">
+  <h2 id="autor">Autor</h2>
+  <p>
+    Lo ha hecho {{ site.author.name }}, desarrollador de software:
+    <a [href]="site.author.url">ivanchesa.com</a>. El código es abierto, con licencia MIT, en
+    <a [href]="site.repository">GitHub</a>; las texturas, los datos y los catálogos de terceros
+    conservan sus licencias (<a routerLink="/creditos">créditos</a>).
+  </p>
+</section>

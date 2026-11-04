@@ -11,7 +11,7 @@
     "lint": "ng lint && prettier --check .",
     "format": "prettier --write .",
     "e2e": "tsc -p tsconfig.e2e.json && npm run build && playwright test",
-    "check": "npm run lint && npm test && npm run build && node scripts/check-initial-bundle.mjs"
+    "check": "npm run lint && npm test && npm run build && node scripts/check-initial-bundle.mjs && node scripts/check-links.mjs"
   },
   "private": true,
   "packageManager": "npm@11.19.1",

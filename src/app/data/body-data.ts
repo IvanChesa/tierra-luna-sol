@@ -1,4 +1,4 @@
-// GENERADO por scripts/build-body-data.mjs el 2026-10-26. No se edita a mano.
+// GENERADO por scripts/build-body-data.mjs el 2026-11-03. No se edita a mano.
 // Datos físicos y orbitales copiados de las fichas de la NASA (NSSDCA) y del JPL; cada dato lleva
 // el id de su fuente (data/sources.ts). Solo hay cambios de unidad exactos y, en los planetas,
 // radio = diámetro / 2.
@@ -58,7 +58,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       radiusKm: {
         value: 2439.5,
         source: 'nssdc-planets',
-        note: 'Radio ecuatorial: la mitad del diámetro de la ficha.',
+        note: 'La mitad del diámetro ecuatorial que da la NASA.',
       },
       massKg: {
         value: 3.3e23,
@@ -152,7 +152,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       radiusKm: {
         value: 6052,
         source: 'nssdc-planets',
-        note: 'Radio ecuatorial: la mitad del diámetro de la ficha.',
+        note: 'La mitad del diámetro ecuatorial que da la NASA.',
       },
       massKg: {
         value: 4.87e24,
@@ -246,7 +246,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       radiusKm: {
         value: 6378,
         source: 'nssdc-planets',
-        note: 'Radio ecuatorial: la mitad del diámetro de la ficha.',
+        note: 'La mitad del diámetro ecuatorial que da la NASA.',
       },
       massKg: {
         value: 5.97e24,
@@ -340,7 +340,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       radiusKm: {
         value: 3396,
         source: 'nssdc-planets',
-        note: 'Radio ecuatorial: la mitad del diámetro de la ficha.',
+        note: 'La mitad del diámetro ecuatorial que da la NASA.',
       },
       massKg: {
         value: 6.42e23,
@@ -434,7 +434,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       radiusKm: {
         value: 71492,
         source: 'nssdc-planets',
-        note: 'Radio ecuatorial: la mitad del diámetro de la ficha.',
+        note: 'La mitad del diámetro ecuatorial que da la NASA.',
       },
       massKg: {
         value: 1.898e27,
@@ -524,7 +524,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       radiusKm: {
         value: 60268,
         source: 'nssdc-planets',
-        note: 'Radio ecuatorial: la mitad del diámetro de la ficha.',
+        note: 'La mitad del diámetro ecuatorial que da la NASA.',
       },
       massKg: {
         value: 5.68e26,
@@ -644,7 +644,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
           albedo: {
             value: [0.12, 0.3],
             source: 'nssdc-saturn-rings',
-            note: 'Albedo del anillo C (columna «Albedo» de la ficha).',
+            note: 'Albedo del anillo C.',
           },
         },
         b: {
@@ -656,7 +656,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
           albedo: {
             value: [0.4, 0.6],
             source: 'nssdc-saturn-rings',
-            note: 'Albedo del anillo B (columna «Albedo» de la ficha).',
+            note: 'Albedo del anillo B.',
           },
         },
         cassini: {
@@ -668,7 +668,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
           albedo: {
             value: [0.2, 0.4],
             source: 'nssdc-saturn-rings',
-            note: 'Albedo de la división de Cassini (columna «Albedo» de la ficha).',
+            note: 'Albedo de la división de Cassini.',
           },
         },
         a: {
@@ -680,7 +680,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
           albedo: {
             value: [0.4, 0.6],
             source: 'nssdc-saturn-rings',
-            note: 'Albedo del anillo A (columna «Albedo» de la ficha).',
+            note: 'Albedo del anillo A.',
           },
         },
       },
@@ -691,7 +691,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       radiusKm: {
         value: 25559,
         source: 'nssdc-planets',
-        note: 'Radio ecuatorial: la mitad del diámetro de la ficha.',
+        note: 'La mitad del diámetro ecuatorial que da la NASA.',
       },
       massKg: {
         value: 8.68e25,
@@ -781,7 +781,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       radiusKm: {
         value: 24764,
         source: 'nssdc-planets',
-        note: 'Radio ecuatorial: la mitad del diámetro de la ficha.',
+        note: 'La mitad del diámetro ecuatorial que da la NASA.',
       },
       massKg: {
         value: 1.02e26,
@@ -901,8 +901,9 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
         source: 'nssdc-planets',
       },
       surfacePressureBar: {
-        value: 0,
-        source: 'nssdc-planets',
+        value: 3e-15,
+        source: 'nssdc-moon',
+        note: 'De noche.',
       },
       globalMagneticField: {
         value: false,
@@ -921,38 +922,38 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
     },
     orbit: {
       semiMajorAxisKm: {
-        value: 384000,
-        source: 'nssdc-planets',
-        note: 'Respecto a la Tierra (nota * de la ficha).',
+        value: 384400,
+        source: 'nssdc-moon',
+        note: 'Respecto a la Tierra.',
       },
       periapsisKm: {
-        value: 363000,
-        source: 'nssdc-planets',
-        note: 'Respecto a la Tierra (nota * de la ficha).',
+        value: 363300,
+        source: 'nssdc-moon',
+        note: 'El medio: a lo largo del año, la distancia a la Tierra va de unos 357.000 a 407.000 km.',
       },
       apoapsisKm: {
-        value: 406000,
-        source: 'nssdc-planets',
-        note: 'Respecto a la Tierra (nota * de la ficha).',
+        value: 405500,
+        source: 'nssdc-moon',
+        note: 'El medio.',
       },
       periodDays: {
-        value: 27.3,
-        source: 'nssdc-planets',
-        note: 'Respecto a la Tierra (nota * de la ficha).',
+        value: 27.3217,
+        source: 'nssdc-moon',
+        note: 'Respecto a la Tierra.',
       },
       meanOrbitalVelocityKmS: {
-        value: 1,
-        source: 'nssdc-planets',
-        note: 'Respecto a la Tierra (nota * de la ficha).',
+        value: 1.022,
+        source: 'nssdc-moon',
+        note: 'Respecto a la Tierra.',
       },
       inclinationDeg: {
-        value: 5.1,
-        source: 'nssdc-planets',
+        value: 5.145,
+        source: 'nssdc-moon',
         note: 'Respecto a la eclíptica.',
       },
       eccentricity: {
-        value: 0.055,
-        source: 'nssdc-planets',
+        value: 0.0549,
+        source: 'nssdc-moon',
       },
     },
   },
@@ -1068,7 +1069,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       synchronousRotation: {
         value: true,
         source: 'nssdc-jovian-satellites',
-        note: 'La ficha marca la rotación con «S».',
+        note: 'La NASA la marca como síncrona («S»).',
       },
     },
     orbit: {
@@ -1113,7 +1114,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       synchronousRotation: {
         value: true,
         source: 'nssdc-jovian-satellites',
-        note: 'La ficha marca la rotación con «S».',
+        note: 'La NASA la marca como síncrona («S»).',
       },
     },
     orbit: {
@@ -1158,7 +1159,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       synchronousRotation: {
         value: true,
         source: 'nssdc-jovian-satellites',
-        note: 'La ficha marca la rotación con «S».',
+        note: 'La NASA la marca como síncrona («S»).',
       },
     },
     orbit: {
@@ -1203,7 +1204,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       synchronousRotation: {
         value: true,
         source: 'nssdc-jovian-satellites',
-        note: 'La ficha marca la rotación con «S».',
+        note: 'La NASA la marca como síncrona («S»).',
       },
     },
     orbit: {
@@ -1248,7 +1249,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       synchronousRotation: {
         value: true,
         source: 'nssdc-saturnian-satellites',
-        note: 'La ficha marca la rotación con «S».',
+        note: 'La NASA la marca como síncrona («S»).',
       },
     },
     orbit: {
@@ -1293,7 +1294,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       synchronousRotation: {
         value: true,
         source: 'nssdc-saturnian-satellites',
-        note: 'La ficha marca la rotación con «S».',
+        note: 'La NASA la marca como síncrona («S»).',
       },
     },
     orbit: {
@@ -1338,7 +1339,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       synchronousRotation: {
         value: true,
         source: 'nssdc-saturnian-satellites',
-        note: 'La ficha marca la rotación con «S».',
+        note: 'La NASA la marca como síncrona («S»).',
       },
     },
     orbit: {
@@ -1383,7 +1384,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       synchronousRotation: {
         value: true,
         source: 'nssdc-saturnian-satellites',
-        note: 'La ficha marca la rotación con «S».',
+        note: 'La NASA la marca como síncrona («S»).',
       },
     },
     orbit: {
@@ -1428,7 +1429,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       synchronousRotation: {
         value: true,
         source: 'nssdc-saturnian-satellites',
-        note: 'La ficha marca la rotación con «S».',
+        note: 'La NASA la marca como síncrona («S»).',
       },
     },
     orbit: {
@@ -1473,7 +1474,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       synchronousRotation: {
         value: true,
         source: 'nssdc-saturnian-satellites',
-        note: 'La ficha marca la rotación con «S».',
+        note: 'La NASA la marca como síncrona («S»).',
       },
     },
     orbit: {
@@ -1514,12 +1515,12 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       geometricAlbedo: {
         value: 0.05,
         source: 'nssdc-saturnian-satellites',
-        note: 'Cara oscura; la clara llega a 0,5 (la ficha da «0.05 / 0.5»).',
+        note: 'Cara oscura; la clara llega a 0,5 (la NASA da «0.05 / 0.5»).',
       },
       synchronousRotation: {
         value: true,
         source: 'nssdc-saturnian-satellites',
-        note: 'La ficha marca la rotación con «S».',
+        note: 'La NASA la marca como síncrona («S»).',
       },
     },
     orbit: {
@@ -1564,7 +1565,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       synchronousRotation: {
         value: true,
         source: 'nssdc-uranian-satellites',
-        note: 'La ficha marca la rotación con «S».',
+        note: 'La NASA la marca como síncrona («S»).',
       },
     },
     orbit: {
@@ -1609,7 +1610,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       synchronousRotation: {
         value: true,
         source: 'nssdc-uranian-satellites',
-        note: 'La ficha marca la rotación con «S».',
+        note: 'La NASA la marca como síncrona («S»).',
       },
     },
     orbit: {
@@ -1654,7 +1655,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       synchronousRotation: {
         value: true,
         source: 'nssdc-uranian-satellites',
-        note: 'La ficha marca la rotación con «S».',
+        note: 'La NASA la marca como síncrona («S»).',
       },
     },
     orbit: {
@@ -1699,7 +1700,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       synchronousRotation: {
         value: true,
         source: 'nssdc-uranian-satellites',
-        note: 'La ficha marca la rotación con «S».',
+        note: 'La NASA la marca como síncrona («S»).',
       },
     },
     orbit: {
@@ -1744,7 +1745,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       synchronousRotation: {
         value: true,
         source: 'nssdc-uranian-satellites',
-        note: 'La ficha marca la rotación con «S».',
+        note: 'La NASA la marca como síncrona («S»).',
       },
     },
     orbit: {
@@ -1789,7 +1790,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       synchronousRotation: {
         value: true,
         source: 'nssdc-neptunian-satellites',
-        note: 'La ficha marca la rotación con «S».',
+        note: 'La NASA la marca como síncrona («S»).',
       },
     },
     orbit: {
@@ -1813,7 +1814,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       retrograde: {
         value: true,
         source: 'nssdc-neptunian-satellites',
-        note: 'La ficha marca el periodo con «R».',
+        note: 'La NASA lo marca como retrógrado («R»).',
       },
     },
   },

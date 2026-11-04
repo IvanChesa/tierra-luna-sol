@@ -28,7 +28,8 @@ https://:project.pages.dev/*
 https://:version.:project.pages.dev/*
   X-Robots-Tag: noindex
 
-# Con hash en el nombre (JS, CSS, las fuentes de `media/` y las texturas): un año, inmutables.
+# Con hash en el nombre (JS, CSS y las texturas): un año, inmutables. Las fuentes, desde la fase 9, en
+# /fonts/ con su nombre fijo (abajo).
 /main-*
   Cache-Control: public, max-age=31536000, immutable
 
@@ -38,15 +39,16 @@ https://:version.:project.pages.dev/*
 /styles-*
   Cache-Control: public, max-age=31536000, immutable
 
-/media/*
-  Cache-Control: public, max-age=31536000, immutable
-
 /textures/*
   Cache-Control: public, max-age=31536000, immutable
 
-# Sin hash (los pósters, las miniaturas y el catálogo de estrellas): un día, para que una versión nueva
-# llegue sin esperar. El HTML lleva el valor de Pages (se revalida siempre).
+# Sin hash (los pósters, las miniaturas, las imágenes de las fichas, el catálogo de estrellas y las
+# fuentes, con su nombre fijo para precargarlas): un día, para que una versión nueva llegue sin esperar.
+# El HTML lleva el valor de Pages (se revalida siempre).
 /img/*
+  Cache-Control: public, max-age=86400
+
+/fonts/*
   Cache-Control: public, max-age=86400
 
 /data/*

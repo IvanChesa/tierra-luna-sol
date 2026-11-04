@@ -1,0 +1,672 @@
+{
+  "about": "Nombres en español de las 88 constelaciones (D38, decisión de Iván del 03-11-2026): los de la tabla «Constelaciones» del Anuario del Real Observatorio de Madrid para 2019 (IGN), «la traducción más habitual del nombre»; en las nueve del zodiaco que la tabla traduce palabra por palabra («Gemelos», «Toro»…), el nombre con el que el propio Anuario nombra esas constelaciones cuando las recorren los planetas («Constelaciones recorridas», 2014–2019) o en su texto («la constelación de Tauro»). Las tildes que faltan en la fuente («Aguila», «Paraiso», «Geminis», «Cancer») y las mayúsculas, según la Ortografía de la RAE. La comprueba scripts/check-constellation-names.mjs con los PDF; la usa scripts/build-constellations.mjs.",
+  "table": {
+    "title": "Anuario del Real Observatorio de Madrid para 2019, «Constelaciones» (páginas 286 y 287; 287 y 288 del PDF)",
+    "publisher": "Instituto Geográfico Nacional (Real Observatorio de Madrid)",
+    "url": "https://www.ign.es/web/resources/acercaDe/libDigPub/Anuario2019.pdf",
+    "pdfPages": [287, 288],
+    "accessed": "2026-11-03",
+    "quote": "su nombre latino, su abreviatura, […] y la traducción más habitual del nombre"
+  },
+  "documents": {
+    "2014": {
+      "url": "https://www.ign.es/web/resources/acercaDe/libDigPub/Anuario2014.pdf",
+      "sha256": "7de4b6c40c2ecc75bab4e09827a7c2f74de006e43add3a0a7219d50bb0bc9dde"
+    },
+    "2016": {
+      "url": "https://www.ign.es/web/resources/acercaDe/libDigPub/Anuario2016.pdf",
+      "sha256": "f5802cb396713e1c19f3c62cafeb9ce2660df3d779098c473b1e259fd97836e0"
+    },
+    "2017": {
+      "url": "https://www.ign.es/web/resources/acercaDe/libDigPub/Anuario2017.pdf",
+      "sha256": "987da2b8e18cae2c2c60c2a2d2c66ad2c582ee2178487db1507e3dc5beb3ee30"
+    },
+    "2018": {
+      "url": "https://www.ign.es/web/resources/acercaDe/libDigPub/Anuario2018.pdf",
+      "sha256": "83deb176714ff258d12dd1ca9113d7fa50476f1f309d9ea4b2019c49dfd29386"
+    },
+    "2019": {
+      "url": "https://www.ign.es/web/resources/acercaDe/libDigPub/Anuario2019.pdf",
+      "sha256": "389f05670bf364cd2e7bd7dd5db9558766b690d5bc355348e7238d1d351d3501"
+    }
+  },
+  "usages": {
+    "2014-jupiter": {
+      "year": "2014",
+      "pdfPage": 18,
+      "line": "Júpiter",
+      "text": "Geminis/Cancer"
+    },
+    "2014-saturno": {
+      "year": "2014",
+      "pdfPage": 18,
+      "line": "Saturno",
+      "text": "Libra"
+    },
+    "2014-urano": {
+      "year": "2014",
+      "pdfPage": 18,
+      "line": "Urano",
+      "text": "Piscis"
+    },
+    "2016-jupiter": {
+      "year": "2016",
+      "pdfPage": 18,
+      "line": "Júpiter",
+      "text": "Leo/Virgo"
+    },
+    "2016-saturno": {
+      "year": "2016",
+      "pdfPage": 18,
+      "line": "Saturno",
+      "text": "Escorpio"
+    },
+    "2016-urano": {
+      "year": "2016",
+      "pdfPage": 18,
+      "line": "Urano",
+      "text": "Piscis"
+    },
+    "2017-jupiter": {
+      "year": "2017",
+      "pdfPage": 18,
+      "line": "Júpiter",
+      "text": "Virgo/Libra"
+    },
+    "2017-saturno": {
+      "year": "2017",
+      "pdfPage": 18,
+      "line": "Saturno",
+      "text": "Escorpio"
+    },
+    "2017-urano": {
+      "year": "2017",
+      "pdfPage": 18,
+      "line": "Urano",
+      "text": "Piscis"
+    },
+    "2018-jupiter": {
+      "year": "2018",
+      "pdfPage": 18,
+      "line": "Júpiter",
+      "text": "Libra/Escorpio"
+    },
+    "2018-urano": {
+      "year": "2018",
+      "pdfPage": 18,
+      "line": "Urano",
+      "text": "Piscis"
+    },
+    "2019-jupiter": {
+      "year": "2019",
+      "pdfPage": 18,
+      "line": "Júpiter",
+      "text": "Sagitario/Escorpio"
+    },
+    "2019-urano": {
+      "year": "2019",
+      "pdfPage": 18,
+      "line": "Urano",
+      "text": "Piscis/Aries"
+    },
+    "2019-tauro": {
+      "year": "2019",
+      "pdfPage": 377,
+      "line": "probabilidad",
+      "text": "la constelación de Tauro"
+    }
+  },
+  "constellations": [
+    {
+      "id": "And",
+      "latin": "Andromeda",
+      "table": "Andrómeda",
+      "es": "Andrómeda"
+    },
+    {
+      "id": "Ant",
+      "latin": "Antlia",
+      "table": "Máquina Neumática",
+      "es": "Máquina Neumática"
+    },
+    {
+      "id": "Aps",
+      "latin": "Apus",
+      "table": "Ave del Paraiso",
+      "es": "Ave del Paraíso",
+      "reason": "tilde"
+    },
+    {
+      "id": "Aqr",
+      "latin": "Aquarius",
+      "table": "Acuario",
+      "es": "Acuario"
+    },
+    {
+      "id": "Aql",
+      "latin": "Aquila",
+      "table": "Aguila",
+      "es": "Águila",
+      "reason": "tilde"
+    },
+    {
+      "id": "Ara",
+      "latin": "Ara",
+      "table": "Altar",
+      "es": "Altar"
+    },
+    {
+      "id": "Ari",
+      "latin": "Aries",
+      "table": "Carnero",
+      "es": "Aries",
+      "reason": "zodiaco",
+      "usage": ["2019-urano"]
+    },
+    {
+      "id": "Aur",
+      "latin": "Auriga",
+      "table": "Cochero",
+      "es": "Cochero"
+    },
+    {
+      "id": "Boo",
+      "latin": "Boötes",
+      "table": "Boyero",
+      "es": "Boyero"
+    },
+    {
+      "id": "Cae",
+      "latin": "Caelum",
+      "table": "Buril",
+      "es": "Buril"
+    },
+    {
+      "id": "Cam",
+      "latin": "Camelopardalis",
+      "table": "Jirafa",
+      "es": "Jirafa"
+    },
+    {
+      "id": "Cnc",
+      "latin": "Cancer",
+      "table": "Cangrejo",
+      "es": "Cáncer",
+      "reason": "zodiaco",
+      "usage": ["2014-jupiter"]
+    },
+    {
+      "id": "CVn",
+      "latin": "Canes Venatici",
+      "table": "Perros de Caza",
+      "es": "Perros de Caza"
+    },
+    {
+      "id": "CMa",
+      "latin": "Canis Major",
+      "table": "Can Mayor",
+      "es": "Can Mayor"
+    },
+    {
+      "id": "CMi",
+      "latin": "Canis Minor",
+      "table": "Can Menor",
+      "es": "Can Menor"
+    },
+    {
+      "id": "Cap",
+      "latin": "Capricornus",
+      "table": "Capricornio",
+      "es": "Capricornio"
+    },
+    {
+      "id": "Car",
+      "latin": "Carina",
+      "table": "Quilla",
+      "es": "Quilla"
+    },
+    {
+      "id": "Cas",
+      "latin": "Cassiopeia",
+      "table": "Casiopea",
+      "es": "Casiopea"
+    },
+    {
+      "id": "Cen",
+      "latin": "Centaurus",
+      "table": "Centauro",
+      "es": "Centauro"
+    },
+    {
+      "id": "Cep",
+      "latin": "Cepheus",
+      "table": "Cefeo",
+      "es": "Cefeo"
+    },
+    {
+      "id": "Cet",
+      "latin": "Cetus",
+      "table": "Ballena",
+      "es": "Ballena"
+    },
+    {
+      "id": "Cha",
+      "latin": "Chamaeleon",
+      "table": "Camaleón",
+      "es": "Camaleón"
+    },
+    {
+      "id": "Cir",
+      "latin": "Circinus",
+      "table": "Compás",
+      "es": "Compás"
+    },
+    {
+      "id": "Col",
+      "latin": "Columba",
+      "table": "Paloma",
+      "es": "Paloma"
+    },
+    {
+      "id": "Com",
+      "latin": "Coma Berenices",
+      "table": "Cabellera de Berenice",
+      "es": "Cabellera de Berenice"
+    },
+    {
+      "id": "CrA",
+      "latin": "Corona Australis",
+      "table": "Corona Austral",
+      "es": "Corona Austral"
+    },
+    {
+      "id": "CrB",
+      "latin": "Corona Borealis",
+      "table": "Corona Boreal",
+      "es": "Corona Boreal"
+    },
+    {
+      "id": "Crv",
+      "latin": "Corvus",
+      "table": "Cuervo",
+      "es": "Cuervo"
+    },
+    {
+      "id": "Crt",
+      "latin": "Crater",
+      "table": "Copa",
+      "es": "Copa"
+    },
+    {
+      "id": "Cru",
+      "latin": "Crux",
+      "table": "Cruz del Sur",
+      "es": "Cruz del Sur"
+    },
+    {
+      "id": "Cyg",
+      "latin": "Cygnus",
+      "table": "Cisne (Cruz del Norte)",
+      "es": "Cisne",
+      "reason": "forma corta"
+    },
+    {
+      "id": "Del",
+      "latin": "Delphinus",
+      "table": "Delfín",
+      "es": "Delfín"
+    },
+    {
+      "id": "Dor",
+      "latin": "Dorado",
+      "table": "Dorada",
+      "es": "Dorada"
+    },
+    {
+      "id": "Dra",
+      "latin": "Draco",
+      "table": "Dragón",
+      "es": "Dragón"
+    },
+    {
+      "id": "Equ",
+      "latin": "Equuleus",
+      "table": "Caballo Menor",
+      "es": "Caballo Menor"
+    },
+    {
+      "id": "Eri",
+      "latin": "Eridanus",
+      "table": "Erídano",
+      "es": "Erídano"
+    },
+    {
+      "id": "For",
+      "latin": "Fornax",
+      "table": "Horno químico",
+      "es": "Horno Químico",
+      "reason": "mayúsculas"
+    },
+    {
+      "id": "Gem",
+      "latin": "Gemini",
+      "table": "Gemelos",
+      "es": "Géminis",
+      "reason": "zodiaco",
+      "usage": ["2014-jupiter"]
+    },
+    {
+      "id": "Gru",
+      "latin": "Grus",
+      "table": "Grulla",
+      "es": "Grulla"
+    },
+    {
+      "id": "Her",
+      "latin": "Hercules",
+      "table": "Hércules",
+      "es": "Hércules"
+    },
+    {
+      "id": "Hor",
+      "latin": "Horologium",
+      "table": "Reloj",
+      "es": "Reloj"
+    },
+    {
+      "id": "Hya",
+      "latin": "Hydra",
+      "table": "Hidra Hembra",
+      "es": "Hidra Hembra"
+    },
+    {
+      "id": "Hyi",
+      "latin": "Hydrus",
+      "table": "Hidra Macho",
+      "es": "Hidra Macho"
+    },
+    {
+      "id": "Ind",
+      "latin": "Indus",
+      "table": "Indio",
+      "es": "Indio"
+    },
+    {
+      "id": "Lac",
+      "latin": "Lacerta",
+      "table": "Lagarto",
+      "es": "Lagarto"
+    },
+    {
+      "id": "Leo",
+      "latin": "Leo",
+      "table": "León",
+      "es": "Leo",
+      "reason": "zodiaco",
+      "usage": ["2016-jupiter"]
+    },
+    {
+      "id": "LMi",
+      "latin": "Leo Minor",
+      "table": "León Menor",
+      "es": "León Menor"
+    },
+    {
+      "id": "Lep",
+      "latin": "Lepus",
+      "table": "Liebre",
+      "es": "Liebre"
+    },
+    {
+      "id": "Lib",
+      "latin": "Libra",
+      "table": "Balanza",
+      "es": "Libra",
+      "reason": "zodiaco",
+      "usage": ["2014-saturno", "2017-jupiter", "2018-jupiter"]
+    },
+    {
+      "id": "Lup",
+      "latin": "Lupus",
+      "table": "Lobo",
+      "es": "Lobo"
+    },
+    {
+      "id": "Lyn",
+      "latin": "Lynx",
+      "table": "Lince",
+      "es": "Lince"
+    },
+    {
+      "id": "Lyr",
+      "latin": "Lyra",
+      "table": "Lira",
+      "es": "Lira"
+    },
+    {
+      "id": "Men",
+      "latin": "Mensa",
+      "table": "Mesa",
+      "es": "Mesa"
+    },
+    {
+      "id": "Mic",
+      "latin": "Microscopium",
+      "table": "Microscopio",
+      "es": "Microscopio"
+    },
+    {
+      "id": "Mon",
+      "latin": "Monoceros",
+      "table": "Unicornio",
+      "es": "Unicornio"
+    },
+    {
+      "id": "Mus",
+      "latin": "Musca",
+      "table": "Mosca",
+      "es": "Mosca"
+    },
+    {
+      "id": "Nor",
+      "latin": "Norma",
+      "table": "Escuadra",
+      "es": "Escuadra"
+    },
+    {
+      "id": "Oct",
+      "latin": "Octans",
+      "table": "Octante",
+      "es": "Octante"
+    },
+    {
+      "id": "Oph",
+      "latin": "Ophiuchus",
+      "table": "Ofiuco",
+      "es": "Ofiuco"
+    },
+    {
+      "id": "Ori",
+      "latin": "Orion",
+      "table": "Orión",
+      "es": "Orión"
+    },
+    {
+      "id": "Pav",
+      "latin": "Pavo",
+      "table": "Pavo",
+      "es": "Pavo"
+    },
+    {
+      "id": "Peg",
+      "latin": "Pegasus",
+      "table": "Pegaso",
+      "es": "Pegaso"
+    },
+    {
+      "id": "Per",
+      "latin": "Perseus",
+      "table": "Perseo",
+      "es": "Perseo"
+    },
+    {
+      "id": "Phe",
+      "latin": "Phoenix",
+      "table": "Fénix",
+      "es": "Fénix"
+    },
+    {
+      "id": "Pic",
+      "latin": "Pictor",
+      "table": "Caballete del Pintor",
+      "es": "Caballete del Pintor"
+    },
+    {
+      "id": "Psc",
+      "latin": "Pisces",
+      "table": "Peces",
+      "es": "Piscis",
+      "reason": "zodiaco",
+      "usage": ["2014-urano", "2016-urano", "2017-urano", "2018-urano", "2019-urano"]
+    },
+    {
+      "id": "PsA",
+      "latin": "Piscis Austrinus",
+      "table": "Pez Austral",
+      "es": "Pez Austral"
+    },
+    {
+      "id": "Pup",
+      "latin": "Puppis",
+      "table": "Popa",
+      "es": "Popa"
+    },
+    {
+      "id": "Pyx",
+      "latin": "Pyxis",
+      "table": "Brújula",
+      "es": "Brújula"
+    },
+    {
+      "id": "Ret",
+      "latin": "Reticulum",
+      "table": "Retículo",
+      "es": "Retículo"
+    },
+    {
+      "id": "Sge",
+      "latin": "Sagitta",
+      "table": "Flecha",
+      "es": "Flecha"
+    },
+    {
+      "id": "Sgr",
+      "latin": "Sagittarius",
+      "table": "Sagitario",
+      "es": "Sagitario"
+    },
+    {
+      "id": "Sco",
+      "latin": "Scorpius",
+      "table": "Escorpión",
+      "es": "Escorpio",
+      "reason": "zodiaco",
+      "usage": ["2016-saturno", "2017-saturno", "2018-jupiter", "2019-jupiter"]
+    },
+    {
+      "id": "Scl",
+      "latin": "Sculptor",
+      "table": "[Taller del] Escultor",
+      "es": "Escultor",
+      "reason": "forma corta"
+    },
+    {
+      "id": "Sct",
+      "latin": "Scutum",
+      "table": "Escudo",
+      "es": "Escudo"
+    },
+    {
+      "id": "Ser",
+      "latin": "Serpens",
+      "table": "Serpiente",
+      "es": "Serpiente"
+    },
+    {
+      "id": "Sex",
+      "latin": "Sextans",
+      "table": "Sextante",
+      "es": "Sextante"
+    },
+    {
+      "id": "Tau",
+      "latin": "Taurus",
+      "table": "Toro",
+      "es": "Tauro",
+      "reason": "zodiaco",
+      "usage": ["2019-tauro"]
+    },
+    {
+      "id": "Tel",
+      "latin": "Telescopium",
+      "table": "Telescopio",
+      "es": "Telescopio"
+    },
+    {
+      "id": "Tri",
+      "latin": "Triangulum",
+      "table": "Triángulo",
+      "es": "Triángulo"
+    },
+    {
+      "id": "TrA",
+      "latin": "Triangulum Australe",
+      "table": "Triángulo Austral",
+      "es": "Triángulo Austral"
+    },
+    {
+      "id": "Tuc",
+      "latin": "Tucana",
+      "table": "Tucán",
+      "es": "Tucán"
+    },
+    {
+      "id": "UMa",
+      "latin": "Ursa Major",
+      "table": "Osa Mayor",
+      "es": "Osa Mayor"
+    },
+    {
+      "id": "UMi",
+      "latin": "Ursa Minor",
+      "table": "Osa Menor",
+      "es": "Osa Menor"
+    },
+    {
+      "id": "Vel",
+      "latin": "Vela",
+      "table": "Vela",
+      "es": "Vela"
+    },
+    {
+      "id": "Vir",
+      "latin": "Virgo",
+      "table": "Virgen",
+      "es": "Virgo",
+      "reason": "zodiaco",
+      "usage": ["2016-jupiter", "2017-jupiter"]
+    },
+    {
+      "id": "Vol",
+      "latin": "Volans",
+      "table": "Pez Volador",
+      "es": "Pez Volador"
+    },
+    {
+      "id": "Vul",
+      "latin": "Vulpecula",
+      "table": "Raposilla",
+      "es": "Raposilla"
+    }
+  ]
+}

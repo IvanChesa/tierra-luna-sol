@@ -1,4 +1,5 @@
-<a class="skip-link" href="#contenido">Saltar al contenido</a>
+<!-- Con la ruta de la página: con <base href="/">, «#contenido» solo llevaría a la portada. -->
+<a class="skip-link" [href]="skipHref()">Saltar al contenido</a>
 
 <header class="site-header">
   <a class="site-name" routerLink="/">{{ site.name }}</a>
@@ -11,35 +12,23 @@
   </button>
   <nav id="site-menu" class="site-nav" aria-label="Principal" popover>
     <ul>
-      <li>
-        <a routerLink="/planetas" routerLinkActive="is-active" ariaCurrentWhenActive="page"
-          >Planetas</a
-        >
-      </li>
-      <li>
-        <a routerLink="/sol" routerLinkActive="is-active" ariaCurrentWhenActive="page">Sol</a>
-      </li>
-      <li>
-        <a routerLink="/luna" routerLinkActive="is-active" ariaCurrentWhenActive="page">Luna</a>
-      </li>
-      <li>
-        <a routerLink="/eclipses" routerLinkActive="is-active" ariaCurrentWhenActive="page"
-          >Eclipses</a
-        >
-      </li>
-      <li>
-        <a routerLink="/sobre-el-proyecto" routerLinkActive="is-active" ariaCurrentWhenActive="page"
-          >Sobre el proyecto</a
-        >
-      </li>
-      <li class="site-nav__extra">
-        <a routerLink="/creditos" routerLinkActive="is-active" ariaCurrentWhenActive="page"
-          >Créditos</a
-        >
-      </li>
+      @for (link of links; track link.path) {
+        <li [class.site-nav__extra]="link.extra">
+          <a [routerLink]="link.path" routerLinkActive="is-active" ariaCurrentWhenActive="page">{{
+            link.label
+          }}</a>
+        </li>
+      }
+      <li class="site-nav__extra"><a [href]="site.legal.notice">Aviso legal</a></li>
+      <li class="site-nav__extra"><a [href]="site.legal.privacy">Política de privacidad</a></li>
     </ul>
     <p class="site-nav__extra site-nav__author">
       Un proyecto de <a [href]="site.author.url">{{ site.author.name }}</a>
+    </p>
+    <!-- En el móvil, el explorador no tiene pie: la nota de privacidad va aquí (fase 9, D24). -->
+    <p class="site-nav__extra site-nav__privacy">
+      Sin cookies, sin analítica y sin peticiones a terceros:
+      <a routerLink="/sobre-el-proyecto" fragment="privacidad">tu privacidad</a>.
     </p>
   </nav>
 </header>
@@ -48,9 +37,16 @@
   <router-outlet />
 </main>
 
+<!-- Legal y privacidad (fase 9, D24): la nota visible y los enlaces a la web del autor (D37). -->
 <footer class="site-footer">
   <p>
+    Sin cookies, sin analítica y sin peticiones a terceros:
+    <a routerLink="/sobre-el-proyecto" fragment="privacidad">tu privacidad, en detalle</a>.
+  </p>
+  <p>
     Un proyecto de <a [href]="site.author.url">{{ site.author.name }}</a> ·
+    <a [href]="site.legal.notice">Aviso legal</a> ·
+    <a [href]="site.legal.privacy">Política de privacidad</a> ·
     <a routerLink="/creditos">Créditos</a>
   </p>
 </footer>
