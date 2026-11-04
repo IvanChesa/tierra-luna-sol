@@ -1314,7 +1314,7 @@ export class SceneEngine implements SceneEngineApi {
     const focus = this.focusIndex;
     const radiusPx = focus === null ? null : (this.screen[focus]?.radiusPx ?? null);
     const closeUp = closeUpAmount(radiusPx);
-    this.world.setFill(fillLight(closeUp));
+    this.world.setFill(fillLight(closeUp), closeUp);
     const albedo = focus === null ? null : (FOCUS_ALBEDO[focus] ?? null);
     const lit =
       focus === null || albedo === null

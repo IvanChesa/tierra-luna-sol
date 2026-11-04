@@ -85,7 +85,10 @@ const TEXTURES = {
     ocean: '8k_earth_specular_map.tif',
     maxWidth: 8192,
   },
-  'earth-night': { file: '8k_earth_nightmap.jpg', kind: 'color', quality: 80 },
+  // Las luces de la noche (fase 9b, D40): Black Marble 2016 en gris (NASA Earth Observatory, VIIRS),
+  // negro fuera de las luces; antes, la de Solar System Scope, con una base azul marino retocada. La
+  // escena le pone el tono cálido medido en las luces de esa textura (`VISUAL_CONFIG.earth`).
+  'earth-night': { file: 'BlackMarble_2016_3km_gray.jpg', kind: 'gray', quality: 80 },
   'earth-clouds': { file: '8k_earth_clouds.jpg', kind: 'gray', quality: 80 },
   // Solar System Scope guarda el sur en G (convenio «DirectX»): se invierte para que sea (este,
   // norte, arriba), como lee el shader (revisión de la fase 5, hallazgo 4; lo comprueba NORMAL_PROBES).
@@ -180,6 +183,19 @@ const PROBES = {
   'earth-day': {
     dark: [[0, -150, 'Pacífico']],
     bright: [[23, 10, 'Sáhara']],
+  },
+  // Las luces de la noche (fase 9b, D40): Madrid y El Cairo (con el delta del Nilo) encendidos frente
+  // al Atlántico y al Sáhara, a oscuras. Girado 180°, Madrid cae en el Pacífico.
+  'earth-night': {
+    dark: [
+      [30, -40, 'Atlántico'],
+      [23, 10, 'Sáhara'],
+    ],
+    bright: [
+      [40.4, -3.7, 'Madrid'],
+      [30.05, 31.24, 'El Cairo'],
+    ],
+    radius: 2,
   },
   moon: {
     dark: [

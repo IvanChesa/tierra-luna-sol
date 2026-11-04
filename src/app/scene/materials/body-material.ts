@@ -214,6 +214,11 @@ uniform float uHasSpecular;
 uniform float uCloudOffset;
 // Opacidad de las nubes y de su sombra: 1 con el disco entero a la vista; menos en los primeros planos.
 uniform float uCloudOpacity;
+// Las luces de la noche (fase 9b, D40): su mapa es en gris (Black Marble) y este, su tono (rgb lineal
+// de luminancia 1); y el relleno de la cara nocturna, en gris neutro (en la vista general; 0 en
+// primer plano).
+uniform vec3 uNightTint;
+uniform float uNightFill;
 // (albedo de las nubes, intensidad de las luces, brillo del océano, oscuridad de la sombra)
 uniform vec4 uEarth;
 // Luz dispersada por la atmósfera (color lineal × intensidad) y refuerzo hacia el limbo.
@@ -411,10 +416,14 @@ void main() {
   if (uHasNight > 0.5) {
     // (Los bordes de smoothstep, en orden: al revés, GLSL ES no define el resultado.)
     float night = 1.0 - smoothstep(-0.15, 0.0, muSun);
-    color += texture2D(uNightMap, uv).rgb * uEarth.y * night * (1.0 - 0.85 * cloud);
+    color += texture2D(uNightMap, uv).r * uNightTint * uEarth.y * night * (1.0 - 0.85 * cloud);
   }
+  // El relleno ilustrativo: del lado del día, con el color de la superficie; del de la noche, en gris
+  // neutro y solo el de la vista general (D40: sin el azul del océano en la cara nocturna).
   vec3 composite = mix(albedo, vec3(uEarth.x), cloud);
-  vec3 earthFill = composite * uFill * (0.25 + 0.75 * max(muViewer, 0.0));
+  float dayFill = smoothstep(-0.1, 0.1, muSun);
+  vec3 nightFill = vec3(dot(composite, vec3(0.2126, 0.7152, 0.0722)) * uNightFill);
+  vec3 earthFill = mix(nightFill, composite * uFill, dayFill) * (0.25 + 0.75 * max(muViewer, 0.0));
   gl_FragColor = vec4(color + uHazeColor.rgb * haze + earthFill, 1.0);
 #else
   vec3 lit = vec3(light);
@@ -484,6 +493,10 @@ export interface EarthUniforms {
   readonly uCloudOffset: Uniform<number>;
   /** Opacidad de las nubes y de su sombra (`cloudOpacity`; 1 con el disco entero a la vista). */
   readonly uCloudOpacity: Uniform<number>;
+  /** El tono de las luces de la noche (rgb lineal de luminancia 1; `VISUAL_CONFIG.earth.nightTint`). */
+  readonly uNightTint: Uniform<Color>;
+  /** El relleno de la cara nocturna, en gris neutro: el de la vista general, 0 en primer plano. */
+  readonly uNightFill: Uniform<number>;
   /** (albedo de las nubes, intensidad de las luces, brillo del océano, oscuridad de su sombra). */
   readonly uEarth: Uniform<Vector4>;
   /** Luz dispersada por la atmósfera (rgb lineal) y su refuerzo hacia el limbo (w). */
@@ -579,6 +592,8 @@ export function createBodyMaterial(options: BodyMaterialOptions) {
         uHasSpecular: new Uniform(0),
         uCloudOffset: new Uniform(0),
         uCloudOpacity: new Uniform(1),
+        uNightTint: new Uniform(new Color(1, 1, 1)),
+        uNightFill: new Uniform(0),
         uEarth: new Uniform(new Vector4(0.8, 1, 1, 0.35)),
         uScatter: new Uniform(new Vector4(0, 0, 0, 0)),
         uTwilightColor: new Uniform(new Color(1, 0.6, 0.35)),

@@ -1,4 +1,4 @@
-// GENERADO por scripts/build-textures.mjs el 2026-11-01. No se edita a mano.
+// GENERADO por scripts/build-textures.mjs el 2026-11-04. No se edita a mano.
 // WebP por niveles con hash (public/textures/), a partir de los originales de assets-src/textures/
 // (origen y licencia de cada uno en docs/FUENTES.md).
 import type { TextureFiles, TextureId } from './textures';
@@ -83,24 +83,24 @@ export const TEXTURE_FILES: TextureFiles = {
   'earth-night': [
     {
       level: '1k',
-      path: 'textures/1k/earth-night.d990e3d7d4.webp',
+      path: 'textures/1k/earth-night.1beb274deb.webp',
       width: 1024,
       height: 512,
-      bytes: 15270,
+      bytes: 10034,
     },
     {
       level: '2k',
-      path: 'textures/2k/earth-night.6abf0c040d.webp',
+      path: 'textures/2k/earth-night.6cef20d3e1.webp',
       width: 2048,
       height: 1024,
-      bytes: 61042,
+      bytes: 37334,
     },
     {
       level: '4k',
-      path: 'textures/4k/earth-night.e4a9bb8a22.webp',
+      path: 'textures/4k/earth-night.4590700d5b.webp',
       width: 4096,
       height: 2048,
-      bytes: 227636,
+      bytes: 141102,
     },
   ],
   'earth-clouds': [
@@ -639,7 +639,6 @@ export const TEXTURE_MEAN_LUMINANCE: Readonly<Partial<Record<TextureId, number>>
   mercury: 0.2294,
   venus: 0.554,
   'earth-day': 0.1195,
-  'earth-night': 0.0034,
   moon: 0.3003,
   mars: 0.1819,
   jupiter: 0.4093,

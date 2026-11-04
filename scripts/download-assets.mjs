@@ -19,6 +19,10 @@
 // - Constelaciones (fase 8): las líneas y los nombres de d3-celestial (Olaf Frohn), con licencia BSD
 //   de 3 cláusulas (su LICENSE, que se descarga con ellos), sobre las cartas de las constelaciones de
 //   la IAU; fijados a un commit.
+// - Las luces de la Tierra de noche (fase 9b, D40): Black Marble 2016 en gris (NASA Earth Observatory,
+//   «NASA Earth Observatory images by Joshua Stevens, using Suomi NPP VIIRS data from Miguel Román,
+//   NASA GSFC»), material de la NASA: «generally are not subject to copyright in the United States»
+//   y se puede usar en simulaciones y webs (https://www.nasa.gov/nasa-brand-center/images-and-media/).
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 
@@ -50,6 +54,11 @@ const MERCURY_DEM =
   'https://planetarymaps.usgs.gov/mosaic/Mercury_Messenger_USGS_DEM_Global_665m_v2.tif';
 const MERCURY_DEM_PAGE =
   'https://astrogeology.usgs.gov/search/map/mercury_messenger_global_dem_665m';
+
+/** Black Marble 2016 en gris, de 13 500 × 6750 px (3 km), en la página «Earth at Night: Maps» de la NASA. */
+const BLACK_MARBLE =
+  'https://assets.science.nasa.gov/content/dam/science/esd/eo/images/imagerecords/144000/144897/BlackMarble_2016_3km_gray.jpg';
+const BLACK_MARBLE_PAGE = 'https://science.nasa.gov/earth/earth-observatory/earth-at-night/maps/';
 
 /** [fichero local, URL, página de la fuente (para el Referer y FUENTES.md)] */
 const ASSETS = [
@@ -116,6 +125,9 @@ const ASSETS = [
   ].map(([name, page]) => [name, USGS_MOSAIC + name, ASTROPEDIA + page]),
   // Mimas: 5760 × 2880 px (16 px/°, 216 m por píxel), en un IMG del PDS con su etiqueta dentro.
   ['SM_1M_0_0_SIMP.IMG', MIMAS_PDS + 'data/images/SM_1M_0_0_SIMP.IMG', MIMAS_PDS],
+  // Las luces de la Tierra de noche (fase 9b, D40): solo las luces, sin la base azul de la textura de
+  // Solar System Scope.
+  ['BlackMarble_2016_3km_gray.jpg', BLACK_MARBLE, BLACK_MARBLE_PAGE],
 ];
 
 /**

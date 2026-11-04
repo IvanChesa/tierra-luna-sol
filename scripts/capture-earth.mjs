@@ -35,6 +35,12 @@ const SQUARE = { width: 900, height: 900, scale: 1 };
 /** La foto de EPIC del Pacífico (2016-06-21 22:58:24 UT; docs/realismo/referencias.md). */
 const EPIC = join(tmpdir(), 'tls-referencias', 'epic_1b_20160621230313.jpg');
 
+/** Acerca la cámara `n` pasos del zoom (×1,4 cada uno, como el botón «Acercar»). */
+const zoomIn = (n) => async (page) => {
+  await page.locator('canvas').first().focus();
+  for (let i = 0; i < n; i++) await page.keyboard.press('+');
+};
+
 /** Una vista guiada: su botón en el panel de la Tierra. */
 const guided = (title) => async (page) => {
   await page.getByRole('button', { name: title, exact: true }).click();
@@ -58,6 +64,9 @@ const SHOTS = [
   ['vista-himalaya', '/explorar/tierra?captura=1', DESKTOP, guided('El Himalaya')],
   ['movil-vista-himalaya', '/explorar/tierra?captura=1', MOBILE, guided('El Himalaya')],
   ['vista-luces', '/explorar/tierra?captura=1', DESKTOP, guided('Las luces de la noche')],
+  ['movil-vista-luces', '/explorar/tierra?captura=1', MOBILE, guided('Las luces de la noche')],
+  // La vista general con la Tierra entre la cámara y el Sol: su cara nocturna (fase 9b, D40).
+  ['sistema-tierra-noche', '/?captura=1&fecha=2026-04-08T00:00Z', DESKTOP],
   ['vista-espana', '/explorar/tierra?captura=1', DESKTOP, guided('España')],
   ['movil-vista-espana', '/explorar/tierra?captura=1', MOBILE, guided('España')],
   // El máximo del eclipse total del 12-08-2026 (17:45:51 UT, 65,2° N 25,2° O; catálogo de la NASA),

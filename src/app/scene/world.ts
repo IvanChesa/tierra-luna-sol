@@ -1123,8 +1123,16 @@ export class World {
   }
 
   /** Relleno ilustrativo de los cuerpos (configuración visual), en fracción de la luz del Sol. */
-  setFill(fill: number): void {
-    for (const visual of this.visuals) if (visual.uniforms) visual.uniforms.uFill.value = fill;
+  /**
+   * El relleno ilustrativo (`fillLight`) para `closeUp` de primer plano. La cara nocturna de la Tierra
+   * lleva el de la vista general, en gris, y nada en primer plano (fase 9b, D40): de cerca, de noche,
+   * solo se ven las luces, el limbo de la atmósfera y las estrellas que tapa.
+   */
+  setFill(fill: number, closeUp = 0): void {
+    for (const visual of this.visuals) {
+      if (visual.uniforms) visual.uniforms.uFill.value = fill;
+      if (visual.earth) visual.earth.uNightFill.value = fill * (1 - closeUp);
+    }
     if (this.ringMaterial) this.ringMaterial.uniforms.uFill.value = fill;
   }
 
@@ -1422,6 +1430,7 @@ export class World {
 function configureEarth(earth: EarthUniforms): void {
   const config = VISUAL_CONFIG.earth;
   earth.uEarth.value.set(config.cloudAlbedo, config.nightLights, config.glint, config.cloudShadow);
+  earth.uNightTint.value.setRGB(...config.nightTint);
   const scatter = new Color(config.scatter.color).multiplyScalar(config.scatter.intensity);
   earth.uScatter.value.set(scatter.r, scatter.g, scatter.b, config.scatter.limb);
   earth.uTwilightColor.value.set(config.twilight);

@@ -1,6 +1,6 @@
 import starsBin from '../../../public/data/stars.bin' with { loader: 'binary' };
 import { Libration } from 'astronomy-engine';
-import { BackSide, FrontSide, Quaternion, Texture, Vector3, Vector4 } from 'three';
+import { BackSide, Color, FrontSide, Quaternion, Texture, Vector3, Vector4 } from 'three';
 import type { BodyId } from '../data/body.model';
 import { BODY_PHOTOMETRY } from '../data/photometry';
 import { KM_PER_AU } from '../ephemeris/constants';
@@ -1828,6 +1828,38 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     settle(h);
     expect(opacity()).toBe(1);
     h.engine.dispose();
+  });
+
+  it('la cara nocturna de la Tierra: el relleno de la vista general, en gris; en primer plano, nada, y las luces con su tono (fase 9b, D40)', async () => {
+    interface EarthVisual {
+      uniforms: { uFill: { value: number } } | null;
+      earth: { uNightFill: { value: number }; uNightTint: { value: Color } } | null;
+    }
+    const earthOf = (h: Harness) =>
+      (internals(h).world as unknown as { visuals: EarthVisual[] }).visuals.find(
+        (visual) => visual.earth,
+      );
+    // En la vista general, el mismo relleno ilustrativo (la Tierra de noche se lee como un disco).
+    const overview = await createHarness({ reducedMotion: true });
+    settle(overview);
+    const far = earthOf(overview);
+    expect(far?.uniforms?.uFill.value).toBeCloseTo(VISUAL_CONFIG.fill.overview, 6);
+    expect(far?.earth?.uNightFill.value).toBeCloseTo(VISUAL_CONFIG.fill.overview, 6);
+    const [r, g, b] = VISUAL_CONFIG.earth.nightTint;
+    expect(far?.earth?.uNightTint.value.r).toBeCloseTo(r, 6);
+    expect(far?.earth?.uNightTint.value.g).toBeCloseTo(g, 6);
+    expect(far?.earth?.uNightTint.value.b).toBeCloseTo(b, 6);
+    // El tono, cálido y de luminancia 1 (el mapa en gris pone el brillo).
+    expect(0.2126 * r + 0.7152 * g + 0.0722 * b).toBeCloseTo(1, 2);
+    expect(r).toBeGreaterThan(b);
+    overview.engine.dispose();
+    // En la vista Tierra (primer plano), el de la cara nocturna desaparece: solo las luces.
+    const close = await createHarness({ reducedMotion: true, view: 'earth' });
+    settle(close);
+    const near = earthOf(close);
+    expect(near?.uniforms?.uFill.value).toBeLessThan(0.01);
+    expect(near?.earth?.uNightFill.value).toBeLessThan(1e-4);
+    close.engine.dispose();
   });
 
   it('las lunas de un sistema que no se distingue no se dibujan; al enfocar su planeta, sí (fase 4b)', async () => {

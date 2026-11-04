@@ -77,7 +77,13 @@ export const VISUAL_CONFIG = {
    *   (neutros, ≈ 0) y apenas los bosques (oscuros). Con `knee` 0,55, la relación de brillo océano /
    *   desierto (el océano medio de las tres fotos entre el desierto medio de Arabia y el Sáhara
    *   occidental, como en la fase 3b) es 0,189, y en EPIC, 0,178 (sin comprimir, 0,076);
-   * - `nightLights`: la intensidad de las luces de las ciudades (lineal);
+   * - `nightLights`: la intensidad de las luces de las ciudades (lineal), del mapa en gris de Black
+   *   Marble 2016 (fase 9b, D40: negro fuera de las luces);
+   * - `nightTint`: el tono de esas luces (rgb lineal de luminancia 1), el medio de las luces de la
+   *   textura de noche de Solar System Scope que se usaba antes (sus píxeles de luminancia lineal de más
+   *   de 0,1): un amarillo anaranjado, como el alumbrado en las fotos nocturnas desde la ISS. El suelo
+   *   sin luces de esa textura tenía una base azul marino (de media, (7, 9, 22) en sRGB) que la
+   *   exposición del primer plano destapaba;
    * - `glint`: el brillo del Sol reflejado en el océano;
    * - `cloudShadow`: cuánto oscurece la sombra de las nubes (0–1);
    * - `scatter`: la luz que dispersa la atmósfera sobre el lado diurno (color sRGB, intensidad en
@@ -98,6 +104,7 @@ export const VISUAL_CONFIG = {
     cloudAlbedo: 1,
     arid: { knee: 0.55, warmFrom: 0.25, warmTo: 0.4 },
     nightLights: 1.2,
+    nightTint: [1.2, 0.993, 0.485] as readonly [number, number, number],
     glint: 0.12,
     cloudShadow: 0.35,
     scatter: { color: '#5b8fe6', intensity: 0.035, limb: 1.5 },
