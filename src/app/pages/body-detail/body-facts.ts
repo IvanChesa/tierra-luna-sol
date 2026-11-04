@@ -10,6 +10,7 @@
  * en millones de km con las UA al lado, y las de las lunas, en km enteros.
  */
 import {
+  decimalsOf,
   formatAu,
   formatDistanceKm,
   formatExact,
@@ -103,8 +104,10 @@ const range = ([min, max]: Range): FactValue => ({
 /**
  * Un periodo con las reglas de ESTILO §3, con un decimal: horas hasta 48 h; después, días y, desde
  * 1000 días, años. Si la cifra que se ve no es la de la fuente (convertida o redondeada), la de la
- * fuente va al lado («58,7 días» y «1407,6 h»; «11,9 años» y «4331 días»): así no se pierden sus
- * decimales (revisión de la fase 9, sugerencia 18).
+ * fuente va al lado, con todos sus decimales («58,7 días» y «1407,6 h»; «11,9 años» y «4331 días»;
+ * revisión de la fase 9, sugerencia 18). En su unidad y con un decimal o ninguno, la cifra que se ve
+ * ya es la de la fuente: la NASA da «88.0» días para Mercurio, que el dato guarda como 88, y
+ * «88,0 días» no lleva «88 días» al lado (segunda ronda, hallazgo 23).
  */
 export function periodCells(
   hours: number,
@@ -115,15 +118,16 @@ export function periodCells(
 } {
   const h = Math.abs(hours);
   const days = h / 24;
-  const text =
-    h < 48
-      ? `${formatNumber(h, 1, true)}${NBSP}h`
-      : days < 1000
-        ? `${formatNumber(days, 1, true)}${NBSP}días`
-        : `${formatNumber(days / 365.25, 1, true)}${NBSP}años`;
-  const original =
-    sourceUnit === 'h' ? `${formatExact(h)}${NBSP}h` : `${formatExact(days)}${NBSP}días`;
-  return { value: split(text), source: text === original ? undefined : original };
+  const [shown, unit]: [number, string] =
+    h < 48 ? [h, 'h'] : days < 1000 ? [days, 'días'] : [days / 365.25, 'años'];
+  const original = sourceUnit === 'h' ? h : days;
+  // Sin el ruido de la coma flotante del paso a horas y vuelta (como `formatExact`).
+  const same = unit === sourceUnit && decimalsOf(Number(original.toPrecision(12))) <= 1;
+  return {
+    value: split(`${formatNumber(shown, 1, true)}${NBSP}${unit}`),
+    // Mimas: 0,9424218 días, siete decimales (el tope de `formatExact` es seis).
+    source: same ? undefined : `${formatExact(original, 12)}${NBSP}${sourceUnit}`,
+  };
 }
 
 /** «5832,5 h · retrógrada»: lo que va al lado de la cifra, sin lo que falte. */

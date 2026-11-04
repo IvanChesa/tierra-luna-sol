@@ -109,6 +109,24 @@ describe('body-facts: las tablas de datos de las fichas (fase 9)', () => {
     });
   });
 
+  it('los periodos: sin repetir la cifra de la fuente si solo le falta su cero («88.0» de la NASA)', () => {
+    // El dato guarda 88 y la NASA da 88.0: «88,0 días», sin «88 días» al lado (segunda ronda, 23).
+    const nbsp = String.fromCharCode(0xa0);
+    const mercury = bodyFacts(getBody('mercurio'));
+    expect(rowOf(mercury, 'periodDays')?.value).toEqual({ number: '88,0', unit: 'días' });
+    expect(rowOf(mercury, 'periodDays')?.detail).toBeUndefined();
+    expect(rowOf(bodyFacts(getBody('marte')), 'periodDays')?.detail).toBeUndefined();
+    const earth = bodyFacts(getBody('tierra'));
+    expect(rowOf(earth, 'lengthOfDayH')?.value).toEqual({ number: '24,0', unit: 'h' });
+    expect(rowOf(earth, 'lengthOfDayH')?.detail).toBeUndefined();
+    // Convertida o con más decimales, sí, y con todos los de la fuente (Mimas, siete).
+    expect(rowOf(mercury, 'rotationPeriodH')?.detail).toBe(`1407,6${nbsp}h`);
+    expect(rowOf(bodyFacts(getBody('luna')), 'periodDays')?.detail).toBe(`27,3217${nbsp}días`);
+    const mimas = bodyFacts(getBody('mimas'));
+    expect(rowOf(mimas, 'periodDays')?.value).toEqual({ number: '22,6', unit: 'h' });
+    expect(rowOf(mimas, 'periodDays')?.detail).toBe(`0,9424218${nbsp}días`);
+  });
+
   it('el Sol: sin órbita, con su luminosidad y su tipo espectral', () => {
     const sun = bodyFacts(getBody('sol'));
     expect(sun.map((g) => g.id)).toEqual(['fisicos']);
