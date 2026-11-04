@@ -18,6 +18,7 @@ Una línea por cada fase cerrada en modo autónomo por bloques y, al terminar ca
 | 6 · La Luna | 2026-10-31 | Dos rondas. La primera, CAMBIOS NECESARIOS: 1 bloqueante (el polo sur, de cerca, salía como un «sol de rayas»: los datos equirrectangulares del LOLA no dan para el polo), 2 importantes (`nearestMoonPhase` saltaba un mes justo después de una fase; un aviso de presupuesto del CSS), 8 menores y 5 sugerencias. Corregido todo: casquetes polares con los modelos polares del LOLA (PDS, 240 m por píxel) por encima de 76°; las texturas del primer plano esperan al final de los viajes (el viaje Tierra → Luna llegaba a 337 MB) y un fallo propio (con el motor en reposo, la Luna conservaba su 8K en la vista general). La segunda, APROBADA CON CAMBIOS MENORES: 4 menores y 4 sugerencias, aplicados o anotados (la cola de subidas, para la fase 10; las sombras del relieve, al backlog). Fusionada con `--no-ff` (`e321a85`) | 555 tests · cobertura de `ephemeris/` del 99,47 % · JS inicial de 298,66 kB (código propio 12,13 de 15) · vista Luna a 59,8 FPS con 265 / 102 / 61 MB de VRAM (alto, medio y bajo) y 5,1 MiB de texturas en alto (de 10) · el viaje Tierra ↔ Luna, como mucho 284 MB · la sombra de la Tierra frente al catálogo de la NASA: gamma a ≤ 0,0010 y magnitudes a ≤ 0,001 en tres eclipses · la libración de la malla, a < 0,1° de `Libration` |
 | 7 · Lunas, sombras y escala real | 2026-11-01 | La revisión del bloque D (`docs/revisiones/bloque-D.md`) hizo también de revisión de la fase: la sesión se paró por el límite de uso antes del subagente. APROBADA CON CAMBIOS MENORES: 0 bloqueantes, 3 importantes (Ío verde lima, D1; las órbitas y estelas que de cerca se ven como rectas que cruzan la pantalla, D3; el dominio pasa a ivanchesa.com, D5) y 2 menores (el corte duro del hueco de Tritón, D2; el realce de los anillos también a contraluz, D4), todos atendidos. Tres fallos propios encontrados al corregir, antes de llegar a `main`: dos sondas de Tritón que pasaban por el relleno del hueco, el albedo de los mosaicos calibrado con ese relleno y los dos primeros criterios de D3 (las esquinas entre rectas contaban como curva; el horizonte de una órbita vista desde dentro se quedaba). Fusionada con `--no-ff` (`d2a0c9e`) | 578 tests · cobertura de `ephemeris/` del 99,48 % · 74 e2e en el CI · JS inicial de 298,65 kB (código propio 12,12 de 15) · three 705,73 kB · 12 lunas con su mosaico (Ío en color, a ΔE\*ab 2,6 de PIA02308) · sistemas de lunas a 58–60 FPS en los tres niveles y VRAM ≤ 278 MB en alto y ≤ 86 en bajo · escala real sin temblor (0 px) · las sombras del tránsito triple del Hubble (24-1-2015) donde las fotografió · anillos (D36): B / disco 1,03, el B tostado y sin lavanda; a contraluz, nada quemado (antes, el 36 % de la división de Cassini) · en las cinco vistas de D3, ninguna recta, con 0,10 ms por frame en el peor caso |
 | 8 · El cielo desde España y los eclipses | 2026-11-03 | CAMBIOS NECESARIOS: 0 bloqueantes, 2 importantes (el deslizador de la noche, que en su última media hora saltaba a la noche siguiente; `/eclipses`, que en el móvil se salía por la derecha, WCAG 1.4.10), 9 menores y 5 sugerencias. Corregidos los importantes y los menores; de las sugerencias, dos y media, y el resto, propuestas para la fase 10. Un fallo propio al comprobarlo (de día, la entradilla del cielo no se leía sobre el resplandor), corregido. Sin bloqueantes, sin segunda ronda. La sesión se cerró antes de fusionar; fusionada en la siguiente con `--no-ff` (`358ae6b`) | 678 tests · cobertura de `ephemeris/` del 98,9 % · 87 e2e en el CI · JS inicial de 300,40 kB (código propio 12,62 de 15) · three 743,27 kB · cielo a 59–60 FPS en los tres niveles, con 0,6–0,8 ms de CPU por frame y 39 MB de VRAM · salidas, puestas y crepúsculos a ≤ 2 min del USNO (el Montsec y el Teide, en tres fechas) · los 45 eclipses de 2026 a 2035 con la fecha y el tipo de la NASA · la sombra del 12-08-2026 a 0,2° del punto de la NASA · 743 segmentos de constelaciones (d3-celestial, BSD) |
+| 9 · Contenido y compartir | 2026-11-04 | Dos rondas. La primera, CAMBIOS NECESARIOS: 1 bloqueante (con `<base href="/">`, las 386 notas numeradas de las fichas y «Saltar al contenido» llevaban a la portada, y `check-links.mjs` las daba por buenas), 2 importantes (la Luna, «Luna de Tierra»; la nota de privacidad, ausente en el explorador), 11 menores y 6 sugerencias; atendido todo, salvo dos propuestas para la fase 10. La segunda, CAMBIOS NECESARIOS sin bloqueantes: 2 importantes («Saltar al contenido» perdía la consulta de la URL y, al hidratar, apuntaba a la portada; el menú del móvil no cabía en horizontal), 1 menor (los periodos repetían la cifra de la fuente sin su cero) y 1 sugerencia (`/luna` en el menú y en las migas, para Iván); corregidos, con un fallo propio más (el periodo de Mimas, con 6 de los 7 decimales de su fuente). Fusionada con `--no-ff` (`04be17c`) | 715 tests · cobertura de `ephemeris/` del 98,9 % · 105 e2e, en local y en el CI · 40 rutas prerenderizadas; las 30 fichas, sin three ni astronomy-engine en su JS inicial · JS inicial de 314,23 kB con los estilos (código propio 14,88 de 15) · las métricas de Lighthouse sin Lighthouse (CPU ×4 y 4G lenta), con el PC libre: 99 de nota estimada en las nueve páginas de la muestra (en la revisión, de 97 a 99) y CLS 0 · 1161 enlaces internos y 108 externos bien (los 3 de ivanchesa.com, pendientes del dominio) · 0 cookies y 0 peticiones a terceros en las 40 rutas · 88 constelaciones en español, comprobadas con el Anuario del IGN · 360 textos con su fuente para Iván · la imagen para compartir, 34 kB |
 ---
 
 ## Resumen del bloque «fases 1 a 1» (2026-10-24)
@@ -451,3 +452,71 @@ Está en `PENDIENTES.md` («Bloque E (fase 9)», «Decisiones del 03-11» y «Re
 - confirmar `@lhci/cli` en la fase 10;
 - probar en tu móvil (no bloquea);
 - los PR 1 y 3 de Dependabot, que siguen abiertos.
+
+## Resumen del bloque E, fases 8 y 9 (2026-11-04)
+
+### Sesiones
+1. **Fase 8** (01-11): la fase entera, con su revisión por subagente y sus correcciones. Iván cerró la sesión antes de fusionar.
+2. **Fase 9** (03-11): la fusión de la fase 8, la fase 9 entera, su primera ronda de revisión con sus correcciones y las cinco decisiones de Iván de ese día. Iván cerró la sesión durante la segunda ronda, que se paró sin escribir nada.
+3. **Esta sesión** (04-11): la segunda ronda, por un subagente sin el contexto de la sesión; sus correcciones, la fusión y este resumen.
+
+### Qué se ha hecho
+- **Fase 8, el cielo desde España y los eclipses** (detalle en su informe):
+  - `/cielo`, con el Montsec por defecto, los otros seis lugares y «Usar mi ubicación» (solo al pulsarlo, y la ubicación no sale del navegador), cada lugar con su zona horaria;
+  - la cúpula del cielo con la refracción, el color del cielo según la altura del Sol, el deslizador de la noche en la hora del lugar y las constelaciones de d3-celestial (BSD);
+  - «Esta noche»: qué planetas se ven, sus salidas, puestas y culminaciones, los crepúsculos, la fase de la Luna y hacia dónde mirar, con su tabla accesible;
+  - `/eclipses`: los próximos visibles desde los mismos lugares, con «Ver en 3D», que lleva a la sombra de la Luna en la vista Tierra o a la Luna en la sombra de la Tierra.
+- **Fase 9, contenido y compartir** (detalle en su informe):
+  - las fichas de los 30 cuerpos y sus índices (`/planetas` y `/lunas`, nueva), prerenderizadas y sin three: los datos con los decimales y la nota de su fuente, «Hoy» calculado en el navegador, las curiosidades y las lunas de cada sistema;
+  - 60 imágenes del propio motor para las fichas y la imagen para compartir;
+  - `/creditos`, recurso a recurso, y `/sobre-el-proyecto` como caso de estudio, con la privacidad y la frase del NEL de Cloudflare;
+  - compartir: la description de cada página, Open Graph, `noindex` (siempre en `/404`) y `robots.txt`; el pie con los enlaces legales a ivanchesa.com y la nota «Sin cookies, sin analítica y sin peticiones a terceros», también en el explorador y en el menú del móvil;
+  - los textos, repasados con ESTILO, y `docs/revision-textos.md` para Iván;
+  - las decisiones de Iván del 03-11: las constelaciones en español con el latín de la IAU (D38), el cielo en tiempo real (D33), el menú con «Cielo» y la Luna la primera de `/lunas`, y la fase propia de antes de la 10, apuntada en el plan.
+
+### Métricas al cerrar el bloque
+- **Tests:** 715 unitarios (cobertura de `ephemeris/` del 98,9 %) y 105 e2e, en verde en local y en el CI de la rama (ejecución 41896083050: lint, tests, build, e2e y la vista previa en Cloudflare Pages). El de `main`, el de este push (despliega staging).
+- **Bundle:** JS inicial de 314,23 kB con los estilos (aviso a 320), con 14,88 kB de código propio de 15; three, 743,99 kB (aviso a 900); la interfaz del explorador, diferida, 156,97 kB.
+- **Rendimiento:**
+  - el cielo, a 59–60 FPS en los tres niveles, con 0,6–0,8 ms de CPU por frame y 39 MB de VRAM;
+  - las páginas de contenido, con las métricas de Lighthouse medidas sin Lighthouse (CPU ×4 y 4G lenta) y el PC libre: 99 de nota estimada en las nueve de la muestra (en la revisión, de 97 a 99), con CLS 0.
+- **Precisión:** salidas, puestas y crepúsculos a ≤ 2 min del USNO (el Montsec y el Teide, en tres fechas); los 45 eclipses de 2026 a 2035, con la fecha y el tipo de la NASA; la sombra del 12-08-2026, a 0,2° del punto de la NASA.
+- **Privacidad y enlaces:** 0 cookies y 0 peticiones a terceros en las 40 rutas; 1161 enlaces internos y 108 externos bien (los 3 de ivanchesa.com, pendientes del dominio).
+- **Datos y textos:** ninguna cifra sin fuente en las fichas (test en los 30 cuerpos); las 88 constelaciones en español, comprobadas con el Anuario del IGN; 360 textos con su fuente, para Iván.
+
+### Desviaciones importantes (detalle en los informes, §4)
+- **Fase 8:**
+  - el cielo, en tiempo real (después, decisión de Iván: D33);
+  - las constelaciones, con el nombre latino de la IAU (después, en español: D38, en la fase 9);
+  - la luz del cielo, ilustrativa, con colores de referencia a siete alturas del Sol;
+  - de noche se dibujan todos los planetas, también los que no se ven a simple vista;
+  - `/eclipses`, con el selector de los mismos lugares y sin «Usar mi ubicación».
+- **Fase 9:**
+  - **Lighthouse no se ha ejecutado** (`@lhci/cli`, por aprobar): sus métricas, medidas con Playwright y sus curvas; el criterio queda en ⚠️ hasta la fase 10;
+  - la vista previa del enlace, simulada con las etiquetas del HTML; la de una app real, con el dominio (fase 11), también en ⚠️;
+  - la imagen para compartir, una composición de tres renders del motor, en JPEG;
+  - las fuentes, precargadas (adelantado de la fase 10), con `font-display: optional` en el texto;
+  - el código propio inicial, casi en su presupuesto (14,88 kB de 15).
+
+### Incidencias
+- **Las dos sesiones anteriores las cerró Iván a medias:** la de la fase 8, antes de fusionar, y la de la fase 9, durante la segunda ronda de la revisión. Se retomaron desde este diario.
+- **Una tarea mía olvidada en segundo plano** (un `python` que extraía el texto de un PDF del IGN: casi tres horas con un núcleo) falseó la primera medida de rendimiento de la fase 9 (de 95 a 97, con Marte en el límite). Con el PC libre, 99. Desde entonces, se miran los procesos antes de medir.
+- **El bloqueante de la fase 9** (las notas y «Saltar al contenido», a la portada) se le escapaba a `check-links.mjs`, que resolvía las anclas contra la página y no contra `<base href>`, como el navegador. Corregido en la primera respuesta; la segunda ronda encontró lo que quedaba del salto (la consulta de la URL y la hidratación), corregido con tests que fallaban con el código de antes.
+
+### Condiciones de parada
+No se activó ninguna:
+- no quedó ningún bloqueante tras la segunda ronda de la fase 9;
+- no hizo falta ninguna dependencia ni herramienta nueva (Lighthouse no se ejecutó, porque `@lhci/cli` espera a Iván; los PDF del IGN se leen con un lector propio);
+- los datos nuevos tienen una licencia compatible o solo se citan: d3-celestial (BSD), y los PDF del IGN, como fuente de los nombres;
+- lo que aún no se puede demostrar (Lighthouse y la vista previa en una app real) queda en ⚠️ con su fase, sin cambiar el plan.
+
+### Pendiente para Iván (`PENDIENTES.md`)
+1. **Revisar los textos** en `docs/revision-textos.md` (360, cada uno con su fuente y su hueco). Las 88 constelaciones, la sesión de revisión del bloque E.
+2. **Decidir** lo de `/luna` en el menú y en las migas (segunda ronda, sugerencia 24) y, sin prisa, si «Sobre el proyecto» cuenta cómo se ha hecho.
+3. **La fase propia de antes de la 10** (el Sol, las lunas que faltan, los sistemas de lunas de la vista general y el lado nocturno de la Tierra): la prepara la sesión de revisión con la del bloque E.
+4. **Fase 10:** confirmar `@lhci/cli` (Lighthouse en el CI).
+5. **Cuando el dominio responda:** los enlaces a ivanchesa.com (`node scripts/check-links.mjs --externos`) y, en la fase 11, la vista previa en una app real.
+6. **Probar en tu móvil** (no bloquea): `/cielo`, `/eclipses` y las fichas.
+7. **GitHub:** los PR 1 y 3 de Dependabot siguen abiertos.
+
+El bloque E termina aquí, con sus dos fases fusionadas en `main`. No se ha empezado el bloque F: antes, la revisión del bloque E.
