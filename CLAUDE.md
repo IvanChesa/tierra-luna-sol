@@ -32,6 +32,7 @@ Los bloques y sus fases están en `docs/PLAN.md` §6 y las ramas, en `docs/promp
 - El cielo desde España (`/cielo`, fase 8): selector con el **Montsec por defecto**, el Observatori Fabra, el Roque de los Muchachos, el Teide, Calar Alto, Madrid y Fraga, más «usar mi ubicación»; cada lugar con su zona horaria (`docs/decisiones/CAMBIO-CIELO-ESPANA.md`).
 - El explorador arranca reproduciendo (D31) a la velocidad de su contexto (**D33**, fase 4b): **3 días/s en la vista general** y **1 hora/s con un cuerpo enfocado** o en las vistas Tierra y Luna; salvo con movimiento reducido o con `?fecha=`, que entran en pausa.
 - Constelaciones: solo con licencia CC0, CC BY, MIT, BSD o de dominio público; si no, se omiten y se apuntan.
+- Licencias aceptadas para imágenes y datos de terceros: CC0, CC BY, MIT, BSD, dominio público y la política de uso de imágenes del JPL (con el crédito «Courtesy NASA/JPL-Caltech» y sus excepciones; D43). Nada con cláusula no comercial (NC).
 - Subdominio: `tierra-luna-sol.ivanchesa.com`, el de `site.config.ts` (D5 de la revisión del bloque D; antes, el provisional en ivanchesa.es).
 - Textos: con fuente y `reviewed: false`; Iván los revisa en la fase 9.
 - Pruebas en el móvil: se recogen cuando Iván pueda; no bloquean.
@@ -50,7 +51,7 @@ Los bloques y sus fases están en `docs/PLAN.md` §6 y las ramas, en `docs/promp
 **Al terminar el bloque:** para y deja en `DIARIO.md` un resumen (qué se ha hecho, métricas, desviaciones y pendientes para Iván). No empieces el bloque siguiente: antes lo revisa la sesión de revisión.
 
 ## Reglas permanentes
-- **Idioma:** interfaz, textos, comentarios, commits y docs en español de España. Identificadores y nombres de archivo en inglés. URLs en español y sin barra final. Los textos visibles siguen `docs/ESTILO.md` (se crea en la fase 3).
+- **Idioma:** interfaz, textos, comentarios, commits, docs y los mensajes del chat con Iván (también los de progreso) en español de España. Identificadores y nombres de archivo en inglés. URLs en español y sin barra final. Los textos visibles siguen `docs/ESTILO.md` (se crea en la fase 3).
 - **Stack fijo:**
   - Angular 22: standalone, zoneless y signals. `OnPush` es el valor por defecto: **no se declara**.
   - TypeScript estricto, sin `any`.
@@ -120,7 +121,7 @@ Ojo: los ejemplos de las skills pueden usar React/R3F o versiones antiguas de th
 ## Comandos
 - `npm start` (añade `-- --host 0.0.0.0` para probar en el móvil por la red local)
 - `npm test`, `npm run lint`, `npm run build`, `npm run e2e`
-- `npm run check` (lint + Prettier, tests con el umbral de cobertura de `ephemeris/` ≥ 90 %, build y `scripts/check-initial-bundle.mjs`, que comprueba que ninguna página carga `three` ni `astronomy-engine` en su JS inicial; obligatorio antes de cerrar una fase o entrega)
+- `npm run check` (lint + Prettier, tests con el umbral de cobertura de `ephemeris/` ≥ 90 %, build, `scripts/check-initial-bundle.mjs`, que comprueba que ninguna página carga `three` ni `astronomy-engine` en su JS inicial, y `scripts/check-links.mjs`, que comprueba los enlaces internos del build como los resuelve el navegador; obligatorio antes de cerrar una fase o entrega)
 
 ## Definición de terminado (cada fase)
 1. Criterios de aceptación cumplidos **y demostrados** en el informe (salidas, cifras, capturas).
