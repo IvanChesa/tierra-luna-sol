@@ -35,6 +35,11 @@ const zoomOut =
     for (let i = 0; i < n; i++) await page.keyboard.press(key);
   };
 const zoomIn = (n) => zoomOut(n, '+');
+/** Sube la cámara `n` pasos de 18° (Mayús + flecha arriba en el lienzo) y aleja `zoom` pasos. */
+const fromAbove = (n, zoom) => async (page) => {
+  for (let i = 0; i < n; i++) await page.keyboard.press('Shift+ArrowUp');
+  await zoomOut(zoom)(page);
+};
 const close = (body, date) =>
   `/?captura=1&cuerpo=${body}&marco=ilustrativo${date ? `&fecha=${date}` : ''}`;
 
@@ -42,8 +47,10 @@ const close = (body, date) =>
 const SHOTS = [
   ['escritorio-jupiter-cerca', close('jupiter'), DESKTOP, zoomOut(2)],
   // Las lunas que se ven grandes, con su mapa sin enfocar su sistema (fase 9b, D42).
-  ['escritorio-jupiter-mapas', close('jupiter'), DESKTOP, zoomIn(1)],
+  ['escritorio-jupiter-mapas', close('jupiter'), DESKTOP, zoomIn(2)],
   ['escritorio-saturno-cerca', close('saturno', OPEN_RINGS), DESKTOP, zoomOut(3)],
+  // Desde más arriba: las órbitas, fuera de los anillos.
+  ['escritorio-saturno-arriba', close('saturno', OPEN_RINGS), DESKTOP, fromAbove(2, 3)],
   ['escritorio-saturno-cerca-2026', close('saturno'), DESKTOP, zoomOut(3)],
   ['escritorio-tierra-cerca', close('tierra'), DESKTOP, zoomOut(1)],
   ['escritorio-marte-cerca', close('marte'), DESKTOP, zoomOut(1)],
@@ -53,8 +60,9 @@ const SHOTS = [
   ['escritorio-sistema', '/?captura=1', DESKTOP],
   // La vista general, acercada: sin enfocar nada, los sistemas aparecen cuando su planeta crece.
   ['escritorio-sistema-cerca', '/?captura=1', DESKTOP, zoomIn(3)],
-  ['movil-jupiter-cerca', close('jupiter'), MOBILE, zoomOut(2)],
-  ['movil-saturno-cerca', close('saturno', OPEN_RINGS), MOBILE, zoomOut(3)],
+  // En el móvil, la ficha tapa la mitad de abajo: el planeta, más pequeño de partida.
+  ['movil-jupiter-cerca', close('jupiter'), MOBILE],
+  ['movil-saturno-cerca', close('saturno', OPEN_RINGS), MOBILE, fromAbove(2, 1)],
   ['movil-sistema', '/?captura=1', MOBILE],
 ];
 

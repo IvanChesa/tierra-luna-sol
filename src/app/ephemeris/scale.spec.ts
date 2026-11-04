@@ -11,6 +11,8 @@ import {
   blendMagnitude,
   blendPlacements,
   blendPosition,
+  compressSystems,
+  createMoonSystems,
   globalPhysicalKmPerUnit,
   illustrativeDistance,
   illustrativeDistanceToAu,
@@ -19,6 +21,7 @@ import {
   illustrativePosition,
   illustrativeRadius,
   localPhysicalKmPerUnit,
+  moonSystemLayout,
   placeBodies,
   placeHeliocentricPoint,
   placeMoonPoint,
@@ -76,16 +79,170 @@ describe('scale: escala ilustrativa', () => {
       previous = r;
     }
   });
+});
 
-  it('separa las lunas de su planeta sin meterlas dentro y en orden de distancia', () => {
-    const earthRadiusKm = 6371;
-    const visible = illustrativeRadius(earthRadiusKm);
-    const near = illustrativeMoonOffset(vec3(9378 / KM_PER_AU, 0, 0), earthRadiusKm, visible);
-    const far = illustrativeMoonOffset(vec3(384_400 / KM_PER_AU, 0, 0), earthRadiusKm, visible);
-    expect(length(near)).toBeGreaterThan(visible);
-    expect(length(far)).toBeGreaterThan(length(near));
-    const tilted = illustrativeMoonOffset(vec3(0.001, 0.002, -0.0005), earthRadiusKm, visible);
-    expect(angleBetweenDeg(tilted, vec3(0.001, 0.002, -0.0005))).toBeLessThan(1e-9);
+describe('scale: sistemas de lunas de la vista general (fase 9b, D39)', () => {
+  // Del catálogo (data/body-data.ts, NASA y JPL), redondeado: radio (km), semieje (km), excentricidad.
+  const GALILEANS = [
+    { radiusKm: 1821.5, semiMajorAxisKm: 421_800, eccentricity: 0.004 },
+    { radiusKm: 1560.8, semiMajorAxisKm: 671_100, eccentricity: 0.009 },
+    { radiusKm: 2631.2, semiMajorAxisKm: 1_070_400, eccentricity: 0.001 },
+    { radiusKm: 2410.3, semiMajorAxisKm: 1_882_700, eccentricity: 0.007 },
+  ];
+  const SATURNIANS = [
+    { radiusKm: 198.2, semiMajorAxisKm: 185_520, eccentricity: 0.0202 },
+    { radiusKm: 252.1, semiMajorAxisKm: 238_020, eccentricity: 0.0045 },
+    { radiusKm: 531.1, semiMajorAxisKm: 294_660, eccentricity: 0 },
+    { radiusKm: 561.4, semiMajorAxisKm: 377_400, eccentricity: 0.0022 },
+    { radiusKm: 763.5, semiMajorAxisKm: 527_040, eccentricity: 0.001 },
+    { radiusKm: 2574.8, semiMajorAxisKm: 1_221_870, eccentricity: 0.0292 },
+    { radiusKm: 734.3, semiMajorAxisKm: 3_560_850, eccentricity: 0.0283 },
+  ];
+  const SATURN_RINGS = 136_775 / 60_268;
+  const moonParams = DEFAULT_ILLUSTRATIVE_SCALE.moons;
+  type Moons = readonly { radiusKm: number; semiMajorAxisKm: number; eccentricity: number }[];
+
+  /** El aire, de superficie a superficie y en el peor caso: con el planeta y entre lunas vecinas. */
+  function worstGaps(
+    layout: ReturnType<typeof moonSystemLayout>,
+    moons: Moons,
+  ): { planet: number; neighbours: number[] } {
+    const order = moons
+      .map((_, k) => k)
+      .sort((a, b) => (moons[a]?.semiMajorAxisKm ?? 0) - (moons[b]?.semiMajorAxisKm ?? 0));
+    const peri = (k: number) => (layout.axis[k] ?? 0) * (1 - (moons[k]?.eccentricity ?? 0));
+    const apo = (k: number) => (layout.axis[k] ?? 0) * (1 + (moons[k]?.eccentricity ?? 0));
+    const first = order[0] ?? 0;
+    return {
+      planet: peri(first) - (layout.size[first] ?? 0) - layout.core,
+      neighbours: order.slice(1).map((k, j) => {
+        const inner = order[j] ?? 0;
+        return peri(k) - (layout.size[k] ?? 0) - apo(inner) - (layout.size[inner] ?? 0);
+      }),
+    };
+  }
+
+  it('las lunas, más pequeñas respecto a su planeta: Ganímedes, del 10 al 15 % de Júpiter, y la Luna, del 35 al 45 % de la Tierra', () => {
+    const jupiter = moonSystemLayout(71_492, 1, GALILEANS);
+    expect(jupiter.size[2]).toBeGreaterThan(0.1);
+    expect(jupiter.size[2]).toBeLessThan(0.15);
+    const earth = moonSystemLayout(6378, 1, [
+      { radiusKm: 1737.4, semiMajorAxisKm: 384_400, eccentricity: 0.0549 },
+    ]);
+    expect(earth.size[0]).toBeGreaterThan(0.35);
+    expect(earth.size[0]).toBeLessThan(0.45);
+    // La ley, (r / R)^β: Titán, el 12,9 % de Saturno.
+    const saturn = moonSystemLayout(60_268, SATURN_RINGS, SATURNIANS);
+    expect(saturn.size[5]).toBeCloseTo((2574.8 / 60_268) ** moonParams.sizeExponent, 12);
+    expect(saturn.size[5]).toBeCloseTo(0.129, 3);
+  });
+
+  it('en cada sistema, el orden de tamaños y el de las órbitas son los reales', () => {
+    const systems: readonly (readonly [number, number, Moons])[] = [
+      [71_492, 1, GALILEANS],
+      [60_268, SATURN_RINGS, SATURNIANS],
+    ];
+    for (const [radius, core, moons] of systems) {
+      const layout = moonSystemLayout(radius, core, moons);
+      const rank = (values: readonly number[]) =>
+        values.map((_, k) => k).sort((a, b) => (values[a] ?? 0) - (values[b] ?? 0));
+      expect(rank(layout.size)).toEqual(rank(moons.map((m) => m.radiusKm)));
+      expect(rank(layout.axis)).toEqual(rank(moons.map((m) => m.semiMajorAxisKm)));
+    }
+    // Aunque lleguen desordenadas (Tritón va antes que Proteo en el catálogo).
+    const neptune = moonSystemLayout(24_764, 1, [
+      { radiusKm: 1352.6, semiMajorAxisKm: 354_760, eccentricity: 0.000016 },
+      { radiusKm: 208, semiMajorAxisKm: 117_647, eccentricity: 0.0004 },
+    ]);
+    expect(neptune.axis[1]).toBeLessThan(neptune.axis[0] ?? 0);
+  });
+
+  it('sin cruces: la primera, fuera del planeta (o de los anillos), y cada una, a un hueco de la anterior', () => {
+    const systems: readonly (readonly [number, number, Moons])[] = [
+      [71_492, 1, GALILEANS],
+      [60_268, SATURN_RINGS, SATURNIANS],
+    ];
+    for (const [radius, core, moons] of systems) {
+      const layout = moonSystemLayout(radius, core, moons);
+      const { planet, neighbours } = worstGaps(layout, moons);
+      expect(planet).toBeCloseTo(moonParams.clearance, 9);
+      for (const gap of neighbours) expect(gap).toBeGreaterThan(moonParams.gapMin);
+      // Lo que ocupa el sistema: la luna más lejana en su apoapsis, con su radio.
+      const last = moons.length - 1;
+      expect(layout.reach).toBeCloseTo(
+        (layout.axis[last] ?? 0) * (1 + (moons[last]?.eccentricity ?? 0)) +
+          (layout.size[last] ?? 0),
+        12,
+      );
+    }
+    // Las de Saturno, todas por fuera del anillo A (en la realidad, también).
+    const saturn = moonSystemLayout(60_268, SATURN_RINGS, SATURNIANS);
+    for (const axis of saturn.axis) expect(axis).toBeGreaterThan(SATURN_RINGS);
+    expect(saturn.core).toBe(SATURN_RINGS);
+  });
+
+  it('los saltos grandes de la distancia real se notan (la parte logarítmica)', () => {
+    const saturn = moonSystemLayout(60_268, SATURN_RINGS, SATURNIANS);
+    const titan = saturn.axis[5] ?? 0;
+    const iapetus = saturn.axis[6] ?? 0;
+    expect(iapetus - titan).toBeGreaterThanOrEqual(
+      moonParams.spread * Math.log10(3_560_850 / 1_221_870) - 1e-9,
+    );
+  });
+
+  it('rechaza planetas y lunas que no valen', () => {
+    expect(() => moonSystemLayout(0, 1, GALILEANS)).toThrow(RangeError);
+    expect(() => moonSystemLayout(71_492, 0.5, GALILEANS)).toThrow(RangeError);
+    expect(() =>
+      moonSystemLayout(71_492, 1, [{ radiusKm: 10, semiMajorAxisKm: 1e5, eccentricity: 1 }]),
+    ).toThrow(RangeError);
+    expect(moonSystemLayout(71_492, 1, []).reach).toBe(1);
+  });
+
+  it('la posición ilustrativa: la órbita real escalada, en la misma dirección, y comprimida hacia el planeta', () => {
+    const offset = vec3(0.001, 0.002, -0.0005);
+    const scale = 1000;
+    const parent = { radius: 3, core: 2, compression: 1 };
+    const full = illustrativeMoonOffset(offset, scale, parent);
+    expect(angleBetweenDeg(full, offset)).toBeLessThan(1e-9);
+    expect(length(full)).toBeCloseTo(3 * length(offset) * scale, 9);
+    const half = illustrativeMoonOffset(offset, scale, { ...parent, compression: 0.5 });
+    expect(length(half)).toBeCloseTo(3 * (2 + 0.5 * (length(offset) * scale - 2)), 9);
+    const none = illustrativeMoonOffset(offset, scale, { ...parent, compression: 0 });
+    expect(length(none)).toBeCloseTo(6, 9);
+  });
+
+  it('la compresión: nada lejos, lo justo para dejar el aire de cerca y 0 si los planetas no dejan sitio', () => {
+    // Dos planetas de radio 2 con sistemas que llegan a 3 radios (lo que ocupan: 1).
+    const systems = {
+      size: new Float64Array(2),
+      scale: new Float64Array(2),
+      core: Float64Array.from([1, 1]),
+      reach: Float64Array.from([3, 3]),
+    };
+    const radius = Float64Array.from([2, 2]);
+    const at = (d: number, which = systems) =>
+      compressSystems(
+        Float64Array.from([0, 0, 0, d, 0, 0]),
+        radius,
+        [0, 1],
+        which,
+        0.5,
+        new Float64Array(2),
+      );
+    expect([...at(100)]).toEqual([1, 1]);
+    // A 8,5 unidades: los planetas ocupan 4 y el aire 0,5; para los sistemas quedan 4 de 8.
+    const close = at(8.5);
+    expect(close[0]).toBeLessThanOrEqual(0.5 + 1e-12);
+    expect(close[0]).toBe(close[1]);
+    // Con la compresión, las dos esferas dejan al menos el aire pedido.
+    const c = close[0] ?? 0;
+    expect(8.5 - 2 * (2 * (1 + c * 2))).toBeGreaterThanOrEqual(0.5 - 1e-9);
+    expect([...at(3)]).toEqual([0, 0]);
+    // Un cuerpo sin lunas junto a un sistema: solo cuenta lo que se puede comprimir.
+    const bare = { ...systems, reach: Float64Array.from([3, 1]) };
+    expect(at(9, bare)[0]).toBeLessThan(1);
+    expect(at(20, bare)[0]).toBe(1);
   });
 });
 
@@ -168,13 +325,30 @@ describe('scale: marcos de escala y transiciones relativas al foco (D12)', () =>
     calisto: 2410,
   };
   const radius = (id: string) => RADII[id] ?? 1;
+  // Semieje (km) y excentricidad de prueba de las lunas, del catálogo, redondeados.
+  const ORBITS: Record<string, readonly [number, number]> = {
+    luna: [384_400, 0.0549],
+    io: [421_800, 0.004],
+    europa: [671_100, 0.009],
+    ganimedes: [1_070_400, 0.001],
+    calisto: [1_882_700, 0.007],
+  };
   const state = new SolarSystemModel(specs).at(new Date('2026-10-24T00:00:00Z'));
   const { layout } = state;
+  const radiusKm = Float64Array.from(layout.ids, radius);
+  const moons = createMoonSystems(
+    radiusKm,
+    layout.parentIndex,
+    Float64Array.from(layout.ids, (id) => ORBITS[id]?.[0] ?? 0),
+    Float64Array.from(layout.ids, (id) => ORBITS[id]?.[1] ?? 0),
+    new Float64Array(layout.ids.length).fill(1),
+  );
   const input: PlacementInput = {
     heliocentric: state.heliocentric,
     parentOffset: state.parentOffset,
     parentIndex: layout.parentIndex,
-    radiusKm: Float64Array.from(layout.ids, radius),
+    radiusKm,
+    moons,
   };
   const ix = (id: string) => layout.indexOf(id);
   const pos = (p: Placement, id: string) => {
@@ -193,14 +367,21 @@ describe('scale: marcos de escala y transiciones relativas al foco (D12)', () =>
 
   it('el marco ilustrativo coloca planetas y lunas con las funciones de la fase 1', () => {
     expect(pos(illustrative, 'marte')).toEqual(illustrativePosition(state.heliocentricOf('marte')));
+    const earth = illustrativeRadius(radius('tierra'));
+    const compression = illustrative.compression[ix('tierra')] ?? 1;
     const moonOffset = illustrativeMoonOffset(
       state.parentOffsetOf('luna'),
-      radius('tierra'),
-      illustrativeRadius(radius('tierra')),
+      moons.scale[ix('luna')] ?? 0,
+      { radius: earth, core: 1, compression },
     );
     const earthToMoon = sub(pos(illustrative, 'luna'), pos(illustrative, 'tierra'));
     expect(length(earthToMoon)).toBeCloseTo(length(moonOffset), 9);
-    expect(illustrative.radius[ix('tierra')]).toBe(illustrativeRadius(radius('tierra')));
+    expect(illustrative.radius[ix('tierra')]).toBe(earth);
+    // La Luna, con su ley de tamaños (D39) y la compresión de su sistema.
+    expect(illustrative.radius[ix('luna')]).toBeCloseTo(
+      compression * (moons.size[ix('luna')] ?? 0) * earth,
+      12,
+    );
   });
 
   it('el sistema local físico conserva el radio del planeta y pone sus lunas a escala real', () => {
@@ -233,11 +414,16 @@ describe('scale: marcos de escala y transiciones relativas al foco (D12)', () =>
     const parent = {
       position: pos(illustrative, 'jupiter'),
       radius: illustrative.radius[ix('jupiter')] ?? 0,
-      radiusKm: radius('jupiter'),
+      core: moons.core[ix('jupiter')] ?? 1,
+      compression: illustrative.compression[ix('jupiter')] ?? 1,
     };
-    expect(placeMoonPoint(frame, parent, state.parentOffsetOf('io'))).toEqual(
-      pos(illustrative, 'io'),
+    const io = placeMoonPoint(
+      frame,
+      parent,
+      state.parentOffsetOf('io'),
+      moons.scale[ix('io')] ?? 0,
     );
+    expect(io).toEqual(pos(illustrative, 'io'));
     expect(placeRadius(frame, 1)).toBe(DEFAULT_ILLUSTRATIVE_SCALE.minRadius);
   });
 

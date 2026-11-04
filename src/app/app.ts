@@ -1,5 +1,5 @@
 import { Location } from '@angular/common';
-import { Component, DOCUMENT, afterNextRender, inject, signal } from '@angular/core';
+import { Component, DOCUMENT, DestroyRef, afterNextRender, inject, signal } from '@angular/core';
 import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { pathOf } from './core/canonical';
 import { SITE_CONFIG } from './core/site.config';
@@ -53,9 +53,16 @@ export class App {
       this.path.set(pathOf(event.urlAfterRedirects));
     });
     // El menú del móvil y el desplazamiento al navegar, después de pintar y fuera del bundle inicial
-    // (`core/navigation-effects.ts`).
+    // (`core/navigation-effects.ts`); si la app ya no existe cuando llega, nada.
+    const destroyRef = inject(DestroyRef);
+    let alive = true;
+    destroyRef.onDestroy(() => (alive = false));
     afterNextRender(() => {
-      void import('./core/navigation-effects').then((m) => m.followNavigation(router, doc));
+      void import('./core/navigation-effects').then((m) => {
+        if (!alive) return;
+        const subscription = m.followNavigation(router, doc);
+        destroyRef.onDestroy(() => subscription.unsubscribe());
+      });
     });
   }
 

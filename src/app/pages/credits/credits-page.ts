@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { SITE_CONFIG } from '../../core/site.config';
 
 /** El texto de cada licencia (en español, donde lo hay). */
@@ -17,6 +18,7 @@ const LICENSES = {
 @Component({
   selector: 'tls-credits-page',
   host: { class: 'page' },
+  imports: [RouterLink],
   templateUrl: './credits-page.html',
   styleUrl: './credits-page.css',
 })

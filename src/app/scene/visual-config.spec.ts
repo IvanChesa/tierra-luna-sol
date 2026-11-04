@@ -5,6 +5,7 @@ import {
   exposureFor,
   fillLight,
   moonPresence,
+  overviewMoonPresence,
 } from './visual-config';
 
 describe('configuración visual', () => {
@@ -103,6 +104,27 @@ describe('presencia de las lunas (fase 4b)', () => {
     // La misma luna, a 1,5 radios del centro: con el planeta de 10 px no se ve; con 100 px, sí.
     expect(moonPresence(3, 2, 10)).toBe(0);
     expect(moonPresence(3, 2, 100)).toBe(1);
+  });
+
+  it('en la vista general, un sistema aparece con lo que mide su planeta, y cada luna con lo que mide ella (fase 9b)', () => {
+    const { system, moon } = VISUAL_CONFIG.overviewMoonsPx;
+    // Un planeta de radio 2 y una luna de radio 0,2: su disco mide la décima parte que el del planeta.
+    expect(overviewMoonPresence(0.2, 2, system.from)).toBe(0);
+    expect(overviewMoonPresence(0.2, 2, system.to)).toBe(1);
+    expect(overviewMoonPresence(0.2, 2, 20)).toBe(0);
+    let previous = 0;
+    for (let px = system.from; px <= system.to; px += 0.5) {
+      const presence = overviewMoonPresence(0.2, 2, px);
+      expect(presence).toBeGreaterThanOrEqual(previous);
+      expect(presence - previous).toBeLessThan(0.05);
+      previous = presence;
+    }
+    // Una luna diminuta (Mimas) no aparece mientras su disco no llegue a un píxel.
+    const tiny = (2 * moon.from) / 200;
+    expect(overviewMoonPresence(tiny, 2, 200)).toBe(0);
+    expect(overviewMoonPresence((2 * moon.to) / 200, 2, 200)).toBe(1);
+    expect(overviewMoonPresence(0.2, 0, 100)).toBe(0);
+    expect(overviewMoonPresence(0.2, 2, Infinity)).toBe(0);
   });
 
   it('sin radio o con la cámara dentro del planeta, no se dibuja', () => {

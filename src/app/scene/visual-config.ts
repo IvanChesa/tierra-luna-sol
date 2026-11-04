@@ -155,6 +155,17 @@ export const VISUAL_CONFIG = {
    * (en un sistema local físico, el planeta no ha crecido, y sus lunas aparecen algo más tarde).
    */
   moonResolutionPx: { from: 10, to: 37.5 },
+  /**
+   * En la vista general (fase 9b, D39), los sistemas de lunas ya no son compactos: todas sus lunas
+   * quedan fuera del planeta y de los anillos, con aire entre ellas, y se separarían del borde mucho
+   * antes que con `moonResolutionPx` (las de Saturno llegan a 4,8 radios: en la vista general por
+   * defecto, Titán y su órbita se verían a 50 px de un Saturno de 18). Ahí, un sistema aparece cuando
+   * su planeta mide de `system.from` a `system.to` px de radio en pantalla: la vista general por
+   * defecto sigue sin lunas (Júpiter mide de 16 a 21 px en escritorio) y aparecen al acercarse. Y
+   * cada luna, cuando su disco mide de `moon.from` a `moon.to` px: sin motas de medio píxel (Mimas).
+   * En un sistema local físico, como siempre: cada luna a su tamaño real, con su etiqueta.
+   */
+  overviewMoonsPx: { system: { from: 20, to: 40 }, moon: { from: 0.5, to: 1.5 } },
   /** Opacidad de las órbitas de los planetas en la vista general (la de las estelas completas). */
   overviewOrbitOpacity: 0.85,
   /**
@@ -290,6 +301,12 @@ export function closeUpAmount(focusRadiusPx: number | null): number {
   return t * t * (3 - 2 * t);
 }
 
+/** Paso suave de 0 (en `from`) a 1 (en `to`). */
+function smoothstep(value: number, from: number, to: number): number {
+  const t = Math.min(Math.max((value - from) / (to - from), 0), 1);
+  return t * t * (3 - 2 * t);
+}
+
 /**
  * Presencia de una luna (0–1) según cuánto se separa en pantalla del borde de su planeta
  * (`moonResolutionPx`): `distance` es la distancia entre los dos en el espacio y `parentRadius` el
@@ -303,8 +320,25 @@ export function moonPresence(
   if (!(parentRadius > 0) || !Number.isFinite(parentRadiusPx)) return 0;
   const separation = (distance / parentRadius - 1) * parentRadiusPx;
   const { from, to } = VISUAL_CONFIG.moonResolutionPx;
-  const t = Math.min(Math.max((separation - from) / (to - from), 0), 1);
-  return t * t * (3 - 2 * t);
+  return smoothstep(separation, from, to);
+}
+
+/**
+ * Presencia de una luna en la vista general (fase 9b, `overviewMoonsPx`): según lo que mide su planeta
+ * en pantalla (`parentRadiusPx`) y lo que mide ella, con su radio y el del planeta en unidades de
+ * escena.
+ */
+export function overviewMoonPresence(
+  moonRadius: number,
+  parentRadius: number,
+  parentRadiusPx: number,
+): number {
+  if (!(parentRadius > 0) || !Number.isFinite(parentRadiusPx)) return 0;
+  const { system, moon } = VISUAL_CONFIG.overviewMoonsPx;
+  return (
+    smoothstep(parentRadiusPx, system.from, system.to) *
+    smoothstep((moonRadius / parentRadius) * parentRadiusPx, moon.from, moon.to)
+  );
 }
 
 /**

@@ -45,6 +45,7 @@ import { OrientationModel } from './orientations';
 import type { RendererFactory, RendererPort, ResolvedDepthMode } from './renderer';
 import { StarField } from './stars';
 import {
+  MOON_SYSTEMS,
   NEPTUNE_SEMI_MAJOR_AXIS_AU,
   RADII_KM,
   SCENE_BODIES,
@@ -87,6 +88,7 @@ import {
   exposureFor,
   fillLight,
   moonPresence,
+  overviewMoonPresence,
 } from './visual-config';
 import { illustrativeDistance } from '../ephemeris/scale';
 import { BODY_DATA } from '../data/body-data';
@@ -1242,6 +1244,7 @@ export class SceneEngine implements SceneEngineApi {
     const { position, radius } = this.frames.output;
     const camera = this.world.camera.position;
     const focalPx = this.viewport.height / (2 * Math.tan((BASE_FOV_DEG * Math.PI) / 360));
+    const overview = this.frames.targetSpec.kind === 'illustrative';
     for (let k = 0; k < SCENE_BODIES.length; k++) {
       const p = MOON_PARENT[k] as number;
       if (p < 0 || k === this.focusIndex) {
@@ -1260,7 +1263,10 @@ export class SceneEngine implements SceneEngineApi {
         (position[3 * k + 1] as number) - py,
         (position[3 * k + 2] as number) - pz,
       );
-      this.presence[k] = moonPresence(distance, r, radiusPx);
+      // En la vista general, según lo que miden el planeta y la luna (fase 9b, `overviewMoonsPx`).
+      this.presence[k] = overview
+        ? overviewMoonPresence(radius[k] as number, r, radiusPx)
+        : moonPresence(distance, r, radiusPx);
     }
   }
 
@@ -1915,6 +1921,7 @@ function placementInput(
     radiusKm: RADII_KM,
     rings,
     screen,
+    moons: MOON_SYSTEMS,
   };
 }
 

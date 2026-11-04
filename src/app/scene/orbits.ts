@@ -382,7 +382,7 @@ if ( abs( vUv.y ) > 1.0 ) discard;`,
       points[3 * index + 1] as number,
       points[3 * index + 2] as number,
     );
-    return source.parentIndex < 0 ? frames.helioPoint(p) : frames.moonPoint(source.parentIndex, p);
+    return source.parentIndex < 0 ? frames.helioPoint(p) : frames.moonPoint(source.bodyIndex, p);
   }
 
   /** Grosores por extremo de segmento: un búfer intercalado como el de los colores de three. */
@@ -414,7 +414,7 @@ if ( abs( vUv.y ) > 1.0 ) discard;`,
     const c =
       source.parentIndex < 0
         ? frames.helioPoint(origin)
-        : frames.moonPoint(source.parentIndex, origin);
+        : frames.moonPoint(source.bodyIndex, origin);
     // En ejes de Three, como los puntos: (x, z, −y).
     const cx = c.x;
     const cy = c.z;

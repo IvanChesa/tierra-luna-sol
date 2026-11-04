@@ -18,6 +18,31 @@ import { Vec3, length, lerp, scale, vec3 } from './vec3';
 
 export type ScaleMode = 'illustrative' | 'real';
 
+/**
+ * Los sistemas de lunas de la vista general (fase 9b, D39). Valores de presentación, ilustrativos:
+ * - `sizeExponent` β: el radio de una luna, R_vis · (r / R)^β, con R_vis el radio con el que se ve su
+ *   planeta y r / R el real entre los dos. Con 0,65, Ganímedes mide el 11,7 % de Júpiter (el real,
+ *   el 3,7 %; el objetivo de la fase, del 10 al 15 %), la Luna el 42,9 % de la Tierra (27 %; del 35 al
+ *   45 %) y Titán el 12,9 % de Saturno (4,3 %). Es monótona: el orden de tamaños de cada sistema se
+ *   conserva. Antes (fase 4b) las lunas usaban la ley de los planetas y medían el 23–29 % de su planeta.
+ * - `clearance`: el aire entre el planeta, o el borde exterior de sus anillos, y su primera luna (en
+ *   radios del planeta).
+ * - `gapFactor` y `gapMin`: el hueco entre dos lunas vecinas, de superficie a superficie: `gapFactor`
+ *   veces la suma de sus radios más `gapMin` radios del planeta (con 1, un diámetro medio de aire).
+ * - `spread`: la parte logarítmica de la distancia real, desde la primera luna (radios del planeta por
+ *   década): los saltos grandes (de Titán a Jápeto, de Fobos a Deimos) se notan.
+ * - `systemGap`: el aire mínimo (unidades de escena) entre un sistema de lunas y otro cuerpo o sistema;
+ *   si no lo hay, el sistema se comprime ({@link compressSystems}).
+ */
+export interface MoonLayoutParams {
+  readonly sizeExponent: number;
+  readonly clearance: number;
+  readonly gapFactor: number;
+  readonly gapMin: number;
+  readonly spread: number;
+  readonly systemGap: number;
+}
+
 export interface IllustrativeScale {
   /** K: unidades de escena por década de distancia. */
   readonly unitsPerDecade: number;
@@ -28,8 +53,8 @@ export interface IllustrativeScale {
   readonly radiusExponent: number;
   readonly minRadius: number;
   readonly maxRadius: number;
-  /** Separación de los sistemas de lunas: offset_vis = R_vis · (1 + moonSpread · log10(r / R)). */
-  readonly moonSpread: number;
+  /** Los sistemas de lunas (fase 9b, D39): sus tamaños y sus distancias ({@link moonSystemLayout}). */
+  readonly moons: MoonLayoutParams;
   /**
    * Aire mínimo entre dos discos, o entre un disco y los anillos de Saturno (unidades): si dos cuerpos
    * se acercan más, encogen los dos ({@link relieveOverlaps}; revisión del bloque C, C2).
@@ -50,10 +75,11 @@ export interface IllustrativeScale {
  * ({@link relieveOverlaps}): en las conjunciones de Júpiter y Saturno. Lo comprueba el muestreo de
  * `scene/illustrative-layout.spec.ts`.
  *
- * Las lunas se agrupan cerca de su planeta (`moonSpread` 0,5, antes 1,5): si no, al crecer los
- * planetas, sus sistemas crecerían con ellos y chocarían con los vecinos. Un sistema encoge con su
- * planeta. En esas conjunciones, las lunas de Júpiter llegan a los anillos y a las lunas de Saturno,
- * pero en la vista general no se dibujan: sus sistemas no se distinguen.
+ * Los sistemas de lunas (fase 9b, D39; antes, en la fase 4b, una distancia logarítmica con los radios
+ * de los planetas, con la que las galileanas se atravesaban y las de Saturno caían en los anillos):
+ * las lunas, con su propia ley de tamaños respecto a su planeta, y sus órbitas sin cruces, fuera del
+ * planeta y de los anillos, en su orden real ({@link moonSystemLayout}). Un sistema crece y encoge con
+ * su planeta y, si se acerca a otro cuerpo o sistema, se comprime hacia él ({@link compressSystems}).
  */
 export const DEFAULT_ILLUSTRATIVE_SCALE: IllustrativeScale = {
   unitsPerDecade: 100,
@@ -62,7 +88,14 @@ export const DEFAULT_ILLUSTRATIVE_SCALE: IllustrativeScale = {
   radiusExponent: 0.4,
   minRadius: 0.25,
   maxRadius: 13,
-  moonSpread: 0.5,
+  moons: {
+    sizeExponent: 0.65,
+    clearance: 0.3,
+    gapFactor: 1,
+    gapMin: 0.02,
+    spread: 1,
+    systemGap: 0.5,
+  },
   minGap: 1.5,
 };
 
@@ -118,18 +151,165 @@ export function illustrativeRadius(
 export const realRadius = (radiusKm: number, params: RealScale = DEFAULT_REAL_SCALE): number =>
   radiusKm / params.kmPerUnit;
 
+// --- Sistemas de lunas de la vista general (fase 9b, D39) ---------------------------------------
+
+/** Una luna de un sistema: su radio y su órbita (del catálogo). */
+export interface MoonOrbitSpec {
+  readonly radiusKm: number;
+  readonly semiMajorAxisKm: number;
+  /** Excentricidad media (0 ≤ e < 1). */
+  readonly eccentricity: number;
+}
+
+/** La disposición de un sistema de lunas en la vista general, en radios de su planeta. */
+export interface MoonSystemLayout {
+  /** Radio de cada luna (en el orden de entrada). */
+  readonly size: readonly number[];
+  /** Semieje ilustrativo de cada luna. */
+  readonly axis: readonly number[];
+  /** Lo que ocupa el planeta: 1, o el borde exterior de sus anillos. */
+  readonly core: number;
+  /** Hasta dónde llega el sistema: el apoapsis ilustrativo de cada luna más su radio, el mayor. */
+  readonly reach: number;
+}
+
 /**
- * Posición de una luna respecto a su planeta en la escala ilustrativa: misma dirección y una
- * distancia que crece con el logaritmo de la real, siempre fuera del planeta agrandado.
+ * La disposición de un sistema de lunas en la vista general (D39), en radios de su planeta: el radio
+ * de cada luna, (r / R)^β, y su semieje ilustrativo, en el orden real de las órbitas:
+ * - la primera, fuera del planeta (o de sus anillos: `core`) con `clearance` de aire en su periapsis;
+ * - cada una de las demás, en el mayor de dos valores: el de la parte logarítmica de su distancia real
+ *   (`spread` por década desde la primera) y el que deja entre su periapsis y el apoapsis de la
+ *   anterior la suma de sus radios y el hueco de `gapFactor` y `gapMin`.
+ * Cada luna recorre su órbita real escalada por su semieje ilustrativo entre el real (misma dirección
+ * y misma forma): como el periapsis de cada una queda por fuera del apoapsis de la anterior con ese
+ * hueco, dos lunas nunca se tocan, sea cual sea su inclinación, ni tocan al planeta o a sus anillos.
+ */
+export function moonSystemLayout(
+  planetRadiusKm: number,
+  core: number,
+  moons: readonly MoonOrbitSpec[],
+  params: MoonLayoutParams = DEFAULT_ILLUSTRATIVE_SCALE.moons,
+): MoonSystemLayout {
+  if (!(planetRadiusKm > 0) || !(core >= 1)) throw new RangeError('Planeta no válido.');
+  for (const { radiusKm, semiMajorAxisKm, eccentricity } of moons) {
+    if (!(radiusKm > 0) || !(semiMajorAxisKm > 0) || !(eccentricity >= 0 && eccentricity < 1))
+      throw new RangeError('Luna no válida.');
+  }
+  const size = moons.map((moon) => (moon.radiusKm / planetRadiusKm) ** params.sizeExponent);
+  const axis = moons.map(() => 0);
+  // Por su órbita, de dentro afuera.
+  const order = moons
+    .map((moon, k) => ({ k, a: moon.semiMajorAxisKm }))
+    .sort((x, y) => x.a - y.a)
+    .map(({ k }) => k);
+  const first = order[0];
+  let previous = -1;
+  for (const k of order) {
+    const moon = moons[k] as MoonOrbitSpec;
+    const e = moon.eccentricity;
+    const s = size[k] as number;
+    if (previous < 0 || first === undefined) {
+      axis[k] = (core + params.clearance + s) / (1 - e);
+    } else {
+      const before = moons[previous] as MoonOrbitSpec;
+      const law =
+        (axis[first] as number) +
+        params.spread *
+          Math.log10(moon.semiMajorAxisKm / (moons[first] as MoonOrbitSpec).semiMajorAxisKm);
+      const chain =
+        ((axis[previous] as number) * (1 + before.eccentricity) +
+          (1 + params.gapFactor) * ((size[previous] as number) + s) +
+          params.gapMin) /
+        (1 - e);
+      axis[k] = Math.max(law, chain);
+    }
+    previous = k;
+  }
+  let reach = core;
+  moons.forEach((moon, k) => {
+    reach = Math.max(reach, (axis[k] as number) * (1 + moon.eccentricity) + (size[k] as number));
+  });
+  return { size, axis, core, reach };
+}
+
+/**
+ * Los sistemas de lunas de la escena, por cuerpo y en el orden del estado del sistema, para
+ * {@link placeBodies}.
+ */
+export interface MoonSystems {
+  /** Por luna: su radio en radios de su planeta (0 en los demás). */
+  readonly size: Float64Array;
+  /** Por luna: su semieje ilustrativo (radios del planeta) entre el real (UA); 0 en los demás. */
+  readonly scale: Float64Array;
+  /** Por cuerpo con lunas: lo que ocupa (1, o el borde de sus anillos), en sus radios; 1 en los demás. */
+  readonly core: Float64Array;
+  /** Por cuerpo con lunas: hasta dónde llega su sistema, en sus radios; 1 en los demás. */
+  readonly reach: Float64Array;
+}
+
+/**
+ * Los sistemas de lunas de la escena (D39), con {@link moonSystemLayout}: `parentIndex` dice de quién
+ * es cada luna (un cuerpo cuyo padre tiene padre: los planetas, hijos del Sol, no son lunas), y
+ * `core`, lo que ocupa cada cuerpo (el borde de sus anillos, en sus radios; 1 sin anillos).
+ */
+export function createMoonSystems(
+  radiusKm: Float64Array,
+  parentIndex: Int16Array,
+  semiMajorAxisKm: Float64Array,
+  eccentricity: Float64Array,
+  core: Float64Array,
+  params: MoonLayoutParams = DEFAULT_ILLUSTRATIVE_SCALE.moons,
+): MoonSystems {
+  const n = radiusKm.length;
+  const systems: MoonSystems = {
+    size: new Float64Array(n),
+    scale: new Float64Array(n),
+    core: new Float64Array(n).fill(1),
+    reach: new Float64Array(n).fill(1),
+  };
+  const moonsOf = new Map<number, number[]>();
+  for (let k = 0; k < n; k++) {
+    if (isPrimary(parentIndex, k)) continue;
+    const parent = item(parentIndex, k);
+    moonsOf.set(parent, [...(moonsOf.get(parent) ?? []), k]);
+  }
+  for (const [planet, members] of moonsOf) {
+    const layout = moonSystemLayout(
+      item(radiusKm, planet),
+      item(core, planet),
+      members.map((k) => ({
+        radiusKm: item(radiusKm, k),
+        semiMajorAxisKm: item(semiMajorAxisKm, k),
+        eccentricity: item(eccentricity, k),
+      })),
+      params,
+    );
+    systems.core[planet] = layout.core;
+    systems.reach[planet] = layout.reach;
+    members.forEach((k, j) => {
+      systems.size[k] = layout.size[j] as number;
+      systems.scale[k] = ((layout.axis[j] as number) * KM_PER_AU) / item(semiMajorAxisKm, k);
+    });
+  }
+  return systems;
+}
+
+/**
+ * Posición de una luna respecto a su planeta en la vista general (D39): su órbita real escalada por
+ * `scale` (radios del planeta por UA), comprimida hacia lo que ocupa el planeta (`core`) por
+ * `compression` ({@link compressSystems}; 1, sin comprimir) y con el radio con el que se ve el
+ * planeta. Misma dirección que la real.
  */
 export function illustrativeMoonOffset(
   offsetAu: Vec3,
-  planetRadiusKm: number,
-  planetVisibleRadius: number,
-  params: IllustrativeScale = DEFAULT_ILLUSTRATIVE_SCALE,
+  scale: number,
+  parent: Pick<PlacedParent, 'radius' | 'core' | 'compression'>,
 ): Vec3 {
-  const ratio = Math.max((length(offsetAu) * KM_PER_AU) / planetRadiusKm, 1);
-  return withLength(offsetAu, planetVisibleRadius * (1 + params.moonSpread * Math.log10(ratio)));
+  const distance = length(offsetAu) * scale;
+  return withLength(
+    offsetAu,
+    parent.radius * (parent.core + parent.compression * (distance - parent.core)),
+  );
 }
 
 /** Interpolación geométrica de dos magnitudes positivas: t = 0 da `a`, t = 1 da `b`. */
@@ -226,18 +406,26 @@ export function placeHeliocentricPoint(frame: FrameSpec, pointAu: Vec3): Vec3 {
 export interface PlacedParent {
   readonly position: Vec3;
   readonly radius: number;
-  readonly radiusKm: number;
+  /** Lo que ocupa (1, o el borde de sus anillos), en sus radios: en la vista general. */
+  readonly core: number;
+  /** Compresión de su sistema de lunas en la vista general (1: sin comprimir). */
+  readonly compression: number;
 }
 
 /**
  * Coloca una luna (o un punto de su órbita) a partir de su desplazamiento respecto a su planeta
- * (UA). En el marco ilustrativo se separa con {@link illustrativeMoonOffset}; en el físico, a su
- * distancia real.
+ * (UA). En el marco ilustrativo, con su órbita escalada por `moonScale` ({@link MoonSystems}) y
+ * {@link illustrativeMoonOffset}; en el físico, a su distancia real.
  */
-export function placeMoonPoint(frame: FrameSpec, parent: PlacedParent, offsetAu: Vec3): Vec3 {
+export function placeMoonPoint(
+  frame: FrameSpec,
+  parent: PlacedParent,
+  offsetAu: Vec3,
+  moonScale: number,
+): Vec3 {
   const offset =
     frame.kind === 'illustrative'
-      ? illustrativeMoonOffset(offsetAu, parent.radiusKm, parent.radius, frame.params)
+      ? illustrativeMoonOffset(offsetAu, moonScale, parent)
       : scale(offsetAu, KM_PER_AU / frame.kmPerUnit);
   return vec3(
     parent.position.x + offset.x,
@@ -288,17 +476,22 @@ export interface PlacementInput {
   readonly rings?: RingReach | null;
   /** La cámara de la vista general (solo la usa la escala ilustrativa): el tamaño mínimo de C3. */
   readonly screen?: OverviewScreen | null;
+  /** Los sistemas de lunas de la vista general (D39, {@link createMoonSystems}). */
+  readonly moons: MoonSystems;
 }
 
 /** Posiciones (x, y, z) y radios en unidades de escena. */
 export interface Placement {
   readonly position: Float64Array;
   readonly radius: Float64Array;
+  /** Compresión del sistema de lunas de cada cuerpo (1: sin comprimir; solo en la vista general). */
+  readonly compression: Float64Array;
 }
 
 export const createPlacement = (count: number): Placement => ({
   position: new Float64Array(3 * count),
   radius: new Float64Array(count),
+  compression: new Float64Array(count).fill(1),
 });
 
 /** Lee el vector `k` de un array x, y, z intercalado. */
@@ -334,10 +527,11 @@ let relief = new Float64Array(0);
  * Coloca todos los cuerpos en un marco, en coordenadas absolutas de escena (el Sol en el origen).
  * Primero el Sol y los planetas; en la escala ilustrativa, sin solapes con sus radios propios (C2) y
  * después con su tamaño mínimo en pantalla (C3), que así nunca se deshace: con la cámara muy lejos,
- * los discos mínimos de los planetas interiores, de unos píxeles, pueden tocarse. Y después las
- * lunas, alrededor de su planeta con el tamaño final de este: un sistema de lunas encoge con su
- * planeta, y sus órbitas (`placeMoonPoint`, con el radio colocado del planeta) siguen pasando por
- * ellas.
+ * los discos mínimos de los planetas interiores, de unos píxeles, pueden tocarse. Después, en la
+ * escala ilustrativa, la compresión de cada sistema de lunas que se acerca a otro cuerpo o sistema
+ * ({@link compressSystems}, fase 9b). Y por último las lunas, alrededor de su planeta con el tamaño
+ * final de este (D39): un sistema de lunas crece y encoge con su planeta, y sus órbitas
+ * (`placeMoonPoint`, con el planeta colocado) siguen pasando por ellas.
  */
 export function placeBodies(
   frame: FrameSpec,
@@ -354,6 +548,7 @@ export function placeBodies(
   }
   if (relief.length < n) relief = new Float64Array(n);
   relief.fill(1, 0, n);
+  out.compression.fill(1);
   if (frame.kind === 'illustrative') {
     relieveOverlaps(out.position, out.radius, primaries, frame.params.minGap, input.rings, relief);
     for (const k of primaries) out.radius[k] = item(out.radius, k) * item(relief, k);
@@ -373,17 +568,83 @@ export function placeBodies(
         out.radius[k] = Math.max(item(out.radius, k), minRadius);
       }
     }
+    compressSystems(
+      out.position,
+      out.radius,
+      primaries,
+      input.moons,
+      frame.params.moons.systemGap,
+      out.compression,
+    );
   }
+  const moons = input.moons;
   for (let k = 0; k < n; k++) {
     if (isPrimary(input.parentIndex, k)) continue;
     const parent = item(input.parentIndex, k);
     const placedParent: PlacedParent = {
       position: at(out.position, parent),
       radius: item(out.radius, parent),
-      radiusKm: item(input.radiusKm, parent),
+      core: item(moons.core, parent),
+      compression: item(out.compression, parent),
     };
-    put(out.position, k, placeMoonPoint(frame, placedParent, at(input.parentOffset, k)));
-    out.radius[k] = item(out.radius, k) * item(relief, parent);
+    put(
+      out.position,
+      k,
+      placeMoonPoint(frame, placedParent, at(input.parentOffset, k), item(moons.scale, k)),
+    );
+    if (frame.kind === 'illustrative') {
+      out.radius[k] = placedParent.compression * item(moons.size, k) * placedParent.radius;
+    }
+  }
+  return out;
+}
+
+/**
+ * La compresión de los sistemas de lunas de la vista general (fase 9b, D39): un sistema que se acerca
+ * a otro cuerpo o sistema se comprime hacia lo que ocupa su planeta (`core`), con sus lunas, sus
+ * huecos y sus órbitas, en lugar de encoger también el planeta (el alivio de D35 sigue igual). Cada
+ * sistema se toma como una esfera de radio `reach` (en radios de su planeta; la de un cuerpo sin
+ * lunas, su disco) y, para cada par, el factor que deja `gap` de aire entre las dos,
+ * c = (d − gap − R₁·core₁ − R₂·core₂) / (R₁·(reach₁ − core₁) + R₂·(reach₂ − core₂)), con el paso
+ * suave de {@link reliefFactor} (nunca pasa de c, y es 0 si los cuerpos no dejan sitio). Cada sistema
+ * se queda con el menor de sus pares (en `out`, sin reservar memoria: se llama en cada frame). En las
+ * conjunciones más cerradas de Júpiter y Saturno sus lunas llegan a desaparecer (radio 0). Como los
+ * radios y las posiciones cambian de forma continua con el tiempo, la compresión también.
+ */
+export function compressSystems(
+  position: Float64Array,
+  radius: Float64Array,
+  members: readonly number[],
+  systems: MoonSystems,
+  gap: number,
+  out: Float64Array,
+): Float64Array {
+  for (const k of members) out[k] = 1;
+  for (let a = 0; a < members.length; a++) {
+    const i = members[a] as number;
+    for (let b = a + 1; b < members.length; b++) {
+      const j = members[b] as number;
+      const ri = item(radius, i);
+      const rj = item(radius, j);
+      const extent =
+        ri * (item(systems.reach, i) - item(systems.core, i)) +
+        rj * (item(systems.reach, j) - item(systems.core, j));
+      if (!(extent > 0)) continue;
+      if (3 * Math.max(i, j) + 2 >= position.length) {
+        throw new RangeError('Índice de cuerpo fuera de rango.');
+      }
+      const distance = Math.hypot(
+        (position[3 * j] as number) - (position[3 * i] as number),
+        (position[3 * j + 1] as number) - (position[3 * i + 1] as number),
+        (position[3 * j + 2] as number) - (position[3 * i + 2] as number),
+      );
+      const needed =
+        (distance - gap - ri * item(systems.core, i) - rj * item(systems.core, j)) / extent;
+      if (needed >= 1 + RELIEF_SOFTNESS) continue;
+      const factor = reliefFactor(needed);
+      out[i] = Math.min(item(out, i), factor);
+      out[j] = Math.min(item(out, j), factor);
+    }
   }
   return out;
 }

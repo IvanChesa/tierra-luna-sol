@@ -1621,6 +1621,59 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     }
   }, 60_000);
 
+  it('una luna que se ve grande lleva su mapa sin su sistema enfocado, y lo suelta al alejarse (fase 9b, D42)', async () => {
+    const requests: string[] = [];
+    const released: string[] = [];
+    const source = {
+      load: (id: TextureId, level: TextureLevel): Promise<LoadedTexture> => {
+        const texture = new Texture();
+        texture.name = `${id}@${level}`;
+        texture.addEventListener('dispose', () => released.push(texture.name));
+        requests.push(texture.name);
+        return Promise.resolve({
+          texture,
+          file: { level, path: `${id}.webp`, width: 4, height: 2, bytes: 1 },
+          vramBytes: 32,
+        });
+      },
+    };
+    const h = await createHarness(
+      { reducedMotion: true },
+      { textures: () => ({ source, meta: TEXTURE_META }) },
+    );
+    const step = async () => {
+      for (let k = 0; k < 5; k++) await flush();
+    };
+    settle(h);
+    await step();
+    const world = internals(h).world as unknown as {
+      seen: Uint8Array;
+      updateLarge(screen: readonly { index: number; onScreen: boolean; radiusPx: number }[]): void;
+    };
+    const ganymede = sceneBody('ganimedes').index;
+    const at = async (radiusPx: number, onScreen = true) => {
+      world.updateLarge([{ index: ganymede, onScreen, radiusPx }]);
+      await step();
+      return world.seen[ganymede];
+    };
+    // En la vista general, sin su mapa: su disco de color.
+    expect(requests.filter((r) => r.startsWith('ganymede@'))).toEqual([]);
+    expect(await at(20)).toBe(0);
+    // Desde 24 px, su mapa al nivel de la vista general (1k), sin enfocar Júpiter.
+    expect(await at(24)).toBe(1);
+    expect(requests).toEqual(expect.arrayContaining(['ganymede@1k']));
+    // Entre 18 y 24 lo conserva; por debajo de 18 lo suelta (y vuelve a su color).
+    expect(await at(20)).toBe(1);
+    expect(released).not.toContain('ganymede@1k');
+    expect(await at(17)).toBe(0);
+    expect(released).toContain('ganymede@1k');
+    // Fuera de la pantalla no lo pide; los planetas no cuentan (su regla es la de C4, 160 px).
+    expect(await at(40, false)).toBe(0);
+    world.updateLarge([{ index: sceneBody('marte').index, onScreen: true, radiusPx: 40 }]);
+    expect(world.seen[sceneBody('marte').index]).toBe(0);
+    h.engine.dispose();
+  });
+
   it('C4: un cuerpo se ve grande desde 160 px y deja de verse grande por debajo de 120 (histéresis)', async () => {
     const h = await createHarness({ reducedMotion: true });
     settle(h);

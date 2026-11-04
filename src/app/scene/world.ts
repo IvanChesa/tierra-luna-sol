@@ -294,6 +294,14 @@ const MIN_PRESENCE = 0.05;
  */
 const LARGE_ENTER_PX = 160;
 const LARGE_EXIT_PX = 120;
+/**
+ * Radio en pantalla (px CSS) a partir del cual una luna se ve con su mapa aunque su sistema no esté
+ * enfocado, y por debajo del cual lo suelta, con la misma histéresis (fase 9b, D42): en la vista
+ * general y en los viajes, una luna grande ya no es un disco de color plano. Al nivel de la vista
+ * general (la de 1k pesa unos 2,8 MB de VRAM).
+ */
+const SEEN_ENTER_PX = 24;
+const SEEN_EXIT_PX = 18;
 /** Segmentos de la esfera ligera de las lunas pequeñas (a lo ancho). */
 const COARSE_SEGMENTS = 32;
 
@@ -363,6 +371,8 @@ export class World {
   private focusIndex: number | null = null;
   /** 1 para los cuerpos que se ven grandes en pantalla (`LARGE_ENTER_PX`). */
   private readonly large: Uint8Array;
+  /** 1 para las lunas que se ven lo bastante grandes para llevar su mapa (`SEEN_ENTER_PX`). */
+  private readonly seen: Uint8Array;
   private readonly visuals: BodyVisual[];
   private readonly sun: ReturnType<typeof createSunMaterial>;
   private readonly halo: Mesh;
@@ -394,6 +404,7 @@ export class World {
     this.sphere = this.createSphere(options.profile.sphereSegments);
     this.coarseSphere = this.createSphere(COARSE_SEGMENTS);
     this.large = new Uint8Array(options.bodies.length);
+    this.seen = new Uint8Array(options.bodies.length);
     // Color de la fotosfera: un cuerpo negro a la temperatura efectiva del catálogo.
     const temperature = BODY_DATA.sol.physical.effectiveTemperatureK?.value ?? 5772;
     const [r, g, b] = temperatureToSrgb(temperature);
@@ -618,6 +629,7 @@ export class World {
    */
   releaseCloseUps(): void {
     this.large.fill(0);
+    this.seen.fill(0);
     this.setFocus(null);
   }
 
@@ -655,10 +667,11 @@ export class World {
             : satellite
               ? this.profile.satelliteTexture
               : this.profile.focusTexture;
-      // Las demás lunas (fase 7), solo con su sistema enfocado; si no, su color esquemático.
+      // Las demás lunas (fase 7), con su sistema enfocado o si se ven grandes (fase 9b); si no, su
+      // color esquemático.
       const level = near
         ? focusLevel
-        : satellite && focusSystem !== this.systemOf(index)
+        : satellite && focusSystem !== this.systemOf(index) && this.seen[index] !== 1
           ? null
           : this.profile.overviewTexture;
       if (level === null) {
@@ -1064,11 +1077,19 @@ export class World {
   updateLarge(screen: readonly ScreenBody[]): void {
     let changed = false;
     for (const body of screen) {
-      const was = this.large[body.index] === 1;
       const radius = Number.isFinite(body.radiusPx) ? body.radiusPx : Infinity;
+      const was = this.large[body.index] === 1;
       const is = was ? radius >= LARGE_EXIT_PX : body.onScreen && radius >= LARGE_ENTER_PX;
       if (is !== was) {
         this.large[body.index] = is ? 1 : 0;
+        changed = true;
+      }
+      // Las lunas con mapa, también al verse grandes sin su sistema enfocado (fase 9b).
+      if (this.visuals[body.index]?.body.kind !== 'moon') continue;
+      const wasSeen = this.seen[body.index] === 1;
+      const isSeen = wasSeen ? radius >= SEEN_EXIT_PX : body.onScreen && radius >= SEEN_ENTER_PX;
+      if (isSeen !== wasSeen) {
+        this.seen[body.index] = isSeen ? 1 : 0;
         changed = true;
       }
     }

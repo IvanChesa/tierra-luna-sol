@@ -1,4 +1,5 @@
 import { NavigationEnd, NavigationStart, type Router } from '@angular/router';
+import type { Subscription } from 'rxjs';
 import { pathOf } from './canonical';
 
 /**
@@ -11,12 +12,12 @@ import { pathOf } from './canonical';
  *   navegador recupera la posición), ni en la primera navegación. Sin `withInMemoryScrolling`, que
  *   pesa 4 kB en el bundle inicial.
  */
-export function followNavigation(router: Router, doc: Document): void {
+export function followNavigation(router: Router, doc: Document): Subscription {
   let back = false;
   // La ruta de partida: si este chunk llega después de la primera navegación, la siguiente se compara
   // con ella (si solo cambia la consulta, la página no se mueve).
   let path = pathOf(router.url);
-  router.events.subscribe((event) => {
+  return router.events.subscribe((event) => {
     if (event instanceof NavigationStart) back = event.navigationTrigger === 'popstate';
     if (!(event instanceof NavigationEnd)) return;
     const menu = doc.getElementById('site-menu');
