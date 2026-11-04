@@ -53,6 +53,17 @@ test.describe('Fichas de los cuerpos (fase 9)', () => {
   test('las notas de las tablas y «Saltar al contenido» se quedan en la página (con <base href="/">)', async ({
     page,
   }) => {
+    // Cada valor que toma el enlace del salto desde el HTML prerenderizado: al hidratar, tampoco
+    // apunta a la portada mientras llega la primera navegación (segunda ronda, hallazgo 21).
+    await page.addInitScript(() => {
+      const seen: string[] = [];
+      window.__e2eSkipHrefs = seen;
+      new MutationObserver((records) => {
+        for (const record of records) {
+          if ((record.target as Element).matches('a.skip-link')) seen.push(record.oldValue ?? '');
+        }
+      }).observe(document, { subtree: true, attributeFilter: ['href'], attributeOldValue: true });
+    });
     await page.goto('/planetas/marte');
     // La nota 1 baja a su fuente, en la misma ficha (no a la portada: revisión, hallazgo 1).
     await page.locator('table.facts td.facts__ref a').first().click();
@@ -61,6 +72,13 @@ test.describe('Fichas de los cuerpos (fase 9)', () => {
     await expect(page.locator('#fuente-1')).toBeInViewport();
     // «Saltar al contenido», lo primero con el teclado.
     await page.goto('/planetas/marte');
+    // «Hoy» llega después de hidratar la ficha, ya acabada la primera navegación.
+    await expect(page.locator('.today__value').first()).toHaveText(/UA$/);
+    const hrefs = await page.evaluate(() => [
+      ...(window.__e2eSkipHrefs ?? []),
+      document.querySelector('a.skip-link')?.getAttribute('href') ?? '',
+    ]);
+    expect([...new Set(hrefs)]).toEqual(['/planetas/marte#contenido']);
     await page.keyboard.press('Tab');
     const skip = page.getByRole('link', { name: 'Saltar al contenido' });
     await expect(skip).toBeFocused();
@@ -68,6 +86,46 @@ test.describe('Fichas de los cuerpos (fase 9)', () => {
     await page.keyboard.press('Enter');
     await expect(page).toHaveURL(/\/planetas\/marte#contenido$/);
     await expect(page.locator('h1')).toHaveText('Marte');
+  });
+
+  test('«Saltar al contenido» conserva la consulta: el mismo documento y el mismo lugar', async ({
+    page,
+  }) => {
+    // Sin la consulta, el salto cargaría otro documento: el lugar volvería al Montsec y el
+    // explorador, a su estado de entrada (segunda ronda de la revisión, hallazgo 21).
+    test.setTimeout(180_000); // Una página y el explorador, con SwiftShader.
+    const skip = page.getByRole('link', { name: 'Saltar al contenido' });
+    await page.goto('/eclipses?lugar=teide');
+    // El lugar de la consulta lo aplica el navegador: la página ya está hidratada.
+    await expect(page.locator('#eclipses-place')).toHaveValue('teide');
+    await page.evaluate(() => (window.__e2eSameDocument = true));
+    await page.keyboard.press('Tab');
+    await expect(skip).toBeFocused();
+    await expect(skip).toHaveAttribute('href', '/eclipses?lugar=teide#contenido');
+    await page.keyboard.press('Enter');
+    await expect(page).toHaveURL(/\/eclipses\?lugar=teide#contenido$/);
+    expect(await page.evaluate(() => window.__e2eSameDocument)).toBe(true);
+    await expect(page.locator('#eclipses-place')).toHaveValue('teide');
+
+    // En el explorador, con el estado que escribe él mismo en la URL (el lugar y la fecha del cielo).
+    await openExplorer(page, '/cielo?fecha=2026-11-01T21:00Z&lugar=teide');
+    const place = page.getByLabel('Lugar desde el que ves el cielo');
+    await expect(place).toHaveValue('teide');
+    const here = () => {
+      const url = new URL(page.url());
+      return `${url.pathname}${url.search}`;
+    };
+    await expect
+      .poll(async () => (await skip.getAttribute('href')) === `${here()}#contenido`)
+      .toBe(true);
+    const before = here();
+    await page.evaluate(() => (window.__e2eSameDocument = true));
+    await skip.focus();
+    await page.keyboard.press('Enter');
+    await expect(page).toHaveURL(/#contenido$/);
+    expect(await page.evaluate(() => window.__e2eSameDocument)).toBe(true);
+    expect(here()).toBe(before);
+    await expect(place).toHaveValue('teide');
   });
 
   test('la Luna es el satélite de la Tierra, y la description cambia al ir de una luna a otra', async ({
