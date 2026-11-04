@@ -2,7 +2,7 @@
 
 - **Rama:** `fase-9b-sol-lunas`
 - **Fecha:** 2026-11-04 (en curso)
-- **Estado:** en curso: hechas la tarea 0 y la entrega 9b.a; siguen 9b.b, 9b.c, 9b.d y 9b.e
+- **Estado:** en curso: hechas la tarea 0 y las entregas 9b.a y 9b.b; siguen 9b.c, 9b.d y 9b.e
 
 ## Plan
 Bloque S, modo autónomo, una sola fase por entregas en el orden de `docs/decisiones/FASE-9b-SOL-LUNAS.md` (la prioridad de Iván), que manda sobre este plan en tareas y criterios. La revisión del bloque E está aplicada en `main` (`0963b9f`). Los PR 1 y 3 de Dependabot (E5) siguen abiertos: la rama sale del `main` de hoy y, cuando Iván los fusione, se traen (son de parche). Cada entrega cierra con `npm run check`, este informe al día, sus capturas (`?captura=1`, escritorio y móvil, en `docs/informes/img/fase-9b/`) y un commit; y se sube la rama para que su vista previa (`fase-9b-sol-lunas.tierra-luna-sol.pages.dev`) enseñe cuanto antes la primera.
@@ -45,9 +45,10 @@ Bloque S, modo autónomo, una sola fase por entregas en el orden de `docs/decisi
 **Cierre:** `npm run check`, este informe con las evidencias de cada criterio, la revisión por subagente, las correcciones, la fusión con `--no-ff`, el diario y el resumen del bloque S. Después, **parar** (no se empieza el bloque F).
 
 ## 1. Resumen
-En curso. Hechas la tarea 0 y la entrega 9b.a:
+En curso. Hechas la tarea 0 y las entregas 9b.a y 9b.b:
 - **Tarea 0:** `/luna`, con las migas «Inicio › Lunas › Luna» y «Lunas» marcado en el menú (E4).
 - **9b.a, los sistemas de lunas de la vista general (D39):** cada luna con su propia ley de tamaños respecto a su planeta y en una órbita ilustrativa escalada que no se cruza con ninguna otra, con su planeta ni con los anillos (las de Saturno, ahora por fuera); un sistema que se acerca a otro cuerpo o sistema se comprime hacia su planeta en lugar de meterse en él; en la vista general, un sistema aparece cuando su planeta crece en pantalla, y cada luna lleva su mapa cuando se ve grande.
+- **9b.b, la Tierra de noche (D40):** las luces, del mapa Black Marble 2016 de la NASA (negro fuera de ellas) con el tono cálido de las de antes, y sin relleno en la cara nocturna en primer plano (en la vista general, gris neutro): el suelo sin luces, negro y neutro.
 
 ## 2. Criterios de aceptación
 
@@ -64,6 +65,13 @@ En curso. Hechas la tarea 0 y la entrega 9b.a:
 | Las proporciones del punto 1, medidas, y el orden de tamaños y de órbitas de cada sistema, con test | ✅ | Ganímedes, el **11,7 %** del radio de Júpiter (objetivo, 10–15 %; antes, 26,7 %; real, 3,7 %); la Luna, el **42,9 %** del de la Tierra (35–45 %; antes, 59,4 %; real, 27,2 %). Tests en `ephemeris/scale.spec.ts` (`moonSystemLayout`: proporciones, orden de tamaños y de órbitas, también con las lunas desordenadas, como Tritón y Proteo, y el aire con el planeta y entre vecinas en el peor caso de sus excentricidades) y en `illustrative-layout.spec.ts` (los del catálogo). Tabla completa abajo. |
 | Capturas antes y después: Júpiter y Saturno de cerca en la vista general, en escritorio y móvil; Saturno con todas sus lunas fuera de los anillos | ✅ | `docs/informes/img/fase-9b/antes-*` y `despues-*` (§7), con `?marco=ilustrativo` (solo en captura). Saturno desde arriba en 2029: antes, las órbitas y los discos de sus lunas, sobre los anillos; después, todas por fuera y en su orden. |
 | Las lunas con su mapa al acercarse sin enfocarlas (captura), dentro de §5 | ✅ | Desde 24 px de radio (y hasta bajar de 18), su mapa de 1k sin su sistema enfocado: test en `engine.spec.ts` y comprobado en el navegador (Júpiter de cerca en el marco de la vista general: con dos pasos de zoom, Ganímedes mide 26 px y pide `1k/ganymede.…webp`; VRAM, 81,0 MB con el 4K de Júpiter, de 300). Captura `despues-escritorio-jupiter-mapas`. |
+
+### Entrega 9b.b (D40)
+| Criterio | ✅/❌ | Evidencia |
+|---|---|---|
+| Medido en CIELAB en la captura de la cara nocturna: el suelo sin luces, con L\* ≤ 5 y C\* ≤ 3 (negro y neutro); las luces conservan su tono cálido | ✅ | `scripts/measure-earth-night.mjs` (el lienzo de «Las luces de la noche», dentro de 0,85 radios; el suelo, el 80 % más oscuro de unos 580 000 px; las luces, el 2 % más brillante). **Después:** el suelo, L\* 0,2 (percentil 95, 0,8) y C\* 0,2 (1,2) en escritorio, y L\* 0,1 y C\* 0,1 en el móvil; las luces, h 94° (amarillo anaranjado), C\* 27. **Antes:** el suelo, L\* 2,9 y **C\* 18,8** (el azul marino); las luces, h 97°, C\* 10. |
+| Captura antes y después, junto a una foto nocturna de la ISS enlazada (no copiada), en escritorio y móvil; y la vista general con la Tierra de noche, que sigue leyéndose como un disco | ✅ | `antes-` y `despues-tierra-vista-luces`, `-movil-vista-luces` y `-tierra-medianoche-utc`; la referencia, la foto de Singapur y Malasia de noche de un astronauta de la ISS (ISS070-E-80842, 26-01-2024; imagen del día del NASA Earth Observatory del 13-04-2025, https://science.nasa.gov/earth/earth-observatory/singapore-and-malaysia-at-night-154170/): el suelo, negro, y las luces, del naranja al blanco. La vista general con la cara nocturna de la Tierra hacia la cámara (`-tierra-sistema-noche` y su `-detalle` ampliado, 08-04-2026): un disco gris neutro (L\* 23,2, C\* 0,5) sobre el fondo (L\* 12,0), ΔL\* 11,2 (antes 11,8, con los colores del día); el 19-05-2026, delante del Sol, ΔL\* 7,7 (antes 8,4). |
+| La cara de día, el terminador y las comparativas con EPIC de la fase 5 no cambian (las mismas medidas) | ✅ | `scripts/measure-earth-epic.mjs`, antes y después, **idénticas**: océano / desierto, 0,189 (EPIC, 0,178); las nubes (percentil 98) de las tres fotos, 0,696 · 0,631 · 0,603 (EPIC, 0,696 · 0,619 · 0,584). El relleno del lado del día no cambia; solo se vuelve gris del terminador hacia la noche (μ☉ de 0,1 a −0,1). |
 
 **Tamaños y semiejes de la vista general** (en radios de su planeta; `MOON_SYSTEMS`, del catálogo):
 
@@ -89,6 +97,10 @@ Las de Saturno empiezan en 2,65 radios: el borde exterior del anillo A está a 2
 | 9b.a.4 · El mapa de cada luna cuando se ve grande | hecha | ≥ 24 px de radio (lo suelta por debajo de 18), al nivel de la vista general. |
 | 9b.a.5 · El color esquemático, la media de su mosaico | hecha | `scripts/build-texture-colors.mjs` → `scene/texture-colors.ts` (GENERADO): Ío, `#988d4d` (antes `#d8c25a`, mostaza); la Luna, `#96958f`. Los mosaicos en gris no lo necesitan (§5). |
 | 9b.a.6 · Que pasen por delante es normal | — | Las capturas lo enseñan (Calisto delante de Júpiter); lo que no pasa es que se metan una en otra. |
+| 9b.b.1 · Un mapa de solo luces | hecha | Black Marble 2016 en gris (NASA Earth Observatory, VIIRS; material de la NASA, con su crédito), de 13 500 × 6750 px, en `download-assets.mjs` con su SHA-256 y en `build-textures.mjs` (1k, 2k y 4k, más ligeros que los de antes: el de 2k, 37 kB frente a 61), con sondas de alineación (Madrid y El Cairo encendidos, el Atlántico y el Sáhara a oscuras; girado 180°, fallan). El tono, `VISUAL_CONFIG.earth.nightTint`: el medio de las luces de la textura anterior (rgb lineal 1,200 · 0,993 · 0,485). En `FUENTES.md` y `/creditos`. |
+| 9b.b.2 · Sin relleno teñido en la cara nocturna | hecha | El relleno, con el color de la superficie solo del lado del día; del de la noche, en gris neutro (la luminancia del albedo) y con el de la vista general (`uNightFill` = relleno × (1 − primer plano)): en primer plano, nada. |
+| 9b.b.3 · La exposición | hecha | Con el suelo negro y sin relleno, la compensación del primer plano (hasta ×6) solo sube las luces, como una foto de larga exposición. |
+| 9b.b.4 · La forma del disco | hecha | El limbo de la atmósfera (sin cambios) y las estrellas que tapa; en la vista general, el gris neutro del relleno. |
 
 ## 4. Desviaciones del plan y motivo
 - **9b.a.3, el alivio con el tamaño de cada sistema:** encoger cada planeta junto con su sistema (lo que proponía el documento) dejaría a Júpiter y a Saturno a menos de la mitad en sus conjunciones: con sus lunas fuera del planeta y de los anillos, sus sistemas llegan a 2,85 y 4,82 de sus radios (26 y 41 unidades), y en las conjunciones de 1900–2100 están a 24–27 unidades. En su lugar, **el disco de cada planeta sigue con el alivio de D35** (×0,79 como mucho, el 3,2 % del tiempo, sin cambios) y **es su sistema de lunas el que se comprime hacia él** (`compressSystems`): lunas, huecos y órbitas, por un mismo factor y con el paso suave de D35, para que los dos sistemas (tomados como esferas) dejen 0,5 unidades de aire. Con la compresión, las lunas nunca tocan nada, y en las conjunciones más cerradas llegan a desaparecer (radio 0). En el muestreo de 1900 a 2100, el sistema de Saturno se comprime el 21,8 % del tiempo (por debajo de ×0,3, el 8 %), el de Júpiter el 12,6 %, el de Urano el 10,7 % y el de Neptuno el 7,5 %; el de la Tierra, el 0,7 % (×0,91 como mucho, con Venus). Con sistemas más compactos apenas baja (Saturno, del 21 al 15 %): lo deciden las conjunciones de Júpiter, Saturno y Urano. En la fecha de hoy ningún sistema se comprime de forma visible; la conjunción de Saturno y Urano de 2032 y la de Júpiter y Saturno de 2040 se ven en las capturas.
@@ -96,6 +108,7 @@ Las de Saturno empiezan en 2,65 radios: el borde exterior del anillo A está a 2
 - **Tarea 0 y el presupuesto del código propio inicial:** la tarea añadía 260 bytes (15,14 kB de 15); para no subir el presupuesto, lo que el sitio hace al navegar (cerrar el menú del móvil y el desplazamiento al cambiar de página) va a un chunk que se pide después de pintar.
 
 ## 5. Decisiones técnicas nuevas
+- **El tono de las luces de la Tierra** (9b.b): el medio de las luces de la textura de Solar System Scope que se usaba, medido (sus píxeles de luminancia lineal de más de 0,1), en lugar de un color elegido: así «conservan su tono cálido» por construcción. El mapa en gris pone el brillo.
 - **`?marco=ilustrativo`, solo en captura:** el cuerpo enfocado sin pasar a su sistema local físico, con las texturas de la vista general (sin sistema enfocado). Es la única forma determinista de ver de cerca un sistema de la vista general, cuya cámara gira alrededor del Sol.
 - **Los mosaicos en gris y su color esquemático:** la escena tiñe cada mosaico en gris con el tono de su color esquemático, y el brillo del disco plano y el del mapa salen del albedo (D29): de media ya coinciden, y el script solo genera el color de los mapas en color (Ío y la Luna).
 - **La compresión de los sistemas** (§4), en `ephemeris/scale.ts` (TS puro, con tests), y la presencia de las lunas en la vista general, en `visual-config.ts` (`overviewMoonsPx`).
@@ -114,12 +127,16 @@ Initial total 310,81 kB
 ```
 Métricas: la vista general, 21 llamadas de dibujo y 38,4 MB de VRAM (como en la fase 9); Júpiter de cerca con Ganímedes y su mapa, 81,0 MB.
 
+Entrega 9b.b (`npm run check`, 04-11): lint limpio; 727 tests (75 ficheros); JS inicial de 310,81 kB; código propio inicial, 14,86 kB de 15; 1163 enlaces internos bien. `build-textures.mjs`, con las sondas nuevas: «earth-night: oscuros Atlántico 0, Sáhara 0 · claros Madrid 30, El Cairo 84 (girado 180°, fallaría)»; regenerado dos veces, los mismos ficheros (el resto, idénticos). En la vista Tierra, el mapa de noche de 2k pesa 37 kB (antes 61).
+
 ## 7. Capturas
 `docs/informes/img/fase-9b/`, `antes-*` (el build del primer commit de la fase, sin la disposición nueva) y `despues-*`, con `scripts/capture-moon-systems.mjs`:
 - Júpiter de cerca: `escritorio-jupiter-cerca` y `movil-jupiter-cerca`; con sus lunas con mapa, `escritorio-jupiter-mapas`.
 - Saturno: `escritorio-saturno-arriba` (2029, desde arriba: el criterio de los anillos), `escritorio-saturno-cerca` (2029), `escritorio-saturno-cerca-2026` y `movil-saturno-cerca`.
 - La Tierra y la Luna (`escritorio-tierra-cerca`), Marte, Urano y Neptuno.
 - La conjunción de Júpiter y Saturno de 2040 (`escritorio-conjuncion-2040`: los sistemas, comprimidos del todo) y la vista general, por defecto y acercada (`escritorio-sistema`, `escritorio-sistema-cerca`, `movil-sistema`: sin lunas, como antes).
+
+- La Tierra de noche (9b.b), con `scripts/capture-earth.mjs`: `antes-` y `despues-tierra-vista-luces`, `-tierra-movil-vista-luces`, `-tierra-tierra-medianoche-utc` y `-tierra-sistema-noche` (con su `-detalle`, ampliado 4 veces alrededor de la Tierra).
 
 ## 8. Dependencias añadidas
 Ninguna.
@@ -134,3 +151,4 @@ Ninguna por ahora.
 - `npm start` y, en el explorador, acercar la vista general hasta que Júpiter o Saturno midan más de 20 px de radio: aparecen sus lunas, fuera del planeta y de los anillos. Con `?fecha=2040-10-31T00:00Z`, en la conjunción de Júpiter y Saturno, sus sistemas se comprimen.
 - `/?captura=1&cuerpo=saturno&marco=ilustrativo&fecha=2029-06-01T00:00Z` y Mayús + flecha arriba: el sistema de Saturno de la vista general, de cerca.
 - `/luna`: las migas y «Lunas» marcado en el menú.
+- `/explorar/tierra` y «Las luces de la noche»: la cara nocturna, negra, con las luces; `node scripts/measure-earth-night.mjs` mide el suelo y las luces en CIELAB.
