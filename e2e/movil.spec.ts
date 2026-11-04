@@ -201,6 +201,30 @@ test.describe('Móvil', () => {
     await expect(menu).toBeHidden();
   });
 
+  // WCAG 1.4.4 y 1.4.10: en horizontal (o con el zoom al 200 %), el menú cabe en la pantalla y se
+  // desplaza por dentro hasta lo último, la nota de privacidad (fase 9, segunda ronda, hallazgo 22).
+  test('en horizontal, el menú cabe en la pantalla y se desplaza hasta la nota de privacidad', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 915, height: 412 });
+    await openExplorer(page, '/?captura=1');
+    await page.getByRole('button', { name: 'Menú' }).tap();
+    const menu = page.getByRole('navigation', { name: 'Principal' });
+    await expect(menu).toBeVisible();
+    const box = await menu.boundingBox();
+    expect((box?.y ?? 0) + (box?.height ?? Infinity)).toBeLessThanOrEqual(412);
+    // Sin desplazarse por dentro, lo último quedaba debajo del borde de la pantalla.
+    for (const name of ['Aviso legal', 'Política de privacidad', 'tu privacidad']) {
+      const link = menu.getByRole('link', { name, exact: true });
+      await link.scrollIntoViewIfNeeded();
+      await expect(link, name).toBeInViewport();
+    }
+    const privacy = menu.getByRole('link', { name: 'tu privacidad', exact: true });
+    await privacy.tap();
+    await expect(page).toHaveURL(/\/sobre-el-proyecto#privacidad$/);
+    await expect(menu).toBeHidden();
+  });
+
   // WCAG 1.4.10: a 320 px de ancho, nada obliga a desplazarse en horizontal (revisión de la fase 8,
   // hallazgo 2: el selector de /eclipses ensanchaba la página hasta 625 px).
   for (const path of [
