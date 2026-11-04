@@ -2,7 +2,7 @@
 
 - **Rama:** `fase-9b-sol-lunas`
 - **Fecha:** 2026-11-04 (en curso)
-- **Estado:** en curso: hechas la tarea 0 y las entregas 9b.a y 9b.b; siguen 9b.c, 9b.d y 9b.e
+- **Estado:** en curso: hechas la tarea 0 y las entregas 9b.a y 9b.b; la 9b.c, a medias (abajo, «Dónde se queda»); siguen 9b.d y 9b.e
 
 ## Plan
 Bloque S, modo autónomo, una sola fase por entregas en el orden de `docs/decisiones/FASE-9b-SOL-LUNAS.md` (la prioridad de Iván), que manda sobre este plan en tareas y criterios. La revisión del bloque E está aplicada en `main` (`0963b9f`). Los PR 1 y 3 de Dependabot (E5) siguen abiertos: la rama sale del `main` de hoy y, cuando Iván los fusione, se traen (son de parche). Cada entrega cierra con `npm run check`, este informe al día, sus capturas (`?captura=1`, escritorio y móvil, en `docs/informes/img/fase-9b/`) y un commit; y se sube la rama para que su vista previa (`fase-9b-sol-lunas.tierra-luna-sol.pages.dev`) enseñe cuanto antes la primera.
@@ -43,6 +43,22 @@ Bloque S, modo autónomo, una sola fase por entregas en el orden de `docs/decisi
 - El mosaico global del radar de Magellan (USGS Astropedia, dominio público; comprobar el producto y la resolución) con su sonda (Maat Mons); un botón con `aria-pressed` en el panel de Venus enfocado, con el aviso visible; un fundido (un corte con movimiento reducido); la textura solo al pulsarlo y liberada al salir. e2e del botón, axe, `FUENTES.md`, `/creditos` y §5.
 
 **Cierre:** `npm run check`, este informe con las evidencias de cada criterio, la revisión por subagente, las correcciones, la fusión con `--no-ff`, el diario y el resumen del bloque S. Después, **parar** (no se empieza el bloque F).
+
+## Dónde se queda (2026-11-04, sesión parada por Iván)
+- **En la rama** (`7c6a896`, subida): la tarea 0, las entregas 9b.a y 9b.b, cerradas con su `npm run check`, sus capturas y este informe; y, de la **9b.c (el Sol)**, solo su física en TS puro, con 6 tests y sin usar aún en la escena (`ephemeris/sun.ts`):
+  - el limbo por longitud de onda, I(μ)/I(1) = μ^α con α = −0,023 + 0,292·λ⁻¹ (Hestroffer y Magnan, 1998, A&A 333, 338–342, ec. 5; https://www.physics.hmc.edu/faculty/esin/a101/limbdarkening.pdf), comprobado a ±0,02 de los exponentes de Neckel y Labs de su tabla 2; para R, G y B (650, 550 y 450 nm), 0,426, 0,508 y 0,626;
+  - el color del centro del disco que da al disco entero el de 5772 K;
+  - la rotación de las manchas α de Lößnitz et al. (2025, tabla A.1; https://arxiv.org/abs/2508.08196): A = 14,336, B = −2,561, C = −2,04 °/día, sidéreos, frente a los 14,1844 °/día del meridiano de la IAU que usa astronomy-engine;
+  - un calendario determinista de manchas ilustrativas.
+  - `npm run check` con ese commit: lint limpio, 733 tests (76 ficheros), cobertura de `ephemeris/` del 98,9 %, JS inicial de 310,81 kB, código propio inicial de 14,86 kB de 15, 1163 enlaces internos bien.
+- **Sin verificar, en `git stash` («9b.c en curso (sin verificar)…», `stash@{0}`):** el material nuevo del Sol (el limbo por canal, la granulación de celdas que se mueve, las manchas con umbra y penumbra y las fáculas), el halo con la corona de serpentinas (`CORONA_GLSL`, para reutilizarla en el cielo), `VISUAL_CONFIG.sun` (intensidades, manchas, corona y bloom), su conexión en el mundo (el color del centro, las manchas de cada instante, el polo del Sol en pantalla y las capas del bloom) y `scene/sun-bloom.ts` (el `UnrealBloomPass` de `three/addons` sobre un render a media resolución del Sol con los cuerpos que lo tapan en negro, sumado al lienzo: no cambia cómo se pinta lo demás). Compila salvo `sun-bloom.ts`, que aún no se había comprobado; no se ha construido ni visto.
+- **Siguiente paso:**
+  1. `git stash pop` y `npx tsc -p tsconfig.app.json --noEmit`;
+  2. el bloom en `renderer.ts` (crearlo al primer uso, redimensionarlo y liberarlo; un método opcional del puerto, para que el renderer falso de los tests no lo necesite) y en el motor (`sunBloom` en los perfiles alto y medio; después del render, si el Sol está en pantalla; el halo, más tenue con él; su VRAM en las estadísticas; y una opción solo de captura, `?resplandor=0`, sin halo, corona ni bloom, para medir el limbo);
+  3. la totalidad del cielo (E1): sin el resplandor alrededor del Sol en la totalidad, con un anillo en todo el horizonte (el «atardecer de 360°») y una paleta azul muy oscura; la corona con serpentinas; la Luna, más oscura que lo que la rodea;
+  4. las medidas y capturas de la 9b.c: un `scripts/measure-sun.mjs` (α de cada canal con un ajuste log–log en un anillo sin saturar del Sol aislado y sin resplandor; el centro y el borde en CIELAB), la totalidad del 12-08-2026 desde Fraga en CIELAB (la Luna frente a lo que la rodea, el h y el C\* del cielo) y FPS, VRAM y llamadas de dibujo en los tres niveles; las capturas «antes», del build de `5e82fc5`;
+  5. después, las entregas 9b.d (formas y mapas de las lunas) y 9b.e (Venus «Bajo las nubes»), el cierre de la fase y su revisión.
+- **CI de la rama:** el de la 9b.a se canceló al llegar el push de la 9b.b (el de la 9b.b seguía en marcha al parar); el de este commit, el siguiente.
 
 ## 1. Resumen
 En curso. Hechas la tarea 0 y las entregas 9b.a y 9b.b:

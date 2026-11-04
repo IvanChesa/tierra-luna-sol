@@ -521,3 +521,6 @@ No se activó ninguna:
 7. **GitHub:** los PR 1 y 3 de Dependabot siguen abiertos.
 
 El bloque E termina aquí, con sus dos fases fusionadas en `main`. No se ha empezado el bloque F: antes, la revisión del bloque E.
+
+## Bloque S, en curso: dónde se queda (2026-11-04, sesión parada por Iván)
+Fase 9b en la rama `fase-9b-sol-lunas` (subida, sin fusionar): hechas y comprobadas la tarea 0 (`/luna` en Lunas), la 9b.a (los sistemas de lunas de la vista general, sin cruces) y la 9b.b (la Tierra de noche, negra y neutra); de la 9b.c (el Sol), su física en TS puro con tests, y el resto, sin verificar, en `git stash` («9b.c en curso»). El detalle y el siguiente paso, en `docs/informes/fase-9b.md`, «Dónde se queda». Retomar con «Retoma el bloque S donde se quedó».
