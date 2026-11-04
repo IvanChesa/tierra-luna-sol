@@ -208,8 +208,16 @@ test.describe('Fichas de los cuerpos (fase 9)', () => {
       'Las lunas de Urano',
       'Las lunas de Neptuno',
     ]);
-    // En el menú, «Cielo» en lugar de «Luna».
+    // La ficha de la Luna, en «Lunas» (decisión de Iván del 04-11): sus migas y el menú.
+    await featured.getByRole('link', { name: 'Luna', exact: true }).click();
+    await expect(page).toHaveURL(/\/luna$/);
+    const crumbs = page.getByRole('navigation', { name: 'Migas de pan' });
+    await expect(crumbs.getByRole('link')).toHaveText(['Inicio', 'Lunas']);
+    await expect(crumbs.locator('[aria-current="page"]')).toHaveText('Luna');
     const nav = page.getByRole('navigation', { name: 'Principal' });
+    await expect(nav.getByRole('link', { name: 'Lunas' })).toHaveAttribute('aria-current', 'page');
+    await expect(nav.locator('[aria-current]')).toHaveCount(1);
+    // En el menú, «Cielo» en lugar de «Luna».
     await expect(nav.getByRole('link', { name: 'Luna', exact: true })).toHaveCount(0);
     await nav.getByRole('link', { name: 'Cielo' }).click();
     await expect(page).toHaveURL(/\/cielo$/);

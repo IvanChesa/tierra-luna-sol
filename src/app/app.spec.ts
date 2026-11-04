@@ -104,3 +104,59 @@ describe('App: «Saltar al contenido»', () => {
     expect(skipHref(root)).toBe('/eclipses#contenido');
   });
 });
+
+// El enlace del menú de la sección de la página, marcado (con aria-current): también en sus páginas
+// hijas y, en /luna, «Lunas» (la Luna es la primera de /lunas; decisión de Iván del 04-11).
+describe('App: el enlace marcado del menú', () => {
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [App],
+      providers: [
+        provideRouter([
+          { path: 'luna', component: Blank },
+          { path: 'lunas', component: Blank },
+          { path: 'lunas/:id', component: Blank },
+          { path: 'cielo', component: Blank },
+          { path: 'explorar/luna', component: Blank },
+        ]),
+        { provide: APP_BASE_HREF, useValue: '/' },
+        { provide: PlatformLocation, useClass: MockPlatformLocation },
+        { provide: MOCK_PLATFORM_LOCATION_CONFIG, useValue: { startUrl: 'http://localhost/luna' } },
+      ],
+    }).compileComponents();
+  });
+
+  const marked = (root: HTMLElement) =>
+    [...root.querySelectorAll('.site-nav a.is-active')].map((a) => ({
+      label: a.textContent?.trim(),
+      current: a.getAttribute('aria-current'),
+    }));
+
+  it('en /luna, «Lunas», desde antes de la primera navegación (en el HTML prerenderizado)', async () => {
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    expect(marked(fixture.nativeElement as HTMLElement)).toEqual([
+      { label: 'Lunas', current: 'page' },
+    ]);
+  });
+
+  it('«Lunas» en /lunas y en una luna; «Cielo» con su consulta; ninguno en el explorador', async () => {
+    const fixture = TestBed.createComponent(App);
+    const root = fixture.nativeElement as HTMLElement;
+    const router = TestBed.inject(Router);
+    for (const [url, label] of [
+      ['/lunas', 'Lunas'],
+      ['/lunas/titan', 'Lunas'],
+      ['/cielo?lugar=teide', 'Cielo'],
+      ['/luna#fuente-1', 'Lunas'],
+    ] as const) {
+      await router.navigateByUrl(url);
+      await fixture.whenStable();
+      expect(marked(root), url).toEqual([{ label, current: 'page' }]);
+    }
+    await router.navigateByUrl('/explorar/luna');
+    await fixture.whenStable();
+    expect(marked(root)).toEqual([]);
+    expect(root.querySelector('.site-nav a[aria-current]')).toBeNull();
+  });
+});

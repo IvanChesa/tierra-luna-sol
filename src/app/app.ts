@@ -1,18 +1,12 @@
 import { Location } from '@angular/common';
 import { Component, DOCUMENT, afterNextRender, inject, signal } from '@angular/core';
-import {
-  NavigationEnd,
-  NavigationStart,
-  Router,
-  RouterLink,
-  RouterLinkActive,
-  RouterOutlet,
-} from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
+import { pathOf } from './core/canonical';
 import { SITE_CONFIG } from './core/site.config';
 
 @Component({
   selector: 'tls-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
@@ -42,39 +36,33 @@ export class App {
    * hidratar, sin apuntar a la portada mientras llega el chunk de la página.
    */
   protected readonly skipHref = signal(this.contentHref());
+  /**
+   * La ruta de la página (sin consulta ni ancla), para marcar su enlace del menú: el de su sección
+   * también en sus páginas hijas (/lunas en /lunas/titan) y, en /luna, «Lunas» (la Luna es la primera
+   * de /lunas; decisión de Iván del 04-11). Sin `RouterLinkActive`, que no sabe de esa excepción.
+   */
+  protected readonly path = signal(pathOf(this.location.path()));
 
   constructor() {
     const router = inject(Router);
     const doc = inject(DOCUMENT);
     // También cuando el explorador escribe su estado en la URL (con el router).
     router.events.subscribe((event) => {
-      if (event instanceof NavigationEnd) this.skipHref.set(this.contentHref());
+      if (!(event instanceof NavigationEnd)) return;
+      this.skipHref.set(this.contentHref());
+      this.path.set(pathOf(event.urlAfterRedirects));
     });
-    // Al navegar, sin listeners en la plantilla (arrastrarían más runtime al bundle inicial):
-    // - el menú del móvil (popover) se cierra: con el router, la página no se recarga;
-    // - una página nueva empieza arriba, o en su ancla (la del pie: /sobre-el-proyecto#privacidad). Si
-    //   solo cambia la consulta (el lugar de /eclipses), no se mueve; al volver atrás tampoco (el
-    //   navegador recupera la posición), ni en la primera navegación. Sin `withInMemoryScrolling`, que
-    //   pesa 4 kB en el bundle inicial.
+    // El menú del móvil y el desplazamiento al navegar, después de pintar y fuera del bundle inicial
+    // (`core/navigation-effects.ts`).
     afterNextRender(() => {
-      let back = false;
-      let path = '';
-      router.events.subscribe((event) => {
-        if (event instanceof NavigationStart) back = event.navigationTrigger === 'popstate';
-        if (!(event instanceof NavigationEnd)) return;
-        const menu = doc.getElementById('site-menu');
-        if (menu?.matches(':popover-open')) menu.hidePopover();
-        const previous = path;
-        path = event.urlAfterRedirects.split(/[?#]/)[0] ?? '';
-        const fragment = router.parseUrl(event.urlAfterRedirects).fragment;
-        if (back || event.id === 1 || (path === previous && !fragment)) return;
-        setTimeout(() => {
-          const target = fragment ? doc.getElementById(fragment) : null;
-          if (target) target.scrollIntoView();
-          else doc.defaultView?.scrollTo(0, 0);
-        });
-      });
+      void import('./core/navigation-effects').then((m) => m.followNavigation(router, doc));
     });
+  }
+
+  /** ¿Es la de `link` la sección de la página? */
+  protected current(link: string): boolean {
+    const path = this.path();
+    return path === link || path.startsWith(`${link}/`) || (link === '/lunas' && path === '/luna');
   }
 
   /** La URL que se ve (la ruta y la consulta, sin el ancla), con el ancla del contenido. */

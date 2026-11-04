@@ -14,9 +14,12 @@
     <ul>
       @for (link of links; track link.path) {
         <li [class.site-nav__extra]="link.extra">
-          <a [routerLink]="link.path" routerLinkActive="is-active" ariaCurrentWhenActive="page">{{
-            link.label
-          }}</a>
+          <a
+            [routerLink]="link.path"
+            [class.is-active]="current(link.path)"
+            [attr.aria-current]="current(link.path) ? 'page' : null"
+            >{{ link.label }}</a
+          >
         </li>
       }
       <li class="site-nav__extra"><a [href]="site.legal.notice">Aviso legal</a></li>

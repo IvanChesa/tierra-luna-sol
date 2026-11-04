@@ -1,12 +1,15 @@
 import { SITE_CONFIG } from './site.config';
 
+/** La ruta de una URL, sin la consulta ni el ancla (`/cielo?lugar=teide#contenido` → `/cielo`). */
+export const pathOf = (url: string): string => url.split(/[?#]/, 1)[0] ?? '';
+
 /**
  * URL canónica de una ruta (D9): la base del sitio y la ruta, sin barra final, consulta ni fragmento
  * (`/planetas/marte?fecha=…` → `…/planetas/marte`; la raíz, `…/`). Es la URL en la que Cloudflare
  * Pages sirve cada página: `/ruta/` y `/ruta.html` redirigen a ella (fase 4).
  */
 export function canonicalUrl(url: string, base = SITE_CONFIG.baseUrl): string {
-  const path = (url.split(/[?#]/, 1)[0] ?? '').replace(/\/+$/, '');
+  const path = pathOf(url).replace(/\/+$/, '');
   return `${base}${path || '/'}`;
 }
 

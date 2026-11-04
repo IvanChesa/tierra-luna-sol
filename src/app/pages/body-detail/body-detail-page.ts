@@ -49,12 +49,13 @@ export class BodyDetailPage {
     return [...new Set([body.summary.source, ...body.facts.map((fact) => fact.source)])];
   });
   protected readonly explorer = computed(() => explorerLinkOf(this.bodyId()));
+  /** «Inicio › Planetas › Marte», «Inicio › Lunas › Titán»; la Luna, también en Lunas (decisión de Iván del 04-11). */
   protected readonly crumbs = computed<Crumb[]>(() => {
     const body = this.body();
     const section =
       body.kind === 'planet'
         ? [{ label: 'Planetas', link: '/planetas' }]
-        : body.kind === 'moon' && body.id !== 'luna'
+        : body.kind === 'moon'
           ? [{ label: 'Lunas', link: '/lunas' }]
           : [];
     return [{ label: 'Inicio', link: '/' }, ...section, { label: body.name }];
