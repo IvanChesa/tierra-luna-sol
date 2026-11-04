@@ -427,6 +427,8 @@ export class SceneEngine implements SceneEngineApi {
   private readonly viewFrom: ViewFrom | null;
   /** Solo en captura: el cuerpo enfocado, solo y centrado (las miniaturas de las fichas). */
   private readonly isolated: boolean;
+  /** Solo en captura: el foco, en el marco de la vista general (`illustrativeFocus`). */
+  private readonly illustrativeFocus: boolean;
   /** Exposición que tiene ahora el renderer (configuración visual; −1: aún ninguna). */
   private exposure = -1;
   private ready = false;
@@ -514,6 +516,7 @@ export class SceneEngine implements SceneEngineApi {
     this.background = options.background ? sceneBody(options.background).index : null;
     this.viewFrom = this.captureMode ? (options.viewFrom ?? null) : null;
     this.isolated = this.captureMode && (options.isolate ?? false) && initial.focus !== null;
+    this.illustrativeFocus = this.captureMode && (options.illustrativeFocus ?? false);
     if (this.isolated) this.world.setIsolated(initial.focus);
     this.frames = new FrameController(
       this.frameSpec(initial.focus),
@@ -923,7 +926,7 @@ export class SceneEngine implements SceneEngineApi {
       this.emitTime(true);
       // En el cielo no se ve el espacio: sin el primer plano del foco (y sin sus texturas grandes).
       if (this._view === 'sky') this.world.releaseCloseUps();
-      else this.world.setFocus(this.focusIndex);
+      else this.world.setFocus(this.textureFocus(this.focusIndex));
       if (this._view === 'sky') this.enterSky();
       this.invalidate();
     } catch (error) {
@@ -1460,7 +1463,7 @@ export class SceneEngine implements SceneEngineApi {
       };
       if (!replaced || kind === 'view') this.emit('travel', { active: true, kind });
     }
-    if (this.ready) this.world.setFocus(index);
+    if (this.ready) this.world.setFocus(this.textureFocus(index));
     this.lastFrameMs = null;
     this.invalidate();
   }
@@ -1584,9 +1587,17 @@ export class SceneEngine implements SceneEngineApi {
     );
   }
 
+  /**
+   * El foco para las geometrías y las texturas del mundo. Con `illustrativeFocus` (solo en captura),
+   * ninguno: el sistema de lunas se ve como en la vista general, con las texturas que pide allí.
+   */
+  private textureFocus(index: number | null): number | null {
+    return this.illustrativeFocus ? null : index;
+  }
+
   private frameSpec(focus: number | null) {
     const body = focus === null ? null : SCENE_BODIES[focus];
-    const planet = body ? systemPlanetOf(body.id) : null;
+    const planet = body && !this.illustrativeFocus ? systemPlanetOf(body.id) : null;
     return frameFor(
       this._scale,
       planet ? sceneBody(planet).radiusKm : null,
