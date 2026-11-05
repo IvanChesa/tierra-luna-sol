@@ -123,6 +123,9 @@ Decisiones y tareas que dependen de Iván. Claude Code añade aquí cada `TODO(i
 - [x] **Los nombres de las 88 constelaciones** (D38): revisados por la sesión de revisión, **correctos** (los del Anuario del Real Observatorio de Madrid, IGN). Algunos son menos habituales que su variante (Hidra Hembra, Raposilla, Caballo Menor, Dorada, Buril, Horno Químico): se quedan, porque son los de la fuente oficial.
 - [ ] **Los PR 1 y 3 de Dependabot** (E5): fusiona primero el 3 y, en el 1, comenta `@dependabot rebase`, espera al CI en verde y fusiónalo. El 04-11, al aplicar la revisión, seguían abiertos: la fase 9b empieza desde el `main` de entonces y, cuando los fusiones, se traen a la rama (son versiones de parche).
 
+## Decisiones del 05-11 (durante la fase 9b)
+- [x] **Lo que nadie ha visto de las lunas** (D45, `docs/decisiones/FASE-9b-ADENDA-D45.md`; «Tritón se ve fatal», con tu captura de staging): de las tres opciones, la **recreación completa**, «así con las demás lunas también». Ninguna luna con zonas vacías o borrosas: lo que no se vio se recrea a partir del terreno real de la misma luna, lo real no se toca y se dice que es ilustrativo (fichas, `/creditos`, `/sobre-el-proyecto` y `FUENTES.md`). En la entrega 9b.d; en el plan (§1 y la sección de la fase 9b).
+
 ## Decisiones
 - [x] **La revisión de los textos (fase 9)**, decidida al lanzar el bloque E (01-11): `docs/revision-textos.md` con cada texto, su fuente y un hueco para tus correcciones, agrupados por cuerpo y por vista. El bloque no te espera: la revisión queda apuntada abajo («Revisiones y pruebas de Iván») y se sigue.
 - [x] **(Fase 6) `toktx` (KTX-Software): no hace falta.** Con WebP, la VRAM cabe en los 300 MB de §5 en el peor caso de las dos vistas (C4, con test): la vista Tierra, 278 MB, y la vista Luna, 265; y en el viaje entre las dos, como mucho 284 (revisión de la fase 6, hallazgo 4). La reevaluación de KTX2 queda para la fase 10 si hiciera falta en el móvil.
