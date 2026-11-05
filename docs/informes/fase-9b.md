@@ -2,7 +2,7 @@
 
 - **Rama:** `fase-9b-sol-lunas`
 - **Fecha:** 2026-11-04 · 2026-11-05 (en curso)
-- **Estado:** en curso: hechas la tarea 0 y las entregas 9b.a, 9b.b y 9b.c; siguen 9b.d y 9b.e
+- **Estado:** en curso: hechas la tarea 0 y las entregas 9b.a, 9b.b y 9b.c; la 9b.d, empezada (D45: la medida de los mapas y la recreación, como herramienta); sigue la 9b.d y después la 9b.e
 
 ## Plan
 Bloque S, modo autónomo, una sola fase por entregas en el orden de `docs/decisiones/FASE-9b-SOL-LUNAS.md` (la prioridad de Iván), que manda sobre este plan en tareas y criterios. La revisión del bloque E está aplicada en `main` (`0963b9f`). Los PR 1 y 3 de Dependabot (E5) siguen abiertos: la rama sale del `main` de hoy y, cuando Iván los fusione, se traen (son de parche). Cada entrega cierra con `npm run check`, este informe al día, sus capturas (`?captura=1`, escritorio y móvil, en `docs/informes/img/fase-9b/`) y un commit; y se sube la rama para que su vista previa (`fase-9b-sol-lunas.tierra-luna-sol.pages.dev`) enseñe cuanto antes la primera.
@@ -45,9 +45,54 @@ Bloque S, modo autónomo, una sola fase por entregas en el orden de `docs/decisi
 
 **Cierre:** `npm run check`, este informe con las evidencias de cada criterio, la revisión por subagente, las correcciones, la fusión con `--no-ff`, el diario y el resumen del bloque S. Después, **parar** (no se empieza el bloque F).
 
-## Dónde se queda (2026-11-05)
+## Dónde se queda (2026-11-05, noche; sesión parada por Iván)
 - **Hechas y comprobadas:** la tarea 0 y las entregas 9b.a, 9b.b y 9b.c (el Sol y la totalidad del cielo), cada una con su `npm run check`, sus capturas y este informe. La 9b.c se retomó del trabajo sin verificar que dejó la sesión del 04-11 en `git stash`: se conectó el bloom y se corrigió lo que no funcionaba (§4).
-- **Siguen:** la 9b.d (formas y mapas de las lunas) y la 9b.e (Venus «Bajo las nubes»); después, el cierre de la fase y su revisión.
+- **9b.d, empezada por D45** (la adenda de Iván del 05-11, «Tritón se ve fatal»). Nada de esto cambia aún la web: son herramientas fuera del build.
+  - **La medida de los mapas** (`scripts/measure-moon-maps.mjs`, con `scripts/lib/moon-maps.mjs`), en la textura de 2k de cada luna: lo real con detalle, lo visto de lejos y lo no visto. Lo visto de lejos se reconoce con dos criterios, calibrados en cada luna con lo más nítido de su propio mapa degradado a propósito:
+    - el cociente de dos bandas finas, por debajo del de lo nítido degradado ×1,5;
+    - la resolución de origen por octavas (σ), por encima de la de lo nítido degradado ×3 (de 0,8 a 1,4 texeles, según la luna). El cociente se engaña donde solo queda ruido, como en el limbo de las imágenes de la Voyager en Tritón, y la σ no.
+    - El borde de la cobertura se erosiona 3 texeles para quitar la línea del limbo del mosaico. Las islas pequeñas se absorben, salvo las claramente blandas.
+  - **Resultados provisionales** de las 12 lunas con mosaico (real, de lejos y sin datos):
+
+    | Luna | Real | De lejos | Sin datos |
+    |---|---|---|---|
+    | Fobos | 92,4 % | 7,5 % | 0,0 % |
+    | Ío | 85,0 % | 15,0 % | 0,0 % |
+    | Europa | 80,8 % | 18,7 % | 0,5 % |
+    | Ganímedes | 99,1 % | 0,5 % | 0,5 % |
+    | Calisto | 88,3 % | 10,7 % | 1,0 % |
+    | Mimas | 80,5 % | 19,5 % | 0,0 % |
+    | Encélado | 76,1 % | 23,4 % | 0,5 % |
+    | Tetis | 81,0 % | 18,8 % | 0,2 % |
+    | Dione | 87,7 % | 11,4 % | 0,9 % |
+    | Rea | 93,7 % | 6,3 % | 0,0 % |
+    | Jápeto | 70,3 % | 29,7 % | 0,0 % |
+    | Tritón | 30,6 % | 36,1 % | 33,4 % |
+
+    En Tritón, lo real y lo visto de lejos suman dos tercios (66,7 %), lo que dice la NASA: «Voyager photographed two-thirds of Neptune's largest moon Triton» (https://science.nasa.gov/mission/voyager/voyager-2/; cita del subagente, por comprobar al escribir la ficha).
+  - **La recreación** (`scripts/lib/moon-recreate.mjs`; la receta de cada luna, en `scripts/lib/moon-recipes.mjs`; para revisarla, `node scripts/preview-moon-recreation.mjs <luna>`). Determinista, sin dependencias nuevas y sobre la esfera, por caras de un cubo equiangular:
+    - lo no visto parte del brillo de lo visto extendido sobre la esfera (no del gris de relleno del mosaico) y de una recreación previa a 1/4 de resolución, que pone los accidentes grandes;
+    - el detalle sale de parches de lo real de la misma luna (quilting, Efros y Freeman, 2001), cosidos por el corte de menor error con un fundido de 2 px y llevados al brillo de cada zona en proporción (sin escalones entre parches);
+    - se castiga cada zona de origen ya usada (sin motivos repetidos);
+    - en lo visto de lejos se conserva su brillo real por encima de 3 veces su resolución de origen;
+    - lo real no se toca.
+  - **Tritón**, con la receta de la terminal: el casquete en el sur y en el norte, por encima de una frontera ondulada en torno a 47°, y el resto con la «piel de melón» y las llanuras de lo visto. Sin zonas lisas, sin bloques y sin la línea del limbo, en 13 s. Las seis vistas de la adenda, antes y después (provisional):
+    - ![Tritón desde seis direcciones, antes](img/fase-9b/d45-triton-seis-vistas-antes.webp)
+    - ![Tritón desde seis direcciones, después (provisional)](img/fase-9b/d45-triton-seis-vistas-despues.webp)
+  - **Las fuentes, investigadas** (por un subagente; lo esencial, comprobado):
+    - Los mapas del JPL de las cinco lunas de Urano (`ura1vuu2`…`ura5vuu2`, 1440 × 720 en gris, «From the USGS, mosaicked with Voyager imagery») y el de Deimos (`mar2kuu2`) valen por D43: la política del JPL permite usarlos «for any purpose». Ojo: jpl.nasa.gov da 403 a curl; los mismos mapas están en los recursos 3D de la NASA (science.nasa.gov), uno idéntico y cuatro con otra curva de tonos.
+    - Los colores, con el B−V de la tabla de fotometría del Astronomical Almanac 2013 (Andersson, 1974) y el del Sol (Ramírez et al., 2012). No hay V−R publicado.
+    - Jápeto: un albedo de 0,03 a 0,05 en el hemisferio delantero y de 0,5 a 0,6 en el trasero (NASA).
+    - Pharos: el Gazetteer no da su posición (0°, 0° y diámetro 0, marcadores sin valor).
+    - Las formas: la de Proteo (Stooke, CC0) solo se baja a mano, y las de Fobos y Deimos no tienen ninguna licencia de la lista. Las dos cosas, en `PENDIENTES.md` para Iván.
+- **Siguiente paso** (retomar con «Retoma el bloque S donde se quedó»):
+  1. **Acabar la recreación de Tritón.**
+     - Hoy, el norte sale demasiado uniforme. Hay que darle más contraste a gran escala, con más peso o más escala para la guía gruesa, y revisar la frontera del casquete en la vista polar.
+     - Un script que mida el grano (del 70 al 130 % del de lo real vecino) y el borde con lo real (ΔL\* ≤ 2).
+  2. **Llevarla a `build-textures.mjs`**, entre `loadMosaic` y la salida, para Tritón y las lunas con zonas vistas de lejos (tabla de arriba). Lo real, igual al mosaico procesado, con un test; las sondas del Gazetteer siguen pasando. La máscara de cada luna, con sus porcentajes aquí y en `FUENTES.md`.
+  3. **Bajar los mapas del JPL** de Urano y de Deimos con `download-assets` y su SHA-256. Recetas de Urano (Miranda: coronas y terreno de cráteres) y los tintes con su B−V; Tritón, con el suyo.
+  4. **El resto de la 9b.d:** la dicotomía de Jápeto, el terminador de Titán, la textura del planeta al enfocar una luna, las formas cuando decida Iván, Proteo, las fichas, `/creditos` y «Lo que es ilustrativo».
+  5. **Después, la 9b.e y el cierre de la fase.**
 
 ## 1. Resumen
 En curso. Hechas la tarea 0 y las entregas 9b.a, 9b.b y 9b.c:
