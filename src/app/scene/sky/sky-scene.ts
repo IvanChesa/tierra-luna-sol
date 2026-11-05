@@ -21,6 +21,7 @@ import {
   PerspectiveCamera,
   PlaneGeometry,
   Points,
+  Quaternion,
   Scene,
   SphereGeometry,
   Texture,
@@ -48,10 +49,12 @@ import {
   skyColorsAt,
   srgbHexToLinear,
   starLimitAt,
+  totalityOf,
 } from './sky-colors';
 import { SkyLabelPlacement, SkyLabelSpec, SkyLabels } from './sky-labels';
 import {
   createConstellationMaterial,
+  SKY_CORONA_RADII,
   createCoronaMaterial,
   createGroundMaterial,
   createPlanetMaterial,
@@ -100,6 +103,8 @@ export interface SkyFrame {
   readonly obscuration: number;
   /** La orientación de la Luna: sus ejes de malla (Y, el polo) → el cielo, o `null`. */
   readonly moonOrientation: Mat3 | null;
+  /** El polo norte del Sol (IAU) en los ejes del cielo, o `null`: orienta las serpentinas de la corona. */
+  readonly sunPole: Vec3 | null;
   readonly moonShadow: SkyMoonShadow;
   readonly pose: SkyPose;
   readonly projection: ViewProjection;
@@ -209,6 +214,7 @@ export class SkyScene {
   private screenBodies: { id: SkyBodyId; x: number; y: number; radiusPx: number }[] = [];
   private readonly tmpMatrix = new Matrix4();
   private readonly tmpVector = new Vector3();
+  private readonly tmpQuaternion = new Quaternion();
   private disposed = false;
 
   constructor(options: SkySceneOptions) {
@@ -284,6 +290,17 @@ export class SkyScene {
     this.dome.uniforms.uSkyDistance.value = SKY_DISTANCE * 0.99;
     this.dome.uniforms.uGlowPower.value = VISUAL_CONFIG.sky.glow.power;
     this.dome.uniforms.uGlowRise.value = VISUAL_CONFIG.sky.glow.rise;
+    const { ring, corona } = VISUAL_CONFIG.sky.eclipse.totality;
+    const domeUniforms = this.dome.uniforms;
+    domeUniforms.uRingInner.value
+      .setRGB(...srgbHexToLinear(ring.inner.color))
+      .multiplyScalar(ring.inner.intensity);
+    domeUniforms.uRingInnerHeight.value = ring.inner.heightDeg * DEG;
+    domeUniforms.uRingOuter.value
+      .setRGB(...srgbHexToLinear(ring.outer.color))
+      .multiplyScalar(ring.outer.intensity);
+    domeUniforms.uRingOuterHeight.value = ring.outer.heightDeg * DEG;
+    this.coronaMaterial.uniforms.uRoundness.value = corona.roundness;
 
     this.groundMesh = new Mesh(ground, this.ground.material);
     this.groundMesh.name = 'sky-ground';
@@ -476,13 +493,23 @@ export class SkyScene {
       this.sun.quaternion.copy(this.camera.quaternion);
       this.sun.scale.setScalar(SKY_DISTANCE * Math.tan(radius));
       this.sun.visible = sun.altitudeDeg > -2;
-      // La corona, solo en la totalidad (con el Sol tapado del todo).
-      const totality = Math.min(Math.max((frame.obscuration - 0.999) / 0.001, 0), 1);
-      this.corona.visible = this.sun.visible && totality > 0;
+      // La totalidad (con el Sol tapado del todo): la corona, con sus serpentinas en el ecuador del Sol
+      // (el ángulo en pantalla de su polo norte), y la luz del cielo de la totalidad en la cúpula.
+      const totality = this.sun.visible ? totalityOf(frame.obscuration) : 0;
+      this.corona.visible = totality > 0;
       this.corona.position.copy(this.sun.position);
       this.corona.quaternion.copy(this.camera.quaternion);
-      this.corona.scale.setScalar(SKY_DISTANCE * Math.tan(radius) * 4);
-      this.coronaMaterial.uniforms.uStrength.value = 0.9 * totality;
+      this.corona.scale.setScalar(SKY_DISTANCE * Math.tan(radius) * SKY_CORONA_RADII);
+      const eclipse = VISUAL_CONFIG.sky.eclipse.totality;
+      this.coronaMaterial.uniforms.uStrength.value = eclipse.corona.strength * totality;
+      if (frame.sunPole) {
+        const pole = this.tmpVector
+          .set(frame.sunPole.x, frame.sunPole.y, frame.sunPole.z)
+          .applyQuaternion(this.tmpQuaternion.copy(this.camera.quaternion).invert());
+        this.coronaMaterial.uniforms.uPoleAngle.value = Math.atan2(pole.y, pole.x);
+      }
+      this.dome.uniforms.uTotality.value = totality;
+      this.dome.uniforms.uMoonVeil.value = eclipse.moonVeil * totality;
     }
     if (moon) {
       const distance = SKY_DISTANCE * 0.9;
@@ -491,6 +518,13 @@ export class SkyScene {
         .set(moon.direction.x, moon.direction.y, moon.direction.z)
         .multiplyScalar(distance);
       this.moon.scale.setScalar(distance * Math.sin(radius));
+      // El disco de la Luna, para oscurecerlo en la totalidad (el mismo radio que se dibuja).
+      this.dome.uniforms.uMoonDirection.value.set(
+        moon.direction.x,
+        moon.direction.y,
+        moon.direction.z,
+      );
+      this.dome.uniforms.uMoonRadius.value = radius;
       if (frame.moonOrientation) {
         this.moon.quaternion.setFromRotationMatrix(
           toMatrix4(frame.moonOrientation, this.tmpMatrix),

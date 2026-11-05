@@ -1,5 +1,12 @@
 import { PerspectiveCamera } from 'three';
-import { MIN_HIT_RADIUS_PX, SMALL_OCCLUDER, ScreenBody, pickBody, projectBodies } from './picking';
+import {
+  MIN_HIT_RADIUS_PX,
+  SMALL_OCCLUDER,
+  ScreenBody,
+  pickBody,
+  projectBodies,
+  sunOccluders,
+} from './picking';
 
 const WIDTH = 800;
 const HEIGHT = 600;
@@ -127,5 +134,22 @@ describe('picking: selección con el puntero', () => {
   it('ignora lo que está fuera de la pantalla o tapado', () => {
     expect(pickBody([body(1, 10, 10, 30, 5, { occluded: true })], 10, 10)).toBeNull();
     expect(pickBody([body(1, 10, 10, 30, 5, { onScreen: false })], 10, 10)).toBeNull();
+  });
+
+  it('los que pueden tapar el Sol (su bloom, fase 9b): los que se ven y tocan su disco, con holgura', () => {
+    const sun = body(0, 400, 300, 50, 100);
+    const bodies = [
+      sun,
+      body(1, 430, 310, 5, 40), // delante del disco
+      body(2, 455, 300, 4, 40), // fuera del disco, pero a menos de su radio más 2 px
+      body(3, 470, 300, 4, 40), // lejos del disco
+      body(4, 400, 300, 10, 40, { onScreen: false }),
+      body(5, 400, 300, 0, 40), // una luna que no se dibuja (radio 0)
+      body(6, 380, 290, 8, 300), // detrás del Sol: no estorba, pero no hace daño marcarlo
+    ];
+    expect(sunOccluders(bodies, 0)).toEqual([1, 2, 6]);
+    expect(sunOccluders(bodies, 0, 0)).toEqual([1, 6]);
+    // Sin el Sol en pantalla, ninguno.
+    expect(sunOccluders([{ ...sun, onScreen: false }, ...bodies.slice(1)], 0)).toEqual([]);
   });
 });

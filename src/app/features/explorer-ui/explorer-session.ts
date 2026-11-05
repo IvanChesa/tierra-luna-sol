@@ -183,6 +183,7 @@ export class ExplorerSession {
       toneMapping: this.params.toneMapping ?? undefined,
       isolate: this.params.isolate || undefined,
       illustrativeFocus: this.params.illustrativeFocus || undefined,
+      sunMeasure: this.params.sunMeasure || undefined,
       observer: observerOf(this.explorer.skyPlace()),
       skyView: this.params.skyView ?? undefined,
     };

@@ -46,22 +46,82 @@ export const VISUAL_CONFIG = {
     min: 0.6,
     max: 6,
   },
-  /** El Sol (tarea 6). */
+  /**
+   * El Sol (fase 3b, tarea 6; fase 9b, D41: «real y luminoso», el de la luz visible del HMI del SDO).
+   * Todo lo que no es la ley del limbo ni la rotación de las manchas (`ephemeris/sun.ts`) es
+   * **ilustrativo**: la intensidad, el halo, la granulación, las manchas, las fáculas, la corona y el
+   * bloom.
+   */
   sun: {
     /**
-     * Intensidad de la fotosfera: por encima de 1 en la vista general (el Sol deslumbra) y cerca de 1
-     * en primer plano, para que el tone mapping no aplane el oscurecimiento del limbo (el borde queda
-     * al ~33 % del centro, cerca del 30 % de la ley de Allen). En la vista general bajó de 2,6 a 1,9
-     * con el Sol más grande (fase 4b): así el disco no es un círculo blanco plano.
+     * Intensidad de la fotosfera, por encima de 1 (el Sol deslumbra). En la vista general, el disco
+     * sale blanco. En primer plano, el centro casi blanco y, con el limbo por canal, el borde dorado:
+     * con más intensidad, el tone mapping aplana el disco (con 1,9, el oscurecimiento solo se veía en
+     * el último 5 % del radio); con menos, el centro deja de ser casi blanco. Antes (fase 3b), 0,85 en
+     * primer plano y el mismo limbo en los tres canales: un disco beige apagado.
      */
-    intensity: { overview: 1.9, closeUp: 0.85 },
+    intensity: { overview: 2.2, closeUp: 1.1 },
     /**
-     * Halo, en radios solares, y su intensidad: hace de resplandor (no hay bloom). En la vista general,
-     * con el Sol de 13 unidades (fase 4b; antes 9), el halo mide algo más que antes (~31 unidades).
+     * Solo en captura, para medir el limbo (`?medida=limbo`): la intensidad con la que todo el disco
+     * queda por debajo de la compresión del tone mapping neutro (su pico, por debajo de 0,76): así la
+     * captura da I(μ)/I(1) de cada canal sin deformar (`scripts/measure-sun.mjs`).
      */
-    halo: { overview: { radii: 2.4, intensity: 1.3 }, closeUp: { radii: 1.7, intensity: 0.45 } },
-    /** Granulación en primer plano: amplitud ilustrativa y ritmo (unidades de ruido por segundo). */
-    granulation: { amplitude: 0.05, rate: 0.015 },
+    measureIntensity: 0.7,
+    /**
+     * Halo, en radios solares, y su intensidad. En los niveles alto y medio, con el bloom, más tenue:
+     * el resplandor lo da el bloom (`withBloom`, el factor). En primer plano llega a 3 radios, los de la
+     * corona, y es muy tenue: más, y el disco queda envuelto en una neblina gris.
+     */
+    halo: {
+      overview: { radii: 2.4, intensity: 1.3 },
+      closeUp: { radii: 3, intensity: 0.2 },
+      withBloom: 0.55,
+    },
+    /**
+     * Granulación en primer plano (ilustrativa): amplitud, ritmo (unidades de ruido por segundo) y
+     * gránulos por radio del Sol (los reales serían unos 700).
+     */
+    granulation: { amplitude: 0.09, rate: 0.03, scale: 40 },
+    /**
+     * Las manchas (ilustrativas, `sunspotsAt`): cuántas a la vez, su banda de latitud (grados), su vida
+     * (días), el radio de su umbra (grados heliográficos) y lo que tardan en aparecer y en apagarse
+     * (fracción de su vida); el brillo de la umbra y de la penumbra (en fracción de la fotosfera) y el
+     * radio de la penumbra (en radios de la umbra). Sin una fuente del ciclo solar con licencia
+     * compatible (las de SILSO son CC BY-NC), su número es fijo y moderado.
+     */
+    spots: {
+      count: 8,
+      latitudeDeg: [6, 32] as readonly [number, number],
+      lifeDays: [14, 45] as readonly [number, number],
+      umbraDeg: [0.5, 1.5] as readonly [number, number],
+      fadeIn: 0.2,
+      fadeOut: 0.3,
+      umbra: 0.18,
+      penumbra: 0.68,
+      penumbraRatio: 2.4,
+    },
+    /** Lo que aclaran las fáculas alrededor de las manchas, en el limbo (ilustrativo). */
+    faculae: 0.6,
+    /**
+     * La corona en primer plano (ilustrativa: la real solo se ve en un eclipse): su brillo y su forma,
+     * de 0 (la del mínimo del ciclo, con serpentinas) a 1 (la del máximo, redonda).
+     */
+    corona: { closeUp: 0.16, roundness: 0.35 },
+    /**
+     * El bloom, solo del Sol (fase 9b; antes, opcional en la fase 10), en los niveles alto y medio, sobre
+     * un render del Sol con los cuerpos que lo tapan en negro (`scene/sun-bloom.ts`), en la vista general
+     * y en primer plano (se interpola con el primer plano del Sol): su fuerza y el peso de cada capa de
+     * su desenfoque, de la más estrecha a la más ancha (sigmas de unos 8, 28, 80, 210 y 515 px CSS).
+     * - En la vista general, un núcleo fuerte junto al disco y unas alas débiles: el Sol deslumbra sin
+     *   velar la pantalla.
+     * - En primer plano, mucho menos y solo las capas estrechas: el resplandor de un disco crece con su
+     *   área (con 400 px de diámetro, unas 20 veces el de la vista general) y, con la misma forma, las
+     *   alas velaban todo el lienzo y el resplandor sobre el disco borraba su limbo.
+     */
+    bloom: {
+      overview: { strength: 0.8, factors: [1, 0.5, 0.2, 0.05, 0.012] },
+      closeUp: { strength: 0.1, factors: [1, 0.35, 0.04, 0, 0] },
+    },
   },
   /**
    * La Tierra (fase 5). Valores de presentación, ajustados frente a las fotos de EPIC (DSCOVR;
@@ -245,6 +305,19 @@ export const VISUAL_CONFIG = {
    * - `eclipse`: en un eclipse total de Sol el cielo se oscurece como en el crepúsculo civil tardío;
    *   el oscurecimiento empieza cuando el Sol está tapado casi del todo (`from`, la fracción del
    *   disco), no en los parciales poco profundos.
+   * - `eclipse.totality` (fase 9b, E1 de la revisión del bloque E), con el Sol tapado del todo
+   *   (`totalityOf`): sin el resplandor del lado del Sol ni el halo a su alrededor (no hay luz directa:
+   *   antes, con ellos, el cielo era malva plano); un anillo en todo el horizonte (`ring`: el aire
+   *   iluminado fuera de la sombra de la Luna, el «atardecer de 360°»), en dos partes que caen como
+   *   e^(−altura / `heightDeg`): una naranja pegada al horizonte y otra amarilla algo más alta, para que
+   *   al fundirse con el azul pase por un gris casi neutro (C* de 4 a 6) y no por el malva (con un solo
+   *   anillo rojizo, C* de 10 a 15 con h de 300° a 360°, entre 3° y 5° de altura, donde está el Sol de
+   *   Fraga el 12-08-2026; `scripts/measure-sun.mjs` lo mide en la captura); el disco de la Luna,
+   *   más oscuro que el cielo que lo rodea (`moonVeil`: la parte de la luz del cielo que se le quita;
+   *   en las fotos y a simple vista se ve como un disco negro, por el contraste con la corona); y la
+   *   corona (`corona`: su brillo y su forma, la de `CORONA_GLSL`, de 0, la del mínimo del ciclo, con
+   *   serpentinas, a 1, la del máximo, redonda; en 2026 el ciclo va bajando de su máximo).
+   *   **Ilustrativo** todo ello.
    * - Los discos del Sol y de la Luna van a su tamaño real, con un mínimo en pantalla (`minDiscPx`,
    *   radio en px CSS) para que no sean un punto con el gran angular; con un campo estrecho, el real.
    */
@@ -283,7 +356,18 @@ export const VISUAL_CONFIG = {
       [-6, 0],
     ] as readonly (readonly [number, number])[],
     extinction: 0.25,
-    eclipse: { from: 0.96, altitudeDeg: -7 },
+    eclipse: {
+      from: 0.96,
+      altitudeDeg: -7,
+      totality: {
+        ring: {
+          inner: { color: '#e48c45', intensity: 0.55, heightDeg: 0.9 },
+          outer: { color: '#dcc47a', intensity: 0.3, heightDeg: 2 },
+        },
+        moonVeil: 0.6,
+        corona: { strength: 0.9, roundness: 0.45 },
+      },
+    },
     minDiscPx: 5,
   },
 } as const;

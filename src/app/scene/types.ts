@@ -94,6 +94,11 @@ export interface SceneEngineOptions {
    * su sistema de lunas como en la vista general, de cerca (las capturas de la fase 9b, D39).
    */
   readonly illustrativeFocus?: boolean;
+  /**
+   * Solo en captura: el Sol para medir su limbo (`?medida=limbo`, fase 9b): sin halo, corona, bloom,
+   * granulación ni manchas, y con su fotosfera por debajo de la compresión del tone mapping.
+   */
+  readonly sunMeasure?: boolean;
   /** Base de las URL de los recursos (por defecto, la raíz del sitio). */
   readonly assetsBaseUrl?: string;
   /** El lugar de la vista del cielo (fase 8); por defecto, el Montsec. */

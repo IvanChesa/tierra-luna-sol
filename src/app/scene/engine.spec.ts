@@ -30,7 +30,13 @@ import { TEXTURE_FILES } from './texture-files';
 import { hasDepthChunks } from './materials/depth';
 import { ORBIT_WIDTH_PX, trailColor } from './orbits';
 import { VISUAL_CONFIG } from './visual-config';
-import type { RendererCapabilities, RendererInfo, RendererPort } from './renderer';
+import type {
+  RendererCapabilities,
+  RendererInfo,
+  RendererPort,
+  SunBloomOptions,
+  SunBloomPort,
+} from './renderer';
 import { SCENE_BODIES, createSolarSystemModel, sceneBody } from './system';
 import type { SceneEngineEventName, SceneEngineEvents, SceneEngineOptions } from './types';
 
@@ -41,6 +47,30 @@ const START = new Date('2026-10-24T00:00:00Z');
 const BODY_RADII = framingDistanceRadii(FRAMING_FILL.body, 40, WIDTH / HEIGHT);
 const DETAIL_RADII = framingDistanceRadii(FRAMING_FILL.detail, 40, WIDTH / HEIGHT);
 
+/** El bloom del Sol falso (fase 9b): cuenta lo que se le pide; existe (y ocupa) desde que se usa. */
+class FakeSunBloom implements SunBloomPort {
+  compiles = 0;
+  releases = 0;
+  readonly renders: SunBloomOptions[] = [];
+  private alive = false;
+  compile(): Promise<void> {
+    this.compiles++;
+    this.alive = true;
+    return Promise.resolve();
+  }
+  render(_scene: unknown, _camera: unknown, options: SunBloomOptions): void {
+    this.renders.push(options);
+    this.alive = true;
+  }
+  vramBytes(): number {
+    return this.alive ? 7 * 1_048_576 : 0;
+  }
+  release(): void {
+    this.releases++;
+    this.alive = false;
+  }
+}
+
 /** Renderer falso: cuenta lo que se le pide y permite simular la pérdida del contexto. */
 class FakeRenderer implements RendererPort {
   readonly capabilities: RendererCapabilities = {
@@ -49,6 +79,7 @@ class FakeRenderer implements RendererPort {
     depth: 'logarithmic',
     reversedDepthSupported: false,
   };
+  readonly sunBloom = new FakeSunBloom();
   renders = 0;
   compiles = 0;
   /** Si se pone, las compilaciones esperan a esta promesa (para ver qué pasa mientras compilan). */
@@ -613,6 +644,171 @@ describe('SceneEngine: calidad adaptativa, contexto WebGL y limpieza', () => {
     h.engine.focus('marte');
     expect(h.scheduler.waiting).toBe(0);
     expect(SCENE_BODIES).toHaveLength(30);
+  });
+});
+
+describe('SceneEngine: el bloom del Sol (fase 9b, D41)', () => {
+  const SUN = sceneBody('sol').index;
+  const sunOnScreen = (h: Harness) =>
+    (h.engine as unknown as { screen: { onScreen: boolean }[] }).screen[SUN]?.onScreen;
+
+  it('en el nivel alto se compila antes del primer frame y va en cada frame con el Sol en pantalla; su VRAM cuenta', async () => {
+    const h = await createHarness();
+    const bloom = h.renderer.sunBloom;
+    // Antes del primer frame (en la vista general, el Sol se ve desde el primero).
+    expect(bloom.compiles).toBe(1);
+    settle(h);
+    expect(sunOnScreen(h)).toBe(true);
+    expect(bloom.renders.length).toBeGreaterThan(0);
+    expect(bloom.renders.length).toBe(h.renderer.renders);
+    // La VRAM de las estadísticas lleva la del bloom (7 MB en el falso).
+    const withBloom = h.engine.stats().vramMB;
+    bloom.release();
+    expect(h.engine.stats().vramMB).toBeCloseTo(withBloom - 7, 6);
+    h.engine.dispose();
+  });
+
+  it('en el medio también; en el bajo, solo el halo, y al bajar a él sus render targets se liberan', async () => {
+    const medium = await createHarness({ quality: 'medium' });
+    settle(medium);
+    const bloom = medium.renderer.sunBloom;
+    expect(bloom.compiles).toBe(1);
+    expect(bloom.renders.length).toBeGreaterThan(0);
+    medium.engine.setQuality('low');
+    settle(medium);
+    expect(bloom.releases).toBe(1);
+    expect(bloom.vramBytes()).toBe(0);
+    const before = bloom.renders.length;
+    medium.engine.setTime(new Date('2030-01-01T00:00:00Z'));
+    settle(medium);
+    expect(bloom.renders.length).toBe(before);
+    medium.engine.dispose();
+    const low = await createHarness({ quality: 'low' });
+    settle(low);
+    expect(low.renderer.sunBloom.compiles).toBe(0);
+    expect(low.renderer.sunBloom.renders).toEqual([]);
+    low.engine.dispose();
+  });
+
+  it('su fuerza y su forma: las de la vista general y, con el Sol de cerca, las del primer plano', async () => {
+    const { overview, closeUp } = VISUAL_CONFIG.sun.bloom;
+    const far = await createHarness();
+    settle(far);
+    const wide = far.renderer.sunBloom.renders.at(-1);
+    expect(wide?.strength).toBeCloseTo(overview.strength, 9);
+    wide?.factors.forEach((f, k) => expect(f).toBeCloseTo(overview.factors[k] as number, 9));
+    far.engine.dispose();
+    const near = await createHarness({ focus: 'sol' });
+    settle(near);
+    const tight = near.renderer.sunBloom.renders.at(-1);
+    expect(tight?.strength).toBeCloseTo(closeUp.strength, 9);
+    tight?.factors.forEach((f, k) => expect(f).toBeCloseTo(closeUp.factors[k] as number, 9));
+    near.engine.dispose();
+  });
+
+  it('en las vistas Tierra, Luna y cielo, sin bloom y sin su memoria; al volver al sistema solar, vuelve sin compilar otra vez', async () => {
+    const h = await createHarness({ view: 'earth' });
+    settle(h);
+    const bloom = h.renderer.sunBloom;
+    // Se compila al arrancar (para no hacerlo de golpe después), pero su memoria se suelta.
+    expect(bloom.compiles).toBe(1);
+    expect(bloom.releases).toBeGreaterThanOrEqual(1);
+    expect(bloom.vramBytes()).toBe(0);
+    expect(bloom.renders).toEqual([]);
+    h.engine.setView('system');
+    h.engine.skipTransition();
+    settle(h);
+    expect(sunOnScreen(h)).toBe(true);
+    expect(bloom.renders.length).toBeGreaterThan(0);
+    expect(bloom.compiles).toBe(1);
+    const releases = bloom.releases;
+    h.engine.setView('moon');
+    settle(h);
+    expect(bloom.releases).toBe(releases + 1);
+    expect(bloom.vramBytes()).toBe(0);
+    const renders = bloom.renders.length;
+    h.engine.setTime(new Date('2030-01-01T00:00:00Z'));
+    settle(h);
+    expect(bloom.renders.length).toBe(renders);
+    h.engine.dispose();
+  });
+
+  it('al subir a mano desde el nivel bajo, sus sombreados se compilan sin bloquear y después se pinta', async () => {
+    const h = await createHarness({ quality: 'low' });
+    settle(h);
+    const bloom = h.renderer.sunBloom;
+    expect(bloom.compiles).toBe(0);
+    h.engine.setQuality('medium');
+    for (let k = 0; k < 3; k++) await flush();
+    expect(bloom.compiles).toBe(1);
+    settle(h);
+    expect(bloom.renders.length).toBeGreaterThan(0);
+    h.engine.dispose();
+  });
+
+  it('sin bloom al medir el limbo (solo en captura) ni en la miniatura aislada de otro cuerpo', async () => {
+    const measure = await createHarness({ capture: true, focus: 'sol', sunMeasure: true });
+    settle(measure);
+    expect(measure.renderer.sunBloom.compiles).toBe(0);
+    expect(measure.renderer.sunBloom.renders).toEqual([]);
+    measure.engine.dispose();
+    // Fuera del modo de captura, la opción no hace nada.
+    const normal = await createHarness({ focus: 'sol', sunMeasure: true });
+    settle(normal);
+    expect(normal.renderer.sunBloom.renders.length).toBeGreaterThan(0);
+    normal.engine.dispose();
+    const jupiter = await createHarness({ capture: true, focus: 'jupiter', isolate: true });
+    settle(jupiter);
+    expect(jupiter.renderer.sunBloom.renders).toEqual([]);
+    jupiter.engine.dispose();
+    // La miniatura del propio Sol, sí.
+    const sun = await createHarness({ capture: true, focus: 'sol', isolate: true });
+    settle(sun);
+    expect(sun.renderer.sunBloom.renders.length).toBeGreaterThan(0);
+    sun.engine.dispose();
+  });
+
+  interface SunInternals {
+    world: {
+      sun: { uniforms: { uTime: { value: number }; uGranulation: { value: number } } };
+      haloMaterial: { uniforms: { uIntensity: { value: number } } };
+    };
+  }
+  const sunOf = (h: Harness) => (h.engine as unknown as SunInternals).world;
+
+  it('la granulación del Sol de cerca se mueve con el reloj de pared; con movimiento reducido y en las capturas, quieta', async () => {
+    const moving = await createHarness({ focus: 'sol' });
+    settle(moving);
+    moving.engine.setSpeed(3600);
+    moving.engine.setPlaying(true);
+    moving.frames(500);
+    const before = sunOf(moving).sun.uniforms.uTime.value;
+    moving.frames(500);
+    expect(sunOf(moving).sun.uniforms.uTime.value).toBeGreaterThan(before);
+    expect(sunOf(moving).sun.uniforms.uGranulation.value).toBeGreaterThan(0);
+    moving.engine.dispose();
+    for (const options of [{ reducedMotion: true }, { capture: true }]) {
+      const still = await createHarness({ focus: 'sol', ...options });
+      settle(still);
+      still.engine.setSpeed(3600);
+      still.engine.setPlaying(true);
+      still.frames(1000);
+      expect(sunOf(still).sun.uniforms.uTime.value).toBe(0);
+      still.engine.dispose();
+    }
+  });
+
+  it('con bloom, el halo del Sol es más tenue: el resplandor lo pone el bloom', async () => {
+    const withBloom = await createHarness();
+    settle(withBloom);
+    const dimmed = sunOf(withBloom).haloMaterial.uniforms.uIntensity.value;
+    withBloom.engine.dispose();
+    const low = await createHarness({ quality: 'low' });
+    settle(low);
+    const full = sunOf(low).haloMaterial.uniforms.uIntensity.value;
+    low.engine.dispose();
+    expect(full).toBeCloseTo(VISUAL_CONFIG.sun.halo.overview.intensity, 9);
+    expect(dimmed).toBeCloseTo(full * VISUAL_CONFIG.sun.halo.withBloom, 9);
   });
 });
 
@@ -1216,7 +1412,8 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
       );
       settle(h);
       for (let k = 0; k < 5; k++) await flush();
-      const { vramMB } = h.engine.stats();
+      // Las texturas, sin los render targets del bloom del Sol (fase 9b), que se cuentan aparte.
+      const vramMB = h.engine.stats().vramMB - h.renderer.sunBloom.vramBytes() / 1_048_576;
       h.engine.dispose();
       return { requests, vramMB };
     };
@@ -1713,7 +1910,9 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
       } | null;
     };
     expect(world.moonSphere).toBeNull();
-    const overview = h.engine.stats().vramMB;
+    // Sin los render targets del bloom del Sol (fase 9b), que se sueltan al salir del sistema solar.
+    const vram = () => h.engine.stats().vramMB - h.renderer.sunBloom.vramBytes() / 1_048_576;
+    const overview = vram();
     h.engine.setView('moon');
     settle(h);
     const sphere = world.moonSphere;
@@ -1722,7 +1921,7 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     const bytes =
       Object.values(sphere.attributes).reduce((sum, a) => sum + a.array.byteLength, 0) +
       (sphere.index?.array.byteLength ?? 0);
-    expect(h.engine.stats().vramMB - overview).toBeCloseTo(bytes / 1_048_576, 1);
+    expect(vram() - overview).toBeCloseTo(bytes / 1_048_576, 1);
     // Al cambiar de calidad con la Luna enfocada, se rehace con los segmentos del nivel nuevo.
     let replaced = false;
     sphere.addEventListener('dispose', () => (replaced = true));

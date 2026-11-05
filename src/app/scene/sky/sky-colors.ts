@@ -121,6 +121,15 @@ export function discOverlapFraction(separation: number, sun: number, moon: numbe
 }
 
 /**
+ * Cuánto de totalidad hay (0–1) con esa parte del disco del Sol tapada: nada hasta el 99,9 % y toda con
+ * el disco tapado del todo (en un eclipse total, la Luna es mayor que el Sol: la fracción llega a 1 y se
+ * queda ahí mientras dura). Con ella salen la corona, el anillo del horizonte y la Luna oscura.
+ */
+export function totalityOf(obscuration: number): number {
+  return Math.min(Math.max((obscuration - 0.999) / 0.001, 0), 1);
+}
+
+/**
  * La altura del Sol «efectiva» para la luz del cielo en un eclipse: con el Sol tapado casi del todo,
  * el cielo se oscurece hacia el de un crepúsculo civil tardío (`VISUAL_CONFIG.sky.eclipse`).
  */

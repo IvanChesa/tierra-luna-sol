@@ -41,6 +41,7 @@ import { albedoScale } from '../ephemeris/photometry';
 import type { SystemState } from '../ephemeris/system-state';
 import { KM_PER_AU } from '../ephemeris/constants';
 import { Mat3, Vec3, mulMat3Vec, transposeMat3 } from '../ephemeris/vec3';
+import { solarCenterColor, sunspotsAt } from '../ephemeris/sun';
 import { SCHEMATIC_COLORS } from './body-colors';
 import type { FrameController } from './frames';
 import {
@@ -57,10 +58,11 @@ import {
   createBodyMaterial,
 } from './materials/body-material';
 import { createCubeSphere } from './cube-sphere';
+import { OCCLUDER_LAYER, SUN_LAYER } from './layers';
 import { createMarkerMaterial } from './materials/marker-material';
 import { createMilkyWayMaterial } from './materials/milky-way-material';
 import { createRingMaterial } from './materials/ring-material';
-import { createHaloMaterial, createSunMaterial } from './materials/sun-material';
+import { MAX_SUNSPOTS, createHaloMaterial, createSunMaterial } from './materials/sun-material';
 import { OrbitLines, OrbitSource, TrailDirection } from './orbits';
 import type { ScreenBody } from './picking';
 import type { QualityProfile, TextureLevel } from './quality';
@@ -274,7 +276,14 @@ const tmpMatrix = new Matrix4();
 const orbitViewMatrix = new Matrix4();
 const tmpQuaternion = new Quaternion();
 const tmpVector = new Vector3();
-const { halo: HALO, granulation: GRANULATION, intensity: SUN_INTENSITY } = VISUAL_CONFIG.sun;
+const {
+  halo: HALO,
+  granulation: GRANULATION,
+  intensity: SUN_INTENSITY,
+  measureIntensity: SUN_MEASURE_INTENSITY,
+  spots: SPOTS,
+  corona: CORONA,
+} = VISUAL_CONFIG.sun;
 /** La Luna y los radios de la Luna y del Sol, para la sombra de los eclipses en la Tierra. */
 const LUNA_INDEX = sceneBody('luna').index;
 const MOON_RADIUS_KM = BODY_DATA.luna.physical.radiusKm.value;
@@ -374,6 +383,8 @@ export class World {
   /** 1 para las lunas que se ven lo bastante grandes para llevar su mapa (`SEEN_ENTER_PX`). */
   private readonly seen: Uint8Array;
   private readonly visuals: BodyVisual[];
+  /** El índice del Sol en `visuals`. */
+  private readonly sunIndex: number;
   private readonly sun: ReturnType<typeof createSunMaterial>;
   private readonly halo: Mesh;
   private readonly haloMaterial: ReturnType<typeof createHaloMaterial>;
@@ -405,11 +416,19 @@ export class World {
     this.coarseSphere = this.createSphere(COARSE_SEGMENTS);
     this.large = new Uint8Array(options.bodies.length);
     this.seen = new Uint8Array(options.bodies.length);
-    // Color de la fotosfera: un cuerpo negro a la temperatura efectiva del catálogo.
+    // Color de la fotosfera: el del centro del disco que da al disco entero el de un cuerpo negro a la
+    // temperatura efectiva del catálogo (fase 9b: con el limbo por canal, el centro es algo más azul).
     const temperature = BODY_DATA.sol.physical.effectiveTemperatureK?.value ?? 5772;
     const [r, g, b] = temperatureToSrgb(temperature);
-    this.sun = createSunMaterial(new Color().setRGB(r, g, b, SRGBColorSpace));
+    const disc = new Color().setRGB(r, g, b, SRGBColorSpace);
+    const [cr, cg, cb] = solarCenterColor([disc.r, disc.g, disc.b]);
+    this.sun = createSunMaterial(new Color(cr, cg, cb));
+    const shade = this.sun.uniforms.uSpotShade.value;
+    shade.set(SPOTS.umbra, SPOTS.penumbra, SPOTS.penumbraRatio);
+    this.sun.uniforms.uGranuleScale.value = GRANULATION.scale;
+    this.sun.uniforms.uFaculae.value = VISUAL_CONFIG.sun.faculae;
     this.haloMaterial = createHaloMaterial();
+    this.haloMaterial.uniforms.uRoundness.value = CORONA.roundness;
     this.halo = new Mesh(new PlaneGeometry(2, 2), this.haloMaterial.material);
     this.halo.name = 'sun-halo';
     this.halo.frustumCulled = false;
@@ -451,6 +470,9 @@ export class World {
       );
       mesh.name = body.id;
       mesh.matrixAutoUpdate = true;
+      // El bloom del Sol (fase 9b): el Sol, en su capa. Los que lo tapan, en la suya, frame a frame
+      // (`setSunOccluders`).
+      if (body.kind === 'star') mesh.layers.enable(SUN_LAYER);
       this.scene.add(mesh);
       return {
         body,
@@ -478,6 +500,8 @@ export class World {
         frozen: false,
       };
     });
+
+    this.sunIndex = this.visuals.findIndex((v) => v.body.kind === 'star');
 
     const saturn = this.visuals.find((v) => v.body.id === 'saturno');
     if (saturn) {
@@ -580,7 +604,7 @@ export class World {
     if (this.stars) this.stars.object.visible = all;
     this.milkyWay.visible = all && this.milkyWayTexture !== null;
     this.orbits.object.visible = all;
-    this.halo.visible = all || this.visuals[index]?.body.kind === 'star';
+    this.updateHaloVisibility();
   }
 
   /** Cambia de calidad: esferas, estrellas, órbitas y texturas (las anteriores se liberan). */
@@ -1096,19 +1120,90 @@ export class World {
     if (changed) this.requestTextures(this.focusIndex);
   }
 
-  /** Cuánto primer plano del Sol hay (0–1): recoge su halo y enciende la granulación. */
-  private sunCloseUp = 0;
+  /**
+   * Solo en captura (`?medida=limbo`): el Sol para medir su limbo, sin halo, corona, granulación ni
+   * manchas y con su fotosfera por debajo de la compresión del tone mapping.
+   */
+  private sunMeasure = false;
+  /** El instante de las manchas pintadas (no se recalculan si no cambia). */
+  private spotsTimeMs = Number.NaN;
 
   /**
-   * Aspecto del Sol según el encuadre (configuración visual) y el reloj de pared de la granulación
-   * (0 con movimiento reducido o en captura: quieta).
+   * El aspecto del Sol en este frame: su primer plano (`closeUp`, 0–1: recoge el halo, enciende la
+   * granulación y la corona), el reloj de pared de su granulación (s; 0 con movimiento reducido y en las
+   * capturas) y si lleva bloom (en los niveles alto y medio: el halo, más tenue). Se llama después de
+   * `update`, con la escala del Sol de este frame.
    */
-  setSunAppearance(closeUp: number, timeSeconds: number): void {
-    this.sunCloseUp = closeUp;
-    this.sun.uniforms.uGranulation.value = GRANULATION.amplitude * closeUp;
-    this.sun.uniforms.uIntensity.value =
-      SUN_INTENSITY.overview + (SUN_INTENSITY.closeUp - SUN_INTENSITY.overview) * closeUp;
-    this.sun.uniforms.uTime.value = timeSeconds * GRANULATION.rate;
+  setSunAppearance(closeUp: number, timeSeconds: number, bloom: boolean): void {
+    const measure = this.sunMeasure;
+    const sun = this.sun.uniforms;
+    sun.uGranulation.value = measure ? 0 : GRANULATION.amplitude * closeUp;
+    sun.uIntensity.value = measure
+      ? SUN_MEASURE_INTENSITY
+      : SUN_INTENSITY.overview + (SUN_INTENSITY.closeUp - SUN_INTENSITY.overview) * closeUp;
+    sun.uTime.value = timeSeconds * GRANULATION.rate;
+    sun.uFaculae.value = measure ? 0 : VISUAL_CONFIG.sun.faculae;
+    const scale = this.visuals[this.sunIndex]?.mesh.scale.x ?? 1;
+    const halo = this.haloMaterial.uniforms;
+    halo.uRadius.value =
+      scale * (HALO.overview.radii + (HALO.closeUp.radii - HALO.overview.radii) * closeUp);
+    halo.uSunRadius.value = scale;
+    halo.uIntensity.value =
+      (HALO.overview.intensity + (HALO.closeUp.intensity - HALO.overview.intensity) * closeUp) *
+      (bloom ? HALO.withBloom : 1);
+    halo.uCorona.value = CORONA.closeUp * closeUp;
+  }
+
+  /** Solo en captura: el Sol para medir su limbo (`?medida=limbo`; ver `sunMeasure`). */
+  setSunMeasure(measure: boolean): void {
+    this.sunMeasure = measure;
+    this.spotsTimeMs = Number.NaN;
+    this.updateHaloVisibility();
+  }
+
+  /**
+   * Los cuerpos que tapan el Sol en este frame (`sunOccluders`), en la capa del bloom: los demás, no
+   * (así el render del bloom solo dibuja los que hacen falta).
+   */
+  setSunOccluders(indices: readonly number[]): void {
+    for (const visual of this.visuals) visual.mesh.layers.disable(OCCLUDER_LAYER);
+    for (const index of indices) this.visuals[index]?.mesh.layers.enable(OCCLUDER_LAYER);
+  }
+
+  /** El halo se ve con el Sol (también aislado, en su miniatura), salvo al medir su limbo. */
+  private updateHaloVisibility(): void {
+    const isolated = this.isolated;
+    this.halo.visible =
+      !this.sunMeasure && (isolated === null || this.visuals[isolated]?.body.kind === 'star');
+  }
+
+  /**
+   * Las manchas (ilustrativas) del instante `timeMs` en los uniformes del Sol: su dirección en el
+   * sistema propio de la malla (Y, el polo; la longitud este hacia −Z, como los marcadores de la
+   * Tierra) y el radio de su umbra; con su presencia (ninguna al medir el limbo).
+   */
+  private updateSunspots(timeMs: number): void {
+    if (timeMs === this.spotsTimeMs) return;
+    this.spotsTimeMs = timeMs;
+    const spots = this.sunMeasure ? [] : sunspotsAt(timeMs, SPOTS);
+    const directions = this.sun.uniforms.uSpots.value;
+    const presence = this.sun.uniforms.uSpotPresence.value;
+    for (let k = 0; k < MAX_SUNSPOTS; k++) {
+      const spot = spots[k];
+      if (!spot) {
+        presence[k] = 0;
+        continue;
+      }
+      const lat = (spot.latitudeDeg * Math.PI) / 180;
+      const lon = (spot.longitudeDeg * Math.PI) / 180;
+      directions[k]?.set(
+        Math.cos(lat) * Math.cos(lon),
+        Math.sin(lat),
+        -Math.cos(lat) * Math.sin(lon),
+        (spot.umbraDeg * Math.PI) / 180,
+      );
+      presence[k] = spot.presence;
+    }
   }
 
   /**
@@ -1373,15 +1468,19 @@ export class World {
   }
 
   private updateSunAndRings(frame: WorldFrame): void {
-    const sunVisual = this.visuals.find((v) => v.body.kind === 'star');
+    const sunVisual = this.visuals[this.sunIndex];
     if (sunVisual) {
+      // El halo va con el Sol; su tamaño, su brillo y su corona, con su primer plano
+      // (`setSunAppearance`).
       this.halo.position.copy(sunVisual.mesh.position);
-      const t = this.sunCloseUp;
-      const radii = HALO.overview.radii + (HALO.closeUp.radii - HALO.overview.radii) * t;
-      this.haloMaterial.uniforms.uRadius.value = sunVisual.mesh.scale.x * radii;
-      this.haloMaterial.uniforms.uIntensity.value =
-        HALO.overview.intensity + (HALO.closeUp.intensity - HALO.overview.intensity) * t;
-      this.haloMaterial.uniforms.uViewportHeight.value = frame.viewport.height;
+      const halo = this.haloMaterial.uniforms;
+      halo.uViewportHeight.value = frame.viewport.height;
+      // Las serpentinas de la corona salen del ecuador del Sol: el ángulo en pantalla de su polo norte
+      // (el eje Y de su malla, en la vista de la cámara, ya orientada para este frame).
+      tmpVector.set(0, 1, 0).applyQuaternion(sunVisual.mesh.quaternion);
+      tmpVector.applyQuaternion(tmpQuaternion.copy(this.camera.quaternion).invert());
+      halo.uPoleAngle.value = Math.atan2(tmpVector.y, tmpVector.x);
+      this.updateSunspots(frame.state.timeMs);
     }
     const saturn = this.visuals.find((v) => v.body.id === 'saturno');
     if (!saturn?.uniforms || !this.ringMaterial) return;

@@ -14,6 +14,7 @@
  * `normal` de astronomy-engine), copiada aquí en GLSL.
  */
 import { AdditiveBlending, Color, Matrix3, NormalBlending, Texture, Uniform, Vector3 } from 'three';
+import { SOLAR_LIMB_EXPONENTS } from '../../ephemeris/sun';
 import {
   DEPTH_FRAGMENT,
   DEPTH_FRAGMENT_PARS,
@@ -22,6 +23,7 @@ import {
   OUTPUT_FRAGMENT,
   sceneShaderMaterial,
 } from '../materials/depth';
+import { CORONA_GLSL } from '../materials/sun-material';
 
 /**
  * La refracción `normal` de astronomy-engine en GLSL (grados), la misma que `refractionDeg`: Saemundsson
@@ -77,6 +79,23 @@ export function createSkyDomeMaterial() {
     uGlowRise: new Uniform(3),
     /** El brillo del cielo (1, o menos en un eclipse). */
     uBrightness: new Uniform(1),
+    /**
+     * La totalidad de un eclipse de Sol (0–1, fase 9b, E1): sin el resplandor alrededor del Sol, con el
+     * anillo del horizonte y la Luna más oscura que el cielo.
+     */
+    uTotality: new Uniform(0),
+    /**
+     * El anillo de todo el horizonte en la totalidad (el «atardecer de 360°»), en dos partes: una
+     * naranja pegada al horizonte y otra amarilla algo más alta (su color y su altura, rad).
+     */
+    uRingInner: new Uniform(new Color()),
+    uRingInnerHeight: new Uniform(0.016),
+    uRingOuter: new Uniform(new Color()),
+    uRingOuterHeight: new Uniform(0.035),
+    /** La Luna (dirección en los ejes del cielo y radio angular, rad) y lo que se oscurece su disco. */
+    uMoonDirection: new Uniform(new Vector3(0, -1, 0)),
+    uMoonRadius: new Uniform(0.0045),
+    uMoonVeil: new Uniform(0),
   };
   const material = sceneShaderMaterial({
     name: 'tls-sky-dome',
@@ -100,6 +119,14 @@ export function createSkyDomeMaterial() {
       uniform float uGlowPower;
       uniform float uGlowRise;
       uniform float uBrightness;
+      uniform float uTotality;
+      uniform vec3 uRingInner;
+      uniform float uRingInnerHeight;
+      uniform vec3 uRingOuter;
+      uniform float uRingOuterHeight;
+      uniform vec3 uMoonDirection;
+      uniform float uMoonRadius;
+      uniform float uMoonVeil;
       varying vec3 vDirection;
       void main() {
         ${DEPTH_FRAGMENT}
@@ -107,12 +134,24 @@ export function createSkyDomeMaterial() {
         float h = max(d.y, 0.0);
         // Del horizonte al cénit, más deprisa cerca del horizonte (la masa de aire).
         vec3 color = mix(uHorizon, uZenith, pow(h, 0.45));
-        // El resplandor del lado del Sol, pegado al horizonte, y un halo alrededor del Sol.
+        // El resplandor del lado del Sol, pegado al horizonte, y un halo alrededor del Sol. En la
+        // totalidad no hay luz directa del Sol: ninguno de los dos.
         vec3 sun = normalize(uSunDirection);
         float toward = max(dot(normalize(vec3(d.x, 0.0, d.z) + 1e-6), normalize(vec3(sun.x, 0.0, sun.z) + 1e-6)), 0.0);
         float band = pow(toward, uGlowPower) * pow(1.0 - h, uGlowRise);
         float halo = pow(max(dot(d, sun), 0.0), 64.0) * 0.6 + pow(max(dot(d, sun), 0.0), 8.0) * 0.15;
-        color += uGlow * (band + halo * smoothstep(-0.2, 0.05, sun.y));
+        color += uGlow * (band + halo * smoothstep(-0.2, 0.05, sun.y)) * (1.0 - uTotality);
+        // La totalidad: el anillo de todo el horizonte (el aire iluminado fuera de la sombra de la Luna)
+        // y la Luna, más oscura que el cielo que la rodea (ilustrativo, como en las fotos).
+        if (uTotality > 0.0) {
+          float altitude = asin(h);
+          vec3 ring = uRingInner * exp(-altitude / uRingInnerHeight)
+            + uRingOuter * exp(-altitude / uRingOuterHeight);
+          color += ring * uTotality;
+          vec3 moon = normalize(uMoonDirection);
+          float apart = atan(length(cross(d, moon)), dot(d, moon));
+          color *= 1.0 - uMoonVeil * (1.0 - smoothstep(uMoonRadius * 0.97, uMoonRadius, apart));
+        }
         gl_FragColor = vec4(color * uBrightness, 1.0);
         ${OUTPUT_FRAGMENT}
       }
@@ -287,11 +326,15 @@ export function createConstellationMaterial() {
 
 /**
  * El disco del Sol (un cuadrado de cara a la cámara, con su radio aparente) con el oscurecimiento del
- * limbo, en blanco: la luz que lo rodea la pone la cúpula. Se pinta opaco: la Luna, que va después, lo
- * tapa en un eclipse.
+ * limbo por canal de Hestroffer y Magnan (1998; `ephemeris/sun.ts`, fase 9b), en blanco: la luz que lo
+ * rodea la pone la cúpula. Se pinta opaco: la Luna, que va después, lo tapa en un eclipse.
  */
 export function createSunDiscMaterial() {
-  const uniforms = { uIntensity: new Uniform(1.6) };
+  const [red, green, blue] = SOLAR_LIMB_EXPONENTS;
+  const uniforms = {
+    uIntensity: new Uniform(1.6),
+    uLimbExponent: new Uniform(new Vector3(red, green, blue)),
+  };
   const material = sceneShaderMaterial({
     name: 'tls-sky-sun',
     uniforms,
@@ -307,14 +350,15 @@ export function createSunDiscMaterial() {
     fragmentShader: /* glsl */ `
       ${DEPTH_FRAGMENT_PARS}
       uniform float uIntensity;
+      uniform vec3 uLimbExponent;
       varying vec2 vUv;
       void main() {
         ${DEPTH_FRAGMENT}
         float r = length(vUv);
         if (r > 1.0) discard;
-        // Oscurecimiento del limbo (ley lineal, u ≈ 0,6 en el visible).
+        // Oscurecimiento del limbo por canal: I(μ)/I(1) = μ^α.
         float mu = sqrt(max(1.0 - r * r, 0.0));
-        float limb = 1.0 - 0.6 * (1.0 - mu);
+        vec3 limb = pow(vec3(max(mu, 1e-4)), uLimbExponent);
         gl_FragColor = vec4(vec3(1.0, 0.97, 0.9) * uIntensity * limb, 1.0);
         ${OUTPUT_FRAGMENT}
       }
@@ -327,13 +371,23 @@ export function createSunDiscMaterial() {
   return { material, uniforms };
 }
 
+/** El cuadrado de la corona del cielo mide esto en radios solares (desde el centro). */
+export const SKY_CORONA_RADII = 6;
+
 /**
  * La corona del Sol: solo se ve en la totalidad de un eclipse (de día la tapa la luz del cielo). Un
- * resplandor blanco nacarado que cae con la distancia al limbo (∝ r^−2,5, como su brillo medio), en un
- * cuadrado de 4 radios solares; ilustrativo en su forma (sin las serpentinas de cada eclipse).
+ * resplandor blanco nacarado, casi redondo y con serpentinas que salen del ecuador del Sol y se afilan
+ * al alejarse (`CORONA_GLSL`, la misma del Sol del espacio en primer plano), en un cuadrado de
+ * `SKY_CORONA_RADII` radios solares. Ilustrativa en su forma: no es la de cada eclipse.
  */
 export function createCoronaMaterial() {
-  const uniforms = { uStrength: new Uniform(0) };
+  const uniforms = {
+    uStrength: new Uniform(0),
+    /** Ángulo en pantalla del polo norte del Sol (rad), para orientar las serpentinas. */
+    uPoleAngle: new Uniform(Math.PI / 2),
+    /** De 0 (la corona del mínimo del ciclo, con serpentinas) a 1 (la del máximo, redonda). */
+    uRoundness: new Uniform(0.45),
+  };
   const material = sceneShaderMaterial({
     name: 'tls-sky-corona',
     uniforms,
@@ -341,7 +395,7 @@ export function createCoronaMaterial() {
       ${DEPTH_VERTEX_PARS}
       varying vec2 vUv;
       void main() {
-        vUv = (uv * 2.0 - 1.0) * 4.0;
+        vUv = (uv * 2.0 - 1.0) * ${SKY_CORONA_RADII.toFixed(1)};
         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         ${DEPTH_VERTEX}
       }
@@ -349,12 +403,17 @@ export function createCoronaMaterial() {
     fragmentShader: /* glsl */ `
       ${DEPTH_FRAGMENT_PARS}
       uniform float uStrength;
+      uniform float uPoleAngle;
+      uniform float uRoundness;
       varying vec2 vUv;
+      ${CORONA_GLSL}
       void main() {
         ${DEPTH_FRAGMENT}
         float r = length(vUv);
-        if (r < 1.0 || r > 4.0) discard;
-        float glow = pow(r, -2.5) * (1.0 - smoothstep(2.5, 4.0, r));
+        if (r < 1.0 || r > ${SKY_CORONA_RADII.toFixed(1)}) discard;
+        float theta = atan(vUv.y, vUv.x) - uPoleAngle;
+        // Se apaga despacio hacia el borde del cuadrado: sin un círculo marcado alrededor.
+        float glow = tlsCorona(r, theta, uRoundness) * (1.0 - smoothstep(3.0, ${SKY_CORONA_RADII.toFixed(1)}, r));
         gl_FragColor = vec4(vec3(0.95, 0.93, 0.88) * glow * uStrength, 1.0);
         ${OUTPUT_FRAGMENT}
       }

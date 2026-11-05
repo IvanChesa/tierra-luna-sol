@@ -32,7 +32,7 @@ import { attachPointerControls } from './camera/pointer';
 import { SimClock } from './clock';
 import { FRAME_TRANSITION_MS, FrameController, frameFor } from './frames';
 import { LabelInfo, LabelLayer, MARKER_RADIUS_PX, layoutLabels } from './labels';
-import { ScreenBody, pickBody, projectBodies } from './picking';
+import { ScreenBody, pickBody, projectBodies, sunOccluders } from './picking';
 import {
   AdaptiveQuality,
   DEFAULT_ADAPTIVE_OPTIONS,
@@ -42,7 +42,7 @@ import {
   detectQuality,
 } from './quality';
 import { OrientationModel } from './orientations';
-import type { RendererFactory, RendererPort, ResolvedDepthMode } from './renderer';
+import type { RendererFactory, RendererPort, ResolvedDepthMode, SunBloomOptions } from './renderer';
 import { StarField } from './stars';
 import {
   MOON_SYSTEMS,
@@ -431,6 +431,15 @@ export class SceneEngine implements SceneEngineApi {
   private readonly isolated: boolean;
   /** Solo en captura: el foco, en el marco de la vista general (`illustrativeFocus`). */
   private readonly illustrativeFocus: boolean;
+  /** Solo en captura: el Sol para medir su limbo (`sunMeasure`), sin bloom. */
+  private readonly sunMeasure: boolean;
+  /** ¿Lleva bloom el Sol en este frame? (`applyLighting`, con la pantalla de este frame). */
+  private sunBloomOn = false;
+  /** Los sombreados del bloom ya están compilados (hasta entonces, solo el halo: nunca de golpe). */
+  private sunBloomCompiled = false;
+  private sunBloomCompiling = false;
+  /** El primer plano del Sol en este frame (0–1): la fuerza de su bloom. */
+  private sunCloseUp = 0;
   /** Exposición que tiene ahora el renderer (configuración visual; −1: aún ninguna). */
   private exposure = -1;
   private ready = false;
@@ -519,7 +528,9 @@ export class SceneEngine implements SceneEngineApi {
     this.viewFrom = this.captureMode ? (options.viewFrom ?? null) : null;
     this.isolated = this.captureMode && (options.isolate ?? false) && initial.focus !== null;
     this.illustrativeFocus = this.captureMode && (options.illustrativeFocus ?? false);
+    this.sunMeasure = this.captureMode && (options.sunMeasure ?? false);
     if (this.isolated) this.world.setIsolated(initial.focus);
+    if (this.sunMeasure) this.world.setSunMeasure(true);
     this.frames = new FrameController(
       this.frameSpec(initial.focus),
       initial.focus ?? SUN_INDEX,
@@ -685,6 +696,8 @@ export class SceneEngine implements SceneEngineApi {
     if (this.disposed || view === this._view) return;
     const fromSky = this._view === 'sky';
     this._view = view;
+    // El bloom del Sol solo va en la vista del sistema solar: fuera de ella, su memoria se suelta.
+    if (view !== 'system') this.renderer.sunBloom?.release();
     if (view === 'sky') {
       this.enterSky();
       return;
@@ -849,7 +862,11 @@ export class SceneEngine implements SceneEngineApi {
       triangles: info.triangles,
       geometries: info.geometries,
       textures: info.textures,
-      vramMB: (this.world.vramBytes() + (this.sky?.vramBytes() ?? 0)) / 1_048_576,
+      vramMB:
+        (this.world.vramBytes() +
+          (this.sky?.vramBytes() ?? 0) +
+          (this.renderer.sunBloom?.vramBytes() ?? 0)) /
+        1_048_576,
       renderedFrames: this.renderedFrames,
       aliased: SCENE_BODIES.filter((body) => this.aliasing.orbit[body.index] === 1).map(
         (body) => body.id,
@@ -912,6 +929,8 @@ export class SceneEngine implements SceneEngineApi {
       this.world.setStars(stars);
       this.emit('progress', { loaded: 2, total, step: 'Compilando sombreados' });
       await this.renderer.compile(this.world.scene, this.world.camera);
+      // El bloom del Sol, también antes del primer frame (en la vista general, el Sol se ve).
+      await this.compileSunBloom();
       // Si se entra por la vista del cielo, su escena también, antes del primer frame.
       if (this._view === 'sky') {
         const sky = this.ensureSky();
@@ -1073,6 +1092,8 @@ export class SceneEngine implements SceneEngineApi {
     this.applyLighting();
     if (!paint) return moving;
     this.renderer.render(this.world.scene, camera);
+    if (this.sunBloomOn)
+      this.renderer.sunBloom?.render(this.world.scene, camera, this.sunBloomOptions());
     this.renderedFrames++;
     this.frameTimes.push(timeMs);
     if (this.frameTimes.length > 240) this.frameTimes.splice(0, this.frameTimes.length - 240);
@@ -1082,6 +1103,58 @@ export class SceneEngine implements SceneEngineApi {
       this.emit('frameStats', this.stats());
     }
     return moving;
+  }
+
+  /** El bloom del Sol para su primer plano de este frame (`VISUAL_CONFIG.sun.bloom`, interpolado). */
+  private sunBloomOptions(): SunBloomOptions {
+    const { overview, closeUp } = VISUAL_CONFIG.sun.bloom;
+    const t = this.sunCloseUp;
+    const mix = (a: number, b: number) => a + (b - a) * t;
+    const f = (k: number) => mix(overview.factors[k] as number, closeUp.factors[k] as number);
+    return {
+      strength: mix(overview.strength, closeUp.strength),
+      factors: [f(0), f(1), f(2), f(3), f(4)],
+    };
+  }
+
+  /**
+   * Compila los sombreados del bloom sin bloquear (si el nivel lo lleva y aún no lo están): al arrancar
+   * y al subir a mano desde el nivel bajo. La compilación reserva su render target: si la vista no lo
+   * usa, se suelta.
+   */
+  private async compileSunBloom(): Promise<void> {
+    const bloom = this.renderer.sunBloom;
+    if (!bloom || !this.profile.sunBloom || this.sunMeasure) return;
+    if (this.sunBloomCompiled || this.sunBloomCompiling) return;
+    this.sunBloomCompiling = true;
+    try {
+      await bloom.compile(this.world.scene, this.world.camera);
+      this.sunBloomCompiled = true;
+    } catch {
+      // Sin compilar no se pinta: queda el halo.
+    } finally {
+      this.sunBloomCompiling = false;
+    }
+    if (this.disposed) return;
+    if (!this.sunBloomWanted()) bloom.release();
+    this.invalidate();
+  }
+
+  /**
+   * ¿Puede llevar bloom el Sol? En los niveles alto y medio, si el renderer lo tiene, en la vista del
+   * sistema solar, salvo al medir su limbo o en la miniatura aislada de otro cuerpo. En las vistas Tierra
+   * y Luna, no: el Sol casi nunca está en pantalla (y, si lo está, es pequeño y basta su halo), y sus
+   * texturas de primer plano llenan la VRAM (en alto, la vista Tierra llega a unos 277 MB de 300: con el
+   * bloom y una pantalla de densidad 2, pasaría).
+   */
+  private sunBloomWanted(): boolean {
+    return (
+      this.profile.sunBloom &&
+      this._view === 'system' &&
+      !this.sunMeasure &&
+      this.renderer.sunBloom !== undefined &&
+      (!this.isolated || this.focusIndex === SUN_INDEX)
+    );
   }
 
   /**
@@ -1321,11 +1394,18 @@ export class SceneEngine implements SceneEngineApi {
         ? 1
         : this.litBrightness(focus, this.world.phaseAngleOf(focus));
     const exposure = exposureFor(closeUp, albedo, lit);
-    // El Sol: halo y granulación según su primer plano; la granulación cambia con el reloj de pared
-    // (quieta con movimiento reducido y en las capturas).
+    // El Sol: halo, granulación y corona según su primer plano; la granulación cambia con el reloj de
+    // pared (quieta con movimiento reducido y en las capturas). Su bloom, si se ve en pantalla, con los
+    // cuerpos que lo tapan.
+    const occluders =
+      this.sunBloomWanted() && this.sunBloomCompiled ? sunOccluders(this.screen, SUN_INDEX) : null;
+    this.sunBloomOn = occluders !== null && (this.screen[SUN_INDEX]?.onScreen ?? false);
+    this.sunCloseUp = focus === SUN_INDEX ? closeUp : 0;
+    if (this.sunBloomOn && occluders) this.world.setSunOccluders(occluders);
     this.world.setSunAppearance(
-      focus === SUN_INDEX ? closeUp : 0,
+      this.sunCloseUp,
       this.instant() ? 0 : this.deps.now() / 1000,
+      this.sunBloomOn,
     );
     // Las nubes de la Tierra derivan con el tiempo real de los frames pintados (quietas con
     // movimiento reducido y en las capturas), no con el simulado: a 3 días por segundo darían vueltas
@@ -1714,7 +1794,9 @@ export class SceneEngine implements SceneEngineApi {
     const bodies: SkyBody[] = skyBodies(date, place);
     const eclThreeToSky = eclThreeToSkyThree(date, place);
     const state = this.system.at(ms);
-    const moonOrientation = this.orientations.at(state)[MOON_INDEX];
+    const orientations = this.orientations.at(state);
+    const moonOrientation = orientations[MOON_INDEX];
+    const sunOrientation = orientations[SUN_INDEX];
     const toSky = (ecl: { x: number; y: number; z: number }) =>
       mulMat3Vec(eclThreeToSky, normalize(mulMat3Vec(ECL_TO_THREE, ecl)));
     const shadow = earthShadow(date);
@@ -1736,6 +1818,8 @@ export class SceneEngine implements SceneEngineApi {
       moonOrientation: moonOrientation
         ? mulMat3(eclThreeToSky, eclRotationToThree(moonOrientation))
         : null,
+      // El polo del Sol (el eje z de su orientación, en ECL), para las serpentinas de la corona.
+      sunPole: sunOrientation ? toSky(columnOf(sunOrientation, 2)) : null,
       moonShadow: {
         moonGeocentric: toSky(moonGeocentric(date)),
         antisolar: toSky(scaleVec(sunApparentGeocentricEcl(date), -1)),
@@ -1797,6 +1881,10 @@ export class SceneEngine implements SceneEngineApi {
       this.level = level;
       this.profile = QUALITY_PROFILES[level];
       this.world.setQuality(this.profile);
+      // El nivel bajo no lleva bloom: sus render targets se sueltan. Al subir a mano desde él, sus
+      // sombreados se compilan sin bloquear (hasta entonces, el halo).
+      if (!this.profile.sunBloom) this.renderer.sunBloom?.release();
+      else void this.compileSunBloom();
       this.applySize();
       this.invalidate();
     }
