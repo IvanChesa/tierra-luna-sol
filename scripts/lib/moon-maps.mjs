@@ -108,6 +108,81 @@ export function degradedRatio(gray, width, height, mask, factor) {
   return percentile(ratio, mask, 0.5);
 }
 
+/**
+ * La resolución de origen de cada texel (σ gaussiana en texeles de 2k), por octavas: la imagen se
+ * parte en bandas (de 1, 2, 4, 8 y 16 texeles) y en cada texel se mira, desde la más fina, la primera
+ * banda que aún tiene detalle respecto a la más gruesa (al menos `alive` veces el que tiene lo más
+ * nítido de la propia luna, `sharpMask`). Una zona ampliada desde una resolución gruesa tiene vacías
+ * todas las bandas por debajo de su escala de origen: así se mide también lo muy desenfocado, que con
+ * dos bandas se confundía con el ruido. Devuelve σ = 2^(banda − 1), alisada (0,5 en lo nítido; hasta 8),
+ * y la referencia de cada banda (para medir con la misma una versión degradada de la imagen).
+ */
+export function cutoffSigma(
+  gray,
+  width,
+  height,
+  { sharpMask, reference = null, alive = 0.5, smooth = 6 },
+) {
+  const sigmas = [1, 2, 4, 8, 16];
+  const levels = [gray];
+  let previous = 0;
+  for (const s of sigmas) {
+    const step = Math.sqrt(s * s - previous * previous);
+    levels.push(gaussianBlur(levels[levels.length - 1], width, height, step, true));
+    previous = s;
+  }
+  // Energía local de cada banda (la diferencia entre dos niveles), en una ventana que crece con ella.
+  const energies = sigmas.map((s, b) => {
+    const band = new Float32Array(gray.length);
+    const a = levels[b];
+    const c = levels[b + 1];
+    for (let k = 0; k < band.length; k++) {
+      const d = a[k] - c[k];
+      band[k] = d * d;
+    }
+    const e = gaussianBlur(band, width, height, Math.max(6, 2 * s), true);
+    for (let k = 0; k < e.length; k++) e[k] = Math.sqrt(e[k]);
+    return e;
+  });
+  const coarse = energies[energies.length - 1];
+  const relative = energies.slice(0, -1).map((e) => {
+    const q = new Float32Array(e.length);
+    for (let k = 0; k < q.length; k++) q[k] = e[k] / (coarse[k] + 1e-5);
+    return q;
+  });
+  const bands = reference ?? relative.map((q) => percentile(q, sharpMask, 0.5) || 1);
+  const sigma = new Float32Array(gray.length);
+  for (let k = 0; k < sigma.length; k++) {
+    let value = 8;
+    for (let b = 0; b < relative.length; b++) {
+      const a = relative[b][k] / bands[b];
+      if (a >= alive) {
+        // El corte, entre la banda anterior (vacía) y esta: tanto más cerca de la anterior cuanto más
+        // detalle le queda (σ de 2^(b − 2) a 2^(b − 1)).
+        if (b === 0) value = 0.5;
+        else {
+          const before = relative[b - 1][k] / bands[b - 1];
+          const u = Math.min(1, Math.max(0, before / alive));
+          value = 2 ** (b - 1 - u);
+        }
+        break;
+      }
+    }
+    sigma[k] = value;
+  }
+  return { sigma: gaussianBlur(sigma, width, height, smooth, true), reference: bands };
+}
+
+/**
+ * La calibración del umbral de la σ: la mediana de la σ por octavas de lo más nítido (`sharpMask`)
+ * degradado `factor` veces (como en `degradedRatio`), medida con las referencias de la imagen original.
+ */
+export function degradedSigma(gray, width, height, sharpMask, reference, factor) {
+  const blurred = gaussianBlur(gray, width, height, 0.5 * factor, true);
+  const { sigma } = cutoffSigma(blurred, width, height, { sharpMask, reference });
+  return percentile(sigma, sharpMask, 0.5);
+}
+
 /** El percentil `p` (0–1) de los valores de `values` donde `mask` es cierto. */
 export function percentile(values, mask, p) {
   const picked = [];
@@ -126,31 +201,55 @@ export function rowWeights(height) {
 
 /**
  * Las clases de cada texel: 0, real con detalle; 1, visto de lejos; 2, no visto. `coverage` (0–1) es
- * la del mosaico; `ratio`, el de `detailBands`; `threshold`, el cociente por debajo del cual una zona se
- * vio de lejos. Las clases se limpian con un desenfoque de la máscara de lo visto de lejos (una zona
- * es «de lejos» si lo es la mayor parte de su entorno: sin motas sueltas).
+ * la del mosaico; `ratio`, el de `detailBands`, y `sigma`, la de `cutoffSigma`. Una zona se vio de lejos
+ * si su cociente queda por debajo de `threshold` o su σ por encima de `sigmaThreshold`: el cociente de
+ * dos bandas nota lo un poco blando, pero se engaña donde solo queda ruido (el ruido llena la banda
+ * fina); la σ por octavas no se engaña con el ruido, y se usa para lo claramente blando. Lo que queda a
+ * menos de `edge` texeles de lo no visto también pasa a «no visto»: el borde de un mosaico suele traer
+ * una línea (el limbo de la imagen). Las clases se limpian con un desenfoque de la máscara de lo visto
+ * de lejos (una zona es «de lejos» si lo es la mayor parte de su entorno: sin motas sueltas).
  */
-export function classify(coverage, ratio, width, height, threshold, smooth = 6, minArea = 0.004) {
+export function classify(
+  coverage,
+  ratio,
+  sigma,
+  width,
+  height,
+  { threshold, sigmaThreshold, smooth = 6, minArea = 0.004, edge = 3 },
+) {
+  const seen = new Float32Array(width * height);
+  for (let k = 0; k < seen.length; k++) seen[k] = coverage[k] >= 0.5 ? 1 : 0;
+  // Con σ = edge / 1,5, el desenfoque de lo visto baja de 0,933 (Φ(1,5)) a `edge` texeles del borde.
+  const inside = gaussianBlur(seen, width, height, edge / 1.5, true);
   const far = new Float32Array(width * height);
-  for (let k = 0; k < far.length; k++) far[k] = coverage[k] >= 0.5 && ratio[k] < threshold ? 1 : 0;
+  for (let k = 0; k < far.length; k++) {
+    far[k] = seen[k] && (ratio[k] < threshold || sigma[k] > sigmaThreshold) ? 1 : 0;
+  }
   const farSmooth = gaussianBlur(far, width, height, smooth, true);
   const classes = new Uint8Array(width * height);
   for (let k = 0; k < classes.length; k++) {
-    classes[k] = coverage[k] < 0.5 ? 2 : farSmooth[k] > 0.5 ? 1 : 0;
+    classes[k] = !seen[k] || inside[k] < 0.933 ? 2 : farSmooth[k] > 0.5 ? 1 : 0;
   }
   // Sin islas: los trozos de lo real o de lo visto de lejos de menos de `minArea` de la esfera pasan a
   // la clase que los rodea (una llanura lisa dentro de lo real no es «de lejos»; un parche de ruido
-  // dentro de lo de lejos no es real).
-  absorbIslands(classes, width, height, 1, 0, minArea);
+  // dentro de lo de lejos no es real). Salvo lo claramente blando (la mayor parte, con la σ por encima
+  // de su umbral, como el limbo de una imagen junto a lo nítido): eso sigue «de lejos» aunque sea pequeño.
+  const blurry = (members) => {
+    let count = 0;
+    for (const k of members) if (sigma[k] > sigmaThreshold) count++;
+    return count > members.length / 2;
+  };
+  absorbIslands(classes, width, height, 1, 0, minArea, blurry);
   absorbIslands(classes, width, height, 0, 1, minArea);
   return classes;
 }
 
 /**
  * Las componentes conexas (8 vecinos, con la vuelta del antimeridiano) de la clase `from` con menos de
- * `minArea` (fracción del área de la esfera) pasan a `to` si las rodea `to` o lo que no se vio.
+ * `minArea` (fracción del área de la esfera) pasan a `to` si las rodea `to` o lo que no se vio, y si
+ * `keep` (opcional) no dice que se queden como están.
  */
-export function absorbIslands(classes, width, height, from, to, minArea) {
+export function absorbIslands(classes, width, height, from, to, minArea, keep = null) {
   const weights = rowWeights(height);
   const total = weights.reduce((sum, w) => sum + w, 0) * width;
   const seen = new Uint8Array(classes.length);
@@ -186,7 +285,8 @@ export function absorbIslands(classes, width, height, from, to, minArea) {
         }
       }
     }
-    if (!touchesOther && area / total < minArea) for (const k of members) classes[k] = to;
+    if (touchesOther || area / total >= minArea || (keep && keep(members))) continue;
+    for (const k of members) classes[k] = to;
   }
 }
 

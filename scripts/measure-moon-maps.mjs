@@ -7,7 +7,15 @@ import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
-import { classShares, classify, degradedRatio, detailBands, percentile } from './lib/moon-maps.mjs';
+import {
+  classShares,
+  classify,
+  cutoffSigma,
+  degradedRatio,
+  degradedSigma,
+  detailBands,
+  percentile,
+} from './lib/moon-maps.mjs';
 import { loadMosaic } from './usgs-mosaic.mjs';
 
 const SRC = new URL('../assets-src/textures/', import.meta.url);
@@ -38,6 +46,14 @@ export const MOON_MOSAICS = {
  * terreno, y un umbral pegado al texel marcaría como «de lejos» llanuras lisas fotografiadas de cerca.)
  */
 export const FAR_FACTOR = 1.5;
+
+/**
+ * El umbral de la σ por octavas (`cutoffSigma`), calibrado igual: la mediana de la σ de lo más nítido
+ * degradado `SIGMA_FACTOR` veces (en Tritón, Europa y Jápeto, 1,2 texeles). Con 3 y no con 1,5: la σ
+ * solo hace falta donde el cociente de bandas se engaña con el ruido (lo muy blando, como el limbo de
+ * las imágenes de la Voyager), y con un umbral bajo marcaría terrenos nítidos poco contrastados.
+ */
+export const SIGMA_FACTOR = 3;
 
 const args = process.argv.slice(2);
 const pngDir = args.find((a) => a.startsWith('--png='))?.slice(6);
@@ -77,7 +93,13 @@ export async function measureMoon(id, spec, farFactor = FAR_FACTOR) {
   const sharp = percentile(ratio, sharpMask, 0.5);
   const threshold = degradedRatio(gray, WIDTH, HEIGHT, sharpMask, farFactor);
   const twice = degradedRatio(gray, WIDTH, HEIGHT, sharpMask, 2);
-  const classes = classify(mosaic.coverage, ratio, WIDTH, HEIGHT, threshold);
+  // La resolución de origen de cada texel, por octavas (`cutoffSigma`), y su umbral, calibrado igual.
+  const { sigma: sigmaEff, reference: bands } = cutoffSigma(gray, WIDTH, HEIGHT, { sharpMask });
+  const sigmaThreshold = degradedSigma(gray, WIDTH, HEIGHT, sharpMask, bands, SIGMA_FACTOR);
+  const classes = classify(mosaic.coverage, ratio, sigmaEff, WIDTH, HEIGHT, {
+    threshold,
+    sigmaThreshold,
+  });
   const [real, far, none] = classShares(classes, WIDTH, HEIGHT);
   return {
     id,
@@ -89,6 +111,8 @@ export async function measureMoon(id, spec, farFactor = FAR_FACTOR) {
     sharp,
     threshold,
     twice,
+    sigmaEff,
+    sigmaThreshold,
     real,
     far,
     none,
@@ -121,13 +145,15 @@ async function savePng(dir, result) {
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   if (pngDir) await mkdir(pngDir, { recursive: true });
-  console.log('luna        real   de lejos  sin datos   (cociente: nítido · ×1,5 [umbral] · ×2)');
+  console.log(
+    'luna        real   de lejos  sin datos   (cociente: nítido · ×1,5 [umbral] · ×2; σ: umbral)',
+  );
   for (const [id, spec] of Object.entries(MOON_MOSAICS)) {
     if (wanted.length && !wanted.includes(id)) continue;
     const result = await measureMoon(id, spec, factor);
     const pct = (x) => `${(100 * x).toFixed(1).padStart(5)} %`;
     console.log(
-      `${id.padEnd(10)} ${pct(result.real)} ${pct(result.far)} ${pct(result.none)}   (${result.sharp.toFixed(3)} · ${result.threshold.toFixed(3)} · ${result.twice.toFixed(3)})`,
+      `${id.padEnd(10)} ${pct(result.real)} ${pct(result.far)} ${pct(result.none)}   (${result.sharp.toFixed(3)} · ${result.threshold.toFixed(3)} · ${result.twice.toFixed(3)}; ${result.sigmaThreshold.toFixed(2)})`,
     );
     if (pngDir) await savePng(pngDir, result);
   }
