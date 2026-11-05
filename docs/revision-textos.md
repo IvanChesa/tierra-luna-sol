@@ -1,6 +1,6 @@
 # Revisión de los textos
 
-> GENERADO por `scripts/build-text-review.mjs` el 2026-11-03, desde los datos y el HTML del build: es lo que se publica. Decisión de Iván al lanzar el bloque E (fase 9, tarea 7).
+> GENERADO por `scripts/build-text-review.mjs` el 2026-11-05, desde los datos y el HTML del build: es lo que se publica. Decisión de Iván al lanzar el bloque E (fase 9, tarea 7).
 
 ## Cómo se usa
 
@@ -1385,7 +1385,7 @@ Corrección:
 
 **Párrafo 18**
 
-> La vista general, ilustrativa: las distancias, en una escala logarítmica, y los tamaños, agrandados, sin solapes y con un mínimo en pantalla.
+> La vista general, ilustrativa: las distancias, en una escala logarítmica, y los tamaños, agrandados, sin solapes y con un mínimo en pantalla; las lunas, con su propia ley de tamaños y en órbitas que no se cruzan.
 
 Corrección:
 
@@ -1459,29 +1459,47 @@ Corrección:
 
 **Párrafo 29**
 
-> La luz del Sol no se atenúa con la distancia (si no, los planetas exteriores no se verían), y cada vista tiene su exposición.
+> Los sistemas de lunas de la vista general: cada luna, más pequeña respecto a su planeta que con la ley de los planetas, pero mayor que la real (Ganímedes mide el 12 % de Júpiter; en la realidad, el 4 %), y en una órbita escalada para que ninguna se cruce con otra, con su planeta o con los anillos de Saturno, en su orden real y en su dirección real. Cuando dos planetas se acercan (Júpiter y Saturno en sus conjunciones), sus sistemas se encogen hacia ellos para no tocarse.
 
 Corrección:
 
 **Párrafo 30**
 
-> El brillo de los anillos de Saturno, con un realce moderado.
+> La luz del Sol no se atenúa con la distancia (si no, los planetas exteriores no se verían), y cada vista tiene su exposición.
 
 Corrección:
 
 **Párrafo 31**
 
-> El color del cielo desde España según la altura del Sol.
+> El Sol de cerca: su granulación, mucho más gruesa que la real para que se vea; sus manchas, que no son las de ese día (ni en su sitio ni en su número), aunque giran como las reales, más despacio lejos del ecuador; sus fáculas, su corona y su resplandor. El oscurecimiento de su borde, más dorado que el centro, sí es el medido.
 
 Corrección:
 
 **Párrafo 32**
 
-> En los eclipses de Luna, la luz rojiza de la sombra de la Tierra, más clara que la real para que la Luna no salga negra.
+> En la totalidad de un eclipse de Sol, el disco de la Luna, más oscuro que el cielo, como en las fotos; el anillo anaranjado de todo el horizonte; y la forma de la corona, que no es la de ese eclipse.
 
 Corrección:
 
 **Párrafo 33**
+
+> El brillo de los anillos de Saturno, con un realce moderado.
+
+Corrección:
+
+**Párrafo 34**
+
+> El color del cielo desde España según la altura del Sol.
+
+Corrección:
+
+**Párrafo 35**
+
+> En los eclipses de Luna, la luz rojiza de la sombra de la Tierra, más clara que la real para que la Luna no salga negra.
+
+Corrección:
+
+**Párrafo 36**
 
 > Deimos, Proteo y las lunas de Urano, con un color esquemático: no hay un mapa completo de su superficie con una licencia clara.
 
@@ -1489,37 +1507,37 @@ Corrección:
 
 #### Privacidad
 
-**Párrafo 34**
+**Párrafo 37**
 
 > Sin cookies y sin analítica (tampoco la del alojamiento).
 
 Corrección:
 
-**Párrafo 35**
+**Párrafo 38**
 
 > Todo se sirve desde este mismo sitio: ni fuentes, ni scripts, ni imágenes, ni datos de otros dominios.
 
 Corrección:
 
-**Párrafo 36**
+**Párrafo 39**
 
 > Tu navegador guarda solo dos preferencias, en su almacenamiento local: el nivel de calidad del 3D y si quieres los atajos de una sola tecla.
 
 Corrección:
 
-**Párrafo 37**
+**Párrafo 40**
 
 > «Usar mi ubicación», en el cielo, solo pide tu ubicación cuando lo pulsas, y no sale de tu navegador: no va a la dirección de la página ni se guarda.
 
 Corrección:
 
-**Párrafo 38**
+**Párrafo 41**
 
 > El alojamiento, Cloudflare Pages, pide a algunos navegadores (Chrome y Edge) que le envíen un informe cuando una petición a este sitio falla (Network Error Logging). Lo recibe el propio alojamiento, que ya sirve cada página, y solo informa de los fallos.
 
 Corrección:
 
-**Párrafo 39**
+**Párrafo 42**
 
 > La política de privacidad y el aviso legal son los de la web del autor.
 
@@ -1527,7 +1545,7 @@ Corrección:
 
 #### Autor
 
-**Párrafo 40**
+**Párrafo 43**
 
 > Lo ha hecho Iván Chesa Lapena, desarrollador de software: ivanchesa.com. El código es abierto, con licencia MIT, en GitHub; las texturas, los datos y los catálogos de terceros conservan sus licencias (créditos).
 
@@ -1551,35 +1569,41 @@ Corrección:
 
 **Párrafo 2**
 
-> Los planetas, la Tierra (día, noche, nubes, relieve y océanos) y el detalle del brillo de los anillos de Saturno (el Sol no tiene textura: lo dibuja el propio shader): Solar System Scope, con CC BY 4.0. Reducidas y en WebP; el color de algunos planetas, corregido con fotos del Hubble (NASA/ESA), y el del océano de la Tierra, con fotos de EPIC (DSCOVR), del NASA EPIC Team.
+> Los planetas, la Tierra (día, nubes, relieve y océanos) y el detalle del brillo de los anillos de Saturno (el Sol no tiene textura: lo dibuja el propio shader): Solar System Scope, con CC BY 4.0. Reducidas y en WebP; el color de algunos planetas, corregido con fotos del Hubble (NASA/ESA), y el del océano de la Tierra, con fotos de EPIC (DSCOVR), del NASA EPIC Team.
 
 Corrección:
 
 **Párrafo 3**
 
-> Los anillos de Saturno: su opacidad, de la ocultación de β Centauri de Cassini UVIS (Colwell et al., 2020), en el PDS Ring-Moon Systems Node (dominio público); su color y su brillo, de las medidas del Hubble de Salo y French (2010) y de Cuzzi, French y Dones (2002), con la ficha de los anillos de la NASA; los radios de sus divisiones, de la tabla del PDS.
+> Las luces de la Tierra de noche: el mapa Black Marble 2016 en gris, «NASA Earth Observatory images by Joshua Stevens, using Suomi NPP VIIRS data from Miguel Román, NASA GSFC» (material de la NASA). Reducido y en WebP, con el tono cálido de las luces de la textura de Solar System Scope que se usaba antes.
 
 Corrección:
 
 **Párrafo 4**
 
-> La Luna: CGI Moon Kit del Scientific Visualization Studio de la NASA, con datos de LRO/LROC (el color) y LRO/LOLA (el relieve); junto a los polos, el relieve de los modelos polares del LOLA (NASA/GSFC, en el PDS). Material de la NASA, con su crédito.
+> Los anillos de Saturno: su opacidad, de la ocultación de β Centauri de Cassini UVIS (Colwell et al., 2020), en el PDS Ring-Moon Systems Node (dominio público); su color y su brillo, de las medidas del Hubble de Salo y French (2010) y de Cuzzi, French y Dones (2002), con la ficha de los anillos de la NASA; los radios de sus divisiones, de la tabla del PDS.
 
 Corrección:
 
 **Párrafo 5**
 
-> El relieve de Mercurio: el modelo de elevación global de MESSENGER del USGS Astrogeology (Becker et al., 2016), de dominio público. El de Marte: el altímetro MOLA de la Mars Global Surveyor (NASA), en el PDS, de dominio público.
+> La Luna: CGI Moon Kit del Scientific Visualization Studio de la NASA, con datos de LRO/LROC (el color) y LRO/LOLA (el relieve); junto a los polos, el relieve de los modelos polares del LOLA (NASA/GSFC, en el PDS). Material de la NASA, con su crédito.
 
 Corrección:
 
 **Párrafo 6**
 
-> Las lunas: los mosaicos globales del USGS Astrogeology, de dominio público, con imágenes de Viking (Fobos), Voyager y Galileo (Ío, en color, y las demás de Júpiter), Cassini (las de Saturno; los de Tetis y Rea, del DLR, T. Roatsch et al.) y Voyager 2 (Tritón, del Lunar and Planetary Institute, P. Schenk). Mimas, con el mapa del DLR (Roatsch et al., 2018) en el PDS de la NASA. Reducidos y en WebP; los que son en gris, con un tinte. En Tritón, el norte que no vio Voyager 2 se rellena con un gris liso. Deimos, Proteo y las lunas de Urano, con un color esquemático (no hay un mapa completo con una licencia clara).
+> El relieve de Mercurio: el modelo de elevación global de MESSENGER del USGS Astrogeology (Becker et al., 2016), de dominio público. El de Marte: el altímetro MOLA de la Mars Global Surveyor (NASA), en el PDS, de dominio público.
 
 Corrección:
 
 **Párrafo 7**
+
+> Las lunas: los mosaicos globales del USGS Astrogeology, de dominio público, con imágenes de Viking (Fobos), Voyager y Galileo (Ío, en color, y las demás de Júpiter), Cassini (las de Saturno; los de Tetis y Rea, del DLR, T. Roatsch et al.) y Voyager 2 (Tritón, del Lunar and Planetary Institute, P. Schenk). Mimas, con el mapa del DLR (Roatsch et al., 2018) en el PDS de la NASA. Reducidos y en WebP; los que son en gris, con un tinte. En Tritón, el norte que no vio Voyager 2 se rellena con un gris liso. Deimos, Proteo y las lunas de Urano, con un color esquemático (no hay un mapa completo con una licencia clara).
+
+Corrección:
+
+**Párrafo 8**
 
 > Los lugares con nombre de las vistas y el recorrido de la Luna, y los rasgos con los que se comprueba la alineación de los mosaicos: el Gazetteer of Planetary Nomenclature (IAU y USGS), de dominio público.
 
@@ -1587,25 +1611,25 @@ Corrección:
 
 #### Estrellas, Vía Láctea y constelaciones
 
-**Párrafo 8**
+**Párrafo 9**
 
 > Las estrellas: HYG Database v4.1, de David Nash (Astronomy Nexus), con CC BY-SA 4.0. El catálogo derivado del explorador (las estrellas hasta la magnitud 6,5) mantiene esa licencia.
 
 Corrección:
 
-**Párrafo 9**
+**Párrafo 10**
 
 > La Vía Láctea: «The Milky Way panorama», de ESO/S. Brunier, con CC BY 4.0. Sin sus estrellas (las pone el catálogo), reducida, suavizada y en WebP.
 
 Corrección:
 
-**Párrafo 10**
+**Párrafo 11**
 
 > Las líneas de las constelaciones: las figuras de las cartas de las constelaciones de la IAU (IAU y Sky & Telescope: Roger Sinnott y Rick Fienberg; las figuras, de Alan MacRobert), con CC BY 4.0, tal como las prepara d3-celestial, de Olaf Frohn (BSD de 3 cláusulas, © 2015 Olaf Frohn; su texto y la atribución, junto al fichero).
 
 Corrección:
 
-**Párrafo 11**
+**Párrafo 12**
 
 > Los nombres de las constelaciones: los oficiales de la IAU, de astronomy-engine, y en español, los del Anuario del Real Observatorio de Madrid (© Instituto Geográfico Nacional).
 
@@ -1613,31 +1637,37 @@ Corrección:
 
 #### Datos
 
-**Párrafo 12**
+**Párrafo 13**
 
 > Los datos de los cuerpos: las fichas de la NASA (NSSDCA) y los parámetros de los satélites de la NASA/JPL; cada cifra, con su fuente en su ficha.
 
 Corrección:
 
-**Párrafo 13**
+**Párrafo 14**
 
 > Las órbitas de las lunas: elementos propios, ajustados a JPL Horizons, con los planos de Laplace del JPL y los polos de Urano y Neptuno de la IAU (WGCCRE, 2015). La unidad astronómica, la de la IAU (2012).
 
 Corrección:
 
-**Párrafo 14**
+**Párrafo 15**
 
 > Los lugares del cielo desde España: Fraga, Lleida, el Observatori Fabra y la Puerta del Sol, y las altitudes del Montsec y de la Puerta del Sol (MDT02), © Instituto Geográfico Nacional; el Roque de los Muchachos y el Teide, del Instituto de Astrofísica de Canarias; Calar Alto, del Observatorio de Calar Alto; el Montsec, del Parc Astronòmic Montsec, y la altitud del Fabra, del Servei Meteorològic de Catalunya.
 
 Corrección:
 
-**Párrafo 15**
+**Párrafo 16**
 
 > El brillo y el color de los planetas: las leyes de fase de Hilton (2005) y de astronomy-engine, colores medidos en fotos del Hubble (NASA/ESA) y la reconstrucción de Urano y Neptuno de Irwin et al. (2024).
 
 Corrección:
 
-**Párrafo 16**
+**Párrafo 17**
+
+> El Sol: el oscurecimiento del borde en cada color, con la ley de Hestroffer y Magnan (1998), y la rotación de las manchas, más lenta lejos del ecuador, con la medida por el SDO de Lößnitz et al. (2025). Las manchas, la granulación, la corona y el resplandor son ilustrativos.
+
+Corrección:
+
+**Párrafo 18**
 
 > Las comprobaciones: las posiciones, con JPL Horizons; las fases, las salidas, las puestas y los crepúsculos, con el USNO; y los eclipses, con los catálogos de cinco milenios de la NASA, de Fred Espenak y Jean Meeus (NASA/GSFC).
 
@@ -1645,7 +1675,7 @@ Corrección:
 
 #### Textos
 
-**Párrafo 17**
+**Párrafo 19**
 
 > Los resúmenes y las curiosidades de los cuerpos son textos propios, traducidos y resumidos de páginas de NASA Science: cada uno, con su página en su ficha.
 
@@ -1653,27 +1683,33 @@ Corrección:
 
 #### Las imágenes del propio explorador
 
-**Párrafo 18**
+**Párrafo 20**
 
 > Los pósters del explorador, las miniaturas y las imágenes de las fichas, y la imagen para compartir, son capturas del propio motor con estas texturas: mantienen sus licencias y sus atribuciones.
 
 Corrección:
 
+**Párrafo 21**
+
+> Algunas cosas de la escena son una elección de presentación y no un dato: los tamaños y las órbitas de la vista general, con sus sistemas de lunas, la luz de cada vista o el color del cielo. Están, una por una, en lo que es ilustrativo.
+
+Corrección:
+
 #### Programas y tipografías
 
-**Párrafo 19**
+**Párrafo 22**
 
 > astronomy-engine, de Don Cross, con MIT.
 
 Corrección:
 
-**Párrafo 20**
+**Párrafo 23**
 
 > three.js y Angular, con MIT.
 
 Corrección:
 
-**Párrafo 21**
+**Párrafo 24**
 
 > Las tipografías Newsreader (Production Type) y Public Sans (USWDS), con la SIL Open Font License 1.1.
 
@@ -1683,7 +1719,7 @@ Corrección:
 
 #### Creative Commons Atribución 4.0 (CC BY 4.0)
 
-**Párrafo 22**
+**Párrafo 25**
 
 > Las texturas de Solar System Scope, la Vía Láctea de ESO/S. Brunier y las figuras de las cartas de la IAU. Permite usar y cambiar, citando al autor y diciendo los cambios.
 
@@ -1691,7 +1727,7 @@ Corrección:
 
 #### Creative Commons Atribución-CompartirIgual 4.0 (CC BY-SA 4.0)
 
-**Párrafo 23**
+**Párrafo 26**
 
 > El catálogo de estrellas HYG y el fichero derivado del explorador, que se distribuye con la misma licencia y su aviso.
 
@@ -1699,7 +1735,7 @@ Corrección:
 
 #### BSD de 3 cláusulas
 
-**Párrafo 24**
+**Párrafo 27**
 
 > d3-celestial, de Olaf Frohn (las líneas de las constelaciones), con su aviso.
 
@@ -1707,7 +1743,7 @@ Corrección:
 
 #### MIT
 
-**Párrafo 25**
+**Párrafo 28**
 
 > astronomy-engine, three.js, Angular y el código propio del explorador.
 
@@ -1715,7 +1751,7 @@ Corrección:
 
 #### SIL Open Font License 1.1
 
-**Párrafo 26**
+**Párrafo 29**
 
 > Las tipografías Newsreader y Public Sans.
 
@@ -1723,7 +1759,7 @@ Corrección:
 
 #### Dominio público
 
-**Párrafo 27**
+**Párrafo 30**
 
 > Los mosaicos y el relieve del USGS, los datos del PDS de la NASA y las tablas del USNO.
 
@@ -1731,7 +1767,7 @@ Corrección:
 
 #### Material de la NASA
 
-**Párrafo 28**
+**Párrafo 31**
 
 > El CGI Moon Kit, las fichas de la NSSDCA, los datos del JPL y las predicciones de eclipses, que se pueden usar citando su origen y sin dar a entender que la NASA respalda el proyecto.
 
@@ -1739,7 +1775,7 @@ Corrección:
 
 #### Datos del IGN
 
-**Párrafo 29**
+**Párrafo 32**
 
 > Uso libre compatible con CC BY 4.0, con la cita «© Instituto Geográfico Nacional».
 
@@ -1747,13 +1783,13 @@ Corrección:
 
 #### El código del explorador
 
-**Párrafo 30**
+**Párrafo 33**
 
 > El código propio tiene licencia MIT (© 2026 Iván Chesa Lapena) y está en GitHub. Las texturas, los datos y los catálogos de terceros conservan sus propias licencias, las de esta página: en particular, el catálogo de estrellas, CC BY-SA 4.0.
 
 Corrección:
 
-**Párrafo 31**
+**Párrafo 34**
 
 > La NASA no respalda este proyecto ni participa en él, como tampoco ninguna de las demás instituciones citadas.
 
