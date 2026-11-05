@@ -105,9 +105,12 @@ try {
         await page.evaluate(() => window.__tlsViewer.engine.skipTransition());
       }
       await waitForIdle(page);
-      const vramMB = await page.evaluate(() =>
-        Math.round(window.__tlsViewer.engine.stats().vramMB),
-      );
+      // La VRAM y las llamadas de dibujo del último frame (desde la fase 9b, con todas sus pasadas:
+      // también las del bloom del Sol).
+      const { vramMB, llamadas } = await page.evaluate(() => {
+        const stats = window.__tlsViewer.engine.stats();
+        return { vramMB: Math.round(stats.vramMB), llamadas: stats.drawCalls };
+      });
       const playback = await playbackStats(page);
       await waitForIdle(page);
       // Lo que haya llegado en este paso (las respuestas se cuentan de forma asíncrona).
@@ -118,6 +121,7 @@ try {
         pesoKB: Math.round(step.reduce((sum, d) => sum + d.size, 0) / 1024),
         ficheros: step.map((d) => d.path.replace(/^\/textures\//, '')),
         vramMB,
+        llamadas,
         ...playback,
       };
     }
