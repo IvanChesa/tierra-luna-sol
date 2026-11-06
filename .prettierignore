@@ -17,3 +17,6 @@ assets-src/
 
 # Copia local de las skills para otros agentes (no es código del proyecto)
 .agents/
+
+# Worktrees de las sesiones en paralelo (Claude Desktop, fase 9c): otro árbol, no se formatea desde aquí
+.claude/worktrees/
