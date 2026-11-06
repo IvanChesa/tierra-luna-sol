@@ -8,10 +8,16 @@
   min-width: 0;
 }
 
-/* Centrada si cabe; si no, se desplaza en horizontal (el foco y la elección la mueven, body-chips.ts). */
+/*
+ * Centrada si cabe; si no, se desplaza en horizontal (el foco y la elección la mueven, body-chips.ts).
+ * Del ancho de sus fichas: el resto de la franja deja pasar los gestos al lienzo (fase 9c, 9c.1).
+ */
 .row {
   display: flex;
   justify-content: safe center;
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
   gap: var(--space-1);
   padding: var(--space-1);
   overflow-x: auto;

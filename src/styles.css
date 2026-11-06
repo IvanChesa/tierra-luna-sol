@@ -320,6 +320,46 @@ tls-root:has(tls-explorer-ui.is-clean) .site-header {
 }
 
 /*
+ * Los gestos, en todo el lienzo (fase 9c, 9c.1): lo que flota sobre el 3D sin ser un control ni un
+ * panel opaco (la presentación, el pie, las filas de fichas, la barra de tiempo, los grupos de botones
+ * y sus huecos) deja pasar el puntero al lienzo, y arrastrar encima de un texto gira la escena en vez
+ * de seleccionarlo. Solo lo capturan los controles y los paneles opacos.
+ */
+.explorer__lead,
+.explorer__foot,
+tls-explorer-ui
+  > :is(
+    tls-body-chips,
+    tls-time-controls,
+    tls-camera-controls,
+    tls-notices,
+    tls-earth-panel,
+    tls-moon-panel,
+    tls-sky-panel
+  ) {
+  pointer-events: none;
+}
+
+.explorer
+  :is(
+    a[href],
+    button,
+    input,
+    select,
+    textarea,
+    summary,
+    label,
+    [role='toolbar'],
+    [popover],
+    .notice,
+    tls-earth-panel > section,
+    tls-moon-panel > section,
+    tls-sky-panel > :is(section, details)
+  ) {
+  pointer-events: auto;
+}
+
+/*
  * Controles de la interfaz del explorador (los usan varios componentes diferidos): botones con
  * borde, desplegables e inputs nativos con el tema oscuro, y etiquetas pequeñas encima.
  */
