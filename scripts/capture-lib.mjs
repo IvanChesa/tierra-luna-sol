@@ -4,10 +4,11 @@
 // Navegador: el Chromium de Playwright. Por defecto con la GPU del equipo (ANGLE sobre D3D11 en
 // Windows); con `--swiftshader`, WebGL por software (lo que usará el CI en Linux).
 import { chromium } from '@playwright/test';
-import { startServer } from './serve-dist.mjs';
+import { CAPTURE_PORT, startServer } from './serve-dist.mjs';
 
-// No el 4321: es el puerto por defecto de Astro (el de ivanchesa.es puede estar en marcha).
-export const PORT = 4340;
+// `CAPTURE_PORT`, o 4340 (no el 4321: es el puerto por defecto de Astro, y el de ivanchesa.es puede
+// estar en marcha). Con dos sesiones a la vez, cada una con el suyo (`CAPTURE_PORT=4350 node …`).
+export const PORT = CAPTURE_PORT;
 export const BASE = `http://127.0.0.1:${PORT}`;
 
 export function launchArgs(argv = process.argv) {
