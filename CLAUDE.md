@@ -32,7 +32,7 @@ Los bloques y sus fases están en `docs/PLAN.md` §6 y las ramas, en `docs/promp
 - El cielo desde España (`/cielo`, fase 8): selector con el **Montsec por defecto**, el Observatori Fabra, el Roque de los Muchachos, el Teide, Calar Alto, Madrid y Fraga, más «usar mi ubicación»; cada lugar con su zona horaria (`docs/decisiones/CAMBIO-CIELO-ESPANA.md`).
 - El explorador arranca reproduciendo (D31) a la velocidad de su contexto (**D33**, fase 4b): **3 días/s en la vista general** y **1 hora/s con un cuerpo enfocado** o en las vistas Tierra y Luna; salvo con movimiento reducido o con `?fecha=`, que entran en pausa.
 - Constelaciones: solo con licencia CC0, CC BY, MIT, BSD o de dominio público; si no, se omiten y se apuntan.
-- Licencias aceptadas para imágenes y datos de terceros: CC0, CC BY, MIT, BSD, dominio público y la política de uso de imágenes del JPL (con el crédito «Courtesy NASA/JPL-Caltech» y sus excepciones; D43). Nada con cláusula no comercial (NC).
+- Licencias aceptadas para imágenes y datos de terceros: CC0, CC BY, MIT, BSD, dominio público, la política de uso de imágenes del JPL (con el crédito «Courtesy NASA/JPL-Caltech» y sus excepciones; D43) y las reglas de uso de los datos SPICE del NAIF (los DSK de las formas de Fobos y Deimos, citando su fuente y a sus autores; una versión modificada, como la malla reducida, lo dice en su atribución; decisión de Iván del 06-11). Nada con cláusula no comercial (NC).
 - Subdominio: `tierra-luna-sol.ivanchesa.com`, el de `site.config.ts` (D5 de la revisión del bloque D; antes, el provisional en ivanchesa.es).
 - Textos: con fuente y `reviewed: false`; Iván los revisa en la fase 9.
 - Pruebas en el móvil: se recogen cuando Iván pueda; no bloquean.
