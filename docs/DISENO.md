@@ -1,6 +1,7 @@
 # Dirección visual
 
 > Fase 0, tarea 0.9. **Decisión de Iván (23-10-2026): propuesta A, «Carta celeste»**, aplicada en `src/styles.css`. La B se conserva como alternativa descartada, por referencia.
+> Actualizado en la fase 9c (D47, la interfaz más limpia, 06-11): las reglas de la interfaz, los bocetos del visor y de la ficha, la navegación, el control sin borde y la medida de lectura.
 
 ## Línea común
 
@@ -24,9 +25,9 @@ Un atlas impreso de noche: tinta azul casi negra, texto color papel y un acento 
 |---|---|---|
 | `--color-bg` | `#0D1321` | Fondo de página y del visor |
 | `--color-surface` | `#151C2C` | Paneles (controles de tiempo, ficha resumida) |
-| `--color-surface-raised` | `#1D2638` | Elementos sobre paneles (filas activas, menús) |
+| `--color-surface-raised` | `#1D2638` | Elementos sobre paneles (filas activas, menús) y el fondo de los botones (fase 9c) |
 | `--color-line` | `#2C3648` | Separadores decorativos (no es borde de control) |
-| `--color-control` | `#68748C` | Bordes de inputs y botones (≥ 3:1) |
+| `--color-control` | `#68748C` | Bordes de los campos y los desplegables (≥ 3:1); desde la fase 9c, los botones no llevan borde |
 | `--color-text` | `#ECE5D3` | Texto principal (crema) |
 | `--color-text-muted` | `#ABA593` | Texto secundario, unidades y pies |
 | `--color-accent` | `#D9B76E` | Enlaces, cuerpo seleccionado y órbita resaltada |
@@ -111,69 +112,77 @@ La consola de un observatorio: grafito neutro, texto blanco roto y un único ace
 
 ---
 
+## Reglas de la interfaz (fase 9c, D47)
+
+- **El 3D manda.** Lo que flota sobre el lienzo sin ser un control ni un panel opaco no captura el puntero: los gestos llegan al 3D por todo el lienzo (también sobre el título).
+- **Un control, un peso.** El borde (`--color-control`), solo en los campos y los desplegables; los botones, con su fondo (`--color-surface-raised`) y sin borde. Pulsado o abierto, el texto en latón con un subrayado de 2 px, como la pestaña de la vista actual. **Reproducir es lo único destacado** (el círculo de latón).
+- **Paneles sin contorno:** el fondo (`--color-surface`) y la sombra los separan del 3D. Las pestañas, sobre un fondo traslúcido; las fichas de cuerpos, sin caja (la miniatura y el nombre, con una sombra del color del fondo).
+- **Un solo selector a la vista:** las fichas de cuerpos. El Índice es su versión en tabla y, abierto, las sustituye. Con un planeta con lunas elegido, la fila es la de su sistema y el título dice el cuerpo, con «‹ Sistema solar» para volver.
+- **Lo que se usa poco, en «Controles»:** la fecha y la hora, el sentido, la cámara (en el móvil), la vista general, la vista limpia, la calidad, la escala, el recorrido y los atajos.
+- **La primera vez, y no más:** las pistas de uso y el recorrido de la portada (unos 30 s, con «Saltar el recorrido»).
+- **Medida de lectura:** `--measure` = 30em, unos 68 caracteres de texto corrido (antes 68ch, que con el «0» de Public Sans daban unos 89).
+- **Nada por debajo de 11 px** y zonas de 44 × 44 px en el explorador táctil (24 × 24 en todas las páginas).
+
 ## Bocetos de disposición
+
+### Navegación
+
+- **Páginas de lectura** (fichas, índices, eclipses…): la cabecera con el nombre (a la portada), Planetas, Lunas, Sol, Eclipses, Sobre el proyecto y «Explorar en 3D» (en latón). En el móvil, en «Menú», con los créditos y lo legal aparte y abajo.
+- **El explorador:** la cabecera compacta en todos los tamaños (el nombre y «Menú», con lo mismo dentro). Sus vistas, en las pestañas: Sistema solar, Tierra, Luna y Cielo.
 
 ### Visor · escritorio (≥ 1024 px)
 
-Disposición inmersiva de D30 (fase 3c): el lienzo a sangre bajo la cabecera y la interfaz flotando encima. Los paneles que tapan el lienzo (`data-chrome`) apartan el encuadre, que se mide en cada maquetación (`features/viewer/insets.ts`).
+Disposición inmersiva (D30, fase 3c; fase 9c): el lienzo a sangre bajo la cabecera y la interfaz flotando encima. Los paneles que tapan el lienzo (`data-chrome`) apartan el encuadre, que se mide en cada maquetación (`features/viewer/insets.ts`).
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────┐
-│ Tierra Luna Sol       Planetas  Lunas  Sol  Cielo  Eclipses  Sobre el proyecto │ ← cabecera fina (menú del 03-11)
+│ Tierra Luna Sol                                                        ≡ Menú  │ ← cabecera compacta
 ├────────────────────────────────────────────────────────────────────────────────┤
-│ Sistema solar  Tierra  Luna                              ┌───────────────────┐ │ ← vistas y texto de presentación
-│ Título (H1, Newsreader)                                  │ SATURNO         × │ │ ← tarjeta flotante (al elegir
-│ Una frase; se pliega al usar el visor                    │ Resumen en 2–3    │ │     un cuerpo); se desplaza
-│ ┌──────────────┐                                         │ frases            │ │
-│ │ ÍNDICE     × │                                         │ Al Sol    0,00 UA │ │ ← panel «Índice» (cerrado al
-│ │ ○ Sol        │        canvas 3D a sangre               │ Datos y fuentes   │ │     entrar; botón «Índice» o I)
-│ │ ● Saturno    │   (el encuadre se aparta de             │ Ficha completa  → │ │
-│ │   ○ Titán    │    cada panel: nada tapa el             └───────────────────┘ │
-│ │ …            │    cuerpo elegido)                 [+]                        │ ← cámara, en la parte visible
-│ └──────────────┘                                    [−]                        │
-│                                                     [⌂]                        │
-│                                                     [▢]                        │
-│                   (·) Titán  (·) Rea  (·) Jápeto  …                            │ ← lunas del planeta elegido
-│ [≡ Índice]   (☉) Sol  (·) Mercurio  …  (♄) Saturno  …  (·) Neptuno             │ ← fichas con miniatura
-│ (▶)  Fecha                                            Velocidad                │ ← barra de tiempo: reproducir,
-│      24 oct 2026, 02:00 [▦]  ‹ 2026 › ───●───────  3 h/s ▾ [⇆]  [Controles +]  │     fecha y calendario, línea
-│      Hora local, UTC+1              hoy                                        │     del año, velocidad y más
-│ Arrastra para girar · …     1900–2100 · NASA/JPL · astronomy-engine · Créditos │ ← pie, en letra pequeña
+│ Sistema solar  Tierra  Luna  Cielo                     ┌───────────────────┐   │ ← pestañas (vistas 3D)
+│ ‹ Sistema solar                                        │ Saturno         × │   │ ← con un cuerpo, «‹ Sistema
+│ Saturno (H1)                                           │ Planeta           │   │     solar» y su nombre
+│ Posiciones reales, calculadas en tu navegador.         │ Resumen…          │   │ ← autoría (primera pantalla;
+│ Un proyecto de … · Cómo se calcula                     │ Distancia, Datos  │   │     se pliega)
+│                                                        │ Ficha completa  → │   │ ← ficha, sin contorno
+│                    canvas 3D a sangre                  └───────────────────┘   │
+│        (los gestos, en todo él; el encuadre se aparta de los paneles)    +     │ ← acercar y alejar, sin marco
+│                                                                          −     │
+│ [≡ Índice]        (♄) Saturno (·) Mimas (·) Encélado … (·) Jápeto              │ ← la fila del sistema elegido
+│ (▶)  Fecha                   2026 ───────●──────────   Velocidad  [⚙ Controles] │ ← barra: reproducir, fecha,
+│      24 oct 2026, 02:00                    hoy         3 días/s ▾              │     año, velocidad y más
+│ Arrastra para girar · usa la rueda o pellizca para acercarte · elige un cuerpo │ ← pistas, solo la primera vez
 └────────────────────────────────────────────────────────────────────────────────┘
 ```
 Las cifras y las fechas del boceto son marcadores.
 
-- **El índice y las fichas son HTML:** funcionan con teclado y sin WebGL. `Esc` cierra lo que tiene el foco: «Controles +», el índice o la ficha.
-- **La franja de abajo** (fichas, barra y pie) es un velo del color del fondo, sin desenfoque. Los controles de encima son opacos.
-- **La barra no cambia de tamaño al reproducir:** las cifras usan `tabular-nums`, la fecha tiene un ancho mínimo y la lectura, siempre las mismas líneas, para que la fecha no «baile».
-- **Al entrar, el sistema se mueve** a 3 horas por segundo (D31): reproducir y pausar es lo primero y más visible de la barra.
+- **El índice y las fichas son HTML:** funcionan con teclado y sin WebGL. `Esc` cierra lo que tiene el foco: «Controles», el índice o la ficha.
+- **La franja de abajo** es solo el fondo de la barra de tiempo, con un fundido corto (0,75 rem) encima; las fichas flotan sobre el 3D y cuentan en el encuadre.
+- **La barra no cambia de tamaño al reproducir:** las cifras usan `tabular-nums` y la fecha tiene el ancho de la más larga («30 sept 2026, 23:59»).
+- **Al entrar, el sistema se mueve** a la velocidad de su contexto (D33): reproducir y pausar es lo primero y más visible de la barra. La primera vez, el recorrido de la portada.
+- **En las vistas Tierra y Luna**, sin fila de fichas ni Índice: «‹ Sistema solar» en el título y su panel en la columna izquierda. **En el Cielo**, sin Índice: su tabla es la de «Esta noche».
 
 ### Visor · móvil y tableta (< 1024 px)
 
 ```
 ┌────────────────────────────────┐
-│ Tierra Luna Sol            ☰   │
+│ Tierra Luna Sol         ≡ Menú │
 ├────────────────────────────────┤
-│ Sistema solar  Tierra  Luna    │ ← vistas
-│ Título (H1, compacto)          │ ← se pliega al tocar
-│ Arrastra · pellizca            │ ← solo en táctil
+│ Sistema solar Tierra Luna Cielo│ ← pestañas
+│ El sistema solar               │ ← se pliega a una línea al
+│ (entradilla y autoría, en la   │     primer gesto o a los 8 s
+│  primera pantalla)             │
 │                                │
-│          canvas 3D             │
-│    (el encuadre, entre el      │
-│     texto y la franja)     [+] │ ← cámara: una columna a la
-│                            [−] │     derecha que cuenta en
-│                            [⌂] │     el encuadre
-│                            [▢] │
-│ (·) Titán  (·) Rea  …          │ ← lunas del planeta elegido
-│ [≡ Índice] (☉)(·)(·)(●)(·) →   │ ← fichas: fila desplazable
-│ (▶) 24 oct 2026, 02:00     [▦] │ ← barra de tiempo en dos filas;
-│     Hora local, UTC+1          │     la lectura, siempre de tres
-│     3 horas por segundo        │     líneas (no cambia de alto)
-│ ‹ 2026 › ────●─────        [⫶] │ ← «Controles»: su icono, y con
-│          hoy                   │     su nombre desde 480 px
+│          canvas 3D             │ ← sin columna de cámara: acercar
+│   (los gestos, en todo él)     │     y alejar, en «Controles»
+│                                │
+│ [≡ Índice] (☉)(·)(·)(●)(·) →   │ ← fichas: fila desplazable, con
+│ (▶) 24 oct 2026, 02:00 ──●─ [⚙]│     fundido en el borde; barra
+│     Hora local · 3 días/s      │     de tiempo en una fila
 └────────────────────────────────┘
 ```
-- **El índice, la ficha y «Controles +»** suben como hojas inferiores, con su título y su botón de cerrar. Lo que tapan sale del orden del foco.
+- **La ficha** es una hoja de dos alturas encima de la barra (que sigue a la vista: reproducir y pausar, siempre a mano): en reposo, como mucho el 45 % de la pantalla, con el nombre, el resumen, «Ficha completa» y «Ver los datos»; subida, los datos y sus fuentes.
+- **El índice y «Controles»** suben como hojas, con su título y su botón de cerrar. Lo que tapan sale del orden del foco.
+- **Tierra y Luna:** su panel en una fila (las vistas, desplazables, y «Más» para el resto) y la barra plegada a reproducir, la fecha y «Controles». **El Cielo:** el lugar, la hora y una línea de resumen; «Esta noche», a demanda, con la tabla en dos líneas por fila.
 - **En los teléfonos bajos** (en horizontal o con el zoom al 200 %), la página se desplaza: al llegar se ven el lienzo y, justo debajo, la barra con su pausa.
 
 ### Ficha completa (`/planetas/marte`) · sin 3D
@@ -190,13 +199,15 @@ Las cifras y las fechas del boceto son marcadores.
 │ └──────────────────────────────────────────┘ │
 │ Datos                                        │
 │ ┌─────────────────────────┬────────┬───────┐ │
-│ │ Radio medio             │  0 000 │ km  ¹ │ │ ← cifras tabulares, a la derecha,
-│ │ Duración del día        │   00,0 │ h   ² │ │   unidad en color secundario,
-│ │ …                       │        │       │ │   nota con la fuente
+│ │ Radio medio             │  0 000 │ km  ¹ │ │ ← lo esencial primero
+│ │ Duración del día        │   00,0 │ h   ² │ │
+│ │ Datos técnicos                           │ │ ← después, lo técnico
+│ │ Densidad media          │  0 000 │ kg/m³ │ │
 │ └─────────────────────────┴────────┴───────┘ │
 │ Posición hoy: a X UA del Sol (calculada aquí)│
 │ Curiosidades (3), cada una con su fuente     │
 │ Fuentes: ¹ NASA Planetary Fact Sheet …       │
-└──────────────────────────────────────────────┘
+│ ‹ Luna                              Fobos ›  │ ← la anterior y la siguiente,
+└──────────────────────────────────────────────┘     en el orden del atlas
 ```
-Ancho de lectura máximo: `--measure` (68 caracteres).
+Ancho de lectura máximo: `--measure` (30em, unos 68 caracteres).
