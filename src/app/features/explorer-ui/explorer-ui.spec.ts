@@ -283,13 +283,41 @@ describe('ExplorerUi: panel «Índice» y texto de presentación (fase 3c)', () 
     expect(focus.body()).toBeNull();
   });
 
-  it('las vistas Tierra y Luna van sin fichas ni Índice; con un cuerpo, sin título de cuerpo', async () => {
-    const { fixture, host } = await render();
+  it('la portada puede leer el título antes de que la interfaz tenga su vista (sin NG0950)', async () => {
+    window.history.replaceState({}, '', '/?fecha=2030-01-01T00:00Z&cuerpo=marte');
+    TestBed.configureTestingModule({
+      imports: [ExplorerUi],
+      providers: [provideRouter([{ path: '**', children: [] }])],
+    });
+    TestBed.overrideComponent(ExplorerUi, {
+      remove: { imports: [ViewerCanvas] },
+      add: { imports: [FakeCanvas] },
+    });
+    const fixture = TestBed.createComponent(ExplorerUi);
+    const focus = TestBed.inject(ExplorerFocus);
+    // Creada, sin la entrada `view` todavía: el título sin cuerpo, sin error.
+    expect(focus.body()).toBeNull();
+    fixture.componentRef.setInput('view', 'system');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(focus.body()?.id).toBe('marte');
+  });
+
+  it('las vistas Tierra y Luna van sin Índice; con un cuerpo, sin título de cuerpo', async () => {
+    const { fixture, host, sim } = await render();
     fixture.componentRef.setInput('view', 'earth');
     fixture.detectChanges();
     await fixture.whenStable();
     expect(host.classList.contains('is-detail')).toBe(true);
+    expect(host.classList.contains('no-index')).toBe(true);
     expect(TestBed.inject(ExplorerFocus).body()).toBeNull();
+    // En el PC, la fila de lunas encima de la de los planetas también aquí: la Luna, con la Tierra.
+    sim.reflectSelection('tierra');
+    fixture.detectChanges();
+    expect(host.classList.contains('has-moons')).toBe(true);
+    sim.reflectSelection(null);
+    fixture.detectChanges();
+    expect(host.classList.contains('has-moons')).toBe(false);
   });
 
   it('la ficha del móvil, de dos alturas: el tirador la sube, la baja y, abajo, la cierra', async () => {

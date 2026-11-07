@@ -40,6 +40,42 @@ test.describe('El recorrido de la portada (fase 9c)', () => {
     await expect(skip(page)).toBeHidden();
   });
 
+  test('al pararlo con Intro, el foco no se pierde: va al lienzo (revisión, hallazgo 2)', async ({
+    page,
+  }) => {
+    await arrive(page, '/');
+    await expect(skip(page)).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(skip(page)).toBeHidden();
+    await expect(page.locator('canvas[tabindex="0"]')).toBeFocused();
+  });
+
+  test('con una red lenta, no arranca si ya se ha elegido un cuerpo antes del 3D (hallazgo 1)', async ({
+    page,
+  }) => {
+    test.setTimeout(150_000);
+    // El código de three llega 8 s tarde: las fichas y la barra ya funcionan.
+    await page.route('**/*.js', async (route) => {
+      const response = await route.fetch();
+      const body = await response.text();
+      if (body.includes('THREE.WebGLRenderer')) await new Promise((r) => setTimeout(r, 8000));
+      await route.fulfill({ response, body });
+    });
+    await page.goto('/');
+    await page
+      .getByRole('toolbar', { name: 'Sol y planetas' })
+      .getByRole('button', { name: 'Júpiter', exact: true })
+      .click();
+    await expect(title(page)).toHaveText('Júpiter');
+    await expect(page.locator('tls-viewer-canvas')).not.toHaveClass(/is-ready/);
+    await expect(page.locator('tls-viewer-canvas')).toHaveClass(/is-ready/, { timeout: 90_000 });
+    await page.waitForTimeout(5000);
+    await expect(skip(page)).toBeHidden();
+    await expect(title(page)).toHaveText('Júpiter');
+    // No se ha visto: la próxima vez que se llegue a `/` sin tocar nada, arrancará.
+    expect(await page.evaluate(() => localStorage.getItem('tls.recorrido'))).toBeNull();
+  });
+
   test('Esc lo para sin hacer nada más; un clic en el lienzo y la rueda, también', async ({
     browser,
     baseURL,

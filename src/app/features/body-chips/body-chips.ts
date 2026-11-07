@@ -153,6 +153,23 @@ export class BodyChips {
     if (this.focused() !== id) this.focused.set(id);
   }
 
+  /**
+   * Lleva el foco a la ficha de ese cuerpo, que pasa a ser la parada de su fila (al volver a la vista
+   * general con «‹ Sistema solar»). `false` si no está o no se ve (con el Índice abierto).
+   */
+  focusBody(id: BodyId): boolean {
+    const chip = this.chip(id);
+    const shown =
+      chip !== null &&
+      (typeof chip.checkVisibility !== 'function' ||
+        chip.checkVisibility({ checkVisibilityCSS: true, visibilityProperty: true }));
+    if (!chip || !shown) return false;
+    this.setStop(id);
+    chip.focus();
+    this.reveal(chip);
+    return true;
+  }
+
   /** Flechas, Inicio y Fin: el foco a otra ficha de la misma fila (dando la vuelta en los extremos). */
   protected onKeydown(event: KeyboardEvent): void {
     if (!ROW_KEYS.has(event.key) || event.altKey || event.ctrlKey || event.metaKey) return;

@@ -183,6 +183,13 @@ kbd {
   font-size: 0.75rem;
 }
 
+/* Con el dedo no hay `Esc`. */
+@media (pointer: coarse) {
+  kbd {
+    display: none;
+  }
+}
+
 /*
  * Paneles de las vistas Tierra y Luna (`.view-panel`, fases 5 y 6; su sitio, en earth-panel.css y
  * moon-panel.css): el índice usa su misma área.

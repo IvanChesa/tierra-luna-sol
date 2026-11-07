@@ -166,6 +166,36 @@ test.describe('Fichas de cuerpos', () => {
     await expect(page.locator('#card-title')).toHaveText('Mimas');
   });
 
+  test('«‹ Sistema solar» vuelve a la vista general con el foco en la ficha del cuerpo', async ({
+    page,
+  }) => {
+    await openExplorer(page, '/?captura=1&cuerpo=titan');
+    await expect(page.locator('h1')).toHaveText('Titán');
+    await page.getByRole('button', { name: 'Volver al sistema solar' }).focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('h1')).toHaveText('El sistema solar');
+    // El botón se ha quitado: el foco, en Saturno (el planeta de Titán), en la fila de los planetas.
+    await expect(chip(page, 'saturno')).toBeFocused();
+    await expect(chip(page, 'saturno')).toHaveAttribute('tabindex', '0');
+  });
+
+  test('el título del documento sigue al cuerpo elegido (fase 9c; revisión, hallazgo 3)', async ({
+    page,
+  }) => {
+    for (const path of ['/', '/?fecha=2030-06-01T12:00Z']) {
+      await openExplorer(page, path);
+      await expect(page, path).toHaveTitle('Tierra Luna Sol');
+      await planets(page).getByRole('button', { name: 'Saturno', exact: true }).click();
+      await expect(page.locator('h1'), path).toHaveText('Saturno');
+      await expect(page, path).toHaveTitle('Saturno · Tierra Luna Sol');
+      // Sigue igual después de que la URL recoja el cuerpo (y de la estrategia de títulos).
+      await page.waitForTimeout(1000);
+      await expect(page, path).toHaveTitle('Saturno · Tierra Luna Sol');
+      await page.getByRole('button', { name: 'Volver al sistema solar' }).click();
+      await expect(page, path).toHaveTitle('Tierra Luna Sol');
+    }
+  });
+
   test('la distancia de cada ficha se anuncia como descripción', async ({ page }) => {
     await openExplorer(page, '/?captura=1');
     await expect(chip(page, 'saturno')).toHaveAccessibleName('Saturno');

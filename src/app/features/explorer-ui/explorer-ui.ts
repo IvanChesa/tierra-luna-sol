@@ -3,6 +3,7 @@ import {
   DestroyRef,
   ElementRef,
   Injector,
+  OnInit,
   afterNextRender,
   computed,
   effect,
@@ -15,7 +16,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { Title } from '@angular/platform-browser';
-import { NavigationEnd, Router } from '@angular/router';
+import { NavigationEnd, Router, TitleStrategy } from '@angular/router';
 import { formatPageTitle } from '../../core/site-title.strategy';
 import { GUIDED_VIEWS } from '../../data/tours';
 import type { ExplorerView, ViewInsets } from '../../scene';
@@ -150,7 +151,7 @@ function offsetWithin(element: HTMLElement, root: HTMLElement): { left: number; 
     '(focusin)': 'rememberFocus($event)',
   },
 })
-export class ExplorerUi {
+export class ExplorerUi implements OnInit {
   readonly view = input.required<ExplorerView>();
   /** El 3D ya está pintado (el layout quita el póster). */
   readonly ready = output<void>();
@@ -226,18 +227,25 @@ export class ExplorerUi {
   );
   private readonly restoreButton = viewChild<ElementRef<HTMLElement>>('restore');
   private readonly tourSkip = viewChild<ElementRef<HTMLElement>>('tourSkip');
+  private readonly chips = viewChild.required(BodyChips);
   /** El recorrido de la portada, en marcha (fase 9c, 9c.6): «Saltar el recorrido» a la vista. */
   protected readonly touring = signal(false);
   /**
    * Con movimiento reducido, el recorrido no arranca solo: la primera vez, en su lugar, «Ver el
-   * recorrido» (hasta empezar a usar el explorador; siempre, en «Controles»).
+   * recorrido» (en la portada, al llegar; siempre, en «Controles»).
    */
-  protected readonly offersTour = signal(false);
+  private readonly offersTour = linkedSignal({ source: this.view, computation: () => false });
+  /** «Ver el recorrido», hasta empezar a usar el explorador o elegir un cuerpo. */
+  protected readonly showsTourOffer = computed(
+    () => this.offersTour() && !this.acted() && this.sim.selectedBodyId() === null,
+  );
   private tour: { stop(): void } | null = null;
+  /** El código del recorrido, pedido y aún sin llegar. */
+  private tourLoading = false;
+  /** La interfaz sigue viva (lo que llega después, como el código del recorrido, lo mira). */
+  private alive = true;
   /** El almacenamiento del navegador (las preferencias de la primera vez). */
   private readonly storage = safeStorage(this.host.nativeElement.ownerDocument.defaultView);
-  /** El explorador se abrió en la portada, sin parámetros: el único sitio donde arranca el recorrido. */
-  private readonly plainHome: boolean;
   /**
    * Un fundido por cada paso entre el espacio y el cielo (la pista del `@for`): cada uno crea el
    * velo de nuevo y su animación CSS lo desvanece. Con movimiento reducido, ninguno (un corte).
@@ -253,22 +261,28 @@ export class ExplorerUi {
   });
   /** El último elemento con el foco que no es de quita y pon (la ficha, «Mostrar la interfaz»). */
   private lastFocus: HTMLElement | null = null;
+  private readonly focus = inject(ExplorerFocus);
+  /** Lo que dice el título de la portada: el cuerpo elegido en la vista del sistema solar. */
+  private readonly focusTitle = computed<FocusTitle | null>(() => {
+    const id = this.sim.selectedBodyId();
+    if (this.view() !== 'system' || id === null) return null;
+    return { id, name: treeNode(id).name, kind: bodyKindLabel(id) };
+  });
 
   constructor() {
     this.explorer.connectView(this.view);
     afterNextRender(() => this.trackInsets());
 
+    this.destroyRef.onDestroy(() => {
+      this.alive = false;
+      this.session.setTourHandler(null);
+      this.tour?.stop();
+    });
     this.followFocus();
 
     const storage = this.storage;
     this.showsHints = hasSeen(storage, 'tls.pistas') !== true;
-    const location = this.host.nativeElement.ownerDocument.defaultView?.location;
-    this.plainHome = location?.pathname === '/' && !location.search;
     this.session.setTourHandler(() => this.startTour());
-    this.destroyRef.onDestroy(() => {
-      this.session.setTourHandler(null);
-      this.tour?.stop();
-    });
     if (this.showsHints && !this.session.capture) {
       effect(() => {
         if (this.interacted()) untracked(() => markSeen(storage, 'tls.pistas'));
@@ -310,6 +324,14 @@ export class ExplorerUi {
     });
   }
 
+  /**
+   * El título de la portada lee el cuerpo de aquí: se conecta cuando la vista (`view`, una entrada
+   * obligatoria) ya tiene valor; antes, leerla daría el error NG0950.
+   */
+  ngOnInit(): void {
+    this.focus.connect(this.focusTitle);
+  }
+
   protected rememberFocus(event: FocusEvent): void {
     const target = event.target;
     if (target instanceof HTMLElement && !target.closest(TRANSIENT)) this.lastFocus = target;
@@ -327,64 +349,94 @@ export class ExplorerUi {
    * La primera vez que alguien entra en `/` sin parámetros, con el 3D ya pintado: el recorrido. No
    * arranca en el modo de captura, con un enlace profundo (`?cuerpo=`, `?fecha=`, `/explorar/…`),
    * si ya se vio, ni sin almacenamiento (no se puede recordar: no insiste). Con movimiento reducido,
-   * se ofrece «Ver el recorrido».
+   * se ofrece «Ver el recorrido» (y ofrecerlo cuenta como visto: después, en «Controles»).
    */
   private maybeStartTour(): void {
-    if (!this.plainHome || this.session.capture || this.view() !== 'system') return;
-    if (hasSeen(this.storage, 'tls.recorrido') !== false) return;
-    if (this.session.reducedMotion) this.offersTour.set(true);
-    else this.startTour();
+    if (!this.tourStillFits() || hasSeen(this.storage, 'tls.recorrido') !== false) return;
+    if (this.session.reducedMotion) {
+      this.offersTour.set(true);
+      markSeen(this.storage, 'tls.recorrido');
+    } else this.startTour(true);
+  }
+
+  /**
+   * El recorrido que arranca solo, ahora: en la portada sin parámetros (mirados ahora, no al crear la
+   * interfaz) y sin que nadie haya empezado a usarla. Las fichas, la barra y el Índice funcionan antes
+   * que el 3D: con una red lenta, quien llega por primera vez puede haber elegido o pausado ya.
+   */
+  private tourStillFits(): boolean {
+    const location = this.host.nativeElement.ownerDocument.defaultView?.location;
+    return (
+      location?.pathname === '/' &&
+      !location.search &&
+      !this.session.capture &&
+      this.view() === 'system' &&
+      !this.acted() &&
+      this.sim.selectedBodyId() === null
+    );
   }
 
   /**
    * Pone en marcha el recorrido (su código, en un chunk aparte que se pide ahora). Lo para «Saltar el
-   * recorrido», `Esc` o cualquier toque, arrastre, rueda o tecla, y la escena se queda donde está.
+   * recorrido», `Esc` o cualquier toque, arrastre, rueda o tecla, y la escena se queda donde está. Si
+   * arranca solo (`auto`), lo que se mira antes se mira otra vez al llegar su código; si el código no
+   * llega (sin conexión), no se da por visto.
    */
-  protected startTour(): void {
-    if (this.tour || this.touring()) return;
+  protected startTour(auto = false): void {
+    if (this.tour || this.touring() || this.tourLoading) return;
     this.offersTour.set(false);
-    markSeen(this.storage, 'tls.recorrido');
-    void import('../tour/home-tour').then(({ homeTourSteps, runTour }) => {
-      const spain = GUIDED_VIEWS.find((view) => view.id === 'espana');
-      if (!spain || this.tour) return;
-      const doc = this.host.nativeElement.ownerDocument;
-      const interrupt = (event: Event) => {
-        if (event instanceof KeyboardEvent) {
-          if (PASSIVE_KEYS.has(event.key)) return;
-          // `Esc` solo para el recorrido: no salta el viaje en curso ni cierra nada.
-          if (event.key === 'Escape') event.preventDefault();
-        }
-        this.tour?.stop();
-      };
-      const events = ['pointerdown', 'wheel', 'keydown'] as const;
-      const listen = (on: boolean) => {
-        for (const type of events) {
-          if (on) doc.addEventListener(type, interrupt, { capture: true });
-          else doc.removeEventListener(type, interrupt, { capture: true });
-        }
-      };
-      this.tour = runTour(
-        {
-          select: (id) => this.session.select(id),
-          closePanel: () => this.session.closePanel(),
-          goTo: (view) => this.goTo(view, true),
-          showGuidedView: (view) => this.session.showGuidedView(view),
-          play: () => this.sim.setPlaying(true),
-          announce: (text) => this.session.announce(text),
-        },
-        homeTourSteps(spain),
-        (completed) => {
-          listen(false);
-          this.tour = null;
-          this.touring.set(false);
-          if (!completed) this.session.announce('Recorrido parado.');
-        },
-      );
-      listen(true);
-      if (this.view() !== 'system') this.goTo('system', true);
-      this.touring.set(true);
-      afterNextRender(() => this.tourSkip()?.nativeElement.focus(), { injector: this.injector });
-    });
+    this.tourLoading = true;
+    import('../tour/home-tour')
+      .then(({ homeTourSteps, runTour }) => {
+        this.tourLoading = false;
+        const spain = GUIDED_VIEWS.find((view) => view.id === 'espana');
+        if (!this.alive || !spain || this.tour || (auto && !this.tourStillFits())) return;
+        markSeen(this.storage, 'tls.recorrido');
+        const doc = this.host.nativeElement.ownerDocument;
+        // Al acabar, el foco vuelve a donde estaba (o al lienzo): «Saltar el recorrido» se quita.
+        const before = doc.activeElement !== doc.body ? doc.activeElement : null;
+        const interrupt = (event: Event) => {
+          if (event instanceof KeyboardEvent) {
+            if (PASSIVE_KEYS.has(event.key)) return;
+            // `Esc` solo para el recorrido: no salta el viaje en curso ni cierra nada.
+            if (event.key === 'Escape') event.preventDefault();
+          }
+          this.tour?.stop();
+        };
+        const events = ['pointerdown', 'wheel', 'keydown'] as const;
+        const listen = (on: boolean) => {
+          for (const type of events) {
+            if (on) doc.addEventListener(type, interrupt, { capture: true });
+            else doc.removeEventListener(type, interrupt, { capture: true });
+          }
+        };
+        this.tour = runTour(
+          {
+            select: (id) => this.session.select(id),
+            closePanel: () => this.session.closePanel(),
+            goTo: (view) => this.goTo(view, true),
+            showGuidedView: (view) => this.session.showGuidedView(view),
+            play: () => this.sim.setPlaying(true),
+            announce: (text) => this.session.announce(text),
+          },
+          homeTourSteps(spain),
+          (completed) => {
+            listen(false);
+            this.tour = null;
+            if (!this.alive) return;
+            this.touring.set(false);
+            if (!completed) this.session.announce('Recorrido parado.');
+            afterNextRender(() => this.restoreFocus(before), { injector: this.injector });
+          },
+        );
+        listen(true);
+        if (this.view() !== 'system') this.goTo('system', true);
+        this.touring.set(true);
+        afterNextRender(() => this.tourSkip()?.nativeElement.focus(), { injector: this.injector });
+      })
+      .catch(() => {
+        this.tourLoading = false;
+      });
   }
 
   protected stopTour(): void {
@@ -398,36 +450,81 @@ export class ExplorerUi {
   /**
    * El título sigue al cuerpo elegido (fase 9c, decisión 2 de Iván): en la vista del sistema solar, la
    * portada dice «Saturno», con «‹ Sistema solar» para volver (`ExplorerFocus`), y el título del
-   * documento también. El documento es un sistema externo: el título se pone al elegir y otra vez al
-   * acabar cada navegación (la estrategia de títulos lo reescribe cuando la URL recoge el cuerpo).
+   * documento también.
    */
   private followFocus(): void {
-    const focus = inject(ExplorerFocus);
+    const focus = this.focus;
     const title = inject(Title);
-    const current = computed<FocusTitle | null>(() => {
-      const id = this.sim.selectedBodyId();
-      if (this.view() !== 'system' || id === null) return null;
-      return { id, name: treeNode(id).name, kind: bodyKindLabel(id) };
-    });
-    const apply = (body: FocusTitle | null) => {
-      if (body) title.setTitle(formatPageTitle(body.name));
+    const strategy = inject(TitleStrategy);
+    const current = this.focusTitle;
+    // El título del documento (un sistema externo): el del cuerpo o, sin él, el de la página.
+    const apply = () => {
+      const body = untracked(current);
+      const page = body ? body.name : strategy.buildTitle(this.router.routerState.snapshot);
+      title.setTitle(formatPageTitle(page));
     };
     effect(() => {
-      const body = current();
-      untracked(() => {
-        focus.body.set(body);
-        apply(body);
-      });
+      current();
+      untracked(apply);
     });
-    focus.setBackHandler(() => this.session.overview());
+    // La estrategia de títulos lo reescribe al acabar cada navegación (justo después de emitir
+    // `NavigationEnd`; al elegir, la URL recoge el cuerpo): se pone otra vez después, en una microtarea.
     const navigation = this.router.events.subscribe((event) => {
-      if (event instanceof NavigationEnd) apply(untracked(current));
+      if (event instanceof NavigationEnd) {
+        queueMicrotask(() => {
+          if (this.alive) apply();
+        });
+      }
     });
+    focus.setBackHandler(() => this.backToOverview());
     this.destroyRef.onDestroy(() => {
       navigation.unsubscribe();
-      focus.body.set(null);
+      focus.connect(null);
       focus.setBackHandler(null);
     });
+  }
+
+  /**
+   * «‹ Sistema solar» (en el título de la portada): la vista general. El botón desaparece con el cuerpo:
+   * el foco pasa a la ficha del cuerpo (o de su planeta) en la fila de los planetas o, si no se ve, al
+   * lienzo (WCAG 2.4.3).
+   */
+  private backToOverview(): void {
+    const selected = this.sim.selectedBodyId();
+    const chip = selected ? (systemOf(selected) ?? selected) : null;
+    this.session.overview();
+    afterNextRender(
+      () => {
+        if (this.hasFocus()) return;
+        if (chip && this.chips().focusBody(chip)) return;
+        this.canvas()?.focus();
+      },
+      { injector: this.injector },
+    );
+  }
+
+  /**
+   * Al acabar el recorrido, si el foco se ha perdido (estaba en «Saltar el recorrido»): a donde estaba
+   * antes de empezar o al lienzo.
+   */
+  private restoreFocus(before: Element | null): void {
+    if (this.hasFocus()) return;
+    [before, this.canvas()].find(isShown)?.focus();
+  }
+
+  /** ¿Hay un elemento con el foco, a la vista? (`<body>` no cuenta: el foco se ha perdido.) */
+  private hasFocus(): boolean {
+    const doc = this.host.nativeElement.ownerDocument;
+    const active = doc.activeElement;
+    return active !== null && active !== doc.body && isShown(active);
+  }
+
+  /** El lienzo, si se puede enfocar (con el 3D pintado). */
+  private canvas(): HTMLElement | null {
+    return (
+      this.host.nativeElement.parentElement?.querySelector<HTMLElement>('canvas[tabindex="0"]') ??
+      null
+    );
   }
 
   // --- Índice (fase 3c, tarea 4b) ----------------------------------------------------------------

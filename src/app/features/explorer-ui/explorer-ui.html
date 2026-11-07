@@ -100,7 +100,7 @@
     Saltar el recorrido
     <kbd>Esc</kbd>
   </button>
-} @else if (offersTour() && !interacted()) {
+} @else if (showsTourOffer()) {
   <button type="button" class="control skip" (click)="startTour()">
     <tls-icon name="play" />
     Ver el recorrido

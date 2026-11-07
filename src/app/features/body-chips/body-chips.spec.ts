@@ -258,4 +258,14 @@ describe('BodyChips: fichas de cuerpos', () => {
       restore();
     }
   });
+
+  it('focusBody lleva el foco a una ficha y la hace la parada de su fila', () => {
+    const { fixture, chip } = render();
+    expect(fixture.componentInstance.focusBody('saturno')).toBe(true);
+    fixture.detectChanges();
+    expect(document.activeElement).toBe(chip('saturno'));
+    expect(chip('saturno')?.tabIndex).toBe(0);
+    expect(chip('sol')?.tabIndex).toBe(-1);
+    expect(fixture.componentInstance.focusBody('titan')).toBe(false);
+  });
 });
