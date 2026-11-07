@@ -276,6 +276,24 @@ test.describe('Tiempo y URL', () => {
     expect(Math.abs((await simTime(page)) - Date.now())).toBeLessThan(60_000);
   });
 
+  test('con un planeta con lunas elegido, «Controles +» se abre por encima de sus lunas (07-11)', async ({
+    page,
+  }) => {
+    await openExplorer(page, '/?fecha=2030-06-01T12:00Z&cuerpo=saturno');
+    await openControls(page);
+    // Ninguna ficha (ni los planetas ni las lunas, encima) queda debajo del panel.
+    const covered = await page.evaluate(() =>
+      [...document.querySelectorAll<HTMLElement>('tls-body-chips button')]
+        .filter((button) => {
+          const r = button.getBoundingClientRect();
+          const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+          return hit === null || !button.contains(hit);
+        })
+        .map((button) => button.textContent?.trim()),
+    );
+    expect(covered).toEqual([]);
+  });
+
   test('al llegar a 2100 la simulación se para y lo avisa', async ({ page }) => {
     await openExplorer(page, '/?fecha=2100-12-31T23:00Z');
     await page.locator('#time-speed').selectOption('day');

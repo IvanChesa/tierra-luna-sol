@@ -1,14 +1,15 @@
 /*
  * «Controles +»: un panel opaco (docs/DISENO.md) en la capa superior del navegador (`popover`). En
- * escritorio, encima de la barra de tiempo, a la derecha; en móvil, una hoja inferior. Cerrado, el
- * navegador lo oculta (`display: none`): aquí solo se da caja al abierto.
+ * escritorio, encima de la franja de abajo, a la derecha: por encima de todo lo que la tapa (la barra,
+ * las fichas y, si está, la fila de lunas), el margen de abajo del encuadre que mide la interfaz
+ * (`--view-bottom`, explorer-ui.ts); en móvil, una hoja inferior. Cerrado, el navegador lo oculta
+ * (`display: none`): aquí solo se da caja al abierto.
  */
 :host {
-  inset: auto var(--space-4)
-    calc(var(--explorer-bar, 4rem) + var(--explorer-chips, 4.5rem) + var(--space-2)) auto;
+  inset: auto var(--space-4) calc(var(--view-bottom, 8.25rem) + var(--space-2)) auto;
   width: min(25rem, calc(100vw - 2 * var(--space-4)));
   /* Por debajo de la cabecera y de las pestañas (unos 7,5 rem): no las tapa en un escritorio bajo. */
-  max-height: calc(100svh - var(--explorer-bar, 4rem) - var(--explorer-chips, 4.5rem) - 8rem);
+  max-height: calc(100svh - var(--view-bottom, 8.25rem) - 8rem);
   margin: 0;
   padding: var(--space-4);
   overflow-y: auto;
@@ -157,6 +158,11 @@
 
   .menu__group {
     margin-top: var(--space-1);
+  }
+
+  /* La velocidad, a lo ancho: «1 semana por segundo» cabe entera (en media fila, no). */
+  .menu__speed {
+    grid-column: 1 / -1;
   }
 }
 
