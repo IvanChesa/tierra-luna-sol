@@ -1,12 +1,17 @@
-<section class="explorer" [class.explorer--sky]="view() === 'sky'" aria-label="Explorador">
+<section
+  class="explorer"
+  [class.explorer--sky]="view() === 'sky'"
+  [class.explorer--detail]="view() === 'earth' || view() === 'moon'"
+  aria-label="Explorador"
+>
   @if (!posterGone()) {
     <tls-viewer-poster class="explorer__poster" [view]="view()" />
   }
 
   <!--
-    Fondo de la franja de abajo (fichas de cuerpos, barra de tiempo y pie). Reserva su sitio desde el
-    HTML prerenderizado: cuando llega la interfaz, nada se mueve. Su alto es el margen de abajo del
-    encuadre (data-chrome).
+    Fondo de la barra de tiempo, con un fundido corto encima (fase 9c: las fichas de cuerpos flotan sobre
+    el 3D). Reserva su sitio desde el HTML prerenderizado: cuando llega la interfaz, nada se mueve. Su
+    alto cuenta en el margen de abajo del encuadre (data-chrome).
   -->
   <div class="explorer__dock" data-chrome></div>
 

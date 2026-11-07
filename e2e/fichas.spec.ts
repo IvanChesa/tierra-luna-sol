@@ -65,11 +65,12 @@ const SYSTEMS: readonly (readonly [string, string, readonly [string, string][]])
 ];
 
 test.describe('Fichas de cuerpos', () => {
-  test('eligen los 30 cuerpos: los planetas en la primera fila y sus lunas en la segunda', async ({
+  test('eligen los 30 cuerpos: los planetas y, en la fila de su sistema, sus lunas (fase 9c)', async ({
     page,
   }) => {
     await openExplorer(page, '/?captura=1');
     const card = page.locator('#card-title');
+    const back = page.getByRole('button', { name: 'Volver al sistema solar' });
     let count = 0;
     for (const [id, name, moons] of SYSTEMS) {
       await planets(page).getByRole('button', { name, exact: true }).click();
@@ -77,13 +78,17 @@ test.describe('Fichas de cuerpos', () => {
       await expect(chip(page, id)).toHaveAttribute('aria-pressed', 'true');
       await expect.poll(() => focusedBody(page)).toBe(id);
       count++;
-      const row = page.locator('tls-body-chips [role="toolbar"]').first();
       if (moons.length === 0) {
+        await expect(planets(page)).toBeVisible();
         await expect(page.locator('tls-body-chips .moons')).toBeHidden();
         continue;
       }
+      // La fila pasa a ser la de su sistema: el planeta y sus lunas, en lugar de los planetas.
+      const label = id === 'tierra' ? 'La Tierra y la Luna' : `${name} y sus lunas`;
+      const row = page.getByRole('toolbar', { name: label });
       await expect(row).toBeVisible();
-      await expect(row.getByRole('button')).toHaveCount(moons.length);
+      await expect(planets(page)).toBeHidden();
+      await expect(row.getByRole('button')).toHaveCount(moons.length + 1);
       for (const [moonId, moonName] of moons) {
         await row.getByRole('button', { name: moonName, exact: true }).click();
         await expect(card).toHaveText(moonName);
@@ -91,6 +96,9 @@ test.describe('Fichas de cuerpos', () => {
         await expect.poll(() => focusedBody(page)).toBe(moonId);
         count++;
       }
+      // «‹ Sistema solar», en el título: vuelve la fila de los planetas.
+      await back.click();
+      await expect(planets(page)).toBeVisible();
     }
     expect(count).toBe(30);
   });
@@ -113,16 +121,18 @@ test.describe('Fichas de cuerpos', () => {
     await page.keyboard.press('Enter');
     await expect(page.locator('#card-title')).toHaveText('Saturno');
     await expect(chip(page, 'saturno')).toHaveAttribute('aria-pressed', 'true');
-    // El tabulador sale de la fila de planetas (la de lunas va antes en el DOM, encima).
+    // La fila pasa a ser la de Saturno y sus lunas (fase 9c): una sola parada, con las flechas dentro.
+    const system = page.getByRole('toolbar', { name: 'Saturno y sus lunas' });
+    await expect(system.locator('button[tabindex="0"]')).toHaveCount(1);
     await chip(page, 'saturno').focus();
-    await page.keyboard.press('Tab');
-    await expect(page.locator('tls-body-chips button:focus')).toHaveCount(0);
-    // La fila de lunas es otra parada: Mayús+Tab desde los planetas llega a su primera luna.
-    await chip(page, 'saturno').focus();
-    await page.keyboard.press('Shift+Tab');
+    await page.keyboard.press('ArrowRight');
     await expect(chip(page, 'mimas')).toBeFocused();
     await page.keyboard.press('Space');
     await expect(page.locator('#card-title')).toHaveText('Mimas');
+    // El tabulador sale de la fila: ninguna otra ficha recibe el foco.
+    await chip(page, 'mimas').focus();
+    await page.keyboard.press('Tab');
+    await expect(page.locator('tls-body-chips button:focus')).toHaveCount(0);
   });
 
   test('la distancia de cada ficha se anuncia como descripción', async ({ page }) => {

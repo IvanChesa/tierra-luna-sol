@@ -1,16 +1,17 @@
 <!--
-  Las lunas del planeta elegido flotan encima de la fila de planetas. Siempre en el DOM (oculta si no
-  hay lunas): tapa el lienzo por abajo cuando se ve (data-chrome), y el encuadre se aparta.
+  En el cielo, las lunas del planeta elegido flotan encima de la fila de planetas (en la vista del
+  sistema solar, la fila es la de su sistema). Siempre en el DOM (oculta si no hay lunas): tapa el
+  lienzo por abajo cuando se ve (data-chrome), y el encuadre se aparta.
 -->
-<div class="moons" data-chrome [hidden]="moons().length === 0">
+<div class="moons" data-chrome [hidden]="floatingMoons().length === 0">
   <div
-    class="row row--moons"
+    class="row row--moons scroll-hint"
     role="toolbar"
     tabindex="-1"
     [attr.aria-label]="moonsLabel()"
     (keydown)="onKeydown($event)"
   >
-    @for (moon of moons(); track moon.id) {
+    @for (moon of floatingMoons(); track moon.id) {
       <button
         type="button"
         class="moon"
@@ -37,13 +38,13 @@
 </div>
 
 <div
-  class="row"
+  class="row scroll-hint"
   role="toolbar"
   tabindex="-1"
-  aria-label="Sol y planetas"
+  [attr.aria-label]="rowLabel()"
   (keydown)="onKeydown($event)"
 >
-  @for (body of planets; track body.id) {
+  @for (body of row(); track body.id) {
     <button
       type="button"
       class="chip"
@@ -51,7 +52,7 @@
       [attr.data-body]="body.id"
       [attr.aria-pressed]="selected() === body.id"
       [attr.aria-describedby]="body.kind === 'star' ? null : 'chip-desc-' + body.id"
-      [attr.tabindex]="planetStop() === body.id ? 0 : -1"
+      [attr.tabindex]="rowStop() === body.id ? 0 : -1"
       (focus)="onFocus(body.id)"
       (click)="choose(body.id)"
     >

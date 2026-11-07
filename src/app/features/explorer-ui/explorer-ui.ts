@@ -14,13 +14,15 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
-import { Router } from '@angular/router';
+import { Title } from '@angular/platform-browser';
+import { NavigationEnd, Router } from '@angular/router';
+import { formatPageTitle } from '../../core/site-title.strategy';
 import type { ExplorerView, ViewInsets } from '../../scene';
 import { ExplorerStore } from '../../state/explorer.store';
 import { SystemPositions } from '../../state/positions';
 import { SimulationStore } from '../../state/simulation.store';
 import { BodyChips } from '../body-chips/body-chips';
-import { systemOf } from '../body-picker/body-tree';
+import { systemOf, treeNode } from '../body-picker/body-tree';
 import { BodyPanel } from '../body-panel/body-panel';
 import { CameraControls, ZOOM_STEP } from '../camera-controls/camera-controls';
 import { EarthPanel } from '../earth-panel/earth-panel';
@@ -34,6 +36,8 @@ import { VIEW_LINKS } from '../view-switcher/view-switcher';
 import { insetsFromRects, parseChromeEdge } from '../viewer/insets';
 import { Icon } from '../viewer/icon';
 import { ViewerCanvas } from '../viewer/viewer-canvas';
+import { bodyKindLabel } from './describe';
+import { ExplorerFocus, type FocusTitle } from './explorer-focus';
 import { ExplorerSession } from './explorer-session';
 import { IndexPanel } from './index-panel';
 import { Notices } from './notices';
@@ -48,8 +52,15 @@ const VIEW_OF_COMMAND: Readonly<
   'view-sky': 'sky',
 };
 
-/** Deslizar la ficha hacia abajo más que esto la cierra (móvil). */
+/** Deslizar la ficha hacia abajo más que esto la baja o la cierra (móvil). */
 const SWIPE_CLOSE_PX = 72;
+/** Deslizarla hacia arriba más que esto la sube a su altura completa (móvil). */
+const SWIPE_OPEN_PX = 40;
+/**
+ * A los pocos segundos de llegar a una vista, la presentación se pliega sola, aunque no se haya tocado
+ * nada (fase 9c, 9c.2): queda el título. En el modo de captura, no (las capturas son deterministas).
+ */
+export const PRESENTATION_FOLD_MS = 8000;
 
 /** Por debajo de este ancho, el índice y la ficha son hojas inferiores (viewer-layout.css). */
 const SHEETS_MEDIA = '(max-width: 63.99rem)';
@@ -126,6 +137,8 @@ function offsetWithin(element: HTMLElement, root: HTMLElement): { left: number; 
     '[class.has-panel]': 'panelBody() !== null',
     '[class.has-index]': 'explorer.indexOpen()',
     '[class.has-moons]': 'hasMoons()',
+    '[class.is-detail]': 'detail()',
+    '[class.is-sheet-expanded]': 'sheetExpanded()',
     '[class.is-interacted]': 'interacted()',
     '(document:keydown)': 'onKeydown($event)',
     '(pointerdown)': 'acted.set(true)',
@@ -153,8 +166,26 @@ export class ExplorerUi {
     const id = this.panelBody();
     return id ? [id] : [];
   });
-  /** Se ve la fila de lunas de las fichas (el cuerpo elegido es un planeta con lunas o una luna). */
-  protected readonly hasMoons = computed(() => systemOf(this.sim.selectedBodyId()) !== null);
+  /**
+   * Se ve la fila de lunas que flota sobre las fichas: solo en el cielo (en la vista del sistema solar,
+   * la fila de fichas pasa a ser la del sistema del cuerpo elegido; en Tierra y Luna no hay fichas).
+   */
+  protected readonly hasMoons = computed(
+    () => this.view() === 'sky' && systemOf(this.sim.selectedBodyId()) !== null,
+  );
+  /**
+   * Las vistas Tierra y Luna: sin la fila de fichas ni el Índice (fase 9c, 9c.2); «‹ Sistema solar», en
+   * su título, lleva a la vista general.
+   */
+  protected readonly detail = computed(() => this.view() === 'earth' || this.view() === 'moon');
+  /**
+   * La ficha del móvil, subida a su altura completa (con las distancias, los datos y sus fuentes). Al
+   * abrirse, o al cambiar de cuerpo, en reposo: el nombre, el resumen y «Ficha completa».
+   */
+  protected readonly sheetExpanded = linkedSignal({
+    source: this.panelBody,
+    computation: () => false,
+  });
   /** El 3D se ve: los controles de cámara aparecen (antes, y si falla, no harían nada). */
   protected readonly ready3d = signal(false);
   /**
@@ -162,11 +193,15 @@ export class ExplorerUi {
    * vuelve a `false`: se ve el texto de la vista nueva hasta la siguiente interacción.
    */
   protected readonly acted = linkedSignal({ source: this.view, computation: () => false });
+  /** Han pasado unos segundos en la vista (`PRESENTATION_FOLD_MS`); al cambiar de vista, otra vez no. */
+  private readonly settled = linkedSignal({ source: this.view, computation: () => false });
   /**
-   * El texto de presentación se pliega al empezar a usar el explorador o al elegir un cuerpo (fase
-   * 3c, tarea 5); el layout lo pliega por CSS con la clase del anfitrión.
+   * El texto de presentación se pliega al empezar a usar el explorador, al elegir un cuerpo (fase 3c,
+   * tarea 5) o a los pocos segundos (fase 9c); el layout lo pliega por CSS con la clase del anfitrión.
    */
-  protected readonly interacted = computed(() => this.acted() || this.panelBody() !== null);
+  protected readonly interacted = computed(
+    () => this.acted() || this.settled() || this.panelBody() !== null,
+  );
   private swipeStart: number | null = null;
   private readonly panel = viewChild.required<ElementRef<HTMLElement>>('panel');
   private readonly indexToggle = viewChild.required<ElementRef<HTMLElement>>('indexToggle');
@@ -197,6 +232,24 @@ export class ExplorerUi {
   constructor() {
     this.explorer.connectView(this.view);
     afterNextRender(() => this.trackInsets());
+
+    this.followFocus();
+
+    // La presentación se pliega sola a los pocos segundos de llegar a cada vista (un temporizador:
+    // sistema externo). En captura, nunca.
+    let foldTimer: ReturnType<typeof setTimeout> | null = null;
+    if (!this.session.capture) {
+      effect(() => {
+        this.view();
+        untracked(() => {
+          if (foldTimer !== null) clearTimeout(foldTimer);
+          foldTimer = setTimeout(() => this.settled.set(true), PRESENTATION_FOLD_MS);
+        });
+      });
+    }
+    this.destroyRef.onDestroy(() => {
+      if (foldTimer !== null) clearTimeout(foldTimer);
+    });
 
     // Gestión del foco (WCAG 2.4.3): si la interfaz oculta o quita el elemento que tiene el foco
     // (la vista limpia, la ficha o el índice que se cierran o, en móvil, la hoja que tapa la franja
@@ -229,6 +282,41 @@ export class ExplorerUi {
 
   protected closePanel(): void {
     this.session.closePanel();
+  }
+
+  /**
+   * El título sigue al cuerpo elegido (fase 9c, decisión 2 de Iván): en la vista del sistema solar, la
+   * portada dice «Saturno», con «‹ Sistema solar» para volver (`ExplorerFocus`), y el título del
+   * documento también. El documento es un sistema externo: el título se pone al elegir y otra vez al
+   * acabar cada navegación (la estrategia de títulos lo reescribe cuando la URL recoge el cuerpo).
+   */
+  private followFocus(): void {
+    const focus = inject(ExplorerFocus);
+    const title = inject(Title);
+    const current = computed<FocusTitle | null>(() => {
+      const id = this.sim.selectedBodyId();
+      if (this.view() !== 'system' || id === null) return null;
+      return { id, name: treeNode(id).name, kind: bodyKindLabel(id) };
+    });
+    const apply = (body: FocusTitle | null) => {
+      if (body) title.setTitle(formatPageTitle(body.name));
+    };
+    effect(() => {
+      const body = current();
+      untracked(() => {
+        focus.body.set(body);
+        apply(body);
+      });
+    });
+    focus.setBackHandler(() => this.session.overview());
+    const navigation = this.router.events.subscribe((event) => {
+      if (event instanceof NavigationEnd) apply(untracked(current));
+    });
+    this.destroyRef.onDestroy(() => {
+      navigation.unsubscribe();
+      focus.body.set(null);
+      focus.setBackHandler(null);
+    });
   }
 
   // --- Índice (fase 3c, tarea 4b) ----------------------------------------------------------------
@@ -381,15 +469,24 @@ export class ExplorerUi {
     }
   }
 
-  // --- Ficha en móvil: deslizar hacia abajo para cerrarla -------------------------------------
+  // --- Ficha en móvil: una hoja de dos alturas --------------------------------------------------
 
   protected swipeDown(event: PointerEvent): void {
     this.swipeStart = event.clientY;
   }
 
+  /**
+   * Al soltar el tirador: hacia arriba, la hoja sube a su altura completa; hacia abajo, baja a la de
+   * reposo o, si ya estaba en ella, se cierra. (El botón «Ver los datos» de la ficha hace lo mismo.)
+   */
   protected swipeEnd(event: PointerEvent): void {
-    if (this.swipeStart !== null && event.clientY - this.swipeStart > SWIPE_CLOSE_PX) {
-      this.session.closePanel();
+    if (this.swipeStart !== null) {
+      const dy = event.clientY - this.swipeStart;
+      if (dy < -SWIPE_OPEN_PX) this.sheetExpanded.set(true);
+      else if (dy > SWIPE_CLOSE_PX) {
+        if (this.sheetExpanded()) this.sheetExpanded.set(false);
+        else this.session.closePanel();
+      }
     }
     this.swipeStart = null;
   }
@@ -413,13 +510,18 @@ export class ExplorerUi {
     const panel = this.panel().nativeElement;
     const toggle = this.indexToggle().nativeElement;
     const indexClosed = before.index && !now.index;
+    // Lo último con el foco estaba en «Controles» (la vista limpia se pide desde allí), que ya se ha
+    // cerrado: el foco vuelve a su botón (fase 9c).
+    const last = this.lastFocus?.closest('#time-menu')
+      ? (root?.querySelector<HTMLElement>('.time__more') ?? this.lastFocus)
+      : this.lastFocus;
     const candidates = entering
       ? [this.restoreButton()?.nativeElement]
       : now.panel !== null && now.panel !== before.panel
         ? [panel]
         : [
-            indexClosed ? toggle : this.lastFocus,
-            this.lastFocus,
+            indexClosed ? toggle : last,
+            last,
             panel,
             root?.querySelector('[role="treeitem"][tabindex="0"]'),
             toggle,

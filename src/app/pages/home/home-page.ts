@@ -1,18 +1,34 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
+import { ExplorerFocus } from '../../features/explorer-ui/explorer-focus';
 
 /**
  * Portada: la vista del sistema solar y su texto introductorio (prerenderizado).
  * La vista la dice la ruta (`data.view`); el layout del explorador la pasa al motor.
  * El H1, «El sistema solar», va en paralelo a «La Tierra» y «La Luna» (decisión de Iván, 26-10).
+ * Con un cuerpo elegido, el título es el suyo, con «‹ Sistema solar» para volver a la vista general
+ * (fase 9c, decisión 2 de Iván); el cambio se anuncia en la región viva del explorador, como siempre.
  */
 @Component({
   selector: 'tls-home-page',
   template: `
-    <h1>El sistema solar</h1>
-    <p>
-      El Sol, los ocho planetas y veintiuna lunas en las posiciones de hoy, calculadas en tu
-      navegador para cualquier fecha entre 1900 y 2100.
-    </p>
+    @if (focus.body(); as body) {
+      <button
+        type="button"
+        class="explorer__back"
+        aria-label="Volver al sistema solar"
+        (click)="focus.back()"
+      >
+        <span aria-hidden="true">‹</span> Sistema solar
+      </button>
+      <h1>{{ body.name }}</h1>
+      <p>{{ body.kind }}</p>
+    } @else {
+      <h1>El sistema solar</h1>
+      <p>
+        El Sol, los ocho planetas y veintiuna lunas en las posiciones de hoy, calculadas en tu
+        navegador para cualquier fecha entre 1900 y 2100.
+      </p>
+    }
   `,
   styles: `
     h1 {
@@ -33,4 +49,6 @@ import { Component } from '@angular/core';
     }
   `,
 })
-export class HomePage {}
+export class HomePage {
+  protected readonly focus = inject(ExplorerFocus);
+}

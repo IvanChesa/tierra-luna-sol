@@ -119,7 +119,8 @@ test.describe('El cielo desde España (fase 8)', () => {
     const denied = await browser.newContext({ locale: 'es-ES', timezoneId: 'Europe/Madrid' });
     const page = await denied.newPage();
     await openExplorer(page, '/cielo?fecha=2026-11-01T21:00Z');
-    await page.getByRole('button', { name: 'Usar mi ubicación' }).click();
+    // «Usar mi ubicación», una opción del selector del lugar (fase 9c: el nombre del lugar, entero).
+    await page.getByLabel('Lugar desde el que ves el cielo').selectOption('mi-ubicacion');
     await expect(page.locator('.sky__note')).toContainText(
       'Sigues viendo el cielo desde el Parque Astronómico del Montsec',
     );
@@ -134,7 +135,7 @@ test.describe('El cielo desde España (fase 8)', () => {
     });
     const other = await granted.newPage();
     await openExplorer(other, '/cielo?fecha=2026-11-01T21:00Z&lugar=teide');
-    await other.getByRole('button', { name: 'Usar mi ubicación' }).click();
+    await other.getByLabel('Lugar desde el que ves el cielo').selectOption('mi-ubicacion');
     await expect(other.getByLabel('Lugar desde el que ves el cielo')).toHaveValue('user');
     await expect(other.locator('.sky__note')).toContainText('No sale de tu navegador');
     await expect(other).not.toHaveURL(/lugar=/);

@@ -47,18 +47,21 @@ test.describe('Cámara, vista limpia y atajos', () => {
     await expect(index).toBeVisible();
     await expect(page.locator('.scene-labels')).toBeVisible();
 
+    // «Vista limpia», en «Controles» (fase 9c).
+    await openControls(page);
     await page.getByRole('button', { name: 'Vista limpia' }).click();
     await expect(index).toBeHidden();
     await restore.click();
     await expect(index).toBeVisible();
 
-    // El foco no se pierde: al entrar va a «Mostrar la interfaz»; al salir, a donde estaba.
-    const clean = page.getByRole('button', { name: 'Vista limpia' });
-    await clean.focus();
+    // El foco no se pierde: al entrar va a «Mostrar la interfaz»; al salir, al botón «Controles», del
+    // que salió (su panel se ha cerrado).
+    await openControls(page);
+    await page.getByRole('button', { name: 'Vista limpia' }).focus();
     await page.keyboard.press('Enter');
     await expect(restore).toBeFocused();
     await page.keyboard.press('Enter');
-    await expect(clean).toBeFocused();
+    await expect(page.getByRole('button', { name: 'Controles', exact: true })).toBeFocused();
     await index.focus();
     await page.keyboard.press('v');
     await expect(restore).toBeFocused();

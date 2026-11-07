@@ -71,11 +71,12 @@ test.describe('Tiempo y URL', () => {
 
   test('hacia atrás el tiempo retrocede, también a 1 hora por segundo', async ({ page }) => {
     await openExplorer(page, '/?fecha=2030-06-01T12:00Z');
-    await page.getByRole('button', { name: 'Hacia atrás' }).click();
-    await expect(page.getByRole('button', { name: 'Hacia atrás' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
+    // «Hacia atrás», en «Controles» (fase 9c), con su nombre a la vista.
+    await openControls(page);
+    const reverse = page.getByRole('button', { name: 'Hacia atrás' });
+    await reverse.click();
+    await expect(reverse).toHaveAttribute('aria-pressed', 'true');
+    await page.keyboard.press('Escape');
     await page.locator('#time-speed').selectOption('hour');
     await page.locator('.time__play').click();
     await expect(page.locator('#time-speed')).toHaveValue('hour');
@@ -162,7 +163,7 @@ test.describe('Tiempo y URL', () => {
     await expect(line).toHaveAttribute('aria-valuetext', '15 de marzo de 2031');
     await expect(line).toHaveAttribute('max', '364');
     await expect(line).toHaveValue('73');
-    await expect(page.locator('tls-timeline .year__label')).toHaveText('2031');
+    await expect(page.locator('tls-timeline .year')).toHaveText('2031');
     // Flechas, un día (a la misma hora); RePág, un mes; Inicio y Fin, el año.
     await line.focus();
     await page.keyboard.press('ArrowRight');
@@ -175,7 +176,7 @@ test.describe('Tiempo y URL', () => {
     // En el extremo, al año siguiente.
     await page.keyboard.press('ArrowRight');
     await expect(line).toHaveAttribute('aria-valuetext', '1 de enero de 2032');
-    await expect(page.locator('tls-timeline .year__label')).toHaveText('2032');
+    await expect(page.locator('tls-timeline .year')).toHaveText('2032');
     await expect(line).toHaveAttribute('max', '365');
     await page.keyboard.press('Home');
     await expect(line).toHaveValue('0');
@@ -188,9 +189,8 @@ test.describe('Tiempo y URL', () => {
       .poll(async () => new Date(await simTime(page)).getUTCMonth())
       .toBeGreaterThanOrEqual(5);
     expect(new Date(await simTime(page)).getUTCMonth()).toBeLessThanOrEqual(6);
-    // Y los botones del año.
-    await page.getByRole('button', { name: 'Año siguiente' }).click();
-    await expect(page.locator('tls-timeline .year__label')).toHaveText('2033');
+    // Sin botones del año (fase 9c): se cambia con el teclado (arriba) o con la fecha de «Controles».
+    await expect(page.locator('tls-timeline button')).toHaveCount(0);
   });
 
   test('con el tiempo en marcha, la línea sigue a la fecha tras un clic y el teclado parte de lo anunciado', async ({
@@ -228,11 +228,10 @@ test.describe('Tiempo y URL', () => {
     await openExplorer(page, '/?fecha=2100-12-31T23:59Z');
     const line = page.getByRole('slider', { name: 'Línea de tiempo' });
     // En Madrid ya es el 1 de enero de 2101 (de 0:00 a 0:59): un solo día en la pista.
-    await expect(page.locator('tls-timeline .year__label')).toHaveText('2101');
+    await expect(page.locator('tls-timeline .year')).toHaveText('2101');
     await expect(line).toHaveAttribute('min', '0');
     await expect(line).toHaveAttribute('max', '0');
     await expect(line).toHaveAttribute('aria-valuetext', '1 de enero de 2101');
-    await expect(page.getByRole('button', { name: 'Año siguiente' })).toBeDisabled();
     const box = await line.boundingBox();
     if (!box) throw new Error('Sin línea de tiempo');
     await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
@@ -248,7 +247,8 @@ test.describe('Tiempo y URL', () => {
     await expect(button).toHaveAttribute('aria-expanded', 'false');
     await button.click();
     await expect(button).toHaveAttribute('aria-expanded', 'true');
-    await expect(page.locator('#time-date')).toBeFocused();
+    // El foco entra en el panel, no en el campo de la fecha (en Android abriría el calendario).
+    await expect(page.locator('#time-menu')).toBeFocused();
     await page.keyboard.press('Escape');
     await expect(page.locator('#time-date')).toBeHidden();
     await expect(button).toHaveAttribute('aria-expanded', 'false');
@@ -263,7 +263,7 @@ test.describe('Tiempo y URL', () => {
     // Si el foco sale del panel, se cierra: nunca se para en lo que tapa (la tarjeta, la cámara). Desde
     // dentro del panel: el foco entra en él un instante después de abrirse.
     await openControls(page);
-    await expect(page.locator('#time-date')).toBeFocused();
+    await expect(page.locator('#time-menu')).toBeFocused();
     for (let k = 0; k < 10; k++) {
       await page.keyboard.press('Shift+Tab');
       expect(await coveredFocus(page)).toBeNull();

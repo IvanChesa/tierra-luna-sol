@@ -31,30 +31,44 @@ interface Shown {
 @Component({
   selector: 'tls-moon-panel',
   imports: [Icon],
+  host: { '[class.is-more]': 'more()' },
   template: `
     <section class="moon" aria-labelledby="moon-views-title">
       <div class="moon__row">
         <h2 id="moon-views-title" class="moon__title">Vistas</h2>
         <p class="moon__phase">{{ phaseText() }}</p>
       </div>
-      <div class="moon__views" role="group" aria-labelledby="moon-views-title">
-        @for (view of views; track view.id; let i = $index) {
-          <button
-            type="button"
-            class="control moon__view"
-            [attr.aria-pressed]="isShown('view', i)"
-            (click)="chooseView(i)"
-          >
-            {{ view.title }}
-          </button>
-        }
+      <div class="moon__strip">
+        <div class="moon__views scroll-hint" role="group" aria-labelledby="moon-views-title">
+          @for (view of views; track view.id; let i = $index) {
+            <button
+              type="button"
+              class="control moon__view"
+              [attr.aria-pressed]="isShown('view', i)"
+              (click)="chooseView(i)"
+            >
+              {{ view.title }}
+            </button>
+          }
+        </div>
+        <!-- Solo en el móvil: la fase y el recorrido, plegados para que la Luna se vea (fase 9c). -->
+        <button
+          type="button"
+          class="control moon__toggle"
+          aria-label="Más: la fase y el recorrido"
+          aria-controls="moon-tour"
+          [attr.aria-expanded]="more()"
+          (click)="more.set(!more())"
+        >
+          Más
+        </button>
       </div>
       @if (viewCaption(); as text) {
         <p class="moon__caption">{{ text }}</p>
       }
     </section>
 
-    <section class="moon" aria-labelledby="moon-tour-title">
+    <section class="moon moon--tour" id="moon-tour" aria-labelledby="moon-tour-title">
       <h2 id="moon-tour-title" class="moon__title">Recorrido</h2>
       <div class="moon__player">
         <button
@@ -103,6 +117,8 @@ export class MoonPanel {
   /** Con movimiento reducido, el recorrido no avanza solo. */
   readonly stepByStep = this.session.reducedMotion;
   readonly shown = signal<Shown | null>(null);
+  /** En el móvil, la fase, los subtítulos y el recorrido desplegados (en reposo, la fila de las vistas). */
+  readonly more = signal(false);
   readonly touring = signal(false);
 
   /** «Gibosa creciente · 87 % iluminada». */

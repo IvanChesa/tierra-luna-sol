@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
 /**
  * La Tierra en detalle (fase 2: encuadre básico; la fase 5 añade su material y las vistas guiadas).
@@ -6,7 +7,16 @@ import { Component } from '@angular/core';
  */
 @Component({
   selector: 'tls-explore-earth-page',
+  imports: [RouterLink],
   template: `
+    <!-- La vuelta a la vista general (fase 9c, 9c.2: en lugar de la fila de los planetas). -->
+    <a
+      class="explorer__back"
+      routerLink="/"
+      queryParamsHandling="preserve"
+      aria-label="Volver al sistema solar"
+      ><span aria-hidden="true">‹</span> Sistema solar</a
+    >
     <h1>La Tierra</h1>
     <p>Nuestro planeta, orientado según la hora real y con la Luna a su distancia verdadera.</p>
   `,

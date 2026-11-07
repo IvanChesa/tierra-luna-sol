@@ -232,8 +232,9 @@ test.describe('Fichas de los cuerpos (fase 9)', () => {
       .getByRole('toolbar', { name: 'Sol y planetas' })
       .getByRole('button', { name: 'Saturno', exact: true })
       .click();
+    // La fila de su sistema (fase 9c): Saturno y sus lunas.
     await page
-      .getByRole('toolbar', { name: 'Lunas de Saturno' })
+      .getByRole('toolbar', { name: 'Saturno y sus lunas' })
       .getByRole('button', { name: 'Titán', exact: true })
       .click();
     await expect(page.locator('#card-title')).toHaveText('Titán');

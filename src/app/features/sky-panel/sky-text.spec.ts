@@ -10,6 +10,7 @@ import {
   moonNightText,
   nowCell,
   nowSpoken,
+  skySummary,
   placeTitle,
   planetNightText,
   skyPositionText,
@@ -121,5 +122,53 @@ describe('sky-text: los rumbos y las frases', () => {
     expect(constellationName('Vir')).toBe('Virgo');
     // Un símbolo que no existe, tal cual (no rompe el texto).
     expect(constellationName('Xyz')).toBe('Xyz');
+  });
+});
+
+describe('skySummary: la línea de resumen del panel del cielo (fase 9c)', () => {
+  const body = (
+    id: string,
+    name: string,
+    altitude: number,
+    compass: string,
+    spokenCompass: string,
+  ) => ({
+    id,
+    name,
+    up: altitude > -0.5,
+    now: altitude > -0.5 ? `${altitude}° ${compass}` : 'Bajo el horizonte',
+    nowSpoken:
+      altitude > -0.5 ? `${altitude}° de altura, hacia el ${spokenCompass}` : 'Bajo el horizonte',
+  });
+
+  it('la Luna y los planetas sobre el horizonte, los más altos primero, sin el Sol', () => {
+    const summary = skySummary([
+      body('sol', 'Sol', 20, 'S', 'sur'),
+      body('luna', 'Luna', 12, 'E', 'este'),
+      body('saturno', 'Saturno', 37, 'SE', 'sureste'),
+      body('marte', 'Marte', -10, 'O', 'oeste'),
+    ]);
+    expect(summary.text).toBe('Ahora: Saturno, 37° SE · Luna, 12° E');
+    expect(summary.spoken).toBe(
+      'Sobre el horizonte, ahora: Saturno, a 37° de altura, hacia el sureste; Luna, a 12° de altura, hacia el este.',
+    );
+  });
+
+  it('como mucho tres; el resto, en «Esta noche»', () => {
+    const summary = skySummary([
+      body('luna', 'Luna', 50, 'S', 'sur'),
+      body('jupiter', 'Júpiter', 40, 'E', 'este'),
+      body('saturno', 'Saturno', 30, 'SE', 'sureste'),
+      body('venus', 'Venus', 10, 'O', 'oeste'),
+      body('marte', 'Marte', 5, 'NE', 'noreste'),
+    ]);
+    expect(summary.text).toBe('Ahora: Luna, 50° S · Júpiter, 40° E · Saturno, 30° SE · y 2 más');
+    expect(summary.spoken.endsWith('Y 2 más en «Esta noche».')).toBe(true);
+  });
+
+  it('sin nada sobre el horizonte, lo dice', () => {
+    expect(skySummary([body('luna', 'Luna', -3, 'N', 'norte')]).text).toBe(
+      'Ni la Luna ni ningún planeta están ahora sobre el horizonte.',
+    );
   });
 });

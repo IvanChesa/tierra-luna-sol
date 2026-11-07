@@ -13,7 +13,7 @@
   Orden del foco: el lienzo, su cámara, la tarjeta del cuerpo elegido, el botón «Índice» y su panel,
   las fichas de cuerpos y la barra de tiempo (con reproducir y pausar en primer lugar).
 -->
-<!-- En móvil, la cámara es una columna a la derecha que cuenta en el encuadre (data-chrome). -->
+<!-- Acercar y alejar, en escritorio (en el móvil y la tableta están en «Controles»). -->
 <tls-camera-controls class="camera" data-chrome />
 
 <!-- tabindex="-1": el foco llega aquí cuando la ficha tapa lo que lo tenía (la hoja del móvil). -->
@@ -23,6 +23,7 @@
   data-chrome
   tabindex="-1"
   [hidden]="!panelBody()"
+  [class.is-expanded]="sheetExpanded()"
   aria-label="Ficha del cuerpo elegido"
 >
   @if (panelBody()) {
@@ -36,7 +37,7 @@
   }
   <!-- Una ficha por cuerpo: al cambiar de cuerpo se crea otra y entra con un fundido. -->
   @for (id of panelBodies(); track id) {
-    <tls-body-panel [bodyId]="id" (closed)="closePanel()" />
+    <tls-body-panel [bodyId]="id" [(expanded)]="sheetExpanded" (closed)="closePanel()" />
   }
 </aside>
 

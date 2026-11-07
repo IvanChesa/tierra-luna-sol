@@ -4,20 +4,12 @@ import { MAX_DATE, MIN_DATE } from '../../ephemeris/constants';
 import { SimulationStore } from '../../state/simulation.store';
 import { ExplorerSession } from '../explorer-ui/explorer-session';
 import { CAPTURE_DATE } from '../viewer/viewer-params';
-import { Icon } from '../viewer/icon';
-import {
-  dateAtDay,
-  dayOfYear,
-  isTimelineKey,
-  reachableDays,
-  shiftYears,
-  stepDate,
-  yearOf,
-} from './timeline';
+import { dateAtDay, dayOfYear, isTimelineKey, reachableDays, stepDate, yearOf } from './timeline';
 
 /**
  * Línea de tiempo de la barra (fase 3c, tarea 2): el año de la fecha mostrada, de enero a diciembre,
- * con el año a la vista, botones para pasar al anterior o al siguiente y una marca en «hoy».
+ * con el año a la vista y una marca en «hoy». Para cambiar de año, el teclado (Inicio y Fin, en los
+ * extremos) o la fecha de «Controles» (fase 9c: sin los botones del año, una forma menos de lo mismo).
  *
  * Es un `input type="range"` nativo (ratón, táctil y teclado de serie) con `aria-valuetext` («17 de
  * marzo de 2026»). La pista solo llega a los días que caen entre 1900 y 2100 en la zona elegida.
@@ -29,31 +21,8 @@ import {
  */
 @Component({
   selector: 'tls-timeline',
-  imports: [Icon],
   template: `
-    <div class="year">
-      <button
-        type="button"
-        class="step"
-        [disabled]="year() <= firstYear()"
-        title="Año anterior"
-        (click)="shiftYear(-1)"
-      >
-        <tls-icon class="back" name="chevron" />
-        <span class="visually-hidden">Año anterior</span>
-      </button>
-      <span class="year__label">{{ year() }}</span>
-      <button
-        type="button"
-        class="step"
-        [disabled]="year() >= lastYear()"
-        title="Año siguiente"
-        (click)="shiftYear(1)"
-      >
-        <tls-icon name="chevron" />
-        <span class="visually-hidden">Año siguiente</span>
-      </button>
-    </div>
+    <span class="year" aria-hidden="true">{{ year() }}</span>
     <div class="track">
       <input
         #line
@@ -101,9 +70,6 @@ export class TimelineSlider {
   );
 
   protected readonly year = computed(() => yearOf(this.shown(), this.zone()));
-  /** El primer y el último año del rango en la zona (en Madrid, 1899 y 2101: timeline.ts). */
-  protected readonly firstYear = computed(() => yearOf(MIN_DATE, this.zone()));
-  protected readonly lastYear = computed(() => yearOf(MAX_DATE, this.zone()));
   /** Los días de la pista: los del año que caen dentro de 1900–2100. */
   protected readonly range = computed(() =>
     reachableDays(this.year(), this.zone(), MIN_DATE, MAX_DATE),
@@ -159,10 +125,6 @@ export class TimelineSlider {
     this.pointer = false;
     this.keyboard.set(true);
     this.go(next);
-  }
-
-  protected shiftYear(years: number): void {
-    this.go(shiftYears(this.shown(), years, this.zone()));
   }
 
   /** Salta a ese instante (el store lo lleva a 1900–2100) y lo muestra, también con el foco. */

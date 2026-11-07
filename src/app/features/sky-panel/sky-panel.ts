@@ -19,6 +19,7 @@ import {
   nowCell,
   placePhrase,
   nowSpoken,
+  skySummary,
   planetNightText,
   twilightTexts,
   zoneText,
@@ -69,6 +70,8 @@ export class SkyPanel {
   private readonly doc = inject(DOCUMENT);
 
   protected readonly places = SKY_PLACES;
+  /** La opción «Usar mi ubicación» del selector (fase 9c: dentro de él, el nombre del lugar cabe). */
+  protected readonly locateValue = 'mi-ubicacion';
   protected readonly optionLabel = placeOptionLabel;
   protected readonly place = this.explorer.skyPlace;
   protected readonly constellations = this.explorer.constellations;
@@ -161,14 +164,23 @@ export class SkyPanel {
     });
   });
 
+  /** La línea de resumen del panel (fase 9c): lo que está ahora sobre el horizonte. */
+  protected readonly summary = computed(() => skySummary(this.rows()));
+
   protected readonly tableCaption = computed(
     () => `El cielo desde ${this.placeLabel()} a las ${this.clock()} (${this.zone()})`,
   );
 
   // --- Órdenes ------------------------------------------------------------------------------------
 
-  protected choosePlace(event: Event): void {
-    const value = (event.target as HTMLSelectElement | null)?.value;
+  protected choosePlace(select: HTMLSelectElement): void {
+    const value = select.value;
+    if (value === this.locateValue) {
+      // El selector vuelve al lugar de ahora; si llega la ubicación, «Tu ubicación» lo sustituye.
+      select.value = this.place().id;
+      void this.locate();
+      return;
+    }
     if (!value || value === 'user') return;
     this.locationMessage.set(null);
     this.session.setSkyPlace(value);

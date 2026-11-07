@@ -17,7 +17,8 @@ test.describe('Móvil', () => {
     const panel = page.locator('.panel');
     await expect(panel.locator('#card-title')).toHaveText('Marte');
     await expect(sheet).toBeHidden();
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('El sistema solar');
+    // El título sigue al cuerpo elegido (fase 9c, decisión 2 de Iván).
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Marte');
     await page.getByRole('button', { name: 'Cerrar la ficha' }).tap();
     await expect(panel).toBeHidden();
     // Vuelve el H1 (la descripción ya se ha plegado al usar el explorador).
@@ -43,12 +44,19 @@ test.describe('Móvil', () => {
       await page.keyboard.press('Tab');
       expect(await coveredFocus(page)).toBeNull();
     }
-    // Al cerrarla desde dentro, el foco vuelve al botón «Índice»: la fila elegida estaba en la hoja
-    // del índice, que se ha cerrado (con el foco fuera de la ficha, Esc la cierra sin moverlo).
+    // La barra de tiempo sigue a la vista bajo la hoja (fase 9c): el tabulador ha salido de la ficha a
+    // ella. Al cerrarla desde dentro, el foco vuelve a lo último que lo tuvo fuera de la hoja.
+    const outside = await page.evaluate(() => {
+      const element = document.activeElement;
+      if (!(element instanceof HTMLElement) || element.closest('.panel')) return false;
+      element.dataset['e2eLast'] = '';
+      return true;
+    });
+    expect(outside).toBe(true);
     await panel.getByRole('button', { name: 'Cerrar la ficha' }).focus();
     await page.keyboard.press('Escape');
     await expect(panel).toBeHidden();
-    await expect(indexToggle(page)).toBeFocused();
+    await expect(page.locator('[data-e2e-last]')).toBeFocused();
   });
 
   test('durante un viaje con la ficha abierta, «Saltar el viaje» queda encima de la ficha', async ({
@@ -56,7 +64,8 @@ test.describe('Móvil', () => {
   }) => {
     // Sin captura: el viaje de la vista de la Tierra al sistema solar es animado.
     await openExplorer(page, '/explorar/tierra?fecha=2030-06-01T12:00Z');
-    await indexToggle(page).tap();
+    // En la vista Tierra no hay fichas ni botón «Índice» (fase 9c); el índice se abre con su atajo.
+    await page.keyboard.press('i');
     await treeRow(page, 'saturno').tap();
     await expect(page.getByRole('button', { name: /Saltar el viaje/ })).toBeVisible();
     await expect(page.locator('#card-title')).toHaveText('Saturno');
@@ -121,10 +130,10 @@ test.describe('Móvil', () => {
     await row.getByRole('button', { name: 'Neptuno', exact: true }).tap();
     await expect(page.locator('#card-title')).toHaveText('Neptuno');
     expect(await page.evaluate(() => window.scrollY)).toBe(0);
-    // Sus lunas, en una segunda fila con las mismas zonas táctiles.
+    // La fila pasa a ser la de su sistema (fase 9c): Neptuno y sus lunas, con las mismas zonas táctiles.
     await page.getByRole('button', { name: 'Cerrar la ficha' }).tap();
-    const moons = page.getByRole('toolbar', { name: 'Lunas de Neptuno' });
-    await expect(moons.getByRole('button')).toHaveCount(2);
+    const moons = page.getByRole('toolbar', { name: 'Neptuno y sus lunas' });
+    await expect(moons.getByRole('button')).toHaveCount(3);
     for (const height of await moons
       .getByRole('button')
       .evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().height))) {
@@ -171,7 +180,7 @@ test.describe('Móvil', () => {
     // Con el teclado, el foco nunca se para en lo que tapa la hoja (la barra, las fichas).
     await more.focus();
     await page.keyboard.press('Enter');
-    await expect(page.locator('#time-date')).toBeFocused();
+    await expect(page.locator('#time-menu')).toBeFocused();
     for (let k = 0; k < 8; k++) {
       await page.keyboard.press('Shift+Tab');
       expect(await coveredFocus(page)).toBeNull();

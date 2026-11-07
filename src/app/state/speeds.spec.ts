@@ -17,7 +17,6 @@ describe('speeds: escalones de la reproducción', () => {
       'day',
       'days3',
       'week',
-      'days10',
       'month',
       'year',
     ]);
@@ -33,7 +32,8 @@ describe('speeds: escalones de la reproducción', () => {
     expect(nearestSpeedStep(CONTEXT_SPEED.overview).label).toBe('3 días por segundo');
     expect(nearestSpeedStep(CONTEXT_SPEED.body).id).toBe('hour');
     expect(nearestSpeedStep(CONTEXT_SPEED.body).label).toBe('1 hora por segundo');
-    expect(nearestSpeedStep(10 * 86_400).label).toBe('10 días por segundo');
+    // Sin «10 días por segundo» (fase 9c): lo más cercano a 10 días es una semana.
+    expect(nearestSpeedStep(10 * 86_400).label).toBe('1 semana por segundo');
   });
 
   it('la vista general es la del sistema solar sin cuerpo; lo demás, un cuerpo (D33)', () => {
@@ -68,7 +68,8 @@ describe('speeds: escalones de la reproducción', () => {
 
   it('subir y bajar conserva el sentido y se queda en los extremos', () => {
     expect(shiftSpeed(86_400, 1)).toBe(3 * 86_400);
-    expect(shiftSpeed(7 * 86_400, 1)).toBe(10 * 86_400);
+    // Sin «10 días por segundo» (fase 9c), de la semana se pasa al mes.
+    expect(shiftSpeed(7 * 86_400, 1)).toBe((365.25 * 86_400) / 12);
     expect(shiftSpeed(-86_400, -1)).toBe(-3 * 3600);
     expect(shiftSpeed(3 * 3600, -1)).toBe(3600);
     expect(shiftSpeed(1, -1)).toBe(1);

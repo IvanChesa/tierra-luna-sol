@@ -263,6 +263,47 @@ tls-root:has(tls-explorer-ui.is-clean) .site-header {
   margin-bottom: 0;
 }
 
+/* Plegada, la presentación deja el título en una línea (fase 9c, 9c.2). */
+@media (max-width: 63.99rem) {
+  .explorer:has(> tls-explorer-ui.is-interacted) .explorer__intro h1 {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/*
+ * «‹ Sistema solar» (fase 9c): la vuelta a la vista general, encima del título de las vistas Tierra y
+ * Luna y del cuerpo elegido. Discreta, en el color secundario, con su zona táctil.
+ */
+.explorer__back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 1.5rem;
+  margin: 0 0 var(--space-1);
+  padding: 0;
+  background: none;
+  color: var(--color-text-muted);
+  border: 0;
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+  font-weight: var(--font-weight-strong);
+  text-decoration: none;
+}
+
+.explorer__back:hover {
+  color: var(--color-text);
+}
+
+@media (pointer: coarse) {
+  .explorer__back {
+    min-height: var(--tap-target);
+    margin-block: calc((1.5rem - var(--tap-target)) / 2) 0;
+  }
+}
+
 /*
  * Donde falta sitio, el texto se recoge más (queda el selector de vista). También solo a la vista.
  * - Móvil: con la ficha o el índice abiertos (son hojas que suben), todo el texto.
@@ -360,6 +401,36 @@ tls-explorer-ui
 }
 
 /*
+ * Pista de desplazamiento (fase 9c, 9c.2 y 9c.7): una fila que se desplaza en horizontal se funde en
+ * su borde derecho mientras quede algo por ver. La enciende una animación ligada a su desplazamiento;
+ * si la fila cabe (sin desplazamiento), no hay fundido.
+ */
+@property --scroll-fade {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@keyframes scroll-fade {
+  0%,
+  92% {
+    --scroll-fade: 2rem;
+  }
+
+  100% {
+    --scroll-fade: 0px;
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  .scroll-hint {
+    mask-image: linear-gradient(to left, transparent, #000 var(--scroll-fade));
+    animation: scroll-fade linear both;
+    animation-timeline: scroll(self inline);
+  }
+}
+
+/*
  * Controles de la interfaz del explorador (los usan varios componentes diferidos): botones con
  * borde, desplegables e inputs nativos con el tema oscuro, y etiquetas pequeñas encima.
  */
@@ -383,7 +454,8 @@ tls-explorer-ui
   background: var(--color-surface-raised);
 }
 
-.control[aria-pressed='true'] {
+/* Pulsado, o abierto (los botones que despliegan algo: «Índice», «Controles», «Más»). */
+.control:is([aria-pressed='true'], [aria-expanded='true']) {
   background: var(--color-surface-raised);
   color: var(--color-accent);
   border-color: var(--color-accent);

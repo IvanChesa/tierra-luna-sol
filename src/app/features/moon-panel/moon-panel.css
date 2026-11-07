@@ -11,8 +11,13 @@
   display: grid;
   grid-area: index;
   align-self: start;
+  align-content: start;
   gap: var(--space-2);
+  /* Nunca pasa de su área (en un escritorio bajo, 1024 × 768): se desplaza dentro (fase 9c, 9c.4). */
+  max-height: 100%;
   margin: var(--space-2) var(--space-4) 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 @media (max-width: 63.99rem) {
@@ -71,6 +76,24 @@
 .moon__view {
   min-height: 2rem;
   padding-inline: var(--space-2);
+}
+
+.moon__strip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.moon__strip .moon__views {
+  flex: 1;
+  min-width: 0;
+}
+
+/* «Más» (la fase y el recorrido): solo en el móvil (en escritorio se ve todo el panel). */
+.moon__toggle {
+  display: none;
+  flex: none;
 }
 
 .moon__player {
@@ -148,5 +171,14 @@
 
   .moon__caption {
     font-size: var(--text-xs, 0.75rem);
+  }
+
+  /* En reposo, una sola fila: las vistas y «Más», que despliega la fase y el recorrido. */
+  .moon__toggle {
+    display: inline-flex;
+  }
+
+  :host(:not(.is-more)) :is(.moon__phase, .moon__caption, .moon--tour) {
+    display: none;
   }
 }

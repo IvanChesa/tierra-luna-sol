@@ -36,12 +36,12 @@ test.describe('Arranque en movimiento (D31) y velocidad según el contexto (D33)
     await expect(page.locator('p.visually-hidden[aria-live="polite"]')).toContainText(
       'Velocidad: 1 hora por segundo',
     );
-    await page.getByRole('button', { name: 'Vista general' }).click();
+    await page.getByRole('button', { name: 'Volver al sistema solar' }).click();
     await expect(speed).toHaveValue('days3');
     // En el lienzo (su etiqueta).
     await page.locator('.scene-label[data-body="saturno"] .scene-label__name').click();
     await expect(speed).toHaveValue('hour');
-    await page.getByRole('button', { name: 'Vista general' }).click();
+    await page.getByRole('button', { name: 'Volver al sistema solar' }).click();
     await expect(speed).toHaveValue('days3');
     // En el índice.
     await openIndex(page);
@@ -57,12 +57,13 @@ test.describe('Arranque en movimiento (D31) y velocidad según el contexto (D33)
     await page.locator('tls-body-chips button[data-body="marte"]').click();
     await expect(speed).toHaveValue('hour');
     await speed.selectOption('day');
-    // De un cuerpo a otro: el mismo contexto, la misma velocidad.
-    await page.locator('tls-body-chips button[data-body="jupiter"]').click();
-    await expect(page.locator('#card-title')).toHaveText('Júpiter');
+    // De un cuerpo a otro (una luna de Marte, en la fila de su sistema: fase 9c): el mismo contexto,
+    // la misma velocidad.
+    await page.locator('tls-body-chips button[data-body="fobos"]').click();
+    await expect(page.locator('#card-title')).toHaveText('Fobos');
     await expect(speed).toHaveValue('day');
     // Al volver a la vista general, la suya.
-    await page.getByRole('button', { name: 'Vista general' }).click();
+    await page.getByRole('button', { name: 'Volver al sistema solar' }).click();
     await expect(speed).toHaveValue('days3');
   });
 

@@ -11,6 +11,7 @@ import {
   untracked,
 } from '@angular/core';
 import type { BodyId } from '../../data/body.model';
+import { ExplorerStore } from '../../state/explorer.store';
 import { SystemPositions } from '../../state/positions';
 import { SimulationStore } from '../../state/simulation.store';
 import { ROOT_NODES, TreeNode, systemOf, treeNode } from '../body-picker/body-tree';
@@ -21,10 +22,12 @@ import { ExplorerSession } from '../explorer-ui/explorer-session';
 const ROW_KEYS: ReadonlySet<string> = new Set(['ArrowRight', 'ArrowLeft', 'Home', 'End']);
 
 /**
- * Fichas de cuerpos (fase 3c, tarea 1): el selector principal del explorador, sobre la barra de
- * tiempo. Una fila con el Sol y los ocho planetas y, si el cuerpo elegido es un planeta con lunas (o
- * una de ellas), una segunda fila con sus lunas, que flota encima. Cada ficha lleva su miniatura,
- * renderizada por el propio motor (`scripts/build-body-thumbnails.mjs`).
+ * Fichas de cuerpos (fase 3c, tarea 1; fase 9c): el único selector a la vista del explorador, sobre la
+ * barra de tiempo. Una fila con el Sol y los ocho planetas; en la vista del sistema solar, si el cuerpo
+ * elegido es un planeta con lunas (o una de ellas), la fila pasa a ser la de su sistema, el planeta y
+ * sus lunas, y «‹ Sistema solar», en el título, vuelve a la de los planetas (fase 9c, 9c.3: una sola
+ * fila, la mitad de fichas). En el cielo, las lunas siguen en una segunda fila que flota encima. Cada
+ * ficha lleva su miniatura, renderizada por el propio motor (`scripts/build-body-thumbnails.mjs`).
  *
  * Accesibilidad: cada fila es una barra de herramientas (una sola parada del tabulador) con botones
  * `aria-pressed`; las flechas, Inicio y Fin solo mueven el foco (recorrer la fila no lanza un vuelo
@@ -40,9 +43,9 @@ export class BodyChips {
   private readonly sim = inject(SimulationStore);
   private readonly session = inject(ExplorerSession);
   private readonly positions = inject(SystemPositions);
+  private readonly explorer = inject(ExplorerStore);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
-  protected readonly planets = ROOT_NODES;
   protected readonly selected = this.sim.selectedBodyId;
   /** El planeta cuyas lunas se muestran: el elegido o el de la luna elegida. */
   protected readonly system = computed(() => systemOf(this.selected()));
@@ -50,6 +53,25 @@ export class BodyChips {
     const system = this.system();
     return system ? treeNode(system).children.map((id) => treeNode(id)) : [];
   });
+  /** En la vista del sistema solar, la fila es la del sistema del cuerpo elegido, si tiene lunas. */
+  protected readonly drill = computed(
+    () => this.explorer.view() === 'system' && this.system() !== null,
+  );
+  /** Las fichas de la fila principal: el Sol y los planetas, o un planeta y sus lunas. */
+  protected readonly row = computed<readonly TreeNode[]>(() => {
+    const system = this.system();
+    return this.drill() && system ? [treeNode(system), ...this.moons()] : ROOT_NODES;
+  });
+  /** «Saturno y sus lunas»; «La Tierra y la Luna». */
+  protected readonly rowLabel = computed(() => {
+    const system = this.system();
+    if (!this.drill() || !system) return 'Sol y planetas';
+    return system === 'tierra' ? 'La Tierra y la Luna' : `${treeNode(system).name} y sus lunas`;
+  });
+  /** Fuera de la vista del sistema solar (en el cielo), las lunas van en una segunda fila, encima. */
+  protected readonly floatingMoons = computed<readonly TreeNode[]>(() =>
+    this.drill() ? [] : this.moons(),
+  );
   /** «Lunas de Saturno»; la de la Tierra es la Luna, su satélite. */
   protected readonly moonsLabel = computed(() => {
     const system = this.system();
@@ -58,12 +80,13 @@ export class BodyChips {
   });
 
   /** La ficha de cada fila que recibe el foco con el tabulador (tabindex itinerante). */
-  protected readonly planetStop = linkedSignal<BodyId>(() => {
+  protected readonly rowStop = linkedSignal<BodyId>(() => {
+    const row = this.row();
     const selected = this.selected();
-    return selected && treeNode(selected).parent === null ? selected : 'sol';
+    return row.find((node) => node.id === selected)?.id ?? row[0]?.id ?? 'sol';
   });
   protected readonly moonStop = linkedSignal<BodyId | null>(() => {
-    const moons = this.moons();
+    const moons = this.floatingMoons();
     const selected = this.selected();
     return moons.find((moon) => moon.id === selected)?.id ?? moons[0]?.id ?? null;
   });
@@ -77,7 +100,7 @@ export class BodyChips {
   protected readonly descriptions = computed(() => {
     this.focused();
     const texts = () =>
-      [...this.planets, ...this.moons()].map((node) => ({
+      [...this.row(), ...this.floatingMoons()].map((node) => ({
         id: node.id,
         text: distanceText(node.id, this.positions.distances(node.id)),
       }));
@@ -100,9 +123,14 @@ export class BodyChips {
   }
 
   protected choose(id: BodyId): void {
-    if (treeNode(id).parent === null) this.planetStop.set(id);
-    else this.moonStop.set(id);
+    this.setStop(id);
     this.session.select(id);
+  }
+
+  /** La parada del tabulador de la fila de esa ficha. */
+  private setStop(id: BodyId): void {
+    if (this.row().some((node) => node.id === id)) this.rowStop.set(id);
+    else this.moonStop.set(id);
   }
 
   protected onFocus(id: BodyId): void {
@@ -129,8 +157,7 @@ export class BodyChips {
     const target = chips[next];
     const id = target?.dataset['body'] as BodyId | undefined;
     if (!target || !id) return;
-    if (treeNode(id).parent === null) this.planetStop.set(id);
-    else this.moonStop.set(id);
+    this.setStop(id);
     target.focus({ preventScroll: true });
     this.reveal(target);
   }

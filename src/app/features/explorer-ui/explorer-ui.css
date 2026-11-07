@@ -93,12 +93,6 @@
   margin-inline: calc(var(--index-toggle-width) + 2 * var(--space-4));
 }
 
-.index-toggle[aria-expanded='true'] {
-  background: var(--color-surface-raised);
-  color: var(--color-accent);
-  border-color: var(--color-accent);
-}
-
 /*
  * Con la fila de lunas de las fichas (flota sobre la franja de abajo), la tarjeta y el índice acaban
  * por encima de ella: en un escritorio estrecho, si no, se pisarían.
@@ -123,9 +117,19 @@
   bottom: calc(var(--view-bottom, 0px) + var(--space-4));
 }
 
-/* Con «Controles +» abierto, el panel tapa la cámara: fuera de la vista y del foco. En su propia regla:
+/* Con «Controles» abierto, el panel tapa la cámara: fuera de la vista y del foco. En su propia regla:
    sin `:popover-open` en el navegador, se descartaría con todo lo que la acompañara. */
 :host:has(#time-menu:popover-open) .camera {
+  visibility: hidden;
+}
+
+/* Las vistas Tierra y Luna, sin la fila de fichas ni el Índice (fase 9c): «‹ Sistema solar», en el título. */
+:host(.is-detail) :is(.chips, .index-toggle) {
+  display: none;
+}
+
+/* El Índice es la versión en tabla de las fichas: abierto, las sustituye (fase 9c, 9c.3). */
+:host(.has-index) .chips {
   visibility: hidden;
 }
 
@@ -185,13 +189,18 @@ kbd {
 }
 
 @media (max-width: 63.99rem) {
-  /* La ficha sube como una hoja inferior sobre el lienzo y la franja de abajo. */
+  /*
+   * La ficha sube como una hoja inferior, de dos alturas (fase 9c): en reposo, como mucho el 45 % de
+   * la pantalla (el nombre, el resumen y «Ficha completa»); subida, hasta arriba. Siempre encima de la
+   * barra de tiempo, que no tapa: reproducir y pausar, siempre a mano.
+   */
   .panel {
     --chrome-edge: bottom;
-    grid-area: view / 1 / -1 / -1;
+    grid-row: view-start / bar-start;
+    grid-column: 1 / -1;
     align-self: end;
     width: auto;
-    max-height: 72%;
+    max-height: min(45svh, 100%);
     margin: 0;
     border: 0;
     border-top: var(--border-width) solid var(--color-control);
@@ -232,30 +241,26 @@ kbd {
     margin-inline: calc(var(--index-toggle-width) + var(--space-3) + var(--space-2)) 0;
   }
 
-  /*
-   * Una columna pegada a la derecha que tapa el lienzo por ese lado (`right`): el encuadre se aparta
-   * y no pisa el borde de la Tierra o de la Luna en sus vistas. Su sitio no depende de `--view-right`
-   * (que ya la incluye): en móvil no hay paneles a la derecha.
-   */
+  :host(.is-sheet-expanded) .panel {
+    max-height: 100%;
+  }
+
+  /* En el móvil y la tableta, acercar y alejar están en «Controles»: el 3D, sin la columna de botones. */
   .camera {
-    --chrome-edge: right;
-    right: var(--space-3);
-    bottom: calc(var(--view-bottom, 0px) + var(--space-3));
-  }
-
-  /* La barra de tiempo desplegada que no cabe se desplaza (viewer-layout.css). */
-  .dock {
-    min-height: 0;
-    overflow-y: auto;
-    overscroll-behavior: contain;
+    display: none;
   }
 
   /*
-   * Las hojas tapan la franja de abajo y la cámara: mientras están abiertas, lo que tapan sale del
-   * orden del foco y del árbol accesible (el foco pasa a la hoja, explorer-ui.ts).
+   * Las hojas tapan lo de debajo: mientras están abiertas, sale del orden del foco y del árbol
+   * accesible (el foco pasa a la hoja, explorer-ui.ts). La ficha deja a la vista la barra de tiempo.
    */
-  :host(.has-panel) :is(.camera, .index-toggle, .chips, .dock, .view-panel),
-  :host(.has-index) :is(.camera, .index-toggle, .chips, .dock, .panel) {
+  :host(.has-panel) :is(.index-toggle, .chips, .view-panel),
+  :host(.has-index) :is(.index-toggle, .chips, .dock, .panel) {
+    visibility: hidden;
+  }
+
+  /* «Controles» sube sobre la barra de tiempo, como otra hoja: tapa la ficha, las fichas y el panel. */
+  :host:has(#time-menu:popover-open) :is(.panel, .index-toggle, .chips, .view-panel, .notices) {
     visibility: hidden;
   }
 
@@ -264,14 +269,11 @@ kbd {
     margin-bottom: calc(var(--space-2) + 3rem);
   }
 
-  /*
-   * Los avisos ocupan el ancho del lienzo y acaban por encima de la cámara (dos filas de botones,
-   * abajo a la derecha); si no caben, se desplazan.
-   */
+  /* Los avisos ocupan el ancho del lienzo; si no caben, se desplazan. */
   .notices {
     grid-area: view;
     justify-self: stretch;
-    max-height: calc(100% - 3 * var(--space-3) - 2 * var(--tap-target) - var(--space-1));
+    max-height: calc(100% - 2 * var(--space-3));
     margin: var(--space-3) var(--space-3) 0;
   }
 

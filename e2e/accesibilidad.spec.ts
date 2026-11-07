@@ -58,7 +58,13 @@ test.describe('Accesibilidad (axe)', () => {
     // «Controles +» abierto y, dentro, el botón de los atajos.
     await openControls(page);
     expect(await seriousViolations(page)).toEqual([]);
-    await page.getByRole('button', { name: 'Atajos de teclado' }).click();
+    // En el móvil, «Controles» no ofrece los atajos (sin teclado físico, fase 9c): el diálogo, con «?».
+    const help = page.getByRole('button', { name: 'Atajos de teclado' });
+    if (await help.isVisible()) await help.click();
+    else {
+      await page.keyboard.press('Escape');
+      await page.keyboard.press('?');
+    }
     await expect(page.getByRole('dialog', { name: 'Atajos de teclado' })).toBeVisible();
     expect(await seriousViolations(page)).toEqual([]);
     await page.keyboard.press('Escape');

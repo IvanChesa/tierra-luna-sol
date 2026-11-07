@@ -43,7 +43,8 @@ export type IconName =
           <rect class="fill" x="13.5" y="5" width="4" height="14" rx="1" />
         }
         @case ('reverse') {
-          <path d="M11.5 6.5 5 12l6.5 5.5M19 6.5 12.5 12l6.5 5.5" />
+          <!-- El sentido del tiempo: dos flechas opuestas (⇆), que no se confunden con los chevrones. -->
+          <path d="M5 8.5h13.5M15 5l3.5 3.5L15 12M19 15.5H5.5M9 12l-3.5 3.5L9 19" />
         }
         @case ('plus') {
           <path d="M12 5v14M5 12h14" />

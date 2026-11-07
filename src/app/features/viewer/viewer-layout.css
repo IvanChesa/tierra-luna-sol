@@ -23,7 +23,9 @@
   --explorer-panel: 22rem;
   /* Filas de la franja de abajo, reservadas desde el HTML prerenderizado (sin saltos al cargar). */
   --explorer-chips: 4.5rem;
-  --explorer-bar: 4.5rem;
+  --explorer-bar: 4rem;
+  /* El fundido de encima de la barra (fase 9c: corto, para que no tape más del 10 % del lienzo). */
+  --explorer-fade: 0.75rem;
   position: relative;
   display: grid;
   flex: 1;
@@ -47,22 +49,27 @@
 }
 
 /*
- * La franja de abajo: un velo del color del fondo que se funde hacia arriba (sin desenfoques ni
- * transparencias en los paneles: los controles van encima, opacos). El 3D se ve a través de su borde
- * de arriba, pero el motor encuadra por encima de ella.
+ * El fondo de la barra de tiempo: un velo del color del fondo con un fundido corto encima (sin
+ * desenfoques). Las fichas de cuerpos flotan sobre el 3D, con sombra en el nombre (fase 9c, D47: el
+ * velo de antes, de 170–180 px, tapaba él solo el 19–23 % del lienzo). El motor encuadra por encima.
  */
 .explorer__dock {
   --chrome-edge: bottom;
   position: relative;
   z-index: 1;
-  grid-area: chips / 1 / -1 / -1;
+  grid-area: bar / 1 / bar / -1;
+  margin-top: calc(-1 * var(--explorer-fade));
   background: linear-gradient(
-    to top,
-    var(--color-bg) calc(100% - var(--explorer-chips)),
-    color-mix(in srgb, var(--color-bg) 72%, transparent) calc(100% - 0.55 * var(--explorer-chips)),
-    transparent
+    to bottom,
+    transparent,
+    color-mix(in srgb, var(--color-bg) 90%, transparent) var(--explorer-fade)
   );
   pointer-events: none;
+}
+
+/* Las vistas Tierra y Luna no tienen fila de fichas (fase 9c: «‹ Sistema solar», en su título). */
+.explorer--detail {
+  --explorer-chips: 0px;
 }
 
 /*
@@ -111,6 +118,10 @@
   position: relative;
   z-index: 2;
   grid-area: foot;
+  /* Sin velo (no tapa el lienzo): una sombra del color del fondo lo hace legible sobre el 3D. */
+  text-shadow:
+    0 0 3px var(--color-bg),
+    0 1px 2px var(--color-bg);
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
@@ -160,8 +171,8 @@
    */
   .explorer {
     --explorer-chips: 4.25rem;
-    /* La barra de tiempo, en dos filas (la lectura, siempre de tres líneas: no cambia al reproducir). */
-    --explorer-bar: 7rem;
+    /* La barra de tiempo, en una fila (la lectura, siempre de tres líneas: no cambia al reproducir). */
+    --explorer-bar: 3.75rem;
     min-height: 0;
     grid-template-areas:
       'lead'
@@ -188,6 +199,10 @@
       color-mix(in srgb, var(--color-bg) 85%, transparent) 40%,
       transparent
     );
+  }
+
+  .explorer--detail {
+    --explorer-chips: 0px;
   }
 
   .explorer--sky > .explorer__lead::before {
@@ -227,8 +242,8 @@
  */
 @media (max-width: 63.99rem) and (max-height: 30rem) {
   .explorer {
-    /* La cabecera (3,5 rem) y la primera fila de la barra: su relleno, reproducir y la fecha. */
-    --explorer-arrival: calc(3.5rem + 3.75rem);
+    /* La cabecera (3,5 rem) y la barra: su relleno, reproducir y la fecha. */
+    --explorer-arrival: calc(3.5rem + var(--explorer-bar));
     overflow: visible;
     grid-template-areas:
       'view'
@@ -246,7 +261,8 @@
   }
 
   .explorer__dock {
-    grid-area: bar / 1 / -1 / -1;
+    grid-area: bar / 1 / bar / -1;
+    margin-top: 0;
     background: var(--color-bg);
   }
 }

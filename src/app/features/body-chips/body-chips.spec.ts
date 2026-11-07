@@ -7,7 +7,7 @@ import { SimulationStore } from '../../state/simulation.store';
 import { ExplorerSession } from '../explorer-ui/explorer-session';
 import { BodyChips } from './body-chips';
 
-function render() {
+function render(view: 'system' | 'sky' = 'system') {
   window.history.replaceState({}, '', '/?fecha=2026-10-24T00:00Z');
   TestBed.configureTestingModule({
     imports: [BodyChips],
@@ -19,7 +19,7 @@ function render() {
       ExplorerSession,
     ],
   });
-  TestBed.inject(ExplorerStore).connectView(signal('system'));
+  TestBed.inject(ExplorerStore).connectView(signal(view));
   const fixture = TestBed.createComponent(BodyChips);
   fixture.detectChanges();
   const root = fixture.nativeElement as HTMLElement;
@@ -30,7 +30,15 @@ function render() {
     chip(id)?.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
     fixture.detectChanges();
   };
-  return { fixture, root, chip, toolbar, key, sim: TestBed.inject(SimulationStore) };
+  return {
+    fixture,
+    root,
+    chip,
+    toolbar,
+    key,
+    sim: TestBed.inject(SimulationStore),
+    session: TestBed.inject(ExplorerSession),
+  };
 }
 
 describe('BodyChips: fichas de cuerpos', () => {
@@ -91,17 +99,18 @@ describe('BodyChips: fichas de cuerpos', () => {
     expect(sim.selectedBodyId()).toBeNull();
   });
 
-  it('un clic (o Intro y Espacio, que son clics) elige; la segunda fila trae sus lunas', () => {
-    const { root, chip, toolbar, fixture, sim } = render();
+  it('un clic elige; con un planeta con lunas, la fila pasa a ser la de su sistema (fase 9c)', () => {
+    const { root, chip, toolbar, fixture, sim, session } = render();
     chip('saturno')?.click();
     fixture.detectChanges();
     expect(sim.selectedBodyId()).toBe('saturno');
-    expect(chip('saturno')?.getAttribute('aria-pressed')).toBe('true');
-    expect(chip('saturno')?.tabIndex).toBe(0);
-    const moons = toolbar('Lunas de Saturno');
-    expect(root.querySelector<HTMLElement>('.moons')?.hidden).toBe(false);
-    const buttons = [...(moons?.querySelectorAll<HTMLButtonElement>('button') ?? [])];
+    // Una sola fila: el planeta y sus lunas, en lugar de los planetas (no una segunda encima).
+    expect(toolbar('Sol y planetas')).toBeNull();
+    expect(root.querySelector<HTMLElement>('.moons')?.hidden).toBe(true);
+    const system = toolbar('Saturno y sus lunas');
+    const buttons = [...(system?.querySelectorAll<HTMLButtonElement>('button') ?? [])];
     expect(buttons.map((b) => b.textContent?.trim())).toEqual([
+      'Saturno',
       'Mimas',
       'Encélado',
       'Tetis',
@@ -110,31 +119,55 @@ describe('BodyChips: fichas de cuerpos', () => {
       'Titán',
       'Jápeto',
     ]);
+    expect(chip('saturno')?.getAttribute('aria-pressed')).toBe('true');
     expect(buttons.filter((b) => b.tabIndex === 0).map((b) => b.dataset['body'])).toEqual([
-      'mimas',
+      'saturno',
     ]);
-    // Las miniaturas de las lunas, en diferido.
-    expect(buttons[0]?.querySelector('img')?.getAttribute('loading')).toBe('lazy');
 
-    // Una luna: queda elegida, su planeta sigue con su fila y la descripción va a su planeta.
+    // «‹ Sistema solar» (la vista general) vuelve a la fila de los planetas; se elige otra vez.
+    session.overview();
+    fixture.detectChanges();
+    expect(toolbar('Saturno y sus lunas')).toBeNull();
+    expect(toolbar('Sol y planetas')?.querySelectorAll('button')).toHaveLength(9);
+    chip('saturno')?.click();
+    fixture.detectChanges();
+
+    // Una luna: queda elegida, su planeta sigue en la fila (marcado como su sistema) y la
+    // descripción va a su planeta.
     chip('titan')?.click();
     fixture.detectChanges();
     expect(sim.selectedBodyId()).toBe('titan');
     expect(chip('titan')?.getAttribute('aria-pressed')).toBe('true');
     expect(chip('titan')?.tabIndex).toBe(0);
     expect(chip('saturno')?.getAttribute('aria-pressed')).toBe('false');
+    expect(chip('saturno')?.classList.contains('is-system')).toBe(true);
     const described = chip('titan')?.getAttribute('aria-describedby');
     expect((root.querySelector(`#${described}`)?.textContent ?? '').replace(/\s/g, ' ')).toMatch(
       /^A [\d.]+ km de Saturno$/,
     );
   });
 
-  it('la Tierra trae a su satélite, la Luna', () => {
+  it('la Tierra, con su satélite, la Luna', () => {
     const { chip, toolbar, fixture } = render();
     chip('tierra')?.click();
     fixture.detectChanges();
-    const moons = toolbar('Satélite de la Tierra');
-    expect(moons?.querySelectorAll('button')).toHaveLength(1);
+    const system = toolbar('La Tierra y la Luna');
+    expect([...(system?.querySelectorAll('button') ?? [])].map((b) => b.dataset['body'])).toEqual([
+      'tierra',
+      'luna',
+    ]);
     expect(chip('luna')?.textContent?.trim()).toBe('Luna');
+  });
+
+  it('en el cielo, las lunas siguen en una segunda fila, encima de la de los planetas', () => {
+    const { root, chip, toolbar, fixture } = render('sky');
+    chip('saturno')?.click();
+    fixture.detectChanges();
+    expect(toolbar('Sol y planetas')?.querySelectorAll('button')).toHaveLength(9);
+    expect(root.querySelector<HTMLElement>('.moons')?.hidden).toBe(false);
+    const moons = toolbar('Lunas de Saturno');
+    expect(moons?.querySelectorAll('button')).toHaveLength(7);
+    // Las miniaturas de las lunas, en diferido.
+    expect(moons?.querySelector('img')?.getAttribute('loading')).toBe('lazy');
   });
 });

@@ -68,22 +68,36 @@ export const TOUR_STEP_MS = 9000;
 @Component({
   selector: 'tls-earth-panel',
   imports: [Icon],
+  host: { '[class.is-more]': 'more()' },
   template: `
     <section class="earth" aria-labelledby="earth-tours-title">
       <h2 id="earth-tours-title" class="earth__title">Vistas guiadas</h2>
-      <div class="earth__views" role="group" aria-labelledby="earth-tours-title">
-        @for (view of views; track view.id; let i = $index) {
-          <button
-            type="button"
-            class="control earth__view"
-            [attr.aria-pressed]="current() === i"
-            (click)="choose(i)"
-          >
-            {{ view.title }}
-          </button>
-        }
+      <div class="earth__strip">
+        <div class="earth__views scroll-hint" role="group" aria-labelledby="earth-tours-title">
+          @for (view of views; track view.id; let i = $index) {
+            <button
+              type="button"
+              class="control earth__view"
+              [attr.aria-pressed]="current() === i"
+              (click)="choose(i)"
+            >
+              {{ view.title }}
+            </button>
+          }
+        </div>
+        <!-- Solo en el móvil: el resto del panel, plegado para que la Tierra se vea (fase 9c, 9c.2). -->
+        <button
+          type="button"
+          class="control earth__toggle"
+          aria-label="Más: la hora del día y el recorrido"
+          aria-controls="earth-player earth-sun"
+          [attr.aria-expanded]="more()"
+          (click)="more.set(!more())"
+        >
+          Más
+        </button>
       </div>
-      <div class="earth__player">
+      <div class="earth__player" id="earth-player">
         <button
           type="button"
           class="control control--icon"
@@ -112,7 +126,7 @@ export const TOUR_STEP_MS = 9000;
       }
     </section>
 
-    <section class="earth earth--sun" aria-labelledby="earth-sun-title">
+    <section class="earth earth--sun" id="earth-sun" aria-labelledby="earth-sun-title">
       <h2 id="earth-sun-title" class="earth__title">Luz del Sol</h2>
       <div class="earth__row">
         <label class="earth__label" for="earth-sun-hour">Hora del día</label>
@@ -140,6 +154,8 @@ export class EarthPanel {
   private readonly zone = inject(ExplorerStore).timeZone;
 
   readonly views = GUIDED_VIEWS;
+  /** En el móvil, el recorrido y la luz del Sol desplegados (en reposo, solo la fila de las vistas). */
+  readonly more = signal(false);
   /** La vista guiada elegida (índice), o `null` antes de elegir ninguna. */
   readonly current = signal<number | null>(null);
   readonly touring = signal(false);

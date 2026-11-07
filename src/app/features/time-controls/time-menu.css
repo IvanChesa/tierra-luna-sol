@@ -75,8 +75,18 @@
   font-size: var(--text-sm);
 }
 
-.menu__speed .field__group .control:not(.control--icon) {
-  flex: 1;
+/* Los grupos (la cámara, la escena): un rótulo pequeño, como el de los campos. */
+.menu__group {
+  margin: var(--space-2) 0 calc(-1 * var(--space-1));
+  color: var(--color-text-muted);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: var(--font-weight-strong);
+}
+
+/* El foco llega al panel al abrirlo (no a un campo de fecha): el anillo, por dentro. */
+:host(:focus-visible) {
+  outline-offset: calc(-1 * var(--focus-ring-width));
 }
 
 .menu__source {
@@ -99,25 +109,43 @@
   }
 }
 
-/* En escritorio, la velocidad está en la barra y la fuente de los datos en el pie. */
+/* En escritorio, la velocidad está en la barra, y acercar y alejar, sobre el 3D. */
 @media (min-width: 64rem) {
   .menu__speed,
-  .menu__source {
+  .menu__zoom {
+    display: none;
+  }
+}
+
+/* Con pantalla táctil (sin teclado físico), los atajos de teclado no sirven. */
+@media (pointer: coarse) {
+  .menu__help {
     display: none;
   }
 }
 
 /* Móvil: una hoja inferior, como el índice y la ficha. */
 @media (max-width: 63.99rem) {
+  /* Encima de la barra de tiempo, que sigue a la vista (reproducir y pausar, a mano). */
   :host {
-    inset: auto 0 0;
+    inset: auto 0 var(--explorer-bar, 3.75rem);
     width: auto;
-    max-height: 75svh;
+    max-height: calc(100svh - var(--explorer-bar, 3.75rem) - 4rem);
     padding: var(--space-4) var(--space-4) var(--space-6);
     border: 0;
     border-top: var(--border-width) solid var(--color-control);
     border-radius: var(--radius-md) var(--radius-md) 0 0;
     box-shadow: 0 -12px 32px rgb(0 0 0 / 0.4);
+  }
+}
+
+/*
+ * En escritorio, con la ficha del cuerpo abierta (a la derecha), el panel se abre a su izquierda: no la
+ * tapa (fase 9c, 9c.3).
+ */
+@media (min-width: 64rem) {
+  :host-context(tls-explorer-ui.has-panel) {
+    right: calc(var(--explorer-panel, 22rem) + 2 * var(--space-4));
   }
 }
 

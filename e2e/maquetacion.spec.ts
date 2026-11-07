@@ -105,11 +105,17 @@ for (const screen of LOW_SCREENS) {
     const page = await context.newPage();
     await page.goto('/?captura=1');
     await expect(page.locator('tls-viewer-canvas')).toHaveClass(/is-ready/, { timeout: 90_000 });
-    await expect(page.locator('tls-camera-controls button').first()).toBeVisible();
+    // En el móvil, la tableta y con el zoom, acercar y alejar no están sobre el 3D (fase 9c): están en
+    // «Controles» (abajo).
+    await expect(page.locator('tls-camera-controls')).toBeHidden();
     // Al llegar, reproducir y pausar se ve sin desplazar la página (D31, WCAG 2.2.2).
     const play = await page.locator('.time__play').boundingBox();
     expect(play && play.y + play.height).toBeLessThanOrEqual(screen.height);
-    if (screen.expand) await page.locator('.time__more').click();
+    if (screen.expand) {
+      await page.locator('.time__more').click();
+      await expect(page.getByRole('button', { name: 'Acercar' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Alejar' })).toBeVisible();
+    }
     await page.waitForTimeout(300);
 
     const layout = await page.evaluate(() => {

@@ -44,7 +44,7 @@ describe('TimelineSlider: la línea de tiempo de la barra', () => {
 
   it('el año de la fecha, de enero a diciembre, y la fecha en aria-valuetext', () => {
     const { root, line, text } = render('2031-03-15T13:00Z');
-    expect(root.querySelector('.year__label')?.textContent).toBe('2031');
+    expect(root.querySelector('.year')?.textContent).toBe('2031');
     expect(line.getAttribute('aria-label')).toBe('Línea de tiempo');
     expect(line.min).toBe('0');
     expect(line.max).toBe('364');
@@ -87,11 +87,9 @@ describe('TimelineSlider: la línea de tiempo de la barra', () => {
     sim.pause();
   });
 
-  it('en 1900 y en 2100 no se pasa del rango: sin año anterior o siguiente', () => {
+  it('en 1900 y en 2100 no se pasa del rango (y no hay botones del año: fase 9c)', () => {
     const start = render('1900-01-01T00:00Z');
-    const previous = () =>
-      start.root.querySelector<HTMLButtonElement>('button[title="Año anterior"]');
-    expect(previous()?.disabled).toBe(true);
+    expect(start.root.querySelectorAll('button')).toHaveLength(0);
     start.key('ArrowLeft');
     // El store no baja de 1900: la fecha se queda y la línea con ella.
     expect(start.sim.time().toISOString()).toBe('1900-01-01T00:00:00.000Z');
@@ -99,8 +97,6 @@ describe('TimelineSlider: la línea de tiempo de la barra', () => {
     TestBed.resetTestingModule();
 
     const end = render('2100-12-31T23:59Z');
-    const next = end.root.querySelector<HTMLButtonElement>('button[title="Año siguiente"]');
-    expect(next?.disabled).toBe(true);
     expect(end.line.max).toBe('364');
     end.key('End');
     expect(end.sim.time().getUTCFullYear()).toBe(2100);
@@ -110,7 +106,7 @@ describe('TimelineSlider: la línea de tiempo de la barra', () => {
     'en la hora de Madrid, el final de 2100 es 2101, con un solo día en la pista',
     () => {
       const { root, line, text } = render('2100-12-31T23:59Z', 'local');
-      expect(root.querySelector('.year__label')?.textContent).toBe('2101');
+      expect(root.querySelector('.year')?.textContent).toBe('2101');
       expect(line.min).toBe('0');
       expect(line.max).toBe('0');
       expect(text()).toBe('1 de enero de 2101');

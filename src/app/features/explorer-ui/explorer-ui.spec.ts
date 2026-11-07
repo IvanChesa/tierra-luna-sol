@@ -5,7 +5,8 @@ import type { ExplorerView } from '../../scene';
 import { ExplorerStore } from '../../state/explorer.store';
 import { SimulationStore } from '../../state/simulation.store';
 import { ViewerCanvas } from '../viewer/viewer-canvas';
-import { ExplorerUi } from './explorer-ui';
+import { ExplorerFocus } from './explorer-focus';
+import { ExplorerUi, PRESENTATION_FOLD_MS } from './explorer-ui';
 
 /** Sustituto del lienzo: los atajos no necesitan WebGL. */
 @Component({ selector: 'tls-viewer-canvas', template: '' })
@@ -230,5 +231,68 @@ describe('ExplorerUi: panel «Índice» y texto de presentación (fase 3c)', () 
     // Con un cuerpo en el enlace, la ficha está abierta: plegado desde el principio.
     const chosen = await render();
     expect(chosen.host.classList.contains('is-interacted')).toBe(true);
+  });
+
+  it('a los pocos segundos de llegar, la presentación se pliega sola (fase 9c)', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      const { host, fixture } = await render('?fecha=2030-01-01T00:00Z');
+      expect(host.classList.contains('is-interacted')).toBe(false);
+      vi.advanceTimersByTime(PRESENTATION_FOLD_MS);
+      fixture.detectChanges();
+      expect(host.classList.contains('is-interacted')).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('el título sigue al cuerpo elegido, con «‹ Sistema solar» para volver (fase 9c)', async () => {
+    const { fixture, sim } = await render();
+    const focus = TestBed.inject(ExplorerFocus);
+    expect(focus.body()).toEqual({ id: 'marte', name: 'Marte', kind: 'Planeta' });
+    expect(document.title).toBe('Marte · Tierra Luna Sol');
+    sim.select('titan');
+    fixture.detectChanges();
+    expect(focus.body()).toEqual({ id: 'titan', name: 'Titán', kind: 'Luna de Saturno' });
+    // «‹ Sistema solar»: la vista general, sin cuerpo en el título.
+    focus.back();
+    fixture.detectChanges();
+    expect(sim.selectedBodyId()).toBeNull();
+    expect(focus.body()).toBeNull();
+    // Al salir del explorador, el título no se queda con un cuerpo.
+    sim.select('jupiter');
+    fixture.detectChanges();
+    fixture.destroy();
+    expect(focus.body()).toBeNull();
+  });
+
+  it('las vistas Tierra y Luna van sin fichas ni Índice; con un cuerpo, sin título de cuerpo', async () => {
+    const { fixture, host } = await render();
+    fixture.componentRef.setInput('view', 'earth');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(host.classList.contains('is-detail')).toBe(true);
+    expect(TestBed.inject(ExplorerFocus).body()).toBeNull();
+  });
+
+  it('la ficha del móvil, de dos alturas: el tirador la sube, la baja y, abajo, la cierra', async () => {
+    const { fixture, host, explorer } = await render();
+    const panel = host.querySelector<HTMLElement>('.panel');
+    const grip = host.querySelector<HTMLElement>('.panel__grip');
+    if (!panel || !grip) throw new Error('Sin ficha');
+    const drag = (from: number, to: number) => {
+      grip.dispatchEvent(new PointerEvent('pointerdown', { clientY: from, bubbles: true }));
+      grip.dispatchEvent(new PointerEvent('pointerup', { clientY: to, bubbles: true }));
+      fixture.detectChanges();
+    };
+    expect(panel.classList.contains('is-expanded')).toBe(false);
+    drag(500, 400);
+    expect(panel.classList.contains('is-expanded')).toBe(true);
+    expect(host.classList.contains('is-sheet-expanded')).toBe(true);
+    drag(400, 520);
+    expect(panel.classList.contains('is-expanded')).toBe(false);
+    expect(explorer.panelOpen()).toBe(true);
+    drag(400, 520);
+    expect(explorer.panelOpen()).toBe(false);
   });
 });
