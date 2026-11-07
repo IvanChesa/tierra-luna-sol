@@ -106,13 +106,6 @@ export function reachableDays(
   return { first, last };
 }
 
-/** El mismo día y hora `years` años antes o después (el 29 de febrero pasa al 28). */
-export function shiftYears(date: Date, years: number, zone: TimeZoneChoice): Date {
-  const p = partsOf(date, zone);
-  const year = p.year + years;
-  return fromParts({ ...p, year, day: Math.min(p.day, daysInMonth(year, p.month)) }, zone);
-}
-
 export type TimelineKey =
   'ArrowLeft' | 'ArrowRight' | 'ArrowUp' | 'ArrowDown' | 'PageUp' | 'PageDown' | 'Home' | 'End';
 

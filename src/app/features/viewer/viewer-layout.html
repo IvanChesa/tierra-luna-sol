@@ -28,7 +28,9 @@
     @if (view() === 'system') {
       <p class="explorer__credit">
         {{ authorship.text }} Un proyecto de {{ site.author.name }} ·
-        <a routerLink="/sobre-el-proyecto" fragment="precision">Cómo se calcula</a>
+        <a [routerLink]="authorship.source.path" [fragment]="authorship.source.fragment"
+          >Cómo se calcula</a
+        >
       </p>
     }
     <p class="explorer__touch">Arrastra para girar · pellizca para acercarte</p>

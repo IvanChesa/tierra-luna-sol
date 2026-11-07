@@ -8,6 +8,11 @@ import { App } from './app';
 @Component({ template: '' })
 class Blank {}
 
+// Al navegar, la página sube arriba (`window.scrollTo`, en un `setTimeout` que puede llegar después
+// del último test), que jsdom no implementa: sin el aviso. Para todo el archivo, sin restaurarlo: cada
+// archivo de tests tiene su propio jsdom.
+window.scrollTo = () => undefined;
+
 describe('App', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({

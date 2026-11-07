@@ -6,7 +6,6 @@ import {
   daysInYear,
   isTimelineKey,
   reachableDays,
-  shiftYears,
   stepDate,
   yearOf,
 } from './timeline';
@@ -78,13 +77,6 @@ describe('timeline: la línea de tiempo del año de la fecha mostrada', () => {
     );
     expect(iso(stepDate(utc('2026-03-17T10:00:00Z'), 'End', 'utc'))).toBe(
       '2026-12-31T10:00:00.000Z',
-    );
-  });
-
-  it('un año antes o después, el mismo día (el 29 de febrero pasa al 28)', () => {
-    expect(iso(shiftYears(utc('2026-03-17T10:00:00Z'), 1, 'utc'))).toBe('2027-03-17T10:00:00.000Z');
-    expect(iso(shiftYears(utc('2028-02-29T10:00:00Z'), -1, 'utc'))).toBe(
-      '2027-02-28T10:00:00.000Z',
     );
   });
 
