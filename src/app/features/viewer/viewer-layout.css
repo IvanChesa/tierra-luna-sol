@@ -21,11 +21,18 @@
   /* Columna del texto de presentación y del índice; tarjeta de la derecha. */
   --explorer-start: 20rem;
   --explorer-panel: 22rem;
-  /* Filas de la franja de abajo, reservadas desde el HTML prerenderizado (sin saltos al cargar). */
+  /*
+   * Filas de la franja de abajo, reservadas desde el HTML prerenderizado (sin saltos al cargar). La
+   * barra, del alto de su control más alto: en escritorio, la velocidad con su rótulo (unos 55 px); en
+   * el móvil, en una fila, la lectura de tres líneas (no cambia al reproducir).
+   */
   --explorer-chips: 4.5rem;
-  --explorer-bar: 4rem;
-  /* El fundido de encima de la barra (fase 9c: corto, para que no tape más del 10 % del lienzo). */
-  --explorer-fade: 0.75rem;
+  --explorer-bar: 3.75rem;
+  /*
+   * El fundido de encima de la barra (fase 9c: corto). Con la barra, el velo no tapa más del 10 % del
+   * lienzo, tampoco a 1024 × 768 (68 de 712 px; revisión, hallazgo 15).
+   */
+  --explorer-fade: 0.5rem;
   position: relative;
   display: grid;
   flex: 1;
@@ -181,8 +188,6 @@
    */
   .explorer {
     --explorer-chips: 4.25rem;
-    /* La barra de tiempo, en una fila (la lectura, siempre de tres líneas: no cambia al reproducir). */
-    --explorer-bar: 3.75rem;
     min-height: 0;
     grid-template-areas:
       'lead'
