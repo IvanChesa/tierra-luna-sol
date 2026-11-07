@@ -375,6 +375,18 @@ export class ExplorerSession {
     writeSingleKeyShortcuts(this.storage, enabled);
   }
 
+  private tourHandler: (() => void) | null = null;
+
+  /** Lo que hace «Ver el recorrido» (fase 9c, 9c.6); lo pone la interfaz, que tiene el recorrido. */
+  setTourHandler(handler: (() => void) | null): void {
+    this.tourHandler = handler;
+  }
+
+  /** «Ver el recorrido» (en «Controles» y, con movimiento reducido, en la primera pantalla). */
+  startTour(): void {
+    this.tourHandler?.();
+  }
+
   /** Cierra el aviso de los parámetros de la URL (van todos en una caja). */
   dismissWarnings(): void {
     this._warnings.set([]);

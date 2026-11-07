@@ -191,6 +191,236 @@ html {
 }
 
 /*
+ * La cabecera y el pie del sitio (fase 9c: antes en app.css, que va dentro del JavaScript inicial; aquí,
+ * en la hoja de estilos, cuentan lo mismo para la primera pintura y la cabecera compacta del explorador
+ * se escribe una sola vez). La navegación (decisión 2 de Iván, D47): las páginas de lectura (Planetas,
+ * Lunas, Sol, Eclipses y Sobre el proyecto) y «Explorar en 3D»; las vistas 3D, en las pestañas del
+ * explorador.
+ */
+tls-root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+}
+
+.site-header {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-6);
+  min-height: 3.5rem;
+  padding: 0 var(--space-4);
+  background: var(--color-bg);
+  border-bottom: var(--border-width) solid var(--color-line);
+}
+
+/* El nombre lleva a la portada, con su zona táctil (fase 9c, 9c.7: medía 129 × 30). */
+.site-name {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-target);
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-display);
+  text-decoration: none;
+}
+
+/* En escritorio, la navegación en línea (anula el estilo de popover del navegador). */
+.site-nav {
+  position: static;
+  inset: auto;
+  display: block;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  background: none;
+  color: inherit;
+  border: 0;
+}
+
+.site-nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.site-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.5rem;
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+
+.site-nav a:hover,
+.site-nav a.is-active {
+  color: var(--color-text);
+}
+
+.site-nav a.is-active {
+  text-decoration: underline;
+  text-decoration-color: var(--color-accent);
+}
+
+/* «Explorar en 3D»: la puerta al explorador, en latón (el resto, en el color secundario). */
+.site-nav a.site-nav__explore {
+  color: var(--color-accent);
+  font-weight: var(--font-weight-strong);
+}
+
+.site-nav__extra,
+.site-menu-button {
+  display: none;
+}
+
+/*
+ * El menú (Popover API: funciona sin JavaScript), en el móvil en todas las páginas y en el explorador
+ * también en escritorio: allí la cabecera es compacta, el nombre y «Menú» (fase 9c: el 3D, protagonista).
+ * Su aspecto depende de que esté abierto, no del tamaño: solo cuándo se usa depende de las dos cosas.
+ */
+@media (max-width: 63.99rem) {
+  .site-menu-button {
+    display: inline-flex;
+  }
+
+  .site-nav:not(:popover-open) {
+    display: none;
+  }
+}
+
+tls-root:has(.explorer) .site-menu-button {
+  display: inline-flex;
+}
+
+tls-root:has(.explorer) .site-nav:not(:popover-open) {
+  display: none;
+}
+
+.site-menu-button {
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap-target);
+  padding: 0 var(--space-3);
+  background: transparent;
+  color: var(--color-text);
+  border: 0;
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.site-menu-button:hover {
+  background: var(--color-surface);
+}
+
+.site-menu-button svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+}
+
+/* Con el menú abierto, el botón se ve pulsado. */
+.site-menu-button:has(+ .site-nav:popover-open) {
+  background: var(--color-surface-raised);
+  color: var(--color-accent);
+}
+
+/* Cabe en la pantalla y se desplaza por dentro: en horizontal o con el zoom al 200 %, lo último (los
+   enlaces legales y la nota de privacidad) quedaría fuera (WCAG 1.4.4 y 1.4.10; revisión de la fase 9,
+   segunda ronda, hallazgo 22). */
+.site-nav:popover-open {
+  position: fixed;
+  inset: 3.5rem var(--space-2) auto auto;
+  width: min(18rem, calc(100vw - 2 * var(--space-2)));
+  max-height: calc(100dvh - 3.5rem - var(--space-2));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-2) var(--space-4) var(--space-4);
+  background: var(--color-surface);
+  border: 0;
+  border-radius: var(--radius-md);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.45);
+}
+
+.site-nav:popover-open ul {
+  display: grid;
+  gap: 0;
+}
+
+.site-nav:popover-open a {
+  min-height: var(--tap-target);
+  font-size: var(--text-base);
+}
+
+.site-nav:popover-open .site-nav__extra {
+  display: block;
+}
+
+/* Lo legal y los créditos, aparte y abajo (fase 9c, 9c.5): más pequeños, tras una raya. */
+.site-nav:popover-open .site-nav__legal {
+  margin-top: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: var(--border-width) solid var(--color-line);
+}
+
+.site-nav:popover-open .site-nav__legal a {
+  font-size: var(--text-sm);
+}
+
+.site-nav__author,
+.site-nav__privacy {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+/* Dentro de una frase: subrayado, no solo el color (WCAG 1.4.1). */
+.site-nav:popover-open :is(.site-nav__author, .site-nav__privacy) a {
+  display: inline;
+  min-height: 0;
+  color: var(--color-accent);
+  font-size: inherit;
+  text-decoration: underline;
+}
+
+main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  width: 100%;
+  min-height: 0;
+}
+
+main:focus {
+  outline: none;
+}
+
+.site-footer {
+  padding: var(--space-4);
+  border-top: var(--border-width) solid var(--color-line);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.site-footer p {
+  margin: 0;
+}
+
+.site-footer p + p {
+  margin-top: var(--space-1);
+}
+
+/*
  * El explorador ocupa la ventana: sin pie (sus créditos van dentro) y sin desplazar la página. En la
  * vista limpia, tampoco la cabecera.
  */
@@ -247,16 +477,49 @@ tls-root:has(tls-explorer-ui.is-clean) .site-header {
     opacity var(--duration-base) var(--ease-standard);
 }
 
-.explorer:has(> tls-explorer-ui.is-interacted) :is(.explorer__intro p, .explorer__touch) {
+.explorer:has(> tls-explorer-ui.is-interacted)
+  :is(.explorer__intro p, .explorer__touch, .explorer__credit) {
   height: 0;
   opacity: 0;
 }
 
-.explorer__touch {
+.explorer__touch,
+.explorer__credit {
   overflow: hidden;
   transition:
     height var(--duration-base) var(--ease-standard),
     opacity var(--duration-base) var(--ease-standard);
+}
+
+/*
+ * La autoría plegada vuelve a verse con el foco del teclado en su enlace, al momento (nunca un foco
+ * invisible ni a medio desplegar).
+ */
+.explorer:has(> tls-explorer-ui.is-interacted) .explorer__credit:focus-within {
+  height: auto;
+  opacity: 1;
+  transition: none;
+}
+
+/*
+ * Las pistas de uso, solo la primera vez (fase 9c, 9c.5): las enseña la interfaz (`shows-hints`), así
+ * que en el HTML prerenderizado no se ven (ni aparecen y desaparecen al volver); con la presentación
+ * plegada, tampoco.
+ */
+.explorer:not(:has(> tls-explorer-ui.shows-hints)) :is(.explorer__touch, .explorer__hints),
+.explorer:has(> tls-explorer-ui.is-interacted) .explorer__hints {
+  visibility: hidden;
+  opacity: 0;
+}
+
+.explorer:has(> tls-explorer-ui:not(.shows-hints)) .explorer__touch {
+  display: none;
+}
+
+.explorer__hints {
+  transition:
+    opacity var(--duration-base) var(--ease-standard),
+    visibility var(--duration-base);
 }
 
 .explorer:has(> tls-explorer-ui.is-interacted) .explorer__intro h1 {
@@ -312,7 +575,8 @@ tls-root:has(tls-explorer-ui.is-clean) .site-header {
  * - Escritorio, con el índice abierto: todo el texto, para que el índice gane alto.
  */
 @media (max-width: 63.99rem) {
-  .explorer:has(.panel:not([hidden]), .index-panel:not([hidden])) .explorer__intro {
+  .explorer:has(.panel:not([hidden]), .index-panel:not([hidden]))
+    :is(.explorer__intro, .explorer__credit) {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -323,7 +587,7 @@ tls-root:has(tls-explorer-ui.is-clean) .site-header {
 }
 
 @media (max-width: 63.99rem) and (max-height: 45rem) {
-  .explorer__intro p {
+  :is(.explorer__intro p, .explorer__credit) {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -339,7 +603,7 @@ tls-root:has(tls-explorer-ui.is-clean) .site-header {
 }
 
 @media (max-width: 63.99rem) and (max-height: 30rem) {
-  .explorer__intro {
+  :is(.explorer__intro, .explorer__credit) {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -350,7 +614,7 @@ tls-root:has(tls-explorer-ui.is-clean) .site-header {
 }
 
 @media (min-width: 64rem) {
-  .explorer:has(.index-panel:not([hidden])) .explorer__intro {
+  .explorer:has(.index-panel:not([hidden])) :is(.explorer__intro, .explorer__credit) {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -441,9 +705,10 @@ tls-explorer-ui
   gap: var(--space-2);
   min-height: 2.25rem;
   padding: 0 var(--space-3);
-  background: var(--color-surface);
+  background: var(--color-surface-raised);
   color: var(--color-text);
-  border: var(--border-width) solid var(--color-control);
+  /* Sin borde (fase 9c, 9c.5: menos cajas): solo los campos y los desplegables lo llevan, abajo. */
+  border: var(--border-width) solid transparent;
   border-radius: var(--radius-md);
   font: inherit;
   font-size: var(--text-sm);
@@ -451,14 +716,16 @@ tls-explorer-ui
 }
 
 .control:hover {
-  background: var(--color-surface-raised);
+  background: var(--color-line);
 }
 
-/* Pulsado, o abierto (los botones que despliegan algo: «Índice», «Controles», «Más»). */
+/*
+ * Pulsado, o abierto (los botones que despliegan algo: «Índice», «Controles», «Más»): el texto en
+ * latón y su subrayado, como la pestaña de la vista actual.
+ */
 .control:is([aria-pressed='true'], [aria-expanded='true']) {
-  background: var(--color-surface-raised);
   color: var(--color-accent);
-  border-color: var(--color-accent);
+  box-shadow: inset 0 -2px 0 var(--color-accent);
 }
 
 .control--icon {
@@ -469,6 +736,8 @@ tls-explorer-ui
 select.control,
 input.control {
   justify-content: flex-start;
+  background: var(--color-surface);
+  border-color: var(--color-control);
   cursor: auto;
 }
 
@@ -639,7 +908,8 @@ select.control {
 
 .sky-label--constellation {
   color: var(--color-sky-constellation);
-  font-size: 0.6875rem;
+  /* 12 px, para que el latín, debajo, pueda tener 11 sin perder la jerarquía (fase 9c, 9c.7). */
+  font-size: 0.75rem;
   letter-spacing: 0.04em;
   text-align: center;
   opacity: 0.85;
@@ -647,11 +917,12 @@ select.control {
 
 /*
  * Debajo del nombre español, el oficial de la IAU en latín, más pequeño y en cursiva (D38); con el
- * mismo color, que da 5,7:1 sobre el fondo de la noche con la opacidad de la etiqueta.
+ * mismo color, que da 5,7:1 sobre el fondo de la noche con la opacidad de la etiqueta. 11 px, lo más
+ * pequeño que se lee (fase 9c, 9c.7: tenía 9).
  */
 .sky-label__secondary {
   display: block;
-  font-size: 0.5625rem;
+  font-size: 0.6875rem;
   font-style: italic;
   letter-spacing: 0.02em;
 }

@@ -113,6 +113,12 @@ export class TimeMenu {
     this.session.zoom(factor);
   }
 
+  /** «Ver el recorrido»: el panel se cierra y empieza (en la vista del sistema solar). */
+  protected tour(): void {
+    this.done.emit();
+    this.session.startTour();
+  }
+
   /** La vista general: el panel se cierra, para verla. */
   protected overview(): void {
     this.done.emit();

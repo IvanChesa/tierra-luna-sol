@@ -10,12 +10,17 @@ test.describe('El cielo desde España (fase 8)', () => {
   }) => {
     const problems = trackProblems(page);
     await openExplorer(page, '/cielo?fecha=2026-11-01T21:00Z');
-    // «Cielo», en las vistas del explorador y en el menú del sitio (decisión de Iván del 03-11).
-    for (const nav of ['Vistas del explorador', 'Principal']) {
-      await expect(
-        page.getByRole('navigation', { name: nav }).getByRole('link', { name: 'Cielo' }),
-      ).toHaveAttribute('aria-current', 'page');
-    }
+    // «Cielo», en las vistas del explorador; en el menú del sitio, «Explorar en 3D» (fase 9c).
+    await expect(
+      page
+        .getByRole('navigation', { name: 'Vistas del explorador' })
+        .getByRole('link', { name: 'Cielo' }),
+    ).toHaveAttribute('aria-current', 'page');
+    // (El menú del sitio, en el explorador, está cerrado: el enlace se busca por su clase.)
+    await expect(page.locator('#site-menu a.site-nav__explore')).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
     await expect(page.locator('h1')).toHaveText('El cielo desde España');
     const select = page.getByLabel('Lugar desde el que ves el cielo');
     await expect(select).toHaveValue('montsec');
@@ -165,7 +170,7 @@ test.describe('Próximos eclipses (fase 8)', () => {
     await expect(page.locator('h1')).toHaveText('Próximos eclipses visibles desde España');
     await expect(page.locator('.eclipse').first()).toBeVisible();
     await expect(page.locator('.eclipses__note')).toContainText(
-      'Calculado el 1 de noviembre de 2026',
+      'Calculado al publicar la web (el 1 de noviembre de 2026)',
     );
     await context.close();
   });

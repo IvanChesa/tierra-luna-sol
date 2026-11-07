@@ -4,16 +4,17 @@
  * navegador lo oculta (`display: none`): aquí solo se da caja al abierto.
  */
 :host {
-  inset: auto var(--space-4) calc(var(--explorer-bar, 4.5rem) + var(--space-8)) auto;
+  inset: auto var(--space-4)
+    calc(var(--explorer-bar, 4rem) + var(--explorer-chips, 4.5rem) + var(--space-2)) auto;
   width: min(25rem, calc(100vw - 2 * var(--space-4)));
-  max-height: calc(100svh - var(--explorer-bar, 4.5rem) - 7rem);
+  max-height: calc(100svh - var(--explorer-bar, 4rem) - var(--explorer-chips, 4.5rem) - 5rem);
   margin: 0;
   padding: var(--space-4);
   overflow-y: auto;
   overscroll-behavior: contain;
   background: var(--color-surface);
   color: var(--color-text);
-  border: var(--border-width) solid var(--color-control);
+  border: 0;
   border-radius: var(--radius-md);
   box-shadow: 0 16px 48px rgb(0 0 0 / 0.5);
 }
@@ -132,8 +133,6 @@
     width: auto;
     max-height: calc(100svh - var(--explorer-bar, 3.75rem) - 4rem);
     padding: var(--space-4) var(--space-4) var(--space-6);
-    border: 0;
-    border-top: var(--border-width) solid var(--color-control);
     border-radius: var(--radius-md) var(--radius-md) 0 0;
     box-shadow: 0 -12px 32px rgb(0 0 0 / 0.4);
   }
@@ -146,6 +145,17 @@
 @media (min-width: 64rem) {
   :host-context(tls-explorer-ui.has-panel) {
     right: calc(var(--explorer-panel, 22rem) + 2 * var(--space-4));
+  }
+}
+
+/* En el móvil, más compacto: la hoja deja a la vista la cabecera y algo del 3D. */
+@media (max-width: 63.99rem) {
+  .menu {
+    gap: var(--space-2) var(--space-3);
+  }
+
+  .menu__group {
+    margin-top: var(--space-1);
   }
 }
 

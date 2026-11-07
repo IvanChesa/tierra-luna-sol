@@ -106,6 +106,15 @@
   min-width: 0;
 }
 
+/* La autoría: discreta, en el color secundario y en letra pequeña. */
+.explorer__credit {
+  max-width: 32rem;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
 /* Cómo se usa, para quien llega con el dedo (en el escritorio lo dice el pie). */
 .explorer__touch {
   display: none;
@@ -135,12 +144,6 @@
 .explorer__foot p {
   max-width: none;
   margin: 0;
-}
-
-.explorer__credits {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 var(--space-4);
 }
 
 /*

@@ -59,8 +59,12 @@ export class EclipsesPage {
   private readonly entries = signal<readonly EclipseEntry[]>(
     ECLIPSES_BY_PLACE[this.placeId()] ?? [],
   );
+  /**
+   * Lo que dice el HTML prerenderizado: la fecha en que se calculó la lista al publicar la web (fase
+   * 9c, 9c.7: «Calculado el 1 de noviembre» parecía la fecha de hoy). En el navegador, la de hoy.
+   */
   protected readonly calculated = signal(
-    `Calculado el ${formatLongDateInZone(new Date(`${ECLIPSES_FROM}T12:00:00Z`), 'Europe/Madrid')} con astronomy-engine.`,
+    `Calculado al publicar la web (el ${formatLongDateInZone(new Date(`${ECLIPSES_FROM}T12:00:00Z`), 'Europe/Madrid')}) con astronomy-engine.`,
   );
   protected readonly busy = signal(false);
   private run = 0;

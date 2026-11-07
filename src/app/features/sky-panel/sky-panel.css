@@ -36,7 +36,6 @@
   min-width: 0;
   padding: var(--space-3) var(--space-4);
   background: var(--color-surface);
-  border: var(--border-width) solid var(--color-line);
   border-radius: var(--radius-md);
 }
 
@@ -107,6 +106,7 @@
 
 .sky__slider {
   width: 100%;
+  min-height: 1.5rem;
   accent-color: var(--color-accent);
 }
 

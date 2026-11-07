@@ -48,7 +48,6 @@
   min-height: 0;
   margin: var(--space-4) var(--space-4) var(--panel-bottom) 0;
   background: var(--color-surface);
-  border: var(--border-width) solid var(--color-line);
   border-radius: var(--radius-md);
   box-shadow: 0 12px 32px rgb(0 0 0 / 0.35);
   transition:
@@ -86,8 +85,12 @@
   margin-left: var(--space-4);
 }
 
-/* Las fichas, en la misma fila, centradas en el ancho y con sitio para el botón a cada lado. */
+/*
+ * Las fichas, en la misma fila, centradas en el ancho y con sitio para el botón a cada lado. Tapan el
+ * lienzo por abajo (sin velo, fase 9c): el encuadre se aparta, y la cámara queda por encima de ellas.
+ */
 .chips {
+  --chrome-edge: bottom;
   grid-area: chips;
   align-self: center;
   margin-inline: calc(var(--index-toggle-width) + 2 * var(--space-4));
@@ -123,8 +126,12 @@
   visibility: hidden;
 }
 
-/* Las vistas Tierra y Luna, sin la fila de fichas ni el Índice (fase 9c): «‹ Sistema solar», en el título. */
-:host(.is-detail) :is(.chips, .index-toggle) {
+/*
+ * Las vistas Tierra y Luna, sin la fila de fichas ni el Índice (fase 9c): «‹ Sistema solar», en el
+ * título. En el cielo, sin el Índice: su tabla es la de «Esta noche».
+ */
+:host(.is-detail) :is(.chips, .index-toggle),
+:host-context(.explorer--sky) .index-toggle {
   display: none;
 }
 
@@ -202,8 +209,6 @@ kbd {
     width: auto;
     max-height: min(45svh, 100%);
     margin: 0;
-    border: 0;
-    border-top: var(--border-width) solid var(--color-control);
     border-radius: var(--radius-md) var(--radius-md) 0 0;
     box-shadow: 0 -12px 32px rgb(0 0 0 / 0.4);
   }

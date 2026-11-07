@@ -246,6 +246,23 @@ describe('ExplorerUi: panel «Índice» y texto de presentación (fase 3c)', () 
     }
   });
 
+  it('las pistas de uso, solo la primera vez: al plegarse la presentación no vuelven (fase 9c)', async () => {
+    window.localStorage.removeItem('tls.pistas');
+    try {
+      const first = await render('?fecha=2030-01-01T00:00Z');
+      expect(first.host.classList.contains('shows-hints')).toBe(true);
+      first.host.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      first.fixture.detectChanges();
+      expect(window.localStorage.getItem('tls.pistas')).toBe('visto');
+      TestBed.resetTestingModule();
+
+      const again = await render('?fecha=2030-01-01T00:00Z');
+      expect(again.host.classList.contains('shows-hints')).toBe(false);
+    } finally {
+      window.localStorage.removeItem('tls.pistas');
+    }
+  });
+
   it('el título sigue al cuerpo elegido, con «‹ Sistema solar» para volver (fase 9c)', async () => {
     const { fixture, sim } = await render();
     const focus = TestBed.inject(ExplorerFocus);

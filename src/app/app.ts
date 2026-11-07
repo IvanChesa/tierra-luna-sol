@@ -8,23 +8,22 @@ import { SITE_CONFIG } from './core/site.config';
   selector: 'tls-root',
   imports: [RouterOutlet, RouterLink],
   templateUrl: './app.html',
-  styleUrl: './app.css',
 })
 export class App {
   private readonly location = inject(Location);
   protected readonly site = SITE_CONFIG;
   /**
-   * La navegación principal; las de `extra`, solo en el menú del móvil. «Cielo» en lugar de «Luna»
-   * (decisión de Iván del 03-11): la Luna, la primera de /lunas.
+   * La navegación (fase 9c, decisión 2 de Iván): las páginas de lectura y «Explorar en 3D», la portada
+   * del explorador. El cielo es una de sus vistas (sus pestañas); la Luna, la primera de /lunas
+   * (decisión del 03-11). Los créditos y lo legal, aparte, en el menú (app.html).
    */
   protected readonly links = [
-    { path: '/planetas', label: 'Planetas', extra: false },
-    { path: '/lunas', label: 'Lunas', extra: false },
-    { path: '/sol', label: 'Sol', extra: false },
-    { path: '/cielo', label: 'Cielo', extra: false },
-    { path: '/eclipses', label: 'Eclipses', extra: false },
-    { path: '/sobre-el-proyecto', label: 'Sobre el proyecto', extra: false },
-    { path: '/creditos', label: 'Créditos', extra: true },
+    { path: '/planetas', label: 'Planetas' },
+    { path: '/lunas', label: 'Lunas' },
+    { path: '/sol', label: 'Sol' },
+    { path: '/eclipses', label: 'Eclipses' },
+    { path: '/sobre-el-proyecto', label: 'Sobre el proyecto' },
+    { path: '/', label: 'Explorar en 3D' },
   ];
 
   /**
@@ -66,9 +65,10 @@ export class App {
     });
   }
 
-  /** ¿Es la de `link` la sección de la página? */
+  /** ¿Es la de `link` la sección de la página? «Explorar en 3D», en las cuatro vistas del explorador. */
   protected current(link: string): boolean {
     const path = this.path();
+    if (link === '/') return /^\/(explorar\/|cielo$|$)/.test(path);
     return path === link || path.startsWith(`${link}/`) || (link === '/lunas' && path === '/luna');
   }
 

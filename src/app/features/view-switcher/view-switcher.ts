@@ -43,7 +43,7 @@ export const VIEW_LINKS: readonly ViewLink[] = [
       width: fit-content;
       max-width: 100%;
       padding: 2px;
-      border: var(--border-width) solid var(--color-control);
+      background: color-mix(in srgb, var(--color-bg) 70%, transparent);
       border-radius: var(--radius-md);
     }
 

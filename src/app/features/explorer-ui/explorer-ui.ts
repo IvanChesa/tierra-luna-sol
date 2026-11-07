@@ -17,6 +17,7 @@ import {
 import { Title } from '@angular/platform-browser';
 import { NavigationEnd, Router } from '@angular/router';
 import { formatPageTitle } from '../../core/site-title.strategy';
+import { GUIDED_VIEWS } from '../../data/tours';
 import type { ExplorerView, ViewInsets } from '../../scene';
 import { ExplorerStore } from '../../state/explorer.store';
 import { SystemPositions } from '../../state/positions';
@@ -39,6 +40,7 @@ import { ViewerCanvas } from '../viewer/viewer-canvas';
 import { bodyKindLabel } from './describe';
 import { ExplorerFocus, type FocusTitle } from './explorer-focus';
 import { ExplorerSession } from './explorer-session';
+import { hasSeen, markSeen, safeStorage } from './first-visit';
 import { IndexPanel } from './index-panel';
 import { Notices } from './notices';
 
@@ -140,6 +142,7 @@ function offsetWithin(element: HTMLElement, root: HTMLElement): { left: number; 
     '[class.is-detail]': 'detail()',
     '[class.is-sheet-expanded]': 'sheetExpanded()',
     '[class.is-interacted]': 'interacted()',
+    '[class.shows-hints]': 'showsHints',
     '(document:keydown)': 'onKeydown($event)',
     '(pointerdown)': 'acted.set(true)',
     '(focusin)': 'rememberFocus($event)',
@@ -202,6 +205,11 @@ export class ExplorerUi {
   protected readonly interacted = computed(
     () => this.acted() || this.settled() || this.panelBody() !== null,
   );
+  /**
+   * Las pistas de uso («Arrastra para girar…»), solo la primera vez (fase 9c, 9c.5): se pliegan con la
+   * presentación y, desde entonces, no vuelven. Sin almacenamiento, siempre (se pliegan solas).
+   */
+  protected readonly showsHints: boolean;
   private swipeStart: number | null = null;
   private readonly panel = viewChild.required<ElementRef<HTMLElement>>('panel');
   private readonly indexToggle = viewChild.required<ElementRef<HTMLElement>>('indexToggle');
@@ -213,6 +221,19 @@ export class ExplorerUi {
     },
   );
   private readonly restoreButton = viewChild<ElementRef<HTMLElement>>('restore');
+  private readonly tourSkip = viewChild<ElementRef<HTMLElement>>('tourSkip');
+  /** El recorrido de la portada, en marcha (fase 9c, 9c.6): «Saltar el recorrido» a la vista. */
+  protected readonly touring = signal(false);
+  /**
+   * Con movimiento reducido, el recorrido no arranca solo: la primera vez, en su lugar, «Ver el
+   * recorrido» (hasta empezar a usar el explorador; siempre, en «Controles»).
+   */
+  protected readonly offersTour = signal(false);
+  private tour: { stop(): void } | null = null;
+  /** El almacenamiento del navegador (las preferencias de la primera vez). */
+  private readonly storage = safeStorage(this.host.nativeElement.ownerDocument.defaultView);
+  /** El explorador se abrió en la portada, sin parámetros: el único sitio donde arranca el recorrido. */
+  private readonly plainHome: boolean;
   /**
    * Un fundido por cada paso entre el espacio y el cielo (la pista del `@for`): cada uno crea el
    * velo de nuevo y su animación CSS lo desvanece. Con movimiento reducido, ninguno (un corte).
@@ -234,6 +255,21 @@ export class ExplorerUi {
     afterNextRender(() => this.trackInsets());
 
     this.followFocus();
+
+    const storage = this.storage;
+    this.showsHints = hasSeen(storage, 'tls.pistas') !== true;
+    const location = this.host.nativeElement.ownerDocument.defaultView?.location;
+    this.plainHome = location?.pathname === '/' && !location.search;
+    this.session.setTourHandler(() => this.startTour());
+    this.destroyRef.onDestroy(() => {
+      this.session.setTourHandler(null);
+      this.tour?.stop();
+    });
+    if (this.showsHints && !this.session.capture) {
+      effect(() => {
+        if (this.interacted()) untracked(() => markSeen(storage, 'tls.pistas'));
+      });
+    }
 
     // La presentación se pliega sola a los pocos segundos de llegar a cada vista (un temporizador:
     // sistema externo). En captura, nunca.
@@ -278,6 +314,77 @@ export class ExplorerUi {
   protected sceneReady(): void {
     this.ready3d.set(true);
     this.ready.emit();
+    this.maybeStartTour();
+  }
+
+  // --- El recorrido de la portada (fase 9c, 9c.6) -------------------------------------------------
+
+  /**
+   * La primera vez que alguien entra en `/` sin parámetros, con el 3D ya pintado: el recorrido. No
+   * arranca en el modo de captura, con un enlace profundo (`?cuerpo=`, `?fecha=`, `/explorar/…`),
+   * si ya se vio, ni sin almacenamiento (no se puede recordar: no insiste). Con movimiento reducido,
+   * se ofrece «Ver el recorrido».
+   */
+  private maybeStartTour(): void {
+    if (!this.plainHome || this.session.capture || this.view() !== 'system') return;
+    if (hasSeen(this.storage, 'tls.recorrido') !== false) return;
+    if (this.session.reducedMotion) this.offersTour.set(true);
+    else this.startTour();
+  }
+
+  /**
+   * Pone en marcha el recorrido (su código, en un chunk aparte que se pide ahora). Lo para «Saltar el
+   * recorrido», `Esc` o cualquier toque, arrastre, rueda o tecla, y la escena se queda donde está.
+   */
+  protected startTour(): void {
+    if (this.tour || this.touring()) return;
+    this.offersTour.set(false);
+    markSeen(this.storage, 'tls.recorrido');
+    void import('../tour/home-tour').then(({ homeTourSteps, runTour }) => {
+      const spain = GUIDED_VIEWS.find((view) => view.id === 'espana');
+      if (!spain || this.tour) return;
+      const doc = this.host.nativeElement.ownerDocument;
+      const interrupt = (event: Event) => {
+        if (event instanceof KeyboardEvent) {
+          if (PASSIVE_KEYS.has(event.key)) return;
+          // `Esc` solo para el recorrido: no salta el viaje en curso ni cierra nada.
+          if (event.key === 'Escape') event.preventDefault();
+        }
+        this.tour?.stop();
+      };
+      const events = ['pointerdown', 'wheel', 'keydown'] as const;
+      const listen = (on: boolean) => {
+        for (const type of events) {
+          if (on) doc.addEventListener(type, interrupt, { capture: true });
+          else doc.removeEventListener(type, interrupt, { capture: true });
+        }
+      };
+      this.tour = runTour(
+        {
+          select: (id) => this.session.select(id),
+          closePanel: () => this.session.closePanel(),
+          goTo: (view) => this.goTo(view, true),
+          showGuidedView: (view) => this.session.showGuidedView(view),
+          play: () => this.sim.setPlaying(true),
+          announce: (text) => this.session.announce(text),
+        },
+        homeTourSteps(spain),
+        (completed) => {
+          listen(false);
+          this.tour = null;
+          this.touring.set(false);
+          if (!completed) this.session.announce('Recorrido parado.');
+        },
+      );
+      listen(true);
+      if (this.view() !== 'system') this.goTo('system', true);
+      this.touring.set(true);
+      afterNextRender(() => this.tourSkip()?.nativeElement.focus(), { injector: this.injector });
+    });
+  }
+
+  protected stopTour(): void {
+    this.tour?.stop();
   }
 
   protected closePanel(): void {
@@ -462,10 +569,16 @@ export class ExplorerUi {
     return false;
   }
 
-  private goTo(view: ExplorerView): void {
+  /** A otra vista. Las del recorrido sustituyen la entrada del historial (`replace`): no lo llenan. */
+  private goTo(view: ExplorerView, replace = false): void {
     const link = VIEW_LINKS.find((candidate) => candidate.view === view);
     if (link && view !== this.view()) {
-      void this.router.navigate([link.path], { queryParamsHandling: 'preserve' });
+      void this.router.navigate(
+        [link.path],
+        replace
+          ? { queryParamsHandling: 'preserve', replaceUrl: true }
+          : { queryParamsHandling: 'preserve' },
+      );
     }
   }
 

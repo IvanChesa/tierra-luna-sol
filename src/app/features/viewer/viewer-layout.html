@@ -21,6 +21,11 @@
     <div class="explorer__intro">
       <router-outlet (activate)="onActivate()" />
     </div>
+    <!-- La autoría (fase 9c, decisión 3): discreta, en la primera pantalla; se pliega con la entradilla. -->
+    <p class="explorer__credit">
+      {{ authorship.text }} Un proyecto de {{ site.author.name }} ·
+      <a routerLink="/sobre-el-proyecto" fragment="precision">Cómo se calcula</a>
+    </p>
     <p class="explorer__touch">Arrastra para girar · pellizca para acercarte</p>
   </div>
 
@@ -28,21 +33,13 @@
     <tls-explorer-ui [view]="view()" (ready)="onReady()" />
   }
 
-  <!-- Al final del DOM (el foco llega después de la interfaz), en letra pequeña al pie. -->
+  <!--
+    Las pistas de uso, en letra pequeña al pie, solo la primera vez (fase 9c, 9c.5). Los créditos, lo
+    legal y la nota de privacidad, en el menú del sitio; la fuente de los datos, en «Controles».
+  -->
   <footer class="explorer__foot">
     <p class="explorer__hints">
       Arrastra para girar · usa la rueda o pellizca para acercarte · elige un cuerpo
-    </p>
-    <p class="explorer__credits">
-      <span>1900–2100 · NASA/JPL · astronomy-engine</span>
-      <span>
-        Un proyecto de <a [href]="site.author.url">{{ site.author.name }}</a> ·
-        <a [href]="site.legal.notice">Aviso legal</a> ·
-        <a routerLink="/sobre-el-proyecto" fragment="privacidad"
-          >Sin cookies, sin analítica y sin peticiones a terceros</a
-        >
-        · <a routerLink="/creditos">Créditos</a>
-      </span>
     </p>
   </footer>
 </section>

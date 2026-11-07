@@ -138,12 +138,17 @@
     min-width: 0;
   }
 
-  /* Las vistas Tierra y Luna: plegada a reproducir y la fecha; la línea del año, en «Controles». */
-  :host-context(.explorer--detail) .time {
+  /*
+   * Las vistas Tierra y Luna, y el cielo (su noche tiene su propio deslizador): plegada a reproducir y
+   * la fecha; para cambiar de año, la fecha de «Controles».
+   */
+  :host-context(.explorer--detail) .time,
+  :host-context(.explorer--sky) .time {
     grid-template-columns: auto minmax(0, 1fr) auto;
   }
 
-  :host-context(.explorer--detail) .time__line {
+  :host-context(.explorer--detail) .time__line,
+  :host-context(.explorer--sky) .time__line {
     display: none;
   }
 }

@@ -77,17 +77,33 @@
   <tls-sky-panel class="view-panel" data-chrome />
 }
 
-<tls-body-chips class="chips" />
+<!-- Flotan sobre el 3D: cuentan en el margen de abajo del encuadre (data-chrome). -->
+<tls-body-chips class="chips" data-chrome />
 
 <tls-time-controls class="dock" />
 
 <tls-notices class="notices" />
 
-@if (explorer.travelling() === 'view') {
+<!-- Durante el recorrido, sus viajes los para «Saltar el recorrido» (que deja la escena donde está). -->
+@if (explorer.travelling() === 'view' && !touring()) {
   <button type="button" class="control skip" (click)="session.skipTravel()">
     <tls-icon name="skip" />
     Saltar el viaje
     <kbd>Esc</kbd>
+  </button>
+}
+
+<!-- El recorrido de la portada (fase 9c, 9c.6): «Saltar», siempre a la vista y con el foco. -->
+@if (touring()) {
+  <button #tourSkip type="button" class="control skip" (click)="stopTour()">
+    <tls-icon name="skip" />
+    Saltar el recorrido
+    <kbd>Esc</kbd>
+  </button>
+} @else if (offersTour() && !interacted()) {
+  <button type="button" class="control skip" (click)="startTour()">
+    <tls-icon name="play" />
+    Ver el recorrido
   </button>
 }
 

@@ -166,11 +166,13 @@ test.describe('Móvil', () => {
     await expect(page.locator('#time-speed-menu')).toBeVisible();
     await page.locator('#time-speed-menu').selectOption('day');
     await expect(page.locator('.time__speedtext')).toContainText('1 día por segundo');
-    // Ocupa el ancho de abajo, por encima de todo, y se cierra al pulsar fuera.
+    // Ocupa el ancho de abajo, por encima de todo, y se cierra al pulsar fuera (por encima de la hoja).
     const box = await page.locator('#time-menu').boundingBox();
     const viewport = page.viewportSize();
     expect(box && viewport && Math.round(box.x + box.width)).toBe(viewport?.width);
-    await page.mouse.click(20, 200);
+    // Deja a la vista, arriba, la cabecera y algo del 3D (fase 9c: ya no ocupa la pantalla entera).
+    expect(box?.y ?? 0).toBeGreaterThan(100);
+    await page.mouse.click(20, (box?.y ?? 200) - 20);
     await expect(page.locator('#time-date')).toBeHidden();
     // Su botón de cerrar (la hoja tapa el de «Controles»): el foco vuelve a «Controles».
     await more.tap();
@@ -192,16 +194,22 @@ test.describe('Móvil', () => {
     await page.getByRole('button', { name: 'Menú' }).tap();
     const menu = page.getByRole('navigation', { name: 'Principal' });
     await expect(menu).toBeVisible();
-    // «Cielo» en lugar de «Luna» (decisión de Iván del 03-11).
-    await expect(menu.locator('li:not(.site-nav__extra) a')).toHaveText([
+    // Las páginas de lectura y «Explorar en 3D»; el cielo, en las pestañas del explorador (fase 9c).
+    await expect(menu.locator('ul:not(.site-nav__legal) > li > a')).toHaveText([
       'Planetas',
       'Lunas',
       'Sol',
-      'Cielo',
       'Eclipses',
       'Sobre el proyecto',
+      'Explorar en 3D',
     ]);
-    // En el móvil, el explorador no tiene pie: la nota de privacidad y los enlaces legales, aquí (fase 9).
+    // Lo legal, aparte y abajo (fase 9c).
+    await expect(menu.locator('ul.site-nav__legal a')).toHaveText([
+      'Créditos',
+      'Aviso legal',
+      'Política de privacidad',
+    ]);
+    // El explorador no tiene pie del sitio: la nota de privacidad y los enlaces legales, aquí (fase 9).
     await expect(menu).toContainText('Sin cookies, sin analítica y sin peticiones a terceros');
     await expect(menu.getByRole('link', { name: 'Aviso legal' })).toBeVisible();
     await expect(menu.getByRole('link', { name: 'Política de privacidad' })).toBeVisible();
