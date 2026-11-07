@@ -2,16 +2,30 @@
 
 - **Rama:** `fase-9c-interfaz` (desde `main` en `0963b9f`), en el worktree `.claude/worktrees/fase-9c-interfaz-bf1527`
 - **Fecha:** 2026-11-06
-- **Estado:** en curso. **Preparación hecha; esperando la adenda** `docs/decisiones/FASE-9c-INTERFAZ.md` (la crítica de UI/UX con `impeccable`, el alcance que elija Iván y los criterios de aceptación). No se ha empezado ningún cambio de interfaz.
+- **Estado:** en curso, por entregas. Hechas: la preparación, las herramientas con las medidas y capturas de antes, 9c.1 (los gestos), 9c.2 (el móvil) y lo principal de 9c.3 (un solo selector, el panel del Cielo, «Controles», las velocidades y las fechas). Siguen: el resto de 9c.3, 9c.4, 9c.5, 9c.6, 9c.7 y el cierre.
 
 ## 0. Plan
 
-Pendiente de la adenda: cuando llegue, el plan de la fase va aquí (tareas, orden y entregas), antes de tocar la interfaz.
+Lo que pidió Iván el 06-11: una interfaz más limpia y mejor en el móvil y en el PC. La adenda (`docs/decisiones/FASE-9c-INTERFAZ.md`, D47, recibida el 06-11) trae la crítica de `impeccable` (27/40), las tres decisiones de Iván (alcance completo; la navegación nueva, con el título que sigue al cuerpo; el recorrido de 30 s y la línea de autoría), las tareas 9c.1–9c.7 y los criterios. Se trabaja **por entregas, en el orden de la adenda**, cada una con sus commits, sus medidas y el informe al día:
 
-Lo que pidió Iván el 06-11: una interfaz más limpia y mejor en el móvil y en el PC. La crítica de la sesión de revisión (27/40 en los heurísticos de Nielsen) señala tres problemas principales:
-- unos 37–47 controles visibles a la vez en escritorio, con el mismo cuerpo seleccionable en tres o cuatro sitios;
-- en el móvil, al 3D le queda el 21 % de la pantalla en las vistas Tierra, Luna y Cielo;
-- todo con el mismo peso visual (cajas con borde).
+| Entrega | Tareas | Qué |
+|---|---|---|
+| 9c.a | Herramientas y 9c.1 | `scripts/measure-ui.mjs` (zona útil, controles visibles, solapes, zonas táctiles, texto y la hoja del móvil) y `scripts/capture-interface.mjs` (antes y después); las medidas y capturas de antes; los gestos en todo el lienzo (`pointer-events`) y su e2e |
+| 9c.b | 9c.2 | El móvil: la presentación que se pliega, las vistas Tierra y Luna sin la fila de planetas, el panel de cada vista en una fila, la cámara, la hoja del cuerpo de dos alturas con la pausa a mano, la franja de abajo y la barra plegada |
+| 9c.c | 9c.3 y 9c.4 | Un solo selector (el Índice sustituye a las fichas), el panel del Cielo, «Controles», las velocidades y las formas de cambiar la fecha; nada se tapa (el script de solapes en los cuatro tamaños) |
+| 9c.d | 9c.5 | Menos cajas, la navegación nueva (la cabecera, el menú, las pestañas y el título que sigue al cuerpo), los iconos y el pie |
+| 9c.e | 9c.6 | El recorrido de la portada (en un chunk diferido) y la línea de autoría |
+| 9c.f | 9c.7 | Las observaciones menores (zonas táctiles de las páginas, pistas de desplazamiento, texto, fichas completas, `/eclipses`) |
+| Cierre | §5 de la adenda | `docs/DISENO.md`, capturas de después, el detector de impeccable, axe, `npm run check`, el informe completo, la revisión por subagente y **parar sin fusionar** |
+
+**Cómo encaja con los números de la adenda** (§4: ≤ 24 controles en `/` en escritorio, ≤ 30 con un cuerpo elegido y ≤ 16 en el móvil). Contando como la crítica (todo lo que se puede pulsar y se ve, también cada ficha de cuerpo), hoy `/` tiene 7 de la cabecera, 4 pestañas, 4 de la cámara, 9 fichas, el Índice, 8 de la barra de tiempo y 4 enlaces del pie (37). Para bajar a 24 sin quitar ninguna función, el plan es:
+- **la cabecera del explorador, compacta en todos los tamaños:** el nombre (a la portada) y «Menú», con Planetas, Lunas, Sol, Eclipses, Sobre el proyecto y lo legal dentro. En las páginas de lectura, la cabecera completa con «Explorar en 3D» (decisión 2 de Iván). Son 2 controles en lugar de 7;
+- **la barra de tiempo:** reproducir, la fecha, la línea del año, la velocidad y «Controles» (el calendario, el año anterior y siguiente y «Hacia atrás», dentro de «Controles», que ya tiene la fecha);
+- **la cámara en escritorio:** acercar y alejar, sin marco; «Vista general» la hace «‹ Sistema solar» (y está en «Controles»), y «Vista limpia», en «Controles». En el móvil, todo en «Controles»;
+- **el pie:** los créditos y lo legal, al menú; queda la línea de autoría, con un enlace;
+- **con un planeta con lunas elegido,** la fila de fichas pasa a ser la de su sistema (el planeta y sus lunas) y «‹ Sistema solar», en el título, vuelve a la de los planetas: con Saturno, 8 fichas en lugar de 16.
+
+Queda así: `/`, 2 + 4 + 9 + 1 + 4 + 2 + 1 = 23; Saturno elegido, 2 + 4 + 1 + 8 + 1 + 4 + 2 + 2 (cerrar la ficha y «Ficha completa») = 24.
 
 ### 0.1 Cómo se trabaja en paralelo con el bloque S
 
@@ -94,7 +108,10 @@ Los de la adenda `docs/decisiones/FASE-9c-INTERFAZ.md`, cuando llegue.
 | Preparación: los puertos por entorno | hecha | §0.2 |
 | Preparación: `npm ci` y `npm run check` | hecha | §6 |
 | Preparación: la lectura del código de la interfaz | hecha | §5.1 |
-| Las tareas de la adenda | no empezadas | Esperando la adenda |
+| 9c.a · Herramientas | hecha | `scripts/measure-ui.mjs` y `scripts/capture-interface.mjs`; las medidas de antes (§6.1) y 24 capturas de antes en `docs/informes/img/fase-9c/antes-*.webp` (`b41efc0`) |
+| 9c.1 · Los gestos, en todo el lienzo | hecha | `pointer-events` en lo que flota sin ser control; filas de fichas del ancho de sus fichas; e2e `gestos.spec.ts` a 390 y 768 (`b714bf2`) |
+| 9c.2 · El móvil: que el 3D mande | hecha | §5.2. La presentación se pliega también a los 8 s; Tierra y Luna sin fichas ni Índice, con «‹ Sistema solar»; sus paneles, en una fila con «Más»; la cámara, en «Controles»; la ficha, hoja de dos alturas (≤ 45 % en reposo) sobre la barra, que sigue a la vista; la franja de abajo, solo la barra con un fundido de 0,75 rem; la barra, en una fila, y plegada en Tierra y Luna |
+| 9c.3 · Un solo selector y menos controles | en curso | Hecho: la fila de fichas pasa a ser la del sistema del planeta elegido; el Índice, abierto, sustituye a las fichas; el panel del Cielo (lugar, hora y resumen; «Esta noche» a demanda, la tabla en dos líneas por fila en el móvil); «Controles» (el foco al panel, sin atajos en táctil, no tapa la ficha); sin «10 días por segundo»; el calendario y los botones del año, fuera (la fecha, en «Controles») |
 
 ## 4. Desviaciones del plan y motivo
 
@@ -143,6 +160,22 @@ Un mapa de la interfaz antes de cambiarla, para la adenda y para el plan de §0.
 - **Selectores que usan los scripts de la otra sesión** (`scripts/capture-ui.mjs`, `capture-sky.mjs`, `capture-pages.mjs`, `measure.mjs`, `measure-autoplay.mjs`): `.time__more`, `.index-toggle`, `button[data-body=…]`, `#time-scale`, `tls-time-controls`, `tls-viewer-canvas.is-ready`, `.site-menu-button`, `a[href="/planetas"]` y `.eclipses__note`. Si alguno cambia, va a §12.
 - **Los e2e de interfaz** (`maquetacion`, `movil`, `indice-y-ficha`, `tiempo`, `camara`, `vistas`, `tierra`, `luna`, `cielo`, `accesibilidad`) dependen de esa disposición y de sus textos: se actualizan con cada cambio.
 - **`styles.css` también tiene los estilos de las etiquetas de la escena y del cielo** (`.scene-label*`, `.sky-label*`, que crea `scene/labels.ts`, de la otra sesión). Son de este lado por archivo, pero no se tocan sin apuntarlo en §12.
+
+### 5.2 Decisiones de las entregas 9c.1–9c.3
+
+- **Qué captura el puntero (9c.1).** Una regla en `styles.css`: la presentación, el pie, las filas de fichas, la barra de tiempo, los grupos de botones y los paneles de vista no capturan el puntero; sí lo capturan sus controles (`a`, `button`, campos, `summary`, `label`, las barras de herramientas, el `popover` de «Controles») y los paneles opacos. Las filas de fichas, del ancho de sus fichas (`width: fit-content`).
+- **La presentación se pliega sola a los 8 s** (`PRESENTATION_FOLD_MS`), además de al primer gesto; en el modo de captura, nunca. En el móvil, plegada, el título en una línea.
+- **Las vistas Tierra y Luna no tienen fila de fichas ni botón «Índice»** (en ningún tamaño, por coherencia): su título lleva «‹ Sistema solar» (un enlace a `/`, con el nombre accesible «Volver al sistema solar», que contiene el texto visible). El Índice sigue con su atajo, `I`.
+- **Los paneles de Tierra y Luna en el móvil, en una fila:** las vistas, desplazables y con un fundido en el borde mientras quede algo por ver (`.scroll-hint`, una animación ligada al desplazamiento; si la fila cabe, sin fundido), y «Más» («Más: la hora del día y el recorrido»; «Más: la fase y el recorrido»), que despliega lo demás.
+- **La cámara:** en escritorio, solo acercar y alejar, sin marco hasta pasar el ratón o con el foco; en el móvil y la tableta, dentro de «Controles» (con la vista general y la vista limpia, que salen de la cámara en todos los tamaños). Cuando la vista limpia se pide desde «Controles», al salir de ella el foco vuelve al botón «Controles».
+- **«Controles»** agrupa el tiempo (la fecha, la hora, la zona, «Ahora», «Hacia atrás» con su nombre y el icono ⇆ y, en el móvil, la velocidad), la cámara y la escena; sin los atajos con pantalla táctil (`pointer: coarse`). Al abrirse, el foco va al propio panel (no al campo de la fecha, que en Android abriría el calendario). En escritorio, con la ficha abierta, se abre a su izquierda; en el móvil, sube sobre la barra de tiempo, que sigue a la vista, y oculta lo que tapa.
+- **La barra de tiempo:** reproducir, la fecha, la línea del año (con el año escrito, sin botones: el año cambia con Inicio y Fin en los extremos o con la fecha de «Controles»), la velocidad y «Controles». El calendario y «Hacia atrás» pasan a «Controles». En el móvil, en una fila (la lectura de tres líneas: la fecha, la zona y la velocidad); en Tierra y Luna, plegada a reproducir, la fecha y «Controles».
+- **La franja de abajo:** solo detrás de la barra de tiempo, con un fundido de 0,75 rem por encima; las fichas flotan sobre el 3D con una sombra del color del fondo en el nombre.
+- **La ficha del cuerpo en el móvil, de dos alturas:** en reposo, el nombre, el tipo, el resumen, «Ficha completa» y «Ver los datos» (como mucho el 45 % de la pantalla); subida (con «Ver los datos» o arrastrando el tirador hacia arriba), las distancias, los datos y las fuentes. Arrastrar hacia abajo la baja y, en reposo, la cierra. Va encima de la barra de tiempo, que no tapa: reproducir y pausar, siempre a mano. Con `/?cuerpo=saturno`, Saturno queda colocado en el hueco libre desde el primer segundo (comprobado con una imagen por segundo durante 10 s).
+- **Un solo selector a la vista (9c.3):** en la vista del sistema solar, con un planeta con lunas elegido (o una de sus lunas), la fila de fichas pasa a ser la de su sistema («Saturno y sus lunas»: el planeta y sus siete lunas), en lugar de sumar una segunda fila; «‹ Sistema solar», en el título, vuelve a la de los planetas. En el cielo, las lunas siguen en una segunda fila (el cielo no tiene título de cuerpo). El Índice, abierto, sustituye a las fichas.
+- **El título sigue al cuerpo elegido** (decisión 2 de Iván, adelantada de 9c.5 porque la fila del sistema la necesita para volver): un servicio de la raíz sin dependencias, `ExplorerFocus` (`features/explorer-ui/explorer-focus.ts`), que escribe la interfaz diferida y lee la portada. La portada se prerenderiza con «El sistema solar»; con un cuerpo, «‹ Sistema solar», su nombre (H1) y su tipo, y el título del documento, «Saturno · Tierra Luna Sol» (también después de que la URL recoja el cuerpo, que vuelve a pasar por la estrategia de títulos). Su código va en un chunk diferido de 0,26 kB: el código propio inicial queda en 14,75 kB de 15.
+- **El panel del Cielo:** el lugar a lo ancho, con «Usar mi ubicación» como una opción del propio selector (así el nombre del lugar cabe entero; la ubicación se sigue pidiendo solo tras esa acción y nunca sale del navegador); la hora; una línea de resumen con la Luna y los planetas sobre el horizonte, los más altos primero («Ahora: Saturno, 37° SE · Luna, 12° E», con su lectura en palabras para el lector de pantalla; `skySummary`, con tests); y «Esta noche» a demanda, con la tabla recompuesta en dos líneas por fila en el móvil (sin barra horizontal; los papeles de tabla, explícitos). Zonas táctiles de 44 px en el selector, la hora, «Esta noche», «Mirar» y las constelaciones.
+- **Las velocidades:** sin «10 días por segundo», casi igual que «1 semana por segundo»; quedan ocho escalones. Las de D33 (3 días/s y 1 h/s), igual.
 
 ## 6. Salida de los checks
 
