@@ -206,7 +206,7 @@ test.describe('Próximos eclipses (fase 8)', () => {
     await expect(page.locator('h1')).toHaveText('Próximos eclipses visibles desde España');
     await expect(page.locator('.eclipse').first()).toBeVisible();
     await expect(page.locator('.eclipses__note')).toContainText(
-      'Calculado al publicar la web (el 1 de noviembre de 2026)',
+      'Lista calculada el 1 de noviembre de 2026 con astronomy-engine.',
     );
     await context.close();
   });
