@@ -127,12 +127,18 @@
 }
 
 /*
- * Las vistas Tierra y Luna, sin la fila de fichas ni el Índice (fase 9c): «‹ Sistema solar», en el
- * título. En el cielo, sin el Índice: su tabla es la de «Esta noche».
+ * Las vistas Tierra y Luna y el cielo, sin el Índice (`no-index`, fase 9c; en el cielo, su tabla es la
+ * de «Esta noche»). En el móvil, tampoco con fichas: en Tierra y Luna, «‹ Sistema solar» en el título;
+ * en el cielo, «Esta noche», con «Mirar» en cada cuerpo.
  */
-:host(.is-detail) :is(.chips, .index-toggle),
-:host-context(.explorer--sky) .index-toggle {
+:host(.no-index) .index-toggle {
   display: none;
+}
+
+@media (max-width: 47.99rem) {
+  :host(.no-index) .chips {
+    display: none;
+  }
 }
 
 /* El Índice es la versión en tabla de las fichas: abierto, las sustituye (fase 9c, 9c.3). */
@@ -241,9 +247,13 @@ kbd {
     margin-left: var(--space-3);
   }
 
-  /* En móvil, las fichas ocupan el resto de la fila y se desplazan. */
+  /* En móvil, las fichas ocupan el resto de la fila y se desplazan; sin Índice, toda. */
   .chips {
     margin-inline: calc(var(--index-toggle-width) + var(--space-3) + var(--space-2)) 0;
+  }
+
+  :host(.no-index) .chips {
+    margin-inline: 0;
   }
 
   :host(.is-sheet-expanded) .panel {

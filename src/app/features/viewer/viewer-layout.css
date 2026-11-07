@@ -67,11 +67,6 @@
   pointer-events: none;
 }
 
-/* Las vistas Tierra y Luna no tienen fila de fichas (fase 9c: «‹ Sistema solar», en su título). */
-.explorer--detail {
-  --explorer-chips: 0px;
-}
-
 /*
  * Texto de presentación, arriba a la izquierda sobre el 3D. En escritorio no tapa un borde entero
  * (`none`): el encuadre no se aparta por él. Un velo suave detrás lo hace legible sobre las estrellas
@@ -208,10 +203,6 @@
     );
   }
 
-  .explorer--detail {
-    --explorer-chips: 0px;
-  }
-
   .explorer--sky > .explorer__lead::before {
     inset: 0 0 -1.5rem;
     background: linear-gradient(
@@ -225,6 +216,17 @@
   /* Los créditos están en el menú del sitio; las pistas no caben. */
   .explorer__foot {
     display: none;
+  }
+}
+
+/*
+ * En el móvil, las vistas Tierra y Luna no tienen fila de fichas (fase 9c: «‹ Sistema solar», en su
+ * título), ni el cielo (su selector es la tabla de «Esta noche»). En la tableta y el PC, sí: los
+ * planetas y, encima, las lunas del sistema elegido (decisión de Iván del 07-11).
+ */
+@media (max-width: 47.99rem) {
+  .explorer:is(.explorer--detail, .explorer--sky) {
+    --explorer-chips: 0px;
   }
 }
 

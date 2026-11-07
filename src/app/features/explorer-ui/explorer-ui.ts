@@ -36,6 +36,7 @@ import { TimeControls } from '../time-controls/time-controls';
 import { VIEW_LINKS } from '../view-switcher/view-switcher';
 import { insetsFromRects, parseChromeEdge } from '../viewer/insets';
 import { Icon } from '../viewer/icon';
+import { PHONE_QUERY, mediaQuery } from '../viewer/media';
 import { ViewerCanvas } from '../viewer/viewer-canvas';
 import { bodyKindLabel } from './describe';
 import { ExplorerFocus, type FocusTitle } from './explorer-focus';
@@ -140,6 +141,7 @@ function offsetWithin(element: HTMLElement, root: HTMLElement): { left: number; 
     '[class.has-index]': 'explorer.indexOpen()',
     '[class.has-moons]': 'hasMoons()',
     '[class.is-detail]': 'detail()',
+    '[class.no-index]': 'detail() || view() === "sky"',
     '[class.is-sheet-expanded]': 'sheetExpanded()',
     '[class.is-interacted]': 'interacted()',
     '[class.shows-hints]': 'showsHints',
@@ -169,16 +171,18 @@ export class ExplorerUi {
     const id = this.panelBody();
     return id ? [id] : [];
   });
+  /** El teléfono: una sola fila de fichas (en la tableta y el PC, dos; body-chips.ts). */
+  private readonly phone = mediaQuery(PHONE_QUERY);
   /**
-   * Se ve la fila de lunas que flota sobre las fichas: solo en el cielo (en la vista del sistema solar,
-   * la fila de fichas pasa a ser la del sistema del cuerpo elegido; en Tierra y Luna no hay fichas).
+   * Se ve la fila de lunas que flota sobre las fichas: en la tableta y el PC, con un planeta con lunas
+   * (o una de ellas) elegido, en todas las vistas (decisión de Iván del 07-11). En el móvil no la hay.
    */
   protected readonly hasMoons = computed(
-    () => this.view() === 'sky' && systemOf(this.sim.selectedBodyId()) !== null,
+    () => !this.phone() && systemOf(this.sim.selectedBodyId()) !== null,
   );
   /**
-   * Las vistas Tierra y Luna: sin la fila de fichas ni el Índice (fase 9c, 9c.2); «‹ Sistema solar», en
-   * su título, lleva a la vista general.
+   * Las vistas Tierra y Luna: sin el Índice (fase 9c, 9c.2) y, en el móvil, sin la fila de fichas
+   * (como el cielo: `no-index`); «‹ Sistema solar», en su título, lleva a la vista general.
    */
   protected readonly detail = computed(() => this.view() === 'earth' || this.view() === 'moon');
   /**

@@ -1,7 +1,8 @@
 <!--
-  En el cielo, las lunas del planeta elegido flotan encima de la fila de planetas (en la vista del
-  sistema solar, la fila es la de su sistema). Siempre en el DOM (oculta si no hay lunas): tapa el
-  lienzo por abajo cuando se ve (data-chrome), y el encuadre se aparta.
+  En el PC y la tableta, las lunas del sistema elegido flotan encima de la fila de planetas. Siempre en
+  el DOM (oculta si no hay lunas o en el móvil): tapa el lienzo por abajo cuando se ve (data-chrome), y
+  el encuadre se aparta. Cada luna, una pastilla: la miniatura y el nombre al lado (como en la fila
+  del móvil, más abajo).
 -->
 <div class="moons" data-chrome [hidden]="floatingMoons().length === 0">
   <div
@@ -18,7 +19,7 @@
         [attr.data-body]="moon.id"
         [attr.aria-pressed]="selected() === moon.id"
         [attr.aria-describedby]="'chip-desc-' + moon.id"
-        [attr.tabindex]="moonStop() === moon.id ? 0 : -1"
+        [attr.tabindex]="isStop(moon.id) ? 0 : -1"
         (focus)="onFocus(moon.id)"
         (click)="choose(moon.id)"
       >
@@ -37,6 +38,7 @@
   </div>
 </div>
 
+<!-- Los planetas o, en el móvil, el planeta elegido, una raya y sus lunas (pastillas, como arriba). -->
 <div
   class="row scroll-hint"
   role="toolbar"
@@ -52,7 +54,7 @@
       [attr.data-body]="body.id"
       [attr.aria-pressed]="selected() === body.id"
       [attr.aria-describedby]="body.kind === 'star' ? null : 'chip-desc-' + body.id"
-      [attr.tabindex]="rowStop() === body.id ? 0 : -1"
+      [attr.tabindex]="isStop(body.id) ? 0 : -1"
       (focus)="onFocus(body.id)"
       (click)="choose(body.id)"
     >
@@ -66,6 +68,32 @@
       />
       <span class="chip__name">{{ body.name }}</span>
     </button>
+  }
+  @if (rowMoons().length > 0) {
+    <span class="row__divider" aria-hidden="true"></span>
+    @for (moon of rowMoons(); track moon.id) {
+      <button
+        type="button"
+        class="moon"
+        [attr.data-body]="moon.id"
+        [attr.aria-pressed]="selected() === moon.id"
+        [attr.aria-describedby]="'chip-desc-' + moon.id"
+        [attr.tabindex]="isStop(moon.id) ? 0 : -1"
+        (focus)="onFocus(moon.id)"
+        (click)="choose(moon.id)"
+      >
+        <img
+          class="moon__thumb"
+          [src]="thumbnail(moon.id)"
+          width="24"
+          height="24"
+          alt=""
+          loading="lazy"
+          decoding="async"
+        />
+        {{ moon.name }}
+      </button>
+    }
   }
 </div>
 

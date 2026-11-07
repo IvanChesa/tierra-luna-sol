@@ -134,6 +134,10 @@ test.describe('Móvil', () => {
     await page.getByRole('button', { name: 'Cerrar la ficha' }).tap();
     const moons = page.getByRole('toolbar', { name: 'Neptuno y sus lunas' });
     await expect(moons.getByRole('button')).toHaveCount(3);
+    // El planeta, redondo; una raya; y sus lunas, en pastillas (decisión de Iván del 07-11).
+    await expect(moons.locator('.row__divider')).toHaveCount(1);
+    await expect(moons.locator('button.chip')).toHaveText(['Neptuno']);
+    await expect(moons.locator('button.moon')).toHaveText(['Tritón', 'Proteo']);
     for (const height of await moons
       .getByRole('button')
       .evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().height))) {

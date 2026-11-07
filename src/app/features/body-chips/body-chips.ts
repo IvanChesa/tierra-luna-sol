@@ -17,17 +17,22 @@ import { SimulationStore } from '../../state/simulation.store';
 import { ROOT_NODES, TreeNode, systemOf, treeNode } from '../body-picker/body-tree';
 import { distanceText, ofBody } from '../explorer-ui/describe';
 import { ExplorerSession } from '../explorer-ui/explorer-session';
+import { PHONE_QUERY, mediaQuery } from '../viewer/media';
 
 /** Teclas que mueven el foco dentro de una fila (barra de herramientas de WAI-ARIA, horizontal). */
 const ROW_KEYS: ReadonlySet<string> = new Set(['ArrowRight', 'ArrowLeft', 'Home', 'End']);
 
 /**
  * Fichas de cuerpos (fase 3c, tarea 1; fase 9c): el único selector a la vista del explorador, sobre la
- * barra de tiempo. Una fila con el Sol y los ocho planetas; en la vista del sistema solar, si el cuerpo
- * elegido es un planeta con lunas (o una de ellas), la fila pasa a ser la de su sistema, el planeta y
- * sus lunas, y «‹ Sistema solar», en el título, vuelve a la de los planetas (fase 9c, 9c.3: una sola
- * fila, la mitad de fichas). En el cielo, las lunas siguen en una segunda fila que flota encima. Cada
- * ficha lleva su miniatura, renderizada por el propio motor (`scripts/build-body-thumbnails.mjs`).
+ * barra de tiempo. Los planetas, redondos y con el nombre debajo; las lunas, pastillas con la
+ * miniatura y el nombre al lado (decisión de Iván del 07-11: se distinguen a simple vista).
+ * - En el PC y la tableta, dos filas: abajo, el Sol y los planetas; encima, si el cuerpo elegido es un
+ *   planeta con lunas (o una de ellas), las de su sistema. En todas las vistas (en la Tierra y la Luna,
+ *   la Luna).
+ * - En el móvil, una sola fila (fase 9c, 9c.3): en la vista del sistema solar, con un planeta con lunas
+ *   elegido, la de su sistema, el planeta, una raya y sus lunas, y «‹ Sistema solar», en el título,
+ *   vuelve a la de los planetas. En Tierra, Luna y el cielo, el explorador no enseña las fichas.
+ * Cada ficha lleva su miniatura, renderizada por el propio motor (`scripts/build-body-thumbnails.mjs`).
  *
  * Accesibilidad: cada fila es una barra de herramientas (una sola parada del tabulador) con botones
  * `aria-pressed`; las flechas, Inicio y Fin solo mueven el foco (recorrer la fila no lanza un vuelo
@@ -45,6 +50,8 @@ export class BodyChips {
   private readonly positions = inject(SystemPositions);
   private readonly explorer = inject(ExplorerStore);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  /** El teléfono: una sola fila (por encima, la tableta y el PC, dos). */
+  private readonly phone = mediaQuery(PHONE_QUERY);
 
   protected readonly selected = this.sim.selectedBodyId;
   /** El planeta cuyas lunas se muestran: el elegido o el de la luna elegida. */
@@ -53,24 +60,28 @@ export class BodyChips {
     const system = this.system();
     return system ? treeNode(system).children.map((id) => treeNode(id)) : [];
   });
-  /** En la vista del sistema solar, la fila es la del sistema del cuerpo elegido, si tiene lunas. */
+  /** En el móvil, en la vista del sistema solar, la fila es la del sistema elegido, si tiene lunas. */
   protected readonly drill = computed(
-    () => this.explorer.view() === 'system' && this.system() !== null,
+    () => this.phone() && this.explorer.view() === 'system' && this.system() !== null,
   );
-  /** Las fichas de la fila principal: el Sol y los planetas, o un planeta y sus lunas. */
+  /** Las fichas redondas de la fila: el Sol y los planetas, o el planeta del sistema (móvil). */
   protected readonly row = computed<readonly TreeNode[]>(() => {
     const system = this.system();
-    return this.drill() && system ? [treeNode(system), ...this.moons()] : ROOT_NODES;
+    return this.drill() && system ? [treeNode(system)] : ROOT_NODES;
   });
+  /** Las lunas en la misma fila, tras la raya (móvil). */
+  protected readonly rowMoons = computed<readonly TreeNode[]>(() =>
+    this.drill() ? this.moons() : [],
+  );
   /** «Saturno y sus lunas»; «La Tierra y la Luna». */
   protected readonly rowLabel = computed(() => {
     const system = this.system();
     if (!this.drill() || !system) return 'Sol y planetas';
     return system === 'tierra' ? 'La Tierra y la Luna' : `${treeNode(system).name} y sus lunas`;
   });
-  /** Fuera de la vista del sistema solar (en el cielo), las lunas van en una segunda fila, encima. */
+  /** En el PC y la tableta, las lunas van en una segunda fila, encima de la de los planetas. */
   protected readonly floatingMoons = computed<readonly TreeNode[]>(() =>
-    this.drill() ? [] : this.moons(),
+    this.phone() ? [] : this.moons(),
   );
   /** «Lunas de Saturno»; la de la Tierra es la Luna, su satélite. */
   protected readonly moonsLabel = computed(() => {
@@ -81,7 +92,7 @@ export class BodyChips {
 
   /** La ficha de cada fila que recibe el foco con el tabulador (tabindex itinerante). */
   protected readonly rowStop = linkedSignal<BodyId>(() => {
-    const row = this.row();
+    const row = [...this.row(), ...this.rowMoons()];
     const selected = this.selected();
     return row.find((node) => node.id === selected)?.id ?? row[0]?.id ?? 'sol';
   });
@@ -100,7 +111,7 @@ export class BodyChips {
   protected readonly descriptions = computed(() => {
     this.focused();
     const texts = () =>
-      [...this.row(), ...this.floatingMoons()].map((node) => ({
+      [...this.row(), ...this.rowMoons(), ...this.floatingMoons()].map((node) => ({
         id: node.id,
         text: distanceText(node.id, this.positions.distances(node.id)),
       }));
@@ -122,6 +133,11 @@ export class BodyChips {
     return `img/cuerpos/${id}.webp`;
   }
 
+  /** ¿Es la ficha de su fila que recibe el foco con el tabulador? (Cada luna está en una sola fila.) */
+  protected isStop(id: BodyId): boolean {
+    return this.rowStop() === id || this.moonStop() === id;
+  }
+
   protected choose(id: BodyId): void {
     this.setStop(id);
     this.session.select(id);
@@ -129,7 +145,7 @@ export class BodyChips {
 
   /** La parada del tabulador de la fila de esa ficha. */
   private setStop(id: BodyId): void {
-    if (this.row().some((node) => node.id === id)) this.rowStop.set(id);
+    if ([...this.row(), ...this.rowMoons()].some((node) => node.id === id)) this.rowStop.set(id);
     else this.moonStop.set(id);
   }
 
@@ -171,7 +187,7 @@ export class BodyChips {
    * contenedores de fuera, y en las pantallas bajas, donde se desplaza la página, la página entera.
    */
   private reveal(chip: HTMLElement | null): void {
-    const row = chip?.parentElement;
+    const row = chip?.closest<HTMLElement>('.row');
     if (!chip || !row) return;
     const box = row.getBoundingClientRect();
     const target = chip.getBoundingClientRect();
