@@ -9,12 +9,16 @@
 //   táctil) o de menos de 24 × 24 (en todas las páginas; WCAG 2.5.8, sin los enlaces dentro de una
 //   frase, que la norma exceptúa);
 // - texto: lo legible por debajo de 11 px;
-// - la hoja del cuerpo en el móvil: su alto sobre el de la ventana, y si la pausa se puede pulsar.
+// - la hoja del cuerpo en el móvil: su alto sobre el de la ventana, y si la pausa se puede pulsar;
+// - el velo de abajo (el fondo de la barra de tiempo): la parte del lienzo que tapa (9c.2, ≤ 10 %);
+// - recortes (revisión de la 9c, hallazgos 6, 7 y 18): los contenedores que se desbordan en horizontal
+//   sin ser una fila desplazable (`.scroll-hint`), los controles que recortan, y las opciones de un
+//   `select` que no caben enteras en él.
 //
 // No es una medida de rendimiento: no depende de la carga del equipo.
 // Uso: npm run build && CAPTURE_PORT=4350 node scripts/measure-ui.mjs [--json <fichero>] [--solo <grupo>]
-//   grupos: explorador (las vistas en los cuatro tamaños), estados (Controles e Índice abiertos),
-//   paginas (las fichas, los índices y /eclipses).
+//   grupos: explorador (las vistas en los cuatro tamaños), estados (Controles, el Índice y «Más»
+//   abiertos), paginas (las fichas, los índices y /eclipses).
 import { writeFile } from 'node:fs/promises';
 import { openBrowser, openViewer, pageOptions, BASE } from './capture-lib.mjs';
 
@@ -30,12 +34,31 @@ export const SIZES = {
   1440: { width: 1440, height: 900, scale: 1 },
 };
 
+/** Cierra la ficha del cuerpo elegido (el cuerpo sigue elegido). */
+async function closePanel(page) {
+  const close = page.getByRole('button', { name: 'Cerrar la ficha' });
+  if (await close.isVisible()) {
+    await close.click();
+    await page.waitForTimeout(400);
+  }
+}
+
+/** Las vistas, con lo que se hace al llegar (revisión de la 9c, hallazgo 12: con la ficha cerrada). */
 const VIEWS = [
   ['portada', '/?captura=1'],
-  ['saturno', '/?captura=1&cuerpo=saturno'],
-  ['tierra', '/explorar/tierra?captura=1'],
-  ['luna', '/explorar/luna?captura=1'],
-  ['cielo', '/cielo?captura=1'],
+  ['Saturno', '/?captura=1&cuerpo=saturno'],
+  ['Saturno, sin ficha', '/?captura=1&cuerpo=saturno', closePanel],
+  ['Tierra', '/explorar/tierra?captura=1'],
+  ['Luna', '/explorar/luna?captura=1'],
+  ['Cielo', '/cielo?captura=1'],
+  ['Cielo, Saturno sin ficha', '/cielo?captura=1&cuerpo=saturno', closePanel],
+];
+
+/** Lo que se abre en cada vista, y en cuáles (tarea 9c.4; «Más», hallazgo 12). */
+const STATES = [
+  ['controles', '.time__more', ['portada', 'Saturno', 'Tierra', 'Luna', 'Cielo']],
+  ['índice', '.index-toggle', ['portada', 'Saturno', 'Tierra', 'Luna', 'Cielo']],
+  ['más', '.earth__toggle, .moon__toggle', ['Tierra', 'Luna']],
 ];
 
 const PAGES = [
@@ -95,13 +118,25 @@ function inspect({ explorer }) {
     const box = clipped(el);
     return box.right - box.left >= 2 && box.bottom - box.top >= 2;
   };
+  // En su centro, ese control o un hijo suyo (la adenda, 9c.4): no un antecesor, que escondería un
+  // control con `pointer-events: none` (revisión, hallazgo 18). Un enlace partido en dos líneas tiene
+  // una caja por línea (el centro de la caja entera puede caer entre ellas): basta con el de una.
   const hits = (el) => {
-    const box = clipped(el);
-    const x = (box.left + box.right) / 2;
-    const y = (box.top + box.bottom) / 2;
-    const hit = document.elementFromPoint(x, y);
-    return hit !== null && (el === hit || el.contains(hit) || hit.contains(el));
+    const lines = [...el.getClientRects()];
+    const boxes = lines.length > 1 ? lines : [el.getBoundingClientRect()];
+    const outer = clipped(el);
+    return boxes.some((r) => {
+      const left = Math.max(r.left, outer.left);
+      const right = Math.min(r.right, outer.right);
+      const top = Math.max(r.top, outer.top);
+      const bottom = Math.min(r.bottom, outer.bottom);
+      if (right - left < 1 || bottom - top < 1) return false;
+      const hit = document.elementFromPoint((left + right) / 2, (top + bottom) / 2);
+      return hit !== null && (el === hit || el.contains(hit));
+    });
   };
+  /** Dentro de una fila hecha para desplazarse en horizontal (las fichas, las vistas guiadas). */
+  const inScroller = (el) => el.closest('.scroll-hint') !== null;
   const name = (el) =>
     (el.getAttribute('aria-label') || el.textContent || el.getAttribute('title') || el.tagName)
       .replace(/\s+/g, ' ')
@@ -171,12 +206,63 @@ function inspect({ explorer }) {
       tiny.add(`${text.slice(0, 30)} (${size.toFixed(1)} px)`);
   }
 
+  // Recortes: los controles que se ven a medias en horizontal (su contenedor o la ventana los cortan)
+  // fuera de una fila desplazable, y los contenedores que se desbordan en horizontal (hallazgo 7).
+  const cut = outer
+    .filter((el) => !inScroller(el))
+    .filter((el) => {
+      const r = el.getBoundingClientRect();
+      const box = clipped(el);
+      return box.right - box.left < r.width - 1;
+    })
+    .map(describe);
+  const overflowing = [...document.querySelectorAll('body *')]
+    .filter((el) => !inScroller(el) && !el.closest('[hidden], [inert]'))
+    .filter((el) => {
+      const style = getComputedStyle(el);
+      if (style.display === 'none' || style.display === 'contents') return false;
+      if (style.overflowX === 'visible') return false;
+      // Lo de 1 px es lo que solo leen los lectores de pantalla (`.visually-hidden`): no se ve.
+      return el.scrollWidth > el.clientWidth + 1 && el.clientWidth > 1;
+    })
+    .map((el) => {
+      const label = el.id
+        ? `#${el.id}`
+        : `${el.tagName.toLowerCase()}.${[...el.classList].join('.')}`;
+      return `${label} (${el.scrollWidth} > ${el.clientWidth})`;
+    });
+  // Las opciones de un `select` que no caben enteras: una copia del `select` con solo esa opción, de
+  // su ancho natural (el texto, el relleno y la flecha), frente al ancho del de verdad (hallazgo 6).
+  const cutOptions = [];
+  for (const select of [...document.querySelectorAll('select')].filter(drawn)) {
+    const probe = select.cloneNode(false);
+    probe.removeAttribute('id');
+    Object.assign(probe.style, {
+      position: 'absolute',
+      visibility: 'hidden',
+      width: 'auto',
+      minWidth: '0',
+      maxWidth: 'none',
+    });
+    select.parentElement.append(probe);
+    for (const option of select.options) {
+      probe.replaceChildren(new Option(option.text));
+      if (probe.offsetWidth > select.offsetWidth + 0.5) {
+        cutOptions.push(`${option.text.trim()} (${probe.offsetWidth} > ${select.offsetWidth})`);
+      }
+    }
+    probe.remove();
+  }
+
   const result = {
     controls: visible.length,
     controlNames: visible.map(name),
     covered: covered.map(describe),
     small,
     tiny: [...tiny].slice(0, 20),
+    cut,
+    overflowing,
+    cutOptions,
   };
   if (!explorer) return result;
 
@@ -197,6 +283,16 @@ function inspect({ explorer }) {
   }
   result.useful = total ? free / total : 0;
 
+  // El velo de abajo (el fondo de la barra de tiempo, con su fundido): la parte del lienzo visible que
+  // queda debajo de su caja (9c.2: ≤ 10 %).
+  const dock = document.querySelector('.explorer__dock');
+  if (dock && right > left && bottom > top) {
+    const d = dock.getBoundingClientRect();
+    const w = Math.max(0, Math.min(d.right, right) - Math.max(d.left, left));
+    const h = Math.max(0, Math.min(d.bottom, bottom) - Math.max(d.top, top));
+    result.veil = (w * h) / ((right - left) * (bottom - top));
+  }
+
   // La hoja del cuerpo (móvil): su alto sobre el de la ventana, y la pausa a mano.
   const panel = document.querySelector('.panel');
   if (panel && !panel.hidden && panel.checkVisibility()) {
@@ -215,8 +311,9 @@ const report = { explorer: [], states: [], pages: [] };
 try {
   if (!only || only === 'explorador') {
     for (const [size, options] of Object.entries(SIZES)) {
-      for (const [view, path] of VIEWS) {
+      for (const [view, path, arrive] of VIEWS) {
         const { page } = await openViewer(browser, path, options);
+        if (arrive) await arrive(page);
         const result = await page.evaluate(inspect, { explorer: true });
         report.explorer.push({ size: Number(size), view, ...result });
         await page.close();
@@ -227,26 +324,25 @@ try {
     }
   }
   if (!only || only === 'estados') {
-    // Con «Controles» y el Índice abiertos, con y sin cuerpo (tarea 9c.4).
-    const STATES = [
-      ['controles', '.time__more'],
-      ['indice', '.index-toggle'],
-    ];
+    // Con «Controles», el Índice y «Más» abiertos, con y sin cuerpo (tarea 9c.4).
     for (const [size, options] of Object.entries(SIZES)) {
       for (const [view, path] of VIEWS) {
-        for (const [state, selector] of STATES) {
+        for (const [state, selector, views] of STATES) {
+          if (!views.includes(view)) continue;
           const { page } = await openViewer(browser, path, options);
           const toggle = page.locator(selector);
-          if (!(await toggle.isVisible())) {
+          if (!(await toggle.first().isVisible())) {
             await page.close();
             continue;
           }
-          await toggle.click();
+          await toggle.first().click();
           await page.waitForTimeout(400);
           const result = await page.evaluate(inspect, { explorer: true });
           report.states.push({ size: Number(size), view, state, ...result });
           await page.close();
-          console.error(`estado · ${size} · ${view} · ${state}: ${result.covered.length} tapados`);
+          console.error(
+            `estado · ${size} · ${view} · ${state}: ${result.controls} controles, ${result.covered.length} tapados`,
+          );
         }
       }
     }
@@ -276,37 +372,45 @@ try {
 }
 
 const pct = (value) => `${(value * 100).toFixed(1)} %`;
+/** Los recortes de una medida: controles, contenedores y opciones. */
+const cuts = (r) => r.cut.length + r.overflowing.length + r.cutOptions.length;
 if (report.explorer.length) {
   console.log(
-    '| Tamaño | Vista | Zona útil | Controles visibles | Tapados | Zonas < objetivo | Textos < 11 px | Hoja (alto, pausa) |',
+    '| Tamaño | Vista | Zona útil | Velo | Controles visibles | Tapados | Recortes | Zonas < objetivo | Textos < 11 px | Hoja (alto, pausa) |',
   );
-  console.log('|---|---|---|---|---|---|---|---|');
+  console.log('|---|---|---|---|---|---|---|---|---|---|');
   for (const r of report.explorer) {
     const sheet = r.sheet
       ? `${pct(r.sheet.share)}, ${r.sheet.playReachable ? 'a mano' : 'no'}`
       : '—';
     console.log(
-      `| ${r.size} | ${r.view} | ${pct(r.useful)} | ${r.controls} | ${r.covered.length} | ${r.small.length} | ${r.tiny.length} | ${sheet} |`,
+      `| ${r.size} | ${r.view} | ${pct(r.useful)} | ${r.veil === undefined ? '—' : pct(r.veil)} | ${r.controls} | ${r.covered.length} | ${cuts(r)} | ${r.small.length} | ${r.tiny.length} | ${sheet} |`,
     );
   }
 }
 if (report.states.length) {
-  console.log('\n| Tamaño | Vista | Abierto | Controles visibles | Tapados |');
-  console.log('|---|---|---|---|---|');
+  console.log('\n| Tamaño | Vista | Abierto | Controles visibles | Tapados | Recortes |');
+  console.log('|---|---|---|---|---|---|');
   for (const r of report.states) {
-    console.log(`| ${r.size} | ${r.view} | ${r.state} | ${r.controls} | ${r.covered.length} |`);
+    console.log(
+      `| ${r.size} | ${r.view} | ${r.state} | ${r.controls} | ${r.covered.length} | ${cuts(r)} |`,
+    );
   }
 }
 if (report.pages.length) {
-  console.log('\n| Tamaño | Página | Zonas < 24 px | Textos < 11 px |');
-  console.log('|---|---|---|---|');
+  console.log('\n| Tamaño | Página | Zonas < 24 px | Textos < 11 px | Recortes |');
+  console.log('|---|---|---|---|---|');
   for (const r of report.pages)
-    console.log(`| ${r.size} | ${r.path} | ${r.small.length} | ${r.tiny.length} |`);
+    console.log(`| ${r.size} | ${r.path} | ${r.small.length} | ${r.tiny.length} | ${cuts(r)} |`);
 }
-console.log('\nDetalle (tapados, zonas pequeñas y textos pequeños):');
+console.log('\nDetalle (tapados, recortes, zonas pequeñas y textos pequeños):');
 for (const r of [...report.explorer, ...report.states, ...report.pages]) {
   const label = `${r.size} · ${r.view ?? r.path}${r.state ? ` · ${r.state}` : ''}`;
   if (r.covered.length) console.log(`- ${label} · tapados: ${r.covered.join(' · ')}`);
+  if (r.cut.length) console.log(`- ${label} · controles recortados: ${r.cut.join(' · ')}`);
+  if (r.overflowing.length) console.log(`- ${label} · desbordan: ${r.overflowing.join(' · ')}`);
+  if (r.cutOptions.length)
+    console.log(`- ${label} · opciones cortadas: ${r.cutOptions.join(' · ')}`);
   if (r.small.length) console.log(`- ${label} · pequeños: ${r.small.join(' · ')}`);
   if (r.tiny.length) console.log(`- ${label} · textos: ${r.tiny.join(' · ')}`);
 }
