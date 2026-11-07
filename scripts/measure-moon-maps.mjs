@@ -67,7 +67,23 @@ const wanted = args.filter((a) => !a.startsWith('--'));
 
 /** Mide una luna: su mapa en gris a 2048 px, sus clases, sus porcentajes y la calibración. */
 export async function measureMoon(id, spec, farFactor = FAR_FACTOR) {
-  const mosaic = await loadMosaic(new URL(spec.file, SRC), WIDTH, { band: spec.band });
+  const mosaic = await loadMosaic(new URL(spec.file, SRC), WIDTH, {
+    band: spec.band,
+    plain: spec.plain,
+  });
+  return { id, ...classifyMosaic(mosaic, farFactor) };
+}
+
+/**
+ * Las clases de un mosaico ya cargado (`loadMosaic`, a 2048 × 1024): lo real con detalle, lo visto de
+ * lejos y lo no visto, con la calibración de cada luna (lo usa también `build-textures.mjs`, D45).
+ */
+export function classifyMosaic(mosaic, farFactor = FAR_FACTOR) {
+  if (mosaic.width !== WIDTH || mosaic.height !== HEIGHT) {
+    throw new Error(
+      `Las clases se miden en el mapa de ${WIDTH} × ${HEIGHT}, no de ${mosaic.width} × ${mosaic.height}`,
+    );
+  }
   const gray = new Float32Array(WIDTH * HEIGHT);
   for (let k = 0; k < gray.length; k++) {
     const r = mosaic.data[3 * k];
@@ -102,7 +118,6 @@ export async function measureMoon(id, spec, farFactor = FAR_FACTOR) {
   });
   const [real, far, none] = classShares(classes, WIDTH, HEIGHT);
   return {
-    id,
     gray,
     ratio,
     classes,

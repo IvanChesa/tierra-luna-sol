@@ -43,6 +43,7 @@ import {
 } from './build-relief.mjs';
 import { POLAR_EDGE_DEG, buildPolarNormalAtlas } from './lola-polar.mjs';
 import { checkMosaicProbes, loadMosaic } from './usgs-mosaic.mjs';
+import { RECREATION_CRITERIA, recreateMosaic, writeMask } from './lib/moon-map-build.mjs';
 import { checkRingFeatures, loadUvisProfile, ringStripTau } from './ring-profile.mjs';
 
 const ROOT = new URL('../', import.meta.url);
@@ -806,6 +807,88 @@ async function checkPanorama(file) {
   return `vía láctea: centro galáctico ${Math.round(center)} · anticentro ${Math.round(anticenter)} · polos ${Math.round(poles)} · Gran Nube de Magallanes ${Math.round(lmc)} frente a ${Math.round(mirrored)} en el punto simétrico`;
 }
 
+/**
+ * docs/datos/recreacion-lunas.md (GENERADO): de cada luna con mosaico, lo real, lo visto de lejos y lo no
+ * visto (por el área de la esfera), la receta, el grano de lo recreado frente a lo real vecino, el salto
+ * en el borde frente al de bordes ficticios dentro de lo real, lo real en el WebP y su máscara.
+ */
+async function writeRecreationDoc(list, date) {
+  const pct = (x) => `${(100 * x).toFixed(1).replace('.', ',')} %`;
+  const num = (x, d = 2) => (x === null || x === undefined ? '—' : x.toFixed(d).replace('.', ','));
+  const rows = Object.entries(list).map(([id, r]) => {
+    const synthesized = r.far + r.none > 0.001;
+    const pair = (s) => (s ? `${num(s.p95)} · ${num(s.max)}` : '—');
+    const none = r.border.none
+      ? `${pair(r.border.none)} (${num(r.border.naturalP95)} · ${num(r.border.naturalMax)})`
+      : '—';
+    const far = r.border.far ? `${pair(r.border.far)} (${pair(r.border.farOriginal)})` : '—';
+    return `| ${id} | ${pct(r.real)} | ${pct(r.far)} | ${pct(r.none)} | ${r.recipe ?? 'la de por defecto'} | ${synthesized ? num(r.grain) : '—'} | ${none} | ${far} | ${num(r.sharpen)} | ${num(r.compression.recreated)} (${num(r.compression.reference)}) | ![${id}](../informes/img/fase-9b/mascaras/${id}.webp) |`;
+  });
+  const text = `<!-- GENERADO por scripts/build-textures.mjs el ${date}. No se edita a mano. -->
+
+# Las lunas recreadas (D45, fase 9b)
+
+Lo que no se vio de cada luna, recreado a partir del terreno real de la misma luna, y el detalle que falta en lo visto de lejos (\`scripts/lib/moon-recreate.mjs\`, con la receta de \`scripts/lib/moon-recipes.mjs\`). Es **ilustrativo**. Las clases, medidas en el mapa de 2k (\`scripts/measure-moon-maps.mjs\`): lo real con detalle, lo visto de lejos (una resolución de origen más gruesa que la de la textura) y lo no visto. Los porcentajes, por el área de la esfera.
+
+- **Grano:** el paso alto de L* de lo recreado junto a lo real frente al de lo real vecino (D45: del ${RECREATION_CRITERIA.grain[0]} al ${RECREATION_CRITERIA.grain[1]}).
+- **Salto en el borde:** la diferencia del brillo medio (L*, σ = 4 texeles) a cada lado del borde con lo real, por teselas de 64 texeles: el percentil 95 y el máximo, por separado en el borde con lo no visto y en el borde con lo visto de lejos. Con lo no visto, cuyo brillo pone solo la recreación, entre paréntesis lo natural: el mismo salto en bordes ficticios dentro de lo real (la máscara girada 90°, 180° y 270°: la variación natural del relieve). Con lo visto de lejos, cuyo brillo a gran escala es el real (D45, regla 1), entre paréntesis el salto que ya tenía el mosaico original en ese borde (imágenes distintas). D45: no más de ${RECREATION_CRITERIA.borderDeltaL} L* por encima de su referencia (con lo visto de lejos, la mayor de lo natural y del original). En las lunas de sombras duras, cualquier borde salta unos 10 L* por los cráteres; un umbral absoluto solo lo pasaría el relieve liso.
+- **Enfoque:** el de lo recreado, calibrado en cada luna para llevar su grano al de lo real.
+- **Lo real en el WebP:** el error medio absoluto (niveles de 0 a 255) de lo real en la textura de 2k frente al mosaico; entre paréntesis, el del mosaico comprimido igual sin recrear. Antes de comprimir, lo real es idéntico byte a byte.
+- **Máscara:** lo real, sin tinte; lo visto de lejos, en rojo; lo no visto (recreado entero), en azul.
+
+| Luna | Real | Visto de lejos | No visto | Receta | Grano | Borde con lo no visto, p95 · máx (natural) | Borde con lo visto de lejos, p95 · máx (original) | Enfoque | Lo real en el WebP | Máscara |
+|---|---|---|---|---|---|---|---|---|---|---|
+${rows.join('\n')}
+`;
+  await writeFile(new URL('docs/datos/recreacion-lunas.md', ROOT), text);
+}
+
+/** Las lunas con sondas en su mosaico (`MOSAIC_PROBES`): se comprueban otra vez tras recrear. */
+const MOSAIC_PROBES_IDS = new Set(Object.keys((await import('./usgs-mosaic.mjs')).MOSAIC_PROBES));
+
+/**
+ * D45: lo real, en el WebP ya escrito, no se aparta del mosaico más que el propio mosaico comprimido con
+ * la misma calidad (la tolerancia de la compresión): el error medio absoluto en lo real, de cada canal, del
+ * WebP recreado frente al del WebP del mosaico sin recrear, con un 10 % y 0,1 niveles de margen (el
+ * codificador trabaja por bloques, y junto al borde lo vecino cambia). Falla si se pasa.
+ */
+async function checkRealAfterCompression(id, mosaic, classes, file, quality) {
+  const raw = { raw: { width: mosaic.width, height: mosaic.height, channels: 3 } };
+  const decoded = await sharp(fileURLToPath(new URL(file.path, PUBLIC)))
+    .removeAlpha()
+    .raw()
+    .toBuffer();
+  const reference = await sharp(
+    await sharp(mosaic.data, raw).webp({ quality, effort: 6 }).toBuffer(),
+  )
+    .removeAlpha()
+    .raw()
+    .toBuffer();
+  let errRecreated = 0;
+  let errReference = 0;
+  let n = 0;
+  for (let k = 0; k < classes.length; k++) {
+    if (classes[k] !== 0) continue;
+    for (let c = 0; c < 3; c++) {
+      errRecreated += Math.abs(decoded[3 * k + c] - mosaic.data[3 * k + c]);
+      errReference += Math.abs(reference[3 * k + c] - mosaic.data[3 * k + c]);
+    }
+    n += 3;
+  }
+  errRecreated /= n;
+  errReference /= n;
+  const limit = errReference * 1.1 + 0.1;
+  if (errRecreated > limit) {
+    throw new Error(
+      `Lo real de «${id}» se aparta del mosaico en el WebP recreado (${errRecreated.toFixed(3)} niveles de media) más que el mosaico comprimido (${errReference.toFixed(3)})`,
+    );
+  }
+  return {
+    summary: { recreated: errRecreated, reference: errReference },
+    report: `${id}: lo real en el WebP de 2k, a ${errRecreated.toFixed(2)} niveles de media del mosaico (el mosaico comprimido igual, a ${errReference.toFixed(2)}): dentro de la tolerancia de la compresión`,
+  };
+}
+
 // --- Generación ----------------------------------------------------------------------------------
 for (const [level] of LEVELS) {
   const dir = new URL(`textures/${level}/`, PUBLIC);
@@ -817,6 +900,10 @@ const files = {};
 const luminance = {};
 const reports = [];
 let ringStrip = null;
+/** Lo que se recreó de cada luna (D45), para docs/datos/recreacion-lunas.md. */
+const recreations = {};
+const MASKS = new URL('docs/informes/img/fase-9b/mascaras/', ROOT);
+await mkdir(MASKS, { recursive: true });
 for (const [id, spec] of Object.entries(TEXTURES)) {
   if (OMITTED[id]) {
     console.log(`${id}: omitida (${OMITTED[id]})`);
@@ -889,15 +976,43 @@ for (const [id, spec] of Object.entries(TEXTURES)) {
         `${id}: balance de color ${spec.colorGain.map((g) => g.toFixed(3)).join('/')} en RGB lineal (calibrado con compare-io.mjs frente a PIA02308); canales saturados: ${((100 * clipped) / mosaic.data.length).toFixed(2)} %`,
       );
     }
+    // D45 (fase 9b): lo que no se vio, recreado a partir del terreno real de la misma luna, y detalle
+    // sobre lo visto de lejos (scripts/lib/moon-map-build.mjs). Lo real queda igual byte a byte; las
+    // sondas se miden otra vez en el mapa recreado (lo real no cambia, y sus coronas solo cuentan lo que
+    // hay); y la máscara de cada clase va al informe.
+    const recreation = recreateMosaic(id, mosaic);
+    reports.push(recreation.report);
+    if (MOSAIC_PROBES_IDS.has(id)) {
+      const again = checkMosaicProbes(id, { ...mosaic, data: recreation.data });
+      reports.push(
+        `${id}: las sondas, en el mapa recreado: ${again.slice(again.indexOf(':') + 2)}`,
+      );
+    }
+    await writeMask(
+      new URL(`${id}.webp`, MASKS),
+      recreation.data,
+      recreation.classes,
+      mosaic.width,
+      mosaic.height,
+    );
     const list = [];
     for (const [level, width] of LEVELS) {
       if (width > 2048) continue;
-      const pipeline = sharp(mosaic.data, {
+      const pipeline = sharp(recreation.data, {
         raw: { width: mosaic.width, height: mosaic.height, channels: 3 },
       }).resize(width, width / 2, { fit: 'fill', kernel: 'lanczos3' });
       list.push(await emit(id, level, pipeline, spec.quality));
     }
     files[id] = list;
+    const tolerance = await checkRealAfterCompression(
+      id,
+      mosaic,
+      recreation.classes,
+      list.find((f) => f.width === mosaic.width),
+      spec.quality,
+    );
+    reports.push(tolerance.report);
+    recreations[id] = { ...recreation.summary, compression: tolerance.summary };
     luminance[id] = Number(
       (
         await meanLuminance(list[0], {
@@ -1102,4 +1217,5 @@ execFileSync(
     stdio: 'inherit',
   },
 );
+await writeRecreationDoc(recreations, today);
 console.log('\nComprobaciones:\n' + reports.map((r) => `- ${r}`).join('\n'));

@@ -304,3 +304,304 @@ export function classShares(classes, width, height) {
   }
   return area.map((a) => a / total);
 }
+
+// --- La calidad de la recreación (D45): el grano y el borde con lo real ---------------------------
+
+/** L* (CIELAB) de un valor sRGB de 0 a 1 en gris (o de la luminancia ya en sRGB). */
+export function lightness(v) {
+  const c = Math.min(Math.max(v, 0), 1);
+  const y = c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  const f = y > 216 / 24389 ? Math.cbrt(y) : ((24389 / 27) * y + 16) / 116;
+  return 116 * f - 16;
+}
+
+/**
+ * La distancia (en texeles, chaflán 3-4 / 3 con la vuelta del antimeridiano) de cada texel al conjunto
+ * `inSet` más cercano (0 dentro de él), hasta `cap` texeles.
+ */
+export function distanceTo(inSet, width, height, cap = 64) {
+  const INF = 3 * cap + 4;
+  const d = new Float32Array(width * height);
+  for (let k = 0; k < d.length; k++) d[k] = inSet[k] ? 0 : INF;
+  const at = (j, i) => j * width + ((i + width) % width);
+  // Dos pasadas por sentido; la vuelta en longitud, con una pasada extra de cada una.
+  for (let pass = 0; pass < 2; pass++) {
+    for (let j = 0; j < height; j++) {
+      for (let i = 0; i < width; i++) {
+        const k = j * width + i;
+        let v = d[k];
+        v = Math.min(v, d[at(j, i - 1)] + 3);
+        if (j > 0) {
+          v = Math.min(v, d[at(j - 1, i)] + 3, d[at(j - 1, i - 1)] + 4, d[at(j - 1, i + 1)] + 4);
+        }
+        d[k] = v;
+      }
+    }
+    for (let j = height - 1; j >= 0; j--) {
+      for (let i = width - 1; i >= 0; i--) {
+        const k = j * width + i;
+        let v = d[k];
+        v = Math.min(v, d[at(j, i + 1)] + 3);
+        if (j < height - 1) {
+          v = Math.min(v, d[at(j + 1, i)] + 3, d[at(j + 1, i + 1)] + 4, d[at(j + 1, i - 1)] + 4);
+        }
+        d[k] = v;
+      }
+    }
+  }
+  for (let k = 0; k < d.length; k++) d[k] = Math.min(d[k] / 3, cap);
+  return d;
+}
+
+/**
+ * El grano y el borde de un mapa recreado (D45), en L*, entre ±`maxLat` de latitud (cerca de los
+ * polos, el equirrectangular estira la imagen y su paso alto se mide peor).
+ * - El grano: la raíz de la media del cuadrado del paso alto (L* menos su desenfoque de σ = 1,5 texeles a
+ *   escala física), en lo recreado (lo visto de lejos y lo no visto) a menos de `band` texeles de lo real
+ *   y en lo real a menos de `band` de lo recreado; y su cociente (el criterio: de 0,7 a 1,3). También el
+ *   de lo visto de lejos y el de lo no visto, por separado, y en toda la luna.
+ * - El borde (`border`): el brillo medio de cada lado en el propio borde (abajo), por teselas. Con
+ *   `reference` (el mapa original), también el mismo salto en el original en ese borde y en bordes
+ *   ficticios dentro de lo real (lo natural); y, por separado, el borde con lo no visto (`none`), frente a
+ *   lo natural, y el borde con lo visto de lejos (`far`), frente al mayor de lo natural y del original en
+ *   ese borde (el criterio de D45: 2 L* como mucho por encima, en el percentil 95 y en el máximo).
+ *   Y, como información (`bands`), por teselas de `tile` texeles, la media de L* de
+ *   lo real a 1–3 texeles del borde y la de lo recreado a 1–3 texeles de lo real, y su diferencia. Solo
+ *   cuentan las teselas donde esa diferencia se mide con un error típico de `maxError` L* como mucho (de
+ *   las varianzas de las dos franjas): con pocos píxeles (una mota sin datos), la medida es el relieve y
+ *   no un salto (en Encélado, con σ de L* ≈ 10, dos medias de 48 píxeles difieren ±2 por azar). Un salto
+ *   es una discontinuidad en el propio borde: con franjas más anchas (de 2 a 8 texeles) se mide también la
+ *   pendiente natural del terreno, y el mosaico original, continuo donde lo real se junta con lo visto de
+ *   lejos, ya daba |ΔL*| de hasta 4 en Tritón.
+ * `values`: el mapa en gris (0–1, sRGB); `classes`: 0 real, 1 de lejos, 2 no visto.
+ */
+export function recreationQuality(values, classes, width, height, options = {}, reference = null) {
+  const {
+    maxLat = 70,
+    band = 32,
+    tile = 64,
+    inner = 1,
+    outer = 3,
+    minCount = 48,
+    maxError = 0.5,
+    meanSigma = 4,
+    minBorder = 32,
+  } = options;
+  const L = new Float32Array(width * height);
+  for (let k = 0; k < L.length; k++) L[k] = lightness(values[k]);
+  const low = gaussianBlur(L, width, height, 1.5, true);
+  const real = new Uint8Array(width * height);
+  const synth = new Uint8Array(width * height);
+  for (let k = 0; k < classes.length; k++) {
+    real[k] = classes[k] === 0 ? 1 : 0;
+    synth[k] = classes[k] === 0 ? 0 : 1;
+  }
+  const toReal = distanceTo(real, width, height);
+  const toSynth = distanceTo(synth, width, height);
+  const weights = rowWeights(height);
+  const acc = { realNear: [0, 0], synthNear: [0, 0], far: [0, 0], none: [0, 0], real: [0, 0] };
+  const add = (key, w, v) => {
+    acc[key][0] += w * v;
+    acc[key][1] += w;
+  };
+  for (let j = 0; j < height; j++) {
+    const lat = 90 - ((j + 0.5) / height) * 180;
+    if (Math.abs(lat) > maxLat) continue;
+    const w = weights[j];
+    for (let i = 0; i < width; i++) {
+      const k = j * width + i;
+      const hp = (L[k] - low[k]) ** 2;
+      if (classes[k] === 0) {
+        add('real', w, hp);
+        if (toSynth[k] <= band) add('realNear', w, hp);
+      } else {
+        add(classes[k] === 1 ? 'far' : 'none', w, hp);
+        if (toReal[k] <= band) add('synthNear', w, hp);
+      }
+    }
+  }
+  const rms = ([sum, n]) => (n > 0 ? Math.sqrt(sum / n) : NaN);
+  const grain = {
+    real: rms(acc.real),
+    far: rms(acc.far),
+    none: rms(acc.none),
+    realNear: rms(acc.realNear),
+    synthNear: rms(acc.synthNear),
+  };
+  grain.ratioNear = grain.synthNear / grain.realNear;
+  grain.ratioFar = grain.far / grain.real;
+  grain.ratioNone = grain.none / grain.real;
+  // El borde, por teselas.
+  const steps = [];
+  let skipped = 0;
+  for (let ty = 0; ty < height; ty += tile) {
+    const latTop = 90 - (ty / height) * 180;
+    const latBottom = 90 - (Math.min(ty + tile, height) / height) * 180;
+    if (Math.min(Math.abs(latTop), Math.abs(latBottom)) > maxLat) continue;
+    for (let tx = 0; tx < width; tx += tile) {
+      let si = 0;
+      let ni = 0;
+      let so = 0;
+      let no = 0;
+      let qi = 0;
+      let qo = 0;
+      for (let j = ty; j < Math.min(ty + tile, height); j++) {
+        const lat = 90 - ((j + 0.5) / height) * 180;
+        if (Math.abs(lat) > maxLat) continue;
+        for (let i = tx; i < Math.min(tx + tile, width); i++) {
+          const k = j * width + i;
+          if (classes[k] === 0) {
+            if (toSynth[k] >= inner && toSynth[k] <= outer) {
+              si += L[k];
+              qi += L[k] * L[k];
+              ni++;
+            }
+          } else if (toReal[k] >= inner && toReal[k] <= outer) {
+            so += L[k];
+            qo += L[k] * L[k];
+            no++;
+          }
+        }
+      }
+      if (ni >= minCount && no >= minCount) {
+        const vi = Math.max(0, qi / ni - (si / ni) ** 2);
+        const vo = Math.max(0, qo / no - (so / no) ** 2);
+        const error = Math.sqrt(vi / ni + vo / no);
+        if (error <= maxError) steps.push({ tx, ty, delta: so / no - si / ni, error });
+        else skipped++;
+      }
+    }
+  }
+  const summary = (list) => {
+    const abs = list.map((s) => Math.abs(s.delta)).sort((a, b) => a - b);
+    const q = (p) =>
+      abs.length ? abs[Math.min(abs.length - 1, Math.round(p * (abs.length - 1)))] : 0;
+    const worst = list.reduce(
+      (m, s) => (Math.abs(s.delta) > Math.abs(m?.delta ?? 0) ? s : m),
+      null,
+    );
+    return { tiles: list.length, median: q(0.5), p95: q(0.95), max: q(1), worst };
+  };
+  // El brillo medio a cada lado del borde (el criterio): en cada píxel del borde (lo real junto a lo
+  // recreado y lo recreado junto a lo real), la media normalizada de cada lado con σ = `meanSigma`
+  // texeles a escala física (cada lado, solo con sus píxeles), y su diferencia; por teselas, la media
+  // de esa diferencia en sus píxeles del borde (al menos `minBorder`). Así el relieve fino (las sombras
+  // de los cráteres) no pasa por salto, como en las franjas estrechas.
+  const tileSteps = (Lv, sideA, sideB, toA, toB, allowed) => {
+    const wA = gaussianBlur(Float32Array.from(sideA), width, height, meanSigma, true);
+    const wB = gaussianBlur(Float32Array.from(sideB), width, height, meanSigma, true);
+    const lA = new Float32Array(width * height);
+    const lB = new Float32Array(width * height);
+    for (let k = 0; k < Lv.length; k++) {
+      lA[k] = sideA[k] ? Lv[k] : 0;
+      lB[k] = sideB[k] ? Lv[k] : 0;
+    }
+    const mA = gaussianBlur(lA, width, height, meanSigma, true);
+    const mB = gaussianBlur(lB, width, height, meanSigma, true);
+    const list = [];
+    for (let ty = 0; ty < height; ty += tile) {
+      for (let tx = 0; tx < width; tx += tile) {
+        let sum = 0;
+        let count = 0;
+        for (let j = ty; j < Math.min(ty + tile, height); j++) {
+          const lat = 90 - ((j + 0.5) / height) * 180;
+          if (Math.abs(lat) > maxLat) continue;
+          for (let i = tx; i < Math.min(tx + tile, width); i++) {
+            const k = j * width + i;
+            // Solo los píxeles de los dos lados (con un lado de una sola clase, los de la otra no cuentan).
+            if (!sideA[k] && !sideB[k]) continue;
+            const edge = sideA[k] ? toB[k] <= 1 : toA[k] <= 1;
+            if (!edge || (allowed && !allowed[k]) || wA[k] < 0.05 || wB[k] < 0.05) continue;
+            sum += mB[k] / wB[k] - mA[k] / wA[k];
+            count++;
+          }
+        }
+        if (count >= minBorder) list.push({ tx, ty, delta: sum / count, count });
+      }
+    }
+    return list;
+  };
+  const means = tileSteps(L, real, synth, toReal, toSynth, null);
+  // Lo natural (`reference`, el mapa original): el mismo salto en bordes ficticios trazados dentro de lo
+  // real, con la máscara girada 90°, 180° y 270° en longitud, solo donde los dos lados son reales en el
+  // original (a 8 texeles o más de lo que no lo es). En un relieve de sombras duras, cualquier borde da
+  // saltos de 10 L* por los cráteres: el criterio es que el borde con lo recreado no salte más que eso.
+  let natural = null;
+  if (reference) {
+    const L0 = new Float32Array(width * height);
+    for (let k = 0; k < L0.length; k++) L0[k] = lightness(reference[k]);
+    const toNotReal = distanceTo(synth, width, height, 16);
+    const allowed = new Uint8Array(width * height);
+    for (let k = 0; k < allowed.length; k++) allowed[k] = toNotReal[k] >= 8 ? 1 : 0;
+    const list = [];
+    for (const turn of [0.25, 0.5, 0.75]) {
+      const shift = Math.round(turn * width);
+      const a = new Uint8Array(width * height);
+      const b = new Uint8Array(width * height);
+      for (let j = 0; j < height; j++) {
+        for (let i = 0; i < width; i++) {
+          const from = j * width + ((i + shift) % width);
+          a[j * width + i] = real[from];
+          b[j * width + i] = 1 - real[from];
+        }
+      }
+      list.push(
+        ...tileSteps(L0, a, b, distanceTo(a, width, height), distanceTo(b, width, height), allowed),
+      );
+    }
+    natural = summary(list);
+  }
+  // Y el original en el mismo borde: lo visto de lejos es continuo con lo real en el mosaico, y lo no
+  // visto, el gris de su relleno.
+  let original = null;
+  let L0 = null;
+  if (reference) {
+    L0 = new Float32Array(width * height);
+    for (let k = 0; k < L0.length; k++) L0[k] = lightness(reference[k]);
+    original = summary(tileSteps(L0, real, synth, toReal, toSynth, null));
+  }
+  const border = summary(means);
+  // Cada borde por separado (el criterio de D45):
+  // - con lo no visto, cuyo brillo pone solo la recreación: frente a lo natural;
+  // - con lo visto de lejos, cuyo brillo a gran escala es el real (D45, regla 1) y que en el mosaico ya
+  //   podía saltar (imágenes distintas): frente al mayor de lo natural y del original en ese borde.
+  const far = new Uint8Array(width * height);
+  const none = new Uint8Array(width * height);
+  for (let k = 0; k < classes.length; k++) {
+    far[k] = classes[k] === 1 ? 1 : 0;
+    none[k] = classes[k] === 2 ? 1 : 0;
+  }
+  const byKind = (Lv, set) =>
+    summary(tileSteps(Lv, real, set, toReal, distanceTo(set, width, height), null));
+  const noneBorder = byKind(L, none);
+  const farBorder = byKind(L, far);
+  const farOriginal = reference ? byKind(L0, far) : null;
+  const excess = (b, refP95, refMax) =>
+    b.tiles > 0 && refP95 !== null ? { p95: b.p95 - refP95, max: b.max - refMax } : null;
+  const noneExcess = reference ? excess(noneBorder, natural.p95, natural.max) : null;
+  const farExcess = reference
+    ? excess(
+        farBorder,
+        Math.max(natural.p95, farOriginal.p95),
+        Math.max(natural.max, farOriginal.max),
+      )
+    : null;
+  return {
+    grain,
+    border: {
+      ...border,
+      natural,
+      original,
+      none: { ...noneBorder, excess: noneExcess },
+      far: { ...farBorder, original: farOriginal, excess: farExcess },
+      // El peor de los dos (lo que pide D45: como mucho 2 L* por encima de su referencia).
+      excessP95: reference
+        ? Math.max(noneExcess?.p95 ?? -Infinity, farExcess?.p95 ?? -Infinity)
+        : null,
+      excessMax: reference
+        ? Math.max(noneExcess?.max ?? -Infinity, farExcess?.max ?? -Infinity)
+        : null,
+    },
+    bands: { ...summary(steps), skipped },
+  };
+}

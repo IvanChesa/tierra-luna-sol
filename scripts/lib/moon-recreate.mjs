@@ -19,6 +19,8 @@
 // 4. Junto a lo real, la media de lo recreado se lleva a la de lo real (una corrección que se apaga en
 //    `border` píxeles). Las caras vuelven al equirrectangular; lo real se copia tal cual.
 
+import { distanceTo, gaussianBlur, recreationQuality } from './moon-maps.mjs';
+
 /** Un generador de números pseudoaleatorios de 32 bits con semilla (mulberry32). */
 export function mulberry32(seed) {
   let a = seed >>> 0;
@@ -172,6 +174,9 @@ function normalizedBlur(src, weight, S, channels, sigma) {
 /** Los niveles de brillo a gran escala (σ en px de cara) entre los que se interpola la σ efectiva. */
 export const LP_SIGMAS = [1, 2, 4, 8, 16];
 
+/** Los pesos de la luminancia (Rec. 709). */
+const LUMA = [0.2126, 0.7152, 0.0722];
+
 /** Clases de cada píxel (las de `scripts/lib/moon-maps.mjs`). */
 const REAL = 0;
 const FAR = 1;
@@ -198,13 +203,54 @@ export const SYNTHESIS = {
   noneWeight: 1.5,
   reusePenalty: 0.5,
   usageCell: 8,
-  /** El ancho (px) de la corrección de la media junto a lo real. */
-  border: 24,
-  /** Con guía (el nivel grueso), la escala a la que lo no visto la sigue (σ, px). */
-  guideSigma: 6,
-  /** Lo visto de lejos: su brillo se conserva por encima de `keep` × su resolución de origen. */
-  keep: 3,
-  keepMin: 2,
+  /**
+   * El castigo por traer otro grano que el de alrededor: × (1 + `energyPenalty` · ln(E / E₀)²), con E el
+   * detalle fino del origen (la raíz de la media del cuadrado de su paso alto de σ = 2 px) y E₀ el de lo
+   * real que rodea el destino (su media normalizada, con σ = `energySigma` px). Con el solo error del
+   * solape, el «quilting» prefiere los parches lisos (casan con todo: en Ganímedes y Rea, lo recreado salía
+   * con la mitad del grano de lo real); y con la mediana de toda la luna como E₀, en una mancha de Mimas
+   * entraba un relieve más duro que el de sus vecinos.
+   */
+  energyPenalty: 2,
+  energySigma: 24,
+  /**
+   * La corrección de la media junto a lo real: entera hasta `borderFull` px de lo real y apagándose
+   * hasta `border` px, con la media de cada lado a la escala σ = `borderSigma` px (con una corrección que
+   * se apagaba desde el mismo borde, las teselas del borde llegaban a ΔL* 5).
+   */
+  border: 48,
+  borderFull: 8,
+  borderSigma: 8,
+  /** La pasada fina junto al borde: [σ, entera hasta, apagada en] (px). */
+  borderFine: [3, 4, 16],
+  /**
+   * Y la última, en el equirrectangular ya terminado (después de volver de las caras y del enfoque, que la
+   * descolocarían): [σ, entera hasta, apagada en] (texeles, a escala física).
+   */
+  borderFinal: [1.2, 3, 10],
+  /**
+   * El grano que se pierde en los dos remuestreos bilineales (del mapa a las caras y de vuelta), devuelto
+   * con una máscara de enfoque en lo recreado: lo recreado + `sharpen` × (lo recreado − su desenfoque
+   * de σ = `sharpenSigma` px). Calibrado con `recreationQuality` (moon-maps.mjs) en Tritón: sin él, el
+   * grano de lo recreado era el 66 % del de lo real vecino.
+   */
+  sharpen: 'auto',
+  sharpenSigma: 1,
+  /** El enfoque automático, entre 0 y `sharpenMax`, para llevar el grano de lo recreado al de lo real. */
+  sharpenMax: 2.5,
+  /**
+   * Con guía (el nivel grueso), la escala a la que lo no visto la sigue (σ, px): por encima de 4 px, la
+   * estructura de la recreación gruesa; por debajo, el detalle de los parches de este nivel.
+   */
+  guideSigma: 4,
+  /**
+   * Lo visto de lejos: su brillo se conserva por encima de `keep` × su resolución de origen (σ), entre
+   * `keepMin` y `keepMax` px: se pone solo el detalle que el original no resolvió. Con 3 (y 2 px como
+   * mínimo), en las lunas de sombras duras se perdían los bordes de los cráteres de 5 a 10 px de las zonas
+   * apenas blandas de Mimas y entraba en ellas un relieve revuelto.
+   */
+  keep: 1.5,
+  keepMin: 1.5,
   keepMax: 12,
 };
 
@@ -217,13 +263,22 @@ function keepSigma(sigmaEff, P) {
   return Math.min(P.keepMax, Math.max(P.keepMin, P.keep * sigmaEff));
 }
 
-/** El nivel grueso (a 1/4 de resolución): sus parches cubren unos 64 px del nivel fino. */
+/**
+ * El nivel grueso (a 1/4 de resolución): sus parches cubren unos 64 px del nivel fino. Su brillo
+ * regional se impone solo por encima de 16 px suyos (64 del fino, unos 260 km en Tritón): hasta ahí, los
+ * parches traen su propia variación a gran escala (con 6, el casquete del norte salía plano).
+ */
 const COARSE = {
   patch: 16,
   overlap: 4,
   margin: 16,
-  regionalSigma: 6,
-  border: 8,
+  regionalSigma: 16,
+  border: 10,
+  borderFull: 2,
+  borderSigma: 2,
+  borderFine: null,
+  borderFinal: null,
+  sharpen: 0,
   keepMin: 0.5,
   keepMax: 3,
 };
@@ -261,7 +316,7 @@ export function recreate({ rgb, classes, sigmaEff, W, H, recipe = {}, seed = 1, 
       ...coarse,
       recipe,
       seed: seed + 1,
-      params: { ...params, coarsePass: true, ...COARSE },
+      params: { ...params, coarsePass: true, ...COARSE, ...(params.coarse ?? {}) },
     });
     guide = upsample4(result.rgb, coarse.W, coarse.H);
   }
@@ -376,6 +431,87 @@ export function recreate({ rgb, classes, sigmaEff, W, H, recipe = {}, seed = 1, 
     }
   }
   if (pool.length === 0) throw new Error('Sin parches reales enteros: no hay de dónde recrear.');
+  // El detalle fino de cada origen (en luminancia, cada 2 px) y su mediana.
+  for (const src of pool) {
+    const sf = faces[src.f];
+    let sum = 0;
+    let n = 0;
+    for (let dy = 0; dy < B; dy += 2) {
+      for (let dx = 0; dx < B; dx += 2) {
+        const k = (src.y + dy) * S + src.x + dx;
+        let d = 0;
+        for (let c = 0; c < 3; c++) d += LUMA[c] * (sf.color[3 * k + c] - sf.levels[1][3 * k + c]);
+        sum += d * d;
+        n++;
+      }
+    }
+    src.energy = Math.sqrt(sum / n);
+  }
+  const energies = pool.map((src) => src.energy).sort((a, b) => a - b);
+  const medianEnergy = energies[Math.floor(energies.length / 2)] || 1e-6;
+  // El grano que pide cada destino (para el castigo del grano, `energyPenalty`):
+  // - en lo no visto, el de lo real que lo rodea (su media normalizada, σ = `energySigma`);
+  // - en lo visto de lejos, el que corresponde a su propio relieve: su energía en la primera banda que sí
+  //   conserva (por encima de su escala de `keep`), por la relación entre el grano fino y esa banda en lo
+  //   real de la misma luna (la mediana). Así un fondo liso de cráter no recibe el relieve de sus vecinos.
+  const bandEnergy = (face, a, b) => {
+    const e = new Float32Array(S * S);
+    for (let k = 0; k < S * S; k++) {
+      let d = 0;
+      for (let c = 0; c < 3; c++) {
+        const hi = a < 0 ? face.color[3 * k + c] : face.levels[a][3 * k + c];
+        d += LUMA[c] * (hi - face.levels[b][3 * k + c]);
+      }
+      e[k] = d * d;
+    }
+    const blurred = blurCanvas(e, S, 1, 8);
+    for (let k = 0; k < S * S; k++) blurred[k] = Math.sqrt(blurred[k]);
+    return blurred;
+  };
+  // Las bandas de referencia: [nivel de arriba, nivel de abajo] de LP_SIGMAS (2–4, 4–8 y 8–16 px).
+  const BANDS = [
+    [1, 2],
+    [2, 3],
+    [3, 4],
+  ];
+  const ratios = BANDS.map(() => []);
+  faces.forEach((face) => {
+    face.fine = bandEnergy(face, -1, 1);
+    face.bands = BANDS.map(([a, b]) => bandEnergy(face, a, b));
+    for (let k = 0; k < S * S; k += 7) {
+      if (face.cls[k] !== REAL) continue;
+      face.bands.forEach((band, j) => {
+        if (band[k] > 1e-4) ratios[j].push(face.fine[k] / band[k]);
+      });
+    }
+  });
+  const spectrum = ratios.map((list) => {
+    list.sort((a, b) => a - b);
+    return list.length ? list[Math.floor(list.length / 2)] : 1;
+  });
+  faces.forEach((face) => {
+    const real = new Float32Array(S * S);
+    const hp = new Float32Array(S * S);
+    for (let k = 0; k < S * S; k++) {
+      if (face.cls[k] !== REAL) continue;
+      real[k] = 1;
+      hp[k] = face.fine[k] * face.fine[k];
+    }
+    const { value } = normalizedBlur(hp, real, S, 1, P.energySigma);
+    face.localEnergy = new Float32Array(S * S);
+    for (let k = 0; k < S * S; k++) {
+      let wanted = Number.isNaN(value[k]) ? medianEnergy : Math.sqrt(value[k]);
+      if (face.cls[k] === FAR) {
+        // Una banda que la blandura no ha tocado: la de 4–8 px hasta una escala conservada de 3 px (la de
+        // 2–4 ya sale atenuada con una σ de origen de 1,3 y daba poco grano: Ganímedes, 0,57) y la de
+        // 8–16 px por encima.
+        const keep = face.sigma[k];
+        const j = keep <= 3 ? 1 : 2;
+        wanted = face.bands[j][k] * spectrum[j];
+      }
+      face.localEnergy[k] = Math.max(wanted, 1e-4);
+    }
+  });
   const usage = new SourceUsage(S, B, P.usageCell);
 
   // 4. La síntesis, cara a cara; cada una toma como fijo lo que ya han hecho sus vecinas.
@@ -438,6 +574,7 @@ export function recreate({ rgb, classes, sigmaEff, W, H, recipe = {}, seed = 1, 
           random,
           recipe,
           usage,
+          medianEnergy,
         });
         placePatch({ face, canvas, fixed, filled, faces, source: best, x0, y0, S, B });
         if (usage.of(best) >= 0.5) stats.reused++;
@@ -449,7 +586,22 @@ export function recreate({ rgb, classes, sigmaEff, W, H, recipe = {}, seed = 1, 
   }
 
   // 6. Junto a lo real, la media de lo recreado llevada a la de lo real (sin saltos de brillo).
-  for (let f = 0; f < 6; f++) matchBorder({ face: faces[f], canvas: output[f], S, P });
+  // En dos escalas (la mezcla multibanda de D45): la media ancha en una franja ancha y, después, la
+  // fina junto al borde, donde el brillo de lo real puede cambiar deprisa (el limbo de las imágenes).
+  for (let f = 0; f < 6; f++) {
+    matchBorder({
+      face: faces[f],
+      canvas: output[f],
+      S,
+      sigma: P.borderSigma,
+      full: P.borderFull,
+      fade: P.border,
+    });
+    if (P.borderFine) {
+      const [sigma, full, fade] = P.borderFine;
+      matchBorder({ face: faces[f], canvas: output[f], S, sigma, full, fade });
+    }
+  }
 
   // 7. Al equirrectangular: lo real, tal cual; lo demás, de su cara dominante.
   const result = Float32Array.from(rgb);
@@ -469,7 +621,98 @@ export function recreate({ rgb, classes, sigmaEff, W, H, recipe = {}, seed = 1, 
       result[3 * k + 2] = scratch[2];
     }
   }
-  return { rgb: result, guide, base, stats: { ...stats, pool: pool.length } };
+  if (P.sharpen === 'auto') calibrateSharpen(result, classes, W, H, P);
+  else if (P.sharpen > 0) sharpenSynthesized(result, classes, W, H, P);
+  if (P.borderFinal) matchBorderEquirect(result, classes, W, H, P.borderFinal);
+  return {
+    rgb: result,
+    guide,
+    base,
+    stats: { ...stats, pool: pool.length, sharpen: P.sharpenUsed ?? P.sharpen },
+  };
+}
+
+/**
+ * La última corrección de la media junto a lo real (`SYNTHESIS.borderFinal`), en el equirrectangular: como
+ * `matchBorder`, con los desenfoques a escala física y la distancia en texeles (chaflán, con la vuelta).
+ */
+function matchBorderEquirect(rgb, classes, W, H, [sigma, full, fade]) {
+  const real = new Float32Array(W * H);
+  const synth = new Float32Array(W * H);
+  const realSet = new Uint8Array(W * H);
+  for (let k = 0; k < W * H; k++) {
+    realSet[k] = classes[k] === REAL ? 1 : 0;
+    real[k] = realSet[k];
+    synth[k] = 1 - realSet[k];
+  }
+  const distance = distanceTo(realSet, W, H, fade + 1);
+  const realWeight = gaussianBlur(real, W, H, sigma, true);
+  const synthWeight = gaussianBlur(synth, W, H, sigma, true);
+  for (let c = 0; c < 3; c++) {
+    const a = new Float32Array(W * H);
+    const b = new Float32Array(W * H);
+    for (let k = 0; k < W * H; k++) {
+      a[k] = rgb[3 * k + c] * real[k];
+      b[k] = rgb[3 * k + c] * synth[k];
+    }
+    const realMean = gaussianBlur(a, W, H, sigma, true);
+    const synthMean = gaussianBlur(b, W, H, sigma, true);
+    for (let k = 0; k < W * H; k++) {
+      if (realSet[k]) continue;
+      const d = distance[k];
+      if (d >= fade || realWeight[k] < 1e-3 || synthWeight[k] < 1e-3) continue;
+      const t = Math.min(1, Math.max(0, (d - full) / (fade - full)));
+      const w = 1 - t * t * (3 - 2 * t);
+      const delta = realMean[k] / realWeight[k] - synthMean[k] / synthWeight[k];
+      rgb[3 * k + c] = Math.min(1, Math.max(0, rgb[3 * k + c] + w * delta));
+    }
+  }
+}
+
+/**
+ * El enfoque de lo recreado calibrado en cada luna (`sharpen: 'auto'`): el que lleva el grano de lo
+ * recreado junto a lo real al de lo real vecino (`recreationQuality`), en dos pasos (el grano crece con
+ * 1 + s), entre 0 y `sharpenMax`. Con un enfoque fijo (0,9, el de Tritón), Ganímedes salía con el 58 %.
+ */
+function calibrateSharpen(rgb, classes, W, H, P) {
+  const original = Float32Array.from(rgb);
+  const ratio = (map) => {
+    const gray = new Float32Array(W * H);
+    for (let k = 0; k < W * H; k++) {
+      gray[k] = LUMA[0] * map[3 * k] + LUMA[1] * map[3 * k + 1] + LUMA[2] * map[3 * k + 2];
+    }
+    return recreationQuality(gray, classes, W, H).grain.ratioNear;
+  };
+  let amount = 0;
+  let r = ratio(rgb);
+  for (let step = 0; step < 2 && Number.isFinite(r) && r > 0; step++) {
+    amount = Math.min(P.sharpenMax, Math.max(0, (1 + amount) / r - 1));
+    rgb.set(original);
+    if (amount > 0) sharpenSynthesized(rgb, classes, W, H, { ...P, sharpen: amount });
+    r = ratio(rgb);
+  }
+  P.sharpenUsed = amount;
+}
+
+/**
+ * La máscara de enfoque de lo recreado (`SYNTHESIS.sharpen`): en el equirrectangular, con el desenfoque a
+ * escala física (la misma distancia sobre la esfera en longitud que en latitud) y sin tocar lo real.
+ */
+function sharpenSynthesized(rgb, classes, W, H, P) {
+  const weight = new Float32Array(W * H);
+  for (let k = 0; k < W * H; k++) weight[k] = classes[k] === REAL ? 0 : 1;
+  const norm = gaussianBlur(weight, W, H, P.sharpenSigma, true);
+  for (let c = 0; c < 3; c++) {
+    const channel = new Float32Array(W * H);
+    for (let k = 0; k < W * H; k++) channel[k] = rgb[3 * k + c] * weight[k];
+    const low = gaussianBlur(channel, W, H, P.sharpenSigma, true);
+    for (let k = 0; k < W * H; k++) {
+      if (!weight[k]) continue;
+      const v = rgb[3 * k + c];
+      const mean = norm[k] > 1e-3 ? low[k] / norm[k] : v;
+      rgb[3 * k + c] = Math.min(1, Math.max(0, v + P.sharpen * (v - mean)));
+    }
+  }
 }
 
 /**
@@ -640,14 +883,32 @@ function levelOf(sigma) {
 
 /**
  * El valor que deja en el píxel `k` de la cara `face` el píxel `ks` del origen `sf`: el detalle del
- * origen por debajo de la escala del destino, en proporción a su brillo local (`origen / su brillo a esa
- * escala`), sobre el brillo objetivo del destino. Así cada parche trae su textura, no su brillo: entre
- * parches no hay escalones, y el brillo es el que pide cada zona.
+ * origen por debajo de la escala del destino (el origen menos su brillo a esa escala), con una ganancia
+ * en proporción al brillo (destino / origen, acotada entre `GAIN[0]` y `GAIN[1]`), sobre el brillo
+ * objetivo del destino. Así cada parche trae su textura, no su brillo: entre parches no hay escalones, y
+ * el brillo es el que pide cada zona. Sin acotar (destino × origen / su brillo), en un relieve de sombras
+ * negras (las lunas heladas de Saturno) un brillo local de 0,05 multiplicaba el detalle por 10 o más.
  */
-function predict(face, k, sf, ks, c) {
+function predict(face, k, sf, ks, c, amp = 1) {
   const low = lowPassAt(sf.levels, ks, face.level[k], c);
-  return (face.target[3 * k + c] * sf.color[3 * ks + c]) / Math.max(0.02, low);
+  const target = face.target[3 * k + c];
+  const gain = Math.min(GAIN[1], Math.max(GAIN[0], target / Math.max(low, 1e-3)));
+  return target + amp * gain * (sf.color[3 * ks + c] - low);
 }
+
+/**
+ * La amplitud del detalle de un parche: la que lleva su grano (`src.energy`) al que pide el destino
+ * (`wanted`), entre `AMPLITUDE[0]` y `AMPLITUDE[1]`. Sin ella, en un fondo liso de cráter de Mimas
+ * entraba el detalle entero de un origen rugoso (el castigo del grano no basta: elige el mejor de los que
+ * hay, no el que tiene el grano justo).
+ */
+function amplitudeFor(src, wanted) {
+  return Math.min(AMPLITUDE[1], Math.max(AMPLITUDE[0], wanted / Math.max(src.energy, 1e-5)));
+}
+const AMPLITUDE = [0.25, 1];
+
+/** Los límites de la ganancia del detalle en `predict`. */
+const GAIN = [0.5, 2];
 
 /** Interpola el brillo a gran escala de un píxel entre dos niveles. */
 function lowPassAt(levels, k, level, c) {
@@ -678,12 +939,15 @@ function choosePatch({
   random,
   recipe,
   usage,
+  medianEnergy,
 }) {
   const center = (y0 + B / 2) * S + x0 + B / 2;
   const tLat = face.lat[center];
   const tLon = face.lon[center];
+  const wanted = Math.max(face.localEnergy[center], 1e-4);
   const cost = (src, stride) => {
     const sf = faces[src.f];
+    const amp = amplitudeFor(src, wanted);
     let overlapErr = 0;
     let overlapN = 0;
     let farErr = 0;
@@ -696,7 +960,7 @@ function choosePatch({
         const ks = (src.y + dy) * S + src.x + dx;
         if (fixed[k] || filled[k]) {
           for (let c = 0; c < 3; c++) {
-            const e = predict(face, k, sf, ks, c) - canvas[3 * k + c];
+            const e = predict(face, k, sf, ks, c, amp) - canvas[3 * k + c];
             overlapErr += e * e;
           }
           overlapN++;
@@ -736,7 +1000,10 @@ function choosePatch({
     for (let k = 0; k < P.candidates; k++)
       candidates.push(pool[Math.floor(random() * pool.length)]);
   }
-  const penalty = (src) => 1 + P.reusePenalty * usage.of(src);
+  const penalty = (src) => {
+    const mismatch = Math.log(Math.max(src.energy, 1e-5) / wanted);
+    return (1 + P.reusePenalty * usage.of(src)) * (1 + P.energyPenalty * mismatch * mismatch);
+  };
   const rough = candidates
     .map((src) => ({ src, c: cost(src, 4) * penalty(src) }))
     .sort((a, b) => a.c - b.c)
@@ -750,7 +1017,7 @@ function choosePatch({
       best = src;
     }
   }
-  return best;
+  return { ...best, amp: amplitudeFor(best, wanted) };
 }
 
 /**
@@ -770,7 +1037,7 @@ function placePatch({ face, canvas, fixed, filled, faces, source, x0, y0, S, B }
       const ks = (source.y + dy) * S + source.x + dx;
       let e = 0;
       for (let c = 0; c < 3; c++) {
-        const d = predict(face, k, sf, ks, c) - canvas[3 * k + c];
+        const d = predict(face, k, sf, ks, c, source.amp) - canvas[3 * k + c];
         e += d * d;
       }
       err[dy * B + dx] = e;
@@ -799,7 +1066,8 @@ function placePatch({ face, canvas, fixed, filled, faces, source, x0, y0, S, B }
       if (a <= 0) continue;
       const ks = (source.y + dy) * S + source.x + dx;
       for (let c = 0; c < 3; c++) {
-        canvas[3 * k + c] = a * predict(face, k, sf, ks, c) + (1 - a) * canvas[3 * k + c];
+        canvas[3 * k + c] =
+          a * predict(face, k, sf, ks, c, source.amp) + (1 - a) * canvas[3 * k + c];
       }
       filled[k] = 1;
     }
@@ -890,22 +1158,28 @@ function cutSide(err, occupied, take, B, band, side) {
 }
 
 /**
- * Junto a lo real: la media de lo recreado (a la escala de `border` / 3) se lleva a la de lo real
- * extendida por encima del borde, con una corrección que va de entera en el borde a nada a `border` px.
+ * Junto a lo real: la media de lo no visto recreado (a la escala σ = `sigma`) se lleva a la de lo real
+ * extendida por encima del borde, con una corrección entera hasta `full` px de lo real que se apaga hasta
+ * `fade` px (la distancia, por chaflán en la cara con su margen).
  */
-function matchBorder({ face, canvas, S, P }) {
+function matchBorder({ face, canvas, S, sigma, full, fade }) {
   const real = new Float32Array(S * S);
   for (let k = 0; k < S * S; k++) real[k] = face.cls[k] === REAL ? 1 : 0;
-  const sigma = P.border / 3;
   const realMean = normalizedBlur(canvas, real, S, 3, sigma);
   const synth = new Float32Array(S * S);
   for (let k = 0; k < S * S; k++) synth[k] = 1 - real[k];
   const synthMean = normalizedBlur(canvas, synth, S, 3, sigma);
-  // La cercanía a lo real: el peso de lo real en una ventana del ancho del borde.
-  const near = blurCanvas(real, S, 1, P.border / 2);
+  // Lo lejos que queda lo real: el valor de lo real extendido (`realMean`) solo vale cerca de él.
+  const distance = faceDistance(real, S, fade + 1);
   for (let k = 0; k < S * S; k++) {
-    if (real[k]) continue;
-    const w = Math.min(1, 2 * near[k]);
+    // Solo lo no visto: en lo visto de lejos, el brillo a gran escala es el real y no se toca (con la
+    // corrección hasta 48 px, el fondo claro de un cráter de Mimas salía oscuro); su borde inmediato lo
+    // ajusta la última pasada, en el equirrectangular.
+    if (real[k] || face.cls[k] !== NONE) continue;
+    const d = distance[k];
+    if (d >= fade) continue;
+    const t = Math.min(1, Math.max(0, (d - full) / (fade - full)));
+    const w = 1 - t * t * (3 - 2 * t);
     if (w <= 0.001) continue;
     for (let c = 0; c < 3; c++) {
       const target = realMean.value[3 * k + c];
@@ -914,6 +1188,41 @@ function matchBorder({ face, canvas, S, P }) {
       canvas[3 * k + c] += w * (target - mean);
     }
   }
+}
+
+/** La distancia (px, chaflán 3-4 / 3) de cada píxel de una cara S × S a la máscara `inSet`, hasta `cap`. */
+function faceDistance(inSet, S, cap) {
+  const INF = 3 * cap + 4;
+  const d = new Float32Array(S * S);
+  for (let k = 0; k < d.length; k++) d[k] = inSet[k] ? 0 : INF;
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const k = y * S + x;
+      let v = d[k];
+      if (x > 0) v = Math.min(v, d[k - 1] + 3);
+      if (y > 0) {
+        v = Math.min(v, d[k - S] + 3);
+        if (x > 0) v = Math.min(v, d[k - S - 1] + 4);
+        if (x < S - 1) v = Math.min(v, d[k - S + 1] + 4);
+      }
+      d[k] = v;
+    }
+  }
+  for (let y = S - 1; y >= 0; y--) {
+    for (let x = S - 1; x >= 0; x--) {
+      const k = y * S + x;
+      let v = d[k];
+      if (x < S - 1) v = Math.min(v, d[k + 1] + 3);
+      if (y < S - 1) {
+        v = Math.min(v, d[k + S] + 3);
+        if (x < S - 1) v = Math.min(v, d[k + S + 1] + 4);
+        if (x > 0) v = Math.min(v, d[k + S - 1] + 4);
+      }
+      d[k] = v;
+    }
+  }
+  for (let k = 0; k < d.length; k++) d[k] = Math.min(d[k] / 3, cap);
+  return d;
 }
 
 /**
