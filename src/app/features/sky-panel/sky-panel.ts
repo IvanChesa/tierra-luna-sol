@@ -1,7 +1,7 @@
 import { Component, DOCUMENT, computed, inject, linkedSignal, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { formatNumber } from '../../core/format';
-import { SKY_PLACES, placeOptionLabel } from '../../data/places';
+import { SKY_PLACES } from '../../data/places';
 import type { NightSky } from '../../ephemeris/night';
 import { SKY_BODY_IDS, SkyBodyId, skyBodies } from '../../ephemeris/sky';
 import { ExplorerStore } from '../../state/explorer.store';
@@ -9,6 +9,7 @@ import { SimulationStore } from '../../state/simulation.store';
 import type { SkyPlace } from '../../data/sky-place';
 import { ExplorerSession, LocationResult } from '../explorer-ui/explorer-session';
 import { Icon } from '../viewer/icon';
+import { placeShortLabel } from './place-label';
 import { sliderNight, sliderNightHolds, sliderRange } from './night-slider';
 import {
   BODY_NAMES,
@@ -32,6 +33,8 @@ const COMPACT_MEDIA = '(max-width: 63.99rem)';
 interface TableRow {
   readonly id: SkyBodyId;
   readonly name: string;
+  /** La altura ahora (grados): ordena el resumen. */
+  readonly altitudeDeg: number;
   /** «35° SE» (lo que se ve) y «35° de altura, hacia el sureste» (lo que se lee en voz alta). */
   readonly now: string;
   readonly nowSpoken: string;
@@ -70,9 +73,8 @@ export class SkyPanel {
   private readonly doc = inject(DOCUMENT);
 
   protected readonly places = SKY_PLACES;
-  /** La opción «Usar mi ubicación» del selector (fase 9c: dentro de él, el nombre del lugar cabe). */
-  protected readonly locateValue = 'mi-ubicacion';
-  protected readonly optionLabel = placeOptionLabel;
+  /** «Montsec (Lleida)»: corto, para que quepa entero en el selector (fase 9c). */
+  protected readonly optionLabel = placeShortLabel;
   protected readonly place = this.explorer.skyPlace;
   protected readonly constellations = this.explorer.constellations;
   protected readonly locating = signal(false);
@@ -155,6 +157,7 @@ export class SkyPanel {
       return {
         id,
         name: BODY_NAMES[id],
+        altitudeDeg: alt,
         look: lookLabel(id),
         now: nowCell(az, alt),
         nowSpoken: nowSpoken(az, alt),
@@ -173,14 +176,8 @@ export class SkyPanel {
 
   // --- Órdenes ------------------------------------------------------------------------------------
 
-  protected choosePlace(select: HTMLSelectElement): void {
-    const value = select.value;
-    if (value === this.locateValue) {
-      // El selector vuelve al lugar de ahora; si llega la ubicación, «Tu ubicación» lo sustituye.
-      select.value = this.place().id;
-      void this.locate();
-      return;
-    }
+  protected choosePlace(event: Event): void {
+    const value = (event.target as HTMLSelectElement | null)?.value;
     if (!value || value === 'user') return;
     this.locationMessage.set(null);
     this.session.setSkyPlace(value);

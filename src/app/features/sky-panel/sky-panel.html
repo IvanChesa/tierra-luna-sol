@@ -4,25 +4,32 @@
 -->
 <section class="sky" aria-labelledby="sky-place-title">
   <h2 id="sky-place-title" class="sky__title">Lugar</h2>
-  <!-- «Usar mi ubicación», dentro del propio selector: el nombre del lugar cabe entero. -->
-  <label class="visually-hidden" for="sky-place">Lugar desde el que ves el cielo</label>
-  <select
-    #placeSelect
-    id="sky-place"
-    class="sky__select"
-    [attr.aria-busy]="locating() || null"
-    (change)="choosePlace(placeSelect)"
-  >
-    @for (option of places; track option.id) {
-      <option [value]="option.id" [selected]="place().id === option.id">
-        {{ optionLabel(option) }}
-      </option>
-    }
-    @if (place().id === 'user') {
-      <option value="user" selected>Tu ubicación</option>
-    }
-    <option [value]="locateValue">Usar mi ubicación</option>
-  </select>
+  <!--
+    El lugar, con su nombre corto entero, y «Usar mi ubicación»: debajo y a lo ancho; si el panel es
+    ancho (la tableta), a su lado.
+  -->
+  <div class="sky__place">
+    <label class="visually-hidden" for="sky-place">Lugar desde el que ves el cielo</label>
+    <select id="sky-place" class="control sky__select" (change)="choosePlace($event)">
+      @for (option of places; track option.id) {
+        <option [value]="option.id" [selected]="place().id === option.id">
+          {{ optionLabel(option) }}
+        </option>
+      }
+      @if (place().id === 'user') {
+        <option value="user" selected>Tu ubicación</option>
+      }
+    </select>
+    <button
+      type="button"
+      class="control sky__locate"
+      [attr.aria-busy]="locating() || null"
+      (click)="locate()"
+    >
+      <tls-icon name="locate" />
+      Usar mi ubicación
+    </button>
+  </div>
   <p class="sky__note" role="status">{{ locationMessage() }}</p>
 
   <div class="sky__row">
@@ -82,8 +89,9 @@
     }
 
     <!--
-      La tabla; en el móvil, cada fila se recompone en dos líneas (sin barra horizontal). Los papeles,
-      explícitos: con otro «display», el navegador dejaría de tratarla como una tabla.
+      La tabla; si no cabe en su caja (en el móvil y en la columna del escritorio), cada fila se
+      recompone en dos líneas (sin barra horizontal). Los papeles, explícitos: con otro «display», el
+      navegador dejaría de tratarla como una tabla.
     -->
     <table class="sky__table" role="table">
       <caption>

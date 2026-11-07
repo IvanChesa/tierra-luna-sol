@@ -69,8 +69,8 @@ export const compassName = (azimuthDeg: number): string => COMPASS_NAMES[compass
 /** «NE». */
 export const compassShort = (azimuthDeg: number): string => COMPASS_SHORT[compassPoint(azimuthDeg)];
 
-/** «35°» (grados enteros, pegados a la cifra). */
-export const degreesText = (deg: number): string => `${formatNumber(Math.round(deg), 0)}°`;
+/** «35°» (grados enteros, pegados a la cifra; nunca «−0°»). */
+export const degreesText = (deg: number): string => `${formatNumber(Math.round(deg) || 0, 0)}°`;
 
 /** «22:40», en la hora del lugar. */
 export const clockAt = (date: Date, place: SkyPlace): string =>
@@ -193,6 +193,8 @@ export interface SkySummaryBody {
   readonly id: string;
   readonly name: string;
   readonly up: boolean;
+  /** La altura ahora (grados), para el orden. */
+  readonly altitudeDeg: number;
   /** «37° SE». */
   readonly now: string;
   /** «37° de altura, hacia el sureste». */
@@ -214,7 +216,7 @@ export function skySummary(bodies: readonly SkySummaryBody[]): {
 } {
   const up = bodies
     .filter((body) => body.up && body.id !== 'sol')
-    .sort((a, b) => parseFloat(b.now) - parseFloat(a.now));
+    .sort((a, b) => b.altitudeDeg - a.altitudeDeg);
   if (up.length === 0) {
     const text = 'Ni la Luna ni ningún planeta están ahora sobre el horizonte.';
     return { text, spoken: text };

@@ -6,6 +6,7 @@ import {
   clockAt,
   compassName,
   constellationName,
+  degreesText,
   lookLabel,
   moonNightText,
   nowCell,
@@ -136,6 +137,7 @@ describe('skySummary: la línea de resumen del panel del cielo (fase 9c)', () =>
     id,
     name,
     up: altitude > -0.5,
+    altitudeDeg: altitude,
     now: altitude > -0.5 ? `${altitude}° ${compass}` : 'Bajo el horizonte',
     nowSpoken:
       altitude > -0.5 ? `${altitude}° de altura, hacia el ${spokenCompass}` : 'Bajo el horizonte',
@@ -164,6 +166,21 @@ describe('skySummary: la línea de resumen del panel del cielo (fase 9c)', () =>
     ]);
     expect(summary.text).toBe('Ahora: Luna, 50° S · Júpiter, 40° E · Saturno, 30° SE · y 2 más');
     expect(summary.spoken.endsWith('Y 2 más en «Esta noche».')).toBe(true);
+  });
+
+  it('ordena por la altura, no por el texto: con «0°» (antes «−0°», que no se ordenaba)', () => {
+    const summary = skySummary([
+      {
+        ...body('venus', 'Venus', 0, 'O', 'oeste'),
+        altitudeDeg: -0.3,
+        now: `${degreesText(-0.3)} O`,
+      },
+      body('luna', 'Luna', 3, 'E', 'este'),
+      { ...body('marte', 'Marte', 0, 'SO', 'suroeste'), altitudeDeg: 0.4 },
+    ]);
+    expect(summary.text).toBe('Ahora: Luna, 3° E · Marte, 0° SO · Venus, 0° O');
+    expect(degreesText(-0.3)).toBe('0°');
+    expect(degreesText(-12.6)).toBe('−13°');
   });
 
   it('sin nada sobre el horizonte, lo dice', () => {

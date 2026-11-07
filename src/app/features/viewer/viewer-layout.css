@@ -146,6 +146,14 @@
 }
 
 /*
+ * En el cielo, la columna de la izquierda, algo más ancha: el lugar más largo del selector («Roque de
+ * los Muchachos (La Palma)») cabe entero (revisión, hallazgo 6). En el móvil no hay columnas.
+ */
+.explorer--sky {
+  --explorer-start: 22rem;
+}
+
+/*
  * En el cielo, de día y en los crepúsculos, el fondo es claro: con el velo de las otras vistas, que se
  * desvanece, la entradilla quedaba a unos 2:1 sobre el resplandor del Sol. Aquí, casi opaco en toda la
  * caja del texto (92 %: más de 6:1 con el texto apagado aunque detrás haya blanco), y se desvanece

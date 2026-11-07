@@ -124,8 +124,8 @@ test.describe('El cielo desde España (fase 8)', () => {
     const denied = await browser.newContext({ locale: 'es-ES', timezoneId: 'Europe/Madrid' });
     const page = await denied.newPage();
     await openExplorer(page, '/cielo?fecha=2026-11-01T21:00Z');
-    // «Usar mi ubicación», una opción del selector del lugar (fase 9c: el nombre del lugar, entero).
-    await page.getByLabel('Lugar desde el que ves el cielo').selectOption('mi-ubicacion');
+    // «Usar mi ubicación», un botón debajo del selector (revisión de la 9c, hallazgo 5).
+    await page.getByRole('button', { name: 'Usar mi ubicación' }).click();
     await expect(page.locator('.sky__note')).toContainText(
       'Sigues viendo el cielo desde el Parque Astronómico del Montsec',
     );
@@ -140,12 +140,48 @@ test.describe('El cielo desde España (fase 8)', () => {
     });
     const other = await granted.newPage();
     await openExplorer(other, '/cielo?fecha=2026-11-01T21:00Z&lugar=teide');
-    await other.getByLabel('Lugar desde el que ves el cielo').selectOption('mi-ubicacion');
+    await other.getByRole('button', { name: 'Usar mi ubicación' }).click();
     await expect(other.getByLabel('Lugar desde el que ves el cielo')).toHaveValue('user');
     await expect(other.locator('.sky__note')).toContainText('No sale de tu navegador');
     await expect(other).not.toHaveURL(/lugar=/);
     await expect(other).not.toHaveURL(/41\.39/);
     await granted.close();
+  });
+
+  test('recorrer los lugares con las flechas no pide la ubicación; los nombres caben enteros', async ({
+    page,
+  }) => {
+    // Cada petición de la ubicación, contada (sin pedirla de verdad).
+    await page.addInitScript(() => {
+      const count = () => {
+        const root = document.documentElement;
+        root.dataset['geo'] = String(Number(root.dataset['geo'] ?? '0') + 1);
+      };
+      Object.defineProperty(navigator, 'geolocation', {
+        configurable: true,
+        value: { getCurrentPosition: count, watchPosition: count, clearWatch: () => undefined },
+      });
+    });
+    await openExplorer(page, '/cielo?fecha=2026-11-01T21:00Z');
+    const select = page.getByLabel('Lugar desde el que ves el cielo');
+    await select.focus();
+    for (let step = 0; step < 9; step++) await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowUp');
+    const calls = () => page.evaluate(() => document.documentElement.dataset['geo'] ?? '0');
+    expect(await calls()).toBe('0');
+    // Las opciones, cortas (sin el tipo de lugar) y enteras en el ancho del selector.
+    await expect(select.locator('option')).toHaveText([
+      'Montsec (Lleida)',
+      'Observatori Fabra (Barcelona)',
+      'Roque de los Muchachos (La Palma)',
+      'Teide (Tenerife)',
+      'Calar Alto (Almería)',
+      'Puerta del Sol (Madrid)',
+      'Fraga (Huesca)',
+    ]);
+    // Solo el botón la pide.
+    await page.getByRole('button', { name: 'Usar mi ubicación' }).click();
+    await expect.poll(calls).toBe('1');
   });
 
   test('la tecla 4 lleva al cielo y la 1 vuelve al sistema solar, con el mismo motor', async ({

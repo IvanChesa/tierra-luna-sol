@@ -17,6 +17,8 @@
   margin: var(--space-2) var(--space-4) 0;
   overflow-y: auto;
   overscroll-behavior: contain;
+  /* Su ancho manda en el lugar y en la tabla (consultas de contenedor, más abajo). */
+  container-type: inline-size;
 }
 
 @media (max-width: 63.99rem) {
@@ -67,17 +69,24 @@
   font-size: var(--text-sm);
 }
 
-/* El selector, a lo ancho: el nombre del lugar, entero («Usar mi ubicación» es una de sus opciones). */
+/*
+ * El selector y «Usar mi ubicación», a lo ancho, uno debajo del otro: el nombre del lugar, entero. Si
+ * el panel es ancho (la tableta), en una fila: el 3D gana una fila.
+ */
+.sky__place {
+  display: grid;
+  gap: var(--space-2);
+}
+
+@container (min-width: 30rem) {
+  .sky__place {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+
+/* El aspecto, el de los desplegables (`select.control`, styles.css). */
 .sky__select {
   width: 100%;
-  min-height: 2.25rem;
-  padding: 0 var(--space-2);
-  color: var(--color-text);
-  font: inherit;
-  font-size: var(--text-sm);
-  background: var(--color-surface-raised);
-  border: var(--border-width) solid var(--color-control);
-  border-radius: var(--radius-sm);
 }
 
 .sky__note:empty {
@@ -88,7 +97,7 @@
 .sky__hint {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: var(--text-xs, 0.75rem);
+  font-size: 0.75rem;
   line-height: 1.4;
 }
 
@@ -101,7 +110,7 @@
 .sky__zone {
   display: none;
   color: var(--color-text-muted);
-  font-size: var(--text-xs, 0.75rem);
+  font-size: 0.75rem;
 }
 
 .sky__slider {
@@ -129,6 +138,7 @@
   display: grid;
   gap: var(--space-2);
   margin-top: var(--space-1);
+  container-type: inline-size;
 }
 
 .sky__text {
@@ -156,7 +166,7 @@
 .sky__table caption {
   margin-bottom: var(--space-1);
   color: var(--color-text-muted);
-  font-size: var(--text-xs, 0.75rem);
+  font-size: 0.75rem;
   text-align: left;
 }
 
@@ -183,61 +193,12 @@
   color: var(--color-text-muted);
 }
 
-.sky__eclipses {
-  justify-self: start;
-  font-size: var(--text-sm);
-}
-
-.sky__toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--text-sm);
-  cursor: pointer;
-}
-
-.sky__toggle input {
-  width: 1.1rem;
-  height: 1.1rem;
-  accent-color: var(--color-accent);
-}
-
-/* Zonas táctiles de 44 px: el selector, la hora, «Esta noche» y las constelaciones («Mirar», como todo
-   `.control--icon`). */
-@media (pointer: coarse) {
-  .sky__select,
-  .sky__slider,
-  .sky__summary,
-  .sky__toggle {
-    min-height: var(--tap-target);
-  }
-}
-
 /*
- * En móvil, compacto, para que el cielo se vea por encima: los rótulos «Lugar» y «Hora» solo para los
- * lectores de pantalla (el selector y el reloj ya dicen qué son), la nota de la hora cambiada por la zona
- * junto al reloj (revisión de la fase 8, hallazgo 3: la hora del lugar, siempre con su zona), el aviso
- * de día a la vista, el lugar y «Usar mi ubicación» en una fila, y «Esta noche» plegado (la interfaz lo
- * pliega al entrar).
+ * Si la tabla no cabe en su caja (unos 320 px: en el móvil y en la columna del escritorio), sin barra
+ * horizontal (fase 9c; revisión, hallazgo 7): cada fila en dos líneas, el nombre arriba, «Ahora», «Sale»
+ * y «Se pone» debajo con su rótulo, y «Mirar» a la derecha.
  */
-@media (max-width: 63.99rem) {
-  :host {
-    gap: var(--space-1);
-  }
-
-  .sky {
-    gap: var(--space-1);
-    padding: var(--space-2) var(--space-3);
-  }
-
-  .sky__zone {
-    display: inline;
-  }
-
-  /*
-   * La tabla, en el móvil, sin barra horizontal (fase 9c): cada fila en dos líneas, el nombre arriba,
-   * «Ahora», «Sale» y «Se pone» debajo con su rótulo, y «Mirar» a la derecha.
-   */
+@container (max-width: 24rem) {
   .sky__table thead {
     position: absolute;
     width: 1px;
@@ -275,6 +236,56 @@
   .sky__look-cell {
     grid-row: 1 / 3;
     grid-column: 4;
+  }
+}
+
+.sky__eclipses {
+  justify-self: start;
+  font-size: var(--text-sm);
+}
+
+.sky__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.sky__toggle input {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--color-accent);
+}
+
+/* Zonas táctiles de 44 px: la hora, «Esta noche» y las constelaciones (el selector, «Usar mi ubicación»
+   y «Mirar», como todo `.control`). */
+@media (pointer: coarse) {
+  .sky__slider,
+  .sky__summary,
+  .sky__toggle {
+    min-height: var(--tap-target);
+  }
+}
+
+/*
+ * En móvil, compacto, para que el cielo se vea por encima: los rótulos «Lugar» y «Hora» solo para los
+ * lectores de pantalla (el selector y el reloj ya dicen qué son), la nota de la hora cambiada por la zona
+ * junto al reloj (revisión de la fase 8, hallazgo 3: la hora del lugar, siempre con su zona), el aviso
+ * de día a la vista y «Esta noche» plegado (la interfaz lo pliega al entrar).
+ */
+@media (max-width: 63.99rem) {
+  :host {
+    gap: var(--space-1);
+  }
+
+  .sky {
+    gap: var(--space-1);
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .sky__zone {
+    display: inline;
   }
 
   #sky-place-title,
