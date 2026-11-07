@@ -280,7 +280,9 @@ tls-root {
   font-weight: var(--font-weight-strong);
 }
 
-.site-nav__extra,
+/* Lo de más del menú (créditos y lo legal), solo en el menú: en línea, ya están en el pie. Con
+   `.site-nav` delante, gana a `.site-nav ul` (el `ul` de lo legal es uno de ellos). */
+.site-nav .site-nav__extra,
 .site-menu-button {
   display: none;
 }

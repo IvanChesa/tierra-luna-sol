@@ -351,6 +351,33 @@ test.describe('Compartir, legal y privacidad (fase 9)', () => {
     );
   });
 
+  test('en escritorio, la cabecera de las páginas de lectura, en una fila y sin lo legal (hallazgo 4)', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/planetas/marte');
+    const header = page.locator('header.site-header');
+    const visible = await header
+      .getByRole('link')
+      .evaluateAll((links) =>
+        links
+          .filter((link) => link.checkVisibility({ checkVisibilityCSS: true }))
+          .map((link) => link.textContent?.trim()),
+      );
+    expect(visible).toEqual([
+      'Tierra Luna Sol',
+      'Planetas',
+      'Lunas',
+      'Sol',
+      'Eclipses',
+      'Sobre el proyecto',
+      'Explorar en 3D',
+    ]);
+    // Lo legal y los créditos, en el pie (no en una segunda fila de la cabecera).
+    const height = await header.evaluate((element) => element.getBoundingClientRect().height);
+    expect(height).toBeLessThanOrEqual(60);
+  });
+
   test('en el explorador, la nota de privacidad y lo legal, en su menú (fase 9c)', async ({
     page,
   }) => {
