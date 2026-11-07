@@ -21,11 +21,16 @@
     <div class="explorer__intro">
       <router-outlet (activate)="onActivate()" />
     </div>
-    <!-- La autoría (fase 9c, decisión 3): discreta, en la primera pantalla; se pliega con la entradilla. -->
-    <p class="explorer__credit">
-      {{ authorship.text }} Un proyecto de {{ site.author.name }} ·
-      <a routerLink="/sobre-el-proyecto" fragment="precision">Cómo se calcula</a>
-    </p>
+    <!--
+      La autoría (fase 9c, decisión 3 de Iván): discreta, en la primera pantalla, la de la portada; se
+      pliega con la entradilla.
+    -->
+    @if (view() === 'system') {
+      <p class="explorer__credit">
+        {{ authorship.text }} Un proyecto de {{ site.author.name }} ·
+        <a routerLink="/sobre-el-proyecto" fragment="precision">Cómo se calcula</a>
+      </p>
+    }
     <p class="explorer__touch">Arrastra para girar · pellizca para acercarte</p>
   </div>
 

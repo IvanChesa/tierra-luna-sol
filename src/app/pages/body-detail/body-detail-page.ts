@@ -9,6 +9,7 @@ import type { BodyId } from '../../data/body.model';
 import { bodyImageLoader } from '../shared/body-images';
 import { Breadcrumbs, Crumb } from '../shared/breadcrumbs';
 import { moonsByDistance } from '../shared/moons';
+import { atlasNeighbors } from './atlas';
 import { bodyFacts, citations } from './body-facts';
 import { accessedText, imageAltOf, kindLineOf, textSourceName, urlText } from './body-labels';
 import { PENDING_NOTE, pendingRows, positionNote } from './today-text';
@@ -76,6 +77,8 @@ export class BodyDetailPage {
     }
     return null;
   });
+  /** La ficha anterior y la siguiente en el orden del atlas: el Sol y cada planeta con sus lunas. */
+  protected readonly pager = computed(() => atlasNeighbors(this.bodyId()));
   protected readonly imageAlt = computed(() => imageAltOf(this.body()));
   protected readonly pagePath = bodyPagePath;
   protected readonly textSourceName = textSourceName;

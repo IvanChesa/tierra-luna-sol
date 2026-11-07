@@ -15,6 +15,32 @@ const meta = (page: Page, selector: string) =>
   page.locator(`head meta[${selector}]`).getAttribute('content');
 
 test.describe('Fichas de los cuerpos (fase 9)', () => {
+  test('al final, la ficha anterior y la siguiente; los datos técnicos, después de lo esencial (fase 9c)', async ({
+    page,
+  }) => {
+    await page.goto('/planetas/marte');
+    const pager = page.getByRole('navigation', { name: 'Otras fichas' });
+    // En el orden del atlas: la Tierra, la Luna, Marte, Fobos…
+    await expect(pager.getByRole('link', { name: 'Anterior: Luna' })).toHaveAttribute(
+      'href',
+      '/luna',
+    );
+    await expect(pager.getByRole('link', { name: 'Siguiente: Fobos' })).toHaveAttribute(
+      'href',
+      '/lunas/fobos',
+    );
+    const physical = page.locator('table.facts').first();
+    const headers = await physical.locator('tbody th').allTextContents();
+    const technical = headers.findIndex((text) => text.trim() === 'Datos técnicos');
+    expect(technical).toBeGreaterThan(0);
+    // Lo esencial (el radio) antes; lo técnico (la densidad), después de su rótulo.
+    expect(headers.findIndex((text) => text.includes('Radio'))).toBeLessThan(technical);
+    expect(headers.findIndex((text) => text.includes('Densidad'))).toBeGreaterThan(technical);
+    await pager.getByRole('link', { name: 'Siguiente: Fobos' }).click();
+    await expect(page).toHaveURL(/\/lunas\/fobos$/);
+    await expect(page.locator('h1')).toHaveText('Fobos');
+  });
+
   test('la ficha de Marte: datos con su fuente, «Hoy» calculado en el navegador y «Ver en 3D»', async ({
     page,
   }) => {

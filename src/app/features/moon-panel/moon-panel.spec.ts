@@ -8,7 +8,7 @@ import { ExplorerStore } from '../../state/explorer.store';
 import { SystemPositions } from '../../state/positions';
 import { SimulationStore } from '../../state/simulation.store';
 import { ExplorerSession } from '../explorer-ui/explorer-session';
-import { MOON_TOUR_STEP_MS, MoonPanel } from './moon-panel';
+import { MOON_TOUR_STEP_MS, MoonPanel, NEARLY_NEW } from './moon-panel';
 
 function render(reducedMotion = false) {
   window.history.replaceState({}, '', '/explorar/luna?fecha=2026-11-20T00:00Z');
@@ -145,5 +145,20 @@ describe('MoonPanel: vistas y recorrido de la Luna (fase 6)', () => {
       expect(Math.abs(stop.latDeg)).toBeLessThanOrEqual(90);
       expect(Math.abs(stop.lonDeg)).toBeLessThanOrEqual(180);
     }
+  });
+
+  it('con la Luna casi nueva, una frase dice por qué casi no se ve (fase 9c, 9c.7)', () => {
+    const { fixture, root, sim } = render();
+    // La de la fecha del render (20 de noviembre de 2026) no es nueva: sin nota.
+    expect(moonPhase(sim.time()).illuminatedFraction).toBeGreaterThan(NEARLY_NEW);
+    expect(root.querySelector('.moon__new')).toBeNull();
+    // Un día con menos del 5 % iluminado, buscado con la misma función que la fase del panel.
+    let day = new Date('2026-11-01T00:00:00Z');
+    while (moonPhase(day).illuminatedFraction >= NEARLY_NEW) {
+      day = new Date(day.getTime() + 6 * 3_600_000);
+    }
+    sim.setTime(day);
+    fixture.detectChanges();
+    expect(root.querySelector('.moon__new')?.textContent).toContain('La Luna está casi nueva');
   });
 });

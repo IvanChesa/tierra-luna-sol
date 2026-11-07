@@ -40,7 +40,11 @@
   --text-3xl: clamp(2.25rem, 1.7rem + 2.6vw, 3.5rem);
   --leading-tight: 1.15;
   --leading-body: 1.6;
-  --measure: 68ch;
+  /*
+   * Unos 68 caracteres de texto corrido (docs/DISENO.md). En `em`, no en `ch` (el ancho de un «0», más
+   * ancho que la letra media: 68ch daban unos 89 caracteres; fase 9c, 9c.7).
+   */
+  --measure: 30em;
 
   /* Espaciado (escala de 4 px) */
   --space-1: 0.25rem;

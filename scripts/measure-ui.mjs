@@ -123,7 +123,15 @@ function inspect({ explorer }) {
   const inSentence = (el) => {
     if (el.tagName !== 'A') return false;
     const block = el.closest('p, li, td, dd, figcaption, caption');
-    return block !== null && block.textContent.trim().length > el.textContent.trim().length + 2;
+    if (block === null) return false;
+    // En una lista, solo si el elemento tiene texto propio alrededor del enlace (no una tarjeta).
+    if (block.tagName === 'LI') {
+      const own = [...block.childNodes].some(
+        (node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim().length > 1,
+      );
+      if (!own) return false;
+    }
+    return block.textContent.trim().length > el.textContent.trim().length + 2;
   };
   const minTarget = (el) => (touch && el.closest('.explorer') !== null ? 44 : 24);
   const small = visible

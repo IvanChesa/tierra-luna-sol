@@ -141,6 +141,44 @@ test.describe('Móvil', () => {
     }
   });
 
+  test('la ficha, en reposo: como mucho el 45 % de la pantalla, el cuerpo en el hueco libre y la pausa a mano (fase 9c)', async ({
+    page,
+  }) => {
+    await openExplorer(page, '/?captura=1&cuerpo=saturno');
+    const panel = page.locator('.panel');
+    await expect(panel.locator('#card-title')).toHaveText('Saturno');
+    const geometry = () =>
+      page.evaluate(() => {
+        const explorer = document.querySelector('.explorer') as HTMLElement;
+        const sheet = (document.querySelector('.panel') as HTMLElement).getBoundingClientRect();
+        const play = (document.querySelector('.time__play') as HTMLElement).getBoundingClientRect();
+        const hit = document.elementFromPoint(
+          play.left + play.width / 2,
+          play.top + play.height / 2,
+        );
+        const viewBottom = parseFloat(getComputedStyle(explorer).getPropertyValue('--view-bottom'));
+        return {
+          share: sheet.height / innerHeight,
+          // El encuadre sabe la altura de la hoja: el 3D se encuadra por encima de ella.
+          framedAbove: explorer.getBoundingClientRect().bottom - viewBottom <= sheet.top + 1,
+          playReachable: hit !== null && hit.closest('.time__play') !== null,
+          playBelowSheet: play.top >= sheet.bottom - 1,
+        };
+      });
+    await expect.poll(async () => (await geometry()).framedAbove).toBe(true);
+    const { share, playReachable, playBelowSheet } = await geometry();
+    expect(share).toBeLessThanOrEqual(0.45);
+    expect(playReachable).toBe(true);
+    expect(playBelowSheet).toBe(true);
+    // Subida («Ver los datos»), los datos; la pausa sigue a mano.
+    await page.getByRole('button', { name: 'Ver los datos' }).tap();
+    await expect(panel.locator('#card-rest')).toBeVisible();
+    expect((await geometry()).playReachable).toBe(true);
+    await page.locator('.time__play').tap();
+    await expect(page.locator('.time__play')).toHaveAccessibleName(/Pausar/);
+    await page.locator('.time__play').tap();
+  });
+
   test('la línea de tiempo responde al tacto', async ({ page }) => {
     await openExplorer(page, '/?fecha=2031-03-15T13:00Z');
     const line = page.getByRole('slider', { name: 'Línea de tiempo' });

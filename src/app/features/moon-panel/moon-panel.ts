@@ -6,6 +6,9 @@ import { SimulationStore } from '../../state/simulation.store';
 import { ExplorerSession } from '../explorer-ui/explorer-session';
 import { Icon } from '../viewer/icon';
 
+/** Por debajo de esta fracción iluminada, la Luna está «casi nueva» (la nota del panel). */
+export const NEARLY_NEW = 0.05;
+
 /** Segundos que se queda cada parada del recorrido. */
 export const MOON_TOUR_STEP_MS = 12_000;
 
@@ -65,6 +68,13 @@ interface Shown {
       </div>
       @if (viewCaption(); as text) {
         <p class="moon__caption">{{ text }}</p>
+      }
+      <!-- Con la Luna casi nueva, por qué casi no se ve (fase 9c, 9c.7); también con el panel plegado. -->
+      @if (nearlyNew()) {
+        <p class="moon__new">
+          La Luna está casi nueva: la cara que mira a la Tierra apenas recibe luz del Sol. «Cara
+          visible» la enseña en luna llena.
+        </p>
       }
     </section>
 
@@ -126,6 +136,8 @@ export class MoonPanel {
     const phase = moonPhase(this.sim.time());
     return `${phase.name} · ${Math.round(phase.illuminatedFraction * 100)} % iluminada`;
   });
+  /** Menos del 5 % iluminada: la cara visible, casi a oscuras (con la fase que ya se calcula). */
+  readonly nearlyNew = computed(() => moonPhase(this.sim.time()).illuminatedFraction < NEARLY_NEW);
   readonly viewCaption = computed(() => {
     const shown = this.shown();
     return shown?.kind === 'view' ? (this.views[shown.index]?.text ?? null) : null;

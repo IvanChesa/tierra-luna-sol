@@ -106,13 +106,17 @@
   min-width: 0;
 }
 
-/* La autoría: discreta, en el color secundario y en letra pequeña. */
+/* La autoría: discreta, en el color secundario y en letra pequeña. Su enlace, en una sola línea. */
 .explorer__credit {
   max-width: 32rem;
   margin: 0;
   color: var(--color-text-muted);
   font-size: 0.75rem;
   line-height: 1.45;
+}
+
+.explorer__credit a {
+  white-space: nowrap;
 }
 
 /* Cómo se usa, para quien llega con el dedo (en el escritorio lo dice el pie). */

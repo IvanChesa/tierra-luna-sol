@@ -51,7 +51,9 @@ try {
         await page.goto(BASE + path);
         if (kind === 'tour') {
           // Unos segundos dentro del recorrido: ya ha empezado y «Saltar» se ve.
-          await page.waitForSelector('.tour__skip', { timeout: 90_000 });
+          await page
+            .getByRole('button', { name: /Saltar el recorrido/ })
+            .waitFor({ timeout: 90_000 });
           await page.waitForTimeout(6000);
         } else {
           await page.evaluate(async () => {

@@ -75,16 +75,24 @@
   font-size: var(--text-xs, 0.75rem);
 }
 
-/* Las vistas guiadas: botones compactos que se reparten en filas. */
+/*
+ * Las vistas guiadas, en dos columnas (fase 9c, 9c.7: con el reparto en filas, «El Himalaya» se quedaba
+ * solo en la suya); la última, si sobra, a lo ancho. En el móvil, una fila que se desplaza (abajo).
+ */
 .earth__views {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-1);
+}
+
+.earth__view:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
 }
 
 .earth__view {
   min-height: 2rem;
-  padding-inline: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  line-height: 1.2;
 }
 
 .earth__strip {
@@ -180,7 +188,7 @@
 
   /* Las vistas, en una sola fila que se desplaza: el panel no tapa media pantalla. */
   .earth__views {
-    flex-wrap: nowrap;
+    display: flex;
     overflow-x: auto;
     scrollbar-width: none;
   }

@@ -77,7 +77,17 @@
 }
 
 .eclipse__link {
+  display: inline-flex;
+  align-items: center;
   justify-self: start;
+  min-height: 1.5rem;
   margin-top: var(--space-1);
   font-weight: var(--font-weight-strong);
+}
+
+/* Con el dedo, 44 px de alto (fase 9c, 9c.7: medía 74 × 26). */
+@media (pointer: coarse) {
+  .eclipse__link {
+    min-height: var(--tap-target);
+  }
 }

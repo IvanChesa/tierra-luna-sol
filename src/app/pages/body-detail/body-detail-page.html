@@ -64,7 +64,13 @@
           </tr>
         </thead>
         <tbody>
-          @for (row of group.rows; track row.key) {
+          @for (row of group.rows; track row.key; let i = $index) {
+            <!-- Lo esencial primero; lo técnico, después de su rótulo (fase 9c, 9c.7). -->
+            @if (row.technical && !group.rows[i - 1]?.technical) {
+              <tr class="facts__subhead">
+                <th colspan="3">Datos técnicos</th>
+              </tr>
+            }
             <tr>
               <th scope="row">
                 {{ row.label }}
@@ -154,4 +160,22 @@
       (traducidos y resumidos). La NASA no respalda este proyecto.
     </p>
   </section>
+
+  <!-- La ficha anterior y la siguiente, en el orden del atlas (fase 9c, 9c.7). -->
+  @if (pager(); as pages) {
+    <nav class="pager" aria-label="Otras fichas">
+      @if (pages.previous; as previous) {
+        <a class="pager__link" [routerLink]="pagePath(previous.id)" rel="prev"
+          ><span aria-hidden="true">‹</span><span class="visually-hidden">Anterior: </span
+          >{{ previous.name }}</a
+        >
+      }
+      @if (pages.next; as next) {
+        <a class="pager__link pager__link--next" [routerLink]="pagePath(next.id)" rel="next"
+          ><span class="visually-hidden">Siguiente: </span>{{ next.name }}
+          <span aria-hidden="true">›</span></a
+        >
+      }
+    </nav>
+  }
 </article>

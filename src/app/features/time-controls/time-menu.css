@@ -7,7 +7,8 @@
   inset: auto var(--space-4)
     calc(var(--explorer-bar, 4rem) + var(--explorer-chips, 4.5rem) + var(--space-2)) auto;
   width: min(25rem, calc(100vw - 2 * var(--space-4)));
-  max-height: calc(100svh - var(--explorer-bar, 4rem) - var(--explorer-chips, 4.5rem) - 5rem);
+  /* Por debajo de la cabecera y de las pestañas (unos 7,5 rem): no las tapa en un escritorio bajo. */
+  max-height: calc(100svh - var(--explorer-bar, 4rem) - var(--explorer-chips, 4.5rem) - 8rem);
   margin: 0;
   padding: var(--space-4);
   overflow-y: auto;

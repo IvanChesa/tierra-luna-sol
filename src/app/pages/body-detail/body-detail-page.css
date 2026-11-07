@@ -152,9 +152,13 @@
   text-align: center;
 }
 
+/* La nota «Fuente N», con su zona de 24 × 24 px como mínimo (WCAG 2.5.8; fase 9c: medía 24 × 22). */
 .facts__ref a {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-width: 1.5rem;
+  min-height: 1.5rem;
 }
 
 .curiosities,
@@ -193,4 +197,36 @@
 /* Los números de la lista de fuentes, como anclas: que no queden bajo la cabecera al saltar. */
 .sources li {
   scroll-margin-top: var(--space-16);
+}
+
+/* «Datos técnicos»: el rótulo de lo técnico de cada tabla, después de lo esencial (fase 9c, 9c.7). */
+.facts__subhead th {
+  padding-top: var(--space-4);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-strong);
+  text-align: left;
+}
+
+/* La ficha anterior y la siguiente, al final (fase 9c, 9c.7). */
+.pager {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-6);
+  margin-top: var(--space-12);
+  padding-top: var(--space-4);
+  border-top: var(--border-width) solid var(--color-line);
+}
+
+.pager__link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap-target);
+  font-weight: var(--font-weight-strong);
+}
+
+.pager__link--next {
+  margin-left: auto;
 }
