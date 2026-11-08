@@ -1,12 +1,13 @@
 import { Component, input, output } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { Router, provideRouter } from '@angular/router';
 import type { ExplorerView } from '../../scene';
 import { ExplorerStore } from '../../state/explorer.store';
 import { SimulationStore } from '../../state/simulation.store';
 import { ViewerCanvas } from '../viewer/viewer-canvas';
 import { ExplorerFocus } from './explorer-focus';
-import { ExplorerUi, PRESENTATION_FOLD_MS } from './explorer-ui';
+import { ExplorerUi, HINT_MS, PRESENTATION_FOLD_MS } from './explorer-ui';
 
 /** Sustituto del lienzo: los atajos no necesitan WebGL. */
 @Component({ selector: 'tls-viewer-canvas', template: '' })
@@ -246,19 +247,42 @@ describe('ExplorerUi: panel «Índice» y texto de presentación (fase 3c)', () 
     }
   });
 
-  it('las pistas de uso, solo la primera vez: al plegarse la presentación no vuelven (fase 9c)', async () => {
+  it('las pistas de la primera vez, junto a la fila: se van solas sin darse por vistas; un gesto sí (crítica de la 9c)', async () => {
     window.localStorage.removeItem('tls.pistas');
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     try {
-      const first = await render('?fecha=2030-01-01T00:00Z');
-      expect(first.host.classList.contains('shows-hints')).toBe(true);
-      first.host.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      const open = async () => {
+        const rendered = await render('?fecha=2030-01-01T00:00Z');
+        // El 3D pintado (sin recorrido: hay parámetros), las pistas salen.
+        const canvas = rendered.fixture.debugElement.query(By.directive(FakeCanvas));
+        (canvas.componentInstance as FakeCanvas).ready.emit();
+        rendered.fixture.detectChanges();
+        const text = () =>
+          rendered.host.querySelector('tls-callout .callout__text')?.textContent?.trim() ?? null;
+        return { ...rendered, text };
+      };
+      const first = await open();
+      expect(first.text()).toMatch(/^Elige un cuerpo abajo · arrastra para girar · /);
+      // Se van solas a los `HINT_MS`, pero no se dan por vistas.
+      vi.advanceTimersByTime(HINT_MS);
       first.fixture.detectChanges();
+      expect(first.text()).toBeNull();
+      expect(window.localStorage.getItem('tls.pistas')).toBeNull();
+      TestBed.resetTestingModule();
+
+      // La vez siguiente, otra vez; un gesto de verdad después de salir las da por vistas.
+      const second = await open();
+      expect(second.text()).not.toBeNull();
+      second.host.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      second.fixture.detectChanges();
+      expect(second.text()).toBeNull();
       expect(window.localStorage.getItem('tls.pistas')).toBe('visto');
       TestBed.resetTestingModule();
 
-      const again = await render('?fecha=2030-01-01T00:00Z');
-      expect(again.host.classList.contains('shows-hints')).toBe(false);
+      const third = await open();
+      expect(third.text()).toBeNull();
     } finally {
+      vi.useRealTimers();
       window.localStorage.removeItem('tls.pistas');
     }
   });

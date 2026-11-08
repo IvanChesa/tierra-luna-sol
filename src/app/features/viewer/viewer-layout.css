@@ -121,37 +121,6 @@
   white-space: nowrap;
 }
 
-/* Cómo se usa, para quien llega con el dedo (en el escritorio lo dice el pie). */
-.explorer__touch {
-  display: none;
-  margin: 0;
-  color: var(--color-text-muted);
-  font-size: 0.75rem;
-}
-
-.explorer__foot {
-  position: relative;
-  z-index: 2;
-  grid-area: foot;
-  /* Sin velo (no tapa el lienzo): una sombra del color del fondo lo hace legible sobre el 3D. */
-  text-shadow:
-    0 0 3px var(--color-bg),
-    0 1px 2px var(--color-bg);
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 0 var(--space-6);
-  padding: 0 var(--space-4) var(--space-2);
-  color: var(--color-text-muted);
-  font-size: 0.75rem;
-  line-height: 1.5;
-}
-
-.explorer__foot p {
-  max-width: none;
-  margin: 0;
-}
-
 /*
  * En el cielo, la columna de la izquierda, algo más ancha: el lugar más largo del selector («Roque de
  * los Muchachos (La Palma)») cabe entero (revisión, hallazgo 6). En el móvil no hay columnas.
@@ -177,7 +146,7 @@
 }
 
 /* La vista limpia oculta el marco (la interfaz diferida pone la clase en su anfitrión). */
-.explorer:has(> tls-explorer-ui.is-clean) > :is(.explorer__lead, .explorer__dock, .explorer__foot) {
+.explorer:has(> tls-explorer-ui.is-clean) > :is(.explorer__lead, .explorer__dock) {
   display: none;
 }
 
@@ -225,11 +194,6 @@
     );
     mask-image: none;
   }
-
-  /* Los créditos están en el menú del sitio; las pistas no caben. */
-  .explorer__foot {
-    display: none;
-  }
 }
 
 /*
@@ -240,19 +204,6 @@
 @media (max-width: 47.99rem) {
   .explorer:is(.explorer--detail, .explorer--sky) {
     --explorer-chips: 0px;
-  }
-}
-
-@media (max-width: 63.99rem) and (pointer: coarse) {
-  .explorer__touch {
-    display: block;
-  }
-}
-
-/* En los móviles bajos, con el H1 compacto, no cabe. */
-@media (max-width: 63.99rem) and (max-height: 45rem) {
-  .explorer__touch {
-    display: none;
   }
 }
 

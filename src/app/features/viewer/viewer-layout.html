@@ -33,20 +33,14 @@
         >
       </p>
     }
-    <p class="explorer__touch">Arrastra para girar · pellizca para acercarte</p>
   </div>
 
+  <!--
+    Las pistas de uso de la primera vez, junto a la fila de fichas, las enseña la interfaz (crítica de
+    la 9c). Los créditos, lo legal y la nota de privacidad, en el menú del sitio; la fuente de los
+    datos, en «Controles».
+  -->
   @defer (on idle) {
     <tls-explorer-ui [view]="view()" (ready)="onReady()" />
   }
-
-  <!--
-    Las pistas de uso, en letra pequeña al pie, solo la primera vez (fase 9c, 9c.5). Los créditos, lo
-    legal y la nota de privacidad, en el menú del sitio; la fuente de los datos, en «Controles».
-  -->
-  <footer class="explorer__foot">
-    <p class="explorer__hints">
-      Arrastra para girar · usa la rueda o pellizca para acercarte · elige un cuerpo
-    </p>
-  </footer>
 </section>

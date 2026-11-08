@@ -23,6 +23,7 @@ import type { ExplorerView, ViewInsets } from '../../scene';
 import { ExplorerStore } from '../../state/explorer.store';
 import { SystemPositions } from '../../state/positions';
 import { SimulationStore } from '../../state/simulation.store';
+import { moonPhase } from '../../ephemeris/ephemeris';
 import { BodyChips } from '../body-chips/body-chips';
 import { systemOf, treeNode } from '../body-picker/body-tree';
 import { BodyPanel } from '../body-panel/body-panel';
@@ -39,6 +40,7 @@ import { insetsFromRects, parseChromeEdge } from '../viewer/insets';
 import { Icon } from '../viewer/icon';
 import { PHONE_QUERY, mediaQuery } from '../viewer/media';
 import { ViewerCanvas } from '../viewer/viewer-canvas';
+import { Callout } from './callout';
 import { bodyKindLabel } from './describe';
 import { ExplorerFocus, type FocusTitle } from './explorer-focus';
 import { ExplorerSession } from './explorer-session';
@@ -65,6 +67,8 @@ const SWIPE_OPEN_PX = 40;
  * nada (fase 9c, 9c.2): queda el título. En el modo de captura, no (las capturas son deterministas).
  */
 export const PRESENTATION_FOLD_MS = 8000;
+/** Lo que se ven las pistas de la primera vez (crítica de la 9c: 6–8 s), si nadie las usa antes. */
+export const HINT_MS = 7000;
 
 /** Por debajo de este ancho, el índice y la ficha son hojas inferiores (viewer-layout.css). */
 const SHEETS_MEDIA = '(max-width: 63.99rem)';
@@ -136,6 +140,7 @@ function offsetWithin(element: HTMLElement, root: HTMLElement): { left: number; 
     Notices,
     ShortcutsDialog,
     Icon,
+    Callout,
   ],
   providers: [SimulationStore, ExplorerStore, SystemPositions, ExplorerSession],
   templateUrl: './explorer-ui.html',
@@ -150,9 +155,9 @@ function offsetWithin(element: HTMLElement, root: HTMLElement): { left: number; 
     '[class.no-index]': 'detail() || view() === "sky"',
     '[class.is-sheet-expanded]': 'sheetExpanded()',
     '[class.is-interacted]': 'interacted()',
-    '[class.shows-hints]': 'showsHints',
     '(document:keydown)': 'onKeydown($event)',
-    '(pointerdown)': 'acted.set(true)',
+    '(pointerdown)': 'onInteraction($event)',
+    '(wheel)': 'onInteraction($event)',
     '(focusin)': 'rememberFocus($event)',
   },
 })
@@ -216,10 +221,19 @@ export class ExplorerUi implements OnInit {
     () => this.acted() || this.settled() || this.panelBody() !== null,
   );
   /**
-   * Las pistas de uso («Arrastra para girar…»), solo la primera vez (fase 9c, 9c.5): se pliegan con la
-   * presentación y, desde entonces, no vuelven. Sin almacenamiento, siempre (se pliegan solas).
+   * Las pistas de uso de la primera vez (fase 9c, 9c.5; crítica de la 9c), junto a la fila de fichas
+   * mientras se ven: «Elige un cuerpo abajo · arrastra para girar · …». Salen al acabar el recorrido (o
+   * al saltarlo) o, sin recorrido, al verse el 3D; se van a los `HINT_MS` o con la primera interacción
+   * de verdad, y solo entonces se dan por vistas. Sin almacenamiento, cada vez.
    */
-  protected readonly showsHints: boolean;
+  protected readonly hint = signal<string | null>(null);
+  /** Cuándo salieron (la hora de los eventos): lo que pasa antes, como el gesto que para el recorrido, no cuenta. */
+  private hintShownAt = 0;
+  private hintTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Las pistas, aún por ver. */
+  private hintsPending = false;
+  /** El puntero es el dedo: «pellizca» en lugar de «usa la rueda». */
+  private readonly touch = mediaQuery('(pointer: coarse)');
   private swipeStart: number | null = null;
   private readonly panel = viewChild.required<ElementRef<HTMLElement>>('panel');
   private readonly indexToggle = viewChild.required<ElementRef<HTMLElement>>('indexToggle');
@@ -235,6 +249,10 @@ export class ExplorerUi implements OnInit {
   private readonly chips = viewChild.required(BodyChips);
   /** El recorrido de la portada, en marcha (fase 9c, 9c.6): «Saltar el recorrido» a la vista. */
   protected readonly touring = signal(false);
+  /** El rótulo de la parada en la que está («1 de 4 · Saturno y sus anillos»). */
+  protected readonly tourCaption = signal<string | null>(null);
+  /** Cómo se ha parado (lo mira su final): saltado o parado, con el teclado o con el puntero. */
+  private tourEnd: { how: 'skip' | 'stop'; input: 'keyboard' | 'pointer' } | null = null;
   /**
    * Con movimiento reducido, el recorrido no arranca solo: la primera vez, en su lugar, «Ver el
    * recorrido» (en la portada, al llegar; siempre, en «Controles»).
@@ -292,14 +310,11 @@ export class ExplorerUi implements OnInit {
     });
     this.followFocus();
 
-    const storage = this.storage;
-    this.showsHints = hasSeen(storage, 'tls.pistas') !== true;
+    this.hintsPending = hasSeen(this.storage, 'tls.pistas') !== true && !this.session.capture;
     this.session.setTourHandler(() => this.startTour());
-    if (this.showsHints && !this.session.capture) {
-      effect(() => {
-        if (this.interacted()) untracked(() => markSeen(storage, 'tls.pistas'));
-      });
-    }
+    this.destroyRef.onDestroy(() => {
+      if (this.hintTimer !== null) clearTimeout(this.hintTimer);
+    });
 
     // La presentación se pliega sola a los pocos segundos de llegar a cada vista (un temporizador:
     // sistema externo). En captura, nunca.
@@ -364,10 +379,14 @@ export class ExplorerUi implements OnInit {
    * se ofrece «Ver el recorrido» (y ofrecerlo cuenta como visto: después, en «Controles»).
    */
   private maybeStartTour(): void {
-    if (!this.tourStillFits() || hasSeen(this.storage, 'tls.recorrido') !== false) return;
+    if (!this.tourStillFits() || hasSeen(this.storage, 'tls.recorrido') !== false) {
+      this.showHints(false);
+      return;
+    }
     if (this.session.reducedMotion) {
       this.offersTour.set(true);
       markSeen(this.storage, 'tls.recorrido');
+      this.showHints(false);
     } else this.startTour(true);
   }
 
@@ -389,31 +408,42 @@ export class ExplorerUi implements OnInit {
   }
 
   /**
-   * Pone en marcha el recorrido (su código, en un chunk aparte que se pide ahora). Lo para «Saltar el
-   * recorrido», `Esc` o cualquier toque, arrastre, rueda o tecla, y la escena se queda donde está. Si
-   * arranca solo (`auto`), lo que se mira antes se mira otra vez al llegar su código; si el código no
-   * llega (sin conexión), no se da por visto.
+   * Pone en marcha el recorrido (su código, en un chunk aparte que se pide ahora). «Saltar el
+   * recorrido» (o `Esc`) lleva a la vista general en marcha; cualquier otro toque, arrastre, rueda o
+   * tecla lo para y la escena se queda donde está (crítica de la 9c). La parada de la Luna, solo si se ve
+   * iluminada (`TOUR_MOON_MIN_LIT`), sin tocar la fecha. Si arranca solo (`auto`), lo que se mira antes
+   * se mira otra vez al llegar su código; si el código no llega (sin conexión), no se da por visto.
    */
   protected startTour(auto = false): void {
     if (this.tour || this.touring() || this.tourLoading) return;
     this.offersTour.set(false);
+    this.hint.set(null);
     this.tourLoading = true;
     import('../tour/home-tour')
-      .then(({ homeTourSteps, runTour }) => {
+      .then(({ homeTourSteps, runTour, TOUR_MOON_MIN_LIT }) => {
         this.tourLoading = false;
         const spain = GUIDED_VIEWS.find((view) => view.id === 'espana');
-        if (!this.alive || !spain || this.tour || (auto && !this.tourStillFits())) return;
+        if (!this.alive || !spain || this.tour || (auto && !this.tourStillFits())) {
+          if (this.alive && !this.tour) this.showHints(false);
+          return;
+        }
         markSeen(this.storage, 'tls.recorrido');
         const doc = this.host.nativeElement.ownerDocument;
         // Al acabar, el foco vuelve a donde estaba (o al lienzo): «Saltar el recorrido» se quita.
         const before = doc.activeElement !== doc.body ? doc.activeElement : null;
         const interrupt = (event: Event) => {
+          const onSkip =
+            event.target instanceof Element && event.target.closest('.callout__skip') !== null;
           if (event instanceof KeyboardEvent) {
             if (PASSIVE_KEYS.has(event.key)) return;
-            // `Esc` solo para el recorrido: no salta el viaje en curso ni cierra nada.
-            if (event.key === 'Escape') event.preventDefault();
+            const skip =
+              event.key === 'Escape' || (onSkip && (event.key === 'Enter' || event.key === ' '));
+            // `Esc` (e Intro en «Saltar») solo para el recorrido: no salta el viaje ni cierra nada.
+            if (skip) event.preventDefault();
+            this.endTour(skip ? 'skip' : 'stop', 'keyboard');
+            return;
           }
-          this.tour?.stop();
+          this.endTour(onSkip ? 'skip' : 'stop', 'pointer');
         };
         const events = ['pointerdown', 'wheel', 'keydown'] as const;
         const listen = (on: boolean) => {
@@ -426,33 +456,109 @@ export class ExplorerUi implements OnInit {
           {
             select: (id) => this.session.select(id),
             closePanel: () => this.session.closePanel(),
-            goTo: (view) => this.goTo(view, true),
+            goTo: (view) => void this.goTo(view, true),
             showGuidedView: (view) => this.session.showGuidedView(view),
             play: () => this.sim.setPlaying(true),
             announce: (text) => this.session.announce(text),
+            caption: (text) => this.tourCaption.set(text),
           },
-          homeTourSteps(spain),
+          homeTourSteps(spain, {
+            moon: moonPhase(this.sim.time()).illuminatedFraction >= TOUR_MOON_MIN_LIT,
+          }),
           (completed) => {
             listen(false);
             this.tour = null;
+            const end = completed ? null : (this.tourEnd ?? { how: 'stop', input: 'pointer' });
+            this.tourEnd = null;
             if (!this.alive) return;
             this.touring.set(false);
-            if (!completed) this.session.announce('Recorrido parado.');
-            afterNextRender(() => this.restoreFocus(before), { injector: this.injector });
+            this.tourCaption.set(null);
+            if (end?.how === 'skip') this.toOverviewInMotion();
+            else if (end) {
+              // Parado donde está, sin viajes a medias ni «Saltar el viaje» detrás.
+              this.session.skipTravel();
+              this.session.announce('Recorrido parado.');
+            }
+            this.showHints(true);
+            // «Saltar el recorrido», con el foco, se quita. Con el puntero, el foco no se mueve (sin
+            // marco sobre el lienzo); con el teclado, a donde estaba o al lienzo; si acaba solo, al
+            // lienzo, sin marco.
+            if (end?.input !== 'pointer') {
+              const visible = end?.input === 'keyboard';
+              afterNextRender(() => this.restoreFocus(before, visible), {
+                injector: this.injector,
+              });
+            }
           },
         );
         listen(true);
-        if (this.view() !== 'system') this.goTo('system', true);
+        if (this.view() !== 'system') void this.goTo('system', true);
         this.touring.set(true);
         afterNextRender(() => this.tourSkip()?.nativeElement.focus(), { injector: this.injector });
       })
       .catch(() => {
         this.tourLoading = false;
+        this.showHints(false);
       });
   }
 
-  protected stopTour(): void {
-    this.tour?.stop();
+  /** «Saltar el recorrido» sin puntero (un lector de pantalla): como con el teclado. */
+  protected skipTour(): void {
+    this.endTour('skip', 'keyboard');
+  }
+
+  private endTour(how: 'skip' | 'stop', input: 'keyboard' | 'pointer'): void {
+    if (!this.tour) return;
+    this.tourEnd = { how, input };
+    this.tour.stop();
+  }
+
+  /**
+   * «Saltar»: la vista general del sistema solar, en marcha, sin viajes a medias (crítica de la 9c:
+   * no te deja en Saturno ni en la Tierra con «Saltar el viaje»). Desde la Tierra o la Luna, al llegar a
+   * la vista del sistema solar la sesión ya pone la vista general; su viaje se salta al empezar.
+   */
+  private toOverviewInMotion(): void {
+    this.sim.setPlaying(true);
+    if (this.view() === 'system') {
+      this.session.overview();
+      this.session.skipTravel();
+      return;
+    }
+    void this.goTo('system', true)?.then(() =>
+      afterNextRender(() => this.session.skipTravel(), { injector: this.injector }),
+    );
+  }
+
+  /**
+   * Las pistas de la primera vez, junto a la fila, `HINT_MS`: desde el final del recorrido (con «Ahora
+   * tú:»), desde que se salta o, sin recorrido, desde que se ve el 3D (crítica de la 9c). «Elige un
+   * cuerpo abajo», donde hay fichas.
+   */
+  private showHints(afterTour: boolean): void {
+    if (!this.hintsPending || !this.alive) return;
+    const parts = [
+      ...(this.view() === 'system' || !this.phone() ? ['elige un cuerpo abajo'] : []),
+      'arrastra para girar',
+      this.touch() ? 'pellizca para acercarte' : 'usa la rueda para acercarte',
+    ];
+    const text = parts.join(' · ');
+    this.hint.set(afterTour ? `Ahora tú: ${text}` : text.charAt(0).toUpperCase() + text.slice(1));
+    this.hintShownAt = performance.now();
+    if (this.hintTimer !== null) clearTimeout(this.hintTimer);
+    this.hintTimer = setTimeout(() => this.hint.set(null), HINT_MS);
+  }
+
+  /**
+   * Un clic, un toque o la rueda dentro del explorador (las teclas, en `onKeydown`): ya se ha usado. Con
+   * las pistas a la vista, se van y se dan por vistas (no el gesto que las hizo salir, el de antes).
+   */
+  protected onInteraction(event: Event): void {
+    this.acted.set(true);
+    if (this.hint() === null || event.timeStamp <= this.hintShownAt) return;
+    this.hint.set(null);
+    this.hintsPending = false;
+    markSeen(this.storage, 'tls.pistas');
   }
 
   protected closePanel(): void {
@@ -517,11 +623,11 @@ export class ExplorerUi implements OnInit {
 
   /**
    * Al acabar el recorrido, si el foco se ha perdido (estaba en «Saltar el recorrido»): a donde estaba
-   * antes de empezar o al lienzo.
+   * antes de empezar o al lienzo. Sin el teclado de por medio, sin marco de foco (`focusVisible`).
    */
-  private restoreFocus(before: Element | null): void {
+  private restoreFocus(before: Element | null, visible = true): void {
     if (this.hasFocus()) return;
-    [before, this.canvas()].find(isShown)?.focus();
+    [before, this.canvas()].find(isShown)?.focus({ focusVisible: visible });
   }
 
   /** ¿Hay un elemento con el foco, a la vista? (`<body>` no cuenta: el foco se ha perdido.) */
@@ -577,7 +683,7 @@ export class ExplorerUi implements OnInit {
     const target = event.target instanceof Element ? event.target : null;
     const doc = this.host.nativeElement.ownerDocument;
     if (!PASSIVE_KEYS.has(event.key) && (target === doc.body || this.insideExplorer(target))) {
-      this.acted.set(true);
+      this.onInteraction(event);
     }
     if (event.defaultPrevented || this.explorer.helpOpen()) return;
     // Los atajos no actúan mientras se escribe (PLAN 3.d.10).
@@ -633,7 +739,7 @@ export class ExplorerUi implements OnInit {
       case 'view-earth':
       case 'view-moon':
       case 'view-sky':
-        this.goTo(VIEW_OF_COMMAND[command]);
+        void this.goTo(VIEW_OF_COMMAND[command]);
         return true;
       case 'clean-view':
         this.session.setCleanView(!this.explorer.cleanView());
@@ -683,16 +789,15 @@ export class ExplorerUi implements OnInit {
   }
 
   /** A otra vista. Las del recorrido sustituyen la entrada del historial (`replace`): no lo llenan. */
-  private goTo(view: ExplorerView, replace = false): void {
+  private goTo(view: ExplorerView, replace = false): Promise<boolean> | null {
     const link = VIEW_LINKS.find((candidate) => candidate.view === view);
-    if (link && view !== this.view()) {
-      void this.router.navigate(
-        [link.path],
-        replace
-          ? { queryParamsHandling: 'preserve', replaceUrl: true }
-          : { queryParamsHandling: 'preserve' },
-      );
-    }
+    if (!link || view === this.view()) return null;
+    return this.router.navigate(
+      [link.path],
+      replace
+        ? { queryParamsHandling: 'preserve', replaceUrl: true }
+        : { queryParamsHandling: 'preserve' },
+    );
   }
 
   // --- Ficha en móvil: una hoja de dos alturas --------------------------------------------------

@@ -483,13 +483,11 @@ tls-root:has(tls-explorer-ui.is-clean) .site-header {
     opacity var(--duration-base) var(--ease-standard);
 }
 
-.explorer:has(> tls-explorer-ui.is-interacted)
-  :is(.explorer__intro p, .explorer__touch, .explorer__credit) {
+.explorer:has(> tls-explorer-ui.is-interacted) :is(.explorer__intro p, .explorer__credit) {
   height: 0;
   opacity: 0;
 }
 
-.explorer__touch,
 .explorer__credit {
   overflow: hidden;
   transition:
@@ -505,27 +503,6 @@ tls-root:has(tls-explorer-ui.is-clean) .site-header {
   height: auto;
   opacity: 1;
   transition: none;
-}
-
-/*
- * Las pistas de uso, solo la primera vez (fase 9c, 9c.5): las enseña la interfaz (`shows-hints`), así
- * que en el HTML prerenderizado no se ven (ni aparecen y desaparecen al volver); con la presentación
- * plegada, tampoco.
- */
-.explorer:not(:has(> tls-explorer-ui.shows-hints)) :is(.explorer__touch, .explorer__hints),
-.explorer:has(> tls-explorer-ui.is-interacted) .explorer__hints {
-  visibility: hidden;
-  opacity: 0;
-}
-
-.explorer:has(> tls-explorer-ui:not(.shows-hints)) .explorer__touch {
-  display: none;
-}
-
-.explorer__hints {
-  transition:
-    opacity var(--duration-base) var(--ease-standard),
-    visibility var(--duration-base);
 }
 
 .explorer:has(> tls-explorer-ui.is-interacted) .explorer__intro h1 {
@@ -640,7 +617,6 @@ tls-root:has(tls-explorer-ui.is-clean) .site-header {
  * de seleccionarlo. Solo lo capturan los controles y los paneles opacos.
  */
 .explorer__lead,
-.explorer__foot,
 tls-explorer-ui
   > :is(
     tls-body-chips,

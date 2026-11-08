@@ -1,0 +1,54 @@
+/*
+ * Encima de lo que tapa el lienzo por abajo (las fichas y, si está, la fila de lunas), en el centro de la
+ * parte visible (`--view-*`, explorer-ui.ts); en el móvil, a la izquierda. El texto, sobre un velo
+ * casi opaco: legible sobre cualquier 3D (con blanco detrás, más de 10:1).
+ */
+:host {
+  position: absolute;
+  z-index: 4;
+  bottom: calc(var(--view-bottom, 0px) + var(--space-3));
+  left: calc(var(--view-left, 0px) + (100% - var(--view-left, 0px) - var(--view-right, 0px)) / 2);
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+  width: max-content;
+  max-width: min(
+    34rem,
+    calc(100% - var(--view-left, 0px) - var(--view-right, 0px) - 2 * var(--space-4))
+  );
+  translate: -50% 0;
+  pointer-events: none;
+}
+
+.callout__text {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  background: color-mix(in srgb, var(--color-bg) 88%, transparent);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  line-height: 1.4;
+  text-align: center;
+  transition: opacity var(--duration-base) var(--ease-standard);
+}
+
+@starting-style {
+  .callout__text {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 63.99rem) {
+  :host {
+    right: var(--space-3);
+    left: var(--space-3);
+    justify-items: start;
+    width: auto;
+    max-width: none;
+    translate: none;
+  }
+
+  .callout__text {
+    text-align: left;
+  }
+}

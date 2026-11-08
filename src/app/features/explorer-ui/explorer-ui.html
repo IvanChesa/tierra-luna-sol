@@ -93,18 +93,26 @@
   </button>
 }
 
-<!-- El recorrido de la portada (fase 9c, 9c.6): «Saltar», siempre a la vista y con el foco. -->
-@if (touring()) {
-  <button #tourSkip type="button" class="control skip" (click)="stopTour()">
-    <tls-icon name="skip" />
-    Saltar el recorrido
-    <kbd>Esc</kbd>
-  </button>
-} @else if (showsTourOffer()) {
-  <button type="button" class="control skip" (click)="startTour()">
-    <tls-icon name="play" />
-    Ver el recorrido
-  </button>
+<!--
+  El recorrido de la portada (fase 9c, 9c.6) y las pistas de la primera vez, junto a la fila de fichas
+  (crítica de la 9c): el rótulo de cada parada con «Saltar el recorrido» (siempre a la vista y con el
+  foco), «Ver el recorrido» o, al acabar, «Ahora tú: elige un cuerpo abajo…».
+-->
+@if (touring() || showsTourOffer() || hint()) {
+  <tls-callout [text]="touring() ? tourCaption() : hint()">
+    @if (touring()) {
+      <button #tourSkip type="button" class="control callout__skip" (click)="skipTour()">
+        <tls-icon name="skip" />
+        Saltar el recorrido
+        <kbd>Esc</kbd>
+      </button>
+    } @else if (showsTourOffer()) {
+      <button type="button" class="control" (click)="startTour()">
+        <tls-icon name="play" />
+        Ver el recorrido
+      </button>
+    }
+  </tls-callout>
 }
 
 @if (explorer.cleanView()) {
