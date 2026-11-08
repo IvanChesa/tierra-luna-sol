@@ -4,6 +4,8 @@
 // (scripts/lib/disc-metrics.mjs).
 // - El Sol de cerca: el tono (h) y el croma (C*) del centro (μ > 0,9) y del borde (μ de 0,15 a 0,35) y el
 //   contraste a gran escala de su superficie (la desviación típica de L* sin el perfil del limbo).
+// - El Sol en la vista general (segunda vuelta, 08-11: «el disco naranja y sin lavar»): lo mismo del
+//   disco y su resplandor, la mediana de L* a 1,5, 2 y 3 radios del centro, con la del fondo (6).
 // - La Tierra de día con África y Europa: cada píxel, a su latitud y su longitud (la referencia, con la
 //   ortográfica inversa desde su punto central; la nuestra, con el rayo contra la malla de la escena);
 //   los océanos (el Atlántico sur y el Índico: el agua de la máscara, sin el 50 % más claro, que
@@ -20,7 +22,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import sharp from 'sharp';
 import { openBrowser, openViewer, waitForIdle } from './capture-lib.mjs';
 import { cielab, srgbToLinear } from './lib/color.mjs';
-import { sunMetrics } from './lib/disc-metrics.mjs';
+import { overviewSunMetrics, sunMetrics } from './lib/disc-metrics.mjs';
 
 const ROOT = new URL('../', import.meta.url);
 const REF = new URL('assets-src/referencias/', ROOT);
@@ -152,6 +154,15 @@ function referenceGeo({ cx, cy, r }, lat0Deg, lon0Deg, glintCenter) {
 export const show = (c) =>
   c ? `L* ${c.L.toFixed(1)} · C* ${c.c.toFixed(1)} · h ${c.h.toFixed(0)}°` : '—';
 
+/**
+ * El Sol en la vista general (D46, segunda vuelta: «el disco naranja y sin lavar»): el color del centro
+ * y del borde y el resplandor (la mediana de L* a 1,5, 2 y 3 radios, y el fondo, a 6).
+ */
+const showOverview = (device, m) => {
+  const glow = [1.5, 2, 3].map((rho) => `${m.glow[rho]?.L.toFixed(1) ?? '—'} a ${rho}`).join(', ');
+  return `  y en la vista general (${device}): centro ${show(m.center.lab)}; borde ${show(m.limb.lab)}; el resplandor, L* ${glow} radios (el fondo, ${m.glow[6]?.L.toFixed(1) ?? '—'})`;
+};
+
 // --- La referencia ---------------------------------------------------------------------------------
 async function measureReference() {
   console.log('Referencia (earth.ethanplus.ai, capturas del 06-11):');
@@ -165,6 +176,12 @@ async function measureReference() {
     console.log(
       `- el Sol de cerca (${device}): centro ${show(m.center.lab)}; borde ${show(m.limb.lab)}; contraste σL* ${m.contrast.toFixed(2)}`,
     );
+    const overview = `ref-sol-sistema-${device}`;
+    const wide = await sharp(fileURLToPath(new URL(`${overview}-limpia.png`, REF)))
+      .removeAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    console.log(showOverview(device, overviewSunMetrics(wide, meta[`${overview}.png`].disco)));
   }
   for (const device of wants('tierra') ? ['escritorio', 'movil'] : []) {
     const name = `ref-planeta-africa-${device}`;
@@ -325,6 +342,14 @@ async function measureOurs() {
           `- el Sol de cerca (${device}): centro ${show(m.center.lab)}; borde ${show(m.limb.lab)}; contraste σL* ${m.contrast.toFixed(2)}`,
         );
         if (sunView.problems.length) console.log(sunView.problems.join('\n'));
+        // Y en la vista general, también en la vista limpia.
+        const wideView = await openViewer(browser, `/?captura=1&fecha=${DATE}`, size);
+        await wideView.page.keyboard.press('v');
+        await waitForIdle(wideView.page);
+        const wideShot = await render(wideView.page, { sun: true });
+        await wideView.page.close();
+        console.log(showOverview(device, overviewSunMetrics(wideShot.image, wideShot.disc)));
+        if (wideView.problems.length) console.log(wideView.problems.join('\n'));
       }
 
       // La Tierra completa (la vista guiada: 15° N, 10° E, a mediodía), en la vista limpia.

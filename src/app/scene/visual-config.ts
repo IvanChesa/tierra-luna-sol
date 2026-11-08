@@ -47,20 +47,19 @@ export const VISUAL_CONFIG = {
     max: 6,
   },
   /**
-   * El Sol (fase 3b, tarea 6; fase 9b, D41: «real y luminoso», el de la luz visible del HMI del SDO).
-   * Todo lo que no es la ley del limbo ni la rotación de las manchas (`ephemeris/sun.ts`) es
-   * **ilustrativo**: la intensidad, el halo, la granulación, las manchas, las fáculas, la corona y el
-   * bloom.
+   * El Sol (fase 3b, tarea 6; fase 9b, D41: «real y luminoso», el de la luz visible del HMI del SDO; y
+   * D46: en el explorador, realzado). Todo lo que no es la ley del limbo ni la rotación de las manchas
+   * (`ephemeris/sun.ts`) es **ilustrativo**: la intensidad, el halo, la granulación, las manchas, las
+   * fáculas, la corona, el bloom y todo el realzado.
    */
   sun: {
     /**
-     * Intensidad de la fotosfera, por encima de 1 (el Sol deslumbra). En la vista general, el disco
-     * sale blanco. En primer plano, el centro casi blanco y, con el limbo por canal, el borde dorado:
-     * con más intensidad, el tone mapping aplana el disco (con 1,9, el oscurecimiento solo se veía en
-     * el último 5 % del radio); con menos, el centro deja de ser casi blanco. Antes (fase 3b), 0,85 en
-     * primer plano y el mismo limbo en los tres canales: un disco beige apagado.
+     * Intensidad de la fotosfera. Con el Sol realzado (D46, segunda vuelta, 08-11), 1 en la vista
+     * general y en primer plano: así el disco no pasa de la compresión del tone mapping neutro, que lo
+     * lavaba a amarillo crema (en la vista general era 2,2: el disco salía casi blanco), y se ve el mismo
+     * naranja de cerca y de lejos. En la 9b.c (D41), 2,2 y 1,1: el centro casi blanco y el borde dorado.
      */
-    intensity: { overview: 2.2, closeUp: 1.1 },
+    intensity: { overview: 1, closeUp: 1 },
     /**
      * Solo en captura, para medir el limbo (`?medida=limbo`): la intensidad con la que todo el disco
      * queda por debajo de la compresión del tone mapping neutro (su pico, por debajo de 0,76): así la
@@ -68,26 +67,33 @@ export const VISUAL_CONFIG = {
      */
     measureIntensity: 0.7,
     /**
-     * Halo, en radios solares, y su intensidad. En los niveles alto y medio, con el bloom, más tenue:
-     * el resplandor lo da el bloom (`withBloom`, el factor). En primer plano llega a 3 radios, los de la
-     * corona, y es muy tenue: más, y el disco queda envuelto en una neblina gris.
+     * El resplandor ancho del halo, en radios solares, y su intensidad. Con el Sol realzado (D46,
+     * segunda vuelta), solo en la vista general y muy tenue (como la referencia, que tiene una luz
+     * débil hasta unos 3 radios): el resplandor de verdad es el borde fino y los rayos
+     * (`enhanced.rim` y `enhanced.rays`). De cerca, sin él (la referencia es negra a 1,2 radios). Antes,
+     * 1,3 en la vista general: una mancha grande y pálida que lavaba el disco. `withBloom`, lo que se
+     * atenúa si hay bloom (el factor).
      */
     halo: {
-      overview: { radii: 2.4, intensity: 1.3 },
-      closeUp: { radii: 3, intensity: 0.2 },
+      overview: { radii: 2.4, intensity: 0.035 },
+      closeUp: { radii: 1.8, intensity: 0 },
       withBloom: 0.55,
     },
     /**
      * Granulación en primer plano (ilustrativa): amplitud, ritmo (unidades de ruido por segundo) y
-     * gránulos por radio del Sol (los reales serían unos 700).
+     * granos por radio del Sol. Con el Sol realzado, fina (ruido de gradiente en dos octavas, de unos
+     * 2,5 px con el Sol de cerca): la amplitud, en unidades de la estructura (su ganancia en
+     * `enhanced.structure.gain`). En la 9b.c, celdas de Worley de 40 por radio (un mosaico).
      */
-    granulation: { amplitude: 0.09, rate: 0.03, scale: 40 },
+    granulation: { amplitude: 1.7, rate: 0.04, scale: 80 },
     /**
      * Las manchas (ilustrativas, `sunspotsAt`): cuántas a la vez, su banda de latitud (grados), su vida
      * (días), el radio de su umbra (grados heliográficos) y lo que tardan en aparecer y en apagarse
      * (fracción de su vida); el brillo de la umbra y de la penumbra (en fracción de la fotosfera) y el
      * radio de la penumbra (en radios de la umbra). Sin una fuente del ciclo solar con licencia
-     * compatible (las de SILSO son CC BY-NC), su número es fijo y moderado.
+     * compatible (las de SILSO son CC BY-NC), su número es fijo y moderado. Con el Sol realzado, la umbra
+     * y la penumbra algo más oscuras (0,1 y 0,6; antes, 0,18 y 0,68), de bordes suaves y pardas
+     * (`enhanced.spots`), como las de la referencia.
      */
     spots: {
       count: 8,
@@ -96,22 +102,34 @@ export const VISUAL_CONFIG = {
       umbraDeg: [0.5, 1.5] as readonly [number, number],
       fadeIn: 0.2,
       fadeOut: 0.3,
-      umbra: 0.18,
-      penumbra: 0.68,
+      umbra: 0.1,
+      penumbra: 0.6,
       penumbraRatio: 2.4,
     },
-    /** Lo que aclaran las fáculas alrededor de las manchas, en el limbo (ilustrativo). */
-    faculae: 0.6,
+    /**
+     * Lo que aclaran las fáculas alrededor de las manchas, en el limbo (ilustrativo). Con el Sol
+     * realzado, 0,25 (antes, 0,6: un anillo claro alrededor de cada mancha, como un ojo).
+     */
+    faculae: 0.25,
     /**
      * La corona en primer plano (ilustrativa: la real solo se ve en un eclipse): su brillo y su forma,
-     * de 0 (la del mínimo del ciclo, con serpentinas) a 1 (la del máximo, redonda).
+     * de 0 (la del mínimo del ciclo, con serpentinas) a 1 (la del máximo, redonda). Con el Sol realzado,
+     * sin ella (D46, segunda vuelta: de cerca, más allá del borde fino y de los rayos, el fondo; la
+     * corona era un velo pálido hasta 3 radios). La de la totalidad de `/cielo` es otra (`sky/`).
      */
-    corona: { closeUp: 0.16, roundness: 0.35 },
+    corona: { closeUp: 0, roundness: 0.35 },
     /**
-     * El bloom, solo del Sol (fase 9b; antes, opcional en la fase 10), en los niveles alto y medio, sobre
+     * El bloom, solo del Sol (fase 9b, D41; antes, opcional en la fase 10), en los niveles alto y medio, sobre
      * un render del Sol con los cuerpos que lo tapan en negro (`scene/sun-bloom.ts`), en la vista general
-     * y en primer plano (se interpola con el primer plano del Sol): su fuerza y el peso de cada capa de
-     * su desenfoque, de la más estrecha a la más ancha (sigmas de unos 8, 28, 80, 210 y 515 px CSS).
+     * y en primer plano (se interpola con el primer plano del Sol): si está encendido (`enabled`), su
+     * fuerza y el peso de cada capa de su desenfoque, de la más estrecha a la más ancha (sigmas de unos
+     * 8, 28, 80, 210 y 515 px CSS).
+     * - **Apagado con el Sol realzado** (D46, segunda vuelta, 08-11): Iván quiere «un halo fino naranja
+     *   rojizo pegado al borde, con rayos cortos y finos, no una mancha grande y pálida». El bloom
+     *   desenfoca el disco entero: su resplandor caía también sobre el disco (lo aclaraba hacia el
+     *   amarillo y lo lavaba en la vista general) y, ancho y del color del disco, era la mancha pálida.
+     *   El borde fino y los rayos los pinta el halo (`enhanced.rim` y `enhanced.rays`), igual en los
+     *   tres niveles y sin sus 15 pasadas. Se queda aquí, apagado, por si se vuelve al Sol de D41.
      * - En la vista general, un núcleo fuerte junto al disco y unas alas débiles: el Sol deslumbra sin
      *   velar la pantalla.
      * - En primer plano, mucho menos y solo las capas estrechas: el resplandor de un disco crece con su
@@ -119,6 +137,7 @@ export const VISUAL_CONFIG = {
      *   alas velaban todo el lienzo y el resplandor sobre el disco borraba su limbo.
      */
     bloom: {
+      enabled: false as boolean,
       overview: { strength: 0.8, factors: [1, 0.5, 0.2, 0.05, 0.012] },
       closeUp: { strength: 0.1, factors: [1, 0.35, 0.04, 0, 0] },
     },
@@ -126,44 +145,95 @@ export const VISUAL_CONFIG = {
      * **El Sol realzado del explorador** (fase 9b, D46, decisión de Iván del 06-11: «quiero uno más como
      * el de la imagen»), ilustrativo y avisado: con luz visible normal el Sol es blanco (D41: el de
      * `/cielo`, otro shader, y el de `?medida=limbo`, que no cambian); aquí, naranja, como en las
-     * imágenes con filtro de los observatorios y como la referencia (earth.ethanplus.ai). Medido frente a
-     * capturas propias de la referencia (`scripts/measure-d46.mjs`, en CIELAB; informe de la fase 9b).
-     * - `palette`: el color lineal del centro del disco y del borde. El de cada punto sale de mezclarlos
-     *   de μ = 0,05 a 0,95, por el brillo del oscurecimiento del limbo por canal de la 9b.c (su
-     *   luminancia: la forma del perfil sigue siendo la medida). Elegidos para que, tras el tone mapping
-     *   neutro y con la intensidad del primer plano, el centro y el borde queden en el tono y el croma
-     *   de la referencia (centro: h 81°, C\* 51,5; borde, de μ 0,15 a 0,35: h 76°, C\* 53,4).
-     * - `structure`: zonas claras y oscuras a gran escala (como las regiones activas y la red que las
-     *   une), procedurales en el shader: un ruido a tres escalas, retorcido por otro, llevado a manchas
-     *   (smoothstep entre `edges`); su amplitud (el brillo, por exp(amplitud · ±1); también mueven el
-     *   color, lo claro hacia el del centro y lo oscuro hacia el del borde) y su ritmo (unidades de ruido
-     *   por segundo de reloj de pared mientras se pinta; quietas con movimiento reducido y en las
-     *   capturas). Con 0,5, el contraste a gran escala de la superficie (σL\* sin el perfil del limbo)
-     *   pasa del de la referencia, 4,13.
-     * - `glow`: el color lineal del halo y de la corona (en la 9b.c, blanco cálido): el resplandor naranja.
-     * - `rays`: los rayos suaves del resplandor: finos y cortos, junto al limbo (su brillo y su color).
-     * - `prominences`: las protuberancias del limbo en primer plano (bucles de plasma que suben y bajan
-     *   despacio, como los de la referencia; solo fuera del disco): su brillo, su color lineal y su ritmo
-     *   (como el de la granulación).
+     * imágenes con filtro de los observatorios y como la referencia (earth.ethanplus.ai). **Segunda
+     * vuelta** (08-11, Iván: «las manchas estas que sobresalen parecen tumores… intentemos basarnos en el
+     * sol del proyecto ejemplo»): medido frente a capturas propias de la referencia
+     * (`scripts/measure-d46.mjs`, en CIELAB: de cerca, en la mediana del disco, L\* 77,8 · C\* 53,6 ·
+     * h 80,5°, de L\* 68 a 84 del 5 al 95 %; lo claro, h 86° y C\* 45; lo oscuro, h 72° y C\* 60;
+     * `docs/informes/fase-9b-entrega-sol-2.md`). Los colores, lineales (antes del tone mapping neutro, con
+     * la intensidad de arriba).
+     * - `palette`: el color del centro del disco y el del borde (más rojo: el borde, algo más oscuro y
+     *   rojizo), mezclados de μ = `muEdges[0]` a `muEdges[1]`, con el brillo del oscurecimiento del limbo
+     *   por canal de la 9b.c con sus exponentes por `limbSoftening` (la misma ley, más suave: con los de
+     *   la 9b.c, a μ 0,44 el disco bajaba al 66 % y en la referencia baja al 83 %; con 0,55, al 80 %).
+     *   Hasta el último 0,5 % del radio (μ < 0,1), el brillo de μ = 0,1: sin el borde negro y dentado.
+     * - `structure`: las manchas claras y oscuras a escala media y grande, procedurales en el shader:
+     *   ruido de gradiente propio en cinco octavas (`octaves`: la frecuencia de la primera, 2,2 ciclos
+     *   por radio; el peso de cada una frente a la anterior; y la forma, que aplana algo lo intermedio
+     *   para que queden manchas sueltas sobre un naranja casi uniforme), retorcido por un campo ancho que
+     *   cambia con el tiempo (la superficie fluye). Su amplitud y lo que mueve cada canal por unidad
+     *   (`gain`, exp(valor · ganancia)): en lo claro, más el verde y el azul (más amarillo, como lo claro
+     *   de la referencia); en lo oscuro, más todavía (más rojo). Con un límite suave (`limits`, tanh) de
+     *   lo que oscurece y aclara: sin él, en algunos instantes salían zonas pardas (el 5 % más oscuro del
+     *   disco, hasta L\* 57) y el contraste bajaba de golpe al calmarse el ruido. Su ritmo, en unidades
+     *   de ruido por segundo de reloj de pared mientras se pinta (quieta con movimiento reducido y en las
+     *   capturas): en 6 s se ve cambiar, en un minuto cambia del todo. Con estas cifras, el contraste a
+     *   gran escala (σL\* sin el perfil del limbo) queda de 4,9 a 5,8 en diez instantes de cinco minutos
+     *   (la referencia, 4,13; antes del límite, de 4,1 a 6,3).
+     * - `spots`: lo que oscurece cada canal la sombra de una mancha (la sombra elevada a cada valor): el
+     *   verde y el azul, más, para que lo oscuro sea pardo rojizo y no oliva.
+     * - `glow`: el color lineal del resplandor ancho (`halo`, en la vista general), el exponente de su
+     *   caída ((1 − r)^exponente hasta el borde del cuadrado del halo), el resplandor suave naranja que
+     *   envuelve el disco, algo más ancho que el borde (`soft`: su brillo, su color y su ancho, en radios;
+     *   como en la referencia, un naranja suave alrededor del disco además del borde fino; de cerca, a
+     *   0,1 radios del limbo ya casi no está, y no llega a los planetas) y el de la corona (sin ella
+     *   ahora).
+     * - `rim`: el borde fino naranja rojizo pegado al limbo, fuera del disco: su brillo, su color y su
+     *   forma, dos caídas exponenciales (el peso de la ancha y los dos anchos, en radios del disco: de
+     *   cerca, unos 2 y 7 px), con un ancho mínimo en píxeles para cuando el Sol se ve pequeño. Como el de
+     *   la referencia: a 1,01 radios, L\* ≈ 25 y h ≈ 45°; a 1,05, L\* ≈ 15.
+     * - `rays`: los rayos cortos y finos (dos capas, 283 y 157 por vuelta, cada uno con su longitud, su
+     *   brillo y una ligera curva, que cambian despacio): su brillo, su color y su longitud media (en
+     *   radios). Cuando una celda mide menos de 2 px (en la vista general), se funden en su media.
+     * - `prominences`: los bucles de plasma del limbo, solo de cerca: pocos (3), cada uno un manojo de
+     *   14 hilos finos (de ~1 px) y translúcidos en arco entre dos pies en el limbo, que se desvanecen
+     *   con la altura, respiran, se mecen y se encienden y se apagan despacio, cada uno a su ritmo (en
+     *   lugar de los bultos sólidos de la primera vuelta, «tumores»): su brillo, su color y su ritmo
+     *   (segundos de tiempo de los bucles por segundo de reloj de pared). Su tiempo mueve también los
+     *   rayos.
      */
     enhanced: {
       palette: {
-        center: [0.84, 0.49, 0.14] as readonly [number, number, number],
-        limb: [1.06, 0.52, 0.12] as readonly [number, number, number],
+        center: [0.957, 0.53, 0.14] as readonly [number, number, number],
+        limb: [1.175, 0.52, 0.125] as readonly [number, number, number],
+        muEdges: [0, 0.6] as readonly [number, number],
+        limbSoftening: 0.55,
       },
       structure: {
-        amplitude: 0.5,
-        edges: [-0.35, 0.35] as readonly [number, number],
-        rate: 0.03,
+        amplitude: 6,
+        octaves: { frequency: 2.2, persistence: 0.62, shape: 0.5 },
+        gain: {
+          bright: [0.17, 0.33, 0.45] as readonly [number, number, number],
+          dark: [0.2, 0.45, 0.7] as readonly [number, number, number],
+        },
+        limits: { dark: 1.1, bright: 2 },
+        rate: 0.05,
       },
+      spots: { warmth: [1, 1.6, 2.2] as readonly [number, number, number] },
       glow: {
-        halo: [1, 0.55, 0.22] as readonly [number, number, number],
+        halo: [1, 0.6, 0.3] as readonly [number, number, number],
+        exponent: 1.2,
+        soft: {
+          intensity: 0.05,
+          color: [1, 0.42, 0.12] as readonly [number, number, number],
+          widthRadii: 0.09,
+        },
         corona: [1, 0.58, 0.28] as readonly [number, number, number],
       },
-      rays: { intensity: 0.4, color: [1, 0.5, 0.18] as readonly [number, number, number] },
+      rim: {
+        intensity: 0.5,
+        color: [1, 0.2, 0.04] as readonly [number, number, number],
+        shape: { wide: 0.22, narrowRadii: 0.01, wideRadii: 0.035 },
+        minPixels: 1.2,
+      },
+      rays: {
+        intensity: 0.05,
+        color: [1, 0.24, 0.05] as readonly [number, number, number],
+        lengthRadii: 0.05,
+      },
       prominences: {
-        intensity: 0.9,
-        color: [1, 0.35, 0.08] as readonly [number, number, number],
+        intensity: 1,
+        color: [0.7, 0.15, 0.025] as readonly [number, number, number],
         rate: 1,
       },
     },

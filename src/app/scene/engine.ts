@@ -212,6 +212,14 @@ const INSETS_SMOOTHING_MS = 180;
  */
 export const SLOW_SPEED = 60;
 export const SLOW_FRAME_MS = 250;
+/**
+ * El Sol realzado de cerca (fase 9b, D46): su superficie fluye y sus bucles de plasma cambian con el
+ * reloj de pared, también con el tiempo en pausa o a velocidades lentas. Mientras se ve de cerca (su
+ * primer plano, desde `SUN_ANIMATION_CLOSE_UP`), se pinta cada 50 ms aunque nada más se mueva: su
+ * movimiento es lento y basta. Con movimiento reducido y en las capturas, quieto y sin estos frames.
+ */
+export const SUN_FRAME_MS = 50;
+export const SUN_ANIMATION_CLOSE_UP = 0.5;
 
 export interface FrameScheduler {
   /** Pide un frame; con `delayMs`, no antes de que pase ese tiempo (el render a 4 Hz). */
@@ -1017,11 +1025,24 @@ export class SceneEngine implements SceneEngineApi {
       const lower = this.adaptive.sample(this.deps.now(), animating && !slow, this.level);
       if (lower) this.applyQuality(lower, 'auto');
     }
+    const sun = this.sunAnimates();
     if (animating || uploading || this.uploads.length > 0) {
-      this.invalidate(slow ? SLOW_FRAME_MS : 0);
+      this.invalidate(slow ? (sun ? SUN_FRAME_MS : SLOW_FRAME_MS) : 0);
+    } else if (sun) {
+      this.invalidate(SUN_FRAME_MS);
     } else {
       this.lastFrameMs = null;
     }
+  }
+
+  /** ¿Se ve el Sol de cerca, con su superficie y sus bucles en movimiento? (`SUN_FRAME_MS`) */
+  private sunAnimates(): boolean {
+    return (
+      !this.instant() &&
+      this._view === 'system' &&
+      this.sunCloseUp >= SUN_ANIMATION_CLOSE_UP &&
+      (this.screen[SUN_INDEX]?.onScreen ?? false)
+    );
   }
 
   /**
@@ -1124,13 +1145,15 @@ export class SceneEngine implements SceneEngineApi {
   }
 
   /**
-   * Compila los sombreados del bloom sin bloquear (si el nivel lo lleva y aún no lo están): al arrancar
-   * y al subir a mano desde el nivel bajo. La compilación reserva su render target: si la vista no lo
-   * usa, se suelta.
+   * Compila los sombreados del bloom sin bloquear (si está encendido, el nivel lo lleva y aún no lo
+   * están): al arrancar y al subir a mano desde el nivel bajo. La compilación reserva su render target:
+   * si la vista no lo usa, se suelta.
    */
   private async compileSunBloom(): Promise<void> {
     const bloom = this.renderer.sunBloom;
-    if (!bloom || !this.profile.sunBloom || this.sunMeasure) return;
+    if (!bloom || !VISUAL_CONFIG.sun.bloom.enabled || !this.profile.sunBloom || this.sunMeasure) {
+      return;
+    }
     if (this.sunBloomCompiled || this.sunBloomCompiling) return;
     this.sunBloomCompiling = true;
     try {
@@ -1147,14 +1170,17 @@ export class SceneEngine implements SceneEngineApi {
   }
 
   /**
-   * ¿Puede llevar bloom el Sol? En los niveles alto y medio, si el renderer lo tiene, en la vista del
-   * sistema solar, salvo al medir su limbo o en la miniatura aislada de otro cuerpo. En las vistas Tierra
+   * ¿Puede llevar bloom el Sol? Si está encendido (`VISUAL_CONFIG.sun.bloom.enabled`; con el Sol
+   * realzado de D46, apagado: su resplandor lo pinta el halo), en los niveles alto y medio, si el
+   * renderer lo tiene, en la vista del sistema solar, salvo al medir su limbo o en la miniatura aislada
+   * de otro cuerpo. En las vistas Tierra
    * y Luna, no: el Sol casi nunca está en pantalla (y, si lo está, es pequeño y basta su halo), y sus
    * texturas de primer plano llenan la VRAM (en alto, la vista Tierra llega a unos 277 MB de 300: con el
    * bloom y una pantalla de densidad 2, pasaría).
    */
   private sunBloomWanted(): boolean {
     return (
+      VISUAL_CONFIG.sun.bloom.enabled &&
       this.profile.sunBloom &&
       this._view === 'system' &&
       !this.sunMeasure &&

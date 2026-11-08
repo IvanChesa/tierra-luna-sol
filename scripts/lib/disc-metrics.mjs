@@ -108,3 +108,32 @@ export function sunMetrics(image, disc) {
     contrast: largeScaleContrast(image, disc),
   };
 }
+
+/**
+ * El resplandor alrededor de un disco: la mediana de L* (y su tono) en una circunferencia de `rho`
+ * radios (720 muestras dentro de la imagen), para ver cuánto se aclara el fondo junto al Sol.
+ */
+export function ringLightness({ data, info }, { cx, cy, r }, rho) {
+  const list = [];
+  for (let a = 0; a < 720; a++) {
+    const theta = (a / 720) * 2 * Math.PI;
+    const x = Math.round(cx + rho * r * Math.cos(theta));
+    const y = Math.round(cy + rho * r * Math.sin(theta));
+    if (x < 0 || y < 0 || x >= info.width || y >= info.height) continue;
+    const k = (y * info.width + x) * info.channels;
+    list.push(
+      cielab([srgbToLinear(data[k]), srgbToLinear(data[k + 1]), srgbToLinear(data[k + 2])]),
+    );
+  }
+  if (!list.length) return null;
+  list.sort((p, q) => p.L - q.L);
+  return list[Math.floor(list.length / 2)];
+}
+
+/** El Sol en la vista general: lo de `sunMetrics` y el resplandor a 1,5, 2 y 3 radios y el fondo (6). */
+export function overviewSunMetrics(image, disc) {
+  return {
+    ...sunMetrics(image, disc),
+    glow: Object.fromEntries([1.5, 2, 3, 6].map((rho) => [rho, ringLightness(image, disc, rho)])),
+  };
+}
