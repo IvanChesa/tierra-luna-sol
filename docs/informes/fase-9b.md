@@ -70,7 +70,13 @@ Bloque S, modo autónomo, una sola fase por entregas en el orden de `docs/decisi
 - **La Tierra de la 9b.f, hecha y juntada** (08-11, sesión de integración que sustituye a A): `fase-9b-f-tierra` (`582e440`), con `--no-ff` y sin conflictos. Después, `docs/revision-textos.md`, los pósters de la vista general y de la vista Tierra y la imagen para compartir, regenerados, y `npm run check` en verde (§6). Su nota de entrega está ya en este informe (§2 a §7) y se ha borrado.
 - **El CI, otra vez en verde:** el e2e del móvil «/sol a 320 px» fallaba desde `08120db` (la dirección de la fuente del Sol realzado, sin dónde partirse, ensanchaba la ficha hasta 528 px). Arreglado en el CSS de la ficha (`dfbc655`, §4).
 - **Venus (9b.e), hecha y juntada** (08-11, en la sesión de cierre): `fase-9b-e-venus` (`226ab0f`, con el CI en verde), con `--no-ff` y sin conflictos (`bdacb27`). Su rama ya traía `main` (la 9c, la interfaz nueva, con sus conflictos resueltos según la sección 12 de su informe) y el Sol de la segunda vuelta. Su nota de entrega ya está en este informe (§2 a §11) y se ha borrado.
-- **Sigue el cierre:** lo pendiente de §9, §5 con el equipo libre, `npm run check`, la revisión por subagente, las correcciones y la fusión en `main`.
+- **El cierre** (08-11, en esta carpeta, con el equipo libre; detalle en §2, «Cierre de la fase»):
+  - Venus, juntada;
+  - las dos frases del Sol de «Lo que es ilustrativo», al día;
+  - los e2e que fallaban a ratos en el CI, arreglados en su causa (sobre todo, el explorador que no llegaba a cargar en 90 s);
+  - lo de la escena que dejó la 9c: la placa de las etiquetas y el suelo del cielo, hechos; el rótulo de Saturno, la precarga del recorrido y los nombres de España, propuestos para la fase 10;
+  - §5 en los tres niveles, `npm run check` y los e2e, en verde;
+  - después, la revisión por subagente, sus correcciones y la fusión en `main`.
 - **Las medidas de rendimiento son provisionales:** con tres sesiones en el mismo PC. Se repiten al cerrar la fase, con el equipo libre.
 
 ## 1. Resumen
@@ -396,6 +402,35 @@ Hecha en `fase-9b-e-venus` y juntada aquí el 08-11 (`bdacb27`, §4). La rama sa
 - **Al apagarlo,** la VRAM vuelve a la de las nubes, con una textura menos.
 - **Al dejar Venus,** el estado pasa a «off» y el heap se queda en 13–14 MB.
 
+### Cierre de la fase (08-11)
+| Criterio | ✅/❌ | Evidencia |
+|---|---|---|
+| §5 en los tres niveles, con el equipo libre: FPS, VRAM, llamadas de dibujo, memoria tras vueltas y JS inicial | ✅ | **Las 15 vistas** (`measure-views.mjs`, tabla de abajo): **58–60 FPS** de mínimo en todas (§5: ≥ 55 en alto). La VRAM más alta, la vista Tierra en alto, **278 MB de 300**; en bajo, **86 de 120**. **La vista general a 1 día/s** (`measure.mjs`): **59 · 60 · 59 FPS** de mínimo, con 1,38 · 1,22 · 1,14 ms de CPU por frame y las efemérides a 0,19 ms (§5: ≤ 2). **Venus con el radar** (`capture-venus.mjs --medir`): 121 · 57 · 56 MB y 6 llamadas, con 60 · 59 · 60 FPS. **La memoria:** tras 10 idas y vueltas a una ficha, 10 cambios de vista, 6 de calidad y 10 vueltas por los sistemas de lunas, **11 MB de heap**, **un contexto WebGL** y **12 texturas**, como al empezar; las geometrías, de 14 a 16 tras las vueltas (las formas de Fobos y Deimos, que se conservan). **El arranque:** una tarea larga de 61 ms en alto y ninguna en bajo (§5: ninguna de más de 200), y el LCP, el póster (248 y 88 ms). **El JS inicial:** 315,27 kB, con el código propio en 13,81 kB de 15 (`npm run check`). |
+| Lo ya medido y aprobado no cambia | ✅ | **La Tierra de noche** (`measure-earth-night.mjs`): el suelo sin luces, L\* 0,2 · C\* 0,2 en escritorio y 0,1 · 0,2 en el móvil; las luces, h 94°. En la vista general de noche, el disco frente al fondo, ΔL\* 8,0 y 9,6: con el Sol sin bloom, el fondo es más oscuro y el disco se lee mejor que antes (4,1 y 9,7). **La totalidad del cielo** (`measure-sun.mjs totalidad`): de 5° a 33° de altura, h de 282° a 285° y C\* de 11 a 20, como en la 9b.c; el suelo nuevo del cielo queda por debajo del horizonte. **Las sombras, los anillos y las efemérides**, sin cambios: sus tests, en verde. |
+| Lo pendiente de §9 y del encargo del cierre | ✅ | **Las dos frases del Sol** de «Lo que es ilustrativo»: el borde, «con la ley medida, pero más suave» (en `/cielo`, el medido), y sin la corona de cerca; en `/creditos`, también el borde. **Los e2e intermitentes del CI**, arreglados en su causa (§4), con un e2e nuevo que reproduce el principal: sin el arreglo falla igual que en el CI («element(s) not found»), y con él pasa en 3,7 s. **Lo de la escena de la 9c** (backlog 17): la placa de las etiquetas y el suelo del cielo, con sus capturas (`cierre-*`, §7). |
+
+**§5 con el equipo libre** (`measure-views.mjs`, con una RTX 3060 con ANGLE sobre D3D11). Cada celda: FPS mínimo · VRAM (MB) · llamadas de dibujo.
+
+| Vista | Alto | Medio | Bajo |
+|---|---|---|---|
+| sistema | 60 · 38 · 21 | 59 · 38 · 21 | 60 · 38 · 21 |
+| marte (primer plano) | 59 · 126 · 7 | 59 · 62 · 7 | 60 · 62 · 7 |
+| saturno (primer plano) | 59 · 94 · 11 | 59 · 62 · 12 | 59 · 62 · 12 |
+| dione (luna de saturno) | 59 · 102 · 6 | 59 · 70 · 5 | 59 · 62 · 5 |
+| jupiter (sus lunas) | 59 · 89 · 7 | 59 · 57 · 7 | 60 · 56 · 7 |
+| europa (luna de jupiter) | 60 · 97 · 5 | 59 · 65 · 5 | 59 · 56 · 5 |
+| triton (luna de neptuno) | 60 · 52 · 5 | 59 · 51 · 5 | 59 · 43 · 5 |
+| fobos (luna de marte) | 59 · 52 · 5 | 60 · 51 · 5 | 60 · 43 · 5 |
+| urano (sus lunas) | 60 · 60 · 6 | 60 · 59 · 6 | 59 · 59 · 6 |
+| miranda (luna de urano) | 60 · 68 · 5 | 60 · 67 · 5 | 60 · 59 · 5 |
+| deimos (luna de marte) | 60 · 52 · 5 | 59 · 51 · 5 | 59 · 43 · 5 |
+| sol (primer plano) | 59 · 38 · 8 | 60 · 38 · 8 | 59 · 38 · 8 |
+| tierra (vista) | 60 · 278 · 6 | 59 · 86 · 6 | 60 · 86 · 6 |
+| luna (vista) | 60 · 266 · 7 | 59 · 103 · 7 | 59 · 62 · 7 |
+| cielo (vista) | 60 · 39 · 5 | 60 · 39 · 5 | 59 · 38 · 5 |
+
+Frente a la 9b.d: la vista general y el Sol de cerca gastan menos (38 MB y 21 u 8 llamadas, frente a 50 MB y 36 o 23), porque el bloom está apagado desde la segunda vuelta del Sol. Las vistas Tierra y Luna, igual. Las lunas, algo distinto según la fecha y el encuadre de la interfaz de la 9c.
+
 ## 3. Tareas del plan
 | Tarea | Estado | Notas |
 |---|---|---|
@@ -435,13 +470,18 @@ Hecha en `fase-9b-e-venus` y juntada aquí el 08-11 (`bdacb27`, §4). La rama sa
 | 9b.f.10 · El desierto más cálido y la vegetación más verde | hecha (B) | Lo árido, con su propia rodilla (`uEnhancedAridKnee`, solo de día); la vegetación, donde el verde supera al rojo y al azul. Medidos en el Sáhara, el Sahel y el Amazonas (§2). |
 | 9b.f.11 · El borde de la atmósfera, fino y azul | hecha (B) | El tinte del halo (`atmosphere-material.ts`, `createAtmosphere`), con su `#define` (`TLS_TINT`) solo en la Tierra; el crepúsculo, como estaba. |
 | 9b.f.12 · La cara nocturna y las luces, sin cambios | hecha (B) | Medidas antes y después, iguales (§2). |
-| 9b.f.13 · Decir que es realzado | hecha, salvo el panel del Sol | El Sol: la ficha, «Lo que es ilustrativo» y `/creditos`; el panel del Sol, al juntar con la 9c. La Tierra (B): «Lo que es ilustrativo», `/creditos`, `FUENTES.md` y la vista guiada «La Tierra completa» (`data/tours.ts`). |
+| 9b.f.13 · Decir que es realzado | hecha | El Sol: la ficha, «Lo que es ilustrativo», `/creditos` y el panel del explorador (`features/body-panel`, puesto por la sesión C al traer la 9c). La Tierra (B): «Lo que es ilustrativo», `/creditos`, `FUENTES.md` y la vista guiada «La Tierra completa» (`data/tours.ts`). |
 | 9b.f.14 · Los parámetros nuevos | hecha | `VISUAL_CONFIG.sun.enhanced` y `VISUAL_CONFIG.earth.enhanced` (con `earth.cloudFade.min`), con su porqué y lo medido. |
 | 9b.f.15 · `measure-earth-epic.mjs`, como registro | hecha (B) | Sus cifras antes y después, en §2. |
 | 9b.e.1 · El mosaico del radar de Magellan, con su sonda | hecha (C) | El C3-MDIR de 2025 m del USGS (dominio público), en 1k, 2k y 4k (`build-textures.mjs`, tipo `radar`), con los huecos rellenados y tres sondas (Maat Mons, Sapas Mons y Maxwell Montes). |
 | 9b.e.2 · El botón «Bajo las nubes», con el aviso, el fundido y la carga al pedirlo | hecha (C) | En la ficha del explorador de Venus enfocada (la interfaz de la 9c), con `aria-pressed` y una nota enlazada (`aria-describedby`). El estado, en `scene/venus-radar.ts` (con tests); la API, `setVenusRadar` y el evento `venusRadar`. El fundido dura 800 ms (un corte con movimiento reducido o en captura). La textura se pide al pulsarlo y se suelta al apagarlo, al dejar Venus o al cerrar la ficha. |
 | 9b.e.3 · El sombreado del radar | hecha (C) | Con la luz del Sol y la fotometría de Venus (su terminador y su cara de noche), en su material con `#define TLS_RADAR`. El brillo, calibrado como su textura de nubes; la neblina del limbo, al 30 %. |
 | 9b.e.4 · La interfaz de la 9c, traída (sección 12 de su informe) | hecha (C) | `main` traído a la rama de Venus: los 11 conflictos que preveía, resueltos como decía. Además, la línea del Sol realzado en su ficha del explorador, los selectores de los scripts, `tls.recorrido` y las zonas táctiles de los enlaces de «Sobre el proyecto» y `/creditos` (§4). |
+| Cierre.1 · Juntar Venus | hecha | `bdacb27`, sin conflictos, con su CI en verde (§4). |
+| Cierre.2 · Las dos frases del Sol de «Lo que es ilustrativo» | hecha | Y el borde en `/creditos` (§4); la lista de textos, regenerada. |
+| Cierre.3 · Los e2e que fallan a ratos en el CI, arreglados en su causa | hecha | Seis causas (§4): el `@defer (on idle)` sin tope, el reposo sin contar las texturas en vuelo, una espera fija, la velocidad del arranque medida entre dos actualizaciones de la barra, el redondeo del tamaño táctil en el móvil y el contraste del índice en el hover. |
+| Cierre.4 · Lo de la escena que dejó la 9c (backlog 17) | hecha en parte | La placa de las etiquetas y el suelo del cielo, hechos; el rótulo de Saturno, la precarga del recorrido y los nombres de España, propuestos para la fase 10 (§10). |
+| Cierre.5 · §5 con el equipo libre | hecha | §2, «Cierre de la fase». |
 | 9b.d.8 · Lo que nadie ha visto (D45) | hecha | 18 lunas con mapa (las 12 de antes y las 6 del JPL): lo no visto, recreado entero, y lo visto de lejos, con detalle, a partir de su propio terreno, en `build-textures.mjs`; con sus criterios en el build y su máscara. La receta de cada luna, en §5. |
 
 ## 4. Desviaciones del plan y motivo
@@ -520,6 +560,20 @@ Hecha en `fase-9b-e-venus` y juntada aquí el 08-11 (`bdacb27`, §4). La rama sa
   - Teñirlo con el color de las fotos de las Venera 13 y 14, como las vistas de Magellan de la NASA (PIA00104), queda como propuesta para Iván (§9).
 - **9b.e, sin botón en la ficha completa** (`/planetas/venus`): es una página sin 3D. La tarea lo pedía «si encaja», y no encaja.
 
+- **El cierre: los e2e que fallaban a ratos en el CI, arreglados en su causa.** De los runs del 08-11, los intermitentes (en verde con el reintento) y los fallidos tenían estas causas (las del CI del propio cierre y de los e2e en local, incluidas):
+  - **El explorador que no cargaba en 90 s** (5 de los 7 casos; `arranque`, `accesibilidad`, `indice-y-ficha` y `movil`): en `openExplorer`, `tls-viewer-canvas` no llegaba a existir. La traza de un run fallido (`42471327598`) lo explica: en 90 s, la página pidió solo 11 ficheros, sin el chunk de la interfaz. El `@defer (on idle)` que la crea esperaba a `requestIdleCallback`, que, con el hilo principal ocupado sin pausa (SwiftShader y dos workers), podía no llegar nunca.
+    - **El arreglo:** `@defer (on idle(3s))` (`viewer-layout.html`), que pasa ese `timeout` a `requestIdleCallback`: como mucho a los 3 s, la interfaz llega. En un navegador normal, el idle llega mucho antes y nada cambia.
+    - **Su e2e** (`arranque.spec.ts`): un `requestIdleCallback` que solo llama por su `timeout`. Sin el arreglo falla con el mismo error del CI; con él, pasa en 3,7 s.
+  - **La memoria «en caliente» de `vistas.spec.ts`** (15 texturas en lugar de 25): `waitForIdle` daba el motor por quieto tras 1,2 s sin pintar, pero una textura que tardaba más en decodificarse, sin un frame entre medias, se quedaba fuera. El motor cuenta ahora las texturas en vuelo (`stats().texturesLoading`, con su test), y las esperas de los e2e y de los scripts de captura esperan también a que no quede ninguna.
+  - **La fecha escrita a mano** (`tiempo.spec.ts`): la interfaz la aplica tras una pausa al teclear (700 ms), y el test miraba a los 1,5 s fijos. Ahora espera a que llegue (con un tope de 15 s) y después cuenta los saltos y las URL, como antes.
+  - **La velocidad del arranque** (`arranque.spec.ts`; en local, con cuatro workers): 84,9 h/s con un tope de 80 (lo esperado, 72). El test leía la hora de la barra, que se actualiza como mucho 5 veces por segundo: entre dos actualizaciones, cada extremo de la ventana de 2 s podía llevar hasta 200 ms de retraso. Ahora toma cada extremo justo cuando la barra cambia, con la hora de la página en ese momento. En el CI del cierre, la misma prueba dio también 0 h/s: con SwiftShader, la barra no llegó a cambiar en 2 s. Con la medida nueva, cada extremo espera al cambio (como mucho 20 s).
+  - **El tamaño táctil del botón de Venus en el móvil** (`movil.spec.ts`, CI del cierre): 43,99994 px frente a ≥ 44. Es el redondeo a píxeles del dispositivo del Pixel 7 (44 px × 2,625 = 115,5 píxeles), no un botón más pequeño: las comprobaciones de 44 px del móvil llevan una tolerancia de 0,01 px (`TAP_MIN_PX`).
+  - **El contraste del índice en el móvil** (`accesibilidad.spec.ts`): con el puntero sobre la última fila visible, que queda bajo la sombra de «hay más abajo», el valor en gris bajaba a **4,48:1** (`#8c887c` sobre `#1a2233`). Que el puntero quedara ahí dependía de la maquetación. Es un fallo real del hover, así que se arregla en el CSS (`body-picker.css`): en el hover, el valor y el nombre de las lunas pasan al color del texto. En ese mismo test, una carrera: tras tocar la fila, `isVisible()` no espera a que salga «ⓘ»; ahora espera a la ficha o a «ⓘ».
+- **El cierre: lo de la escena que dejó la 9c (backlog 17).**
+  - **Las etiquetas del 3D, con una placa** como la de los nombres de la fila (`.chip__name`): sobre un disco brillante, el contraste bajaba a 1,0–3,9. Con ella, además, las órbitas ya no cruzan los nombres (`cierre-*-etiquetas-*`).
+  - **El suelo del cielo, con un degradado** desde el horizonte (`VISUAL_CONFIG.sky.ground.glow`): liso y casi negro bajo el azul marino del horizonte de noche, en el móvil se leía como un hueco (`cierre-*-movil-cielo-noche`). De día, una bruma junto al horizonte. La totalidad no cambia.
+  - **El rótulo de Saturno, la precarga del recorrido y los nombres de los lugares de España,** propuestos para la fase 10 (§10): el primero necesita saber, frame a frame, lo que miden los anillos en pantalla; los otros dos son de la interfaz y de la escena a la vez.
+
 ## 5. Decisiones técnicas nuevas
 - **El tono de las luces de la Tierra** (9b.b): el medio de las luces de la textura de Solar System Scope que se usaba, medido (sus píxeles de luminancia lineal de más de 0,1), en lugar de un color elegido: así «conservan su tono cálido» por construcción. El mapa en gris pone el brillo.
 - **`?marco=ilustrativo`, solo en captura:** el cuerpo enfocado sin pasar a su sistema local físico, con las texturas de la vista general (sin sistema enfocado). Es la única forma determinista de ver de cerca un sistema de la vista general, cuya cámara gira alrededor del Sol.
@@ -580,6 +634,11 @@ Hecha en `fase-9b-e-venus` y juntada aquí el 08-11 (`bdacb27`, §4). La rama sa
   - Mientras llega la textura, siguen las nubes, con el botón ya pulsado y «Cargando la imagen de radar…»; si no llega, vuelven las nubes y se dice.
   - Al cambiar de calidad con el radar encendido, se pide al nivel nuevo y el anterior se suelta cuando llega.
 - **El aviso, siempre a la vista con el radar:** si la ficha deja de verse (se cierra, otro cuerpo, otra vista), vuelven las nubes. En captura, `?radar=1` lo enciende sin la ficha.
+
+- **`@defer (on idle(3s))`** (cierre): la interfaz del explorador llega cuando el navegador queda libre y, como mucho, a los 3 s.
+- **`stats().texturesLoading`** (cierre): las texturas pedidas que no han llegado ni fallado, contadas en un envoltorio de la fuente de texturas del motor (`countedLoads`). «En reposo», para los e2e y las capturas, es también «sin texturas por llegar».
+- **El índice, en el hover, con el color del texto** en los valores y en los nombres de las lunas (cierre): bajo la sombra de «hay más abajo», el gris no llegaba a 4,5:1.
+- **Las etiquetas del 3D, con placa, y el suelo del cielo, con degradado** (cierre; `VISUAL_CONFIG.sky.ground.glow`: la fracción del color del horizonte junto a él, 0,6, y la profundidad a la que se apaga, 14°).
 
 ## 6. Salida de los checks
 Entrega 9b.a (`npm run check`, 04-11):
@@ -654,6 +713,21 @@ three, diferido, pasa de 798,65 kB (el Sol de la primera vuelta y la Tierra) a 8
 
 **Los e2e** (`E2E_PORT=4421`, todos, con los tres proyectos): **136 de 136** (7,2 min). Antes de traer el Sol, 135 de 136: el que falló, `vistas.spec.ts:19` («sistema → Tierra → Luna → sistema … sin fugas», 25 texturas en lugar de 15), no toca el radar y pasó solo dos veces seguidas (tiempos, con la máquina cargada). El CI de la rama, en verde.
 
+**El cierre** (`npm run check`, 08-11, con todo junto: la 9b entera, Venus, la 9c y lo del cierre):
+```
+All files pass linting. · All matched files use Prettier code style!
+Test Files 81 passed (81) · Tests 808 passed (808)
+Statements 98,93 % · Branches 94,18 % · Functions 100 % · Lines 99,69 % (ephemeris/)
+Initial total 315,27 kB
+✔ El JS inicial de las 40 páginas (20 ficheros) no lleva ningún módulo de three ni de astronomy-engine ni de los stores ni de los controles del visor.
+✔ Código propio en los chunks iniciales: 13,81 kB de 15,00
+  Diferido: three, 813,58 kB en bruto
+✔ Enlaces de las 40 páginas: 1238 internos bien (rutas, ficheros y anclas); 120 externos sin comprobar
+```
+Sin avisos de presupuesto. Los tests nuevos: las texturas en vuelo (`engine.spec.ts`) y el arranque sin idle (`arranque.spec.ts`, e2e).
+
+**Los e2e completos** (`E2E_PORT=4391 npx playwright test`, en local, con los tres proyectos y cuatro workers): en la primera pasada, 136 de 137 (la velocidad del arranque, 84,9 h/s: §4); con su arreglo, **137 de 137** (6,6 min). En el CI de la rama, en verde (los intermitentes que quedaban, con su causa en §4).
+
 ## 7. Capturas
 `docs/informes/img/fase-9b/`, `antes-*` (el build del primer commit de la fase, sin la disposición nueva) y `despues-*`, con `scripts/capture-moon-systems.mjs`:
 - Júpiter de cerca: `escritorio-jupiter-cerca` y `movil-jupiter-cerca`; con sus lunas con mapa, `escritorio-jupiter-mapas`.
@@ -682,18 +756,22 @@ three, diferido, pasa de 798,65 kB (el Sol de la primera vuelta y la Tierra) a 8
   - `venus-escritorio-nubes` y `venus-escritorio-radar`;
   - `venus-movil-nubes` y `venus-movil-radar` (390 × 844 a 2×, con la ficha abierta con «ⓘ»: el botón y su nota en la hoja en reposo);
   - `venus-radar-maat-mons` (solo el lienzo, con el radar y Maat Mons señalado).
+- El cierre: `cierre-antes-` y `cierre-despues-`, con `-movil-etiquetas-sistema` y `-escritorio-etiquetas-tierra` (las etiquetas sin y con su placa; el «antes», el mismo build sin la regla nueva) y `-movil-cielo-noche` (el cielo de noche a 390 × 660, sin y con el degradado del suelo).
 
 ## 8. Dependencias añadidas
 Ninguna.
 
 ## 9. Pendientes y `TODO(ivan)`
 - Los PR 1 y 3 de Dependabot (E5), en `PENDIENTES.md`.
-- **Dos frases de «Lo que es ilustrativo» del Sol (`/sobre-el-proyecto`) se han quedado atrás** con la segunda vuelta, que no tocaba los textos. Son para la revisión de textos de Iván o para el cierre de la fase:
-  - «La forma del oscurecimiento de su borde sí es la medida»: en el explorador, el realzado la suaviza × 0,55 (§4); la medida sigue en `/cielo` y con `?medida=limbo`.
-  - «sus fáculas y su corona»: el explorador ya no pinta la corona (la de cerca está apagada; la de `/cielo` sigue).
+- ~~Dos frases de «Lo que es ilustrativo» del Sol, que la segunda vuelta dejó atrás~~: **al día en el cierre** (§4).
+- **Los textos nuevos o cambiados de la fase**, en `docs/revision-textos.md` (regenerada en el cierre), para la revisión de Iván.
 - **El color del radar de Venus** (para Iván): en gris (el producto tal cual) o teñido con el de las fotos de las Venera 13 y 14, como las vistas de Magellan de la NASA. Es un valor de `VISUAL_CONFIG`, con su fuente.
 
 ## 10. Propuestas de cambio al plan
+- **Para la fase 10, de la escena** (lo que el cierre no hace del backlog 17):
+  - **el rótulo de Saturno, junto al planeta:** hoy su hueco es el radio del anillo A en todas direcciones (`LABEL_EXTENTS`). Con lo que miden los anillos en pantalla en cada eje (el polo de Saturno en la cámara: `a·√(1 − n_x²)` en horizontal y `a·√(1 − n_y²)` en vertical), arriba y abajo el hueco sería casi el del disco, y el rótulo quedaría pegado al planeta;
+  - **la precarga de texturas del recorrido** (la Tierra y la Luna, durante la parada de Saturno), una llamada nueva en la API de la escena;
+  - **los nombres de los lugares de España** sobre sus puntos de la vista guiada.
 - **Para la fase 10** (9b.e): la máscara de cobertura de los mosaicos de las lunas, umbralizada antes de reducir, como la del radar (`zerosAreGaps`). Cambiaría los bordes de sus huecos, y con ellos las texturas y las medidas de D45: habría que rehacerlas y revisarlas.
 
 ## 11. Cómo probarlo
@@ -703,6 +781,7 @@ Ninguna.
 - `/explorar/tierra` y «Las luces de la noche»: la cara nocturna, negra, con las luces; `node scripts/measure-earth-night.mjs` mide el suelo y las luces en CIELAB.
 - El Sol de cerca: en el explorador, «Sol» en el carrusel (o `/?cuerpo=sol`). Su superficie fluye despacio, también en pausa, y en el limbo hay tres bucles de plasma; con movimiento reducido, quieto. Desde la segunda vuelta de la 9b.f, el bloom de la 9b.c está apagado en los tres niveles (§4).
 - Venus «Bajo las nubes»: en el explorador, Venus en la fila (o `/?cuerpo=venus`) y, en su ficha, «Bajo las nubes» (en el móvil, con «ⓘ»). `?captura=1&cuerpo=venus&radar=1` lo enciende sin la ficha. `node scripts/capture-venus.mjs <carpeta>` hace sus capturas, y con `--medir`, §5.
+- El cierre: `E2E_PORT=4391 npx playwright test e2e/arranque.spec.ts -g requestIdleCallback` (el explorador carga aunque el navegador no quede libre nunca); el cielo de noche en un móvil pequeño, con el suelo en degradado.
 - La totalidad: `/cielo?lugar=fraga&fecha=2026-08-12T18:29:29Z` y acercar hacia el Sol (al oeste, a 5° de altura).
 - `node scripts/measure-sun.mjs` mide el limbo, el disco y la totalidad; `node scripts/capture-sun.mjs <carpeta> --prefijo=despues`, las capturas.
 - El Sol y la Tierra realzados (9b.f): `/?cuerpo=sol` y `/explorar/tierra` («La Tierra completa», «El Pacífico» o «El Himalaya»). `node scripts/measure-d46.mjs --solo=sol` o `--solo=tierra` mide frente a las capturas de la referencia (en `assets-src/referencias/`, solo en local), y `node scripts/capture-d46.mjs <carpeta> --prefijo=despues [--comparar]`, las capturas.
