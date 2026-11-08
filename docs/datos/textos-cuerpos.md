@@ -2,7 +2,7 @@
 
 Generada por `scripts/build-body-texts.mjs` a partir de `scripts/content/body-texts.json`. Cada texto
 lleva su fuente y las citas literales en inglés que lo respaldan; el script comprueba que cada cita
-está en su página. Revisados: **0 de 139**. Para dar uno por revisado, pon
+está en su página. Revisados: **0 de 140**. Para dar uno por revisado, pon
 `"reviewed": true` en el JSON y vuelve a ejecutar el script.
 
 ## Sol (`sol`)
@@ -29,6 +29,11 @@ está en su página. Revisados: **0 de 139**. Para dar uno por revisado, pon
   - > named for British astronomer Richard Carrington who observed the Sept. 1, 1859, solar flare that triggered the event.
   - > Telegraph systems worldwide went haywire.
   - > The auroras, or Northern Lights, were visible as far south as Cuba, the Bahamas, Jamaica, El Salvador, and Hawaii.
+- [ ] **Sobre su mapa.** En las fotos, el Sol se ve blanco: emite a la vez todos los colores que vemos. En este explorador se ve en color realzado, como en las imágenes de los observatorios, que lo miran con filtros y pasan lo que ven a colores.
+  - Fuente: <https://svs.gsfc.nasa.gov/vis/a010000/a013800/a013859/script_31299_00.html>
+  - > In photos, the Sun appears white because it emits all the colors we can see at once.
+  - > SDO uses instruments with special filters to see the Sun in 10 different wavelengths of light, including many that we can’t see with our own eyes.
+  - > For us to see them, Scientists convert SDO’s data to colors we can see.
 
 _Nota de redacción:_ El resumen no da la edad del Sol: la página dice «4.5 billion-year-old» en la introducción y «about 4.6 billion years ago» en «Formation».
 

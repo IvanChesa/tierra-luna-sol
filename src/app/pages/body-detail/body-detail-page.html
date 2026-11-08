@@ -15,7 +15,7 @@
       <a class="body__view" [routerLink]="explorer().path" [queryParams]="explorer().query"
         >Ver en 3D</a
       >
-      <!-- Las lunas con parte de su mapa recreada (fase 9b, D45). -->
+      <!-- Las lunas con parte de su mapa recreada (fase 9b, D45) y el Sol realzado (D46). -->
       @if (body().mapNote; as note) {
         <p class="body__note">
           {{ note.text }}
@@ -23,7 +23,11 @@
             Fuente: <a [href]="source" hreflang="en">{{ textSourceName(source) }}</a
             >.
           }
-          <a routerLink="/creditos" fragment="lunas-recreadas">Cómo se recrea</a>.
+          @if (body().kind === 'star') {
+            <a routerLink="/sobre-el-proyecto" fragment="ilustrativo">Lo que es ilustrativo</a>.
+          } @else {
+            <a routerLink="/creditos" fragment="lunas-recreadas">Cómo se recrea</a>.
+          }
         </p>
       }
     </div>

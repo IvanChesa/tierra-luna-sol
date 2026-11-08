@@ -46,7 +46,17 @@
         ]
       }
     ],
-    "notes": "El resumen no da la edad del Sol: la página dice «4.5 billion-year-old» en la introducción y «about 4.6 billion years ago» en «Formation»."
+    "notes": "El resumen no da la edad del Sol: la página dice «4.5 billion-year-old» en la introducción y «about 4.6 billion years ago» en «Formation».",
+    "mapNote": {
+      "text": "En las fotos, el Sol se ve blanco: emite a la vez todos los colores que vemos. En este explorador se ve en color realzado, como en las imágenes de los observatorios, que lo miran con filtros y pasan lo que ven a colores.",
+      "source": "https://svs.gsfc.nasa.gov/vis/a010000/a013800/a013859/script_31299_00.html",
+      "reviewed": false,
+      "quotes": [
+        "In photos, the Sun appears white because it emits all the colors we can see at once.",
+        "SDO uses instruments with special filters to see the Sun in 10 different wavelengths of light, including many that we can’t see with our own eyes.",
+        "For us to see them, Scientists convert SDO’s data to colors we can see."
+      ]
+    }
   },
   {
     "id": "mercurio",

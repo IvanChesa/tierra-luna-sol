@@ -11,7 +11,7 @@
 
 ## Índice
 
-1. [Por cuerpo](#por-cuerpo): los 30, con su resumen y sus tres curiosidades y, en 19 lunas, la línea sobre su mapa (139 textos).
+1. [Por cuerpo](#por-cuerpo): los 30, con su resumen y sus tres curiosidades; en 0 lunas, la línea sobre su mapa, y en el Sol, la de su color realzado (140 textos).
 2. [Por vista](#por-vista): el sistema solar, la Tierra y sus vistas guiadas, la Luna, sus vistas y su recorrido, y el cielo.
 3. [Las páginas](#las-paginas): los índices, los eclipses, «Sobre el proyecto», los créditos y la 404; y [los textos fijos](#los-textos-fijos) de las fichas, del pie y del menú.
 4. [Las descriptions](#las-descriptions): lo que se ve al compartir cada página.
@@ -52,6 +52,14 @@ Corrección:
 > La tormenta geomagnética más intensa registrada, el evento Carrington, se debió a una fulguración solar del 1 de septiembre de 1859: los telégrafos fallaron en todo el mundo y hubo auroras hasta en Cuba y Hawái.
 
 Fuente: <https://science.nasa.gov/sun/facts/>
+
+Corrección:
+
+**Sobre su mapa**
+
+> En las fotos, el Sol se ve blanco: emite a la vez todos los colores que vemos. En este explorador se ve en color realzado, como en las imágenes de los observatorios, que lo miran con filtros y pasan lo que ven a colores.
+
+Fuente: <https://svs.gsfc.nasa.gov/vis/a010000/a013800/a013859/script_31299_00.html>
 
 Corrección:
 
@@ -1623,7 +1631,7 @@ Corrección:
 
 **Párrafo 31**
 
-> El Sol de cerca: su granulación, mucho más gruesa que la real para que se vea; sus manchas, que no son las de ese día (ni en su sitio ni en su número), aunque giran como las reales, más despacio lejos del ecuador; sus fáculas, su corona y su resplandor. El oscurecimiento de su borde, más dorado que el centro, sí es el medido.
+> El Sol del explorador, en color realzado, como en las imágenes de los observatorios: naranja, cuando con luz visible normal es blanco (así se ve en el cielo desde España), con zonas claras y oscuras que cambian despacio, rayos en su resplandor y, de cerca, protuberancias en su borde. Su granulación, mucho más gruesa que la real para que se vea; sus manchas, que no son las de ese día (ni en su sitio ni en su número), aunque giran como las reales, más despacio lejos del ecuador; sus fáculas y su corona. La forma del oscurecimiento de su borde sí es la medida.
 
 Corrección:
 
@@ -1833,7 +1841,7 @@ Corrección:
 
 **Párrafo 19**
 
-> El Sol: el oscurecimiento del borde en cada color, con la ley de Hestroffer y Magnan (1998), y la rotación de las manchas, más lenta lejos del ecuador, con la medida por el SDO de Lößnitz et al. (2025). Las manchas, la granulación, la corona y el resplandor son ilustrativos.
+> El Sol: el oscurecimiento del borde en cada color, con la ley de Hestroffer y Magnan (1998), y la rotación de las manchas, más lenta lejos del ecuador, con la medida por el SDO de Lößnitz et al. (2025). Las manchas, la granulación, la corona y el resplandor son ilustrativos. En el explorador se ve en color realzado, como en las imágenes de los observatorios (con luz visible normal es blanco, como en el cielo): su color, sus zonas claras y oscuras, sus rayos y sus protuberancias, también ilustrativos.
 
 Corrección:
 

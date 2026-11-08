@@ -27,6 +27,11 @@ export const BODY_TEXTS: Record<BodyId, BodyTexts> = {
         reviewed: false,
       },
     ],
+    mapNote: {
+      text: 'En las fotos, el Sol se ve blanco: emite a la vez todos los colores que vemos. En este explorador se ve en color realzado, como en las imágenes de los observatorios, que lo miran con filtros y pasan lo que ven a colores.',
+      source: 'https://svs.gsfc.nasa.gov/vis/a010000/a013800/a013859/script_31299_00.html',
+      reviewed: false,
+    },
   },
   mercurio: {
     summary: {

@@ -120,9 +120,9 @@ export interface SourcedText {
 }
 
 /**
- * La línea sobre el mapa de una luna (fase 9b, D45): lo que se fotografió y lo que el explorador recrea.
- * `source`: la página de la NASA que respalda lo fotografiado, o `null` si solo dice lo recreado (el
- * método y lo medido, en /creditos).
+ * La línea sobre el mapa de una luna (fase 9b, D45: lo que se fotografió y lo que el explorador recrea)
+ * o sobre el color del Sol (D46: realzado). `source`: la página de la NASA que la respalda, o `null` si
+ * solo dice lo recreado (el método y lo medido, en /creditos).
  */
 export interface MapNote {
   readonly text: string;
@@ -135,7 +135,7 @@ export interface BodyTexts {
   readonly summary: SourcedText;
   /** Tres curiosidades. */
   readonly facts: readonly [SourcedText, SourcedText, SourcedText];
-  /** Las lunas con parte de su mapa recreada (fase 9b, D45). */
+  /** Las lunas con parte de su mapa recreada (fase 9b, D45) y el Sol realzado (D46). */
   readonly mapNote?: MapNote;
 }
 
