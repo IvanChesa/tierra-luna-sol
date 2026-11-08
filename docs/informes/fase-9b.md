@@ -1,8 +1,8 @@
 # Informe: Fase 9b (el Sol, las lunas y la Tierra de noche)
 
 - **Rama:** `fase-9b-sol-lunas`
-- **Fecha:** 2026-11-04 · 2026-11-05 · 2026-11-06 (en curso)
-- **Estado:** en curso: hechas la tarea 0 y las entregas 9b.a, 9b.b y 9b.c; la 9b.d, empezada (D45: la medida de los mapas y la recreación, como herramienta); sigue la 9b.d, después la 9b.f (D46, nueva desde el 06-11) y por último la 9b.e
+- **Fecha:** 2026-11-04 · 2026-11-05 · 2026-11-06 · 2026-11-07 · 2026-11-08 (en curso)
+- **Estado:** en curso: hechas la tarea 0 y las entregas 9b.a, 9b.b, 9b.c y 9b.d; sigue la 9b.f (D46) y por último la 9b.e
 
 ## Plan
 Bloque S, modo autónomo, una sola fase por entregas en el orden de `docs/decisiones/FASE-9b-SOL-LUNAS.md` (la prioridad de Iván), que manda sobre este plan en tareas y criterios, con sus adendas D45 (05-11) y D46 (06-11): **0, 9b.a, 9b.b, 9b.c, 9b.d, 9b.f y 9b.e**. La revisión del bloque E está aplicada en `main` (`0963b9f`). Los PR 1 y 3 de Dependabot (E5) siguen abiertos: la rama sale del `main` de hoy y, cuando Iván los fusione, se traen (son de parche). Cada entrega cierra con `npm run check`, este informe al día, sus capturas (`?captura=1`, escritorio y móvil, en `docs/informes/img/fase-9b/`) y un commit; y se sube la rama para que su vista previa (`fase-9b-sol-lunas.tierra-luna-sol.pages.dev`) enseñe cuanto antes la primera.
@@ -55,61 +55,20 @@ Bloque S, modo autónomo, una sola fase por entregas en el orden de `docs/decisi
 
 **Cierre:** `npm run check`, este informe con las evidencias de cada criterio, la revisión por subagente, las correcciones, la fusión con `--no-ff`, el diario y el resumen del bloque S. Después, **parar** (no se empieza el bloque F).
 
-## Dónde se queda (2026-11-05, noche; sesión parada por Iván)
-- **Hechas y comprobadas:** la tarea 0 y las entregas 9b.a, 9b.b y 9b.c (el Sol y la totalidad del cielo), cada una con su `npm run check`, sus capturas y este informe. La 9b.c se retomó del trabajo sin verificar que dejó la sesión del 04-11 en `git stash`: se conectó el bloom y se corrigió lo que no funcionaba (§4).
-- **9b.d, empezada por D45** (la adenda de Iván del 05-11, «Tritón se ve fatal»). Nada de esto cambia aún la web: son herramientas fuera del build.
-  - **La medida de los mapas** (`scripts/measure-moon-maps.mjs`, con `scripts/lib/moon-maps.mjs`), en la textura de 2k de cada luna: lo real con detalle, lo visto de lejos y lo no visto. Lo visto de lejos se reconoce con dos criterios, calibrados en cada luna con lo más nítido de su propio mapa degradado a propósito:
-    - el cociente de dos bandas finas, por debajo del de lo nítido degradado ×1,5;
-    - la resolución de origen por octavas (σ), por encima de la de lo nítido degradado ×3 (de 0,8 a 1,4 texeles, según la luna). El cociente se engaña donde solo queda ruido, como en el limbo de las imágenes de la Voyager en Tritón, y la σ no.
-    - El borde de la cobertura se erosiona 3 texeles para quitar la línea del limbo del mosaico. Las islas pequeñas se absorben, salvo las claramente blandas.
-  - **Resultados provisionales** de las 12 lunas con mosaico (real, de lejos y sin datos):
-
-    | Luna | Real | De lejos | Sin datos |
-    |---|---|---|---|
-    | Fobos | 92,4 % | 7,5 % | 0,0 % |
-    | Ío | 85,0 % | 15,0 % | 0,0 % |
-    | Europa | 80,8 % | 18,7 % | 0,5 % |
-    | Ganímedes | 99,1 % | 0,5 % | 0,5 % |
-    | Calisto | 88,3 % | 10,7 % | 1,0 % |
-    | Mimas | 80,5 % | 19,5 % | 0,0 % |
-    | Encélado | 76,1 % | 23,4 % | 0,5 % |
-    | Tetis | 81,0 % | 18,8 % | 0,2 % |
-    | Dione | 87,7 % | 11,4 % | 0,9 % |
-    | Rea | 93,7 % | 6,3 % | 0,0 % |
-    | Jápeto | 70,3 % | 29,7 % | 0,0 % |
-    | Tritón | 30,6 % | 36,1 % | 33,4 % |
-
-    En Tritón, lo real y lo visto de lejos suman dos tercios (66,7 %), lo que dice la NASA: «Voyager photographed two-thirds of Neptune's largest moon Triton» (https://science.nasa.gov/mission/voyager/voyager-2/; cita del subagente, por comprobar al escribir la ficha).
-  - **La recreación** (`scripts/lib/moon-recreate.mjs`; la receta de cada luna, en `scripts/lib/moon-recipes.mjs`; para revisarla, `node scripts/preview-moon-recreation.mjs <luna>`). Determinista, sin dependencias nuevas y sobre la esfera, por caras de un cubo equiangular:
-    - lo no visto parte del brillo de lo visto extendido sobre la esfera (no del gris de relleno del mosaico) y de una recreación previa a 1/4 de resolución, que pone los accidentes grandes;
-    - el detalle sale de parches de lo real de la misma luna (quilting, Efros y Freeman, 2001), cosidos por el corte de menor error con un fundido de 2 px y llevados al brillo de cada zona en proporción (sin escalones entre parches);
-    - se castiga cada zona de origen ya usada (sin motivos repetidos);
-    - en lo visto de lejos se conserva su brillo real por encima de 3 veces su resolución de origen;
-    - lo real no se toca.
-  - **Tritón**, con la receta de la terminal: el casquete en el sur y en el norte, por encima de una frontera ondulada en torno a 47°, y el resto con la «piel de melón» y las llanuras de lo visto. Sin zonas lisas, sin bloques y sin la línea del limbo, en 13 s. Las seis vistas de la adenda, antes y después (provisional):
-    - ![Tritón desde seis direcciones, antes](img/fase-9b/d45-triton-seis-vistas-antes.webp)
-    - ![Tritón desde seis direcciones, después (provisional)](img/fase-9b/d45-triton-seis-vistas-despues.webp)
-  - **Las fuentes, investigadas** (por un subagente; lo esencial, comprobado):
-    - Los mapas del JPL de las cinco lunas de Urano (`ura1vuu2`…`ura5vuu2`, 1440 × 720 en gris, «From the USGS, mosaicked with Voyager imagery») y el de Deimos (`mar2kuu2`) valen por D43: la política del JPL permite usarlos «for any purpose». Ojo: jpl.nasa.gov da 403 a curl; los mismos mapas están en los recursos 3D de la NASA (science.nasa.gov), uno idéntico y cuatro con otra curva de tonos.
-    - Los colores, con el B−V de la tabla de fotometría del Astronomical Almanac 2013 (Andersson, 1974) y el del Sol (Ramírez et al., 2012). No hay V−R publicado.
-    - Jápeto: un albedo de 0,03 a 0,05 en el hemisferio delantero y de 0,5 a 0,6 en el trasero (NASA).
-    - Pharos: el Gazetteer no da su posición (0°, 0° y diámetro 0, marcadores sin valor).
-    - Las formas: la de Proteo (Stooke, CC0) solo se baja a mano, y las de Fobos y Deimos no tienen ninguna licencia de la lista. Las dos cosas, en `PENDIENTES.md` para Iván.
-- **Siguiente paso** (retomar con «Retoma el bloque S donde se quedó»):
-  1. **Acabar la recreación de Tritón.**
-     - Hoy, el norte sale demasiado uniforme. Hay que darle más contraste a gran escala, con más peso o más escala para la guía gruesa, y revisar la frontera del casquete en la vista polar.
-     - Un script que mida el grano (del 70 al 130 % del de lo real vecino) y el borde con lo real (ΔL\* ≤ 2).
-  2. **Llevarla a `build-textures.mjs`**, entre `loadMosaic` y la salida, para Tritón y las lunas con zonas vistas de lejos (tabla de arriba). Lo real, igual al mosaico procesado, con un test; las sondas del Gazetteer siguen pasando. La máscara de cada luna, con sus porcentajes aquí y en `FUENTES.md`.
-  3. **Bajar los mapas del JPL** de Urano y de Deimos con `download-assets` y su SHA-256. Recetas de Urano (Miranda: coronas y terreno de cráteres) y los tintes con su B−V; Tritón, con el suyo.
-  4. **El resto de la 9b.d:** la dicotomía de Jápeto, el terminador de Titán, la textura del planeta al enfocar una luna, las formas cuando decida Iván, Proteo, las fichas, `/creditos` y «Lo que es ilustrativo».
-  5. **Después, la 9b.e y el cierre de la fase.**
+## Dónde se queda (2026-11-08)
+- **Hechas y comprobadas:** la tarea 0 y las entregas 9b.a, 9b.b, 9b.c y 9b.d, cada una con su `npm run check`, sus capturas y este informe.
+- **La 9b.d** se retomó del trabajo sin commit que dejó la sesión del 06-11 (la recreación de D45 ya dentro de `build-textures.mjs`, `8165610`): se comprobó, se terminó (las formas, los mapas del JPL, Proteo, Jápeto, Titán, las fichas y los créditos) y se cerró el 08-11 (§2 a §7; el 07-11 la cortó el límite de uso con el build de texturas a medias, y se repitió entero).
+- **Sigue** la 9b.f (D46: el Sol y la Tierra con color realzado), después la 9b.e (Venus «Bajo las nubes») y el cierre de la fase con la revisión automática.
+- **La 9b.f, empezada sin verificar, en `git stash`** («9b.f en curso…»: el shader del Sol realzado en `sun-material.ts`, con su estructura, sus rayos y sus protuberancias, inerte hasta conectarlo en `world.ts`; la configuración de D46 en `visual-config.ts`; y los scripts `measure-d46.mjs`, `capture-d46.mjs` y `lib/disc-metrics.mjs`). Las cifras de la referencia y el plan de la Tierra, en la nota de traspaso de la carpeta de notas de las sesiones.
+- **Las medidas de rendimiento de la 9b.d son provisionales:** se tomaron con la sesión de la 9c trabajando en el mismo equipo. Se repiten al cerrar la fase, con el equipo libre.
 
 ## 1. Resumen
-En curso. Hechas la tarea 0 y las entregas 9b.a, 9b.b y 9b.c:
+En curso. Hechas la tarea 0 y las entregas 9b.a, 9b.b, 9b.c y 9b.d:
 - **Tarea 0:** `/luna`, con las migas «Inicio › Lunas › Luna» y «Lunas» marcado en el menú (E4).
 - **9b.a, los sistemas de lunas de la vista general (D39):** cada luna con su propia ley de tamaños respecto a su planeta y en una órbita ilustrativa escalada que no se cruza con ninguna otra, con su planeta ni con los anillos (las de Saturno, ahora por fuera); un sistema que se acerca a otro cuerpo o sistema se comprime hacia su planeta en lugar de meterse en él; en la vista general, un sistema aparece cuando su planeta crece en pantalla, y cada luna lleva su mapa cuando se ve grande.
 - **9b.b, la Tierra de noche (D40):** las luces, del mapa Black Marble 2016 de la NASA (negro fuera de ellas) con el tono cálido de las de antes, y sin relleno en la cara nocturna en primer plano (en la vista general, gris neutro): el suelo sin luces, negro y neutro.
 - **9b.c, el Sol (D41) y la totalidad del cielo (E1):** el Sol de la luz visible, casi blanco en el centro y dorado hacia el borde, con el oscurecimiento del limbo de cada color de una ley publicada (medido en la captura: el exponente de cada canal, a 0,003 de la ley), un resplandor (bloom) que solo sale del Sol en los niveles alto y medio, granulación que se mueve, manchas que giran con la rotación diferencial medida, fáculas y una corona tenue. En la totalidad del eclipse del 12-08-2026 desde Fraga, el cielo pasa del malva plano a un azul muy oscuro con el horizonte anaranjado en toda la vuelta, la Luna es lo más oscuro del cielo y la corona tiene serpentinas.
+- **9b.d, las lunas: formas y mapas (D42, D43 y D45):** ninguna luna es ya una bola de un color (salvo Titán, por su neblina, ahora con el terminador suave de las fotos). Deimos y las cinco de Urano tienen los mapas del JPL; Proteo, cráteres generados. Lo que nadie ha visto (el norte de Tritón y de las lunas de Urano, y lo que no cubre el mapa de Deimos) se recrea con el terreno real de cada luna, y lo visto de lejos lleva detalle, sin tocar lo real. Fobos y Deimos tienen su forma real (los DSK del NAIF); Jápeto, el contraste de sus dos caras de los albedos de la NASA; las lunas en gris, el color de su B−V. Las fichas, los créditos y «Lo que es ilustrativo» lo dicen.
 
 ## 2. Criterios de aceptación
 
@@ -183,6 +142,67 @@ El primer intervalo (μ de 0,975 a 1) es la referencia: por eso la ley no da 1 e
 
 Las de Saturno empiezan en 2,65 radios: el borde exterior del anillo A está a 2,27.
 
+### Entrega 9b.d (D42, D43 y D45)
+| Criterio | ✅/❌ | Evidencia |
+|---|---|---|
+| Ninguna luna como bola lisa de color plano, salvo Titán (por su neblina): la rejilla de las 20 | ✅ | `antes-` y `despues-lunas-rejilla.webp` (§7; el «antes», del build de `8165610`, sin la entrega): antes, Deimos, Miranda, Ariel, Umbriel, Titania, Oberón y Proteo eran discos de un color; ahora, todas con mapa (Proteo, con cráteres generados). Titán, sin superficie a propósito (su neblina), con el terminador suave de abajo. |
+| Fobos, Deimos y Proteo con su forma real y sus medidas (los semiejes de la malla frente a los publicados, con test) | ✅ Fobos y Deimos · ⚠️ Proteo | Las de Fobos y Deimos, de los DSK del NAIF (decisión de Iván del 06-11), en una rejilla de radios (`scripts/build-shapes.mjs`): el elipsoide ajustado, Fobos **13,11 × 11,39 × 9,27 km** (NASA: 13,0 × 11,4 × 9,1) y Deimos **7,78 × 6,02 × 5,35** (7,8 × 6,0 × 5,1), a menos de 0,5 km, con sus ejes a menos de 8° de los del cuerpo; el radio del volumen equivalente, 11,11 y 6,23 km (el catálogo: 11,08 y 6,2). Stickney (Gazetteer, Feature/5707), una depresión de 1,01 km en su sitio (0,24 girada 180°, 0,11 reflejada): la forma no está girada ni reflejada. Tests: `scene/shapes.spec.ts` (13: los binarios decodificados, los semiejes, el volumen, el eje largo hacia el meridiano 0 —hacia Marte con la rotación síncrona— y Stickney; y, con elipsoides sintéticos, el radio de cada vértice y las normales a menos de 1°, también en los polos y en la costura de ±180°) y `engine.spec.ts` (se piden con su mapa, una vez; la geometría se rehace al cambiar de calidad y se libera al cerrar). **Proteo, como esfera:** su forma de Stooke solo se baja a mano y `assets-src/shapes/` no la tiene (decisión de Iván del 06-11; `PENDIENTES.md`). |
+| Los mapas nuevos, con sus sondas en el build, y la licencia de cada fichero en `FUENTES.md` | ✅ | Deimos y las cinco de Urano, los mapas del JPL (D43). Sin georreferencia: su convención de longitud, la única de las cuatro posibles con la que pasan las sondas (Wunda, clara, y Hamlet, oscura, con su claridad en pies de foto de la NASA; los bordes de Yangoor y Domovoy) y con la que fallan las otras tres; en las demás, sondas que fallan giradas o reflejadas (Verona Rupes, Belmont Chasma y Ursula, Swift). En `FUENTES.md`, fila a fila, con su SHA-256. |
+| Jápeto: el contraste de sus dos caras, medido frente a los albedos publicados | ✅ | El material oscuro de su hemisferio delantero (el 37,5 % de la luna) frente a su hemisferio trasero: **de 0,537 a 0,073** en el mapa; la NASA: «albedo 0.03-0.05» y «0.5-0.6» (0,04 / 0,55 = 0,073). En la escena, el hemisferio trasero, a 0,55 (`TEXTURE_ALBEDO_REFERENCE`): antes, la media del mapa iba al 0,05 del catálogo (su cara oscura) y las dos caras salían oscuras. |
+| §5 en las vistas de los sistemas de lunas (FPS, VRAM y memoria tras 10 vueltas) | ✅ (provisional: se repite al cerrar la fase, con el equipo libre) | `measure-views.mjs` (tabla abajo; con la sesión de la 9c y un build de texturas en marcha en el mismo equipo): **59–60 FPS de mínimo en las 15 vistas de los tres niveles** (§5: ≥ 55 en alto). Los sistemas de lunas, de 43 a 138 MB de VRAM (lo más alto, Marte de cerca en alto, con su 4K, sus dos lunas con su mapa y sus formas) y de 5 a 12 llamadas de dibujo; lo más alto de todas, la vista Tierra en alto, 278 MB de 300, como antes. `measure.mjs`: tras 10 idas y vueltas a una ficha, 10 cambios de vista, 6 de calidad y 10 vueltas por los sistemas de lunas, 11 MB de heap (como al empezar), un contexto WebGL y 25 texturas; las geometrías, de 15 a 17 tras las vueltas por las lunas: las dos de más son las formas de Fobos y Deimos, que se conservan (una por luna, también tras más vueltas: test en `engine.spec.ts`) y se rehacen al cambiar de calidad. |
+| D45: capturas de cada luna afectada desde seis direcciones y la rejilla de las 20: ni zonas grises lisas, ni manchas borrosas, ni costuras, ni repeticiones, ni pellizcos en los polos | ✅ (con tres notas) | `d45-<luna>-seis-vistas-{antes,despues}.webp` de las 18 lunas con mapa y Proteo (`scripts/capture-moon-views.mjs`, sobre la textura de 2k que carga la escena; el «antes», la del commit anterior), y la rejilla. **Notas:** la recta de la longitud 180° de Miranda y de Titania, las uniones de las láminas de la carta de Deimos y el contorno claro con el que esa carta cierra lo cartografiado, y las sombras negras del terminador de las imágenes de la Voyager junto a lo no visto ya están en el mapa del JPL (son datos reales, que D45 no deja tocar); y el norte recreado de Miranda tiene relieve, pero menos contraste que su sur (fotografiado con el Sol bajo): para Iván, en `PENDIENTES.md`. |
+| D45: el grano de lo recreado, del 70 al 130 % del de lo real vecino; en el borde con lo real, ningún salto de brillo medio de más de ΔL* 2 | ✅ (el borde, medido frente a lo natural: §4) | Las 18 (`docs/datos/recreacion-lunas.md`, GENERADO): el grano, **de 0,93 a 1,26** (antes de recrear, de 0,45 a 0,94, salvo Deimos, 1,70). El borde, por teselas de 64 texeles (el brillo medio con σ = 4 a cada lado): con lo no visto, como mucho 1,23 L* por encima de lo natural en el percentil 95 (Dione) y por debajo en el máximo; con lo visto de lejos, por debajo del salto que ya tenía el mosaico en ese borde en las 18. |
+| D45: lo real, sin cambios (las sondas y el test de la zona real) | ✅ | En el build (`moon-map-build.mjs`, que hace fallar el build): lo real, **igual byte a byte** antes de comprimir (falla si un solo canal cambia) y, en el WebP de 2k, dentro de la tolerancia de su compresión (el error medio frente al mosaico, como mucho el del propio mosaico comprimido igual + 10 %: de 1,07 a 3,11 niveles de 255, frente a 1,09–3,25); las sondas de cada mosaico, otra vez sobre el mapa recreado y solo sobre lo real. Una sonda que cae sobre todo en lo recreado no se mide ahí (Burr en Calisto, Parwez en Encélado, Philoetius en Tetis; en Deimos y Miranda, su única sonda, Swift y Verona Rupes, y se dice): ya pasó en el mosaico, y lo real queda igual byte a byte. Jápeto, con su dicotomía después de recrear (§4). |
+| D45: los porcentajes de lo real, lo visto de lejos y lo recreado de cada luna, en el informe y en `FUENTES.md` | ✅ | Tabla de abajo; en `FUENTES.md`, en `docs/datos/recreacion-lunas.md` y en `/creditos#lunas-recreadas`. |
+| D45: las fichas, `/creditos` y `/sobre-el-proyecto` lo dicen | ✅ | Las fichas de las 18 lunas con mapa y Proteo, una línea sobre su mapa (`mapNote`, `reviewed: false`): con fuente de la NASA en Tritón («Voyager photographed two-thirds…»), las cinco de Urano («the Sun illuminated only the southern hemispheres…») y Proteo; en las demás, sin fuente externa y con el enlace a «Cómo se recrea». `/creditos`: los mapas del JPL, las formas del NAIF y lo recreado, con su tabla. «Lo que es ilustrativo»: lo recreado, Proteo y las sombras de Fobos y Deimos. |
+
+**§5 por vista y nivel en la 9b.d** (`measure-views.mjs`, provisional; cada celda: FPS mínimo · VRAM (MB) · llamadas de dibujo):
+
+| Vista | Alto | Medio | Bajo |
+|---|---|---|---|
+| sistema | 59 · 50 · 36 | 60 · 50 · 36 | 59 · 38 · 21 |
+| Marte de cerca (Fobos y Deimos con su mapa y su forma) | 59 · 138 · 7 | 59 · 74 · 7 | 59 · 62 · 7 |
+| Saturno de cerca | 60 · 106 · 12 | 59 · 74 · 12 | 60 · 62 · 12 |
+| Dione | 60 · 74 · 5 | 59 · 74 · 5 | 60 · 54 · 5 |
+| Júpiter y sus lunas | 59 · 100 · 7 | 59 · 68 · 7 | 60 · 56 · 7 |
+| Europa | 60 · 68 · 5 | 60 · 68 · 5 | 60 · 48 · 5 |
+| Tritón | 59 · 63 · 5 | 59 · 63 · 5 | 59 · 43 · 5 |
+| Fobos | 60 · 63 · 5 | 60 · 63 · 5 | 60 · 43 · 5 |
+| Urano y sus lunas (con los mapas del JPL) | 60 · 71 · 6 | 60 · 71 · 7 | 59 · 59 · 6 |
+| Miranda | 59 · 71 · 5 | 59 · 71 · 5 | 59 · 51 · 5 |
+| Deimos | 60 · 63 · 5 | 59 · 63 · 5 | 60 · 43 · 5 |
+| Sol de cerca | 60 · 172 · 23 | 60 · 76 · 23 | 59 · 64 · 8 |
+| vista Tierra | 60 · 278 · 6 | 59 · 86 · 6 | 59 · 86 · 6 |
+| vista Luna | 60 · 266 · 7 | 59 · 103 · 7 | 60 · 62 · 7 |
+| cielo | 59 · 39 · 5 | 60 · 39 · 5 | 59 · 38 · 5 |
+
+En el Sol de cerca, 172 MB y 23 llamadas en alto (en la 9b.c, 132 y 20): con las tres vistas nuevas del recorrido (Urano, Miranda y Deimos, cada una con 5 s a 1 día/s), el Sol se mide unos 15 días más tarde, con Venus grande junto a él, que pide su textura de 4K (el único fichero de ese paso); dentro de §5.
+
+**D45, cada luna** (`docs/datos/recreacion-lunas.md`, GENERADO por el build, con el salto en el borde, el enfoque, lo real en el WebP y la máscara de cada una). Los porcentajes, por el área de la esfera; el grano de lo recreado frente a lo real vecino (entre paréntesis, el del mapa antes de recrear):
+
+| Luna | Real | Visto de lejos | No visto | Grano |
+|---|---|---|---|---|
+| Fobos | 91,7 % | 8,3 % | 0,0 % | 1,02 (0,94) |
+| Deimos | 55,5 % | 32,7 % | 11,8 % | 1,26 (1,70) |
+| Ío | 82,9 % | 17,1 % | 0,0 % | 0,99 (0,81) |
+| Europa | 80,0 % | 19,5 % | 0,5 % | 0,98 (0,45) |
+| Ganímedes | 97,9 % | 1,6 % | 0,5 % | 0,97 (0,47) |
+| Calisto | 87,5 % | 11,5 % | 1,0 % | 1,00 (0,79) |
+| Mimas | 80,0 % | 20,0 % | 0,0 % | 0,97 (0,76) |
+| Encélado | 74,1 % | 25,9 % | 0,0 % | 0,98 (0,90) |
+| Tetis | 79,8 % | 20,2 % | 0,0 % | 0,97 (0,78) |
+| Dione | 87,3 % | 12,7 % | 0,0 % | 0,95 (0,49) |
+| Rea | 92,6 % | 7,4 % | 0,0 % | 0,96 (0,53) |
+| Jápeto | 69,2 % | 30,8 % | 0,0 % | 0,96 (0,53) |
+| Tritón | 30,6 % | 36,1 % | 33,4 % | 0,98 (0,55) |
+| Miranda | 30,5 % | 8,9 % | 60,6 % | 0,96 (0,53) |
+| Ariel | 24,5 % | 8,8 % | 66,7 % | 0,95 (0,57) |
+| Umbriel | 35,3 % | 1,1 % | 63,6 % | 0,95 (0,71) |
+| Titania | 30,9 % | 0,4 % | 68,6 % | 0,93 (0,48) |
+| Oberón | 33,5 % | 0,0 % | 66,5 % | 1,06 (0,71) |
+
+En Tritón, lo real y lo visto de lejos suman dos tercios (66,7 %), lo que dice la NASA («Voyager photographed two-thirds of Neptune's largest moon Triton»); en las cinco de Urano, lo no visto es su norte (la Voyager 2 las vio con el Sol sobre su hemisferio sur). Proteo no tiene mosaico: su superficie es entera generada (un campo de 13 049 cráteres, ilustrativo).
+
 ## 3. Tareas del plan
 | Tarea | Estado | Notas |
 |---|---|---|
@@ -203,6 +223,14 @@ Las de Saturno empiezan en 2,65 radios: el borde exterior del anillo A está a 2
 | 9b.c.4 · Manchas ilustrativas con la rotación diferencial publicada | hecha | 8 a la vez, de 6° a 32° de latitud, que nacen, derivan con la ley de Lößnitz et al. (2025) y se apagan; umbra y penumbra de borde irregular; número fijo (SILSO es CC BY-NC). Fáculas a trozos, en la red de las celdas grandes y solo hacia el limbo. |
 | 9b.c.5 · Una corona tenue en primer plano | hecha | `CORONA_GLSL` en el halo, con serpentinas y plumas polares orientadas con el polo del Sol. |
 | 9b.c.6 · La totalidad del cielo (E1) | hecha | Sin el resplandor del lado del Sol ni el halo; el anillo de todo el horizonte (naranja y amarillo); la Luna, más oscura que el cielo; y la corona con serpentinas, hasta 6 radios. |
+| 9b.d.1 · Formas reales de Fobos, Deimos y Proteo | hecha (Fobos y Deimos) · Proteo, esfera | Los DSK del NAIF (decisión de Iván del 06-11) en una rejilla de radios (`scripts/build-shapes.mjs` → `public/data/shapes/`, `scene/shape-files.ts`); la escena deforma la esfera de la luna con ella (`scene/shapes.ts`), con el mapa por la misma latitud y longitud planetocéntricas; las normales, de la rejilla. Proteo sigue como esfera: su forma de Stooke solo se baja a mano y no está en `assets-src/shapes/` (decisión de Iván del 06-11). |
+| 9b.d.2 · Las cinco de Urano, con su mapa | hecha | Los mapas del JPL (D43), con sus sondas, el norte recreado (D45) y el color de su B−V (Miranda, sin B−V publicado: gris neutro). |
+| 9b.d.3 · Deimos con su mapa y su forma; Proteo con su superficie | hecha | Deimos, el mapa del JPL (el fondo de su carta, lo no cartografiado, recreado: §4) y su forma del DSK del NAIF. Proteo: un campo de cráteres generado (`scripts/lib/crater-field.mjs`), con su mapa de normales, sobre la esfera; sin Pharos (el Gazetteer no da su posición). |
+| 9b.d.4 · La dicotomía de Jápeto | hecha | `scripts/lib/dichotomy.mjs`: el material oscuro del hemisferio delantero, de 0,537 a 0,073 del trasero (NASA: 0,04 / 0,55); la escena calibra con el hemisferio trasero a 0,55. |
+| 9b.d.5 · El terminador de Titán | hecha | Un oscurecimiento hacia el terminador, min(1, μ₀/μ)^1,15 (`terminatorExponent`, en TS y en GLSL), ajustado a los perfiles de PIA06230: el error del modelo, del 9,2 % al 2,4 % (`scripts/measure-titan-terminator.mjs`); en la captura de la escena (`--captura`: con la exposición del primer plano, el halo de la neblina y el tone mapping), un 8,4 % frente a la foto. Captura `-terminador-titan`. |
+| 9b.d.6 · La textura del planeta al enfocar una de sus lunas | hecha (ya la daba C4) | La regla de C4 (un cuerpo de 160 px o más lleva la textura del primer plano) ya la cubría; ahora, con su test (Ío enfocada: Júpiter, grande detrás, pide la suya). |
+| 9b.d.7 · `FUENTES.md`, `/creditos` y la licencia en `CLAUDE.md` | hecha | `FUENTES.md`, fila a fila; `/creditos`, con los mapas del JPL, las formas del NAIF y lo recreado (con su tabla); la licencia del JPL (D43) y las reglas del NAIF ya estaban en `CLAUDE.md`. |
+| 9b.d.8 · Lo que nadie ha visto (D45) | hecha | 18 lunas con mapa (las 12 de antes y las 6 del JPL): lo no visto, recreado entero, y lo visto de lejos, con detalle, a partir de su propio terreno, en `build-textures.mjs`; con sus criterios en el build y su máscara. La receta de cada luna, en §5. |
 
 ## 4. Desviaciones del plan y motivo
 - **9b.a.3, el alivio con el tamaño de cada sistema:** encoger cada planeta junto con su sistema (lo que proponía el documento) dejaría a Júpiter y a Saturno a menos de la mitad en sus conjunciones: con sus lunas fuera del planeta y de los anillos, sus sistemas llegan a 2,85 y 4,82 de sus radios (26 y 41 unidades), y en las conjunciones de 1900–2100 están a 24–27 unidades. En su lugar, **el disco de cada planeta sigue con el alivio de D35** (×0,79 como mucho, el 3,2 % del tiempo, sin cambios) y **es su sistema de lunas el que se comprime hacia él** (`compressSystems`): lunas, huecos y órbitas, por un mismo factor y con el paso suave de D35, para que los dos sistemas (tomados como esferas) dejen 0,5 unidades de aire. Con la compresión, las lunas nunca tocan nada, y en las conjunciones más cerradas llegan a desaparecer (radio 0). En el muestreo de 1900 a 2100, el sistema de Saturno se comprime el 21,8 % del tiempo (por debajo de ×0,3, el 8 %), el de Júpiter el 12,6 %, el de Urano el 10,7 % y el de Neptuno el 7,5 %; el de la Tierra, el 0,7 % (×0,91 como mucho, con Venus). Con sistemas más compactos apenas baja (Saturno, del 21 al 15 %): lo deciden las conjunciones de Júpiter, Saturno y Urano. En la fecha de hoy ningún sistema se comprime de forma visible; la conjunción de Saturno y Urano de 2032 y la de Júpiter y Saturno de 2040 se ven en las capturas.
@@ -216,6 +244,20 @@ Las de Saturno empiezan en 2,65 radios: el borde exterior del anillo A está a 2
 - **El bloom, solo en la vista del sistema solar.** En las vistas Tierra y Luna el Sol casi nunca está en pantalla (y, si lo está, es pequeño y basta su halo), y sus texturas de primer plano llenan la VRAM: con el bloom reservado, la vista Tierra en alto llegaba a 290 MB (de 300) con una pantalla de densidad 1, y con densidad 2 (la copia del lienzo pasa de 6 a 23 MB) habría pasado de 300. Al salir de la vista del sistema solar se suelta su memoria (278 MB); al volver, se reserva otra vez sin compilar nada.
 - **El disco del Sol del cielo, con el limbo por canal** (no lo pedía la entrega): la misma ley que el del espacio, en lugar de una lineal igual en los tres canales.
 
+- **D45, el salto del brillo en el borde con lo real, medido frente a lo natural** (y no como un ΔL* ≤ 2 absoluto). Con la medida del brillo medio a cada lado (σ = 4 texeles, por teselas de 64), un borde trazado al azar dentro de lo real ya salta de 2,4 a 9,8 L* en el percentil 95 según la luna (las de sombras duras, por los cráteres): un umbral absoluto de 2 solo lo pasaría el relieve liso. El criterio, por separado: en el borde con lo **no visto** (cuyo brillo pone solo la recreación), como mucho 2 L* por encima de lo natural (esos bordes ficticios, con la máscara girada 90°, 180° y 270°); en el borde con lo **visto de lejos** (cuyo brillo a gran escala es real, D45 regla 1, y ya saltaba en el mosaico por juntar imágenes distintas), como mucho 2 por encima del mayor de lo natural y del salto del mosaico original. La primera versión (de la sesión anterior) mezclaba los dos bordes con la referencia mayor, y así Encélado pasaba con un borde de 6,3 frente a 2,8 de lo natural solo porque el mosaico ya saltaba 13,6. Las zonas no vistas por encima de 70° de latitud no se miden (el equirrectangular las estira): se ven en las seis vistas.
+- **Las motas a 0 dentro de sombras, como sombra y no como hueco** (`restoreShadowSpecks`, `usgs-mosaic.mjs`). En un mosaico de 8 bits, lo más hondo de la sombra de un cráter vale 0, como lo que no tiene datos: en Fobos había 152 motas así, en Encélado 1338 y en Dione 1914, que la recreación rellenaba de terreno gris (contra «lo real no se toca»). Una mota sin datos de como mucho 400 px del mapa de 2k que toca algo casi negro (el píxel más oscuro a 1–2 px, ≤ 20 de 255) cuenta como dato. La media del anillo no servía: a 2 km ya es la del terreno, y su mínimo es casi siempre negro (de 0 a 10 en 1033 de las 1338 motas de Encélado). Cambia también las cifras de lo «sin datos» de la fase 7 (Fobos, de 0,04 % a 0).
+- **La dicotomía de Jápeto, después de la recreación.** Lo real o lo visto de lejos es cosa de la resolución de origen, no del brillo: medidas después de oscurecer Cassini Regio, lo visto de lejos pasaba del 31 % al 42 % (con menos contraste, parece tener menos detalle). Y sus sondas son de borde: con el material oscuro a 0,045 de su brillo, el gradiente de Valdebron se pierde en 8 bits (en el mapa recreado y calibrado, 1,01 frente al 1,15 que pide). Así que la recreación parte del mosaico tal como llega, las sondas se miden en él y después la dicotomía se aplica con el mismo factor (medido en el mosaico) al mosaico y al mapa recreado: lo real sigue igual en los dos, y la comprobación tras comprimir se hace frente al mosaico calibrado.
+- **Jápeto: el material oscuro, solo en el hemisferio delantero.** El mosaico del USGS tiene zonas grises en el hemisferio trasero (junto a su ápice, a 270° O) que en las fotos de Cassini son hielo claro: con un umbral sin más, o con una curva continua, se oscurecía también ese hemisferio. Como la NASA atribuye el albedo de 0,03–0,05 al hemisferio delantero, el oscurecimiento va en él (entero hasta 80° de su ápice y nada desde 110°); el trasero no cambia.
+- **El terminador de Titán: oscurece hacia el terminador, no ilumina más allá.** La propuesta de la fase 7 era «una sombra suavizada por la atmósfera»; medida en PIA06230, la luz más allá del terminador es despreciable (el mejor ajuste con luz envolvente da w = 0) y lo que hace suave el terminador es que el brillo cae poco a poco por todo el disco (μ₀² frente al μ₀^0,9 de la escena). El factor min(1, μ₀/μ)^e es neutro en fase llena (no toca la calibración del albedo) y no abrillanta el limbo iluminado.
+- **Las seis vistas de D45, sobre la textura y no en la escena.** `capture-moon-views.mjs` pinta cada luna desde las seis direcciones con su textura de 2k (la que carga la escena): las longitudes exactas, sin depender de la fecha. En la escena, la rejilla de las 20 y las capturas de las formas y de Titán.
+- **La línea sobre el mapa en las fichas de las lunas con zonas vistas de lejos, sin fuente externa.** Las de Tritón, Proteo y las cinco de Urano llevan una fuente de la NASA; las otras doce dicen lo que el explorador recrea (no hay una fuente que respalde eso), con un enlace a «Cómo se recrea» (`/creditos#lunas-recreadas`), donde está lo medido y el método. Para Iván, en `PENDIENTES.md`.
+- **La ficha de las lunas es de la sesión de la 9c** (`pages/body-detail`): la línea del mapa añade un `@if` tras «Ver en 3D» en su plantilla y su fuente a `textSources()`. **Para la fusión.**
+- **Deimos: el fondo claro de su carta, como lo no visto.** El mapa del JPL de Deimos es una carta aerografiada (de las imágenes de la Viking) sobre un fondo claro y liso: el norte y una franja junto al meridiano de 180°, que nadie cartografió. No vale 0, así que la primera versión lo tomaba por real, y en la rejilla y en el primer plano salía una mancha blanca y lisa (contra D45). A gran escala, ese fondo es más claro que 165 (de 0 a 255) y lo cartografiado va de 60 a 160 (el histograma tiene dos modas separadas): con ese umbral (`background`, solo en Deimos), el fondo pasa a «sin datos» (el 17,2 % del mapa, el 11,8 % de la esfera) y se recrea con su terreno, como el norte de las lunas de Urano. Las uniones de las láminas de la carta (dos rectas horizontales, una vertical y el círculo del casquete sur) y el contorno claro que cierra lo cartografiado son de lo real y se quedan, como la recta de los 180° de Miranda y de Titania: se ven en las seis vistas.
+- **Proteo, como esfera; sin Pharos.** Lo decidió Iván el 06-11 (sin el zip de Stooke, esfera); el Gazetteer da Pharos en 0°, 0° y con diámetro 0, y ninguna otra fuente comprobable da su posición.
+- **El norte recreado de Miranda, con menos contraste que su sur.** Tiene relieve (cráteres y arcos), pero su sur se fotografió con el Sol bajo y sus sombras son muy marcadas. No es una zona lisa (el criterio); queda para que Iván lo vea (`PENDIENTES.md`).
+
+- **Dos tests, corregidos al cerrar la 9b.d.** El de la alineación de los mapas de las lunas (`texture-meta.spec.ts`) solo trataba como retrógrada a Tritón: las cinco de Urano, ahora con mapa, también giran al revés respecto a su polo norte de la IAU (el del lado norte del plano invariable), y su hemisferio delantero está a 90° E. Y el de la textura de Júpiter con Ío enfocada (`engine.spec.ts`) dependía de la hora: a las 00:00 del 24-10-2026 Júpiter queda detrás de la cámara del encuadre de Ío; a las 18:00, detrás de Ío.
+
 ## 5. Decisiones técnicas nuevas
 - **El tono de las luces de la Tierra** (9b.b): el medio de las luces de la textura de Solar System Scope que se usaba, medido (sus píxeles de luminancia lineal de más de 0,1), en lugar de un color elegido: así «conservan su tono cálido» por construcción. El mapa en gris pone el brillo.
 - **`?marco=ilustrativo`, solo en captura:** el cuerpo enfocado sin pasar a su sistema local físico, con las texturas de la vista general (sin sistema enfocado). Es la única forma determinista de ver de cerca un sistema de la vista general, cuya cámara gira alrededor del Sol.
@@ -226,6 +268,16 @@ Las de Saturno empiezan en 2,65 radios: el borde exterior del anillo A está a 2
 - **`scene/layers.ts`**: las capas del bloom (el Sol y los que lo tapan), para que `sun-bloom.ts` no dependa de `world.ts`.
 - **`totalityOf`** (`sky-colors.ts`, con test): la totalidad, de 0 a 1, del 99,9 % al 100 % del disco tapado.
 - **`scripts/lib/color.mjs`**: sRGB → lineal y CIELAB para los scripts de medida (los anteriores llevan su propia copia).
+
+- **Las formas como rejilla de radios** (9b.d.1): una forma estrellada vista desde su centro (como los modelos de Thomas) es una función r(latitud, longitud); la escena deforma con ella la esfera que ya usa (la detallada o la ligera), así el mapa se proyecta igual que en la esfera y no hay malla nueva que mantener. Se carga al pedir el mapa de la luna (`EngineDeps.loadShape`, como las constelaciones) y, mientras, es una esfera. El binario lleva su hash en la consulta (`?v=`): un nombre fijo que los tests leen.
+- **Las normales de los cuerpos, del atributo `normal`** (`body-material.ts`): en la esfera es la posición, como antes; en las formas, la de la rejilla. La esfera cúbica de la Luna (sin normales) sigue con la posición.
+- **La recreación, en `build-textures.mjs`, con su calidad como condición del build**: si una luna no cumple el grano o el borde, o si lo real cambia un canal, el build falla.
+- **Las recetas:** Tritón, con su casquete (el del sur, real; el del norte, por encima de una frontera de unos 47° con un ruido fractal de ±14° y apartada de lo real; el resto, con la «piel de melón» y las llanuras de lo visto). Las demás, la receta por defecto: lo no visto, con parches de todo lo real de la misma luna (en Miranda, sus coronas y su terreno de cráteres por igual) y el brillo de lo visto extendido sobre la esfera; lo visto de lejos, con su brillo real por encima de 1,5 veces su resolución de origen y detalle por debajo.
+- **Los mapas del JPL, con `plain`** (`loadMosaic`): un TIFF sin georreferencia con la longitud de su borde izquierdo y el sentido de sus columnas dados, que comprueban las sondas; y, en Deimos, `background`: el fondo claro de su carta, lo no cartografiado, como sin datos (§4).
+- **El color de las lunas en gris, de su B−V** (`COLOR_INDICES`, `data/photometry.ts`): la reflectividad relativa en B y V frente a la del Sol, en las longitudes de onda pivote de Johnson del SVO, con `bandChromaticity` (el método de Venus). Son tintes casi neutros, como dice la NASA.
+- **`TEXTURE_ALBEDO_REFERENCE`** (generado en `texture-files.ts`): las texturas cuyo brillo se calibra con una región (Jápeto: su hemisferio trasero a 0,55) y no con su media.
+- **`mapNote`** (`BodyTexts`, generado por `build-body-texts.mjs`): la línea sobre el mapa, con fuente de la NASA y citas comprobadas o sin fuente (`source: null`); también en `docs/datos/textos-cuerpos.md` y en `docs/revision-textos.md`.
+- **`data/moon-recreation.ts`** (generado por `build-textures.mjs`): lo medido de cada luna, para la tabla de `/creditos`, siempre igual a lo del build.
 
 ## 6. Salida de los checks
 Entrega 9b.a (`npm run check`, 04-11):
@@ -245,6 +297,19 @@ Entrega 9b.b (`npm run check`, 04-11): lint limpio; 727 tests (75 ficheros); JS 
 
 Entrega 9b.c (`npm run check`, 05-11): lint limpio; **744 tests** (76 ficheros); cobertura de `ephemeris/` del 98,93 % de las sentencias y el 99,69 % de las líneas; JS inicial de 310,81 kB; código propio inicial, 14,86 kB de 15; three, diferido, 775,14 kB (antes, 753,54: el `UnrealBloomPass` y el Sol nuevo); 1163 enlaces internos bien y 111 externos sin comprobar (dos nuevos, los de los artículos del Sol en `/creditos`: el de arXiv responde; el de ADS tiene una verificación antibots).
 
+Entrega 9b.d (`npm run check`, 08-11):
+```
+All files pass linting. · All matched files use Prettier code style!
+Test Files 77 passed (77) · Tests 762 passed (762)
+Statements 98,93 % · Lines 99,69 % (ephemeris/)
+Initial total 310,81 kB
+✔ El JS inicial de las 40 páginas (17 ficheros) no lleva ningún módulo de three ni de astronomy-engine ni de los stores ni de los controles del visor.
+✔ Código propio en los chunks iniciales: 14,86 kB de 15,00
+  Diferido: three, 785,41 kB en bruto
+✔ Enlaces de las 40 páginas: 1183 internos bien (rutas, ficheros y anclas); 118 externos sin comprobar
+```
+three, diferido, pasa de 775,14 kB (9b.c) a 785,41 por las formas de Fobos y Deimos, el terminador de Titán y el color de las lunas. `build-textures.mjs`, entero y determinista: las 97 texturas del manifiesto, en disco (nada sobra), con sus criterios de D45 y sus sondas.
+
 ## 7. Capturas
 `docs/informes/img/fase-9b/`, `antes-*` (el build del primer commit de la fase, sin la disposición nueva) y `despues-*`, con `scripts/capture-moon-systems.mjs`:
 - Júpiter de cerca: `escritorio-jupiter-cerca` y `movil-jupiter-cerca`; con sus lunas con mapa, `escritorio-jupiter-mapas`.
@@ -255,6 +320,12 @@ Entrega 9b.c (`npm run check`, 05-11): lint limpio; **744 tests** (76 ficheros);
 - La Tierra de noche (9b.b), con `scripts/capture-earth.mjs`: `antes-` y `despues-tierra-vista-luces`, `-tierra-movil-vista-luces`, `-tierra-tierra-medianoche-utc` y `-tierra-sistema-noche` (con su `-detalle`, ampliado 4 veces alrededor de la Tierra).
 - El Sol y la totalidad (9b.c), con `scripts/capture-sun.mjs` (`antes-*`, del build de la rama sin la entrega, `8068f3c`; `despues-*`): `sol-cerca` (solo el lienzo, como la comparativa de la fase 3b con el SDO), `escritorio-sol-cerca`, `movil-sol-cerca`, `escritorio-sol-sistema`, `movil-sol-sistema` y, solo después, `sol-medida-limbo`; la totalidad del 12-08-2026 desde Fraga: `escritorio-cielo-eclipse-fraga-cerca` (campo de 3°), `escritorio-cielo-eclipse-fraga` (50°) y `movil-cielo-eclipse-fraga-cerca`.
 - Regeneradas con el motor nuevo (son capturas suyas): la miniatura y las imágenes de la ficha del Sol, la imagen para compartir (lleva el Sol) y el póster de la vista general (escritorio y móvil), para que el paso del póster al 3D no dé un salto. Al regenerar las miniaturas cambian también, de forma reproducible, las de la Tierra (su cara nocturna de la 9b.b, que no se había regenerado) y Marte (apenas: 104 canales de 27 648 con más de 8 niveles).
+
+- Las lunas (9b.d), con el «antes» del build de `8165610` (la rama sin la entrega, servido desde una copia aparte):
+  - la rejilla de las 20 (`antes-` y `despues-lunas-rejilla`) y los sistemas de cerca, `-escritorio-` y `-movil-europa-jupiter`, `-titan-saturno`, `-dione-saturno` y `-triton-neptuno`, con `scripts/capture-moons.mjs`;
+  - las formas, `-forma-fobos`, `-forma-fobos-rasante`, `-forma-deimos` y `-forma-deimos-rasante`; Titán con la geometría de PIA06230, `-terminador-titan`; `-proteo` y `-japeto`, con `scripts/capture-moon-shapes.mjs`;
+  - D45: cada luna con mapa (y Proteo) desde las seis direcciones de la adenda, `d45-<luna>-seis-vistas-antes` y `-despues`, con `scripts/capture-moon-views.mjs --antes=8165610`; y la máscara de las clases de cada una (sin tinte, lo real; en rojo, lo visto de lejos; en azul, lo no visto), en `mascaras/` (las genera `build-textures.mjs`).
+  - regeneradas con las lunas nuevas (son capturas del motor): las miniaturas (`public/img/cuerpos/`) y las imágenes de las fichas (`public/img/fichas/`) de las lunas, que ahora salen con su mapa (Deimos, las de Urano y Proteo), con su forma (Fobos y Deimos), con Tritón y lo visto de lejos recreados, Jápeto con sus dos caras y Titán con su terminador. Con ellas cambian, de forma reproducible, las que no se habían regenerado tras las entregas anteriores: la de la Tierra (su cara nocturna de la 9b.b), las de Venus, Marte, Saturno, Urano y Neptuno (apenas: como mucho 20–24 niveles en algunos píxeles) y la imagen para compartir (`og.jpg`).
 
 ## 8. Dependencias añadidas
 Ninguna.
