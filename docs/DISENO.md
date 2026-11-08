@@ -1,7 +1,7 @@
 # Dirección visual
 
 > Fase 0, tarea 0.9. **Decisión de Iván (23-10-2026): propuesta A, «Carta celeste»**, aplicada en `src/styles.css`. La B se conserva como alternativa descartada, por referencia.
-> Actualizado en la fase 9c (D47, la interfaz más limpia, 06-11): las reglas de la interfaz, los bocetos del visor y de la ficha, la navegación, el control sin borde y la medida de lectura.
+> Actualizado en la fase 9c (D47, la interfaz más limpia, 06-11): las reglas de la interfaz, los bocetos del visor y de la ficha, la navegación, el control sin borde y la medida de lectura. El 07-11, planetas y lunas, distintos en el selector (decisión de Iván).
 
 ## Línea común
 
@@ -116,8 +116,11 @@ La consola de un observatorio: grafito neutro, texto blanco roto y un único ace
 
 - **El 3D manda.** Lo que flota sobre el lienzo sin ser un control ni un panel opaco no captura el puntero: los gestos llegan al 3D por todo el lienzo (también sobre el título).
 - **Un control, un peso.** El borde (`--color-control`), solo en los campos y los desplegables; los botones, con su fondo (`--color-surface-raised`) y sin borde. Pulsado o abierto, el texto en latón con un subrayado de 2 px, como la pestaña de la vista actual. **Reproducir es lo único destacado** (el círculo de latón).
-- **Paneles sin contorno:** el fondo (`--color-surface`) y la sombra los separan del 3D. Las pestañas, sobre un fondo traslúcido; las fichas de cuerpos, sin caja (la miniatura y el nombre, con una sombra del color del fondo).
-- **Un solo selector a la vista:** las fichas de cuerpos. El Índice es su versión en tabla y, abierto, las sustituye. Con un planeta con lunas elegido, la fila es la de su sistema y el título dice el cuerpo, con «‹ Sistema solar» para volver.
+- **Paneles sin contorno:** el fondo (`--color-surface`) y la sombra los separan del 3D. Las pestañas, sobre un fondo traslúcido; los planetas de las fichas, sin caja (la miniatura y el nombre, con una sombra del color del fondo).
+- **Un solo selector a la vista:** las fichas de cuerpos. El Índice es su versión en tabla y, abierto, las sustituye. El título dice el cuerpo elegido, con «‹ Sistema solar» para volver.
+- **Planetas y lunas, distintos a simple vista** (decisión de Iván del 07-11): los planetas, redondos y con el nombre debajo; las lunas, pastillas con su fondo, la miniatura y el nombre al lado (como un botón: pulsada, el nombre en latón con su subrayado).
+  - **En el PC y la tableta (≥ 768 px), dos filas:** abajo, el Sol y los planetas; encima, las lunas del sistema elegido. En todas las vistas: en Tierra y Luna, los planetas y, encima, la Luna.
+  - **En el móvil, una sola fila:** con un planeta con lunas elegido, el planeta, una raya y sus lunas (desplazable), y «‹ Sistema solar», en el título, vuelve a la de los planetas. En Tierra, Luna y el Cielo, sin fichas (en el Cielo, su selector es la tabla de «Esta noche», con «Mirar»).
 - **Lo que se usa poco, en «Controles»:** la fecha y la hora, el sentido, la cámara (en el móvil), la vista general, la vista limpia, la calidad, la escala, el recorrido y los atajos.
 - **La primera vez, y no más:** las pistas de uso y el recorrido de la portada (unos 30 s, con «Saltar el recorrido»).
 - **Medida de lectura:** `--measure` = 30em, unos 68 caracteres de texto corrido (antes 68ch, que con el «0» de Public Sans daban unos 89).
@@ -147,8 +150,10 @@ Disposición inmersiva (D30, fase 3c; fase 9c): el lienzo a sangre bajo la cabec
 │                    canvas 3D a sangre                  └───────────────────┘   │
 │        (los gestos, en todo él; el encuadre se aparta de los paneles)    +     │ ← acercar y alejar, sin marco
 │                                                                          −     │
-│ [≡ Índice]        (♄) Saturno (·) Mimas (·) Encélado … (·) Jápeto              │ ← la fila del sistema elegido
-│ (▶)  Fecha                   2026 ───────●──────────   Velocidad  [⚙ Controles] │ ← barra: reproducir, fecha,
+│                [◐ Mimas] [◐ Encélado] [◐ Tetis] [◐ Dione] … [◐ Jápeto]         │ ← encima, las lunas del sistema
+│ [≡ Índice]    (☉)  (·)  (·)  (·)  (·)  (♃)  (♄)  (·)  (·)                      │    elegido, en pastillas; abajo,
+│               Sol  Mer. Ven. Tie. Mar. Júp. Sat. Ura. Nep.                     │    los planetas, el nombre debajo
+│ (▶)  Fecha                   2026 ───────●──────────   Velocidad  [⚙ Controles]│ ← barra: reproducir, fecha,
 │      24 oct 2026, 02:00                    hoy         3 días/s ▾              │     año, velocidad y más
 │ Arrastra para girar · usa la rueda o pellizca para acercarte · elige un cuerpo │ ← pistas, solo la primera vez
 └────────────────────────────────────────────────────────────────────────────────┘
@@ -156,10 +161,11 @@ Disposición inmersiva (D30, fase 3c; fase 9c): el lienzo a sangre bajo la cabec
 Las cifras y las fechas del boceto son marcadores.
 
 - **El índice y las fichas son HTML:** funcionan con teclado y sin WebGL. `Esc` cierra lo que tiene el foco: «Controles», el índice o la ficha.
-- **La franja de abajo** es solo el fondo de la barra de tiempo, con un fundido corto (0,75 rem) encima; las fichas flotan sobre el 3D y cuentan en el encuadre.
+- **La franja de abajo** es solo el fondo de la barra de tiempo, con un fundido corto (0,5 rem) encima; los dos, como mucho el 10 % del lienzo; las fichas flotan sobre el 3D y cuentan en el encuadre.
 - **La barra no cambia de tamaño al reproducir:** las cifras usan `tabular-nums` y la fecha tiene el ancho de la más larga («30 sept 2026, 23:59»).
 - **Al entrar, el sistema se mueve** a la velocidad de su contexto (D33): reproducir y pausar es lo primero y más visible de la barra. La primera vez, el recorrido de la portada.
-- **En las vistas Tierra y Luna**, sin fila de fichas ni Índice: «‹ Sistema solar» en el título y su panel en la columna izquierda. **En el Cielo**, sin Índice: su tabla es la de «Esta noche».
+- **En las vistas Tierra y Luna**, sin Índice: los planetas y, encima, la Luna; «‹ Sistema solar» en el título y su panel en la columna izquierda. **En el Cielo**, sin Índice: su tabla es la de «Esta noche»; su columna, de 22 rem, para que quepa el lugar más largo.
+- **«Controles»** se abre encima de la franja de abajo, a la derecha (con la ficha abierta, a su izquierda): por encima de la barra, las fichas y la fila de lunas, que no tapa.
 
 ### Visor · móvil y tableta (< 1024 px)
 
@@ -180,9 +186,20 @@ Las cifras y las fechas del boceto son marcadores.
 │     Hora local · 3 días/s      │     de tiempo en una fila
 └────────────────────────────────┘
 ```
+En el teléfono (< 768 px), con un planeta con lunas elegido (y la ficha cerrada), la fila es la de su sistema; en la tableta, como en el PC, dos filas:
+```
+┌────────────────────────────────┐
+│ ‹ Sistema solar                │ ← el título dice el cuerpo, con
+│ Saturno                        │    «‹ Sistema solar» para volver
+│              …                 │
+│ (♄) │ [◐ Mimas] [◐ Encélado] → │ ← el planeta, una raya y sus
+│ Sat.│                          │    lunas en pastillas (desplazable)
+│ (▶) 24 oct 2026, 02:00 ──●─ [⚙]│
+└────────────────────────────────┘
+```
 - **La ficha** es una hoja de dos alturas encima de la barra (que sigue a la vista: reproducir y pausar, siempre a mano): en reposo, como mucho el 45 % de la pantalla, con el nombre, el resumen, «Ficha completa» y «Ver los datos»; subida, los datos y sus fuentes.
 - **El índice y «Controles»** suben como hojas, con su título y su botón de cerrar. Lo que tapan sale del orden del foco.
-- **Tierra y Luna:** su panel en una fila (las vistas, desplazables, y «Más» para el resto) y la barra plegada a reproducir, la fecha y «Controles». **El Cielo:** el lugar, la hora y una línea de resumen; «Esta noche», a demanda, con la tabla en dos líneas por fila.
+- **Tierra y Luna:** en el teléfono, sin fichas (en el título, «‹ Sistema solar»); su panel en una fila (las vistas, desplazables, y «Más» para el resto) y la barra plegada a reproducir, la fecha y «Controles». **El Cielo:** el lugar (su nombre corto, «Montsec (Lleida)») con «Usar mi ubicación» debajo (en la tableta, a su lado), la hora y una línea de resumen; «Esta noche», a demanda, con la tabla en dos líneas por fila si no cabe en su caja (también en la columna del escritorio); en el teléfono, sin fichas.
 - **En los teléfonos bajos** (en horizontal o con el zoom al 200 %), la página se desplaza: al llegar se ven el lienzo y, justo debajo, la barra con su pausa.
 
 ### Ficha completa (`/planetas/marte`) · sin 3D

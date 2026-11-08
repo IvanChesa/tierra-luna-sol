@@ -167,6 +167,7 @@ Se miden con un script de la fase (`scripts/measure-ui.mjs` o parecido; los scri
 - [ ] **Controles visibles:**
   - en escritorio, ≤ 24 en `/` y ≤ 30 con un cuerpo elegido;
   - en el móvil, ≤ 16 en cualquier vista.
+  - **Cambio del 07-11 (decisión de Iván):** con un cuerpo elegido en escritorio, ≤ 32 (en lugar de ≤ 30). Planetas y lunas vuelven a distinguirse en el selector de abajo: en el PC y la tableta, dos filas (los planetas, redondos con el nombre debajo; encima, las lunas del sistema elegido, en pastillas con la miniatura y el nombre al lado), también en las vistas Tierra y Luna; en el móvil, una sola fila (el planeta, una raya y sus lunas) con «‹ Sistema solar» para volver.
 - [ ] **La hoja del cuerpo en el móvil, en reposo:** ≤ 45 % de la pantalla, con el cuerpo visible y la pausa a mano (e2e).
 - [ ] **Los gestos:** el e2e de 9c.1 en verde a 390 y 768.
 - [ ] **Sin solapes:** el script de 9c.4 sin fallos en los cuatro tamaños.
