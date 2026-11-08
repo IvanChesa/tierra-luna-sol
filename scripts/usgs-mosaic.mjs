@@ -31,10 +31,12 @@ import { tiffGeoInfo } from './build-relief.mjs';
  * (`leftEdgeEastDeg`) y el sentido de sus columnas (`eastward`); sus sondas lo comprueban. Con
  * `plain.background` (el de Deimos, una carta aerografiada sobre un fondo claro), lo que a gran escala
  * (desenfocado `blurPx` píxeles del mapa reducido) es más claro que `above` es el fondo de la carta, lo
- * no cartografiado: cuenta como sin datos. Devuelve el búfer, su cobertura (de 0 a 1 por píxel: las
- * sondas solo miden lo que hay), la fracción del mapa sin datos y un informe.
+ * no cartografiado: cuenta como sin datos. Con `zerosAreGaps` (el radar de Magellan, fase 9b), todo 0
+ * es un hueco: en un radar no hay sombras de cráteres a 0 que conservar (`restoreShadowSpecks`), y las
+ * franjas de las órbitas que faltan son rayas finas a 0. Devuelve el búfer, su cobertura (de 0 a 1 por
+ * píxel: las sondas solo miden lo que hay), la fracción del mapa sin datos y un informe.
  */
-export async function loadMosaic(url, width, { band, plain } = {}) {
+export async function loadMosaic(url, width, { band, plain, zerosAreGaps = false } = {}) {
   const path = fileURLToPath(url);
   const source = plain
     ? await plainSource(path, plain)
@@ -54,8 +56,14 @@ export async function loadMosaic(url, width, { band, plain } = {}) {
     pipeline.resize(width, height, { fit: 'fill', kernel: 'lanczos3' }).raw().toBuffer();
   const [color, coverage, light] = await Promise.all([
     reduce(open().toColourspace('srgb')),
-    // Un solo canal: sin toColourspace, sharp lo devuelve en sRGB, con tres.
-    reduce(open().threshold(1).toColourspace('b-w')),
+    // Un solo canal: sin toColourspace, sharp lo devuelve en sRGB, con tres. sharp umbraliza después de
+    // reducir: así, la máscara sale binaria y un píxel mezclado con un hueco cuenta como dato entero.
+    // Con huecos grandes (las lunas) lo tapa el fundido del borde; con las rayas finas del radar (unos
+    // 25 px del original, 3 o 5 del mapa reducido), no: se veían como líneas oscuras. Con
+    // `zerosAreGaps`, la máscara se umbraliza en el original y después se reduce, como la imagen.
+    zerosAreGaps
+      ? fullResolutionMask(open(), source).then(reduce)
+      : reduce(open().threshold(1).toColourspace('b-w')),
     // El fondo de una carta aerografiada (sharp desenfoca después de reducir).
     plain?.background ? reduce(open().toColourspace('b-w').blur(plain.background.blurPx)) : null,
   ]);
@@ -77,7 +85,9 @@ export async function loadMosaic(url, width, { band, plain } = {}) {
       color[i * 3] = color[i * 3 + 1] = color[i * 3 + 2] = value;
     }
   }
-  const shadows = restoreShadowSpecks(color, coverage, width, height);
+  const shadows = zerosAreGaps
+    ? { count: 0, pixels: 0 }
+    : restoreShadowSpecks(color, coverage, width, height);
   const { data: out, empty, fill, mean } = fillGaps(color, coverage, width, height);
   // Columna del borde izquierdo: la de la longitud −180°.
   const shift = Math.round(((((-180 - firstLonDeg) % 360) + 360) % 360) / (360 / width)) % width;
@@ -111,6 +121,19 @@ export async function loadMosaic(url, width, { band, plain } = {}) {
     emptyFraction: empty / pixels,
     report: `${source.width} × ${source.height}, ${kind}, el borde izquierdo en ${firstLonDeg.toFixed(2)}° E; ${gaps}${specks}${background ? `; de ello, el fondo claro de la carta (lo no cartografiado), el ${((100 * background) / pixels).toFixed(1)} % del mapa` : ''}`,
   };
+}
+
+/**
+ * La máscara de lo que hay (255) y de los huecos (0) de un mosaico, a su resolución, como una imagen de
+ * sharp que se puede reducir después (`zerosAreGaps`).
+ */
+async function fullResolutionMask(pipeline, source) {
+  const mask = await pipeline.toColourspace('b-w').threshold(1).raw().toBuffer();
+  // Un canal también al reducirla (sin `toColourspace`, sharp la devuelve en sRGB, con tres).
+  return sharp(mask, {
+    raw: { width: source.width, height: source.height, channels: 1 },
+    limitInputPixels: false,
+  }).toColourspace('b-w');
 }
 
 /**
@@ -510,6 +533,17 @@ export const MOSAIC_PROBES = {
     { name: 'Ursula', lat: -12.4, lon: 45.2, radius: 2, sign: 1, feature: 6245 },
   ],
   oberon: [{ name: 'Hamlet', lat: -46.1, lon: 44.4, radius: 3, sign: -1, feature: 2340 }],
+  // Venus bajo las nubes (fase 9b, D44): el mosaico del radar de Magellan, con su georreferencia. En el
+  // radar, los volcanes con sus coladas (Maat Mons, en el radio de su ficha, 395 km de diámetro: 1,9°;
+  // y Sapas Mons) y Maxwell Montes (en las cumbres de Venus, el suelo devuelve mucho más eco) son más
+  // claros que lo que los rodea. El Gazetteer da sus centros en longitud este de 0 a 360 (Maat Mons,
+  // 194,6° E; Sapas Mons, 188,3° E). Una sonda oscura (Lakshmi Planum, la meseta lisa junto a Maxwell,
+  // o el fondo de Mead) no se distingue de lo que la rodea a esta escala (medido: 0,94 a 0,99).
+  'venus-radar': [
+    { name: 'Maat Mons', lat: 0.5, lon: -165.4, radius: 2, sign: 1, feature: 3550 },
+    { name: 'Sapas Mons', lat: 8.5, lon: -171.7, radius: 1, sign: 1, feature: 5318 },
+    { name: 'Maxwell Montes', lat: 65.2, lon: 3.3, radius: 2.5, sign: 1, feature: 3766 },
+  ],
 };
 
 /** El cuerpo del catálogo de cada mosaico con sondas de borde (para su radio). */
@@ -668,15 +702,17 @@ export function checkMosaicProbes(
   return `${id}: sondas (brillo: disco / anillo; borde: borde / resto) ${show(straight)}; girado 180°, ${show(rotated)}; reflejado, ${show(mirrored)}`;
 }
 
-// Solo: un mosaico a 2048 px en PNG, con sus sondas (un círculo en cada una), para verlo.
-//   node scripts/usgs-mosaic.mjs <id> <fichero del mosaico> <carpeta de salida> [canal]
+// Solo: un mosaico a 2048 px en PNG, con sus sondas (un círculo en cada una), para verlo. Con
+// --radar, todo 0 es un hueco (`zerosAreGaps`: el radar de Venus).
+//   node scripts/usgs-mosaic.mjs <id> <fichero del mosaico> <carpeta de salida> [canal] [--radar]
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const [id, file, out, band] = process.argv.slice(2);
+  const [id, file, out, band] = process.argv.slice(2).filter((arg) => !arg.startsWith('--'));
   if (!id || !file || !out) {
     throw new Error('Uso: node scripts/usgs-mosaic.mjs <id> <fichero> <carpeta de salida> [canal]');
   }
   const mosaic = await loadMosaic(pathToFileURL(file), 2048, {
     band: band === undefined ? undefined : Number(band),
+    zerosAreGaps: process.argv.includes('--radar'),
   });
   console.log(mosaic.report);
   try {
