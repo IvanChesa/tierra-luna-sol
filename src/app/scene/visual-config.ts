@@ -150,7 +150,7 @@ export const VISUAL_CONFIG = {
      * sol del proyecto ejemplo»): medido frente a capturas propias de la referencia
      * (`scripts/measure-d46.mjs`, en CIELAB: de cerca, en la mediana del disco, L\* 77,8 · C\* 53,6 ·
      * h 80,5°, de L\* 68 a 84 del 5 al 95 %; lo claro, h 86° y C\* 45; lo oscuro, h 72° y C\* 60;
-     * `docs/informes/fase-9b-entrega-sol-2.md`). Los colores, lineales (antes del tone mapping neutro, con
+     * `docs/informes/fase-9b.md`, §2). Los colores, lineales (antes del tone mapping neutro, con
      * la intensidad de arriba).
      * - `palette`: el color del centro del disco y el del borde (más rojo: el borde, algo más oscuro y
      *   rojizo), mezclados de μ = `muEdges[0]` a `muEdges[1]`, con el brillo del oscurecimiento del limbo
@@ -295,7 +295,7 @@ export const VISUAL_CONFIG = {
      * las mismas texturas de Solar System Scope): manda sobre los ajustes de EPIC de arriba donde se
      * contradicen (`scripts/measure-earth-epic.mjs` queda como registro). Calibrada frente a capturas
      * propias de la referencia (`scripts/measure-d46.mjs --solo=tierra`, en CIELAB: el 15-01-2026, con
-     * África y Europa de día; `docs/informes/fase-9b-entrega-tierra.md`). La cara nocturna (D40) y las
+     * África y Europa de día; `docs/informes/fase-9b.md`, §2). La cara nocturna (D40) y las
      * luces no cambian: su relleno de la vista general y las nubes que tapan las luces siguen con el
      * albedo y las nubes de la fase 5.
      * - `ocean`: el albedo lineal del océano (en la máscara de agua de siempre), un azul vivo, y lo que
