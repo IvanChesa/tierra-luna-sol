@@ -11,7 +11,12 @@ import type { ExplorerView } from '../../scene';
   selector: 'tls-viewer-poster',
   template: `
     <picture>
-      <source media="(max-width: 640px)" [srcset]="mobile()" width="720" height="1408" />
+      <source
+        media="(max-width: 640px)"
+        [srcset]="mobile()"
+        width="720"
+        [attr.height]="mobileHeight()"
+      />
       <img
         class="poster"
         [src]="desktop()"
@@ -42,4 +47,9 @@ export class ViewerPoster {
   readonly view = input.required<ExplorerView>();
   protected readonly desktop = computed(() => `img/poster-${this.view()}-escritorio.webp`);
   protected readonly mobile = computed(() => `img/poster-${this.view()}-movil.webp`);
+  /**
+   * El alto del lienzo en el móvil de `build-poster.mjs` (360 × 760 a 2×): en el cielo, sin la cabecera
+   * de las demás vistas, algo más alto (la interfaz de la 9c; cierre de la fase 9b).
+   */
+  protected readonly mobileHeight = computed(() => (this.view() === 'sky' ? 1424 : 1408));
 }
