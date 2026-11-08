@@ -29,6 +29,10 @@ const STEPS = [
   ['europa (luna de jupiter)', { focus: 'europa' }],
   ['triton (luna de neptuno)', { focus: 'triton' }],
   ['fobos (luna de marte)', { focus: 'fobos' }],
+  // Fase 9b (D42 y D45): las cinco de Urano con sus mapas del JPL, y Deimos con su forma.
+  ['urano (sus lunas)', { focus: 'urano' }],
+  ['miranda (luna de urano)', { focus: 'miranda' }],
+  ['deimos (luna de marte)', { focus: 'deimos' }],
   ['sol (primer plano)', { focus: 'sol' }],
   ['tierra (vista)', { route: '/explorar/tierra' }],
   ['luna (vista)', { route: '/explorar/luna' }],

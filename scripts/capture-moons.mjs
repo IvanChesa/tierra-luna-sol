@@ -1,37 +1,52 @@
-// Capturas de la fase 7, entrega 7.a (las lunas con su mosaico), deterministas (?captura=1):
-// - Una hoja de contactos con las 12 lunas que tienen mosaico global, cada una sola (`aislado=1`) y
-//   con la luz de las miniaturas (fase de 30°, desde 15° sobre la eclíptica), con su nombre; y la
-//   misma hoja «antes», con su color esquemático (sus texturas, bloqueadas).
+// Capturas de las lunas (fase 7, entrega 7.a; desde la fase 9b, D42, las 20), deterministas
+// (?captura=1):
+// - Una hoja de contactos con las 20 lunas, cada una sola (`aislado=1`) y con la luz de las
+//   miniaturas (fase de 30°, desde 15° sobre la eclíptica), con su nombre.
 // - Algunas lunas delante de su planeta (`detras=`), en escritorio y en móvil.
-// Uso: npm run build && node scripts/capture-moons.mjs docs/informes/img/fase-7 [--swiftshader]
+// Con `--prefijo=antes` o `--prefijo=despues`, para comparar (el «antes», con el build sin la
+// entrega: el script se ejecuta desde una copia de ese commit, que sirve su propio dist).
+// Uso: npm run build && node scripts/capture-moons.mjs <carpeta> [--prefijo=despues] [--swiftshader]
 import { mkdir } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
+import { isAbsolute } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import sharp from 'sharp';
 import { openBrowser, openViewer, stats } from './capture-lib.mjs';
 
 const out = process.argv[2];
 if (!out) throw new Error('Uso: node scripts/capture-moons.mjs <carpeta de salida>');
-const dir = new URL(`../${out.replace(/\/?$/, '/')}`, import.meta.url);
+const prefix = process.argv.find((a) => a.startsWith('--prefijo='))?.slice(10) ?? '';
+const named = (name) => (prefix ? `${prefix}-${name}` : name);
+const dir = isAbsolute(out)
+  ? pathToFileURL(`${out.replace(/[\\/]?$/, '/')}`)
+  : new URL(`../${out.replace(/\/?$/, '/')}`, import.meta.url);
 await mkdir(dir, { recursive: true });
 const file = (name) => fileURLToPath(new URL(name, dir));
 
 /**
- * [id del catálogo, nombre, textura]: las lunas con mosaico (scene/world.ts, BODY_TEXTURES). Titán no
- * lleva (su color y su halo, frente a PIA06230: `titan-cassini-2005` de capture-realism.mjs).
+ * [id del catálogo, nombre]: las 20 lunas, por planeta (la Luna, aparte: tiene su vista). Titán, sin
+ * textura de superficie (su neblina; su color y su halo, frente a PIA06230).
  */
 const MOONS = [
-  ['fobos', 'Fobos', 'phobos'],
-  ['io', 'Ío', 'io'],
-  ['europa', 'Europa', 'europa'],
-  ['ganimedes', 'Ganímedes', 'ganymede'],
-  ['calisto', 'Calisto', 'callisto'],
-  ['mimas', 'Mimas', 'mimas'],
-  ['encelado', 'Encélado', 'enceladus'],
-  ['tetis', 'Tetis', 'tethys'],
-  ['dione', 'Dione', 'dione'],
-  ['rea', 'Rea', 'rhea'],
-  ['japeto', 'Jápeto', 'iapetus'],
-  ['triton', 'Tritón', 'triton'],
+  ['fobos', 'Fobos'],
+  ['deimos', 'Deimos'],
+  ['io', 'Ío'],
+  ['europa', 'Europa'],
+  ['ganimedes', 'Ganímedes'],
+  ['calisto', 'Calisto'],
+  ['mimas', 'Mimas'],
+  ['encelado', 'Encélado'],
+  ['tetis', 'Tetis'],
+  ['dione', 'Dione'],
+  ['rea', 'Rea'],
+  ['titan', 'Titán'],
+  ['japeto', 'Jápeto'],
+  ['miranda', 'Miranda'],
+  ['ariel', 'Ariel'],
+  ['umbriel', 'Umbriel'],
+  ['titania', 'Titania'],
+  ['oberon', 'Oberón'],
+  ['triton', 'Tritón'],
+  ['proteo', 'Proteo'],
 ];
 const DESKTOP = { width: 1600, height: 900, scale: 1 };
 const MOBILE = { width: 390, height: 844, scale: 2, mobile: true };
@@ -53,7 +68,7 @@ const BODY_FILL = 0.46;
 const escapeXml = (text) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;');
 
 /** Una luna sola, recortada a 1,1 radios y reducida a la casilla. */
-async function moonCell(browser, id, blockTexture) {
+async function moonCell(browser, id) {
   const query = new URLSearchParams({
     captura: '1',
     aislado: '1',
@@ -62,10 +77,7 @@ async function moonCell(browser, id, blockTexture) {
     latitud: '15',
     sobre: 'ecliptica',
   });
-  const setup = blockTexture
-    ? (page) => page.route(`**/textures/*/${blockTexture}.*.webp`, (route) => route.abort())
-    : undefined;
-  const { page } = await openViewer(browser, `/?${query}`, { ...SHOT, setup });
+  const { page } = await openViewer(browser, `/?${query}`, SHOT);
   // Solo el lienzo (sin la ficha que abre `cuerpo=`), como las miniaturas.
   const base64 = await page.evaluate(async () => {
     const blob = await window.__tlsViewer.engine.capture();
@@ -92,16 +104,16 @@ async function moonCell(browser, id, blockTexture) {
     .toBuffer();
 }
 
-/** La hoja de contactos de las lunas con mosaico, con o sin sus texturas. */
-async function contactSheet(browser, name, withTextures) {
+/** La hoja de contactos de las lunas. */
+async function contactSheet(browser, name) {
   const rows = Math.ceil(MOONS.length / COLUMNS);
   const width = COLUMNS * CELL;
   const height = rows * (CELL + LABEL);
   const layers = [];
-  for (const [k, [id, label, texture]] of MOONS.entries()) {
+  for (const [k, [id, label]] of MOONS.entries()) {
     const left = (k % COLUMNS) * CELL;
     const top = Math.floor(k / COLUMNS) * (CELL + LABEL);
-    layers.push({ input: await moonCell(browser, id, withTextures ? null : texture), left, top });
+    layers.push({ input: await moonCell(browser, id), left, top });
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${CELL}" height="${LABEL}"><text x="${CELL / 2}" y="24" font-family="Segoe UI, Arial, sans-serif" font-size="20" fill="#e8e2d0" text-anchor="middle">${escapeXml(label)}</text></svg>`;
     layers.push({ input: Buffer.from(svg), left, top: top + CELL });
   }
@@ -114,8 +126,7 @@ async function contactSheet(browser, name, withTextures) {
 
 const { browser, close } = await openBrowser();
 try {
-  await contactSheet(browser, 'lunas-mosaicos-despues', true);
-  await contactSheet(browser, 'lunas-mosaicos-antes', false);
+  await contactSheet(browser, named('lunas-rejilla'));
   for (const [name, path] of IN_CONTEXT) {
     for (const [device, size] of [
       ['escritorio', DESKTOP],
@@ -124,7 +135,7 @@ try {
       const { page, problems } = await openViewer(browser, path, size);
       await sharp(await page.screenshot())
         .webp({ quality: 88 })
-        .toFile(file(`${device}-${name}.webp`));
+        .toFile(file(named(`${device}-${name}.webp`)));
       const s = await stats(page);
       console.log(
         `${device}-${name}: ${s.drawCalls} llamadas, ${s.textures} texturas, ${Math.round(s.vramMB)} MB de VRAM`,
