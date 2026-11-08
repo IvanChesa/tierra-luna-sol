@@ -310,7 +310,9 @@ try {
     const first = await memory();
     const heapStart = await heap();
     for (let k = 0; k < 10; k++) {
-      await page.click('a[href="/planetas"]');
+      // Desde la fase 9c, en el explorador el enlace a /planetas está dentro de «Menú».
+      await page.click('.site-menu-button');
+      await page.click('#site-menu a[href="/planetas"]');
       await page.waitForURL('**/planetas');
       // Atrás (como el botón del navegador): vuelve a /?captura=1, la escena determinista.
       await page.goBack();
