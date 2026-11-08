@@ -461,22 +461,41 @@ export class World {
     shade.set(SPOTS.umbra, SPOTS.penumbra, SPOTS.penumbraRatio);
     this.sun.uniforms.uGranuleScale.value = GRANULATION.scale;
     this.sun.uniforms.uFaculae.value = VISUAL_CONFIG.sun.faculae;
-    // El Sol realzado del explorador (fase 9b, D46): su paleta, su estructura, los rayos de su
-    // resplandor y el color de sus protuberancias (su brillo va con el primer plano, en
-    // `setSunAppearance`). Con `?medida=limbo`, el de la luz visible (`setSunMeasure`).
+    // El Sol realzado del explorador (fase 9b, D46; segunda vuelta, 08-11): su paleta, su estructura,
+    // sus manchas pardas, el borde fino y los rayos de su halo y el color de sus bucles de plasma (su
+    // brillo va con el primer plano, en `setSunAppearance`). Con `?medida=limbo`, el de la luz visible
+    // (`setSunMeasure`).
     const enhanced = this.sun.uniforms;
+    const { palette, structure } = ENHANCED_SUN;
     enhanced.uEnhance.value = 1;
-    enhanced.uEnhanceCenter.value.setRGB(...ENHANCED_SUN.palette.center);
-    enhanced.uEnhanceLimb.value.setRGB(...ENHANCED_SUN.palette.limb);
-    enhanced.uStructure.value = ENHANCED_SUN.structure.amplitude;
+    enhanced.uEnhanceCenter.value.setRGB(...palette.center);
+    enhanced.uEnhanceLimb.value.setRGB(...palette.limb);
+    enhanced.uPaletteEdges.value.set(...palette.muEdges);
+    enhanced.uLimbSoftening.value = palette.limbSoftening;
+    enhanced.uStructure.value = structure.amplitude;
+    enhanced.uStructureOctaves.value.set(
+      structure.octaves.frequency,
+      structure.octaves.persistence,
+      structure.octaves.shape,
+    );
+    enhanced.uStructureGain.value.set(...structure.gain.bright);
+    enhanced.uStructureGainDark.value.set(...structure.gain.dark);
+    enhanced.uSpotWarmth.value.set(...ENHANCED_SUN.spots.warmth);
     this.haloMaterial = createHaloMaterial();
-    this.haloMaterial.uniforms.uRoundness.value = CORONA.roundness;
-    this.haloMaterial.uniforms.uRays.value = ENHANCED_SUN.rays.intensity;
-    this.haloMaterial.uniforms.uRayColor.value.setRGB(...ENHANCED_SUN.rays.color);
-    this.haloMaterial.uniforms.uColor.value.setRGB(...ENHANCED_SUN.glow.halo);
-    this.haloMaterial.uniforms.uCoronaColor.value.setRGB(...ENHANCED_SUN.glow.corona);
-    enhanced.uStructureEdges.value.set(...ENHANCED_SUN.structure.edges);
-    this.haloMaterial.uniforms.uProminenceColor.value
+    const halo = this.haloMaterial.uniforms;
+    const { rim, rays, glow } = ENHANCED_SUN;
+    halo.uRoundness.value = CORONA.roundness;
+    halo.uColor.value.setRGB(...glow.halo);
+    halo.uGlowExponent.value = glow.exponent;
+    halo.uCoronaColor.value.setRGB(...glow.corona);
+    halo.uRim.value = rim.intensity;
+    halo.uRimColor.value.setRGB(...rim.color);
+    halo.uRimShape.value.set(rim.shape.wide, rim.shape.narrowRadii, rim.shape.wideRadii);
+    halo.uRimMinPixels.value = rim.minPixels;
+    halo.uRays.value = rays.intensity;
+    halo.uRayColor.value.setRGB(...rays.color);
+    halo.uRayLength.value = rays.lengthRadii;
+    halo.uProminenceColor.value
       .setRGB(...ENHANCED_SUN.prominences.color)
       .multiplyScalar(ENHANCED_SUN.prominences.intensity);
     this.halo = new Mesh(new PlaneGeometry(2, 2), this.haloMaterial.material);
@@ -1222,11 +1241,11 @@ export class World {
   private spotsTimeMs = Number.NaN;
 
   /**
-   * El aspecto del Sol en este frame: su primer plano (`closeUp`, 0–1: recoge el halo, enciende la
-   * granulación, la corona y las protuberancias), el reloj de pared de su granulación, de su estructura
-   * y de sus protuberancias (s; 0 con movimiento reducido y en las capturas) y si lleva bloom (en los
-   * niveles alto y medio: el halo, más tenue). Se llama después de `update`, con la escala del Sol de
-   * este frame.
+   * El aspecto del Sol en este frame: su primer plano (`closeUp`, 0–1: recoge el halo y apaga su
+   * resplandor ancho, enciende la granulación, la corona si tiene brillo y los bucles de plasma; el
+   * borde fino y los rayos van siempre), el reloj de pared de su granulación, de su estructura y de
+   * los rayos y los bucles (s; 0 con movimiento reducido y en las capturas) y si lleva bloom (si está
+   * encendido: el halo, más tenue). Se llama después de `update`, con la escala del Sol de este frame.
    */
   setSunAppearance(closeUp: number, timeSeconds: number, bloom: boolean): void {
     const measure = this.sunMeasure;

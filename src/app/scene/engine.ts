@@ -1124,13 +1124,15 @@ export class SceneEngine implements SceneEngineApi {
   }
 
   /**
-   * Compila los sombreados del bloom sin bloquear (si el nivel lo lleva y aún no lo están): al arrancar
-   * y al subir a mano desde el nivel bajo. La compilación reserva su render target: si la vista no lo
-   * usa, se suelta.
+   * Compila los sombreados del bloom sin bloquear (si está encendido, el nivel lo lleva y aún no lo
+   * están): al arrancar y al subir a mano desde el nivel bajo. La compilación reserva su render target:
+   * si la vista no lo usa, se suelta.
    */
   private async compileSunBloom(): Promise<void> {
     const bloom = this.renderer.sunBloom;
-    if (!bloom || !this.profile.sunBloom || this.sunMeasure) return;
+    if (!bloom || !VISUAL_CONFIG.sun.bloom.enabled || !this.profile.sunBloom || this.sunMeasure) {
+      return;
+    }
     if (this.sunBloomCompiled || this.sunBloomCompiling) return;
     this.sunBloomCompiling = true;
     try {
@@ -1147,14 +1149,17 @@ export class SceneEngine implements SceneEngineApi {
   }
 
   /**
-   * ¿Puede llevar bloom el Sol? En los niveles alto y medio, si el renderer lo tiene, en la vista del
-   * sistema solar, salvo al medir su limbo o en la miniatura aislada de otro cuerpo. En las vistas Tierra
+   * ¿Puede llevar bloom el Sol? Si está encendido (`VISUAL_CONFIG.sun.bloom.enabled`; con el Sol
+   * realzado de D46, apagado: su resplandor lo pinta el halo), en los niveles alto y medio, si el
+   * renderer lo tiene, en la vista del sistema solar, salvo al medir su limbo o en la miniatura aislada
+   * de otro cuerpo. En las vistas Tierra
    * y Luna, no: el Sol casi nunca está en pantalla (y, si lo está, es pequeño y basta su halo), y sus
    * texturas de primer plano llenan la VRAM (en alto, la vista Tierra llega a unos 277 MB de 300: con el
    * bloom y una pantalla de densidad 2, pasaría).
    */
   private sunBloomWanted(): boolean {
     return (
+      VISUAL_CONFIG.sun.bloom.enabled &&
       this.profile.sunBloom &&
       this._view === 'system' &&
       !this.sunMeasure &&
