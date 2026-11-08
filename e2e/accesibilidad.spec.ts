@@ -41,6 +41,9 @@ test.describe('Accesibilidad (axe)', () => {
     // En el móvil, elegir no abre la ficha (decisión del 08-11): con la fila de su sistema, y con
     // «ⓘ», arriba, la ficha.
     const info = page.getByRole('button', { name: 'Ver la ficha de Saturno' });
+    // Primero, que salga la ficha (escritorio) o «ⓘ» (móvil): `isVisible()` no espera, y justo tras
+    // tocar la fila «ⓘ» podía no estar aún (cierre de la fase 9b).
+    await expect(page.locator('#card-title').or(info).first()).toBeVisible();
     if (await info.isVisible()) {
       expect(await seriousViolations(page)).toEqual([]);
       await info.click();
