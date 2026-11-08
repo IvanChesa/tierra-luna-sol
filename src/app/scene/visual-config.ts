@@ -168,8 +168,8 @@ export const VISUAL_CONFIG = {
      *   disco, hasta L\* 57) y el contraste bajaba de golpe al calmarse el ruido. Su ritmo, en unidades
      *   de ruido por segundo de reloj de pared mientras se pinta (quieta con movimiento reducido y en las
      *   capturas): en 6 s se ve cambiar, en un minuto cambia del todo. Con estas cifras, el contraste a
-     *   gran escala (σL\* sin el perfil del limbo) queda de 4,9 a 5,8 en diez instantes de cinco minutos
-     *   (la referencia, 4,13; antes del límite, de 4,1 a 6,3).
+     *   gran escala (σL\* sin el perfil del limbo) queda de 4,66 a 5,57 en diez instantes de cinco
+     *   minutos, con la paleta final (la referencia, 4,13; antes del límite, de 4,1 a 6,3).
      * - `spots`: lo que oscurece cada canal la sombra de una mancha (la sombra elevada a cada valor): el
      *   verde y el azul, más, para que lo oscuro sea pardo rojizo y no oliva.
      * - `glow`: el color lineal del resplandor ancho (`halo`, en la vista general), el exponente de su
