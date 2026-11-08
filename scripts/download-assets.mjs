@@ -33,6 +33,9 @@
 //   en texto). Reglas del NAIF: «SPICE kernels placed on the NAIF server may be downloaded and used by
 //   anyone» (https://naif.jpl.nasa.gov/naif/rules.html). Fobos: Willner, Shi y Oberst (2014, DLR, de
 //   las imágenes HRSC de la Mars Express); Deimos: P. Thomas (de las imágenes de las Viking).
+// - Venus bajo las nubes (fase 9b, D44): el mosaico global C3-MIDR del radar de Magellan, en
+//   Astropedia (USGS Astrogeology, del PDS Geosciences Node): «Access Constraints: public domain»,
+//   «Use Constraints: None».
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 
@@ -153,6 +156,15 @@ const ASSETS = [
     ['ura4vuu2.tif', 'uranus.html'],
     ['ura5vuu2.tif', 'uranus.html'],
   ].map(([name, page]) => [name, JPL_TMAPS + 'pix/' + name, JPL_TMAPS + page]),
+  // Venus «Bajo las nubes» (fase 9b, D44): el mosaico global del radar de Magellan, C3-MIDR de
+  // 2025 m por píxel (18 775 × 9388, 8 bits en gris, equirrectangular de −180° a 180° y longitud
+  // positiva al este; 170 MB). Su ficha de Astropedia: «Access Constraints: public domain» y «Use
+  // Constraints: None» (PDS Geosciences Node; Ford et al., 1993).
+  [
+    'Venus_Magellan_C3-MDIR_Global_Mosaic_2025m.tif',
+    USGS_MOSAIC + 'Venus_Magellan_C3-MDIR_Global_Mosaic_2025m.tif',
+    ASTROPEDIA + 'venus_magellan_global_c3_mdir_mosaic_2025m',
+  ],
 ];
 
 /**
