@@ -1237,9 +1237,9 @@ Corrección:
 
 **La Tierra completa**
 
-> La Tierra entera, de día: océanos, continentes y nubes, como la fotografía la cámara EPIC de la NASA desde el espacio, entre la Tierra y el Sol.
+> La Tierra entera, de día y en color realzado: el océano, que cubre cerca del 71 % de su superficie, los continentes y las nubes.
 
-Fuente: <https://epic.gsfc.nasa.gov/about/epic>
+Fuente: <https://science.nasa.gov/earth/facts/>
 
 Corrección:
 
@@ -1643,29 +1643,35 @@ Corrección:
 
 **Párrafo 33**
 
-> El brillo de los anillos de Saturno, con un realce moderado.
+> La Tierra del explorador, en color realzado: los océanos, de un azul más vivo que en las fotos; menos nubes y más finas, para que los continentes se vean enteros; el reflejo del Sol en el agua, más grande; el relieve, más marcado; el desierto y la vegetación, con más color; y el borde de su atmósfera, más azul. Su cara nocturna y sus luces, como en las fotos.
 
 Corrección:
 
 **Párrafo 34**
 
-> El color del cielo desde España según la altura del Sol.
+> El brillo de los anillos de Saturno, con un realce moderado.
 
 Corrección:
 
 **Párrafo 35**
 
-> En los eclipses de Luna, la luz rojiza de la sombra de la Tierra, más clara que la real para que la Luna no salga negra.
+> El color del cielo desde España según la altura del Sol.
 
 Corrección:
 
 **Párrafo 36**
 
-> Lo que no se vio de las lunas: el norte de Tritón y de las cinco lunas grandes de Urano, que ninguna sonda fotografió, lo que el mapa de Deimos no cubre y el detalle de lo que solo se fotografió de lejos, recreados con el terreno real de cada luna (cuánto, en los créditos). Proteo no tiene mapa: sus cráteres son generados, y su forma, una esfera.
+> En los eclipses de Luna, la luz rojiza de la sombra de la Tierra, más clara que la real para que la Luna no salga negra.
 
 Corrección:
 
 **Párrafo 37**
+
+> Lo que no se vio de las lunas: el norte de Tritón y de las cinco lunas grandes de Urano, que ninguna sonda fotografió, lo que el mapa de Deimos no cubre y el detalle de lo que solo se fotografió de lejos, recreados con el terreno real de cada luna (cuánto, en los créditos). Proteo no tiene mapa: sus cráteres son generados, y su forma, una esfera.
+
+Corrección:
+
+**Párrafo 38**
 
 > Las sombras de Fobos y Deimos sobre Marte, y las que reciben, con su radio medio, como si fueran esferas: sus formas sí son las reales.
 
@@ -1673,37 +1679,37 @@ Corrección:
 
 #### Privacidad
 
-**Párrafo 38**
+**Párrafo 39**
 
 > Sin cookies y sin analítica (tampoco la del alojamiento).
 
 Corrección:
 
-**Párrafo 39**
+**Párrafo 40**
 
 > Todo se sirve desde este mismo sitio: ni fuentes, ni scripts, ni imágenes, ni datos de otros dominios.
 
 Corrección:
 
-**Párrafo 40**
+**Párrafo 41**
 
 > Tu navegador guarda solo dos preferencias, en su almacenamiento local: el nivel de calidad del 3D y si quieres los atajos de una sola tecla.
 
 Corrección:
 
-**Párrafo 41**
+**Párrafo 42**
 
 > «Usar mi ubicación», en el cielo, solo pide tu ubicación cuando lo pulsas, y no sale de tu navegador: no va a la dirección de la página ni se guarda.
 
 Corrección:
 
-**Párrafo 42**
+**Párrafo 43**
 
 > El alojamiento, Cloudflare Pages, pide a algunos navegadores (Chrome y Edge) que le envíen un informe cuando una petición a este sitio falla (Network Error Logging). Lo recibe el propio alojamiento, que ya sirve cada página, y solo informa de los fallos.
 
 Corrección:
 
-**Párrafo 43**
+**Párrafo 44**
 
 > La política de privacidad y el aviso legal son los de la web del autor.
 
@@ -1711,7 +1717,7 @@ Corrección:
 
 #### Autor
 
-**Párrafo 44**
+**Párrafo 45**
 
 > Lo ha hecho Iván Chesa Lapena, desarrollador de software: ivanchesa.com. El código es abierto, con licencia MIT, en GitHub; las texturas, los datos y los catálogos de terceros conservan sus licencias (créditos).
 
@@ -1735,7 +1741,7 @@ Corrección:
 
 **Párrafo 2**
 
-> Los planetas, la Tierra (día, nubes, relieve y océanos) y el detalle del brillo de los anillos de Saturno (el Sol no tiene textura: lo dibuja el propio shader): Solar System Scope, con CC BY 4.0. Reducidas y en WebP; el color de algunos planetas, corregido con fotos del Hubble (NASA/ESA), y el del océano de la Tierra, con fotos de EPIC (DSCOVR), del NASA EPIC Team.
+> Los planetas, la Tierra (día, nubes, relieve y océanos) y el detalle del brillo de los anillos de Saturno (el Sol no tiene textura: lo dibuja el propio shader): Solar System Scope, con CC BY 4.0. Reducidas y en WebP; el color de algunos planetas, corregido con fotos del Hubble (NASA/ESA). La Tierra del explorador, en color realzado (ilustrativo): los océanos, las nubes, el relieve y la tierra, con más color que en las fotos de EPIC (DSCOVR), del NASA EPIC Team, con las que se ajustó al principio.
 
 Corrección:
 
