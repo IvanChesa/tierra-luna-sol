@@ -153,6 +153,7 @@ Decisiones y tareas que dependen de Iván. Claude Code añade aquí cada `TODO(i
 - [ ] Textos de las vistas guiadas y de los recorridos (fases 5 y 6; en el plan v1, 4 y 5). En Shackleton, el subtítulo dice, como su fuente, que el interior está siempre en sombra, pero la escena no dibuja las sombras del relieve y se ve iluminada la pared interior que mira al Sol: matizarlo (segunda ronda de la revisión de la fase 6).
 - [ ] Pruebas en el móvil real: por la vista previa de Cloudflare Pages desde la fase 4 (`staging.tierra-luna-sol.pages.dev`, la de `main`) o por la red local (fases 4–10; en el plan v1, 4–9). La primera, el 31-10 en staging: va bien.
 - [ ] Visto bueno final en el móvil (fase 10; en el plan v1, la 9).
+- [ ] **La interfaz de la fase 9c en tu iPhone** (D47, fusionada el 08-11; no bloquea): que en Safari ya no quede la franja vacía bajo la barra de tiempo (con las barras recogidas) y que la barra no choque con la del inicio; el cielo (su barra y su panel), «ⓘ» (la ficha) y el salto entre un planeta y sus lunas. Y, cuando puedas, los textos nuevos de la interfaz (`reviewed: false`, en el informe de la fase 9c, §12) y si quieres el año también en la barra del teléfono (§10 del informe; en el backlog del plan, el 15).
 
 ## Fase 10
 - [ ] Conseguir un iPhone para probar (aunque sea prestado).

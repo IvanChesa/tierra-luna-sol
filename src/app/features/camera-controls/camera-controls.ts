@@ -6,64 +6,58 @@ import { Icon } from '../viewer/icon';
 export const ZOOM_STEP = 1.4;
 
 /**
- * Controles de cámara (PLAN 3.c.6): acercar, alejar, la vista general y la vista limpia. El mismo
- * trabajo que los gestos sobre el lienzo, con botones y con el teclado (cada uno con su atajo).
+ * Controles de cámara (PLAN 3.c.6; fase 9c, D47): acercar y alejar, la alternativa de un solo puntero
+ * a la rueda y al pellizco (WCAG 2.5.1), cada una con su atajo. En escritorio, en una esquina de la
+ * parte visible del lienzo y sin marco hasta pasar el ratón o llegar con el foco; en el móvil y la
+ * tableta no ocupan el 3D: están en «Controles», con la vista general y la vista limpia.
  */
 @Component({
   selector: 'tls-camera-controls',
   imports: [Icon],
   template: `
     <div class="camera" role="group" aria-label="Cámara">
-      <button
-        type="button"
-        class="control control--icon"
-        title="Acercar (+)"
-        (click)="zoom(1 / step)"
-      >
+      <button type="button" class="camera__button" title="Acercar (+)" (click)="zoom(1 / step)">
         <tls-icon name="plus" />
         <span class="visually-hidden">Acercar</span>
       </button>
-      <button type="button" class="control control--icon" title="Alejar (−)" (click)="zoom(step)">
+      <button type="button" class="camera__button" title="Alejar (−)" (click)="zoom(step)">
         <tls-icon name="minus" />
         <span class="visually-hidden">Alejar</span>
-      </button>
-      <!-- camera__extra: en un lienzo muy bajo se ocultan; G, V y «Controles +» siguen valiendo. -->
-      <button
-        type="button"
-        class="control control--icon camera__extra"
-        title="Vista general (G)"
-        (click)="session.overview()"
-      >
-        <tls-icon name="overview" />
-        <span class="visually-hidden">Vista general</span>
-      </button>
-      <button
-        type="button"
-        class="control control--icon camera__extra"
-        title="Vista limpia: ocultar la interfaz (V)"
-        (click)="session.setCleanView(true)"
-      >
-        <tls-icon name="clean" />
-        <span class="visually-hidden">Vista limpia</span>
       </button>
     </div>
   `,
   styles: `
-    /* Una columna; en móvil, pegada a la derecha, y el encuadre se aparta de ella (explorer-ui.css). */
     .camera {
       display: grid;
       gap: var(--space-1);
     }
 
-    .control {
-      background: var(--color-surface);
+    /*
+     * Sin marco: el icono, en el color del texto sobre un círculo del fondo casi transparente, que se
+     * lee sobre las estrellas (más de 3:1 sobre cualquier fondo oscuro); el marco y la superficie, al
+     * pasar el ratón o con el foco.
+     */
+    .camera__button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.25rem;
+      height: 2.25rem;
+      padding: 0;
+      background: color-mix(in srgb, var(--color-bg) 55%, transparent);
+      color: var(--color-text);
+      border: var(--border-width) solid transparent;
+      border-radius: 50%;
+      cursor: pointer;
+      transition:
+        background var(--duration-fast) var(--ease-standard),
+        border-color var(--duration-fast) var(--ease-standard);
     }
 
-    /* Muy bajo (móvil en horizontal, zoom al 200 %): solo acercar y alejar caben en la columna. */
-    @media (max-width: 63.99rem) and (max-height: 30rem) {
-      .camera__extra {
-        display: none;
-      }
+    .camera__button:hover,
+    .camera__button:focus-visible {
+      background: var(--color-surface);
+      border-color: var(--color-control);
     }
   `,
 })

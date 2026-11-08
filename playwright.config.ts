@@ -42,6 +42,12 @@ export default defineConfig({
     locale: 'es-ES',
     timezoneId: 'Europe/Madrid',
     trace: 'retain-on-failure',
+    // El recorrido de la portada (fase 9c), ya visto: arranca la primera vez en `/` sin parámetros y
+    // pararía las pruebas que entran así. Las suyas (`recorrido.spec.ts`) empiezan sin nada guardado.
+    storageState: {
+      cookies: [],
+      origins: [{ origin: ORIGIN, localStorage: [{ name: 'tls.recorrido', value: 'visto' }] }],
+    },
   },
   projects: [
     {

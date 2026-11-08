@@ -106,7 +106,10 @@ export function reachableDays(
   return { first, last };
 }
 
-/** El mismo día y hora `years` años antes o después (el 29 de febrero pasa al 28). */
+/**
+ * El mismo día y hora `years` años antes o después (el 29 de febrero pasa al 28): el año de la barra
+ * (crítica de la 9c), con ‹ y › o Mayús + RePág y AvPág.
+ */
 export function shiftYears(date: Date, years: number, zone: TimeZoneChoice): Date {
   const p = partsOf(date, zone);
   const year = p.year + years;

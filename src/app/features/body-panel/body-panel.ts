@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, output } from '@angular/core';
+import { Component, computed, inject, input, model, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { formatAu, formatDistanceKm, formatPeriodHours } from '../../core/format';
 import { getBody } from '../../data/bodies';
@@ -53,6 +53,11 @@ const NEAR_KM = 5e6;
 export class BodyPanel {
   readonly bodyId = input.required<BodyId>();
   readonly closed = output<void>();
+  /**
+   * En el móvil, la hoja subida a su altura completa (fase 9c, 9c.2): en reposo, el nombre, el resumen
+   * y «Ficha completa»; subida, también las distancias, los datos y sus fuentes. En escritorio, todo.
+   */
+  readonly expanded = model(false);
 
   private readonly positions = inject(SystemPositions);
   protected readonly body = computed(() => getBody(this.bodyId()));

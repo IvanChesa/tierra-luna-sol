@@ -165,6 +165,11 @@
 }
 
 .card__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0 var(--space-3);
   flex: none;
   padding: var(--space-1) var(--space-6);
   border-top: var(--border-width) solid var(--color-line);
@@ -199,5 +204,39 @@
 
   .card__foot {
     padding: 0 var(--space-4);
+  }
+}
+
+/* Al abrir la ficha con «ⓘ» en el móvil, el foco llega al resumen: el anillo, por dentro. */
+.card__body:focus-visible {
+  outline-offset: calc(-1 * var(--focus-ring-width));
+}
+
+/* «Ver los datos»: solo en el móvil (en escritorio, la tarjeta lo enseña todo). */
+.card__more {
+  display: none;
+}
+
+@media (max-width: 63.99rem) {
+  .card__more {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--tap-target);
+    padding: 0 var(--space-2);
+    background: transparent;
+    color: var(--color-accent);
+    border: 0;
+    font: inherit;
+    font-size: var(--text-sm);
+    cursor: pointer;
+  }
+
+  /* En reposo, la hoja no pasa del 45 % de la pantalla: el nombre, el resumen y «Ficha completa». */
+  :host-context(.panel:not(.is-expanded)) .card__rest {
+    display: none;
+  }
+
+  :host-context(.panel:not(.is-expanded)) .card__summary {
+    margin-bottom: var(--space-2);
   }
 }

@@ -8,6 +8,11 @@ import { App } from './app';
 @Component({ template: '' })
 class Blank {}
 
+// Al navegar, la página sube arriba (`window.scrollTo`, en un `setTimeout` que puede llegar después
+// del último test), que jsdom no implementa: sin el aviso. Para todo el archivo, sin restaurarlo: cada
+// archivo de tests tiene su propio jsdom.
+window.scrollTo = () => undefined;
+
 describe('App', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -24,29 +29,34 @@ describe('App', () => {
     expect(root.querySelector('nav[aria-label="Principal"]')).not.toBeNull();
   });
 
-  it('la navegación: «Cielo» en lugar de «Luna» (decisión de Iván del 03-11) y, solo en el menú del móvil, los créditos y lo legal', async () => {
+  it('la navegación: las páginas de lectura y «Explorar en 3D» (fase 9c, decisión 2 de Iván); los créditos y lo legal, aparte', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const root = fixture.nativeElement as HTMLElement;
-    const main = [...root.querySelectorAll('.site-nav li:not(.site-nav__extra) a')];
+    const main = [...root.querySelectorAll('.site-nav > ul:not(.site-nav__legal) a')];
     expect(main.map((a) => a.textContent?.trim())).toEqual([
       'Planetas',
       'Lunas',
       'Sol',
-      'Cielo',
       'Eclipses',
       'Sobre el proyecto',
+      'Explorar en 3D',
     ]);
     expect(main.map((a) => a.getAttribute('href'))).toEqual([
       '/planetas',
       '/lunas',
       '/sol',
-      '/cielo',
       '/eclipses',
       '/sobre-el-proyecto',
+      '/',
     ]);
-    const extra = [...root.querySelectorAll('.site-nav li.site-nav__extra a')];
-    expect(extra.map((a) => a.textContent?.trim())).toEqual([
+    // El cielo es una vista del explorador (sus pestañas), no una página de la cabecera.
+    expect(main.map((a) => a.getAttribute('href'))).not.toContain('/cielo');
+    expect(root.querySelector('.site-nav a.site-nav__explore')?.textContent?.trim()).toBe(
+      'Explorar en 3D',
+    );
+    const legal = [...root.querySelectorAll('.site-nav ul.site-nav__legal a')];
+    expect(legal.map((a) => a.textContent?.trim())).toEqual([
       'Créditos',
       'Aviso legal',
       'Política de privacidad',
@@ -113,9 +123,11 @@ describe('App: el enlace marcado del menú', () => {
       imports: [App],
       providers: [
         provideRouter([
+          { path: '', pathMatch: 'full', component: Blank },
           { path: 'luna', component: Blank },
           { path: 'lunas', component: Blank },
           { path: 'lunas/:id', component: Blank },
+          { path: 'eclipses', component: Blank },
           { path: 'cielo', component: Blank },
           { path: 'explorar/luna', component: Blank },
         ]),
@@ -140,23 +152,24 @@ describe('App: el enlace marcado del menú', () => {
     ]);
   });
 
-  it('«Lunas» en /lunas y en una luna; «Cielo» con su consulta; ninguno en el explorador', async () => {
+  it('«Lunas» en /lunas y en una luna; «Explorar en 3D» en las vistas del explorador (fase 9c)', async () => {
     const fixture = TestBed.createComponent(App);
     const root = fixture.nativeElement as HTMLElement;
     const router = TestBed.inject(Router);
     for (const [url, label] of [
       ['/lunas', 'Lunas'],
       ['/lunas/titan', 'Lunas'],
-      ['/cielo?lugar=teide', 'Cielo'],
       ['/luna#fuente-1', 'Lunas'],
+      ['/?cuerpo=saturno', 'Explorar en 3D'],
+      ['/explorar/luna', 'Explorar en 3D'],
+      ['/cielo?lugar=teide', 'Explorar en 3D'],
     ] as const) {
       await router.navigateByUrl(url);
       await fixture.whenStable();
       expect(marked(root), url).toEqual([{ label, current: 'page' }]);
     }
-    await router.navigateByUrl('/explorar/luna');
+    await router.navigateByUrl('/eclipses');
     await fixture.whenStable();
-    expect(marked(root)).toEqual([]);
-    expect(root.querySelector('.site-nav a[aria-current]')).toBeNull();
+    expect(marked(root)).toEqual([{ label: 'Eclipses', current: 'page' }]);
   });
 });

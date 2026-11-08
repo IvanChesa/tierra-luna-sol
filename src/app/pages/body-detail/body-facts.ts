@@ -45,6 +45,8 @@ export interface FactRow {
   /** La aclaración del dato (`Sourced.note`), si no repite la etiqueta. */
   readonly note?: string;
   readonly source: SourceId;
+  /** Un dato técnico: va después de los esenciales, tras el rótulo «Datos técnicos» (fase 9c). */
+  readonly technical: boolean;
 }
 
 export interface FactGroup {
@@ -76,6 +78,24 @@ function noteOf(label: string, data: Sourced<unknown>): string | undefined {
   return plain(note) === plain(label) ? undefined : note;
 }
 
+/**
+ * Lo técnico de cada tabla (fase 9c, 9c.7: lo esencial primero; lo técnico, separado): la densidad, la
+ * velocidad de escape, el achatamiento, el albedo, el tipo espectral y, de la órbita, sus extremos, su
+ * inclinación y su excentricidad. Lo esencial: el tamaño, la masa, la gravedad, el día, el eje, la
+ * temperatura, la presión, el campo magnético, los anillos, la distancia media, el periodo y el sentido.
+ */
+const TECHNICAL_KEYS: ReadonlySet<string> = new Set([
+  'densityKgM3',
+  'escapeVelocityKmS',
+  'flatteningRatio',
+  'geometricAlbedo',
+  'spectralType',
+  'periapsisKm',
+  'apoapsisKm',
+  'inclinationDeg',
+  'eccentricity',
+]);
+
 function row(
   key: string,
   label: string,
@@ -83,8 +103,22 @@ function row(
   value: FactValue,
   detail?: string,
 ): FactRow {
-  return { key, label, value, detail, note: noteOf(label, data), source: data.source };
+  return {
+    key,
+    label,
+    value,
+    detail,
+    note: noteOf(label, data),
+    source: data.source,
+    technical: TECHNICAL_KEYS.has(key),
+  };
 }
+
+/** Lo esencial primero y lo técnico después, cada parte en el orden de la fuente. */
+const essentialFirst = (rows: readonly FactRow[]): FactRow[] => [
+  ...rows.filter((r) => !r.technical),
+  ...rows.filter((r) => r.technical),
+];
 
 const exact = (value: number, unit: string): FactValue => ({ number: formatExact(value), unit });
 
@@ -383,7 +417,9 @@ function aroundOf(body: Body): string {
 
 /** Las tablas de la ficha: los datos físicos, la órbita (si tiene) y los anillos (Saturno). */
 export function bodyFacts(body: Body): FactGroup[] {
-  const groups: FactGroup[] = [{ id: 'fisicos', title: 'Datos físicos', rows: physicalRows(body) }];
+  const groups: FactGroup[] = [
+    { id: 'fisicos', title: 'Datos físicos', rows: essentialFirst(physicalRows(body)) },
+  ];
   const title = `Órbita ${aroundOf(body)}`;
   // «Respecto a la Tierra.» en la órbita de la Luna: ya lo dice el título («alrededor de la Tierra»).
   const implied = (note: string | undefined) =>
@@ -391,7 +427,7 @@ export function bodyFacts(body: Body): FactGroup[] {
   const orbit = orbitRows(body).map((row) =>
     implied(row.note) ? { ...row, note: undefined } : row,
   );
-  if (orbit.length) groups.push({ id: 'orbita', title, rows: orbit });
+  if (orbit.length) groups.push({ id: 'orbita', title, rows: essentialFirst(orbit) });
   const rings = ringRows(body);
   if (rings.length) groups.push({ id: 'anillos', title: 'Anillos', rows: rings });
   return groups;

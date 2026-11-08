@@ -105,12 +105,29 @@ for (const screen of LOW_SCREENS) {
     const page = await context.newPage();
     await page.goto('/?captura=1');
     await expect(page.locator('tls-viewer-canvas')).toHaveClass(/is-ready/, { timeout: 90_000 });
-    await expect(page.locator('tls-camera-controls button').first()).toBeVisible();
+    // En el móvil, la tableta y con el zoom, acercar y alejar no están sobre el 3D (fase 9c): están en
+    // «Controles» (abajo).
+    await expect(page.locator('tls-camera-controls')).toBeHidden();
     // Al llegar, reproducir y pausar se ve sin desplazar la página (D31, WCAG 2.2.2).
     const play = await page.locator('.time__play').boundingBox();
     expect(play && play.y + play.height).toBeLessThanOrEqual(screen.height);
-    if (screen.expand) await page.locator('.time__more').click();
-    await page.waitForTimeout(300);
+    if (screen.expand) {
+      await page.locator('.time__more').click();
+      await expect(page.getByRole('button', { name: 'Acercar' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Alejar' })).toBeVisible();
+    }
+    // Lo que hay que esperar: que la presentación termine de plegarse y el encuadre se mida otra vez
+    // (con SwiftShader, los fotogramas tardan). Con «Controles» abierto, su hoja cuenta en el encuadre
+    // (crítica de la 9c): el lienzo libre es el que queda entre el texto de la vista y la hoja.
+    const free = () =>
+      page.evaluate(() => {
+        const explorer = document.querySelector('.explorer') as HTMLElement;
+        const style = getComputedStyle(explorer);
+        const px = (name: string) => parseFloat(style.getPropertyValue(name)) || 0;
+        const rect = explorer.getBoundingClientRect();
+        return rect.bottom - px('--view-bottom') - (rect.top + px('--view-top'));
+      });
+    await expect.poll(free).toBeGreaterThanOrEqual(150);
 
     const layout = await page.evaluate(() => {
       const explorer = document.querySelector('.explorer') as HTMLElement;
@@ -233,6 +250,10 @@ for (const screen of [
     const page = await context.newPage();
     await page.goto('/?captura=1&cuerpo=saturno');
     await expect(page.locator('tls-viewer-canvas')).toHaveClass(/is-ready/, { timeout: 90_000 });
+    // Por debajo de 1024 px, elegir un cuerpo no abre su ficha: la abre «ⓘ», en la franja de arriba
+    // (segunda decisión de Iván del 08-11).
+    await expect(page.locator('#card-title')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Ver la ficha de Saturno' }).click();
     await expect(page.locator('#card-title')).toHaveText('Saturno');
     await page.waitForTimeout(500);
     expect(await page.evaluate(() => window.scrollY)).toBe(0);

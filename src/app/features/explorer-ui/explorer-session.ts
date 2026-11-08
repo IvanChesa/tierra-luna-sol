@@ -34,6 +34,7 @@ import {
   viewerQueryParams,
 } from '../viewer/viewer-params';
 import { describeBody, viewName } from './describe';
+import { SHEETS_QUERY, mediaQuery } from '../viewer/media';
 
 /** Lo que la sesión necesita del motor (un subconjunto de su API: en los tests, un doble). */
 export type ExplorerEngine = SimulationEngine &
@@ -95,6 +96,8 @@ export class ExplorerSession {
   private readonly positions = inject(SystemPositions);
   private readonly router = inject(Router);
   private readonly doc = inject(DOCUMENT);
+  /** El móvil y la tableta: elegir un cuerpo en el sistema solar no abre su ficha (decisión del 08-11). */
+  private readonly sheets = mediaQuery(SHEETS_QUERY);
   private readonly storage = safeLocalStorage(this.doc.defaultView);
 
   readonly params: ViewerParams;
@@ -139,7 +142,10 @@ export class ExplorerSession {
       scale: this.params.scale ?? 'illustrative',
       quality: this.params.quality ?? (this.capture ? 'high' : readQualityPreference(this.storage)),
     });
-    this.explorer.panelOpen.set(this.params.body !== null);
+    // En el móvil, el cuerpo de la URL se elige sin abrir su ficha en el sistema solar (como al tocarlo).
+    this.explorer.panelOpen.set(
+      this.params.body !== null && !(this.sheets() && this.explorer.view() === 'system'),
+    );
     this.explorer.singleKeyShortcuts.set(readSingleKeyShortcuts(this.storage));
     this.explorer.skyPlace.set(skyPlaceOf(this.params.place ?? DEFAULT_PLACE_ID));
 
@@ -242,7 +248,9 @@ export class ExplorerSession {
     }
     if (view === 'system') {
       this.sim.select(id);
-      this.explorer.panelOpen.set(id !== null);
+      // En el móvil y la tableta, elegir no abre la ficha: la fila pasa a ser la de su sistema (el
+      // planeta y sus lunas) y la ficha se abre con «ⓘ», arriba (decisión de Iván del 08-11).
+      this.explorer.panelOpen.set(id !== null && !this.sheets());
       const speed = this.applySpeedContext();
       if (id) this.announceBody(id, speed);
       else this.announce(`Vista general del sistema solar.${speed}`);
@@ -324,6 +332,11 @@ export class ExplorerSession {
     this.explorer.panelOpen.set(false);
   }
 
+  /** Abre la ficha del cuerpo elegido (en el móvil, desde «ⓘ»). */
+  openPanel(): void {
+    if (this.sim.selectedBodyId() !== null) this.explorer.panelOpen.set(true);
+  }
+
   /** Acerca (< 1) o aleja (> 1) la cámara. */
   zoom(factor: number): void {
     this.engine?.zoomBy(factor);
@@ -374,6 +387,18 @@ export class ExplorerSession {
   setSingleKeyShortcuts(enabled: boolean): void {
     this.explorer.singleKeyShortcuts.set(enabled);
     writeSingleKeyShortcuts(this.storage, enabled);
+  }
+
+  private tourHandler: (() => void) | null = null;
+
+  /** Lo que hace «Ver el recorrido» (fase 9c, 9c.6); lo pone la interfaz, que tiene el recorrido. */
+  setTourHandler(handler: (() => void) | null): void {
+    this.tourHandler = handler;
+  }
+
+  /** «Ver el recorrido» (en «Controles» y, con movimiento reducido, en la primera pantalla). */
+  startTour(): void {
+    this.tourHandler?.();
   }
 
   /** Cierra el aviso de los parámetros de la URL (van todos en una caja). */

@@ -161,4 +161,27 @@ describe('body-facts: las tablas de datos de las fichas (fase 9)', () => {
     // La primera fila (el radio de las lunas) es del JPL.
     expect(list[0]?.id).toBe('jpl-satellite-physical-parameters');
   });
+
+  it('lo esencial primero; lo técnico, después y marcado (fase 9c, 9c.7)', () => {
+    for (const body of BODIES) {
+      for (const group of bodyFacts(body)) {
+        const firstTechnical = group.rows.findIndex((r) => r.technical);
+        if (firstTechnical < 0) continue;
+        // Después de la primera fila técnica, ninguna esencial.
+        expect(
+          group.rows.slice(firstTechnical).every((r) => r.technical),
+          `${body.id} · ${group.id}`,
+        ).toBe(true);
+      }
+    }
+    const mars = bodyFacts(getBody('marte'));
+    const physical = mars.find((g) => g.id === 'fisicos')?.rows ?? [];
+    expect(physical.filter((r) => r.technical).map((r) => r.key)).toEqual(
+      expect.arrayContaining(['densityKgM3', 'escapeVelocityKmS']),
+    );
+    expect(physical.find((r) => r.key === 'radiusKm')?.technical).toBe(false);
+    const orbit = mars.find((g) => g.id === 'orbita')?.rows ?? [];
+    expect(orbit[0]?.key).toBe('semiMajorAxisKm');
+    expect(orbit.find((r) => r.key === 'eccentricity')?.technical).toBe(true);
+  });
 });

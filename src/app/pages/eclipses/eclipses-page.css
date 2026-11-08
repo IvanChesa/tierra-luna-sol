@@ -1,5 +1,6 @@
+/* Los párrafos, con la medida de lectura del sitio (`--measure`, unos 68 caracteres; con 42rem pasaban
+   de 90: crítica de la 9c); las tarjetas, de su ancho. */
 .eclipses__intro {
-  max-width: 42rem;
   color: var(--color-text-muted);
 }
 
@@ -10,7 +11,8 @@
   grid-template-columns: minmax(0, 1fr);
   gap: var(--space-2);
   max-width: 28rem;
-  margin: var(--space-4) 0 var(--space-5);
+  /* `--space-6`: `--space-5` no existe en la escala, y el margen se quedaba en 0 (fase 9c). */
+  margin: var(--space-4) 0 var(--space-6);
 }
 
 .eclipses__label {
@@ -37,8 +39,7 @@
 }
 
 .eclipses__sources {
-  max-width: 42rem;
-  margin-top: var(--space-5);
+  margin-top: var(--space-6);
 }
 
 .eclipses__list {
@@ -52,7 +53,7 @@
 .eclipse {
   display: grid;
   gap: var(--space-1);
-  max-width: 42rem;
+  max-width: calc(var(--measure) + 2 * var(--space-4));
   padding: var(--space-3) var(--space-4);
   background: var(--color-surface);
   border: var(--border-width) solid var(--color-line);
@@ -77,7 +78,17 @@
 }
 
 .eclipse__link {
+  display: inline-flex;
+  align-items: center;
   justify-self: start;
+  min-height: 1.5rem;
   margin-top: var(--space-1);
   font-weight: var(--font-weight-strong);
+}
+
+/* Con el dedo, 44 px de alto (fase 9c, 9c.7: medía 74 × 26). */
+@media (pointer: coarse) {
+  .eclipse__link {
+    min-height: var(--tap-target);
+  }
 }
