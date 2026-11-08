@@ -54,7 +54,8 @@ import {
   sceneBody,
   systemPlanetOf,
 } from './system';
-import type { TextureId, TextureMeta, TextureSource } from './textures';
+import { releaseTexture, type TextureId, type TextureMeta, type TextureSource } from './textures';
+import { VenusRadarLayer, type VenusRadarState } from './venus-radar';
 import type {
   BodyId,
   DepthMode,
@@ -303,6 +304,8 @@ interface ActiveFlight extends Flight {
 type Listener<K extends SceneEngineEventName> = (event: SceneEngineEvents[K]) => void;
 
 const SUN_INDEX = SCENE_BODIES.findIndex((body) => body.kind === 'star');
+/** Venus: el radar de Magellan solo se enciende con ella enfocada (fase 9b, D44). */
+const VENUS_INDEX = SCENE_BODIES.findIndex((body) => body.id === 'venus');
 /** Índice del planeta de cada luna (−1 en el Sol y los planetas). */
 const MOON_PARENT = SCENE_BODIES.map((body) =>
   body.kind === 'moon' && body.parent ? sceneBody(body.parent).index : -1,
@@ -438,6 +441,10 @@ export class SceneEngine implements SceneEngineApi {
   private readonly illustrativeFocus: boolean;
   /** Solo en captura: el Sol para medir su limbo (`sunMeasure`), sin bloom. */
   private readonly sunMeasure: boolean;
+  /** Solo en captura: Venus enfocada con el radar de Magellan (`venusRadar`, `?radar=1`). */
+  private readonly radarCapture: boolean;
+  /** Venus «Bajo las nubes» (fase 9b, D44): la capa del radar de Magellan. */
+  private readonly venusRadar: VenusRadarLayer;
   /** ¿Lleva bloom el Sol en este frame? (`applyLighting`, con la pantalla de este frame). */
   private sunBloomOn = false;
   /** Los sombreados del bloom ya están compilados (hasta entonces, solo el halo: nunca de golpe). */
@@ -521,6 +528,14 @@ export class SceneEngine implements SceneEngineApi {
       loadShape: this.deps.loadShape ?? null,
       invalidate: () => this.invalidate(),
     });
+    this.venusRadar = new VenusRadarLayer({
+      textures: textures?.source ?? null,
+      apply: (texture, mix) => this.world.setVenusRadar(texture, mix),
+      release: releaseTexture,
+      onState: (state) => this.emit('venusRadar', { state }),
+      invalidate: () => this.invalidate(),
+      fadeMs: VISUAL_CONFIG.venus.radar.fadeMs,
+    });
 
     const initial =
       options.focus !== undefined && options.focus !== null
@@ -535,6 +550,8 @@ export class SceneEngine implements SceneEngineApi {
     this.isolated = this.captureMode && (options.isolate ?? false) && initial.focus !== null;
     this.illustrativeFocus = this.captureMode && (options.illustrativeFocus ?? false);
     this.sunMeasure = this.captureMode && (options.sunMeasure ?? false);
+    this.radarCapture =
+      this.captureMode && (options.venusRadar ?? false) && initial.focus === VENUS_INDEX;
     if (this.isolated) this.world.setIsolated(initial.focus);
     if (this.sunMeasure) this.world.setSunMeasure(true);
     this.frames = new FrameController(
@@ -629,6 +646,11 @@ export class SceneEngine implements SceneEngineApi {
   get qualityLevel(): QualityLevel {
     return this.level;
   }
+  /** Venus «Bajo las nubes» (fase 9b, D44): el estado del radar de Magellan. */
+  get venusRadarState(): VenusRadarState {
+    return this.venusRadar.state;
+  }
+
   get skyView(): SkyView {
     return this.skyRig.pose;
   }
@@ -704,6 +726,7 @@ export class SceneEngine implements SceneEngineApi {
     this._view = view;
     // El bloom del Sol solo va en la vista del sistema solar: fuera de ella, su memoria se suelta.
     if (view !== 'system') this.renderer.sunBloom?.release();
+    if (view !== 'system') this.venusRadar.release();
     if (view === 'sky') {
       this.enterSky();
       return;
@@ -736,6 +759,18 @@ export class SceneEngine implements SceneEngineApi {
     if (this.disposed || !Number.isFinite(azimuthDeg) || !Number.isFinite(altitudeDeg)) return;
     this.skyRig.lookAt(azimuthDeg, altitudeDeg, this.instant());
     if (this._view === 'sky') this.invalidate();
+  }
+
+  /**
+   * Venus «Bajo las nubes» (fase 9b, D44): el radar de Magellan en lugar de las nubes, solo con Venus
+   * enfocada en la vista del sistema solar. Se pide al encenderlo, con un fundido (un corte con
+   * movimiento reducido), y se suelta al apagarlo o al dejar de enfocar Venus. Su estado, en el evento
+   * `venusRadar`.
+   */
+  setVenusRadar(on: boolean): void {
+    if (this.disposed) return;
+    if (on && (this.focusIndex !== VENUS_INDEX || this._view !== 'system')) return;
+    this.venusRadar.set(on, this.profile.focusTexture, this.instant());
   }
 
   setConstellationsVisible(visible: boolean): void {
@@ -870,6 +905,7 @@ export class SceneEngine implements SceneEngineApi {
       textures: info.textures,
       vramMB:
         (this.world.vramBytes() +
+          this.venusRadar.vramBytes +
           (this.sky?.vramBytes() ?? 0) +
           (this.renderer.sunBloom?.vramBytes() ?? 0)) /
         1_048_576,
@@ -899,6 +935,7 @@ export class SceneEngine implements SceneEngineApi {
     this.labels.dispose();
     this.sky?.dispose();
     this.sky = null;
+    this.venusRadar.release();
     this.world.dispose();
     this.renderer.dispose();
     this.listeners.clear();
@@ -955,6 +992,7 @@ export class SceneEngine implements SceneEngineApi {
       if (this._view === 'sky') this.world.releaseCloseUps();
       else this.world.setFocus(this.textureFocus(this.focusIndex));
       if (this._view === 'sky') this.enterSky();
+      if (this.radarCapture) this.setVenusRadar(true);
       this.invalidate();
     } catch (error) {
       if (this.disposed) return;
@@ -1002,9 +1040,10 @@ export class SceneEngine implements SceneEngineApi {
     } else if (this.clock.playing) {
       this.emitTime(false);
     }
+    const fading = this.venusRadar.step(dt, this.instant());
     const moving = this.renderFrame(timeMs, true, dt);
     const uploading = this.processUpload();
-    const animating = this.clock.playing || moving || this.frames.animating;
+    const animating = this.clock.playing || moving || fading || this.frames.animating;
     // Reproducción lenta y nada más en marcha: 4 frames por segundo bastan (y no se miden FPS).
     const slow =
       this.clock.playing &&
@@ -1525,6 +1564,8 @@ export class SceneEngine implements SceneEngineApi {
     }
     this.focusIndex = index;
     this.framing = framing;
+    // El radar de Venus, solo con Venus enfocada (fase 9b, D44): al dejarla, se suelta.
+    if (index !== VENUS_INDEX) this.venusRadar.release();
     // La vista general vuelve siempre a su encuadre (todo el sistema a la vista).
     const arrival = framing.kind === 'overview' ? OVERVIEW_ANGLES : angles;
     const duration = this.instant() ? 0 : kind === 'view' ? VIEW_TRIP_MS : FOCUS_FLIGHT_MS;
@@ -1887,6 +1928,7 @@ export class SceneEngine implements SceneEngineApi {
       this.level = level;
       this.profile = QUALITY_PROFILES[level];
       this.world.setQuality(this.profile);
+      this.venusRadar.setLevel(this.profile.focusTexture);
       // El nivel bajo no lleva bloom: sus render targets se sueltan. Al subir a mano desde él, sus
       // sombreados se compilan sin bloquear (hasta entonces, el halo).
       if (!this.profile.sunBloom) this.renderer.sunBloom?.release();

@@ -5,10 +5,12 @@
 import type { BodyId } from '../data/body.model';
 import type { ViewFrom } from './camera/view-from';
 import type { ToneMappingMode } from './visual-config';
+import type { VenusRadarState } from './venus-radar';
 
 export type { BodyId } from '../data/body.model';
 export type { ViewFrom } from './camera/view-from';
 export type { ToneMappingMode } from './visual-config';
+export type { VenusRadarState } from './venus-radar';
 
 /** Vistas del explorador (D10): el sistema solar, la Tierra, la Luna y el cielo desde España (fase 8). */
 export type ExplorerView = 'system' | 'earth' | 'moon' | 'sky';
@@ -99,6 +101,8 @@ export interface SceneEngineOptions {
    * granulación ni manchas, y con su fotosfera por debajo de la compresión del tone mapping.
    */
   readonly sunMeasure?: boolean;
+  /** Solo en captura: Venus enfocada con el radar de Magellan (`?radar=1`, fase 9b, D44). */
+  readonly venusRadar?: boolean;
   /** Base de las URL de los recursos (por defecto, la raíz del sitio). */
   readonly assetsBaseUrl?: string;
   /** El lugar de la vista del cielo (fase 8); por defecto, el Montsec. */
@@ -165,6 +169,11 @@ export interface SceneEngineEvents {
    * (`view`, ~3 s, con «Saltar»). Con movimiento reducido no hay viajes: los cambios son directos.
    */
   readonly travel: { readonly active: boolean; readonly kind: 'focus' | 'view' };
+  /**
+   * Venus «Bajo las nubes» (fase 9b, D44): `off`, las nubes; `loading`, pedido; `on`, el radar;
+   * `error`, no ha llegado (vuelven las nubes).
+   */
+  readonly venusRadar: { readonly state: VenusRadarState };
 }
 
 export type SceneEngineEventName = keyof SceneEngineEvents;
@@ -211,6 +220,12 @@ export interface SceneEngineApi {
   lookAtSky(azimuthDeg: number, altitudeDeg: number): void;
   /** Muestra u oculta las líneas y los nombres de las constelaciones en la vista del cielo. */
   setConstellationsVisible(visible: boolean): void;
+  /**
+   * Venus «Bajo las nubes» (fase 9b, D44): con Venus enfocada, el radar de Magellan en lugar de sus
+   * nubes (con un fundido, o un corte con movimiento reducido); al dejar de enfocarla, vuelven las
+   * nubes. Su estado, en el evento `venusRadar`.
+   */
+  setVenusRadar(on: boolean): void;
   /** Termina ya el viaje de cámara o la transición de marco en curso («Saltar», `Esc`). */
   skipTransition(): void;
   /** Muestra u oculta las etiquetas de los cuerpos (la vista limpia las oculta). */
@@ -239,4 +254,6 @@ export interface SceneEngineApi {
   readonly qualityLevel: QualityLevel;
   /** Hacia dónde mira la cámara del cielo. */
   readonly skyView: SkyView;
+  /** Venus «Bajo las nubes» (fase 9b, D44): el estado del radar de Magellan (también en su evento). */
+  readonly venusRadarState: VenusRadarState;
 }

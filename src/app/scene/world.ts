@@ -54,6 +54,7 @@ import {
   EarthUniforms,
   MAX_SHADOW_CASTERS,
   MoonUniforms,
+  RadarUniforms,
   ShadowUniforms,
   createBodyMaterial,
 } from './materials/body-material';
@@ -281,6 +282,8 @@ interface BodyVisual {
   readonly moon: MoonUniforms | null;
   /** Las sombras de otros cuerpos que recibe (fase 7) y quiénes las proyectan (sus índices). */
   readonly shadows: ShadowUniforms | null;
+  /** Venus: la capa del radar de Magellan (fase 9b, D44); `null` en los demás cuerpos. */
+  readonly radar: RadarUniforms | null;
   readonly shadowCasters: readonly number[];
   readonly maps: readonly BodyMap[];
   /** Dónde van los mapas extra (los uniformes de la Tierra o de la Luna). */
@@ -499,6 +502,7 @@ export class World {
             earth: body.id === 'tierra',
             moon: body.id === 'luna',
             shadows: casters.length > 0,
+            radar: body.id === 'venus',
           })
         : null;
       if (bodyMaterial?.earth) configureEarth(bodyMaterial.earth);
@@ -531,6 +535,7 @@ export class World {
         earth: bodyMaterial?.earth ?? null,
         moon: bodyMaterial?.moon ?? null,
         shadows: bodyMaterial?.shadows ?? null,
+        radar: bodyMaterial?.radar ?? null,
         shadowCasters: bodyMaterial?.shadows ? casters : [],
         maps: (bodyMaterial?.earth ? EARTH_MAPS : bodyMaterial?.moon ? MOON_MAPS : []).map(
           (map) => ({ ...map, loaded: null, requested: null }),
@@ -1348,6 +1353,28 @@ export class World {
   setPixelRatio(pixelRatio: number): void {
     this.stars?.setPixelRatio(pixelRatio);
     this.markerMaterial.uniforms.uPixelRatio.value = pixelRatio;
+  }
+
+  /**
+   * Venus «Bajo las nubes» (fase 9b, D44): la textura del radar de Magellan y su fundido con las nubes
+   * (0: las nubes; 1: el radar), los que lleva `scene/venus-radar.ts`. Su brillo, calibrado como el
+   * de una textura de Venus (su disco lleno, al albedo geométrico de Venus), por `brightness`; la
+   * neblina del limbo, por `haze` (`VISUAL_CONFIG.venus.radar`). La textura la libera esa capa.
+   */
+  setVenusRadar(texture: Texture | null, mix: number): void {
+    const visual = this.visuals.find((v) => v.radar);
+    const radar = visual?.radar;
+    if (!visual || !radar) return;
+    radar.uRadarMap.value = texture;
+    radar.uRadarMix.value = texture ? Math.min(Math.max(mix, 0), 1) : 0;
+    const luminance = TEXTURE_MEAN_LUMINANCE['venus-radar'];
+    const { brightness, haze } = VISUAL_CONFIG.venus.radar;
+    const scale =
+      visual.photometry && luminance !== undefined
+        ? bodyAlbedoScale(visual.body.id, visual.photometry, luminance)
+        : 1;
+    radar.uRadar.value.set(scale * brightness, haze);
+    this.options.invalidate();
   }
 
   /** Memoria de vídeo estimada (texturas + geometría), en bytes. */

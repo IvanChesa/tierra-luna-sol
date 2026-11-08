@@ -24,6 +24,7 @@ export type {
   ScaleMode,
   SceneEngineApi,
   ToneMappingMode,
+  VenusRadarState,
   ViewFrom,
   SceneEngineEventName,
   SceneEngineEvents,

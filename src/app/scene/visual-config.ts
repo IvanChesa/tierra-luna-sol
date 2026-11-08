@@ -300,6 +300,19 @@ export const VISUAL_CONFIG = {
     umbraLight: { color: '#b8502e', intensity: 0.18, axis: 0.35 },
   },
   /**
+   * Venus «Bajo las nubes» (fase 9b, D44): el mosaico del radar de Magellan en lugar de las nubes,
+   * con la misma luz del Sol y la misma fotometría de Venus (la tarea 3: su sombreado sigue con su
+   * luz). El radar no mide la luz visible: lo que da es el eco de cada punto (lo rugoso y las cumbres,
+   * claros), y se pinta en gris, sin color inventado. Su brillo, **ilustrativo**: el de una textura de
+   * Venus, calibrado igual que la de las nubes (`brightness` × el albedo geométrico de Venus en el
+   * disco lleno), para que se vea con la misma exposición. `haze`: la parte de la neblina del limbo
+   * que queda con el radar (la de las nubes taparía su borde). `fadeMs`: el fundido entre las nubes y
+   * el radar (un corte con movimiento reducido o en las capturas).
+   */
+  venus: {
+    radar: { brightness: 1, haze: 0.3, fadeMs: 800 },
+  },
+  /**
    * Los anillos de Saturno (fase 7, D36; decisión de Iván del 30-10): un realce **ilustrativo** del
    * brillo que reflejan (no de su opacidad), como el relleno de D21. Con su albedo calibrado con el
    * Hubble, el anillo B brilla 0,8 veces el disco de Saturno en la geometría de la foto de 2019 (lo
