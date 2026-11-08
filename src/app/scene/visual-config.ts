@@ -214,7 +214,8 @@ export const VISUAL_CONFIG = {
      * contradicen (`scripts/measure-earth-epic.mjs` queda como registro). Calibrada frente a capturas
      * propias de la referencia (`scripts/measure-d46.mjs --solo=tierra`, en CIELAB: el 15-01-2026, con
      * África y Europa de día; `docs/informes/fase-9b-entrega-tierra.md`). La cara nocturna (D40) y las
-     * luces no cambian.
+     * luces no cambian: su relleno de la vista general y las nubes que tapan las luces siguen con el
+     * albedo y las nubes de la fase 5.
      * - `ocean`: el albedo lineal del océano (en la máscara de agua de siempre), un azul vivo, y lo que
      *   conserva de la variación de brillo de la textura (su luminancia en el agua, 0,0477 de mediana, y
      *   el exponente: 0, nada; 1, en proporción): el Atlántico sur y el Índico, en el tono de la
@@ -230,8 +231,8 @@ export const VISUAL_CONFIG = {
      *   incidencia normal y hasta `fresnelMax` veces más hacia el borde), con su brillo en la incidencia
      *   normal (`intensity`, en lugar del `glint` de arriba): grande, suave y sin quemar a blanco.
      * - `land`: la saturación de la tierra (1: la de la textura), la rodilla de la compresión de lo
-     *   árido (en lugar de `arid.knee`; más alta: el desierto, más claro, L\* 63 frente a 65 en la
-     *   referencia) y el tinte lineal de lo árido (la misma zona cálida: más amarillo) y de la
+     *   árido (de día, en lugar de `arid.knee`, que sigue en la cara nocturna; más alta: el desierto,
+     *   más claro, L\* 63 frente a 65 en la referencia) y el tinte lineal de lo árido (la misma zona cálida: más amarillo) y de la
      *   vegetación (donde el verde supera al rojo y al azul: más verde; ni la nieve ni las salinas).
      * - `relief`: la fuerza del mapa de normales de la Tierra (1: el relieve sin exagerar): las montañas
      *   se ven desde la Tierra completa. Con más de 6 salen los bloques de compresión del mapa.

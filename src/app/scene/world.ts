@@ -1622,10 +1622,11 @@ function configureEarth(earth: EarthUniforms): void {
   const scatter = new Color(config.scatter.color).multiplyScalar(config.scatter.intensity);
   earth.uScatter.value.set(scatter.r, scatter.g, scatter.b, config.scatter.limb);
   earth.uTwilightColor.value.set(config.twilight);
+  earth.uArid.value.set(config.arid.knee, config.arid.warmFrom, config.arid.warmTo);
   // La Tierra realzada del explorador (fase 9b, D46): el océano, las nubes, la tierra y el reflejo;
-  // la rodilla de lo árido, la suya.
+  // la rodilla de lo árido, la suya (de día: la noche sigue con la de arriba, D40).
   const { ocean, clouds, glint, land } = config.enhanced;
-  earth.uArid.value.set(land.aridKnee, config.arid.warmFrom, config.arid.warmTo);
+  earth.uEnhancedAridKnee.value = land.aridKnee;
   earth.uOcean.value.set(...ocean.albedo, 1);
   earth.uOceanDetail.value.set(ocean.waterLuminance, ocean.detail);
   earth.uCloudShape.value.set(clouds.from, clouds.to, clouds.max, 1);

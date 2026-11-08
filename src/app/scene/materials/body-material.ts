@@ -235,6 +235,8 @@ uniform vec4 uScatter;
 uniform vec3 uTwilightColor;
 // Tierras áridas: (rodilla de la compresión, calidez desde la que empieza, calidez a la que es entera).
 uniform vec3 uArid;
+// La rodilla de lo árido de la Tierra realzada (D46), de día; 0: la de uArid.
+uniform float uEnhancedAridKnee;
 // La Tierra realzada del explorador (fase 9b, D46; ilustrativa). Con w = 0 en uOcean, uCloudShape y
 // uGlintShape, y uLand = (1, 1, 1, 1), la de la fase 5, ajustada con EPIC.
 // - uOcean: el albedo lineal del océano (rgb) y cuánto sustituye al de la textura (w), en el agua de la
@@ -392,7 +394,11 @@ void main() {
   // hielo (neutros), y apenas los bosques (oscuros).
   float aridLum = max(dot(albedo, vec3(0.2126, 0.7152, 0.0722)), 1e-4);
   float arid = smoothstep(uArid.y, uArid.z, (albedo.r - albedo.b) / aridLum);
-  albedo *= mix(1.0, 1.0 / (1.0 + aridLum / uArid.x), arid);
+  // El de la fase 5 (con EPIC): el de la cara nocturna (D40), que la Tierra realzada no cambia.
+  vec3 nightAlbedo = albedo * mix(1.0, 1.0 / (1.0 + aridLum / uArid.x), arid);
+  // De día, la rodilla de la Tierra realzada (D46: el desierto, más claro), si la hay.
+  float knee = uEnhancedAridKnee > 0.0 ? uEnhancedAridKnee : uArid.x;
+  albedo *= mix(1.0, 1.0 / (1.0 + aridLum / knee), arid);
   // El agua (la máscara especular, 1 en el agua): para el océano realzado y para el reflejo.
   float water = uHasSpecular > 0.5 ? texture2D(uSpecularMap, uv).r : 0.0;
   if (uOcean.w > 0.0) {
@@ -445,9 +451,10 @@ void main() {
   haze *= sunVisible;
   // Nubes: la cobertura de su capa, que deriva en longitud (ilustrativo).
   vec2 cloudUv = vec2(uv.x + uCloudOffset, uv.y);
-  float cloud = uHasClouds > 0.5
-    ? tlsCloudCover(texture2D(uCloudMap, cloudUv).r) * uCloudOpacity
-    : 0.0;
+  float cloudRaw = uHasClouds > 0.5 ? texture2D(uCloudMap, cloudUv).r : 0.0;
+  // La de la textura (la de la noche, D40) y, de día, la realzada (D46), si lo está.
+  float cloudCover = cloudRaw * uCloudOpacity;
+  float cloud = uHasClouds > 0.5 ? tlsCloudCover(cloudRaw) * uCloudOpacity : 0.0;
   // Su sombra: la misma capa, un poco desplazada hacia el Sol en el plano tangente (aproximación).
   float shadow = 0.0;
   if (uHasClouds > 0.5 && muSun > 0.0) {
@@ -484,13 +491,16 @@ void main() {
   if (uHasNight > 0.5) {
     // (Los bordes de smoothstep, en orden: al revés, GLSL ES no define el resultado.)
     float night = 1.0 - smoothstep(-0.15, 0.0, muSun);
-    color += texture2D(uNightMap, uv).r * uNightTint * uEarth.y * night * (1.0 - 0.85 * cloud);
+    // Las nubes que las tapan, las de la textura (D40: la Tierra realzada no cambia la noche).
+    color += texture2D(uNightMap, uv).r * uNightTint * uEarth.y * night * (1.0 - 0.85 * cloudCover);
   }
   // El relleno ilustrativo: del lado del día, con el color de la superficie; del de la noche, en gris
-  // neutro y solo el de la vista general (D40: sin el azul del océano en la cara nocturna).
+  // neutro y solo el de la vista general (D40: sin el azul del océano en la cara nocturna), con el
+  // albedo y las nubes de la fase 5: así su disco se sigue leyendo igual en la vista general.
   vec3 composite = mix(albedo, vec3(uEarth.x), cloud);
   float dayFill = smoothstep(-0.1, 0.1, muSun);
-  vec3 nightFill = vec3(dot(composite, vec3(0.2126, 0.7152, 0.0722)) * uNightFill);
+  vec3 nightComposite = mix(nightAlbedo, vec3(uEarth.x), cloudCover);
+  vec3 nightFill = vec3(dot(nightComposite, vec3(0.2126, 0.7152, 0.0722)) * uNightFill);
   vec3 earthFill = mix(nightFill, composite * uFill, dayFill) * (0.25 + 0.75 * max(muViewer, 0.0));
   gl_FragColor = vec4(color + uHazeColor.rgb * haze + earthFill, 1.0);
 #else
@@ -572,6 +582,8 @@ export interface EarthUniforms {
   readonly uTwilightColor: Uniform<Color>;
   /** Tierras áridas: (rodilla, calidez desde, calidez hasta); `VISUAL_CONFIG.earth.arid`. */
   readonly uArid: Uniform<Vector3>;
+  /** La rodilla de lo árido de la Tierra realzada (fase 9b, D46), de día; 0: la de `uArid`. */
+  readonly uEnhancedAridKnee: Uniform<number>;
   /**
    * La Tierra realzada (fase 9b, D46; `VISUAL_CONFIG.earth.enhanced`): el albedo lineal del océano y
    * cuánto sustituye al de la textura (w; 0: el de EPIC de la fase 5).
@@ -686,6 +698,7 @@ export function createBodyMaterial(options: BodyMaterialOptions) {
         uTwilightColor: new Uniform(new Color(1, 0.6, 0.35)),
         // Sin compresión hasta que se configura (rodilla enorme).
         uArid: new Uniform(new Vector3(1e6, 0.25, 0.4)),
+        uEnhancedAridKnee: new Uniform(0),
         // Sin el realzado de D46 hasta que se configura.
         uOcean: new Uniform(new Vector4(0, 0, 0, 0)),
         uOceanDetail: new Uniform(new Vector2(1, 0)),

@@ -1389,13 +1389,10 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
       2,
     );
     expect(earth.uOccluderLocal.value.w).toBeCloseTo(0.272, 2);
-    // Y las tierras áridas, con su compresión: la rodilla, la de la Tierra realzada (fase 9b, D46).
-    const { warmFrom, warmTo } = VISUAL_CONFIG.earth.arid;
-    expect(earth.uArid.value.toArray()).toEqual([
-      VISUAL_CONFIG.earth.enhanced.land.aridKnee,
-      warmFrom,
-      warmTo,
-    ]);
+    // Y las tierras áridas, con su compresión de la configuración visual (calibrada con EPIC; de
+    // noche, también con la Tierra realzada).
+    const { knee, warmFrom, warmTo } = VISUAL_CONFIG.earth.arid;
+    expect(earth.uArid.value.toArray()).toEqual([knee, warmFrom, warmTo]);
     h.engine.dispose();
   });
 
@@ -1414,6 +1411,7 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
         uGlintFresnel: { value: { x: number; y: number } };
         uGlintTint: { value: Vector3 };
         uEarth: { value: Vector4 };
+        uEnhancedAridKnee: { value: number };
       } | null;
       atmosphere: { uniforms: { uTint: { value: Vector3 } } } | null;
     }
@@ -1431,6 +1429,7 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     expect(earth.uGlintFresnel.value).toMatchObject({ x: glint.f0, y: glint.fresnelMax });
     expect(earth.uGlintTint.value.toArray()).toEqual([...glint.tint]);
     expect(earth.uEarth.value.z).toBe(glint.intensity);
+    expect(earth.uEnhancedAridKnee.value).toBe(land.aridKnee);
     // Los umbrales de las nubes, en orden, y su opacidad, sin pasar de la de la textura.
     expect(clouds.from).toBeLessThan(clouds.to);
     expect(clouds.max).toBeLessThanOrEqual(1);
