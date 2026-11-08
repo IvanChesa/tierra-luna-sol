@@ -91,9 +91,10 @@
   grid-column: 1 / -1;
 }
 
+/* Con el relleno de los demás botones (con 4 px, apretadas; crítica de la 9c). */
 .earth__view {
-  min-height: 2rem;
-  padding: var(--space-1) var(--space-2);
+  min-height: 2.25rem;
+  padding: var(--space-2) var(--space-3);
   line-height: 1.2;
 }
 

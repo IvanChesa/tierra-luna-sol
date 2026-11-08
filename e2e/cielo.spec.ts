@@ -198,6 +198,26 @@ test.describe('El cielo desde España (fase 8)', () => {
   });
 });
 
+test.describe('El cielo desde España: los rápidos de la crítica de la 9c', () => {
+  test('«Esta noche», con su marcador de abierto o cerrado; «Constelaciones», de 24 px de alto', async ({
+    page,
+  }) => {
+    await openExplorer(page, '/cielo?fecha=2026-11-01T21:00Z');
+    const summary = page.locator('.sky__summary');
+    const marker = () =>
+      summary.evaluate((element) => {
+        const style = getComputedStyle(element);
+        return `${style.display} ${style.listStyleType}`;
+      });
+    // En escritorio, abierto al entrar; al pulsarlo, se pliega y el marcador lo dice.
+    await expect.poll(marker).toBe('list-item disclosure-open');
+    const toggle = await page.locator('.sky__toggle').boundingBox();
+    expect(toggle?.height ?? 0).toBeGreaterThanOrEqual(24);
+    await summary.click();
+    await expect.poll(marker).toBe('list-item disclosure-closed');
+  });
+});
+
 test.describe('Próximos eclipses (fase 8)', () => {
   test('la lista prerenderizada se lee sin JavaScript', async ({ browser }) => {
     const context = await browser.newContext({ javaScriptEnabled: false, locale: 'es-ES' });

@@ -126,9 +126,10 @@
   line-height: 1.4;
 }
 
+/* Con el marcador del navegador, abierto o cerrado (con `display: flex` no salía; crítica de la 9c). */
 .sky__summary {
-  display: flex;
-  align-items: center;
+  display: list-item;
+  align-content: center;
   min-height: 2.25rem;
   cursor: pointer;
   list-style-position: inside;
@@ -244,9 +245,11 @@
   font-size: var(--text-sm);
 }
 
+/* La casilla y su rótulo, 24 px de alto como mínimo (WCAG 2.5.8; crítica de la 9c). */
 .sky__toggle {
   display: inline-flex;
   align-items: center;
+  min-height: 1.5rem;
   gap: var(--space-2);
   font-size: var(--text-sm);
   cursor: pointer;

@@ -15,6 +15,15 @@ test.describe('La vista Tierra (fase 5)', () => {
       'Las luces de la noche',
       'España',
     ]);
+    // Con el relleno de los demás botones: 8 px arriba y abajo y 12 a los lados (crítica de la 9c).
+    const padding = await views
+      .getByRole('button')
+      .first()
+      .evaluate((button) => {
+        const style = getComputedStyle(button);
+        return [parseFloat(style.paddingTop), parseFloat(style.paddingLeft)];
+      });
+    expect(padding).toEqual([8, 12]);
     await views.getByRole('button', { name: 'España', exact: true }).click();
     await expect(views.getByRole('button', { name: 'España', exact: true })).toHaveAttribute(
       'aria-pressed',
