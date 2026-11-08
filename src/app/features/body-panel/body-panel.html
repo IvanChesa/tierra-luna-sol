@@ -19,8 +19,51 @@
   <div class="card__body" id="card-body" tabindex="-1">
     <p class="card__summary">{{ body().summary.text }}</p>
 
+    <!-- Venus «Bajo las nubes» (fase 9b, D44): solo con Venus enfocada y el 3D a la vista. -->
+    @if (radar(); as state) {
+      <div class="card__radar">
+        <button
+          type="button"
+          class="control card__radar-toggle"
+          [attr.aria-pressed]="radarPressed()"
+          aria-describedby="card-radar-note"
+          (click)="radarChange.emit(!radarPressed())"
+        >
+          Bajo las nubes
+        </button>
+        <p class="card__radar-note" id="card-radar-note">
+          @switch (state) {
+            @case ('loading') {
+              Cargando la imagen de radar…
+            }
+            @case ('on') {
+              Imagen de radar de la sonda Magellan, no lo que verían tus ojos.
+            }
+            @case ('error') {
+              No se ha podido cargar la imagen de radar: siguen las nubes.
+            }
+            @default {
+              Su superficie, como la vio el radar de la sonda Magellan.
+            }
+          }
+        </p>
+      </div>
+    }
+
     <!-- En el móvil, en reposo, no se ve: «Ver los datos» (o subir la hoja) lo despliega. -->
     <div class="card__rest" id="card-rest">
+      <!-- El Sol, en color realzado (fase 9b, D46): lo dice, con su fuente. -->
+      @if (sunNote(); as note) {
+        <p class="card__note">
+          {{ note.text }}
+          @if (note.source; as source) {
+            Fuente: <a [href]="source" hreflang="en">{{ sourceName(source) }}</a
+            >.
+          }
+          <a routerLink="/sobre-el-proyecto" fragment="ilustrativo">Lo que es ilustrativo</a>.
+        </p>
+      }
+
       @if (distances().length > 0) {
         <h3 class="card__section">Distancia</h3>
         <dl class="card__data">

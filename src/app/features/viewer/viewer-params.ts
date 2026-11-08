@@ -18,6 +18,8 @@
  *   `cuerpo=` solo y centrado.
  * - Solo en captura, para ver de cerca un sistema de lunas de la vista general (fase 9b):
  *   `marco=ilustrativo`, el cuerpo de `cuerpo=` enfocado sin pasar a su sistema local físico.
+ * - Solo en captura, Venus «Bajo las nubes» (fase 9b, D44): `radar=1`, con `cuerpo=venus`, el radar de
+ *   Magellan en lugar de las nubes, ya cargado y sin fundido.
  * - Solo en captura, para medir el limbo del Sol (fase 9b): `medida=limbo`, el Sol sin halo, corona,
  *   bloom, granulación ni manchas, y con su fotosfera por debajo de la compresión del tone mapping.
  * - `lugar=teide` (fase 8): el lugar del cielo desde España (los del selector; por defecto, el
@@ -61,6 +63,8 @@ export interface ViewerParams {
   readonly illustrativeFocus: boolean;
   /** Solo en captura: el Sol para medir su limbo (`medida=limbo`). */
   readonly sunMeasure: boolean;
+  /** Solo en captura: Venus con el radar de Magellan (`radar=1`). */
+  readonly venusRadar: boolean;
   /** El lugar del cielo desde España (`lugar=`), o `null` (el de por defecto). */
   readonly place: PlaceId | null;
   /** Solo en captura: hacia dónde mira la cámara del cielo. */
@@ -189,6 +193,7 @@ export function parseViewerParams(search: string): ViewerParams {
     isolate: capture && params.get('aislado') === '1',
     illustrativeFocus: capture && params.get('marco') === 'ilustrativo',
     sunMeasure: capture && params.get('medida') === 'limbo',
+    venusRadar: capture && params.get('radar') === '1',
     place: place as PlaceId | null,
     skyView: capture ? parseSkyView(params) : null,
     shadow: params.get('sombra') === '1' && time !== null,

@@ -74,6 +74,9 @@ class FakeEngine implements ExplorerEngine {
   setConstellationsVisible(visible: boolean) {
     this.calls.push(`setConstellationsVisible ${visible}`);
   }
+  setVenusRadar(on: boolean) {
+    this.calls.push(`setVenusRadar ${on}`);
+  }
   on<K extends SceneEngineEventName>(type: K, listener: (event: SceneEngineEvents[K]) => void) {
     const set = this.listeners.get(type) ?? new Set();
     set.add(listener as (event: unknown) => void);
@@ -532,5 +535,36 @@ describe('ExplorerSession: «Ver en 3D» de un eclipse de Sol (fase 8)', () => {
     session.attachEngine(engine);
     engine.emit('ready', { startupMs: 10 });
     expect(engine.calls.some((call) => call.startsWith('lookAtSurface'))).toBe(false);
+  });
+});
+
+describe('ExplorerSession: Venus «Bajo las nubes» (fase 9b, D44)', () => {
+  afterEach(() => window.history.replaceState({}, '', '/'));
+
+  it('la orden llega al motor; el estado es el que dice el motor y lo que se ve en el lienzo se anuncia', async () => {
+    const { session } = await setup('?fecha=2026-06-01T00:00Z&cuerpo=venus');
+    const engine = new FakeEngine();
+    session.attachEngine(engine);
+    expect(session.radar()).toBe('off');
+    session.setVenusRadar(true);
+    expect(engine.calls.at(-1)).toBe('setVenusRadar true');
+    engine.emit('venusRadar', { state: 'loading' });
+    expect(session.radar()).toBe('loading');
+    engine.emit('venusRadar', { state: 'on' });
+    expect(session.radar()).toBe('on');
+    expect(session.announcement()).toBe(
+      'Venus bajo las nubes: imagen de radar de la sonda Magellan.',
+    );
+    session.setVenusRadar(false);
+    expect(engine.calls.at(-1)).toBe('setVenusRadar false');
+    engine.emit('venusRadar', { state: 'off' });
+    expect(session.radar()).toBe('off');
+    // Si no llega la textura, se dice.
+    engine.emit('venusRadar', { state: 'error' });
+    expect(session.announcement()).toMatch(/No se ha podido cargar el radar de Venus/);
+    // Sin motor (al desconectarlo), vuelve a «off».
+    engine.emit('venusRadar', { state: 'on' });
+    session.detachEngine();
+    expect(session.radar()).toBe('off');
   });
 });

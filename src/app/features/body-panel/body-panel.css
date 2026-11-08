@@ -112,6 +112,37 @@
   line-height: 1.55;
 }
 
+/*
+ * Venus «Bajo las nubes» (fase 9b, D44): el botón (un control con aria-pressed, como las vistas guiadas)
+ * y, debajo, lo que enseña: el aviso de que es una imagen de radar. Junto al resumen: en el móvil, a la
+ * vista también con la hoja en reposo.
+ */
+.card__radar {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-6);
+}
+
+.card__radar-note,
+.card__note {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+/* La línea del Sol en color realzado (fase 9b, D46), antes de sus datos. */
+.card__note {
+  margin-bottom: var(--space-6);
+}
+
+@media (pointer: coarse) {
+  .card__radar-toggle {
+    min-height: var(--tap-target);
+  }
+}
+
 .card__section {
   margin: 0 0 var(--space-2);
   color: var(--color-text-muted);
@@ -237,6 +268,10 @@
   }
 
   :host-context(.panel:not(.is-expanded)) .card__summary {
+    margin-bottom: var(--space-2);
+  }
+
+  :host-context(.panel:not(.is-expanded)) .card__radar {
     margin-bottom: var(--space-2);
   }
 }

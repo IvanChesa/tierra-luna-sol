@@ -38,7 +38,13 @@
   }
   <!-- Una ficha por cuerpo: al cambiar de cuerpo se crea otra y entra con un fundido. -->
   @for (id of panelBodies(); track id) {
-    <tls-body-panel [bodyId]="id" [(expanded)]="sheetExpanded" (closed)="closePanel()" />
+    <tls-body-panel
+      [bodyId]="id"
+      [radar]="venusRadar()"
+      [(expanded)]="sheetExpanded"
+      (radarChange)="session.setVenusRadar($event)"
+      (closed)="closePanel()"
+    />
   }
 </aside>
 

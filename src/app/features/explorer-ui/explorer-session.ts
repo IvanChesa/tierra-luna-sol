@@ -6,6 +6,7 @@ import type {
   ExplorerView,
   SceneEngineApi,
   SceneEngineOptions,
+  VenusRadarState,
   ViewInsets,
 } from '../../scene';
 import { ExplorerStore } from '../../state/explorer.store';
@@ -51,6 +52,7 @@ export type ExplorerEngine = SimulationEngine &
     | 'setObserver'
     | 'lookAtSky'
     | 'setConstellationsVisible'
+    | 'setVenusRadar'
   >;
 
 /** El resultado de pedir la ubicación del navegador («Usar mi ubicación»). */
@@ -109,6 +111,9 @@ export class ExplorerSession {
   private readonly _announcement = signal('');
   /** La frase de la región `aria-live` (PLAN 3.d.11). */
   readonly announcement = this._announcement.asReadonly();
+  private readonly _radar = signal<VenusRadarState>('off');
+  /** Venus «Bajo las nubes» (fase 9b, D44): el estado del radar de Magellan, el que dice el motor. */
+  readonly radar = this._radar.asReadonly();
 
   private engine: ExplorerEngine | null = null;
   private engineOffs: (() => void)[] = [];
@@ -190,6 +195,7 @@ export class ExplorerSession {
       isolate: this.params.isolate || undefined,
       illustrativeFocus: this.params.illustrativeFocus || undefined,
       sunMeasure: this.params.sunMeasure || undefined,
+      venusRadar: this.params.venusRadar || undefined,
       observer: observerOf(this.explorer.skyPlace()),
       skyView: this.params.skyView ?? undefined,
     };
@@ -208,6 +214,7 @@ export class ExplorerSession {
       engine.on('travel', ({ active, kind }) => this.explorer.travelling.set(active ? kind : null)),
       // «Ver en 3D» de un eclipse de Sol (`?sombra=1`): al estar lista la Tierra, sobre la sombra.
       engine.on('ready', () => this.aimAtShadow()),
+      engine.on('venusRadar', ({ state }) => this.radarChanged(state)),
     ];
     engine.setSpeed(speed);
     engine.setPlaying(playing);
@@ -222,6 +229,7 @@ export class ExplorerSession {
     for (const off of this.engineOffs.splice(0)) off();
     this.engine = null;
     this.explorer.travelling.set(null);
+    this._radar.set('off');
   }
 
   // --- Órdenes --------------------------------------------------------------------------------
@@ -326,6 +334,26 @@ export class ExplorerSession {
   /** «Vista general»: todo el sistema solar a la vista. */
   overview(): void {
     this.select(null);
+  }
+
+  /**
+   * Venus «Bajo las nubes» (fase 9b, D44): el radar de Magellan en lugar de sus nubes, o las nubes otra
+   * vez. Solo con Venus enfocada en el sistema solar (si no, el motor no hace nada); al dejarla, vuelven
+   * las nubes solas.
+   */
+  setVenusRadar(on: boolean): void {
+    this.engine?.setVenusRadar(on);
+  }
+
+  /** El estado del radar que dice el motor, y lo que no se ve en el lienzo, dicho (`aria-live`). */
+  private radarChanged(state: VenusRadarState): void {
+    const previous = this._radar();
+    this._radar.set(state);
+    if (state === 'on' && previous !== 'on') {
+      this.announce('Venus bajo las nubes: imagen de radar de la sonda Magellan.');
+    } else if (state === 'error') {
+      this.announce('No se ha podido cargar el radar de Venus: siguen sus nubes.');
+    }
   }
 
   closePanel(): void {
