@@ -132,17 +132,36 @@
 @media (max-width: 63.99rem) {
   /*
    * Encima de la barra de tiempo, que sigue a la vista (reproducir y pausar, a mano). Una hoja baja, como
-   * mucho el 45 % de la pantalla (crítica de la 9c): el 3D se ve mientras se usa, y la cámara aparta el
-   * cuerpo por encima de ella. Lo que no cabe, se desplaza dentro.
+   * mucho el 45 % de la pantalla (crítica de la 9c), y en un teléfono bajo, menos: bajo el título quedan
+   * unos 150 px de 3D (maquetacion.spec.ts), con 10 rem de hoja como mínimo. El 3D se ve mientras se
+   * usa, y la cámara aparta el cuerpo por encima de ella. Lo que no cabe, se desplaza dentro.
    */
   :host {
     --chrome-edge: bottom;
     inset: auto 0 var(--explorer-bar, 3.75rem);
     width: auto;
-    max-height: min(45svh, calc(100svh - var(--explorer-bar, 3.75rem) - 4rem));
+    max-height: min(45svh, max(10rem, calc(100svh - var(--explorer-bar, 3.75rem) - 20rem)));
     padding: var(--space-4) var(--space-4) var(--space-6);
     border-radius: var(--radius-md) var(--radius-md) 0 0;
     box-shadow: 0 -12px 32px rgb(0 0 0 / 0.4);
+  }
+}
+
+/*
+ * En horizontal (o con el zoom al 200 %), una hoja abajo no deja ver nada: un panel a la derecha, de
+ * debajo de las pestañas (no las tapa, como en escritorio) a la barra, con el 3D a su izquierda (la
+ * cámara aparta el cuerpo).
+ */
+@media (max-width: 63.99rem) and (max-height: 30rem) {
+  :host {
+    --chrome-edge: right;
+    inset: 7rem 0 var(--explorer-bar, 3.75rem) auto;
+    width: min(22rem, 60vw);
+    /* De arriba abajo (el `popover` del navegador trae `height: fit-content`). */
+    height: auto;
+    max-height: none;
+    border-radius: var(--radius-md) 0 0 0;
+    box-shadow: -12px 0 32px rgb(0 0 0 / 0.4);
   }
 }
 

@@ -116,7 +116,18 @@ for (const screen of LOW_SCREENS) {
       await expect(page.getByRole('button', { name: 'Acercar' })).toBeVisible();
       await expect(page.getByRole('button', { name: 'Alejar' })).toBeVisible();
     }
-    await page.waitForTimeout(300);
+    // Lo que hay que esperar: que la presentación termine de plegarse y el encuadre se mida otra vez
+    // (con SwiftShader, los fotogramas tardan). Con «Controles» abierto, su hoja cuenta en el encuadre
+    // (crítica de la 9c): el lienzo libre es el que queda entre el texto de la vista y la hoja.
+    const free = () =>
+      page.evaluate(() => {
+        const explorer = document.querySelector('.explorer') as HTMLElement;
+        const style = getComputedStyle(explorer);
+        const px = (name: string) => parseFloat(style.getPropertyValue(name)) || 0;
+        const rect = explorer.getBoundingClientRect();
+        return rect.bottom - px('--view-bottom') - (rect.top + px('--view-top'));
+      });
+    await expect.poll(free).toBeGreaterThanOrEqual(150);
 
     const layout = await page.evaluate(() => {
       const explorer = document.querySelector('.explorer') as HTMLElement;
