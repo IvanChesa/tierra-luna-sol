@@ -238,7 +238,9 @@ uniform vec3 uArid;
 // La rodilla de lo árido de la Tierra realzada (D46), de día; 0: la de uArid.
 uniform float uEnhancedAridKnee;
 // La Tierra realzada del explorador (fase 9b, D46; ilustrativa). Con w = 0 en uOcean, uCloudShape y
-// uGlintShape, y uLand = (1, 1, 1, 1), la de la fase 5, ajustada con EPIC.
+// uGlintShape, uLand = (1, 1, 1, 1), uVegetationTint = (1, 1, 1) y uEnhancedAridKnee = 0, la de la
+// fase 5, ajustada con EPIC (salvo el relieve, que en la Tierra siempre pierde el escalón de
+// cuantización de su mapa: ver reliefNormal).
 // - uOcean: el albedo lineal del océano (rgb) y cuánto sustituye al de la textura (w), en el agua de la
 //   máscara especular; uOceanDetail: la luminancia del agua en la textura que vale 1 y el exponente con
 //   que se conserva su variación (0: nada; 1: en proporción).
