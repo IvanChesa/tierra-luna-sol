@@ -40,6 +40,13 @@ test.describe('Accesibilidad (axe)', () => {
     await page.locator('#tree-saturno > .row').click();
     await expect(page.locator('#card-title')).toHaveText('Saturno');
     expect(await seriousViolations(page)).toEqual([]);
+    // En el móvil, la ficha es una barra fina (decisión del 08-11): su hoja, abierta, también.
+    const bar = page.locator('.bar__toggle');
+    if (await bar.isVisible()) {
+      await bar.click();
+      await expect(bar).toHaveAttribute('aria-expanded', 'true');
+      expect(await seriousViolations(page)).toEqual([]);
+    }
 
     await page.goto('/explorar/tierra?captura=1');
     await expect(page.locator('tls-viewer-canvas')).toHaveClass(/is-ready/, { timeout: 90_000 });

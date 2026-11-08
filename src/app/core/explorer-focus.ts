@@ -1,5 +1,5 @@
 import { Service, Signal, computed, signal } from '@angular/core';
-import type { BodyId } from '../../data/body.model';
+import type { BodyId } from '../data/body.model';
 
 /** Lo que dice el título de la vista del sistema solar del cuerpo elegido. */
 export interface FocusTitle {
@@ -16,7 +16,9 @@ export interface FocusTitle {
  * diferida del explorador (`ExplorerUi`, que tiene los stores) conecta su señal y la página de la
  * portada, que se prerenderiza con el título del sistema solar, la lee: sin cuerpo, el de siempre.
  *
- * Vive en la raíz, sin dependencias: lo importan solo las dos partes diferidas, nunca el bundle inicial.
+ * Vive en la raíz y en `core/`, sin dependencias: lo importan las dos partes diferidas y la cabecera
+ * del sitio (`app.ts`, la franja del cuerpo elegido en el móvil: decisión de Iván del 08-11). En el
+ * bundle inicial pesa poco y no arrastra nada del visor.
  */
 @Service()
 export class ExplorerFocus {

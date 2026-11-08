@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { ExplorerFocus } from '../../features/explorer-ui/explorer-focus';
+import { ExplorerFocus } from '../../core/explorer-focus';
 
 /**
  * Portada: la vista del sistema solar y su texto introductorio (prerenderizado).

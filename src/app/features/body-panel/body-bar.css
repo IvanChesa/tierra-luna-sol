@@ -1,0 +1,100 @@
+/*
+ * La barra fina de la ficha (móvil y tableta; decisión de Iván del 08-11): una fila encima de la barra
+ * de tiempo, como mucho el 12 % de la pantalla. En escritorio, no hay (la tarjeta lo enseña todo).
+ */
+:host {
+  display: none;
+}
+
+@media (max-width: 63.99rem) {
+  :host {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-1) var(--space-1) var(--space-1) 0;
+  }
+}
+
+/* El nombre y «Ver ficha» en una línea; el tipo y el dato clave, debajo. */
+.bar__toggle {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  column-gap: var(--space-3);
+  flex: 1;
+  min-width: 0;
+  min-height: var(--tap-target);
+  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-4);
+  background: transparent;
+  color: var(--color-text);
+  border: 0;
+  border-radius: var(--radius-md);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  /* El gesto de deslizar es suyo: no desplaza la página. */
+  touch-action: none;
+}
+
+.bar__toggle:focus-visible {
+  outline-offset: calc(-1 * var(--focus-ring-width));
+}
+
+.bar__name,
+.bar__meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bar__name {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-display);
+  line-height: 1.25;
+}
+
+.bar__more {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-accent);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-strong);
+}
+
+/* Hacia arriba, cerrada; hacia abajo, abierta. Con movimiento reducido, sin giro (styles.css). */
+.bar__chevron {
+  rotate: -90deg;
+  transition: rotate var(--duration-fast) var(--ease-standard);
+}
+
+[aria-expanded='true'] .bar__chevron {
+  rotate: 90deg;
+}
+
+.bar__meta {
+  grid-column: 1 / -1;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  line-height: 1.3;
+}
+
+.bar__close {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap-target);
+  height: var(--tap-target);
+  padding: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  border: 0;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.bar__close:hover {
+  color: var(--color-text);
+}

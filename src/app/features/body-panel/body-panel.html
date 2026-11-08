@@ -1,4 +1,10 @@
 <article class="card" aria-labelledby="card-title">
+  <!--
+    Móvil y tableta: la barra fina (decisión de Iván del 08-11), que abre y cierra la hoja. Hace de
+    cabecera: con ella, la de abajo no se ve.
+  -->
+  <tls-body-bar [name]="body().name" [meta]="meta()" [(open)]="open" (closed)="closed.emit()" />
+
   <header class="card__head">
     <div class="card__heading">
       <h2 class="card__title" id="card-title">{{ body().name }}</h2>
@@ -15,7 +21,8 @@
     </button>
   </header>
 
-  <div class="card__body">
+  <!-- tabindex="-1": al abrir la hoja en el móvil, el foco llega aquí (a su contenido). -->
+  <div class="card__body" id="card-body" tabindex="-1">
     <p class="card__summary">{{ body().summary.text }}</p>
 
     <!-- En el móvil, en reposo, no se ve: «Ver los datos» (o subir la hoja) lo despliega. -->

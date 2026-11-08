@@ -8,6 +8,7 @@ import { SOURCES, Source, SourceId } from '../../data/sources';
 import { SystemPositions } from '../../state/positions';
 import { bodyKindLabel, bodyPagePath, toBodyLabel } from '../explorer-ui/describe';
 import { Icon } from '../viewer/icon';
+import { BodyBar } from './body-bar';
 
 interface Row {
   readonly label: string;
@@ -46,7 +47,7 @@ const NEAR_KM = 5e6;
  */
 @Component({
   selector: 'tls-body-panel',
-  imports: [RouterLink, Icon],
+  imports: [RouterLink, Icon, BodyBar],
   templateUrl: './body-panel.html',
   styleUrl: './body-panel.css',
 })
@@ -58,11 +59,24 @@ export class BodyPanel {
    * y «Ficha completa»; subida, también las distancias, los datos y sus fuentes. En escritorio, todo.
    */
   readonly expanded = model(false);
+  /**
+   * En el móvil, la hoja abierta (decisión de Iván del 08-11): cerrada, solo la barra fina (el nombre,
+   * el tipo y un dato clave); abierta, también el resumen y «Ficha completa» (y, subida, los datos).
+   */
+  readonly open = model(false);
 
   private readonly positions = inject(SystemPositions);
   protected readonly body = computed(() => getBody(this.bodyId()));
   protected readonly kind = computed(() => bodyKindLabel(this.bodyId()));
   protected readonly link = computed(() => bodyPagePath(this.bodyId()));
+  /** Lo que dice la barra fina bajo el nombre: el tipo y el primer dato (el radio), que no cambia. */
+  protected readonly meta = computed(() => {
+    const first = this.facts()[0];
+    if (!first) return this.kind();
+    // La unidad, con espacio duro (ESTILO §3).
+    const unit = first.value.unit ? `\u00a0${first.value.unit}` : '';
+    return `${this.kind()} · ${first.label}: ${first.value.number}${unit}`;
+  });
   /**
    * Las fuentes de los datos de la ficha (ESTILO §5). Si son varias (en las lunas, el radio sale
    * del JPL y la rotación y la órbita de la NSSDCA), cada una dice qué respalda.

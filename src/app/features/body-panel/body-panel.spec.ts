@@ -43,6 +43,18 @@ describe('BodyPanel: ficha resumida', () => {
     expect(rotation?.querySelector('.card__unit')).toBeNull();
   });
 
+  it('la barra fina del móvil dice el nombre, el tipo y el radio, y controla la hoja (decisión del 08-11)', () => {
+    const root = render('saturno');
+    const toggle = root.querySelector<HTMLButtonElement>('.bar__toggle');
+    expect(toggle?.querySelector('.bar__name')?.textContent).toBe('Saturno');
+    expect(toggle?.querySelector('.bar__meta')?.textContent).toBe(
+      'Planeta · Radio ecuatorial: 60.268\u00a0km',
+    );
+    expect(toggle?.getAttribute('aria-expanded')).toBe('false');
+    expect(toggle?.getAttribute('aria-controls')).toBe('card-body');
+    expect(root.querySelector('#card-body')?.getAttribute('tabindex')).toBe('-1');
+  });
+
   it('el enlace a la ficha completa va en un pie fijo, fuera de la parte que se desplaza', () => {
     const root = render('saturno');
     const link = root.querySelector<HTMLAnchorElement>('.card__foot .card__link');

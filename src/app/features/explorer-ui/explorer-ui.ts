@@ -42,7 +42,7 @@ import { PHONE_QUERY, mediaQuery } from '../viewer/media';
 import { ViewerCanvas } from '../viewer/viewer-canvas';
 import { Callout } from './callout';
 import { bodyKindLabel } from './describe';
-import { ExplorerFocus, type FocusTitle } from './explorer-focus';
+import { ExplorerFocus, type FocusTitle } from '../../core/explorer-focus';
 import { ExplorerSession } from './explorer-session';
 import { hasSeen, markSeen, safeStorage } from './first-visit';
 import { IndexPanel } from './index-panel';
@@ -199,13 +199,21 @@ export class ExplorerUi implements OnInit {
    */
   protected readonly detail = computed(() => this.view() === 'earth' || this.view() === 'moon');
   /**
-   * La ficha del móvil, subida a su altura completa (con las distancias, los datos y sus fuentes). Al
-   * abrirse, o al cambiar de cuerpo, en reposo: el nombre, el resumen y «Ficha completa».
+   * La ficha del móvil y la tableta, abierta (decisión de Iván del 08-11): al elegir un cuerpo, o al
+   * cambiar de cuerpo, solo la barra fina (el nombre, el tipo y un dato clave); a demanda, la hoja a
+   * media pantalla, con el resumen y «Ficha completa».
    */
+  protected readonly sheetOpen = linkedSignal({
+    source: this.panelBody,
+    computation: () => false,
+  });
+  /** Y subida a su altura completa (con las distancias, los datos y sus fuentes: «Ver los datos»). */
   protected readonly sheetExpanded = linkedSignal({
     source: this.panelBody,
     computation: () => false,
   });
+  /** Las hojas del móvil y la tableta (la ficha, el índice y «Controles» suben desde abajo). */
+  private readonly sheets = mediaQuery(SHEETS_MEDIA);
   /** El 3D se ve: los controles de cámara aparecen (antes, y si falla, no harían nada). */
   protected readonly ready3d = signal(false);
   /**
@@ -775,6 +783,11 @@ export class ExplorerUi implements OnInit {
       this.closeIndex();
       return true;
     }
+    // En el móvil, la hoja abierta vuelve a la barra fina, con el foco (decisión de Iván del 08-11).
+    if (this.sheetOpen() && this.sheets()) {
+      this.setSheet(false);
+      return true;
+    }
     if (this.explorer.panelOpen()) {
       this.session.closePanel();
       return true;
@@ -802,26 +815,60 @@ export class ExplorerUi implements OnInit {
     );
   }
 
-  // --- Ficha en móvil: una hoja de dos alturas --------------------------------------------------
+  // --- Ficha en móvil: la barra fina y la hoja, a demanda (decisión de Iván del 08-11) ----------
 
   protected swipeDown(event: PointerEvent): void {
     this.swipeStart = event.clientY;
+    // Soltar fuera del tirador también cuenta (con el ratón no hay captura implícita, como con el dedo).
+    (event.currentTarget as Element | null)?.setPointerCapture?.(event.pointerId);
   }
 
   /**
-   * Al soltar el tirador: hacia arriba, la hoja sube a su altura completa; hacia abajo, baja a la de
-   * reposo o, si ya estaba en ella, se cierra. (El botón «Ver los datos» de la ficha hace lo mismo.)
+   * Al soltar el tirador de la hoja abierta: hacia arriba, sube a su altura completa; hacia abajo,
+   * baja a la de media pantalla o, si ya estaba en ella, vuelve a la barra fina. (La barra se desliza
+   * sola: body-bar.ts; «Ver los datos» sube y baja la hoja.)
    */
   protected swipeEnd(event: PointerEvent): void {
     if (this.swipeStart !== null) {
       const dy = event.clientY - this.swipeStart;
-      if (dy < -SWIPE_OPEN_PX) this.sheetExpanded.set(true);
-      else if (dy > SWIPE_CLOSE_PX) {
+      if (dy < -SWIPE_OPEN_PX) {
+        if (this.sheetOpen()) this.sheetExpanded.set(true);
+        else this.setSheet(true);
+      } else if (dy > SWIPE_CLOSE_PX) {
         if (this.sheetExpanded()) this.sheetExpanded.set(false);
+        else if (this.sheetOpen()) this.setSheet(false);
         else this.session.closePanel();
       }
     }
     this.swipeStart = null;
+  }
+
+  /** La barra abre o cierra la hoja (un toque, el teclado o un gesto): el foco, como en `setSheet`. */
+  protected sheetToggled(open: boolean): void {
+    if (!open) this.sheetExpanded.set(false);
+    this.focusSheet(open);
+  }
+
+  /** Abre la hoja o la devuelve a la barra fina, con el foco. */
+  private setSheet(open: boolean): void {
+    this.sheetOpen.set(open);
+    if (!open) this.sheetExpanded.set(false);
+    this.focusSheet(open);
+  }
+
+  /**
+   * Al abrir la hoja, el foco va a su contenido (el resumen); al cerrarla, a la barra, que la abre otra
+   * vez. Cuando ya está pintada.
+   */
+  private focusSheet(open: boolean): void {
+    afterNextRender(
+      () => {
+        const panel = this.panel().nativeElement;
+        const target = panel.querySelector<HTMLElement>(open ? '.card__body' : '.bar__toggle');
+        if (isShown(target)) target.focus();
+      },
+      { injector: this.injector },
+    );
   }
 
   // --- Foco -----------------------------------------------------------------------------------------
@@ -836,7 +883,11 @@ export class ExplorerUi implements OnInit {
   private keepFocus(before: FocusState, now: FocusState): void {
     const doc = this.host.nativeElement.ownerDocument;
     const active = doc.activeElement;
-    if (active && active !== doc.body && isShown(active)) return;
+    // En el móvil, al elegir un cuerpo, el foco va a su barra fina aunque no se haya perdido (decisión
+    // de Iván del 08-11): desde ella se abre la hoja.
+    const chosen = now.panel !== null && now.panel !== before.panel;
+    const toBar = chosen && this.sheets();
+    if (active && active !== doc.body && isShown(active) && !toBar) return;
     const entering = now.clean && !before.clean;
     if (!entering && this.lastFocus === null) return;
     const root = this.host.nativeElement.parentElement;
@@ -850,8 +901,8 @@ export class ExplorerUi implements OnInit {
       : this.lastFocus;
     const candidates = entering
       ? [this.restoreButton()?.nativeElement]
-      : now.panel !== null && now.panel !== before.panel
-        ? [panel]
+      : chosen
+        ? [toBar ? panel.querySelector('.bar__toggle') : null, panel]
         : [
             indexClosed ? toggle : last,
             last,
@@ -881,8 +932,15 @@ export class ExplorerUi implements OnInit {
     const chrome = () => [...explorer.querySelectorAll<HTMLElement>('[data-chrome]')];
     const measure = () => {
       const stage = { left: 0, top: 0, right: explorer.clientWidth, bottom: explorer.clientHeight };
+      // Lo que no se ve (`visibility: hidden`: en el móvil, las fichas tras la ficha) no aparta el
+      // encuadre: con la barra fina, el cuerpo, en el centro del hueco que queda (decisión del 08-11).
       const rects = chrome()
-        .filter((element) => element.offsetWidth > 0 && element.offsetHeight > 0)
+        .filter(
+          (element) =>
+            element.offsetWidth > 0 &&
+            element.offsetHeight > 0 &&
+            win.getComputedStyle(element).visibility !== 'hidden',
+        )
         .map((element) => {
           const { left, top } = offsetWithin(element, explorer);
           return {
