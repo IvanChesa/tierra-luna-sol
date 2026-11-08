@@ -1420,6 +1420,7 @@ export class World {
       uHaze: body.uHaze,
       uHazeColor: hazeColor,
       uSunDirection: body.uSunDirection,
+      uTint: new Uniform(new Vector3(1, 1, 1)),
     });
     const shell = new Mesh(this.coarseSphere, material);
     shell.name = `${mesh.name}-atmosphere`;

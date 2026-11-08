@@ -44,6 +44,9 @@ uniform float uRadius;
 uniform float uScaleHeight;
 uniform vec4 uHaze;
 uniform vec4 uHazeColor;
+// Un tinte lineal sobre el halo: (1, 1, 1), ninguno; el borde de la Tierra realzada (fase 9b, D46),
+// más azul y brillante.
+uniform vec3 uTint;
 varying vec3 vViewPosition;
 varying vec3 vCenter;
 varying vec3 vSunDirection;
@@ -80,7 +83,7 @@ void main() {
   float cosAlpha = dot(toSun, toViewer);
   float forward = 1.0 + uHaze.w * tlsHenyeyGreenstein(cosAlpha, g) / tlsHenyeyGreenstein(-1.0, g);
   float glow = uHaze.x * density * lit * forward;
-  gl_FragColor = vec4(uHazeColor.rgb * glow, 1.0);
+  gl_FragColor = vec4(uHazeColor.rgb * uTint * glow, 1.0);
   ${OUTPUT_FRAGMENT}
 }
 `;
@@ -95,6 +98,8 @@ export interface AtmosphereUniforms {
   readonly uHazeColor: Uniform<Vector4>;
   /** El mismo vector que usa el material del cuerpo: no hay que copiarlo en cada frame. */
   readonly uSunDirection: Uniform<Vector3>;
+  /** Tinte lineal del halo: (1, 1, 1), ninguno; el borde de la Tierra realzada (fase 9b, D46). */
+  readonly uTint: Uniform<Vector3>;
 }
 
 export function createAtmosphereMaterial(uniforms: AtmosphereUniforms) {
