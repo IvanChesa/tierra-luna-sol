@@ -143,8 +143,7 @@ try {
     if (path.includes('radar=1')) await waitForRadar(page);
     if (action) await action(page);
     report.gpu ??= await rendererName(page);
-    await page.screenshot({ path: file(`${name}.png`) });
-    await sharp(file(`${name}.png`))
+    await sharp(await page.screenshot())
       .webp({ quality: 82 })
       .toFile(file(`${name}.webp`));
     const { vramMB, drawCalls } = await stats(page);
