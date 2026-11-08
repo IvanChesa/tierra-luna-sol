@@ -250,6 +250,10 @@ for (const screen of [
     const page = await context.newPage();
     await page.goto('/?captura=1&cuerpo=saturno');
     await expect(page.locator('tls-viewer-canvas')).toHaveClass(/is-ready/, { timeout: 90_000 });
+    // Por debajo de 1024 px, elegir un cuerpo no abre su ficha: la abre «ⓘ», en la franja de arriba
+    // (segunda decisión de Iván del 08-11).
+    await expect(page.locator('#card-title')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Ver la ficha de Saturno' }).click();
     await expect(page.locator('#card-title')).toHaveText('Saturno');
     await page.waitForTimeout(500);
     expect(await page.evaluate(() => window.scrollY)).toBe(0);
