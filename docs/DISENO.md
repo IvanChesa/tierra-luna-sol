@@ -116,13 +116,17 @@ La consola de un observatorio: grafito neutro, texto blanco roto y un único ace
 
 - **El 3D manda.** Lo que flota sobre el lienzo sin ser un control ni un panel opaco no captura el puntero: los gestos llegan al 3D por todo el lienzo (también sobre el título).
 - **Un control, un peso.** El borde (`--color-control`), solo en los campos y los desplegables; los botones, con su fondo (`--color-surface-raised`) y sin borde. Pulsado o abierto, el texto en latón con un subrayado de 2 px, como la pestaña de la vista actual. **Reproducir es lo único destacado** (el círculo de latón).
-- **Paneles sin contorno:** el fondo (`--color-surface`) y la sombra los separan del 3D. Las pestañas, sobre un fondo traslúcido; los planetas de las fichas, sin caja (la miniatura y el nombre, con una sombra del color del fondo).
+- **Paneles sin contorno:** el fondo (`--color-surface`) y la sombra los separan del 3D. Las pestañas, sobre un fondo traslúcido; los planetas de las fichas, sin caja: la miniatura, y el nombre sobre una placa casi opaca del color del fondo, que se lee también sobre un planeta brillante (≥ 4,5:1 en el peor caso, medido por `scripts/measure-ui.mjs`; crítica de la 9c).
 - **Un solo selector a la vista:** las fichas de cuerpos. El Índice es su versión en tabla y, abierto, las sustituye. El título dice el cuerpo elegido, con «‹ Sistema solar» para volver.
 - **Planetas y lunas, distintos a simple vista** (decisión de Iván del 07-11): los planetas, redondos y con el nombre debajo; las lunas, pastillas con su fondo, la miniatura y el nombre al lado (como un botón: pulsada, el nombre en latón con su subrayado).
   - **En el PC y la tableta (≥ 768 px), dos filas:** abajo, el Sol y los planetas; encima, las lunas del sistema elegido. En todas las vistas: en Tierra y Luna, los planetas y, encima, la Luna.
   - **En el móvil, una sola fila:** con un planeta con lunas elegido, el planeta, una raya y sus lunas (desplazable), y «‹ Sistema solar», en el título, vuelve a la de los planetas. En Tierra, Luna y el Cielo, sin fichas (en el Cielo, su selector es la tabla de «Esta noche», con «Mirar»).
 - **Lo que se usa poco, en «Controles»:** la fecha y la hora, el sentido, la cámara (en el móvil), la vista general, la vista limpia, la calidad, la escala, el recorrido y los atajos.
-- **La primera vez, y no más:** las pistas de uso y el recorrido de la portada (unos 30 s, con «Saltar el recorrido»).
+- **La primera vez, y no más:** el recorrido de la portada y, al acabarlo o saltarlo, las pistas de uso (crítica de la 9c).
+  - **El recorrido,** unos 29 s: Saturno, la Tierra y España (con sus lugares nombrados), la Luna (si no está casi nueva: con menos del 20 % iluminado, esa parada se salta, sin tocar la fecha) y la vista general en marcha. Cada parada, con su rótulo («1 de 4 · Saturno y sus anillos»). «Saltar el recorrido» lleva a la vista general en marcha, sin anillo de foco si se ha usado el ratón o un toque.
+  - **Las pistas,** 7 s junto a la fila: «Ahora tú: elige un cuerpo abajo · arrastra para girar · usa la rueda para acercarte» (o «pellizca», con el dedo). Solo se dan por vistas con una interacción de verdad (un clic, un toque, la rueda o una tecla que no sea moverse con el tabulador); si se acaban sin usarlas, vuelven otro día.
+- **Los avisos sobre el 3D** (el rótulo del recorrido, las pistas y «Saltar el recorrido»): en una placa junto a la fila, centrada en la zona libre del encuadre (`tls-callout`); no capturan el puntero.
+- **Lo plegado se despliega al recibir el foco** (la presentación y la autoría, con un cuerpo elegido en el móvil): el tabulador nunca se para en algo que no se ve.
 - **Medida de lectura:** `--measure` = 30em, unos 68 caracteres de texto corrido (antes 68ch, que con el «0» de Public Sans daban unos 89).
 - **Nada por debajo de 11 px** y zonas de 44 × 44 px en el explorador táctil (24 × 24 en todas las páginas).
 
@@ -130,7 +134,7 @@ La consola de un observatorio: grafito neutro, texto blanco roto y un único ace
 
 ### Navegación
 
-- **Páginas de lectura** (fichas, índices, eclipses…): la cabecera con el nombre (a la portada), Planetas, Lunas, Sol, Eclipses, Sobre el proyecto y «Explorar en 3D» (en latón). En el móvil, en «Menú», con los créditos y lo legal aparte y abajo.
+- **Páginas de lectura** (fichas, índices, eclipses…): la cabecera con el nombre (a la portada), Planetas, Lunas, Sol, Eclipses, Sobre el proyecto y «Explorar en 3D» (en latón). En el móvil, en «Menú», con los créditos y lo legal aparte y abajo. Debajo, las migas («Inicio › Planetas › Marte», «Inicio › Eclipses»).
 - **El explorador:** la cabecera compacta en todos los tamaños (el nombre y «Menú», con lo mismo dentro). Sus vistas, en las pestañas: Sistema solar, Tierra, Luna y Cielo.
 
 ### Visor · escritorio (≥ 1024 px)
@@ -150,12 +154,12 @@ Disposición inmersiva (D30, fase 3c; fase 9c): el lienzo a sangre bajo la cabec
 │                    canvas 3D a sangre                  └───────────────────┘   │
 │        (los gestos, en todo él; el encuadre se aparta de los paneles)    +     │ ← acercar y alejar, sin marco
 │                                                                          −     │
+│     Ahora tú: elige un cuerpo abajo · arrastra para girar · usa la rueda…      │ ← pistas, 7 s, la primera vez
 │                [◐ Mimas] [◐ Encélado] [◐ Tetis] [◐ Dione] … [◐ Jápeto]         │ ← encima, las lunas del sistema
 │ [≡ Índice]    (☉)  (·)  (·)  (·)  (·)  (♃)  (♄)  (·)  (·)                      │    elegido, en pastillas; abajo,
 │               Sol  Mer. Ven. Tie. Mar. Júp. Sat. Ura. Nep.                     │    los planetas, el nombre debajo
-│ (▶)  Fecha                   2026 ───────●──────────   Velocidad  [⚙ Controles]│ ← barra: reproducir, fecha,
-│      24 oct 2026, 02:00                    hoy         3 días/s ▾              │     año, velocidad y más
-│ Arrastra para girar · usa la rueda o pellizca para acercarte · elige un cuerpo │ ← pistas, solo la primera vez
+│ (▶)  Fecha               ‹ 2026 › ──────●──────────   Velocidad  [⚙ Controles] │ ← barra: reproducir, fecha,
+│      24 oct 2026, 02:00                    hoy         3 días/s ▾              │     el año (‹ ›), velocidad y más
 └────────────────────────────────────────────────────────────────────────────────┘
 ```
 Las cifras y las fechas del boceto son marcadores.
@@ -164,8 +168,9 @@ Las cifras y las fechas del boceto son marcadores.
 - **La franja de abajo** es solo el fondo de la barra de tiempo, con un fundido corto (0,5 rem) encima; los dos, como mucho el 10 % del lienzo; las fichas flotan sobre el 3D y cuentan en el encuadre.
 - **La barra no cambia de tamaño al reproducir:** las cifras usan `tabular-nums` y la fecha tiene el ancho de la más larga («30 sept 2026, 23:59»).
 - **Al entrar, el sistema se mueve** a la velocidad de su contexto (D33): reproducir y pausar es lo primero y más visible de la barra. La primera vez, el recorrido de la portada.
-- **En las vistas Tierra y Luna**, sin Índice: los planetas y, encima, la Luna; «‹ Sistema solar» en el título y su panel en la columna izquierda. **En el Cielo**, sin Índice: su tabla es la de «Esta noche»; su columna, de 22 rem, para que quepa el lugar más largo.
-- **«Controles»** se abre encima de la franja de abajo, a la derecha (con la ficha abierta, a su izquierda): por encima de la barra, las fichas y la fila de lunas, que no tapa.
+- **En las vistas Tierra y Luna**, sin Índice: los planetas y, encima, la Luna; «‹ Sistema solar» en el título y su panel en la columna izquierda, que aparta el encuadre a su derecha: la región de una vista guiada (España), en la zona libre. **En el Cielo**, sin Índice: su tabla es la de «Esta noche»; su columna, de 22 rem, para que quepa el lugar más largo.
+- **El año, un mando de la barra:** «‹ 2026 ›», en la línea del año, en el PC y la tableta (con el dedo, flechas de 44 px; en el teléfono, la línea apenas mide 100 px: el año va en la fecha y en «Controles»). Un toque, un año; mantenido medio segundo, por décadas; siempre dentro de 1900–2100. Con el teclado, Mayús + Re Pág y Av Pág en la línea del año, que lo dice en su descripción. Las flechas no son paradas del tabulador: la línea y el año son un solo mando (los topes de D47).
+- **«Controles»** se abre encima de la franja de abajo, a la derecha (con la ficha abierta, a su izquierda): por encima de la barra, las fichas y la fila de lunas, que no tapa. Abierto, cuenta en el encuadre: la cámara aparta el cuerpo a su izquierda.
 
 ### Visor · móvil y tableta (< 1024 px)
 
@@ -198,8 +203,8 @@ En el teléfono (< 768 px), con un planeta con lunas elegido (y la ficha cerrada
 └────────────────────────────────┘
 ```
 - **La ficha** es una hoja de dos alturas encima de la barra (que sigue a la vista: reproducir y pausar, siempre a mano): en reposo, como mucho el 45 % de la pantalla, con el nombre, el resumen, «Ficha completa» y «Ver los datos»; subida, los datos y sus fuentes.
-- **El índice y «Controles»** suben como hojas, con su título y su botón de cerrar. Lo que tapan sale del orden del foco.
-- **Tierra y Luna:** en el teléfono, sin fichas (en el título, «‹ Sistema solar»); su panel en una fila (las vistas, desplazables, y «Más» para el resto) y la barra plegada a reproducir, la fecha y «Controles». **El Cielo:** el lugar (su nombre corto, «Montsec (Lleida)») con «Usar mi ubicación» debajo (en la tableta, a su lado), la hora y una línea de resumen; «Esta noche», a demanda, con la tabla en dos líneas por fila si no cabe en su caja (también en la columna del escritorio); en el teléfono, sin fichas.
+- **El índice y «Controles»** suben como hojas, con su título y su botón de cerrar. Lo que tapan sale del orden del foco. «Controles» es una hoja baja, como mucho el 45 % de la pantalla (lo demás se desplaza dentro): el 3D se ve encima mientras se usa, y la cámara aparta el cuerpo por encima de ella. En un teléfono bajo, deja al menos unos 150 px de 3D bajo el título; en horizontal (o con el zoom al 200 %), es un panel a la derecha, de debajo de las pestañas a la barra, con el 3D a su izquierda.
+- **Tierra y Luna:** en el teléfono, sin fichas (en el título, «‹ Sistema solar»); su panel en una fila (las vistas, desplazables, y «Más» para el resto) y la barra plegada a reproducir, la fecha y «Controles». **El Cielo:** el lugar (su nombre corto, «Montsec (Lleida)») con «Usar mi ubicación» debajo (en la tableta, a su lado), la hora y una línea de resumen; «Esta noche», a demanda (con su marcador de abierto o cerrado), con la tabla en dos líneas por fila si no cabe en su caja (también en la columna del escritorio); en el teléfono, sin fichas.
 - **En los teléfonos bajos** (en horizontal o con el zoom al 200 %), la página se desplaza: al llegar se ven el lienzo y, justo debajo, la barra con su pausa.
 
 ### Ficha completa (`/planetas/marte`) · sin 3D
