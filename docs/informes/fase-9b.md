@@ -1,13 +1,8 @@
 # Informe: Fase 9b (el Sol, las lunas y la Tierra de noche)
 
 - **Rama:** `fase-9b-sol-lunas`
-- **Fecha:** 2026-11-04 · 2026-11-05 · 2026-11-06 · 2026-11-07 · 2026-11-08 (en curso)
-- **Estado:** en cierre: la tarea 0 y las seis entregas, hechas y juntadas en esta rama:
-  - 9b.a, 9b.b, 9b.c y 9b.d;
-  - 9b.f: el Sol, en dos vueltas (la segunda, aprobada por Iván el 08-11), y la Tierra, de la sesión B;
-  - 9b.e: Venus, de la sesión C, con la interfaz de la 9c que traía su rama.
-
-  Sigue el cierre: lo pendiente, §5 con el equipo libre, la revisión y la fusión en `main`.
+- **Fecha:** 2026-11-04 · 2026-11-05 · 2026-11-06 · 2026-11-07 · 2026-11-08 (cierre y fusión)
+- **Estado:** **fusionada en `main`** el 08-11 (`32933c9`), con la revisión por subagente aplicada (`docs/revisiones/fase-9b.md`: cambios necesarios, sin Bloqueantes; sus tres Importantes, corregidos). La tarea 0 y las seis entregas, hechas; el cierre, también. Queda para Iván el criterio del borde de D45 (⚠️, §9 y `PENDIENTES.md`).
 
 ## Plan
 Bloque S, modo autónomo, una sola fase por entregas en el orden de `docs/decisiones/FASE-9b-SOL-LUNAS.md` (la prioridad de Iván), que manda sobre este plan en tareas y criterios, con sus adendas D45 (05-11) y D46 (06-11): **0, 9b.a, 9b.b, 9b.c, 9b.d, 9b.f y 9b.e**. La revisión del bloque E está aplicada en `main` (`0963b9f`). Los PR 1 y 3 de Dependabot (E5) siguen abiertos: la rama sale del `main` de hoy y, cuando Iván los fusione, se traen (son de parche). Cada entrega cierra con `npm run check`, este informe al día, sus capturas (`?captura=1`, escritorio y móvil, en `docs/informes/img/fase-9b/`) y un commit; y se sube la rama para que su vista previa (`fase-9b-sol-lunas.tierra-luna-sol.pages.dev`) enseñe cuanto antes la primera.

@@ -546,3 +546,104 @@ A Iván no le gustó el Sol de la primera vuelta («Las manchas estas que sobres
 - **Las protuberancias:** tres bucles de plasma finos y translúcidos en lugar de los bultos.
 
 `/cielo`, igual píxel a píxel. Al rehacer las imágenes salió un fallo del halo: puntos oscuros de un píxel en el borde del Sol pequeño, en la vista general del móvil y en la miniatura. Los causaba una derivada dentro de una rama, que el compilador de D3D no respeta; arreglado sin derivadas y con su test (`d881476`). Regenerados después: la miniatura y las imágenes de la ficha del Sol, la imagen para compartir y el póster de la vista general; `docs/revision-textos.md` sale igual. `npm run check` en verde: 767 tests, JS inicial 310,81 kB, código propio inicial 14,86 kB de 15, three diferido 808,43 kB y 1184 enlaces internos. La nota de entrega, llevada al informe y borrada. Para Iván o para el cierre: dos frases de «Lo que es ilustrativo» del Sol se han quedado atrás (§9 del informe). Sigue: juntar C (Venus) y cerrar la fase cuando la 9c esté fusionada; las medidas de §5, al cerrar, con el equipo libre.
+
+## Fase 9b: fusionada en `main` (2026-11-08)
+`32933c9`, con `--no-ff`. La revisión por subagente (`docs/revisiones/fase-9b.md`) dio **cambios necesarios, sin Bloqueantes**. Sus tres Importantes, corregidos:
+- el criterio del borde de D45, llevado a Iván con ⚠️;
+- los ocho pósters, regenerados;
+- la tabla de `/creditos`, enfocable a 320 px, con un e2e de axe a ese ancho.
+
+**Métricas:**
+- 808 tests y 138 e2e (y 1 que se salta), en verde en local; el CI de la rama, 137 de 137 sin intermitentes.
+- El JS inicial, 315,27 kB, con 13,81 kB de 15 de código propio; three, 813,58 kB.
+- Las 15 vistas, a 59–60 FPS en los tres niveles; la VRAM más alta, 278 MB de 300.
+
+## Resumen del bloque S, fase 9b (2026-11-08)
+
+### Sesiones
+1. **04-11:** la tarea 0, la 9b.a y la 9b.b. Iván la paró con la 9b.c empezada.
+2. **05-11:** la 9b.c (el Sol y la totalidad) y el comienzo de D45. Iván la paró con la recreación de Tritón en curso. Un intento de sesión en paralelo para los mapas de D45 se paró y se borró: la principal no había recibido el aviso.
+3. **Del 06-11 al 08-11:** la 9b.d. El 07-11 la cortó el límite de uso con el build de texturas a medias, y el 08-11 se repitió entero.
+4. **08-11, en paralelo** (decisión de Iván; `docs/decisiones/FASE-9b-REPARTO-PARALELO.md`):
+   - A, el Sol de la 9b.f;
+   - B, la Tierra de la 9b.f;
+   - C, Venus (9b.e);
+   - una segunda vuelta del Sol, en su propia sesión (Iván no aprobó la primera);
+   - una sesión de integración, que juntó la Tierra y el Sol de la segunda vuelta.
+5. **08-11, el cierre** (la sesión que hizo la Tierra): Venus juntada, lo pendiente, los e2e intermitentes del CI, lo de la escena de la 9c, §5 con el equipo libre, la revisión por subagente, sus correcciones y la fusión.
+
+### Qué se ha hecho (detalle en el informe de la fase 9b)
+- **Tarea 0:** `/luna`, con «Inicio › Lunas › Luna» y «Lunas» marcado en el menú.
+- **9b.a, los sistemas de lunas de la vista general (D39):** cada luna con su propia ley de tamaños y en una órbita ilustrativa sin cruces, fuera del planeta y de los anillos. Un sistema que se acerca a otro se comprime hacia su planeta.
+- **9b.b, la Tierra de noche (D40):** negra y neutra, con las luces de Black Marble 2016.
+- **9b.c, el Sol de la luz visible (D41) y la totalidad del cielo (E1):** el limbo por canal de una ley publicada, la granulación, las manchas con la rotación diferencial medida y la corona; en la totalidad, el cielo azul muy oscuro con el anillo del horizonte.
+- **9b.d, las lunas (D42, D43 y D45):** ninguna es ya una bola lisa.
+  - Fobos y Deimos tienen su forma de los DSK del NAIF.
+  - Deimos y las cinco de Urano llevan los mapas del JPL.
+  - Lo que nadie vio está recreado con el terreno real de cada luna.
+  - Jápeto tiene sus dos caras, y Titán, su terminador.
+- **9b.f, el Sol y la Tierra con color realzado (D46):** medidos frente a la referencia.
+  - El Sol, naranja, con estructura que fluye, rayos cortos y bucles de plasma (en dos vueltas; la segunda, aprobada por Iván).
+  - La Tierra: el océano azul vivo, el reflejo cian, nubes finas, el relieve ×5 y el borde azul.
+  - `/cielo` y la noche no cambian.
+- **9b.e, Venus «Bajo las nubes» (D44):** el radar de Magellan, con su aviso, accesible con el teclado.
+- **El cierre:**
+  - los e2e que fallaban a ratos en el CI, arreglados en su causa (seis causas; la principal, el `@defer (on idle)` sin tope);
+  - las etiquetas del 3D, con placa;
+  - el suelo del cielo, con un degradado;
+  - las frases del Sol, al día.
+
+### Métricas al cerrar el bloque
+- **Tests:** 808 unitarios, con la cobertura de `ephemeris/` al 98,93 %, y 138 e2e (y 1 que se salta), en verde en local. El CI de la rama, 137 de 137 sin intermitentes (`1b28193`); el de `main`, el de este push (despliega staging).
+- **Bundle:** el JS inicial, 315,27 kB (aviso a 320), con 13,81 kB de código propio de 15; three, 813,58 kB (aviso a 900).
+- **Rendimiento,** con el equipo libre (una RTX 3060):
+  - las 15 vistas, a 59–60 FPS de mínimo en los tres niveles;
+  - la VRAM más alta, 278 MB de 300 en alto y 86 de 120 en bajo;
+  - Venus con el radar, 121, 57 y 56 MB;
+  - la vista general a 1 día/s, 59–60 FPS, con 1,38 ms de CPU por frame y 0,19 ms de efemérides;
+  - la memoria, estable tras las vueltas (11 MB de heap, un contexto WebGL);
+  - el arranque, con una tarea larga de 61 ms en alto.
+- **Lo medido frente a fuentes y referencias:**
+  - el limbo del Sol, a 0,003 de la ley en cada canal;
+  - el Sol realzado, a 2° del tono de la referencia, y la Tierra, a 2–7°;
+  - las nubes, el 1,5 % del disco;
+  - la noche, L\* 0,2 · C\* 0,2.
+- **Privacidad y enlaces:** 0 peticiones a terceros (e2e) y 1238 enlaces internos bien.
+
+### Desviaciones importantes (detalle en el informe, §4)
+- **9b.a:** el sistema de lunas se comprime hacia su planeta, en lugar de encoger el planeta con su sistema.
+- **9b.c:** el bloom, sumado en luz lineal y solo en la vista general. Desde la segunda vuelta de la 9b.f, apagado.
+- **9b.d:** el criterio del borde de D45, medido frente a lo natural (**⚠️, lo decide Iván**). Proteo sigue como esfera, sin el zip de Stooke.
+- **9b.f:**
+  - el Sol de la segunda vuelta lleva el limbo × 0,55 y no tiene bloom ni corona de cerca; de cerca se pinta cada 50 ms, también en pausa;
+  - la cara nocturna de la Tierra, con el albedo y las nubes de la fase 5 (si no, dejaba de leerse en la vista general).
+- **9b.e:** el radar, en gris y con la luz de Venus.
+- **El cierre:** de lo de la escena de la 9c, el rótulo de Saturno, la precarga del recorrido y los nombres de España quedan propuestos para la fase 10.
+
+### Incidencias
+- **Cortes:** el límite de uso del 07-11, con el build de texturas a medias, y las sesiones que Iván paró el 04-11 y el 05-11.
+- **El intento de sesión en paralelo del 05-11,** parado y borrado. La lección se aplicó el 08-11: el reparto, por escrito y por archivos, y los puertos, por entorno.
+- **Con tres sesiones en el mismo equipo,** `measure.mjs` daba caídas falsas de FPS (26 ms por frame frente a 1,6). Se comparó con el build de partida en el mismo momento, y §5 se repitió al cerrar con el equipo libre.
+- **El CI:**
+  - estuvo en rojo por el e2e de `/sol` a 320 px (arreglado en `dfbc655`);
+  - tenía intermitentes con seis causas, arregladas en el cierre: tras ellas, 137 de 137 sin reintentos.
+- **Un uniforme neutro en un shader compartido** cambiaba píxeles de otros cuerpos (Marte y Titán). Desde entonces, lo de un solo cuerpo va con su `#define`.
+
+### Condiciones de parada
+No se activó ninguna:
+- no quedó ningún Bloqueante tras la revisión;
+- no hizo falta ninguna dependencia ni herramienta nueva;
+- las licencias nuevas son compatibles: la política del JPL (D43), el NAIF (decisión de Iván del 06-11) y el dominio público del USGS y de la NASA;
+- el criterio del borde de D45 queda en ⚠️, como decisión de Iván, sin cambiar el plan.
+
+### Pendiente para Iván (`PENDIENTES.md`)
+1. **El criterio del borde de D45:** ¿el relativo o el absoluto, medido más ancho?
+2. **El color del radar de Venus:** en gris o como las fotos de las Venera.
+3. **Las lunas recreadas, de un vistazo:** también la línea del mapa de las fichas y Miranda sin B−V.
+4. **La forma de Proteo:** bajar el zip de Stooke a mano. Y Pharos, sin posición.
+5. **Revisar los textos** de `docs/revision-textos.md` (540, cada uno con su fuente).
+6. **Probar en el móvil y en el iPhone:** la interfaz de la 9c, el Sol y la Tierra realzados y Venus.
+7. **GitHub:** los PR 1 y 3 de Dependabot siguen abiertos.
+8. **La fase 10:** `@lhci/cli` y las propuestas de la 9b (§10 de su informe).
+
+El bloque S termina aquí, con la fase 9b fusionada en `main`. No se ha empezado el bloque F (fase 10): antes, la revisión del bloque S.
