@@ -11,14 +11,41 @@
   min-width: 0;
 }
 
-/* El año a la vista (para el lector, la línea ya dice la fecha entera en `aria-valuetext`). */
+/*
+ * El año a la vista, con ‹ y › para cambiarlo (para el lector, la línea ya dice la fecha entera en
+ * `aria-valuetext`, y su descripción, las teclas del año). Zonas de 24 px; sin marco hasta el hover.
+ */
 .year {
+  display: inline-flex;
   flex: none;
-  min-width: 4ch;
+  align-items: center;
   color: var(--color-text-muted);
   font-size: var(--text-sm);
   font-weight: var(--font-weight-strong);
+}
+
+.year__value {
+  min-width: 4ch;
   text-align: center;
+}
+
+.year__step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: var(--radius-md);
+  font-size: var(--text-base);
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+}
+
+.year__step:hover {
+  background: var(--color-line);
+  color: var(--color-text);
 }
 
 .track {

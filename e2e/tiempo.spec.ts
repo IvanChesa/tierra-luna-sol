@@ -163,7 +163,7 @@ test.describe('Tiempo y URL', () => {
     await expect(line).toHaveAttribute('aria-valuetext', '15 de marzo de 2031');
     await expect(line).toHaveAttribute('max', '364');
     await expect(line).toHaveValue('73');
-    await expect(page.locator('tls-timeline .year')).toHaveText('2031');
+    await expect(page.locator('tls-timeline .year__value')).toHaveText('2031');
     // Flechas, un día (a la misma hora); RePág, un mes; Inicio y Fin, el año.
     await line.focus();
     await page.keyboard.press('ArrowRight');
@@ -176,7 +176,7 @@ test.describe('Tiempo y URL', () => {
     // En el extremo, al año siguiente.
     await page.keyboard.press('ArrowRight');
     await expect(line).toHaveAttribute('aria-valuetext', '1 de enero de 2032');
-    await expect(page.locator('tls-timeline .year')).toHaveText('2032');
+    await expect(page.locator('tls-timeline .year__value')).toHaveText('2032');
     await expect(line).toHaveAttribute('max', '365');
     await page.keyboard.press('Home');
     await expect(line).toHaveValue('0');
@@ -228,7 +228,7 @@ test.describe('Tiempo y URL', () => {
     await openExplorer(page, '/?fecha=2100-12-31T23:59Z');
     const line = page.getByRole('slider', { name: 'Línea de tiempo' });
     // En Madrid ya es el 1 de enero de 2101 (de 0:00 a 0:59): un solo día en la pista.
-    await expect(page.locator('tls-timeline .year')).toHaveText('2101');
+    await expect(page.locator('tls-timeline .year__value')).toHaveText('2101');
     await expect(line).toHaveAttribute('min', '0');
     await expect(line).toHaveAttribute('max', '0');
     await expect(line).toHaveAttribute('aria-valuetext', '1 de enero de 2101');
@@ -292,6 +292,36 @@ test.describe('Tiempo y URL', () => {
         .map((button) => button.textContent?.trim()),
     );
     expect(covered).toEqual([]);
+  });
+
+  test('el año, como mando de la barra (crítica de la 9c): ‹ y ›, mantenido por décadas, y con Mayús + RePág', async ({
+    page,
+  }) => {
+    await openExplorer(page, '/?fecha=2026-06-01T12:00Z');
+    const year = page.locator('tls-timeline .year__value');
+    const steps = page.locator('tls-timeline .year__step');
+    await expect(year).toHaveText('2026');
+    await steps.last().click();
+    await expect(year).toHaveText('2027');
+    await steps.first().click();
+    await expect(year).toHaveText('2026');
+    // Mantenido, por décadas: hasta 1969 en un par de segundos.
+    const box = await steps.first().boundingBox();
+    if (!box) throw new Error('Sin ‹');
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await expect
+      .poll(async () => Number(await year.textContent()), { timeout: 10_000 })
+      .toBeLessThanOrEqual(1976);
+    await page.mouse.up();
+    const reached = Number(await year.textContent());
+    // Con el teclado, en la línea de tiempo (una sola parada): Mayús + RePág, un año más.
+    await page.getByRole('slider', { name: 'Línea de tiempo' }).focus();
+    await page.keyboard.press('Shift+PageUp');
+    await expect(year).toHaveText(String(reached + 1));
+    await expect(page.getByRole('slider', { name: 'Línea de tiempo' })).toHaveAccessibleDescription(
+      /con Mayús, un año/,
+    );
   });
 
   test('al llegar a 2100 la simulación se para y lo avisa', async ({ page }) => {
