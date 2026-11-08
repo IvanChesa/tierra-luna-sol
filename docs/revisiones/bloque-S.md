@@ -57,6 +57,7 @@ La revisión de la fase hizo bien su trabajo: vio el cambio de criterio de D45 y
 | S6 | Menor (antes de la fase 11) | `src/app/core/site.config.ts:48`; el pie | **ivanchesa.com sigue sin existir** (NXDOMAIN el 08-11). Los enlaces del pie (el aviso legal, la privacidad y el autor) llevan a un dominio que no resuelve, y el subdominio de la fase 11 (`tierra-luna-sol.ivanchesa.com`) necesita su zona. En ivanchesa.es, las dos páginas legales responden (200). | Se queda ivanchesa.com (D37). La fase 11 empieza cuando el dominio exista (lo lleva la sesión de ivanchesa.com). Si para entonces no tiene las páginas legales, los enlaces pasan provisionalmente a las de ivanchesa.es. |
 | S8 | **Importante** (fase 10; decisión de Iván del 08-11) | El Sol del explorador: su orientación en la escena, `sun-material.ts` y `sunspotsAt` | **«El sol está rotando, no debe rotar»** (Iván, en su PC, después de esta revisión). El disco gira con la rotación del Sol, de unos 14° al día en el ecuador. A 3 días/s, la velocidad de la vista general, son unos 42° por segundo, y a 1 h/s, una vuelta en unos 10 minutos. Las manchas, además, derivan con su rotación diferencial. | **El Sol del explorador, sin girar:** el disco, con su eje pero sin el giro sobre él; las manchas, quietas (sin la deriva de la rotación diferencial); y, si giran, también los rayos del halo. Se queda el fluir lento de la superficie que Iván aprobó en la segunda vuelta. Comprobado a 3 días/s y a 1 h/s con `scripts/capture-sun-motion.mjs`. Los textos que hablan del giro de las manchas (`/creditos`, «Lo que es ilustrativo» y la ficha del Sol, si lo nombra), al día. |
 | S9 | **Importante** (fase 10; decisión de Iván del 08-11) | La cabecera del explorador con un cuerpo elegido: «‹ Sistema solar» sobre el título, en escritorio y en la franja del móvil | **«Haz más reconocible el botón de volver al sistema solar; recuerda, queremos una interfaz limpia y sencilla»** (Iván, con una captura de escritorio con la Tierra elegida). Hoy es un texto pequeño y gris sobre el título: se lee como una miga o un subtítulo, no como un botón. Además, a su lado, la pestaña «Sistema solar» está activa y no hace nada (backlog 15). | **Un botón de verdad,** con el lenguaje de los demás («Índice», «Controles»): flecha y texto, fondo o borde, al menos 44 px de alto, y estados visibles al pasar el ratón y con el foco. **La pestaña «Sistema solar»**, con un cuerpo elegido, hace lo mismo: vuelve a la vista general. Sin añadir controles: en el mismo sitio y los mismos que hay. En la franja del móvil, el mismo tratamiento. Capturas antes y después en escritorio y en el móvil. |
+| S10 | **Importante** (fase 10; decisión de Iván del 08-11, que cambia D31 y D33) | La velocidad con la que arranca el explorador. Hoy, D33: 3 días/s en la vista general y 1 h/s con un cuerpo elegido o en las vistas Tierra y Luna. | **«Quiero cambiar el inicio de tiempo de 3 días y 1 hora en planetas a tiempo real por defecto en todo; lo cambia el usuario si lo quiere»** (Iván). | **El explorador arranca reproduciendo en tiempo real** (un segundo por segundo) en todas las vistas, con la opción «Tiempo real» en el selector de velocidad. **Una sola velocidad para todo:** si el usuario la cambia, se queda la suya al cambiar de vista o de cuerpo, y desaparecen las velocidades por contexto de D33. Siguen las excepciones de D31: con movimiento reducido o con `?fecha=`, en pausa. El recorrido de la primera visita se queda como está, y al acabar, tiempo real. Al día: el plan (D31 y D33), `CLAUDE.md` («Decisiones ya tomadas»), los textos que nombren la velocidad del arranque y los e2e, tests y scripts que la suponen (por ejemplo, la velocidad del arranque de `arranque.spec.ts`). |
 | S7 | Menor (ahora) | El plan, `PROMPTS.md`, `PENDIENTES.md` y `CLAUDE.md` | El bloque S, sin cerrar en los documentos, y las decisiones de abajo, sin apuntar. | «Para aplicar esta revisión», abajo. |
 
 ## Decisiones que Iván delegó (08-11)
@@ -171,7 +172,7 @@ Esta revisión ya está en `main` (la subió la sesión de revisión). El bloque
      - **el PR 4 de Dependabot,** como dice la decisión 5: el test, `@dependabot rebase`, el CI en verde y la fusión; después, otra vez `npm ci`;
      - **los documentos, al día:**
        - **el plan:**
-         - D48 y D49 en §1, y `@lhci/cli` en la lista cerrada;
+         - D48 y D49 en §1, D31 y D33 cambiadas según S10, y `@lhci/cli` en la lista cerrada;
          - en §6, el bloque S ✅ (revisado en `bloque-S.md`);
          - la fase 10, con la entrega 10.a, las decisiones 4 y 6 y las propuestas de la 9b;
          - la tarea 9 (el bloom), «quitarlo»;
@@ -180,12 +181,12 @@ Esta revisión ya está en `main` (la subió la sesión de revisión). El bloque
        - **`PENDIENTES.md`:**
          - lo decidido aquí, marcado con su fecha y «delegado por Iván en la sesión de revisión»;
          - lo que sigue siendo de Iván: sus pruebas en el móvil, el zip de Proteo (opcional), «Sobre el proyecto» (opcional) y la lista corta de textos, cuando exista;
-       - **`CLAUDE.md`:** en «Decisiones ya tomadas», `@lhci/cli`, aprobado y con sus condiciones;
+       - **`CLAUDE.md`:** en «Decisiones ya tomadas», `@lhci/cli`, aprobado y con sus condiciones, y la velocidad del arranque de S10, en lugar de la de D33;
        - **el `DIARIO`:** una línea.
   2. **Crea la rama de la fase 10 y sigue el ciclo de siempre.**
      - **La tarea 6 (la regresión visual) va al final, después de juntar la 10.a,** para que sus referencias partan de las lunas buenas.
      - **Las medidas de rendimiento de la tarea 4, con el equipo libre:** cuando la sesión 2 haya terminado.
-     - S2 va en la tarea 4, y S3, S8 y S9, en la 8. S8 y S9, de las primeras: son peticiones de Iván.
+     - S2 va en la tarea 4, y S3, S8, S9 y S10, en la 8. S8, S9 y S10, de las primeras: son peticiones de Iván.
   3. **Integra la 10.a** con `--no-ff` (como la 9b) y cierra la fase.
 
 ### Sesión 2, «Bloque F: las lunas, segunda vuelta (10.a)»
