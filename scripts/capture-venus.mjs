@@ -214,6 +214,10 @@ try {
         await waitForRadar(page);
       }
       const afterToggles = await stats(page);
+      // Apagado: la textura del radar se suelta y la VRAM vuelve a la de las nubes.
+      await page.evaluate(() => window.__tlsViewer.engine.setVenusRadar(false));
+      await waitForRadar(page, 'off');
+      const off = await stats(page);
       await page.evaluate(() => {
         const engine = window.__tlsViewer.engine;
         engine.focus('marte');
@@ -236,6 +240,7 @@ try {
           vramMB: Math.round(afterToggles.vramMB),
           texturas: afterToggles.textures,
         },
+        apagado: { vramMB: Math.round(off.vramMB), texturas: off.textures },
         trasDejarVenus: {
           vramMB: Math.round(left.vramMB),
           texturas: left.textures,
