@@ -1631,7 +1631,7 @@ Corrección:
 
 **Párrafo 31**
 
-> El Sol del explorador, en color realzado, como en las imágenes de los observatorios: naranja, cuando con luz visible normal es blanco (así se ve en el cielo desde España), con zonas claras y oscuras que cambian despacio, rayos en su resplandor y, de cerca, protuberancias en su borde. Su granulación, mucho más gruesa que la real para que se vea; sus manchas, que no son las de ese día (ni en su sitio ni en su número), aunque giran como las reales, más despacio lejos del ecuador; sus fáculas y su corona. La forma del oscurecimiento de su borde sí es la medida.
+> El Sol del explorador, en color realzado, como en las imágenes de los observatorios: naranja, cuando con luz visible normal es blanco (así se ve en el cielo desde España), con zonas claras y oscuras que cambian despacio, rayos en su resplandor y, de cerca, protuberancias en su borde. Su granulación, mucho más gruesa que la real para que se vea; sus manchas, que no son las de ese día (ni en su sitio ni en su número), aunque giran como las reales, más despacio lejos del ecuador; y sus fáculas. El oscurecimiento de su borde sigue la ley medida, pero más suave; en el cielo desde España, el Sol lleva el medido.
 
 Corrección:
 
@@ -1859,7 +1859,7 @@ Corrección:
 
 **Párrafo 20**
 
-> El Sol: el oscurecimiento del borde en cada color, con la ley de Hestroffer y Magnan (1998), y la rotación de las manchas, más lenta lejos del ecuador, con la medida por el SDO de Lößnitz et al. (2025). Las manchas, la granulación, la corona y el resplandor son ilustrativos. En el explorador se ve en color realzado, como en las imágenes de los observatorios (con luz visible normal es blanco, como en el cielo): su color, sus zonas claras y oscuras, sus rayos y sus protuberancias, también ilustrativos.
+> El Sol: el oscurecimiento del borde en cada color, con la ley de Hestroffer y Magnan (1998), y la rotación de las manchas, más lenta lejos del ecuador, con la medida por el SDO de Lößnitz et al. (2025). Las manchas, la granulación, la corona y el resplandor son ilustrativos. En el explorador se ve en color realzado, como en las imágenes de los observatorios (con luz visible normal es blanco, como en el cielo): su color, sus zonas claras y oscuras, el oscurecimiento de su borde (más suave que el de la ley), sus rayos y sus protuberancias, también ilustrativos.
 
 Corrección:
 
