@@ -181,6 +181,7 @@ Esta revisión ya está en `main` (la subió la sesión de revisión). El bloque
        - **`PENDIENTES.md`:**
          - lo decidido aquí, marcado con su fecha y «delegado por Iván en la sesión de revisión»;
          - lo que sigue siendo de Iván: sus pruebas en el móvil, el zip de Proteo (opcional), «Sobre el proyecto» (opcional) y la lista corta de textos, cuando exista;
+         - para la fase 11, a petición de Iván (08-11): comprobar en producción que no sale el panel de rendimiento (FPS, CPU, llamadas, VRAM…). Solo se ve con `ng serve`, porque `viewer-canvas.ts` lo enseña con `isDevMode()`, y el build publicado no lo lleva. Iván lo vio en su PC con el servidor de desarrollo;
        - **`CLAUDE.md`:** en «Decisiones ya tomadas», `@lhci/cli`, aprobado y con sus condiciones, y la velocidad del arranque de S10, en lugar de la de D33;
        - **el `DIARIO`:** una línea.
   2. **Crea la rama de la fase 10 y sigue el ciclo de siempre.**
