@@ -11,6 +11,9 @@
 // - texto: lo legible por debajo de 11 px;
 // - la ficha del cuerpo en el móvil, en reposo (desde el 08-11, la barra fina): su alto sobre el de la
 //   ventana, y si la pausa se puede pulsar; abierta (el estado «ficha»), el alto de la hoja;
+// - el hueco libre: la parte de la pantalla que no tapan las franjas de arriba y de abajo (el alto del
+//   encuadre que dejan los márgenes `--view-*`, sobre el de la ventana; en el cielo, ≥ 80 % en reposo:
+//   decisión de Iván del 08-11);
 // - el centro del cuerpo elegido en el hueco libre (el que dejan los márgenes del encuadre): el
 //   centroide de lo que brilla en una captura de ese hueco, respecto a su centro (decisión del 08-11);
 // - el velo de abajo (el fondo de la barra de tiempo): la parte del lienzo que tapa (9c.2, ≤ 10 %);
@@ -39,6 +42,13 @@ export const SIZES = {
   1440: { width: 1440, height: 900, scale: 1 },
 };
 
+/**
+ * Un móvil del alto que deja Safari de iOS con sus barras (decisión de Iván del 08-11): solo las vistas
+ * y los estados del explorador, no las páginas.
+ */
+const SAFARI = { '390 × 660': { width: 390, height: 660, scale: 1, mobile: true } };
+const EXPLORER_SIZES = { ...SIZES, ...SAFARI };
+
 /** Cierra la ficha del cuerpo elegido (el cuerpo sigue elegido). */
 async function closePanel(page) {
   const close = page.getByRole('button', { name: 'Cerrar la ficha' });
@@ -64,8 +74,10 @@ const STATES = [
   ['controles', '.time__more', ['portada', 'Saturno', 'Tierra', 'Luna', 'Cielo']],
   ['índice', '.index-toggle', ['portada', 'Saturno', 'Tierra', 'Luna', 'Cielo']],
   ['más', '.earth__toggle, .moon__toggle', ['Tierra', 'Luna']],
-  // La hoja de la ficha, abierta desde la barra fina (móvil y tableta; decisión del 08-11).
-  ['ficha', '.bar__toggle', ['Saturno']],
+  // La ficha, abierta con «ⓘ» en la franja de arriba, y el panel del cielo, desde su barra (móvil y
+  // tableta; decisiones de Iván del 08-11).
+  ['ficha', '.site-focus__info', ['Saturno']],
+  ['panel del cielo', 'tls-sky-bar .bar', ['Cielo']],
 ];
 
 /** Las vistas con un cuerpo elegido en el sistema solar: su centro, en el hueco libre. */
@@ -332,6 +344,16 @@ function inspect({ explorer }) {
   }
   result.useful = total ? free / total : 0;
 
+  // El hueco libre (decisión de Iván del 08-11): el alto del encuadre que dejan las franjas de arriba y
+  // de abajo, sobre el de la ventana (lo que se ve del 3D, de lado a lado).
+  const stage = document.querySelector('.explorer');
+  const stageStyle = getComputedStyle(stage);
+  const inset = (name) => parseFloat(stageStyle.getPropertyValue(name)) || 0;
+  const stageBox = stage.getBoundingClientRect();
+  const gapTop = Math.max(stageBox.top + inset('--view-top'), 0);
+  const gapBottom = Math.min(stageBox.bottom - inset('--view-bottom'), vh);
+  result.gap = Math.max(0, gapBottom - gapTop) / vh;
+
   // El velo de abajo (el fondo de la barra de tiempo, con su fundido): la parte del lienzo visible que
   // queda debajo de su caja (9c.2: ≤ 10 %).
   const dock = document.querySelector('.explorer__dock');
@@ -398,13 +420,13 @@ const { browser, close } = await openBrowser([]);
 const report = { explorer: [], states: [], pages: [] };
 try {
   if (!only || only === 'explorador') {
-    for (const [size, options] of Object.entries(SIZES)) {
+    for (const [size, options] of Object.entries(EXPLORER_SIZES)) {
       for (const [view, path, arrive] of VIEWS) {
         const { page } = await openViewer(browser, path, options);
         if (arrive) await arrive(page);
         const result = await page.evaluate(inspect, { explorer: true });
         result.centre = CENTRED.has(view) ? await bodyCentre(page) : null;
-        report.explorer.push({ size: Number(size), view, ...result });
+        report.explorer.push({ size, view, ...result });
         await page.close();
         console.error(
           `explorador · ${size} · ${view}: ${result.controls} controles, zona útil ${(result.useful * 100).toFixed(1)} %`,
@@ -414,7 +436,7 @@ try {
   }
   if (!only || only === 'estados') {
     // Con «Controles», el Índice y «Más» abiertos, con y sin cuerpo (tarea 9c.4).
-    for (const [size, options] of Object.entries(SIZES)) {
+    for (const [size, options] of Object.entries(EXPLORER_SIZES)) {
       for (const [view, path] of VIEWS) {
         for (const [state, selector, views] of STATES) {
           if (!views.includes(view)) continue;
@@ -427,7 +449,7 @@ try {
           await toggle.first().click();
           await page.waitForTimeout(400);
           const result = await page.evaluate(inspect, { explorer: true });
-          report.states.push({ size: Number(size), view, state, ...result });
+          report.states.push({ size, view, state, ...result });
           await page.close();
           console.error(
             `estado · ${size} · ${view} · ${state}: ${result.controls} controles, ${result.covered.length} tapados`,
@@ -468,27 +490,28 @@ const centre = (value) => (value ? `${signed(value.dx)} / ${signed(value.dy)}` :
 const cuts = (r) => r.cut.length + r.overflowing.length + r.cutOptions.length;
 if (report.explorer.length) {
   console.log(
-    '| Tamaño | Vista | Zona útil | Velo | Controles visibles | Tapados | Recortes | Zonas < objetivo | Textos < 11 px | Contraste de los nombres | Ficha en reposo (alto, pausa) | Centro del cuerpo (Δx, Δy) |',
+    '| Tamaño | Vista | Zona útil | Hueco libre | Velo | Controles visibles | Tapados | Recortes | Zonas < objetivo | Textos < 11 px | Contraste de los nombres | Ficha en reposo (alto, pausa) | Centro del cuerpo (Δx, Δy) |',
   );
-  console.log('|---|---|---|---|---|---|---|---|---|---|---|---|');
+  console.log('|---|---|---|---|---|---|---|---|---|---|---|---|---|');
   for (const r of report.explorer) {
     const sheet = r.sheet
       ? `${pct(r.sheet.share)}, ${r.sheet.playReachable ? 'a mano' : 'no'}`
       : '—';
     console.log(
-      `| ${r.size} | ${r.view} | ${pct(r.useful)} | ${r.veil === undefined ? '—' : pct(r.veil)} | ${r.controls} | ${r.covered.length} | ${cuts(r)} | ${r.small.length} | ${r.tiny.length} | ${r.nameContrast === null ? '—' : r.nameContrast.toFixed(1) + ':1'} | ${sheet} | ${centre(r.centre)} |`,
+      `| ${r.size} | ${r.view} | ${pct(r.useful)} | ${pct(r.gap)} | ${r.veil === undefined ? '—' : pct(r.veil)} | ${r.controls} | ${r.covered.length} | ${cuts(r)} | ${r.small.length} | ${r.tiny.length} | ${r.nameContrast === null ? '—' : r.nameContrast.toFixed(1) + ':1'} | ${sheet} | ${centre(r.centre)} |`,
     );
   }
 }
 if (report.states.length) {
   console.log(
-    '\n| Tamaño | Vista | Abierto | Controles visibles | Tapados | Recortes | Zona útil | Hoja |',
+    '\n| Tamaño | Vista | Abierto | Controles visibles | Tapados | Recortes | Zona útil | Hueco libre | Hoja |',
   );
-  console.log('|---|---|---|---|---|---|---|---|');
+  console.log('|---|---|---|---|---|---|---|---|---|');
   for (const r of report.states) {
     const sheet = r.state === 'ficha' && r.sheet ? pct(r.sheet.share) : '—';
+    const gap = pct(r.gap);
     console.log(
-      `| ${r.size} | ${r.view} | ${r.state} | ${r.controls} | ${r.covered.length} | ${cuts(r)} | ${pct(r.useful)} | ${sheet} |`,
+      `| ${r.size} | ${r.view} | ${r.state} | ${r.controls} | ${r.covered.length} | ${cuts(r)} | ${pct(r.useful)} | ${gap} | ${sheet} |`,
     );
   }
 }

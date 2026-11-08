@@ -22,7 +22,11 @@ const SIZES = {
   390: { width: 390, height: 844, scale: 2, mobile: true },
   768: { width: 768, height: 1024, scale: 1, mobile: true },
   1440: { width: 1440, height: 900, scale: 1 },
+  // Un móvil del alto que deja Safari de iOS con sus barras (decisión de Iván del 08-11), solo en las
+  // vistas que cambian con él.
+  '390-660': { width: 390, height: 660, scale: 2, mobile: true },
 };
+const SAFARI_SHOTS = new Set(['saturno', 'saturno-hoja', 'cielo', 'cielo-panel']);
 
 /**
  * [nombre, ruta, explorador o página, acción tras cargar]. El recorrido de la portada solo existe
@@ -34,14 +38,16 @@ const SHOTS = [
   // El selector con un planeta con lunas elegido y la ficha cerrada (decisión de Iván del 07-11): en
   // el PC y la tableta, dos filas; en el móvil, una, con la raya.
   ...(stage === 'despues' ? [['saturno-fichas', '/?captura=1&cuerpo=saturno', 'closed']] : []),
-  // La hoja de la ficha, abierta desde la barra fina (decisión de Iván del 08-11): solo en el móvil y la
-  // tableta (en escritorio no hay barra).
+  // La ficha, abierta con «ⓘ» en la franja de arriba (decisión de Iván del 08-11): solo en el móvil y la
+  // tableta (en escritorio, la tarjeta ya está abierta).
   ...(stage === 'despues' ? [['saturno-hoja', '/?captura=1&cuerpo=saturno', 'sheet']] : []),
   // «Controles» abierto con Saturno (crítica de la 9c): cuenta en el encuadre; en el móvil, hoja baja.
   ...(stage === 'despues' ? [['saturno-controles', '/?captura=1&cuerpo=saturno', 'controls']] : []),
   ['tierra', '/explorar/tierra?captura=1', 'viewer'],
   ['luna', '/explorar/luna?captura=1', 'viewer'],
   ['cielo', '/cielo?captura=1', 'viewer'],
+  // El panel del cielo, abierto desde su barra (decisión de Iván del 08-11): en el móvil y la tableta.
+  ...(stage === 'despues' ? [['cielo-panel', '/cielo?captura=1', 'skysheet']] : []),
   ['ficha-marte', '/planetas/marte', 'page'],
   ['lunas', '/lunas', 'page'],
   ['eclipses', '/eclipses', 'page'],
@@ -53,21 +59,25 @@ try {
   for (const [name, path, kind] of SHOTS) {
     if (wanted.size && !wanted.has(name)) continue;
     for (const [size, options] of Object.entries(SIZES)) {
+      if (size === '390-660' && !SAFARI_SHOTS.has(name)) continue;
       let page;
-      if (kind === 'viewer' || kind === 'closed' || kind === 'controls' || kind === 'sheet') {
+      const opens = { sheet: '.site-focus__info', skysheet: 'tls-sky-bar .bar' };
+      if (['viewer', 'closed', 'controls', 'sheet', 'skysheet'].includes(kind)) {
         ({ page } = await openViewer(browser, path, options));
-        if (kind === 'sheet') {
-          const bar = page.locator('.bar__toggle');
-          if (!(await bar.isVisible())) {
+        if (kind in opens) {
+          const button = page.locator(opens[kind]);
+          if (!(await button.isVisible())) {
             await page.close();
             continue;
           }
-          await bar.click();
-          // El encuadre se mide otra vez y la cámara sube el cuerpo por encima de la hoja.
+          await button.click();
+          // El encuadre se mide otra vez y la cámara sube lo elegido por encima de la hoja.
           await page.waitForTimeout(2500);
         }
-        if (kind === 'closed') {
-          await page.getByRole('button', { name: 'Cerrar la ficha' }).click();
+        // En el móvil, elegir no abre la ficha (decisión de Iván del 08-11): ya está cerrada.
+        const close = page.getByRole('button', { name: 'Cerrar la ficha' });
+        if (kind === 'closed' && (await close.isVisible())) {
+          await close.click();
           await page.waitForTimeout(800);
         }
         if (kind === 'controls') {
