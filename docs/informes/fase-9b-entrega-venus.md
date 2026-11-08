@@ -87,4 +87,4 @@ Con la GPU del equipo (una RTX 3060 con ANGLE sobre D3D11), con otras sesiones e
 - three, diferido, en 812,94 kB (antes del Sol de la segunda vuelta, 803,16; con la 9b.f de la primera, 798,65: el radar, +4,5);
 - **1238 enlaces internos** bien.
 
-**Los e2e** (`E2E_PORT=4421`, todos, con los tres proyectos): antes de traer el Sol, 135 de 136. El que falló, `vistas.spec.ts:19` («sistema → Tierra → Luna → sistema … sin fugas», 25 texturas en lugar de 15), no toca el radar. Repetido solo, pasa dos veces seguidas: es de tiempos, con la máquina cargada (cuatro workers con SwiftShader y otras sesiones en marcha), y el CI lo repite una vez si falla. Con el Sol traído: §10 bis.
+**Los e2e** (`E2E_PORT=4421`, todos, con los tres proyectos): antes de traer el Sol, 135 de 136. El que falló, `vistas.spec.ts:19` («sistema → Tierra → Luna → sistema … sin fugas», 25 texturas en lugar de 15), no toca el radar. Repetido solo, pasa dos veces seguidas: es de tiempos, con la máquina cargada (cuatro workers con SwiftShader y otras sesiones en marcha), y el CI lo repite una vez si falla. **Con el Sol traído, 136 de 136** (7,2 min), también ese.
