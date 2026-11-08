@@ -37,6 +37,8 @@
   display: grid;
   flex: 1;
   min-height: 30rem;
+  /* Las zonas seguras (`viewport-fit=cover`): la barra de tiempo, por encima de la del inicio. */
+  padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   overflow: hidden;
   background: var(--color-bg);
   grid-template-areas:
@@ -224,7 +226,7 @@
       'chips'
       'foot';
     grid-template-rows:
-      calc(100svh - var(--explorer-arrival)) minmax(var(--explorer-bar), auto)
+      calc(100dvh - var(--explorer-arrival)) minmax(var(--explorer-bar), auto)
       var(--explorer-chips) auto;
   }
 

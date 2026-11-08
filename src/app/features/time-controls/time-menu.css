@@ -138,7 +138,8 @@
    */
   :host {
     --chrome-edge: bottom;
-    inset: auto 0 var(--explorer-bar, 3.75rem);
+    /* Encima de la barra, que sube con la zona segura de abajo (`viewport-fit=cover`). */
+    inset: auto 0 calc(var(--explorer-bar, 3.75rem) + env(safe-area-inset-bottom));
     width: auto;
     max-height: min(45svh, max(10rem, calc(100svh - var(--explorer-bar, 3.75rem) - 20rem)));
     padding: var(--space-4) var(--space-4) var(--space-6);
@@ -155,7 +156,8 @@
 @media (max-width: 63.99rem) and (max-height: 30rem) {
   :host {
     --chrome-edge: right;
-    inset: 7rem 0 var(--explorer-bar, 3.75rem) auto;
+    inset: 7rem env(safe-area-inset-right)
+      calc(var(--explorer-bar, 3.75rem) + env(safe-area-inset-bottom)) auto;
     width: min(22rem, 60vw);
     /* De arriba abajo (el `popover` del navegador trae `height: fit-content`). */
     height: auto;
