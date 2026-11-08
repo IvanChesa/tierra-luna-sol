@@ -2,7 +2,7 @@
 
 - **Rama:** `fase-9b-sol-lunas`
 - **Fecha:** 2026-11-04 · 2026-11-05 · 2026-11-06 · 2026-11-07 · 2026-11-08 (en curso)
-- **Estado:** en curso: hechas la tarea 0 y las entregas 9b.a, 9b.b, 9b.c, 9b.d y 9b.f (el Sol, de la sesión A, y la Tierra, de la sesión B, ya juntas en esta rama); la 9b.e (Venus, sesión C), en su rama; después, juntarla y el cierre
+- **Estado:** en curso: hechas la tarea 0 y las entregas 9b.a, 9b.b, 9b.c, 9b.d y 9b.f (el Sol, en dos vueltas, la segunda aprobada por Iván el 08-11, y la Tierra, de la sesión B, ya juntos en esta rama); la 9b.e (Venus, sesión C), en su rama; después, juntarla y el cierre
 
 ## Plan
 Bloque S, modo autónomo, una sola fase por entregas en el orden de `docs/decisiones/FASE-9b-SOL-LUNAS.md` (la prioridad de Iván), que manda sobre este plan en tareas y criterios, con sus adendas D45 (05-11) y D46 (06-11): **0, 9b.a, 9b.b, 9b.c, 9b.d, 9b.f y 9b.e**. La revisión del bloque E está aplicada en `main` (`0963b9f`). Los PR 1 y 3 de Dependabot (E5) siguen abiertos: la rama sale del `main` de hoy y, cuando Iván los fusione, se traen (son de parche). Cada entrega cierra con `npm run check`, este informe al día, sus capturas (`?captura=1`, escritorio y móvil, en `docs/informes/img/fase-9b/`) y un commit; y se sube la rama para que su vista previa (`fase-9b-sol-lunas.tierra-luna-sol.pages.dev`) enseñe cuanto antes la primera.
@@ -61,6 +61,7 @@ Bloque S, modo autónomo, una sola fase por entregas en el orden de `docs/decisi
 - **Hechas y comprobadas:** la tarea 0 y las entregas 9b.a, 9b.b, 9b.c y 9b.d, cada una con su `npm run check`, sus capturas y este informe. La 9b.d se cerró el 08-11 (el 07-11 la cortó el límite de uso con el build de texturas a medias, y se repitió entero).
 - **El reparto en tres sesiones** (decisión de Iván del 08-11, `docs/decisiones/FASE-9b-REPARTO-PARALELO.md`): A, el Sol (esta sesión, que integra y cierra la fase); B, la Tierra (`fase-9b-f-tierra`); C, Venus (`fase-9b-e-venus`). La base común de la 9b.f (las herramientas de D46 y los bloques `enhanced` de `visual-config.ts`) está en `43072d6`; antes, `0447eae` trae de la 9c los puertos por entorno (`CAPTURE_PORT` y `E2E_PORT`) para que las tres sesiones no se pisen.
 - **El Sol de la 9b.f, hecho** (§2 a §7): realzado y medido frente a la referencia, con sus textos, salvo la línea del panel del Sol del explorador, que está en `features/` (de nadie hasta que se fusione la 9c) y va al juntar.
+- **El Sol, rehecho en una segunda vuelta y juntado** (08-11): a Iván no le gustó el de la primera («Las manchas estas que sobresalen parecen tumores… no me acaba de gustar. Intentemos basarnos en el sol del proyecto ejemplo») y se rehízo en `fase-9b-f-sol-2`, desde `d765654` (§2). Iván lo aprobó el 08-11 («el sol le doy aprobado») y se juntó con `--no-ff` y sin conflictos (`fb3d021`). Después se rehicieron las imágenes del motor con el Sol nuevo (su miniatura, las de su ficha, la imagen para compartir y el póster de la vista general). Al hacerlo salieron puntos oscuros en el borde del Sol pequeño, un fallo del halo ya arreglado (`d881476`, §4). `npm run check`, en verde (§6). Su nota de entrega está ya en este informe y se ha borrado.
 - **La Tierra de la 9b.f, hecha y juntada** (08-11, sesión de integración que sustituye a A): `fase-9b-f-tierra` (`582e440`), con `--no-ff` y sin conflictos. Después, `docs/revision-textos.md`, los pósters de la vista general y de la vista Tierra y la imagen para compartir, regenerados, y `npm run check` en verde (§6). Su nota de entrega está ya en este informe (§2 a §7) y se ha borrado.
 - **El CI, otra vez en verde:** el e2e del móvil «/sol a 320 px» fallaba desde `08120db` (la dirección de la fuente del Sol realzado, sin dónde partirse, ensanchaba la ficha hasta 528 px). Arreglado en el CSS de la ficha (`dfbc655`, §4).
 - **Sigue:** juntar C (Venus) cuando termine, y cerrar la fase cuando la 9c esté fusionada (la revisión por subagente, las correcciones y la fusión en `main`).
@@ -72,7 +73,12 @@ En curso. Hechas la tarea 0 y las entregas 9b.a, 9b.b, 9b.c, 9b.d y 9b.f:
 - **9b.a, los sistemas de lunas de la vista general (D39):** cada luna con su propia ley de tamaños respecto a su planeta y en una órbita ilustrativa escalada que no se cruza con ninguna otra, con su planeta ni con los anillos (las de Saturno, ahora por fuera); un sistema que se acerca a otro cuerpo o sistema se comprime hacia su planeta en lugar de meterse en él; en la vista general, un sistema aparece cuando su planeta crece en pantalla, y cada luna lleva su mapa cuando se ve grande.
 - **9b.b, la Tierra de noche (D40):** las luces, del mapa Black Marble 2016 de la NASA (negro fuera de ellas) con el tono cálido de las de antes, y sin relleno en la cara nocturna en primer plano (en la vista general, gris neutro): el suelo sin luces, negro y neutro.
 - **9b.c, el Sol (D41) y la totalidad del cielo (E1):** el Sol de la luz visible, casi blanco en el centro y dorado hacia el borde, con el oscurecimiento del limbo de cada color de una ley publicada (medido en la captura: el exponente de cada canal, a 0,003 de la ley), un resplandor (bloom) que solo sale del Sol en los niveles alto y medio, granulación que se mueve, manchas que giran con la rotación diferencial medida, fáculas y una corona tenue. En la totalidad del eclipse del 12-08-2026 desde Fraga, el cielo pasa del malva plano a un azul muy oscuro con el horizonte anaranjado en toda la vuelta, la Luna es lo más oscuro del cielo y la corona tiene serpentinas.
-- **9b.f, el Sol (D46, sesión A):** en el explorador, el Sol se ve en color realzado, como en la referencia: naranja (con la forma del oscurecimiento del limbo de la 9b.c), con zonas claras y oscuras a gran escala que cambian despacio, un resplandor naranja con rayos cortos y, de cerca, protuberancias que suben y bajan en el limbo. Medido frente a capturas propias de la referencia: el tono y el croma del centro y del borde, en los suyos, y más contraste a gran escala. En `/cielo`, el Sol de siempre (las mismas capturas, píxel a píxel). Lo dicen su ficha, «Lo que es ilustrativo» y `/creditos`.
+- **9b.f, el Sol (D46, en dos vueltas):** en el explorador, el Sol se ve en color realzado, como en la referencia. A Iván no le gustó la primera vuelta (sesión A): sus protuberancias parecían «tumores» y, en la vista general, el bloom lavaba el disco. Se rehízo en una segunda, que aprobó el 08-11:
+  - el disco, naranja saturado de cerca y de lejos, con zonas claras y oscuras que fluyen despacio (también en pausa), granulación fina, manchas oscuras y el borde algo más oscuro y rojizo;
+  - alrededor, un borde fino naranja rojizo, un resplandor suave y rayos cortos, sin la mancha pálida de antes;
+  - de cerca, tres bucles de plasma finos y translúcidos.
+
+  Medido frente a capturas propias de la referencia: de cerca, el tono del centro y del borde, a 2° como mucho del suyo, y el croma, del 100 al 105 %; en la vista general, el centro, naranja y sin lavar (L\* 79,8 · C\* 51,3 · h 81°, frente a 80,9 · 49,8 · 83°); y algo más de contraste. En `/cielo`, el Sol de siempre (las mismas capturas, píxel a píxel). Lo dicen su ficha, «Lo que es ilustrativo» y `/creditos`.
 - **9b.f, la Tierra (D46, sesión B):** también en color realzado, como en la referencia: el océano de un azul vivo, el reflejo del Sol ancho y cian (sin quemar), muchas menos nubes y más finas (del 9,8 % del disco al 1,5 %; la referencia, el 0,7 %), el desierto más claro y amarillo, la vegetación más verde, el relieve cinco veces más marcado y un borde de atmósfera fino y azul. Medido frente a capturas propias de la referencia: el tono y el croma de los océanos, en los suyos. La cara nocturna y las luces (D40), iguales que antes. Lo dicen «Lo que es ilustrativo», `/creditos` y la vista guiada «La Tierra completa», que ya no dice que es como la foto de la cámara EPIC.
 - **9b.d, las lunas: formas y mapas (D42, D43 y D45):** ninguna luna es ya una bola de un color (salvo Titán, por su neblina, ahora con el terminador suave de las fotos). Deimos y las cinco de Urano tienen los mapas del JPL; Proteo, cráteres generados. Lo que nadie ha visto (el norte de Tritón y de las lunas de Urano, y lo que no cubre el mapa de Deimos) se recrea con el terreno real de cada luna, y lo visto de lejos lleva detalle, sin tocar lo real. Fobos y Deimos tienen su forma real (los DSK del NAIF); Jápeto, el contraste de sus dos caras de los albedos de la NASA; las lunas en gris, el color de su B−V. Las fichas, los créditos y «Lo que es ilustrativo» lo dicen.
 
@@ -209,15 +215,77 @@ En el Sol de cerca, 172 MB y 23 llamadas en alto (en la 9b.c, 132 y 20): con las
 
 En Tritón, lo real y lo visto de lejos suman dos tercios (66,7 %), lo que dice la NASA («Voyager photographed two-thirds of Neptune's largest moon Triton»); en las cinco de Urano, lo no visto es su norte (la Voyager 2 las vio con el Sol sobre su hemisferio sur). Proteo no tiene mosaico: su superficie es entera generada (un campo de 13 049 cráteres, ilustrativo).
 
-### Entrega 9b.f (D46): el Sol (sesión A)
+### Entrega 9b.f (D46): el Sol (sesión A y segunda vuelta)
+**Dos vueltas.** La primera (sesión A, hasta `31a7a19`) cumplía los criterios de la adenda: de cerca, el centro a h 83° y C\* 48,2 y el borde a h 79° y C\* 51,7 (la referencia: 81° y 51,5; 76° y 53,4), con σL\* 5,65 (4,13). Pero a Iván no le gustó. El 08-11 dijo: «Las manchas estas que sobresalen parecen tumores… no me acaba de gustar. Intentemos basarnos en el sol del proyecto ejemplo». Las protuberancias se veían como bultos sólidos en el limbo y, en la vista general, el bloom lavaba el disco hasta dejarlo color crema. Decidió rehacerlo.
+
+La **segunda vuelta** se hizo en `fase-9b-f-sol-2`, desde `d765654`, con la Tierra ya junta. Sus criterios son más estrictos que los de la adenda: de cerca, el h a ±5° y el C\* al menos el 90 %; y el disco, naranja y sin lavar también en la vista general. Iván la aprobó el 08-11 («el sol le doy aprobado») y se juntó aquí con `--no-ff` (`fb3d021`). Lo de abajo es la segunda vuelta; las cifras de la primera quedan en las tablas, como registro.
+
 | Criterio | ✅/❌ | Evidencia |
 |---|---|---|
-| Capturas antes, después y referencia, lado a lado, en escritorio y móvil: el Sol de cerca y en la vista general | ✅ (la referencia, solo en local) | `antes-` y `despues-d46-escritorio-sol-cerca`, `-movil-sol-cerca`, `-escritorio-sol-sistema` y `-movil-sol-sistema` (§7; el «antes», del build de partida, `43072d6`), con `scripts/capture-d46.mjs`, en la fecha de las capturas de la referencia (15-01-2026). Lado a lado con las de la referencia, con `--comparar`, en `assets-src/referencias/comparativas/`: la adenda pide que las capturas de la referencia no se suban (§4). |
-| El Sol, medido frente a la referencia: el h del centro y del borde, a ±10°; el C\*, al menos el 80 % del suyo; el contraste a gran escala, al menos el suyo | ✅ | `scripts/measure-d46.mjs --solo=sol` (con `scripts/lib/disc-metrics.mjs`: lo mismo, medido igual en las dos). **El centro** (μ > 0,9): L\* 78,8 · C\* 48,2 · **h 83°** (la referencia: 78,6 · 51,5 · 81°; el 80 %, 41,2). **El borde** (μ de 0,15 a 0,35): L\* 66,4 · C\* 51,7 · **h 79°** (71,8 · 53,4 · 76°; el 80 %, 42,7). **El contraste**, σL\* sin el perfil del limbo: **5,65** (4,13). En el móvil: el centro, 79,3 · 48,1 · 83°; el borde, 65,4 · 51,6 · 78°; σL\* 5,31 (4,21). Antes: el centro, L\* 94,8 · C\* 3,7 · h 71°; el borde, 78,6 · 11,0 · 77°; σL\* 0,51. |
-| Sin cambios: la totalidad y el Sol de `/cielo` (las medidas de la 9b.c), las efemérides y las sombras | ✅ | `/cielo` (`scene/sky/`, otro shader), **igual píxel a píxel**: la puesta de Sol desde el Montsec, el Sol de cerca y la totalidad del 12-08-2026 desde Fraga, antes y después (0 canales distintos de 2 678 400 en cada una). `measure-sun.mjs`: la totalidad, con las mismas cifras de la 9b.c (la Luna, L\* 12,0; el cielo lejos de la corona, L\* 19,3 · C\* 14,8 · h 283°), y el limbo de D41 con `?medida=limbo` (el Sol sin realzar), α R 0,429 · G 0,511 · B 0,629, como antes. Las efemérides y las sombras: sus tests, en `npm run check`. |
-| §5 en los tres niveles (FPS, VRAM, llamadas de dibujo y memoria), con las protuberancias | ✅ (provisional: con tres sesiones en el mismo PC; se repite al cerrar la fase) | `measure-views.mjs`: el Sol de cerca, **59 FPS de mínimo en los tres niveles**, con la misma VRAM (172, 76 y 64 MB) y las mismas llamadas de dibujo (23, 23 y 8) que antes: la estructura, los rayos y las protuberancias van en los shaders que ya había (el disco y el halo). La vista general, 60 · 50 · 36 en alto. En la primera pasada, Urano en medio dio 36 FPS; repetido ese nivel, 60 (la máquina, ocupada). `measure.mjs`: la reproducción a 60, 60 y 59 FPS; la memoria, como en la 9b.d tras las idas y vueltas, los cambios de vista y de calidad y las vueltas por las lunas (11 MB de heap, 25 texturas y un contexto WebGL). En el nivel bajo, con ellas: caben. |
-| Con movimiento reducido, todo quieto | ✅ | Test en `engine.spec.ts`: la estructura y las protuberancias se mueven con el reloj de pared mientras se pinta y, con movimiento reducido y en las capturas, quietas (su tiempo, 0); las protuberancias, solo de cerca (en la vista general, apagadas); y con `?medida=limbo`, el Sol de D41. |
-| Los textos de «realzado», en sus tres sitios (la parte del Sol) | ✅ ficha, «Lo que es ilustrativo» y `/creditos` · ⏳ el panel | La línea del Sol, con fuente de la NASA (el SVS: «In photos, the Sun appears white…» y que los datos del SDO se pasan a colores; las citas, comprobadas por `build-body-texts.mjs`) y `reviewed: false`, en su ficha, con el enlace a «Lo que es ilustrativo». El panel del Sol del explorador está en `features/`, de nadie hasta que se fusione la 9c: va al juntar (§4). |
+| Capturas antes, después y referencia, lado a lado: el Sol de cerca y en la vista general, en escritorio y móvil | ✅ (la referencia, solo en local) | `sol2-antes-d46-*` (el Sol de la primera vuelta, del build de `d765654`) y `sol2-despues-d46-*`, de `escritorio-sol-cerca`, `movil-sol-cerca`, `escritorio-sol-sistema` y `movil-sol-sistema` (§7), con `scripts/capture-d46.mjs` en la fecha de la referencia (15-01-2026). Lado a lado con la referencia, con `--prefijo=sol2-despues --antes=sol2-antes --comparar`, en `assets-src/referencias/comparativas/sol2-despues-d46-*.png`: esa carpeta la ignora git, porque la referencia no se sube (§4). Las de la primera vuelta, `antes-` y `despues-d46-*-sol-*` (su «antes», del build de `43072d6`). |
+| De cerca, frente a la referencia: el h del centro y del borde, a ±5°; el C\*, al menos el 90 % del suyo (la adenda pedía ±10° y el 80 %) | ✅ | `scripts/measure-d46.mjs --solo=sol`, con `scripts/lib/disc-metrics.mjs`: lo mismo, medido igual en las dos (tabla abajo). **Escritorio:** el centro (μ > 0,9), h 81° (la referencia, 81°) y C\* 51,4 (51,5: el 100 %); el borde (μ de 0,15 a 0,35), h 75° (76°) y C\* 56,1 (53,4: el 105 %). **Móvil:** el centro, h 81° (81°) y C\* 51,3 (el 100 %); el borde, h 74° (76°) y C\* 56,3 (el 105 %). |
+| En la vista general, el disco naranja y sin lavar, medido | ✅ | `measure-d46.mjs --solo=sol` mide ahora también la vista general, en la referencia y en lo nuestro: el centro, el borde y el resplandor (la mediana de L\* a 1,5, 2 y 3 radios, con la del fondo a 6). **Escritorio:** el centro, L\* 79,8 · C\* 51,3 · h 81° (la referencia, 80,9 · 49,8 · 83°); el resplandor, L\* 13,2 a 1,5 radios y 8,2 a 2, sobre un fondo de 6,0 (la referencia, 13,1 y 9,1 sobre 1,5). **Móvil:** el centro, 79,8 · 51,4 · 81° (81,6 · 48,9 · 84°); el resplandor, 17,8 y 10,6 (12,7 y 8,6). **La primera vuelta** (escritorio, la misma medida): el centro, L\* 98,3 · C\* 21,3 · h 106°, casi blanco, y el resplandor, L\* 58,5 a 1,5 radios y 40,0 a 2: la mancha pálida. |
+| El contraste a gran escala (σL\* sin el perfil del limbo), al menos el de la referencia, también a lo largo del tiempo | ✅ | **De cerca:** 4,75 en escritorio y 4,77 en el móvil (la referencia, 4,13 y 4,21). **A lo largo del tiempo:** 10 instantes de los primeros 5 minutos de reloj, de 0 a 300 s, dan de **4,66 a 5,57**. La primera versión de esta vuelta (`5b4d1de`) bajaba a 4,09 en algunos instantes, con zonas pardas. Se arregló con un límite suave de lo que oscurece y aclara (§5). |
+| Sin cambios: la totalidad y el Sol de `/cielo` (las medidas de la 9b.c), las efemérides y las sombras | ✅ | `/cielo` (`scene/sky/`, otro shader) sale **igual píxel a píxel** en las dos vueltas. En la segunda, 0 canales distintos en las 5 capturas PNG del lienzo entre el build de `d765654` y el de después, también tras juntarla y arreglar el halo. Son la totalidad del 12-08-2026 desde Fraga (de cerca, de lejos y en el móvil), la puesta de Sol desde el Montsec y el Sol de cerca en el cielo. `CORONA_GLSL`, la corona que también usa `/cielo`, no cambia. `measure-sun.mjs`: la totalidad, con las cifras de la 9b.c (la Luna, L\* 12,0; el cielo lejos de la corona, L\* 19,3 · C\* 14,8 · h 283°; el horizonte, h 65° a 0,5°). El limbo de D41 con `?medida=limbo` (el Sol sin realzar): α R 0,429 · G 0,511 · B 0,629, como antes. Las efemérides y las sombras: sus tests, en `npm run check`. |
+| §5 en los tres niveles (FPS, VRAM, llamadas de dibujo y memoria), con los bucles de plasma | ✅ (provisional: con otras sesiones en el mismo PC; se repite al cerrar la fase) | `measure-views.mjs` y `measure.mjs` (tabla abajo): **59–60 FPS de mínimo en todas las vistas de los tres niveles**. Sin el bloom, menos memoria y menos llamadas: la vista general, 38 MB y 21 llamadas en los tres niveles (en la primera vuelta, 50 y 36 en alto y medio); el Sol de cerca en alto, 161 MB y 8 llamadas (172 y 23). La memoria, estable: 11 MB de heap, 12 texturas (25 en la primera vuelta, 13 de ellas del bloom) y un contexto WebGL. |
+| Con movimiento reducido, todo quieto | ✅ | **Tests en `engine.spec.ts`:** con movimiento reducido y en las capturas, el tiempo de la superficie, de la granulación y de los bucles se queda en 0 y no hay frames de más. **En uso real** (`scripts/capture-sun-motion.mjs`, sin el modo de captura y con `?fecha=`, que arranca en pausa): dos capturas del lienzo separadas 6 s cambian 7,5 de 255 de media en el disco y 0,3 fuera; con `prefers-reduced-motion`, 0,00 y 0,00. |
+| El movimiento, visible y lento (lo pedía la segunda vuelta) | ✅ | Las mismas capturas (`sol2-movimiento-t0` y `-t6`): en 6 s la superficie cambia de forma, sin saltos; en un minuto, del todo. Los bucles respiran y se mecen en decenas de segundos, y se encienden y se apagan en unos minutos. En la primera vuelta, con el tiempo en pausa el motor dejaba de pintar y el Sol se quedaba quieto; ahora, de cerca, pinta cada 50 ms (§4). |
+| Los textos de «realzado», en sus tres sitios (la parte del Sol) | ✅ ficha, «Lo que es ilustrativo» y `/creditos` · ⏳ el panel | La línea del Sol va en su ficha, con fuente de la NASA y `reviewed: false`, y enlaza a «Lo que es ilustrativo». La fuente es el SVS: «In photos, the Sun appears white…» y que los datos del SDO se pasan a colores; `build-body-texts.mjs` comprueba las citas. El panel del Sol del explorador está en `features/`, que es de nadie hasta que se fusione la 9c: va al juntar (§4). La segunda vuelta no toca los textos, y dos frases de «Lo que es ilustrativo» se han quedado atrás (§9). |
+
+**El Sol, medido** (`measure-d46.mjs --solo=sol`, el 15-01-2026, en CIELAB). Las cifras de la segunda vuelta salen iguales en su rama (`315c1a9`) y tras juntarla con el halo arreglado (`d881476`).
+
+| | Centro (μ > 0,9) | Borde (μ 0,15–0,35) | σL\* |
+|---|---|---|---|
+| Referencia, de cerca, escritorio | L\* 78,6 · C\* 51,5 · h 81° | 71,8 · 53,4 · 76° | 4,13 |
+| Referencia, de cerca, móvil | 78,6 · 51,5 · 81° | 71,6 · 53,6 · 76° | 4,21 |
+| Primera vuelta, de cerca, escritorio | 78,8 · 48,2 · 83° | 66,4 · 51,7 · 79° | 5,65 |
+| Primera vuelta, de cerca, móvil | 79,3 · 48,1 · 83° | 65,4 · 51,6 · 78° | 5,31 |
+| **Segunda vuelta, de cerca, escritorio** | **79,7 · 51,4 · 81°** | **69,8 · 56,1 · 75°** | **4,75** |
+| **Segunda vuelta, de cerca, móvil** | **79,8 · 51,3 · 81°** | **69,3 · 56,3 · 74°** | **4,77** |
+| Referencia, vista general, escritorio | 80,9 · 49,8 · 83° | 59,8 · 50,0 · 68° | — |
+| Referencia, vista general, móvil | 81,6 · 48,9 · 84° | 53,1 · 41,0 · 74° | — |
+| Primera vuelta, vista general, escritorio | 98,3 · 21,3 · 106° | 93,4 · 38,1 · 97° | — |
+| **Segunda vuelta, vista general, escritorio** | **79,8 · 51,3 · 81°** | **69,2 · 56,9 · 74°** | — |
+| **Segunda vuelta, vista general, móvil** | **79,8 · 51,4 · 81°** | **69,0 · 57,3 · 74°** | — |
+
+En la vista general, nuestro disco mide 30,9 px de radio en escritorio y 19,2 px reales en el móvil; el de la referencia, 15,3 y 7,7. Por eso su σL\* no se compara. Antes de la 9b.f (el Sol de la 9b.c), el centro de cerca era casi blanco: L\* 94,8 · C\* 3,7 · h 71°, con σL\* 0,51.
+
+**El disco, por dentro** (μ > 0,5, de cerca, escritorio, en el instante de la captura):
+
+| | L\* p5 · p50 · p95 | Lo oscuro (el 10 %) |
+|---|---|---|
+| Referencia | 68,1 · 77,8 · 84,2 | C\* 59,6 · h 72° |
+| Segunda vuelta | 65,7 · 77,5 · 85,4 | C\* 62,0 · h 72° |
+
+**El halo, de cerca** (la mediana de L\* y su tono en anillos fuera del disco, escritorio):
+
+| ρ (radios) | 1,02 | 1,05 | 1,10 | 1,20 | 1,50 |
+|---|---|---|---|---|---|
+| Referencia (fondo L\* 1,5) | 20–32 · 44–48° | ~11 · ~36° | 4,6 · 23° | 2,0 | 1,5 |
+| Primera vuelta (fondo 6) | 57,7 · 70° | 54,0 · 72° | 47,7 · 72° | 38,6 · 73° | 24,8 · 74° |
+| Segunda vuelta (fondo 6) | 28,6 · 56° | 21,5 · 54° | 14,9 · 27° | 9,0 | 6,0 |
+
+**§5 de la segunda vuelta, provisional.** `measure-views.mjs` con una RTX 3060 con ANGLE sobre D3D11, sobre el build de `315c1a9` y con otras sesiones en el mismo PC; se repite al cerrar la fase. En todas las vistas de los tres niveles, 59–60 FPS de mínimo. Las del Sol, en FPS mínimo · VRAM (MB) · llamadas de dibujo:
+
+| Vista | Alto | Medio | Bajo |
+|---|---|---|---|
+| Sistema, segunda vuelta | 59 · 38 · 21 | 60 · 38 · 21 | 60 · 38 · 21 |
+| Sistema, primera vuelta (con bloom en alto y medio) | 60 · 50 · 36 | — · 50 · 36 | — · 38 · 21 |
+| Sol de cerca, segunda vuelta | 59 · 161 · 8 | 59 · 65 · 8 | 59 · 64 · 8 |
+| Sol de cerca, primera vuelta | 59 · 172 · 23 | 59 · 76 · 23 | 59 · 64 · 8 |
+| Vista Tierra, segunda vuelta | 60 · 278 · 6 | 60 · 86 · 6 | 59 · 86 · 6 |
+| Cielo, segunda vuelta | 59 · 39 · 5 | 60 · 39 · 5 | 59 · 38 · 5 |
+
+En la primera vuelta no se midieron los FPS de la vista general en medio y en bajo (—). El shader nuevo del disco (cinco octavas de ruido, la granulación y las manchas) y el del halo (el borde, los rayos y tres bucles de 14 hilos) no bajan los FPS: el Sol de cerca gasta 0,98 ms de CPU por frame en alto. La VRAM más alta sigue siendo la de la vista Tierra en alto, 278 MB de 300.
+
+`measure.mjs`, sobre el mismo build:
+- **Reposo:** en la vista general en pausa, 0 frames y 0 `requestAnimationFrame` en 3 s. El pintado cada 50 ms solo va con el Sol de cerca.
+- **Reproducción a 1 día/s:** 60 FPS de mínimo en los tres niveles, con 1,37 ms de CPU por frame en alto (en la primera vuelta, 1,83, con el bloom).
+- **Arranque:** sin tareas largas, porque la compilación del bloom ya no está (en la 9b.c, de 53 a 124 ms). LCP, 232 ms en alto.
+- **Memoria:** estable tras las idas y vueltas, los cambios de vista y de calidad y las vueltas por las lunas: 11 MB de heap, 12 texturas y un contexto WebGL.
+- **Contexto WebGL perdido y recuperado:** 0 frames mientras falta y uno al volver.
+
+El arreglo del halo tras juntarla (`d881476`, §4) no cambia estas cifras. De cerca, las capturas salen iguales: 197 píxeles cambian, con 1 nivel de diferencia como mucho. En la vista general y en la miniatura cambian solo los píxeles de los puntos.
 
 ### Entrega 9b.f (D46): la Tierra (sesión B)
 Hecha en `fase-9b-f-tierra` (desde `d5ce7f8`, con la base común `43072d6`) y juntada aquí el 08-11 (§4). Todo está en el shader de la Tierra (`body-material.ts`, `TLS_EARTH`) y en `VISUAL_CONFIG.earth.enhanced`, con su porqué: las texturas no cambian.
@@ -309,11 +377,11 @@ En la rama de B, el Sol todavía era el de la 9b.c: el Sol realzado no añade VR
 | 9b.d.5 · El terminador de Titán | hecha | Un oscurecimiento hacia el terminador, min(1, μ₀/μ)^1,15 (`terminatorExponent`, en TS y en GLSL), ajustado a los perfiles de PIA06230: el error del modelo, del 9,2 % al 2,4 % (`scripts/measure-titan-terminator.mjs`); en la captura de la escena (`--captura`: con la exposición del primer plano, el halo de la neblina y el tone mapping), un 8,4 % frente a la foto. Captura `-terminador-titan`. |
 | 9b.d.6 · La textura del planeta al enfocar una de sus lunas | hecha (ya la daba C4) | La regla de C4 (un cuerpo de 160 px o más lleva la textura del primer plano) ya la cubría; ahora, con su test (Ío enfocada: Júpiter, grande detrás, pide la suya). |
 | 9b.d.7 · `FUENTES.md`, `/creditos` y la licencia en `CLAUDE.md` | hecha | `FUENTES.md`, fila a fila; `/creditos`, con los mapas del JPL, las formas del NAIF y lo recreado (con su tabla); la licencia del JPL (D43) y las reglas del NAIF ya estaban en `CLAUDE.md`. |
-| 9b.f.1 · El Sol, con color realzado | hecha | Una paleta del borde al centro (lineal, `VISUAL_CONFIG.sun.enhanced.palette`) por la luminancia del limbo por canal de la 9b.c: la forma del perfil sigue siendo la medida. |
-| 9b.f.2 · Su estructura a gran escala | hecha | Procedural en el shader: un ruido a tres escalas retorcido por otro (*domain warp*), llevado a manchas claras y oscuras (smoothstep), con el brillo por exp(amplitud · ±1) y el color hacia el del centro o el del borde; evoluciona despacio con el reloj de pared; determinista y quieta con movimiento reducido y en las capturas. |
-| 9b.f.3 · El resplandor naranja con rayos suaves | hecha | El halo y la corona, naranjas (`glow`); rayos finos y cortos junto al limbo, aditivos (`rays`); el bloom de la 9b.c, sin cambios (sale del Sol, ahora naranja). En la vista general, Mercurio y Venus siguen viéndose junto a él. |
-| 9b.f.4 · Protuberancias animadas en primer plano | hecha | En el halo: cinco bucles de tres hilos finos, solo fuera del disco, que suben y bajan despacio, cada uno con su ritmo; con el primer plano del Sol (en la vista general, apagadas) y en los tres niveles (caben en §5). Sin filamentos en el disco. |
-| 9b.f.5 · `/cielo`, sin cambios | hecha | Igual píxel a píxel (§2). |
+| 9b.f.1 · El Sol, con color realzado | hecha (dos vueltas) | **Segunda vuelta:** una paleta lineal antes del tone mapping, con intensidad 1 de cerca y de lejos: el disco no llega a la compresión del tone mapping neutro, que en la vista general lo lavaba a crema. El color del centro y el del borde, más rojo, se mezclan por μ (`VISUAL_CONFIG.sun.enhanced.palette`). El brillo, con el oscurecimiento del limbo por canal de la 9b.c y sus exponentes × 0,55 (§4). **Primera:** la paleta por la luminancia de ese limbo, sin suavizar. |
+| 9b.f.2 · Su estructura a gran escala | hecha (dos vueltas) | **Segunda vuelta:** ruido de gradiente propio en cinco octavas, retorcido por un campo que cambia con el tiempo. Cada octava se apaga cuando su detalle baja de un par de píxeles. Un límite suave (tanh) acota lo que oscurece y aclara, con una ganancia por canal: lo claro, más amarillo; lo oscuro, más rojo. Encima, granulación fina (dos octavas) y manchas solares pardas de borde suave. Fluye despacio con el reloj de pared, también en pausa con el Sol de cerca (§4), y queda quieta con movimiento reducido y en las capturas. **Primera:** un ruido a tres escalas con *domain warp*, llevado a manchas con smoothstep. |
+| 9b.f.3 · El resplandor naranja con rayos suaves | hecha (dos vueltas) | **Segunda vuelta**, todo en el halo e igual en los tres niveles: un borde fino naranja rojizo pegado al limbo (dos caídas exponenciales de 0,01 y 0,035 radios, con un ancho mínimo en píxeles), un resplandor suave naranja de 0,09 radios y rayos cortos y finos (283 + 157 por vuelta, con su curva; por debajo de 2 px, su media). En la vista general, un resplandor ancho muy tenue (L\* 8,2 a 2 radios, sobre un fondo de 6) que no tapa a los planetas. El bloom de la 9b.c y la corona de cerca, apagados (§4). **Primera:** el halo y la corona, naranjas, con rayos, y el bloom de la 9b.c. |
+| 9b.f.4 · Protuberancias animadas en primer plano | hecha (dos vueltas) | **Segunda vuelta:** tres bucles de plasma, cada uno con 14 hilos finos y translúcidos en arco entre dos pies en el limbo. Los hilos miden ~1 px, con un mínimo de 0,45 px para que no parpadeen. Se desvanecen con la altura, y cada bucle respira, se mece y se enciende y se apaga despacio. Solo de cerca, en los tres niveles. **Primera:** cinco bucles de tres hilos, que se veían como bultos sólidos (los «tumores»). |
+| 9b.f.5 · `/cielo`, sin cambios | hecha | Igual píxel a píxel en las dos vueltas (§2). |
 | 9b.f.6 · Los océanos, de un azul vivo | hecha (B) | En el shader, sin la calibración de EPIC: oscuros y saturados como en la referencia (`VISUAL_CONFIG.earth.enhanced`); medidos en el Atlántico y el Índico (§2). |
 | 9b.f.7 · El reflejo del Sol en el agua | hecha (B) | Con Fresnel y solo en el agua (la máscara de siempre): un núcleo blanco (el Sol) y un lóbulo ancho cian (`glint.tint`); con `exponent` 12, la mitad de su brillo a unos 19° de arco del punto del reflejo. Sin quemar: 243 de 255 de máximo. |
 | 9b.f.8 · Nubes más finas | hecha (B) | Del 9,8 % del disco al 1,5 % (la referencia, el 0,7 %); de cerca, `cloudFade.min` 0,15 (antes 0,3): sin los velos borrosos del primer plano del Himalaya. |
@@ -352,12 +420,34 @@ En la rama de B, el Sol todavía era el de la 9b.c: el Sol realzado no añade VR
 
 - **9b.f, las capturas lado a lado con la referencia, solo en local.** La adenda pide «capturas antes, después y referencia, lado a lado» y, a la vez, que las capturas de la referencia no se suban al repo. En el repo van el antes y el después; el lado a lado con la referencia, con `capture-d46.mjs --comparar`, en `assets-src/referencias/comparativas/` (ignorada por git), para Iván.
 - **9b.f, la línea del panel del Sol, al juntar con la 9c.** El panel del explorador está en `features/body-panel`, que el reparto deja de nadie hasta que se fusione la 9c (que lo rehace). La línea ya está en los datos (`mapNote` del Sol) y en la ficha; en el panel, al juntar.
-- **9b.f, el halo y la corona del Sol, naranjas.** En la 9b.c eran de un blanco cálido: con el disco naranja, el resplandor salía gris. Ahora toman el color de `glow`, en la vista general y en primer plano (también la corona ilustrativa).
+- **9b.f, el halo y la corona del Sol, naranjas.** En la 9b.c eran de un blanco cálido: con el disco naranja, el resplandor salía gris. Ahora toman el color de `glow`, en la vista general y en primer plano (también la corona ilustrativa). En la segunda vuelta, la corona de cerca está apagada (abajo).
 - **9b.f, los puertos por entorno, traídos de la 9c** (`0447eae`, un cherry-pick de `2f52b14`, el mismo contenido): sin ellos, esta rama no tenía `CAPTURE_PORT` ni `E2E_PORT`, y B y C no podían usar los puertos del reparto.
 - **9b.f, las imágenes que no son del Sol, sin regenerar.** Al regenerar las del Sol (su miniatura, las de su ficha, la de compartir y el póster de la vista general) cambiaban también, con ruido o por cambios de entregas anteriores, la miniatura de Venus, las fichas de otros planetas y los pósters de las vistas Tierra y cielo. Se dejan como estaban: los pósters se rehacen al juntar la Tierra (B) y con la interfaz de la 9c.
 - **9b.f, juntar la Tierra** (08-11): `git merge --no-ff fase-9b-f-tierra`, sin conflictos (B tocó, con cambios pequeños, los compartidos `world.ts`, `engine.spec.ts`, `visual-config.ts`, `about-page.html`, `credits-page.html` y `FUENTES.md`). Regenerados después: `docs/revision-textos.md` (el texto nuevo de «La Tierra completa» y el punto de la Tierra en «Lo que es ilustrativo»), los pósters de la vista general y de la vista Tierra (escritorio y móvil; el de la vista Tierra, sin la Tierra realzada, haría un salto al pasar del póster al 3D) y la imagen para compartir (lleva la Tierra de su ficha). `body-texts.ts` y `textos-cuerpos.md`, regenerados sin cambios (B no tocó `body-texts.json`). Los pósters de las vistas Luna y cielo no llevan la Tierra de día: siguen como estaban, hasta la interfaz de la 9c.
 - **9b.f, las capturas de la Tierra con el prefijo de la herramienta común** (`antes-d46-…` y `despues-d46-…`), no con `tierra-` como pedía el reparto: son solo de la Tierra (`tierra-completa`, `pacifico`, `himalaya`) y no chocan con las del Sol.
 - **9b.f, las imágenes del motor de la Tierra, en la rama de B:** su miniatura (`public/img/cuerpos/tierra.webp`) y las de su ficha (`public/img/fichas/tierra-360.webp` y `-720.webp`). Las de los demás cuerpos, sin tocar: Venus cambia de una pasada a otra también con el build de partida (máximo 13 niveles); Marte y Titán salen idénticas gracias al `#define` del tinte del halo (con un uniforme neutro a 1 cambiaban algún píxel: diferencia media 0,02 y 0,56, máxima 7 y 17).
+- **9b.f, el Sol, rehecho en una segunda vuelta** (decisión de Iván del 08-11). La primera cumplía los criterios de la adenda, pero a Iván no le gustó: «Las manchas estas que sobresalen parecen tumores… no me acaba de gustar. Intentemos basarnos en el sol del proyecto ejemplo». Se rehízo en `fase-9b-f-sol-2` con criterios más estrictos (§2), e Iván aprobó el resultado el 08-11. Se juntó con `git merge --no-ff fase-9b-f-sol-2`, sin conflictos: tocaba los archivos del Sol, `engine.ts`, `engine.spec.ts`, `world.ts`, `visual-config.ts`, los scripts de D46 y sus capturas.
+- **9b.f, segunda vuelta: el oscurecimiento del limbo, más suave en el realzado (× 0,55).**
+  - Usa la ley por canal de la 9b.c con sus exponentes por 0,55: a μ 0,44 el disco baja al 80 % (con los de la 9b.c, al 66 %; en la referencia, al 83 %).
+  - **Motivo:** con los exponentes de la 9b.c, el borde salía pardo y el disco, más oscuro que la referencia en toda su mitad exterior.
+  - D46 (tarea 1) pedía conservar el perfil «como forma»: es la misma ley, más suave. Lo aprobó la sesión de revisión el 08-11, y después Iván, con el Sol entero.
+  - El limbo de `?medida=limbo` y el del Sol de `/cielo` siguen siendo el de D41, medido igual.
+- **9b.f, segunda vuelta: el bloom de la 9b.c, apagado en el explorador** (`VISUAL_CONFIG.sun.bloom.enabled`).
+  - Desenfoca el disco entero: su resplandor caía también sobre el disco, lo aclaraba hacia el amarillo y, en la vista general, lo lavaba. Ancho y del color del disco, era «la mancha grande y pálida».
+  - El borde fino, el resplandor suave y los rayos los pinta el halo, igual en los tres niveles y sin sus 15 pasadas.
+  - El módulo se queda, con su interruptor, por si se vuelve al Sol de D41. Sus tests lo encienden.
+- **9b.f, segunda vuelta: la corona de cerca, apagada en el explorador.** Era un velo pálido hasta 3 radios, y la referencia es negra a 1,2. La de la totalidad de `/cielo` es otra y no cambia.
+- **9b.f, segunda vuelta: la granulación, de celdas a ruido fino.** En la 9b.c eran celdas de Worley de 40 por radio, con calles oscuras. Se veían como un mosaico, y la referencia tiene un grano fino. `?medida=limbo` no la usa.
+- **9b.f, segunda vuelta: una excepción al render bajo demanda.**
+  - Con el Sol de cerca y nada más en marcha, el motor pinta cada 50 ms, para que su superficie fluya también en pausa (como en la referencia).
+  - No se aplica en la vista general, en las vistas Tierra, Luna y cielo, con movimiento reducido, en las capturas ni con la pestaña oculta.
+  - Con la reproducción lenta (hasta 60 s/s), el Sol de cerca se pinta a ese ritmo en lugar de a 4 Hz.
+- **9b.f, el halo del Sol, arreglado al juntar la segunda vuelta** (`d881476`).
+  - **El fallo:** al rehacer las imágenes del motor salieron puntos oscuros de un píxel en el borde fino del Sol pequeño. En la miniatura había ocho alrededor del limbo, y también salían en la vista general del móvil (el Sol, de unos 14 px de radio).
+  - **La causa:** el halo medía el píxel con `fwidth` dentro de la rama de ρ > 0,97, que no siguen todos los píxeles de su cuadro de 2 × 2. Ahí una derivada no está definida, y el compilador de D3D (ANGLE) la metía en la rama aunque se calculara antes. En los cuadros que cruzan el borde de la rama daba casi 0, y el borde fino perdía su ancho mínimo.
+  - **El arreglo:** el vértice da lo que mide un píxel (sus unidades por píxel a la distancia del Sol y la densidad del renderer), con el mismo valor que daba `fwidth(r)`. Tiene su test.
+  - **Lo comprobado:** de cerca, las capturas salen iguales; en la vista general y en la miniatura cambian solo los píxeles de los puntos; `/cielo`, igual píxel a píxel.
+- **9b.f, segunda vuelta: las imágenes que no son del Sol, sin regenerar.** Al rehacer las miniaturas, las de Venus, la Tierra, Saturno y Titán cambian de una pasada a otra (como mucho 20 niveles, en unos 30 canales): se dejan como estaban.
 - **El CI, en rojo desde `08120db`, arreglado** (`dfbc655`): el e2e del móvil «/sol: a 320 px de ancho, sin desplazamiento horizontal» (WCAG 1.4.10) daba una página de 533 px en el CI (528 en local). La causa: la línea de la ficha «Los textos, de…» enseña la dirección de cada fuente, y la del Sol realzado (`svs.gsfc.nasa.gov/vis/a010000/a013800/a013859/script_31299_00.html`) no tiene espacios donde partirse. Arreglado en la causa, sin tocar el test: `overflow-wrap: anywhere` en los enlaces de `.body__note` (`body-detail-page.css`), para esta y para cualquier dirección larga que venga. Los 16 e2e del móvil, en verde en local. `body-detail-page.css` también lo cambia la 9c, en otras líneas: **para la fusión**.
 - **Un test de la fase 5 que falló una vez en la rama de B:** «las nubes derivan con los frames pintados…» (`engine.spec.ts`), en una ejecución parcial con el equipo cargado por las otras sesiones; pasó en las dos siguientes y en el check completo, aquí también. Usa un reloj simulado y la entrega no toca ni la deriva ni `cloudDrift`. Sin causa encontrada: para la revisión.
 - **Dos tests, corregidos al cerrar la 9b.d.** El de la alineación de los mapas de las lunas (`texture-meta.spec.ts`) solo trataba como retrógrada a Tritón: las cinco de Urano, ahora con mapa, también giran al revés respecto a su polo norte de la IAU (el del lado norte del plano invariable), y su hemisferio delantero está a 90° E. Y el de la textura de Júpiter con Ío enfocada (`engine.spec.ts`) dependía de la hora: a las 00:00 del 24-10-2026 Júpiter queda detrás de la cámara del encuadre de Ío; a las 18:00, detrás de Ío.
@@ -392,6 +482,29 @@ En la rama de B, el Sol todavía era el de la 9b.c: el Sol realzado no añade VR
 - **El relieve ×5, sin el escalón de cuantización:** amplificado, el mapa de normales de 8 bits dibujaba rectángulos en las llanuras (India, Tarim) y manchas oscuras (Afganistán); antes de amplificar se quita una zona muerta de ~1,5 niveles. Con más de ×6, vuelven los bloques.
 - **La noche, con la Tierra de la fase 5:** el relleno nocturno de la vista general sale del albedo y de las nubes; con los realzados (un océano más oscuro y menos nubes), la Tierra de noche dejaba de leerse como un disco (ΔL\* de 4,1 a −0,2). El relleno de la noche y las nubes que tapan las luces usan el albedo (con la rodilla de lo árido de EPIC) y las nubes de la textura; por eso la rodilla realzada va en su propio uniforme (`uEnhancedAridKnee`, solo de día) y `uArid` no cambia.
 - **El tinte del halo de la Tierra, con un `#define`** (`TLS_TINT`), no con un uniforme neutro: un uniforme a 1 en el shader compartido cambiaba algún píxel de Marte y de Titán.
+
+- **El Sol de la segunda vuelta, en los mismos dos shaders** (el disco y el halo), sin mallas ni pasadas nuevas. Con el bloom apagado, gasta menos llamadas de dibujo y menos VRAM.
+- **El realzado del disco** (`sun-material.ts`):
+  - la paleta (centro y borde) y su mezcla por μ;
+  - el perfil suavizado, con el brillo de μ = 0,1 en el último 0,5 % del radio (sin él, la ley iba a negro y el borde salía oscuro y dentado);
+  - la estructura: cinco octavas de ruido de gradiente propio, cada una apagada cuando su detalle mide menos de un par de píxeles (sin moiré en la vista general);
+  - su forma y un límite suave (tanh), con una ganancia por canal distinta en lo claro y en lo oscuro;
+  - la granulación fina y las manchas pardas (su sombra, elevada a 1, 1,6 y 2,2 por canal).
+- **El contraste, estable:**
+  - En la primera versión de la segunda vuelta dependía de unas pocas manchas grandes y oscilaba de 4,1 a 6,3 en cinco minutos, con zonas pardas en algunos instantes (el 5 % más oscuro, hasta L\* 57).
+  - Con el límite suave de lo oscuro, una forma más lineal y algo más de amplitud, queda de 4,66 a 5,57. Lo oscuro, como en la referencia: C\* 62,0 y h 72°, frente a 59,6 y 72°.
+  - Una primera octava más alta (3,4 ciclos por radio) daba cifras aún más estables. Cambiaba el carácter de la superficie a «camuflaje», y la revisión pidió no tocar el aspecto hasta que opinara Iván.
+- **El halo** (`createHaloMaterial`):
+  - el borde fino, el resplandor suave y los rayos, con anchos mínimos en píxeles y su media cuando una celda mide menos de 2 px;
+  - los bucles, con la distancia a cada semielipse aproximada por el valor de su ecuación entre su gradiente;
+  - empieza a 0,97 radios: donde la silueta de la malla (un polígono) se queda dentro del círculo, el hueco lleva el borde y no el fondo;
+  - lo que mide un píxel, sin derivadas (§4).
+- **El enganche del motor:** `SUN_FRAME_MS` (50 ms) y `sunAnimates()` en `engine.ts`; el interruptor del bloom, en `compileSunBloom` y `sunBloomWanted`.
+- **Las herramientas de la segunda vuelta:**
+  - `capture-d46.mjs`, con `--antes=`, para comparar con la primera vuelta;
+  - `measure-d46.mjs`, con la vista general (`overviewSunMetrics` y `ringLightness`, en `scripts/lib/disc-metrics.mjs`);
+  - `scripts/capture-sun-motion.mjs`, nuevo: el movimiento en uso real, con y sin movimiento reducido.
+- **El radio del halo de la vista general no cambia** (2,4 radios): `labels.ts` lo usa para apartar los nombres del Sol.
 
 ## 6. Salida de los checks
 Entrega 9b.a (`npm run check`, 04-11):
@@ -441,6 +554,21 @@ Initial total 310,81 kB
 ```
 three, diferido, 798,65 kB (en la 9b.d, 785,41: el GLSL del Sol y de la Tierra realzados y sus bloques `enhanced`). Sin avisos de presupuesto. Los 16 e2e del móvil, en verde en local (`E2E_PORT=4391`).
 
+El Sol de la segunda vuelta, en su rama (`npm run check`, 08-11, sobre `315c1a9`): lint y Prettier limpios; 766 tests (77 ficheros); la cobertura de `ephemeris/`, 98,93 % de las sentencias y 99,69 % de las líneas; el build, sin avisos de presupuesto; el código propio inicial, 14,86 kB de 15; 1184 enlaces internos bien.
+
+**La 9b.f con el Sol de la segunda vuelta** (`npm run check`, 08-11, tras juntarla y arreglar el halo, `d881476`):
+```
+All files pass linting. · All matched files use Prettier code style!
+Test Files 77 passed (77) · Tests 767 passed (767)
+Statements 98,93 % · Branches 94,18 % · Functions 100 % · Lines 99,69 % (ephemeris/)
+Initial total 310,81 kB
+✔ El JS inicial de las 40 páginas (17 ficheros) no lleva ningún módulo de three ni de astronomy-engine ni de los stores ni de los controles del visor.
+✔ Código propio en los chunks iniciales: 14,86 kB de 15,00
+  Diferido: three, 808,43 kB en bruto
+✔ Enlaces de las 40 páginas: 1184 internos bien (rutas, ficheros y anclas); 119 externos sin comprobar
+```
+three, diferido, pasa de 798,65 kB (el Sol de la primera vuelta y la Tierra) a 808,43 por el GLSL del Sol de la segunda vuelta. Sin avisos de presupuesto. El test nuevo (el halo, sin derivadas) es el 767.
+
 ## 7. Capturas
 `docs/informes/img/fase-9b/`, `antes-*` (el build del primer commit de la fase, sin la disposición nueva) y `despues-*`, con `scripts/capture-moon-systems.mjs`:
 - Júpiter de cerca: `escritorio-jupiter-cerca` y `movil-jupiter-cerca`; con sus lunas con mapa, `escritorio-jupiter-mapas`.
@@ -460,12 +588,20 @@ three, diferido, 798,65 kB (en la 9b.d, 785,41: el GLSL del Sol y de la Tierra r
 
 - El Sol realzado (9b.f, sesión A), con `scripts/capture-d46.mjs` en la fecha de la referencia (15-01-2026): `antes-` y `despues-d46-escritorio-sol-cerca`, `-movil-sol-cerca`, `-escritorio-sol-sistema` y `-movil-sol-sistema` (el «antes», del build de `43072d6`). Regeneradas con él: su miniatura, las imágenes de su ficha, la imagen para compartir y el póster de la vista general.
 - La Tierra realzada (9b.f, sesión B), con `scripts/capture-d46.mjs` en la misma fecha: `antes-` y `despues-d46-escritorio-` y `-movil-tierra-completa`, `-pacifico` y `-himalaya` (12 capturas, con la interfaz; el «antes», del build de `d5ce7f8`). Regeneradas con ella: su miniatura y las imágenes de su ficha (en la rama de B) y, tras juntarla, los pósters de la vista general y de la vista Tierra y la imagen para compartir.
+- El Sol de la segunda vuelta (9b.f):
+  - Con `scripts/capture-d46.mjs`, en la fecha de la referencia: `sol2-antes-d46-` y `sol2-despues-d46-escritorio-sol-cerca`, `-movil-sol-cerca`, `-escritorio-sol-sistema` y `-movil-sol-sistema`. El «antes» es el Sol de la primera vuelta, del build de `d765654`.
+  - El movimiento en uso real, con `scripts/capture-sun-motion.mjs`: `sol2-movimiento-t0` y `-t6` (en pausa, con 6 s entre las dos) y `sol2-movimiento-reducido-t0` y `-t6` (con movimiento reducido: iguales).
+  - Lado a lado con la referencia, solo en local: `assets-src/referencias/comparativas/sol2-despues-d46-*.png`.
+  - Regeneradas tras juntarla y arreglar el halo: la miniatura y las imágenes de la ficha del Sol, la imagen para compartir y el póster de la vista general (escritorio y móvil).
 
 ## 8. Dependencias añadidas
 Ninguna.
 
 ## 9. Pendientes y `TODO(ivan)`
 - Los PR 1 y 3 de Dependabot (E5), en `PENDIENTES.md`.
+- **Dos frases de «Lo que es ilustrativo» del Sol (`/sobre-el-proyecto`) se han quedado atrás** con la segunda vuelta, que no tocaba los textos. Son para la revisión de textos de Iván o para el cierre de la fase:
+  - «La forma del oscurecimiento de su borde sí es la medida»: en el explorador, el realzado la suaviza × 0,55 (§4); la medida sigue en `/cielo` y con `?medida=limbo`.
+  - «sus fáculas y su corona»: el explorador ya no pinta la corona (la de cerca está apagada; la de `/cielo` sigue).
 
 ## 10. Propuestas de cambio al plan
 Ninguna por ahora.
@@ -475,7 +611,11 @@ Ninguna por ahora.
 - `/?captura=1&cuerpo=saturno&marco=ilustrativo&fecha=2029-06-01T00:00Z` y Mayús + flecha arriba: el sistema de Saturno de la vista general, de cerca.
 - `/luna`: las migas y «Lunas» marcado en el menú.
 - `/explorar/tierra` y «Las luces de la noche»: la cara nocturna, negra, con las luces; `node scripts/measure-earth-night.mjs` mide el suelo y las luces en CIELAB.
-- El Sol de cerca: en el explorador, «Sol» en el carrusel (o `/?cuerpo=sol`). Con la reproducción en marcha, la granulación se mueve; con movimiento reducido, quieta. En la calidad «baja», sin bloom (el halo).
+- El Sol de cerca: en el explorador, «Sol» en el carrusel (o `/?cuerpo=sol`). Su superficie fluye despacio, también en pausa, y en el limbo hay tres bucles de plasma; con movimiento reducido, quieto. Desde la segunda vuelta de la 9b.f, el bloom de la 9b.c está apagado en los tres niveles (§4).
 - La totalidad: `/cielo?lugar=fraga&fecha=2026-08-12T18:29:29Z` y acercar hacia el Sol (al oeste, a 5° de altura).
 - `node scripts/measure-sun.mjs` mide el limbo, el disco y la totalidad; `node scripts/capture-sun.mjs <carpeta> --prefijo=despues`, las capturas.
 - El Sol y la Tierra realzados (9b.f): `/?cuerpo=sol` y `/explorar/tierra` («La Tierra completa», «El Pacífico» o «El Himalaya»). `node scripts/measure-d46.mjs --solo=sol` o `--solo=tierra` mide frente a las capturas de la referencia (en `assets-src/referencias/`, solo en local), y `node scripts/capture-d46.mjs <carpeta> --prefijo=despues [--comparar]`, las capturas.
+- La segunda vuelta del Sol:
+  - `node scripts/measure-d46.mjs --solo=sol` mide también la vista general.
+  - `node scripts/capture-d46.mjs docs/informes/img/fase-9b --prefijo=sol2-despues --antes=sol2-antes --comparar --solo=d46-escritorio-sol-cerca,d46-movil-sol-cerca,d46-escritorio-sol-sistema,d46-movil-sol-sistema` hace sus capturas.
+  - `node scripts/capture-sun-motion.mjs docs/informes/img/fase-9b` captura el movimiento en uso real.

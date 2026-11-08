@@ -6,8 +6,11 @@
 // Con `--comparar`, además, cada vista con su «antes», su «después» y la de la referencia, lado a lado,
 // en `assets-src/referencias/comparativas/` (ignorada por git: las capturas de la referencia son solo
 // para medir y no se suben al repo, D46).
+// Con `--antes=`, el prefijo del «antes» de la comparativa (por defecto, `antes`): así una segunda vuelta
+// compara con la primera (`--prefijo=sol2-despues --antes=sol2-antes`; la comparativa se llama como el
+// «después»).
 // Uso: npm run build && node scripts/capture-d46.mjs docs/informes/img/fase-9b --prefijo=despues
-//      [--comparar] [--solo=nombre,…]
+//      [--comparar] [--antes=prefijo] [--solo=nombre,…]
 import { mkdir, stat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
@@ -16,6 +19,7 @@ import { openBrowser, openViewer, waitForIdle } from './capture-lib.mjs';
 const out = process.argv[2];
 if (!out) throw new Error('Uso: node scripts/capture-d46.mjs <carpeta de salida> [--prefijo=…]');
 const prefix = process.argv.find((arg) => arg.startsWith('--prefijo='))?.slice(10) ?? 'despues';
+const before = process.argv.find((arg) => arg.startsWith('--antes='))?.slice(8) ?? 'antes';
 const compare = process.argv.includes('--comparar');
 const only = process.argv.find((arg) => arg.startsWith('--solo='))?.slice('--solo='.length);
 const wanted = only ? new Set(only.split(',')) : null;
@@ -110,7 +114,7 @@ const exists = (path) =>
 
 /** Las tres capturas de una vista, a la misma altura, lado a lado (solo en local). */
 async function sideBySide(name, reference) {
-  const parts = [file(`antes-${name}.webp`), file(`despues-${name}.webp`)];
+  const parts = [file(`${before}-${name}.webp`), file(`${prefix}-${name}.webp`)];
   const ref = fileURLToPath(new URL(reference, REF));
   if (!(await exists(ref))) return null;
   parts.push(ref);
@@ -127,7 +131,8 @@ async function sideBySide(name, reference) {
     return item;
   });
   await mkdir(COMPARE, { recursive: true });
-  const target = fileURLToPath(new URL(`${name}.png`, COMPARE));
+  const label = prefix === 'despues' ? name : `${prefix}-${name}`;
+  const target = fileURLToPath(new URL(`${label}.png`, COMPARE));
   await sharp({ create: { width, height, channels: 3, background: '#000' } })
     .composite(composite)
     .png()

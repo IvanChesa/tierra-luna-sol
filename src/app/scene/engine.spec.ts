@@ -656,6 +656,16 @@ describe('SceneEngine: el bloom del Sol (fase 9b, D41)', () => {
   const SUN = sceneBody('sol').index;
   const sunOnScreen = (h: Harness) =>
     (h.engine as unknown as { screen: { onScreen: boolean }[] }).screen[SUN]?.onScreen;
+  // Con el Sol realzado (D46, segunda vuelta) el bloom está apagado (su resplandor lo pinta el halo):
+  // su mecánica se prueba con el interruptor encendido.
+  const bloomSwitch = VISUAL_CONFIG.sun.bloom as { enabled: boolean };
+  const bloomEnabled = bloomSwitch.enabled;
+  beforeEach(() => {
+    bloomSwitch.enabled = true;
+  });
+  afterEach(() => {
+    bloomSwitch.enabled = bloomEnabled;
+  });
 
   it('en el nivel alto se compila antes del primer frame y va en cada frame con el Sol en pantalla; su VRAM cuenta', async () => {
     const h = await createHarness();
@@ -878,6 +888,110 @@ describe('SceneEngine: el bloom del Sol (fase 9b, D41)', () => {
     low.engine.dispose();
     expect(full).toBeCloseTo(VISUAL_CONFIG.sun.halo.overview.intensity, 9);
     expect(dimmed).toBeCloseTo(full * VISUAL_CONFIG.sun.halo.withBloom, 9);
+  });
+});
+
+describe('SceneEngine: el Sol realzado, segunda vuelta (fase 9b, D46)', () => {
+  interface HaloInternals {
+    world: {
+      sun: { uniforms: { uStructureTime: { value: number }; uTime: { value: number } } };
+      haloMaterial: {
+        uniforms: {
+          uIntensity: { value: number };
+          uRim: { value: number };
+          uRays: { value: number };
+          uSoftGlow: { value: { w: number } };
+          uCorona: { value: number };
+          uProminences: { value: number };
+          uProminenceTime: { value: number };
+        };
+      };
+    };
+  }
+  const internals = (h: Harness) => (h.engine as unknown as HaloInternals).world;
+
+  it('sin bloom en ningún nivel: el resplandor es el halo, sin atenuar, con su borde fino y sus rayos y sin corona', async () => {
+    const { enhanced, halo } = VISUAL_CONFIG.sun;
+    expect(VISUAL_CONFIG.sun.bloom.enabled).toBe(false);
+    for (const quality of ['high', 'medium', 'low'] as const) {
+      const h = await createHarness({ quality });
+      settle(h);
+      expect(h.renderer.sunBloom.compiles).toBe(0);
+      expect(h.renderer.sunBloom.renders).toEqual([]);
+      expect(h.renderer.sunBloom.vramBytes()).toBe(0);
+      const uniforms = internals(h).haloMaterial.uniforms;
+      expect(uniforms.uIntensity.value).toBeCloseTo(halo.overview.intensity, 9);
+      expect(uniforms.uRim.value).toBe(enhanced.rim.intensity);
+      expect(uniforms.uRays.value).toBe(enhanced.rays.intensity);
+      expect(uniforms.uSoftGlow.value.w).toBe(enhanced.glow.soft.widthRadii);
+      h.engine.dispose();
+    }
+    // De cerca, sin el resplandor ancho ni la corona; con los bucles de plasma.
+    const near = await createHarness({ focus: 'sol' });
+    settle(near);
+    const uniforms = internals(near).haloMaterial.uniforms;
+    expect(uniforms.uIntensity.value).toBeLessThan(halo.closeUp.intensity + 0.002);
+    expect(uniforms.uCorona.value).toBe(0);
+    expect(uniforms.uProminences.value).toBeGreaterThan(0.9);
+    near.engine.dispose();
+  });
+
+  it('de cerca, su superficie y sus bucles se mueven también con el tiempo en pausa (un frame cada 50 ms); con movimiento reducido, en las capturas y en la vista general, sin esos frames', async () => {
+    const near = await createHarness({ focus: 'sol' });
+    settle(near);
+    // En pausa (el arnés no reproduce): sigue pidiendo frames, con su espera, y el tiempo de la
+    // superficie y de los bucles avanza con el reloj de pared.
+    expect(near.scheduler.waiting).toBe(1);
+    const world = internals(near);
+    const structure = world.sun.uniforms.uStructureTime.value;
+    const loops = world.haloMaterial.uniforms.uProminenceTime.value;
+    const renders = near.renderer.renders;
+    const delayed = near.scheduler.delayed;
+    near.frames(1000);
+    // Cada 50 ms, en el primer frame de 60 Hz que toca: de 15 a 20 por segundo.
+    expect(near.renderer.renders - renders).toBeGreaterThanOrEqual(14);
+    expect(near.renderer.renders - renders).toBeLessThanOrEqual(21);
+    expect(near.scheduler.delayed).toBeGreaterThan(delayed);
+    expect(world.sun.uniforms.uStructureTime.value).toBeGreaterThan(structure);
+    expect(world.haloMaterial.uniforms.uProminenceTime.value).toBeGreaterThan(loops);
+    near.engine.dispose();
+    for (const options of [{ reducedMotion: true }, { capture: true }]) {
+      const still = await createHarness({ focus: 'sol', ...options });
+      settle(still);
+      expect(still.scheduler.waiting).toBe(0);
+      const before = still.renderer.renders;
+      still.frames(1000);
+      expect(still.renderer.renders).toBe(before);
+      expect(internals(still).sun.uniforms.uStructureTime.value).toBe(0);
+      still.engine.dispose();
+    }
+    // En la vista general, el Sol mide unos píxeles: en pausa, en reposo (render bajo demanda).
+    const overview = await createHarness();
+    settle(overview);
+    expect(overview.scheduler.waiting).toBe(0);
+    overview.engine.dispose();
+  });
+
+  it('el halo, sin derivadas (dentro de su rama no están definidas: con D3D dejaban puntos oscuros en el borde del Sol pequeño); lo que mide un píxel, con la densidad del renderer', async () => {
+    interface HaloPixel {
+      world: {
+        haloMaterial: {
+          material: { fragmentShader: string };
+          uniforms: { uPixelRatio: { value: number } };
+        };
+      };
+    }
+    const h = await createHarness();
+    settle(h);
+    const halo = (h.engine as unknown as HaloPixel).world.haloMaterial;
+    const code = halo.material.fragmentShader
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/\/\/.*$/gm, '');
+    expect(code).not.toMatch(/\b(fwidth|dFdx|dFdy)\s*\(/);
+    h.engine.resize(WIDTH, HEIGHT, 3);
+    expect(h.renderer.size.pixelRatio).toBeGreaterThan(1);
+    expect(halo.uniforms.uPixelRatio.value).toBe(h.renderer.size.pixelRatio);
+    h.engine.dispose();
   });
 });
 
