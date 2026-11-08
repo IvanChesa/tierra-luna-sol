@@ -2,7 +2,12 @@
 
 - **Rama:** `fase-9b-sol-lunas`
 - **Fecha:** 2026-11-04 · 2026-11-05 · 2026-11-06 · 2026-11-07 · 2026-11-08 (en curso)
-- **Estado:** en curso: hechas la tarea 0 y las entregas 9b.a, 9b.b, 9b.c, 9b.d y 9b.f (el Sol, en dos vueltas, la segunda aprobada por Iván el 08-11, y la Tierra, de la sesión B, ya juntos en esta rama); la 9b.e (Venus, sesión C), en su rama; después, juntarla y el cierre
+- **Estado:** en cierre: la tarea 0 y las seis entregas, hechas y juntadas en esta rama:
+  - 9b.a, 9b.b, 9b.c y 9b.d;
+  - 9b.f: el Sol, en dos vueltas (la segunda, aprobada por Iván el 08-11), y la Tierra, de la sesión B;
+  - 9b.e: Venus, de la sesión C, con la interfaz de la 9c que traía su rama.
+
+  Sigue el cierre: lo pendiente, §5 con el equipo libre, la revisión y la fusión en `main`.
 
 ## Plan
 Bloque S, modo autónomo, una sola fase por entregas en el orden de `docs/decisiones/FASE-9b-SOL-LUNAS.md` (la prioridad de Iván), que manda sobre este plan en tareas y criterios, con sus adendas D45 (05-11) y D46 (06-11): **0, 9b.a, 9b.b, 9b.c, 9b.d, 9b.f y 9b.e**. La revisión del bloque E está aplicada en `main` (`0963b9f`). Los PR 1 y 3 de Dependabot (E5) siguen abiertos: la rama sale del `main` de hoy y, cuando Iván los fusione, se traen (son de parche). Cada entrega cierra con `npm run check`, este informe al día, sus capturas (`?captura=1`, escritorio y móvil, en `docs/informes/img/fase-9b/`) y un commit; y se sube la rama para que su vista previa (`fase-9b-sol-lunas.tierra-luna-sol.pages.dev`) enseñe cuanto antes la primera.
@@ -64,7 +69,8 @@ Bloque S, modo autónomo, una sola fase por entregas en el orden de `docs/decisi
 - **El Sol, rehecho en una segunda vuelta y juntado** (08-11): a Iván no le gustó el de la primera («Las manchas estas que sobresalen parecen tumores… no me acaba de gustar. Intentemos basarnos en el sol del proyecto ejemplo») y se rehízo en `fase-9b-f-sol-2`, desde `d765654` (§2). Iván lo aprobó el 08-11 («el sol le doy aprobado») y se juntó con `--no-ff` y sin conflictos (`fb3d021`). Después se rehicieron las imágenes del motor con el Sol nuevo (su miniatura, las de su ficha, la imagen para compartir y el póster de la vista general). Al hacerlo salieron puntos oscuros en el borde del Sol pequeño, un fallo del halo ya arreglado (`d881476`, §4). `npm run check`, en verde (§6). Su nota de entrega está ya en este informe y se ha borrado.
 - **La Tierra de la 9b.f, hecha y juntada** (08-11, sesión de integración que sustituye a A): `fase-9b-f-tierra` (`582e440`), con `--no-ff` y sin conflictos. Después, `docs/revision-textos.md`, los pósters de la vista general y de la vista Tierra y la imagen para compartir, regenerados, y `npm run check` en verde (§6). Su nota de entrega está ya en este informe (§2 a §7) y se ha borrado.
 - **El CI, otra vez en verde:** el e2e del móvil «/sol a 320 px» fallaba desde `08120db` (la dirección de la fuente del Sol realzado, sin dónde partirse, ensanchaba la ficha hasta 528 px). Arreglado en el CSS de la ficha (`dfbc655`, §4).
-- **Sigue:** juntar C (Venus) cuando termine, y cerrar la fase cuando la 9c esté fusionada (la revisión por subagente, las correcciones y la fusión en `main`).
+- **Venus (9b.e), hecha y juntada** (08-11, en la sesión de cierre): `fase-9b-e-venus` (`226ab0f`, con el CI en verde), con `--no-ff` y sin conflictos (`bdacb27`). Su rama ya traía `main` (la 9c, la interfaz nueva, con sus conflictos resueltos según la sección 12 de su informe) y el Sol de la segunda vuelta. Su nota de entrega ya está en este informe (§2 a §11) y se ha borrado.
+- **Sigue el cierre:** lo pendiente de §9, §5 con el equipo libre, `npm run check`, la revisión por subagente, las correcciones y la fusión en `main`.
 - **Las medidas de rendimiento son provisionales:** con tres sesiones en el mismo PC. Se repiten al cerrar la fase, con el equipo libre.
 
 ## 1. Resumen
@@ -80,6 +86,12 @@ En curso. Hechas la tarea 0 y las entregas 9b.a, 9b.b, 9b.c, 9b.d y 9b.f:
 
   Medido frente a capturas propias de la referencia: de cerca, el tono del centro y del borde, a 2° como mucho del suyo, y el croma, del 100 al 105 %; en la vista general, el centro, naranja y sin lavar (L\* 79,8 · C\* 51,3 · h 81°, frente a 80,9 · 49,8 · 83°); y algo más de contraste. En `/cielo`, el Sol de siempre (las mismas capturas, píxel a píxel). Lo dicen su ficha, «Lo que es ilustrativo» y `/creditos`.
 - **9b.f, la Tierra (D46, sesión B):** también en color realzado, como en la referencia: el océano de un azul vivo, el reflejo del Sol ancho y cian (sin quemar), muchas menos nubes y más finas (del 9,8 % del disco al 1,5 %; la referencia, el 0,7 %), el desierto más claro y amarillo, la vegetación más verde, el relieve cinco veces más marcado y un borde de atmósfera fino y azul. Medido frente a capturas propias de la referencia: el tono y el croma de los océanos, en los suyos. La cara nocturna y las luces (D40), iguales que antes. Lo dicen «Lo que es ilustrativo», `/creditos` y la vista guiada «La Tierra completa», que ya no dice que es como la foto de la cámara EPIC.
+- **9b.e, Venus «Bajo las nubes» (D44, sesión C):** con Venus enfocada, su ficha del explorador lleva un botón «Bajo las nubes».
+  - Al pulsarlo, las nubes dan paso al mosaico global del radar de Magellan, con un fundido (un corte con movimiento reducido). Va en gris y con la luz del Sol de Venus.
+  - La ficha avisa de que es una imagen de radar, no lo que verían los ojos.
+  - La textura se pide al pulsarlo y se suelta al apagarlo o al dejar Venus.
+  - Maat Mons cae en su sitio (sus sondas, en el build).
+  - Se usa con el teclado (`aria-pressed`) y no tiene violaciones de axe.
 - **9b.d, las lunas: formas y mapas (D42, D43 y D45):** ninguna luna es ya una bola de un color (salvo Titán, por su neblina, ahora con el terminador suave de las fotos). Deimos y las cinco de Urano tienen los mapas del JPL; Proteo, cráteres generados. Lo que nadie ha visto (el norte de Tritón y de las lunas de Urano, y lo que no cubre el mapa de Deimos) se recrea con el terreno real de cada luna, y lo visto de lejos lleva detalle, sin tocar lo real. Fobos y Deimos tienen su forma real (los DSK del NAIF); Jápeto, el contraste de sus dos caras de los albedos de la NASA; las lunas en gris, el color de su B−V. Las fichas, los créditos y «Lo que es ilustrativo» lo dicen.
 
 ## 2. Criterios de aceptación
@@ -350,6 +362,40 @@ Hecha en `fase-9b-f-tierra` (desde `d5ce7f8`, con la base común `43072d6`) y ju
 
 En la rama de B, el Sol todavía era el de la 9b.c: el Sol realzado no añade VRAM ni llamadas de dibujo (§2, el Sol), y la Tierra realzada tampoco, así que juntos dan las mismas cifras de memoria y de llamadas. Los FPS de los dos juntos, al cerrar la fase.
 
+### Entrega 9b.e (D44): Venus «Bajo las nubes» (sesión C)
+Hecha en `fase-9b-e-venus` y juntada aquí el 08-11 (`bdacb27`, §4). La rama sale de `d765654`; trae `main` (la 9c) en `940cc65` y el Sol de la segunda vuelta en `d19d06a`.
+
+| Criterio | ✅/❌ | Evidencia |
+|---|---|---|
+| Captura de Venus con las nubes y «Bajo las nubes», con Maat Mons en su sitio (sonda) | ✅ | **Capturas:** `venus-escritorio-nubes` y `-radar`, `venus-movil-nubes` y `-radar` (con la interfaz; en el móvil, la ficha abierta con «ⓘ»), y `venus-radar-maat-mons` (solo el lienzo, con Maat Mons señalado). El punto de 0,5° N y 194,6° E del Gazetteer, proyectado con la orientación de Venus y la cámara de la escena, cae sobre sus coladas, claras en el radar. La fecha, el 05-11-2026: Maat Mons de frente y a pleno sol (`capture-venus.mjs --buscar`). **Las sondas, en el build** (disco / anillo; tienen que pasar de 1,08): Maat Mons 1,12, Sapas Mons 1,33 y Maxwell Montes 1,39. Con el mapa girado 180°, 1,00 · 1,01 · 0,98; reflejado, 1,01 · 1,03 · 1,15: no pasan. |
+| e2e del botón (teclado y `aria-pressed`) y axe sin violaciones | ✅ | **`e2e/venus.spec.ts`** (escritorio): con Intro, `aria-pressed="true"`, la textura de 4k pedida una vez (y no antes), el aviso visible y axe (WCAG 2.1 A y AA) sin violaciones graves ni críticas. Con espacio, vuelven las nubes. Con otro cuerpo, no hay botón, y de vuelta en Venus está apagado. `?radar=1` en captura. **`e2e/movil.spec.ts`:** en la hoja en reposo, el botón (44 px de alto) y, al tocarlo, el aviso a la vista; al cerrar la ficha, vuelven las nubes. |
+| La licencia en `FUENTES.md` y en `/creditos` | ✅ | **`FUENTES.md`:** la fila de `venus-radar` (el producto, la URL, el SHA-256, «Access Constraints: public domain» y «Use Constraints: None» de su ficha, y lo que se le hace). **`/creditos`:** «Venus bajo las nubes», con el enlace a su ficha de Astropedia. **«Lo que es ilustrativo»:** el radar, en gris, con la luz del Sol y el brillo de sus nubes. |
+| §5 con la textura cargada | ✅ (provisional; la vista general, repetida al cerrar: §5 de abajo) | **Con el radar:** en alto, 132 MB de VRAM (≤ 300) y las mismas 6 llamadas de dibujo; en medio y bajo, 68 y 56 MB (≤ 120 en bajo). FPS mínimo de 60, 59 y 59 a 1 día/s. **Tras 10 encendidos y apagados,** la misma VRAM; apagado, la de las nubes (90, 58 y 46 MB). |
+
+**El radar de Magellan:**
+- **El producto:** «Venus Magellan Global C3-MDIR Mosaic 2025m» del USGS Astrogeology (https://astrogeology.usgs.gov/search/map/venus_magellan_global_c3_mdir_mosaic_2025m).
+  - El mosaico: 18 775 × 9388 px, 8 bits en gris, equirrectangular, 2025 m por píxel.
+  - Su ficha: «Access Constraints: public domain», «Use Constraints: None»; originador, el PDS Geosciences Node; referencia, Ford et al. (1993).
+  - Se usa el mosaico en gris (el radar tal cual), no el «Synthetic Color» ni el «Colorized Topographic».
+  - Bajado con `download-assets.mjs` (176 335 453 bytes, SHA-256 `833d5368…01ec380`), sin verificación anti-bots.
+- **Los huecos:** el 8,1 % del mapa vale 0: las franjas de las órbitas sin cubrir (de unos 25 px) y parte de los polos. En el radar, todo 0 es un hueco.
+  - Se rellenan como los de las lunas: las rayas, con la media local de los lados; las zonas grandes, con el gris liso de la franja vecina.
+  - Sin inventar relieve y sin la recreación de D45, que es de las lunas.
+- **Las sondas:** Maat Mons, Sapas Mons y Maxwell Montes, más claros en el radar que lo que los rodea. Una sonda oscura (Lakshmi Planum, Mead o Atalanta Planitia) no se distingue a esta escala, así que no se usa.
+- **Las texturas:** `venus-radar` en 1k (50 806 bytes), 2k (187 010) y 4k (653 204), con una luminancia media de 0,2382. El build de texturas se repitió entero: las demás texturas, las máscaras y los generados de las lunas salen idénticos.
+
+**§5, provisional** (`capture-venus.mjs --medir`, Venus enfocada el 05-11-2026 a 1600 × 900, con otras sesiones en marcha). Cada celda: VRAM (MB) · llamadas de dibujo.
+
+| Nivel | Con las nubes | Con el radar | FPS mínimo con el radar (1 día/s) · CPU por frame | Tras 10 encendidos y apagados | Apagado |
+|---|---|---|---|---|---|
+| Alto | 90 · 6 | **132 · 6** | **60** · 1,03 ms | 132 | **90** |
+| Medio | 58 · 6 | **68 · 6** | **59** · 0,92 ms | 68 | **58** |
+| Bajo | 46 · 6 | **56 · 6** | **59** · 0,87 ms | 56 | **46** |
+
+- **El peso de la textura,** solo al pulsar: 638 kB en alto (4k) y 183 kB en medio y bajo (2k).
+- **Al apagarlo,** la VRAM vuelve a la de las nubes, con una textura menos.
+- **Al dejar Venus,** el estado pasa a «off» y el heap se queda en 13–14 MB.
+
 ## 3. Tareas del plan
 | Tarea | Estado | Notas |
 |---|---|---|
@@ -392,6 +438,10 @@ En la rama de B, el Sol todavía era el de la 9b.c: el Sol realzado no añade VR
 | 9b.f.13 · Decir que es realzado | hecha, salvo el panel del Sol | El Sol: la ficha, «Lo que es ilustrativo» y `/creditos`; el panel del Sol, al juntar con la 9c. La Tierra (B): «Lo que es ilustrativo», `/creditos`, `FUENTES.md` y la vista guiada «La Tierra completa» (`data/tours.ts`). |
 | 9b.f.14 · Los parámetros nuevos | hecha | `VISUAL_CONFIG.sun.enhanced` y `VISUAL_CONFIG.earth.enhanced` (con `earth.cloudFade.min`), con su porqué y lo medido. |
 | 9b.f.15 · `measure-earth-epic.mjs`, como registro | hecha (B) | Sus cifras antes y después, en §2. |
+| 9b.e.1 · El mosaico del radar de Magellan, con su sonda | hecha (C) | El C3-MDIR de 2025 m del USGS (dominio público), en 1k, 2k y 4k (`build-textures.mjs`, tipo `radar`), con los huecos rellenados y tres sondas (Maat Mons, Sapas Mons y Maxwell Montes). |
+| 9b.e.2 · El botón «Bajo las nubes», con el aviso, el fundido y la carga al pedirlo | hecha (C) | En la ficha del explorador de Venus enfocada (la interfaz de la 9c), con `aria-pressed` y una nota enlazada (`aria-describedby`). El estado, en `scene/venus-radar.ts` (con tests); la API, `setVenusRadar` y el evento `venusRadar`. El fundido dura 800 ms (un corte con movimiento reducido o en captura). La textura se pide al pulsarlo y se suelta al apagarlo, al dejar Venus o al cerrar la ficha. |
+| 9b.e.3 · El sombreado del radar | hecha (C) | Con la luz del Sol y la fotometría de Venus (su terminador y su cara de noche), en su material con `#define TLS_RADAR`. El brillo, calibrado como su textura de nubes; la neblina del limbo, al 30 %. |
+| 9b.e.4 · La interfaz de la 9c, traída (sección 12 de su informe) | hecha (C) | `main` traído a la rama de Venus: los 11 conflictos que preveía, resueltos como decía. Además, la línea del Sol realzado en su ficha del explorador, los selectores de los scripts, `tls.recorrido` y las zonas táctiles de los enlaces de «Sobre el proyecto» y `/creditos` (§4). |
 | 9b.d.8 · Lo que nadie ha visto (D45) | hecha | 18 lunas con mapa (las 12 de antes y las 6 del JPL): lo no visto, recreado entero, y lo visto de lejos, con detalle, a partir de su propio terreno, en `build-textures.mjs`; con sus criterios en el build y su máscara. La receta de cada luna, en §5. |
 
 ## 4. Desviaciones del plan y motivo
@@ -452,6 +502,24 @@ En la rama de B, el Sol todavía era el de la 9b.c: el Sol realzado no añade VR
 - **Un test de la fase 5 que falló una vez en la rama de B:** «las nubes derivan con los frames pintados…» (`engine.spec.ts`), en una ejecución parcial con el equipo cargado por las otras sesiones; pasó en las dos siguientes y en el check completo, aquí también. Usa un reloj simulado y la entrega no toca ni la deriva ni `cloudDrift`. Sin causa encontrada: para la revisión.
 - **Dos tests, corregidos al cerrar la 9b.d.** El de la alineación de los mapas de las lunas (`texture-meta.spec.ts`) solo trataba como retrógrada a Tritón: las cinco de Urano, ahora con mapa, también giran al revés respecto a su polo norte de la IAU (el del lado norte del plano invariable), y su hemisferio delantero está a 90° E. Y el de la textura de Júpiter con Ío enfocada (`engine.spec.ts`) dependía de la hora: a las 00:00 del 24-10-2026 Júpiter queda detrás de la cámara del encuadre de Ío; a las 18:00, detrás de Ío.
 
+- **9b.e, juntar Venus** (08-11, cierre): `git merge --no-ff fase-9b-e-venus`, sin conflictos (`bdacb27`), con su CI en verde (`226ab0f`). Su rama ya traía `main` (la 9c) y el Sol de la segunda vuelta.
+  - **Los conflictos con la 9c,** resueltos en la rama de Venus como decía la sección 12 de su informe:
+    - `app.*`, `app.spec.ts` y `e2e/contenido.spec.ts`: la versión de la 9c, que ya llevaba la tarea 0 de esta fase (traída con cherry-pick);
+    - `scene/engine.ts`, `scene/types.ts` y `scripts/capture-moon-systems.mjs`: la de la 9b;
+    - `viewer-params.ts`, su spec y `explorer-session.ts`: con los parámetros de captura de las dos (`marco=ilustrativo`, `medida=limbo` y `radar=1`);
+    - el plan, con D45, D46 y D47.
+  - **Otros ajustes:**
+    - `ExplorerFocus` está ahora en `core/` (nada de la 9b lo importaba);
+    - `measure.mjs` abre «Menú» antes de pulsar `/planetas`, y `measure-autoplay.mjs` marca el recorrido y las pistas como vistos;
+    - los enlaces de los informes en las tablas de «Sobre el proyecto» (16 px) y los de las licencias de `/creditos` (19 px) pasan a 24 px de alto (las zonas táctiles de la 9c).
+- **9b.e, la máscara de cobertura del radar, umbralizada antes de reducir** (`zerosAreGaps`, solo en el radar).
+  - **El fallo:** sharp umbraliza después de reducir, así que la máscara de `loadMosaic` salía binaria y un píxel mezclado con un hueco contaba como dato entero. En las lunas, con huecos grandes, lo tapa el fundido del borde; en las rayas finas del radar quedaban líneas oscuras.
+  - **El camino de las lunas no se toca:** cambiaría sus texturas, y D45 dice que lo real no se toca. Queda como propuesta para la fase 10 (§10).
+- **9b.e, en gris y con la luz de Venus.** El producto es en gris y el aviso dice que es una imagen de radar.
+  - Iluminado con la luz del Sol de Venus (su terminador y su cara de noche), se lee como una superficie. El radar no mide la luz visible, y se dice en «Lo que es ilustrativo».
+  - Teñirlo con el color de las fotos de las Venera 13 y 14, como las vistas de Magellan de la NASA (PIA00104), queda como propuesta para Iván (§9).
+- **9b.e, sin botón en la ficha completa** (`/planetas/venus`): es una página sin 3D. La tarea lo pedía «si encaja», y no encaja.
+
 ## 5. Decisiones técnicas nuevas
 - **El tono de las luces de la Tierra** (9b.b): el medio de las luces de la textura de Solar System Scope que se usaba, medido (sus píxeles de luminancia lineal de más de 0,1), en lugar de un color elegido: así «conservan su tono cálido» por construcción. El mapa en gris pone el brillo.
 - **`?marco=ilustrativo`, solo en captura:** el cuerpo enfocado sin pasar a su sistema local físico, con las texturas de la vista general (sin sistema enfocado). Es la única forma determinista de ver de cerca un sistema de la vista general, cuya cámara gira alrededor del Sol.
@@ -505,6 +573,13 @@ En la rama de B, el Sol todavía era el de la 9b.c: el Sol realzado no añade VR
   - `measure-d46.mjs`, con la vista general (`overviewSunMetrics` y `ringLightness`, en `scripts/lib/disc-metrics.mjs`);
   - `scripts/capture-sun-motion.mjs`, nuevo: el movimiento en uso real, con y sin movimiento reducido.
 - **El radio del halo de la vista general no cambia** (2,4 radios): `labels.ts` lo usa para apartar los nombres del Sol.
+
+- **El radar, en el material de Venus con su `#define` (`TLS_RADAR`)** (9b.e): el albedo del radar sustituye al de las nubes según el fundido. Ni mallas, ni pasadas, ni llamadas de dibujo nuevas, y ningún otro cuerpo cambia (la lección del tinte del halo de la Tierra).
+- **El brillo del radar, el de una textura de Venus** (`VISUAL_CONFIG.venus.radar.brightness`, 1): calibrado como su textura de nubes (el disco lleno, al albedo geométrico de Venus), sin el contraste rebajado de las nubes ni su color. La neblina del limbo, al 30 % (`haze`).
+- **El estado del radar, en `scene/venus-radar.ts`** (con tests), y `venusRadarState` (solo lectura) en la API del motor: los scripts y los e2e esperan a que el radar esté a la vista.
+  - Mientras llega la textura, siguen las nubes, con el botón ya pulsado y «Cargando la imagen de radar…»; si no llega, vuelven las nubes y se dice.
+  - Al cambiar de calidad con el radar encendido, se pide al nivel nuevo y el anterior se suelta cuando llega.
+- **El aviso, siempre a la vista con el radar:** si la ficha deja de verse (se cierra, otro cuerpo, otra vista), vuelven las nubes. En captura, `?radar=1` lo enciende sin la ficha.
 
 ## 6. Salida de los checks
 Entrega 9b.a (`npm run check`, 04-11):
@@ -569,6 +644,16 @@ Initial total 310,81 kB
 ```
 three, diferido, pasa de 798,65 kB (el Sol de la primera vuelta y la Tierra) a 808,43 por el GLSL del Sol de la segunda vuelta. Sin avisos de presupuesto. El test nuevo (el halo, sin derivadas) es el 767.
 
+**Venus (9b.e), en su rama, con el Sol de la segunda vuelta traído** (`npm run check`, 08-11, sesión C, sobre `226ab0f`):
+- lint y Prettier, sin avisos;
+- **807 tests** (81 ficheros), con la cobertura de `ephemeris/` al 98,93 %;
+- el build;
+- el JS inicial, 315,18 kB (lo que trae la 9c), y el código propio inicial, **13,81 kB de 15**;
+- three, diferido, 812,94 kB (el radar, +4,5);
+- **1238 enlaces internos** bien.
+
+**Los e2e** (`E2E_PORT=4421`, todos, con los tres proyectos): **136 de 136** (7,2 min). Antes de traer el Sol, 135 de 136: el que falló, `vistas.spec.ts:19` («sistema → Tierra → Luna → sistema … sin fugas», 25 texturas en lugar de 15), no toca el radar y pasó solo dos veces seguidas (tiempos, con la máquina cargada). El CI de la rama, en verde.
+
 ## 7. Capturas
 `docs/informes/img/fase-9b/`, `antes-*` (el build del primer commit de la fase, sin la disposición nueva) y `despues-*`, con `scripts/capture-moon-systems.mjs`:
 - Júpiter de cerca: `escritorio-jupiter-cerca` y `movil-jupiter-cerca`; con sus lunas con mapa, `escritorio-jupiter-mapas`.
@@ -593,6 +678,10 @@ three, diferido, pasa de 798,65 kB (el Sol de la primera vuelta y la Tierra) a 8
   - El movimiento en uso real, con `scripts/capture-sun-motion.mjs`: `sol2-movimiento-t0` y `-t6` (en pausa, con 6 s entre las dos) y `sol2-movimiento-reducido-t0` y `-t6` (con movimiento reducido: iguales).
   - Lado a lado con la referencia, solo en local: `assets-src/referencias/comparativas/sol2-despues-d46-*.png`.
   - Regeneradas tras juntarla y arreglar el halo: la miniatura y las imágenes de la ficha del Sol, la imagen para compartir y el póster de la vista general (escritorio y móvil).
+- Venus (9b.e), con `scripts/capture-venus.mjs` (el 05-11-2026, con la interfaz):
+  - `venus-escritorio-nubes` y `venus-escritorio-radar`;
+  - `venus-movil-nubes` y `venus-movil-radar` (390 × 844 a 2×, con la ficha abierta con «ⓘ»: el botón y su nota en la hoja en reposo);
+  - `venus-radar-maat-mons` (solo el lienzo, con el radar y Maat Mons señalado).
 
 ## 8. Dependencias añadidas
 Ninguna.
@@ -602,9 +691,10 @@ Ninguna.
 - **Dos frases de «Lo que es ilustrativo» del Sol (`/sobre-el-proyecto`) se han quedado atrás** con la segunda vuelta, que no tocaba los textos. Son para la revisión de textos de Iván o para el cierre de la fase:
   - «La forma del oscurecimiento de su borde sí es la medida»: en el explorador, el realzado la suaviza × 0,55 (§4); la medida sigue en `/cielo` y con `?medida=limbo`.
   - «sus fáculas y su corona»: el explorador ya no pinta la corona (la de cerca está apagada; la de `/cielo` sigue).
+- **El color del radar de Venus** (para Iván): en gris (el producto tal cual) o teñido con el de las fotos de las Venera 13 y 14, como las vistas de Magellan de la NASA. Es un valor de `VISUAL_CONFIG`, con su fuente.
 
 ## 10. Propuestas de cambio al plan
-Ninguna por ahora.
+- **Para la fase 10** (9b.e): la máscara de cobertura de los mosaicos de las lunas, umbralizada antes de reducir, como la del radar (`zerosAreGaps`). Cambiaría los bordes de sus huecos, y con ellos las texturas y las medidas de D45: habría que rehacerlas y revisarlas.
 
 ## 11. Cómo probarlo
 - `npm start` y, en el explorador, acercar la vista general hasta que Júpiter o Saturno midan más de 20 px de radio: aparecen sus lunas, fuera del planeta y de los anillos. Con `?fecha=2040-10-31T00:00Z`, en la conjunción de Júpiter y Saturno, sus sistemas se comprimen.
@@ -612,6 +702,7 @@ Ninguna por ahora.
 - `/luna`: las migas y «Lunas» marcado en el menú.
 - `/explorar/tierra` y «Las luces de la noche»: la cara nocturna, negra, con las luces; `node scripts/measure-earth-night.mjs` mide el suelo y las luces en CIELAB.
 - El Sol de cerca: en el explorador, «Sol» en el carrusel (o `/?cuerpo=sol`). Su superficie fluye despacio, también en pausa, y en el limbo hay tres bucles de plasma; con movimiento reducido, quieto. Desde la segunda vuelta de la 9b.f, el bloom de la 9b.c está apagado en los tres niveles (§4).
+- Venus «Bajo las nubes»: en el explorador, Venus en la fila (o `/?cuerpo=venus`) y, en su ficha, «Bajo las nubes» (en el móvil, con «ⓘ»). `?captura=1&cuerpo=venus&radar=1` lo enciende sin la ficha. `node scripts/capture-venus.mjs <carpeta>` hace sus capturas, y con `--medir`, §5.
 - La totalidad: `/cielo?lugar=fraga&fecha=2026-08-12T18:29:29Z` y acercar hacia el Sol (al oeste, a 5° de altura).
 - `node scripts/measure-sun.mjs` mide el limbo, el disco y la totalidad; `node scripts/capture-sun.mjs <carpeta> --prefijo=despues`, las capturas.
 - El Sol y la Tierra realzados (9b.f): `/?cuerpo=sol` y `/explorar/tierra` («La Tierra completa», «El Pacífico» o «El Himalaya»). `node scripts/measure-d46.mjs --solo=sol` o `--solo=tierra` mide frente a las capturas de la referencia (en `assets-src/referencias/`, solo en local), y `node scripts/capture-d46.mjs <carpeta> --prefijo=despues [--comparar]`, las capturas.
