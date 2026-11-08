@@ -1,11 +1,13 @@
 /* Panel de la vista Tierra: dos bloques opacos sobre el lienzo, como la tarjeta y el índice. */
 /*
  * Su sitio en la rejilla del explorador (el anfitrión de la interfaz es `display: contents`): en
- * escritorio, en la columna de la presentación, debajo de ella, sin apartar el encuadre; en móvil,
+ * escritorio, en la columna de la presentación, debajo de ella, con el encuadre a su derecha; en móvil,
  * al pie del lienzo, encima de las fichas, y el encuadre sube por encima de él.
  */
 :host {
-  --chrome-edge: none;
+  /* En escritorio, el encuadre se aparta a su derecha: la región de una vista guiada (España), en la
+     zona libre (crítica de la 9c). */
+  --chrome-edge: left;
   position: relative;
   z-index: 2;
   display: grid;
