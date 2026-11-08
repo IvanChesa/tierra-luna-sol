@@ -26,15 +26,23 @@ import { tiffGeoInfo } from './build-relief.mjs';
 
 /**
  * Lee un mosaico y lo deja a `width` × `width / 2` (RGB de 8 bits, sRGB), centrado en la longitud 0.
- * `band`: solo ese canal (Tritón: el naranja de un mosaico en falso color), en gris. Devuelve el
- * búfer, su cobertura (de 0 a 1 por píxel: las sondas solo miden lo que hay), la fracción del mapa sin
- * datos y un informe.
+ * `band`: solo ese canal (Tritón: el naranja de un mosaico en falso color), en gris. `plain`: un TIFF
+ * sin georreferencia (los mapas del JPL de la fase 9b), con la longitud ESTE de su borde izquierdo
+ * (`leftEdgeEastDeg`) y el sentido de sus columnas (`eastward`); sus sondas lo comprueban. Con
+ * `plain.background` (el de Deimos, una carta aerografiada sobre un fondo claro), lo que a gran escala
+ * (desenfocado `blurPx` píxeles del mapa reducido) es más claro que `above` es el fondo de la carta, lo
+ * no cartografiado: cuenta como sin datos. Con `zerosAreGaps` (el radar de Magellan, fase 9b), todo 0
+ * es un hueco: en un radar no hay sombras de cráteres a 0 que conservar (`restoreShadowSpecks`), y las
+ * franjas de las órbitas que faltan son rayas finas a 0. Devuelve el búfer, su cobertura (de 0 a 1 por
+ * píxel: las sondas solo miden lo que hay), la fracción del mapa sin datos y un informe.
  */
-export async function loadMosaic(url, width, { band } = {}) {
+export async function loadMosaic(url, width, { band, plain, zerosAreGaps = false } = {}) {
   const path = fileURLToPath(url);
-  const source = path.toLowerCase().endsWith('.img')
-    ? await pdsSource(path)
-    : await geoTiffSource(path);
+  const source = plain
+    ? await plainSource(path, plain)
+    : path.toLowerCase().endsWith('.img')
+      ? await pdsSource(path)
+      : await geoTiffSource(path);
   if (Math.abs(source.width / source.height - 2) > 0.01) {
     throw new Error(`${path}: no es un mapa global de 2:1 (${source.width} × ${source.height})`);
   }
@@ -46,12 +54,29 @@ export async function loadMosaic(url, width, { band } = {}) {
   const open = () => source.open().removeAlpha();
   const reduce = (pipeline) =>
     pipeline.resize(width, height, { fit: 'fill', kernel: 'lanczos3' }).raw().toBuffer();
-  const [color, coverage] = await Promise.all([
+  const [color, coverage, light] = await Promise.all([
     reduce(open().toColourspace('srgb')),
-    // Un solo canal: sin toColourspace, sharp lo devuelve en sRGB, con tres.
-    reduce(open().threshold(1).toColourspace('b-w')),
+    // Un solo canal: sin toColourspace, sharp lo devuelve en sRGB, con tres. sharp umbraliza después de
+    // reducir: así, la máscara sale binaria y un píxel mezclado con un hueco cuenta como dato entero.
+    // Con huecos grandes (las lunas) lo tapa el fundido del borde; con las rayas finas del radar (unos
+    // 25 px del original, 3 o 5 del mapa reducido), no: se veían como líneas oscuras. Con
+    // `zerosAreGaps`, la máscara se umbraliza en el original y después se reduce, como la imagen.
+    zerosAreGaps
+      ? fullResolutionMask(open(), source).then(reduce)
+      : reduce(open().threshold(1).toColourspace('b-w')),
+    // El fondo de una carta aerografiada (sharp desenfoca después de reducir).
+    plain?.background ? reduce(open().toColourspace('b-w').blur(plain.background.blurPx)) : null,
   ]);
   const pixels = width * height;
+  let background = 0;
+  if (light) {
+    for (let i = 0; i < pixels; i++) {
+      if (light[i] > plain.background.above && coverage[i]) {
+        coverage[i] = 0;
+        background++;
+      }
+    }
+  }
   // Un canal en gris, una vez reducido (sharp aplica `extractChannel` después de `toColourspace`: con
   // él, la imagen llegaba con un canal en lugar de tres).
   if (band !== undefined) {
@@ -60,6 +85,9 @@ export async function loadMosaic(url, width, { band } = {}) {
       color[i * 3] = color[i * 3 + 1] = color[i * 3 + 2] = value;
     }
   }
+  const shadows = zerosAreGaps
+    ? { count: 0, pixels: 0 }
+    : restoreShadowSpecks(color, coverage, width, height);
   const { data: out, empty, fill, mean } = fillGaps(color, coverage, width, height);
   // Columna del borde izquierdo: la de la longitud −180°.
   const shift = Math.round(((((-180 - firstLonDeg) % 360) + 360) % 360) / (360 / width)) % width;
@@ -82,14 +110,107 @@ export async function loadMosaic(url, width, { band } = {}) {
   const gaps = empty
     ? `sin datos, ${((100 * empty) / pixels).toFixed(1)} % (con el gris de la franja vecina, ${show(fill)}, frente a la media de lo que hay, ${show(mean)}, y su borde difuminado)`
     : 'sin datos, 0,0 %';
+  const specks = shadows.count
+    ? `; ${shadows.count} motas a 0 dentro de sombras (${shadows.pixels} px), tomadas por sombra y no por hueco`
+    : '';
   return {
     data: shifted,
     coverage: shiftedCoverage,
     width,
     height,
     emptyFraction: empty / pixels,
-    report: `${source.width} × ${source.height}, ${kind}, el borde izquierdo en ${firstLonDeg.toFixed(2)}° E; ${gaps}`,
+    report: `${source.width} × ${source.height}, ${kind}, el borde izquierdo en ${firstLonDeg.toFixed(2)}° E; ${gaps}${specks}${background ? `; de ello, el fondo claro de la carta (lo no cartografiado), el ${((100 * background) / pixels).toFixed(1)} % del mapa` : ''}`,
   };
+}
+
+/**
+ * La máscara de lo que hay (255) y de los huecos (0) de un mosaico, a su resolución, como una imagen de
+ * sharp que se puede reducir después (`zerosAreGaps`).
+ */
+async function fullResolutionMask(pipeline, source) {
+  const mask = await pipeline.toColourspace('b-w').threshold(1).raw().toBuffer();
+  // Un canal también al reducirla (sin `toColourspace`, sharp la devuelve en sRGB, con tres).
+  return sharp(mask, {
+    raw: { width: source.width, height: source.height, channels: 1 },
+    limitInputPixels: false,
+  }).toColourspace('b-w');
+}
+
+/**
+ * Las motas «sin datos» que son sombras (fase 9b, D45): en un mosaico de 8 bits, lo más hondo de la
+ * sombra de un cráter vale 0 (saturado por abajo), como lo que no tiene datos. Una mota sin datos
+ * pequeña (como mucho `maxPixels` en el mapa reducido) que toca algo casi negro (el píxel más oscuro de
+ * lo que hay a 1–2 píxeles de ella, como mucho `maxRingMin`, de 0 a 255) es el núcleo de una sombra:
+ * cuenta como dato y conserva su valor (negro). La media del anillo no vale: a 2 km, en Encélado y en
+ * Dione ya es la del terreno, y su mínimo, casi siempre negro (de 0 a 10 en 1033 de sus 1338 motas y en
+ * 1410 de 1914). Sin esto, en Fobos se recreaban sombras de cráteres como terreno gris, y en las lunas
+ * de Saturno, miles de motas (D45: lo real no se toca).
+ */
+export const SHADOW_SPECKS = { maxPixels: 400, maxRingMin: 20 };
+
+/**
+ * Marca como dato (cobertura 255) las motas de `coverage` (de 0 a 255; < 128, sin datos) que son
+ * sombras, según `SHADOW_SPECKS`. `color`: el mapa reducido (RGB de 8 bits, con los huecos a 0).
+ * Devuelve cuántas motas y píxeles.
+ */
+export function restoreShadowSpecks(color, coverage, width, height) {
+  const pixels = width * height;
+  const label = new Int32Array(pixels).fill(-1);
+  const luminance = (i) => {
+    const w = coverage[i] / 255;
+    const v = 0.2126 * color[3 * i] + 0.7152 * color[3 * i + 1] + 0.0722 * color[3 * i + 2];
+    return w > 0.02 ? v / w : 0;
+  };
+  const neighbors = (i, visit) => {
+    const x = i % width;
+    const y = (i - x) / width;
+    for (let dy = -1; dy <= 1; dy++) {
+      const yy = y + dy;
+      if (yy < 0 || yy >= height) continue;
+      for (let dx = -1; dx <= 1; dx++) {
+        if (dx || dy) visit(yy * width + ((x + dx + width) % width));
+      }
+    }
+  };
+  let count = 0;
+  let restored = 0;
+  for (let start = 0; start < pixels; start++) {
+    if (coverage[start] >= 128 || label[start] !== -1) continue;
+    // La mota (8-conexa), sin pasar de `maxPixels` + 1.
+    const speck = [start];
+    label[start] = start;
+    for (let n = 0; n < speck.length && speck.length <= SHADOW_SPECKS.maxPixels; n++) {
+      neighbors(speck[n], (j) => {
+        if (coverage[j] < 128 && label[j] === -1) {
+          label[j] = start;
+          speck.push(j);
+        }
+      });
+    }
+    if (speck.length > SHADOW_SPECKS.maxPixels) {
+      // Un hueco grande: se marca entero para no volver a recorrerlo.
+      for (let n = 0; n < speck.length; n++) {
+        neighbors(speck[n], (j) => {
+          if (coverage[j] < 128 && label[j] === -1) {
+            label[j] = start;
+            speck.push(j);
+          }
+        });
+      }
+      continue;
+    }
+    // Lo que hay alrededor, a 1–2 píxeles.
+    const ring = new Set();
+    for (const i of speck) neighbors(i, (j) => coverage[j] >= 128 && ring.add(j));
+    for (const i of [...ring]) neighbors(i, (j) => coverage[j] >= 128 && ring.add(j));
+    let darkest = Infinity;
+    for (const j of ring) darkest = Math.min(darkest, luminance(j));
+    if (darkest > SHADOW_SPECKS.maxRingMin) continue;
+    for (const i of speck) coverage[i] = 255;
+    count++;
+    restored += speck.length;
+  }
+  return { count, pixels: restored };
 }
 
 /**
@@ -252,6 +373,29 @@ async function geoTiffSource(path) {
 }
 
 /**
+ * Un mapa global en cilíndrica simple sin georreferencia (los del Solar System Simulator del JPL, fase
+ * 9b): la longitud ESTE de su borde izquierdo y el sentido de sus columnas, dados. Con las columnas
+ * hacia el oeste, se refleja: su borde izquierdo pasa a ser el derecho, que es la misma longitud (el
+ * mapa da la vuelta entera).
+ */
+async function plainSource(path, { leftEdgeEastDeg, eastward }) {
+  const open = () => {
+    const pipeline = sharp(path);
+    return eastward ? pipeline : pipeline.flop();
+  };
+  const metadata = await sharp(path).metadata();
+  if (!metadata.width || !metadata.height) throw new Error(`${path}: sin dimensiones`);
+  return {
+    open,
+    width: metadata.width,
+    height: metadata.height,
+    channels: metadata.channels,
+    firstLonDeg: leftEdgeEastDeg,
+    spanDeg: 360,
+  };
+}
+
+/**
  * Un IMG del PDS con su etiqueta PDS3 dentro (Mimas: COISS_3006): una banda de 8 bits en cilíndrica
  * simple. La longitud ESTE del borde izquierdo de la primera muestra, de `SAMPLE_PROJECTION_OFFSET`
  * (la muestra, contada desde 0, del meridiano central) y `MAP_RESOLUTION` (px/°), con las muestras
@@ -369,6 +513,37 @@ export const MOSAIC_PROBES = {
     { name: 'Namazu Macula', lat: -25.5, lon: 14, radius: 2, sign: -1, feature: 4125 },
     { name: 'Kikimora Maculae', lat: -31, lon: 78, radius: 1, sign: -1, feature: 3029 },
   ],
+  // Los mapas del JPL (fase 9b), sin georreferencia: con el borde izquierdo en −180° y las columnas
+  // hacia el este (como los del USGS), y solo con esa de las cuatro convenciones posibles (0° o −180°,
+  // hacia el este o el oeste), pasan Wunda, clara, y Hamlet, oscura (claridad de fuente oficial: los pies
+  // de foto de la NASA, NSSDC P-29502 y APOD del 31-01-1997), y los bordes de Yangoor y Domovoy. Las
+  // cinco de Urano usan longitudes este de 0 a 360 en el Gazetteer, y Deimos, oeste. En las demás,
+  // el brillo de cada rasgo es el observado en el mapa, y sus sondas comprueban que no se gire ni se
+  // refleje: Verona Rupes (el escarpe, claro), Belmont Chasma (oscura) y Ursula (clara). En Deimos,
+  // Swift, un cráter de fondo oscuro en la latitud del Gazetteer (planetográfica, como la del mapa).
+  deimos: [{ name: 'Swift', lat: 12.5, lon: 1.8, radius: 2, sign: -1, feature: 5789 }],
+  miranda: [{ name: 'Verona Rupes', lat: -18.3, lon: -12.2, radius: 1, sign: 1, feature: 6359 }],
+  ariel: [
+    { name: 'Yangoor', lat: -68.7, lon: -80.3, diameterKm: 78, feature: 6638 },
+    { name: 'Domovoy', lat: -71.5, lon: -20.3, diameterKm: 71, feature: 1570 },
+  ],
+  umbriel: [{ name: 'Wunda', lat: -7.9, lon: -86.4, radius: 2.5, sign: 1, feature: 6587 }],
+  titania: [
+    { name: 'Belmont Chasma', lat: -8.5, lon: 32.6, radius: 1, sign: -1, feature: 678 },
+    { name: 'Ursula', lat: -12.4, lon: 45.2, radius: 2, sign: 1, feature: 6245 },
+  ],
+  oberon: [{ name: 'Hamlet', lat: -46.1, lon: 44.4, radius: 3, sign: -1, feature: 2340 }],
+  // Venus bajo las nubes (fase 9b, D44): el mosaico del radar de Magellan, con su georreferencia. En el
+  // radar, los volcanes con sus coladas (Maat Mons, en el radio de su ficha, 395 km de diámetro: 1,9°;
+  // y Sapas Mons) y Maxwell Montes (en las cumbres de Venus, el suelo devuelve mucho más eco) son más
+  // claros que lo que los rodea. El Gazetteer da sus centros en longitud este de 0 a 360 (Maat Mons,
+  // 194,6° E; Sapas Mons, 188,3° E). Una sonda oscura (Lakshmi Planum, la meseta lisa junto a Maxwell,
+  // o el fondo de Mead) no se distingue de lo que la rodea a esta escala (medido: 0,94 a 0,99).
+  'venus-radar': [
+    { name: 'Maat Mons', lat: 0.5, lon: -165.4, radius: 2, sign: 1, feature: 3550 },
+    { name: 'Sapas Mons', lat: 8.5, lon: -171.7, radius: 1, sign: 1, feature: 5318 },
+    { name: 'Maxwell Montes', lat: 65.2, lon: 3.3, radius: 2.5, sign: 1, feature: 3766 },
+  ],
 };
 
 /** El cuerpo del catálogo de cada mosaico con sondas de borde (para su radio). */
@@ -379,6 +554,12 @@ const MOSAIC_BODIES = {
   dione: 'dione',
   rhea: 'rea',
   iapetus: 'japeto',
+  miranda: 'miranda',
+  ariel: 'ariel',
+  umbriel: 'umbriel',
+  titania: 'titania',
+  oberon: 'oberon',
+  deimos: 'deimos',
 };
 
 /** Una sonda de borde pasa si el gradiente en el borde supera en este factor al de dentro y fuera. */
@@ -395,9 +576,15 @@ function probeRadiusDeg(id, probe) {
 /**
  * Comprueba las sondas de un mosaico (RGB de 8 bits, equirrectangular con la longitud 0 en el centro)
  * y devuelve un informe; falla si alguna no pasa o si el mapa girado 180° o reflejado también las pasa
- * todas (las sondas no distinguirían la orientación).
+ * todas (las sondas no distinguirían la orientación). Con `onlyCovered` (el mapa recreado de D45, con
+ * `coverage` = lo real): una sonda que cae sobre todo fuera de lo cubierto no se mide (lo recreado
+ * sustituye a propósito el detalle fino de lo visto de lejos; ya pasó en el mosaico) y se dice.
  */
-export function checkMosaicProbes(id, { data, width, height, coverage }) {
+export function checkMosaicProbes(
+  id,
+  { data, width, height, coverage },
+  { onlyCovered = false } = {},
+) {
   const probes = MOSAIC_PROBES[id];
   if (!probes) return null;
   const luminance = new Float32Array(width * height);
@@ -445,9 +632,35 @@ export function checkMosaicProbes(id, { data, width, height, coverage }) {
     // Sin datos en la corona (una sonda girada que cae en un hueco): no hay rasgo que medir.
     return count ? sum / count : NaN;
   };
-  const measure = (probe, transform) => {
+  // La fracción cubierta de un disco de `r1` grados de arco (`onlyCovered`).
+  const coveredShare = (lat, lon, r1) => {
+    const cx = (lon + 180) * pxPerDeg;
+    const cy = (90 - lat) * pxPerDeg;
+    const stretch = 1 / Math.max(Math.cos((lat * Math.PI) / 180), 0.2);
+    const reach = Math.ceil(r1 * pxPerDeg);
+    let inside = 0;
+    let count = 0;
+    for (let dy = -reach; dy <= reach; dy++) {
+      for (let dx = -Math.ceil(reach * stretch); dx <= Math.ceil(reach * stretch); dx++) {
+        if (Math.hypot(dx / stretch, dy) / pxPerDeg > r1) continue;
+        if (covered(Math.round(cx + dx), Math.round(cy + dy))) inside++;
+        count++;
+      }
+    }
+    return count ? inside / count : 0;
+  };
+  const measure = (probe, transform, straight = false) => {
     const [lat, lon] = transform(probe.lat, probe.lon);
     const r = probeRadiusDeg(id, probe);
+    // En el mapa recreado, una sonda sobre todo fuera de lo real no se mide (en su sitio; girada o
+    // reflejada, no cuenta como pasada).
+    if (
+      onlyCovered &&
+      coverage &&
+      coveredShare(lat, lon, probe.diameterKm ? 2.2 * r : 3 * r) < 0.5
+    ) {
+      return straight ? { ratio: NaN, ok: true, skipped: true } : { ratio: NaN, ok: false };
+    }
     if (probe.diameterKm && gradient) {
       const rim = annulus(gradient, lat, lon, 0.8 * r, 1.2 * r);
       const inside = annulus(gradient, lat, lon, 0, 0.5 * r);
@@ -460,11 +673,21 @@ export function checkMosaicProbes(id, { data, width, height, coverage }) {
       Math.max(annulus(luminance, lat, lon, 2 * r, 3 * r, true), 1e-6);
     return { ratio, ok: probe.sign > 0 ? ratio > 1.08 : ratio < 0.92 };
   };
-  const passes = (transform) => probes.map((probe) => ({ probe, ...measure(probe, transform) }));
-  const straight = passes((lat, lon) => [lat, lon]);
+  const passes = (transform, straight = false) =>
+    probes.map((probe) => ({ probe, ...measure(probe, transform, straight) }));
+  const straight = passes((lat, lon) => [lat, lon], true);
   const rotated = passes((lat, lon) => [lat, lon + 180 > 180 ? lon - 180 : lon + 180]);
   const mirrored = passes((lat, lon) => [lat, -lon]);
-  const show = (results) => results.map((r) => `${r.probe.name} ${r.ratio.toFixed(2)}`).join(', ');
+  const show = (results) =>
+    results
+      .map((r) => `${r.probe.name} ${r.skipped ? 'en zona recreada' : r.ratio.toFixed(2)}`)
+      .join(', ');
+  if (straight.every((r) => r.skipped)) {
+    // Solo con `onlyCovered`: todas caen en lo recreado (Deimos, con su única sonda, Swift, en lo visto
+    // de lejos). Ya pasaron en el mosaico, antes de recrear, y lo real queda igual byte a byte
+    // (`recreateMosaic` lo comprueba): no hay nada más que medir aquí, y se dice.
+    return `${id}: ninguna sonda cae en lo real (${show(straight)}); pasaron en el mosaico, antes de recrear, y lo real queda igual byte a byte`;
+  }
   if (!straight.every((r) => r.ok)) {
     throw new Error(`El mosaico de «${id}» no pasa sus sondas: ${show(straight)}`);
   }
@@ -479,15 +702,17 @@ export function checkMosaicProbes(id, { data, width, height, coverage }) {
   return `${id}: sondas (brillo: disco / anillo; borde: borde / resto) ${show(straight)}; girado 180°, ${show(rotated)}; reflejado, ${show(mirrored)}`;
 }
 
-// Solo: un mosaico a 2048 px en PNG, con sus sondas (un círculo en cada una), para verlo.
-//   node scripts/usgs-mosaic.mjs <id> <fichero del mosaico> <carpeta de salida> [canal]
+// Solo: un mosaico a 2048 px en PNG, con sus sondas (un círculo en cada una), para verlo. Con
+// --radar, todo 0 es un hueco (`zerosAreGaps`: el radar de Venus).
+//   node scripts/usgs-mosaic.mjs <id> <fichero del mosaico> <carpeta de salida> [canal] [--radar]
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const [id, file, out, band] = process.argv.slice(2);
+  const [id, file, out, band] = process.argv.slice(2).filter((arg) => !arg.startsWith('--'));
   if (!id || !file || !out) {
     throw new Error('Uso: node scripts/usgs-mosaic.mjs <id> <fichero> <carpeta de salida> [canal]');
   }
   const mosaic = await loadMosaic(pathToFileURL(file), 2048, {
     band: band === undefined ? undefined : Number(band),
+    zerosAreGaps: process.argv.includes('--radar'),
   });
   console.log(mosaic.report);
   try {

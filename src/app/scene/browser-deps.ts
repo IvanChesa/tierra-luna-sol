@@ -85,6 +85,12 @@ export function browserEngineDeps(options: SceneEngineOptions): EngineDeps {
         throw new Error(`No se han podido cargar las constelaciones (${response.status}).`);
       return (await response.json()) as unknown;
     },
+    loadShape: async (path) => {
+      const response = await view.fetch(new URL(path, base));
+      if (!response.ok)
+        throw new Error(`No se ha podido cargar la forma ${path} (${response.status}).`);
+      return response.arrayBuffer();
+    },
     textures: ({ maxTextureSize, anisotropy, upload }) => ({
       source: new ManifestTextureSource({
         files: TEXTURE_FILES,

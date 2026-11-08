@@ -1,4 +1,5 @@
 import { NO_INSETS } from '../view-insets';
+import { VISUAL_CONFIG } from '../visual-config';
 import {
   discOverlapFraction,
   eclipseSkyAltitude,
@@ -8,6 +9,7 @@ import {
   skyColorsAt,
   srgbHexToLinear,
   starLimitAt,
+  totalityOf,
 } from './sky-colors';
 import {
   DEFAULT_SKY_POSE,
@@ -145,6 +147,32 @@ describe('sky-colors: la luz del cielo según la altura del Sol', () => {
     expect(eclipseSkyAltitude(30, 0.98)).toBeLessThan(30);
     expect(eclipseSkyAltitude(30, 0.98)).toBeGreaterThan(-7);
     expect(eclipseSkyAltitude(-10, 1)).toBe(-10);
+  });
+
+  it('la totalidad (fase 9b, E1): nada hasta el 99,9 % del disco tapado y toda con el disco tapado', () => {
+    expect(totalityOf(0)).toBe(0);
+    expect(totalityOf(0.99)).toBe(0);
+    expect(totalityOf(0.999)).toBe(0);
+    expect(totalityOf(0.9995)).toBeCloseTo(0.5, 9);
+    expect(totalityOf(1)).toBe(1);
+  });
+
+  it('el cielo de la totalidad desde Fraga, en la configuración: azul, con el horizonte anaranjado', () => {
+    const { ring, moonVeil } = VISUAL_CONFIG.sky.eclipse.totality;
+    // El anillo: naranja pegado al horizonte (R > G > B) y amarillo más arriba, y más bajo el naranja.
+    const [ir, ig, ib] = srgbHexToLinear(ring.inner.color);
+    const [or, og] = srgbHexToLinear(ring.outer.color);
+    expect(ir).toBeGreaterThan(ig);
+    expect(ig).toBeGreaterThan(ib);
+    expect(og / or).toBeGreaterThan(ig / ir);
+    expect(ring.inner.heightDeg).toBeLessThan(ring.outer.heightDeg);
+    // La Luna, más oscura que el cielo, sin llegar a negro (ilustrativo).
+    expect(moonVeil).toBeGreaterThan(0);
+    expect(moonVeil).toBeLessThan(1);
+    // El cielo de la totalidad (la altura efectiva del eclipse): azul, B > G > R en el cénit.
+    const { zenith } = skyColorsAt(VISUAL_CONFIG.sky.eclipse.altitudeDeg);
+    expect(zenith[2]).toBeGreaterThan(zenith[1]);
+    expect(zenith[1]).toBeGreaterThan(zenith[0]);
   });
 });
 

@@ -10,14 +10,25 @@
   <ul>
     <li>
       <strong
-        >Los planetas, la Tierra (día, noche, nubes, relieve y océanos) y el detalle del brillo de
-        los anillos de Saturno</strong
+        >Los planetas, la Tierra (día, nubes, relieve y océanos) y el detalle del brillo de los
+        anillos de Saturno</strong
       >
       (el Sol no tiene textura: lo dibuja el propio shader):
       <a href="https://www.solarsystemscope.com/textures/">Solar System Scope</a>, con
       <a [href]="licenses.ccBy">CC BY 4.0</a>. Reducidas y en WebP; el color de algunos planetas,
-      corregido con fotos del Hubble (NASA/ESA), y el del océano de la Tierra, con fotos de
-      <a href="https://epic.gsfc.nasa.gov/">EPIC (DSCOVR), del NASA EPIC Team</a>.
+      corregido con fotos del Hubble (NASA/ESA). La Tierra del explorador, en color realzado
+      (ilustrativo): los océanos, las nubes, el relieve y la tierra, con más color que en las fotos
+      de <a href="https://epic.gsfc.nasa.gov/">EPIC (DSCOVR), del NASA EPIC Team</a>, con las que se
+      ajustó al principio.
+    </li>
+    <li>
+      <strong>Las luces de la Tierra de noche</strong>: el mapa
+      <a href="https://science.nasa.gov/earth/earth-observatory/earth-at-night/maps/"
+        >Black Marble 2016</a
+      >
+      en gris, «NASA Earth Observatory images by Joshua Stevens, using Suomi NPP VIIRS data from
+      Miguel Román, NASA GSFC» (material de la NASA). Reducido y en WebP, con el tono cálido de las
+      luces de la textura de Solar System Scope que se usaba antes.
     </li>
     <li>
       <strong>Los anillos de Saturno</strong>: su opacidad, de la ocultación de β Centauri de
@@ -48,6 +59,15 @@
       público.
     </li>
     <li>
+      <strong>Venus bajo las nubes</strong>: el mosaico global del radar de la sonda Magellan
+      (C3-MIDR, 2 km por píxel), del
+      <a href="https://astrogeology.usgs.gov/search/map/venus_magellan_global_c3_mdir_mosaic_2025m"
+        >USGS Astrogeology</a
+      >
+      y el PDS Geosciences Node (NASA/JPL), de dominio público. Reducido y en WebP; lo que el radar
+      no cubrió, en un gris liso. Es una imagen de radar, en gris: no lo que verían los ojos.
+    </li>
+    <li>
       <strong>Las lunas</strong>: los mosaicos globales del
       <a href="https://astrogeology.usgs.gov/search">USGS Astrogeology</a>, de dominio público, con
       imágenes de Viking (Fobos), Voyager y Galileo (Ío, en color, y las demás de Júpiter), Cassini
@@ -55,9 +75,62 @@
       Lunar and Planetary Institute, P. Schenk). Mimas, con el mapa del DLR (Roatsch et al., 2018)
       en el
       <a href="https://pds-rings.seti.org/holdings/volumes/COISS_3xxx/COISS_3006/">PDS de la NASA</a
-      >. Reducidos y en WebP; los que son en gris, con un tinte. En Tritón, el norte que no vio
-      Voyager 2 se rellena con un gris liso. Deimos, Proteo y las lunas de Urano, con un color
-      esquemático (no hay un mapa completo con una licencia clara).
+      >. <strong>Deimos y las cinco lunas grandes de Urano</strong>, con los mapas del
+      <a href="https://space.jpl.nasa.gov/tmaps/">Solar System Simulator del JPL</a> (del USGS, con
+      imágenes de las Viking y de la Voyager 2; Caltech/JPL/USGS), «Courtesy NASA/JPL-Caltech»,
+      según la <a href="https://www.jpl.nasa.gov/jpl-image-use-policy/">política de uso</a> de sus
+      imágenes. Reducidos y en WebP; los que son en gris, con el color de su índice B−V publicado
+      (The Astronomical Almanac, Zellner y Capen, 1974, y Pascu et al., 2006) o, sin él, en gris
+      neutro. En Jápeto, el contraste de sus dos caras, llevado al de sus albedos (0,03–0,05 y
+      0,5–0,6, <a href="https://science.nasa.gov/saturn/moons/iapetus/">NASA</a>).
+    </li>
+    <li>
+      <strong>Las formas de Fobos y Deimos</strong>: sus modelos de forma (DSK) del
+      <a href="https://naif.jpl.nasa.gov/pub/naif/MEX/kernels/dsk/aareadme.txt"
+        >servidor del NAIF</a
+      >
+      (los de la Mars Express, del ESA SPICE Service), según sus
+      <a href="https://naif.jpl.nasa.gov/naif/rules.html">reglas de uso</a>: el de Fobos, de K.
+      Willner, X. Shi y J. Oberst (DLR, 2014), con imágenes HRSC de la Mars Express; el de Deimos,
+      de P. Thomas, con imágenes de las Viking. Es una versión modificada: este proyecto los reduce
+      a una rejilla de radios por latitud y longitud.
+    </li>
+    <li id="lunas-recreadas">
+      <strong>Lo que no se vio de las lunas, recreado</strong> (ilustrativo): lo que ninguna sonda
+      fotografió (el norte de Tritón y de las lunas de Urano) y lo que el mapa de Deimos no cubre se
+      recrean enteros, y lo que solo se fotografió de lejos lleva detalle recreado, siempre con
+      parches del terreno real de la misma luna, sobre la esfera y sin tocar lo real. Proteo no
+      tiene mapa: sus cráteres son generados. El método y lo medido (el grano y el borde con lo
+      real), en <a [href]="recreationDoc">recreacion-lunas.md</a>.
+      <!--
+        En las pantallas estrechas, la tabla no encoge más: se desplaza, y se enfoca con el teclado
+        (axe, scrollable-region-focusable, a 320 px; cierre de la fase 9b).
+      -->
+      <div class="recreation" tabindex="0" role="region" aria-labelledby="recreation-caption">
+        <table>
+          <caption id="recreation-caption">
+            La superficie de cada luna, medida en su mapa
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Luna</th>
+              <th scope="col">Real</th>
+              <th scope="col">De lejos (con detalle recreado)</th>
+              <th scope="col">No vista (recreada)</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of recreation; track row.id) {
+              <tr>
+                <th scope="row">{{ row.name }}</th>
+                <td>{{ row.real }}</td>
+                <td>{{ row.far }}</td>
+                <td>{{ row.none }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     </li>
     <li>
       <strong>Los lugares con nombre</strong> de las vistas y el recorrido de la Luna, y los rasgos
@@ -138,6 +211,17 @@
       y Neptuno de <a href="https://doi.org/10.1093/mnras/stad3761">Irwin et al. (2024)</a>.
     </li>
     <li>
+      <strong>El Sol</strong>: el oscurecimiento del borde en cada color, con la ley de
+      <a href="https://ui.adsabs.harvard.edu/abs/1998A%26A...333..338H/abstract"
+        >Hestroffer y Magnan (1998)</a
+      >, y la rotación de las manchas, más lenta lejos del ecuador, con la medida por el SDO de
+      <a href="https://arxiv.org/abs/2508.08196">Lößnitz et al. (2025)</a>. Las manchas, la
+      granulación, la corona y el resplandor son ilustrativos. En el explorador se ve en color
+      realzado, como en las imágenes de los observatorios (con luz visible normal es blanco, como en
+      el cielo): su color, sus zonas claras y oscuras, el oscurecimiento de su borde (más suave que
+      el de la ley), sus rayos y sus protuberancias, también ilustrativos.
+    </li>
+    <li>
       <strong>Las comprobaciones</strong>: las posiciones, con
       <a href="https://ssd.jpl.nasa.gov/horizons/">JPL Horizons</a>; las fases, las salidas, las
       puestas y los crepúsculos, con el <a href="https://aa.usno.navy.mil/">USNO</a>; y los
@@ -162,6 +246,12 @@
     Los pósters del explorador, las miniaturas y las imágenes de las fichas, y la imagen para
     compartir, son capturas del propio motor con estas texturas: mantienen sus licencias y sus
     atribuciones.
+  </p>
+  <p>
+    Algunas cosas de la escena son una elección de presentación y no un dato: los tamaños y las
+    órbitas de la vista general, con sus sistemas de lunas, la luz de cada vista o el color del
+    cielo. Están, una por una, en
+    <a routerLink="/sobre-el-proyecto" fragment="ilustrativo">lo que es ilustrativo</a>.
   </p>
 </section>
 

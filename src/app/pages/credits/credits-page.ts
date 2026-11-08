@@ -1,5 +1,31 @@
 import { Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { formatNumber } from '../../core/format';
 import { SITE_CONFIG } from '../../core/site.config';
+import { BODY_INDEX } from '../../data/body-index';
+import { MOON_RECREATION } from '../../data/moon-recreation';
+
+/** Una fracción como porcentaje con un decimal («30,6 %»). */
+const percent = (x: number): string => `${formatNumber(100 * x, 1, true)}\u00a0%`;
+
+/**
+ * Lo recreado de cada luna con mapa (fase 9b, D45), en el orden del catálogo: lo real con detalle, lo
+ * que solo se fotografió de lejos y lo que no se vio, medidos en su mapa (data/moon-recreation.ts).
+ */
+const RECREATION_ROWS = BODY_INDEX.flatMap((entry) => {
+  const row = MOON_RECREATION.find((r) => r.body === entry.id);
+  return row
+    ? [
+        {
+          id: row.body,
+          name: entry.name,
+          real: percent(row.real),
+          far: percent(row.far),
+          none: percent(row.none),
+        },
+      ]
+    : [];
+});
 
 /** El texto de cada licencia (en español, donde lo hay). */
 const LICENSES = {
@@ -17,6 +43,7 @@ const LICENSES = {
 @Component({
   selector: 'tls-credits-page',
   host: { class: 'page' },
+  imports: [RouterLink],
   templateUrl: './credits-page.html',
   styleUrl: './credits-page.css',
 })
@@ -24,4 +51,6 @@ export class CreditsPage {
   protected readonly site = SITE_CONFIG;
   protected readonly licenses = LICENSES;
   protected readonly sources = `${SITE_CONFIG.repository}/blob/main/docs/FUENTES.md`;
+  protected readonly recreation = RECREATION_ROWS;
+  protected readonly recreationDoc = `${SITE_CONFIG.repository}/blob/main/docs/datos/recreacion-lunas.md`;
 }

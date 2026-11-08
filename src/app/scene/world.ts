@@ -41,6 +41,7 @@ import { albedoScale } from '../ephemeris/photometry';
 import type { SystemState } from '../ephemeris/system-state';
 import { KM_PER_AU } from '../ephemeris/constants';
 import { Mat3, Vec3, mulMat3Vec, transposeMat3 } from '../ephemeris/vec3';
+import { solarCenterColor, sunspotsAt } from '../ephemeris/sun';
 import { SCHEMATIC_COLORS } from './body-colors';
 import type { FrameController } from './frames';
 import {
@@ -53,20 +54,28 @@ import {
   EarthUniforms,
   MAX_SHADOW_CASTERS,
   MoonUniforms,
+  RadarUniforms,
   ShadowUniforms,
   createBodyMaterial,
 } from './materials/body-material';
 import { createCubeSphere } from './cube-sphere';
+import { SHAPE_FILES } from './shape-files';
+import { ShapeGrid, decodeShape, shapeGeometry } from './shapes';
+import { OCCLUDER_LAYER, SUN_LAYER } from './layers';
 import { createMarkerMaterial } from './materials/marker-material';
 import { createMilkyWayMaterial } from './materials/milky-way-material';
 import { createRingMaterial } from './materials/ring-material';
-import { createHaloMaterial, createSunMaterial } from './materials/sun-material';
+import { MAX_SUNSPOTS, createHaloMaterial, createSunMaterial } from './materials/sun-material';
 import { OrbitLines, OrbitSource, TrailDirection } from './orbits';
 import type { ScreenBody } from './picking';
 import type { QualityProfile, TextureLevel } from './quality';
 import { StarField, temperatureToSrgb } from './stars';
 import { SceneBody, sceneBody } from './system';
-import { MOON_ELEVATION_RANGE_M, TEXTURE_MEAN_LUMINANCE } from './texture-files';
+import {
+  MOON_ELEVATION_RANGE_M,
+  TEXTURE_ALBEDO_REFERENCE,
+  TEXTURE_MEAN_LUMINANCE,
+} from './texture-files';
 import { VISUAL_CONFIG } from './visual-config';
 import {
   LoadedTexture,
@@ -105,6 +114,14 @@ export const BODY_TEXTURES: Readonly<Partial<Record<BodyId, TextureId>>> = {
   rea: 'rhea',
   japeto: 'iapetus',
   triton: 'triton',
+  // Fase 9b (D42, D43 y D45): Deimos y las cinco de Urano, con los mapas del JPL; Proteo, generado.
+  deimos: 'deimos',
+  miranda: 'miranda',
+  ariel: 'ariel',
+  umbriel: 'umbriel',
+  titania: 'titania',
+  oberon: 'oberon',
+  proteo: 'proteus',
 };
 
 /**
@@ -116,6 +133,8 @@ export const BODY_RELIEF_TEXTURES: Readonly<Partial<Record<BodyId, TextureId>>> 
   tierra: 'earth-normal',
   luna: 'moon-normal',
   marte: 'mars-normal',
+  // Proteo (fase 9b, D45): el relieve de su campo de cráteres generado.
+  proteo: 'proteus-normal',
 };
 
 /**
@@ -206,8 +225,23 @@ export interface WorldOptions {
   readonly textures: TextureSource | null;
   readonly textureMeta: Readonly<Record<TextureId, TextureMeta>> | null;
   readonly rings: RingRadii;
+  /**
+   * Carga una forma (`SHAPE_FILES`, fase 9b): Fobos y Deimos con su forma real cuando se ven con su
+   * mapa. Sin ella (`null`), son esferas.
+   */
+  readonly loadShape?: ((path: string) => Promise<ArrayBuffer>) | null;
   /** Algo ha cambiado fuera del bucle (por ejemplo, ha llegado una textura): hay que pintar. */
   readonly invalidate: () => void;
+}
+
+/**
+ * La forma de una luna irregular (fase 9b, D42): su rejilla, cuando llega, y la esfera detallada y la
+ * ligera deformadas con ella (se hacen al usarlas; la detallada se rehace al cambiar de calidad).
+ */
+interface ShapeState {
+  grid: ShapeGrid | null;
+  detailed: BufferGeometry | null;
+  coarse: BufferGeometry | null;
 }
 
 export interface WorldFrame {
@@ -248,6 +282,8 @@ interface BodyVisual {
   readonly moon: MoonUniforms | null;
   /** Las sombras de otros cuerpos que recibe (fase 7) y quiénes las proyectan (sus índices). */
   readonly shadows: ShadowUniforms | null;
+  /** Venus: la capa del radar de Magellan (fase 9b, D44); `null` en los demás cuerpos. */
+  readonly radar: RadarUniforms | null;
   readonly shadowCasters: readonly number[];
   readonly maps: readonly BodyMap[];
   /** Dónde van los mapas extra (los uniformes de la Tierra o de la Luna). */
@@ -274,7 +310,15 @@ const tmpMatrix = new Matrix4();
 const orbitViewMatrix = new Matrix4();
 const tmpQuaternion = new Quaternion();
 const tmpVector = new Vector3();
-const { halo: HALO, granulation: GRANULATION, intensity: SUN_INTENSITY } = VISUAL_CONFIG.sun;
+const {
+  halo: HALO,
+  granulation: GRANULATION,
+  intensity: SUN_INTENSITY,
+  measureIntensity: SUN_MEASURE_INTENSITY,
+  spots: SPOTS,
+  corona: CORONA,
+  enhanced: ENHANCED_SUN,
+} = VISUAL_CONFIG.sun;
 /** La Luna y los radios de la Luna y del Sol, para la sombra de los eclipses en la Tierra. */
 const LUNA_INDEX = sceneBody('luna').index;
 const MOON_RADIUS_KM = BODY_DATA.luna.physical.radiusKm.value;
@@ -294,6 +338,14 @@ const MIN_PRESENCE = 0.05;
  */
 const LARGE_ENTER_PX = 160;
 const LARGE_EXIT_PX = 120;
+/**
+ * Radio en pantalla (px CSS) a partir del cual una luna se ve con su mapa aunque su sistema no esté
+ * enfocado, y por debajo del cual lo suelta, con la misma histéresis (fase 9b, D42): en la vista
+ * general y en los viajes, una luna grande ya no es un disco de color plano. Al nivel de la vista
+ * general (la de 1k pesa unos 2,8 MB de VRAM).
+ */
+const SEEN_ENTER_PX = 24;
+const SEEN_EXIT_PX = 18;
 /** Segmentos de la esfera ligera de las lunas pequeñas (a lo ancho). */
 const COARSE_SEGMENTS = 32;
 
@@ -360,10 +412,16 @@ export class World {
    * mientras la Luna está enfocada (revisión de la fase 6, hallazgo 11).
    */
   private moonSphere: BufferGeometry | null = null;
+  /** Las formas pedidas (por índice del cuerpo): Fobos y Deimos (fase 9b). */
+  private readonly shapes = new Map<number, ShapeState>();
   private focusIndex: number | null = null;
   /** 1 para los cuerpos que se ven grandes en pantalla (`LARGE_ENTER_PX`). */
   private readonly large: Uint8Array;
+  /** 1 para las lunas que se ven lo bastante grandes para llevar su mapa (`SEEN_ENTER_PX`). */
+  private readonly seen: Uint8Array;
   private readonly visuals: BodyVisual[];
+  /** El índice del Sol en `visuals`. */
+  private readonly sunIndex: number;
   private readonly sun: ReturnType<typeof createSunMaterial>;
   private readonly halo: Mesh;
   private readonly haloMaterial: ReturnType<typeof createHaloMaterial>;
@@ -394,11 +452,59 @@ export class World {
     this.sphere = this.createSphere(options.profile.sphereSegments);
     this.coarseSphere = this.createSphere(COARSE_SEGMENTS);
     this.large = new Uint8Array(options.bodies.length);
-    // Color de la fotosfera: un cuerpo negro a la temperatura efectiva del catálogo.
+    this.seen = new Uint8Array(options.bodies.length);
+    // Color de la fotosfera: el del centro del disco que da al disco entero el de un cuerpo negro a la
+    // temperatura efectiva del catálogo (fase 9b: con el limbo por canal, el centro es algo más azul).
     const temperature = BODY_DATA.sol.physical.effectiveTemperatureK?.value ?? 5772;
     const [r, g, b] = temperatureToSrgb(temperature);
-    this.sun = createSunMaterial(new Color().setRGB(r, g, b, SRGBColorSpace));
+    const disc = new Color().setRGB(r, g, b, SRGBColorSpace);
+    const [cr, cg, cb] = solarCenterColor([disc.r, disc.g, disc.b]);
+    this.sun = createSunMaterial(new Color(cr, cg, cb));
+    const shade = this.sun.uniforms.uSpotShade.value;
+    shade.set(SPOTS.umbra, SPOTS.penumbra, SPOTS.penumbraRatio);
+    this.sun.uniforms.uGranuleScale.value = GRANULATION.scale;
+    this.sun.uniforms.uFaculae.value = VISUAL_CONFIG.sun.faculae;
+    // El Sol realzado del explorador (fase 9b, D46; segunda vuelta, 08-11): su paleta, su estructura,
+    // sus manchas pardas, el borde fino y los rayos de su halo y el color de sus bucles de plasma (su
+    // brillo va con el primer plano, en `setSunAppearance`). Con `?medida=limbo`, el de la luz visible
+    // (`setSunMeasure`).
+    const enhanced = this.sun.uniforms;
+    const { palette, structure } = ENHANCED_SUN;
+    enhanced.uEnhance.value = 1;
+    enhanced.uEnhanceCenter.value.setRGB(...palette.center);
+    enhanced.uEnhanceLimb.value.setRGB(...palette.limb);
+    enhanced.uPaletteEdges.value.set(...palette.muEdges);
+    enhanced.uLimbSoftening.value = palette.limbSoftening;
+    enhanced.uStructure.value = structure.amplitude;
+    enhanced.uStructureOctaves.value.set(
+      structure.octaves.frequency,
+      structure.octaves.persistence,
+      structure.octaves.shape,
+    );
+    enhanced.uStructureGain.value.set(...structure.gain.bright);
+    enhanced.uStructureGainDark.value.set(...structure.gain.dark);
+    enhanced.uStructureLimits.value.set(structure.limits.dark, structure.limits.bright);
+    enhanced.uSpotWarmth.value.set(...ENHANCED_SUN.spots.warmth);
     this.haloMaterial = createHaloMaterial();
+    const halo = this.haloMaterial.uniforms;
+    const { rim, rays, glow } = ENHANCED_SUN;
+    halo.uRoundness.value = CORONA.roundness;
+    halo.uColor.value.setRGB(...glow.halo);
+    halo.uGlowExponent.value = glow.exponent;
+    halo.uCoronaColor.value.setRGB(...glow.corona);
+    halo.uRim.value = rim.intensity;
+    halo.uRimColor.value.setRGB(...rim.color);
+    halo.uRimShape.value.set(rim.shape.wide, rim.shape.narrowRadii, rim.shape.wideRadii);
+    halo.uRimMinPixels.value = rim.minPixels;
+    const [sr, sg, sb] = glow.soft.color;
+    const soft = glow.soft.intensity;
+    halo.uSoftGlow.value.set(sr * soft, sg * soft, sb * soft, glow.soft.widthRadii);
+    halo.uRays.value = rays.intensity;
+    halo.uRayColor.value.setRGB(...rays.color);
+    halo.uRayLength.value = rays.lengthRadii;
+    halo.uProminenceColor.value
+      .setRGB(...ENHANCED_SUN.prominences.color)
+      .multiplyScalar(ENHANCED_SUN.prominences.intensity);
     this.halo = new Mesh(new PlaneGeometry(2, 2), this.haloMaterial.material);
     this.halo.name = 'sun-halo';
     this.halo.frustumCulled = false;
@@ -419,6 +525,7 @@ export class World {
             earth: body.id === 'tierra',
             moon: body.id === 'luna',
             shadows: casters.length > 0,
+            radar: body.id === 'venus',
           })
         : null;
       if (bodyMaterial?.earth) configureEarth(bodyMaterial.earth);
@@ -440,6 +547,9 @@ export class World {
       );
       mesh.name = body.id;
       mesh.matrixAutoUpdate = true;
+      // El bloom del Sol (fase 9b): el Sol, en su capa. Los que lo tapan, en la suya, frame a frame
+      // (`setSunOccluders`).
+      if (body.kind === 'star') mesh.layers.enable(SUN_LAYER);
       this.scene.add(mesh);
       return {
         body,
@@ -448,6 +558,7 @@ export class World {
         earth: bodyMaterial?.earth ?? null,
         moon: bodyMaterial?.moon ?? null,
         shadows: bodyMaterial?.shadows ?? null,
+        radar: bodyMaterial?.radar ?? null,
         shadowCasters: bodyMaterial?.shadows ? casters : [],
         maps: (bodyMaterial?.earth ? EARTH_MAPS : bodyMaterial?.moon ? MOON_MAPS : []).map(
           (map) => ({ ...map, loaded: null, requested: null }),
@@ -467,6 +578,8 @@ export class World {
         frozen: false,
       };
     });
+
+    this.sunIndex = this.visuals.findIndex((v) => v.body.kind === 'star');
 
     const saturn = this.visuals.find((v) => v.body.id === 'saturno');
     if (saturn) {
@@ -569,7 +682,7 @@ export class World {
     if (this.stars) this.stars.object.visible = all;
     this.milkyWay.visible = all && this.milkyWayTexture !== null;
     this.orbits.object.visible = all;
-    this.halo.visible = all || this.visuals[index]?.body.kind === 'star';
+    this.updateHaloVisibility();
   }
 
   /** Cambia de calidad: esferas, estrellas, órbitas y texturas (las anteriores se liberan). */
@@ -579,6 +692,11 @@ export class World {
     const old = this.sphere;
     this.sphere = this.createSphere(profile.sphereSegments);
     old.dispose();
+    // Las formas, sobre la esfera detallada nueva (se rehacen al usarlas, en `setFocus`).
+    for (const shape of this.shapes.values()) {
+      shape.detailed?.dispose();
+      shape.detailed = null;
+    }
     // La esfera cúbica se rehace con los segmentos del nivel nuevo si la Luna sigue enfocada.
     this.moonSphere?.dispose();
     this.moonSphere = null;
@@ -596,14 +714,7 @@ export class World {
     this.focusIndex = focusIndex;
     const moonFocused = focusIndex !== null && Boolean(this.visuals[focusIndex]?.moon);
     if (moonFocused) this.moonSphere ??= createCubeSphere(this.profile.moonSegments);
-    for (const visual of this.visuals) {
-      visual.mesh.geometry =
-        visual.moon && visual.body.index === focusIndex && this.moonSphere
-          ? this.moonSphere
-          : this.detailed(visual.body, focusIndex)
-            ? this.sphere
-            : this.coarseSphere;
-    }
+    for (const visual of this.visuals) visual.mesh.geometry = this.geometryFor(visual, focusIndex);
     if (!moonFocused && this.moonSphere) {
       this.moonSphere.dispose();
       this.moonSphere = null;
@@ -618,6 +729,7 @@ export class World {
    */
   releaseCloseUps(): void {
     this.large.fill(0);
+    this.seen.fill(0);
     this.setFocus(null);
   }
 
@@ -655,16 +767,19 @@ export class World {
             : satellite
               ? this.profile.satelliteTexture
               : this.profile.focusTexture;
-      // Las demás lunas (fase 7), solo con su sistema enfocado; si no, su color esquemático.
+      // Las demás lunas (fase 7), con su sistema enfocado o si se ven grandes (fase 9b); si no, su
+      // color esquemático.
       const level = near
         ? focusLevel
-        : satellite && focusSystem !== this.systemOf(index)
+        : satellite && focusSystem !== this.systemOf(index) && this.seen[index] !== 1
           ? null
           : this.profile.overviewTexture;
       if (level === null) {
         this.releaseTexture(visual);
         continue;
       }
+      // Con su mapa, la luna irregular lleva también su forma (fase 9b).
+      this.requestShape(visual);
       if (visual.relief) {
         const reliefLevel = visual.earth
           ? this.profile.earthMapsTexture
@@ -706,6 +821,48 @@ export class World {
   }
 
   /**
+   * La geometría de un cuerpo: la esfera cúbica de la Luna enfocada; la esfera detallada (el Sol, los
+   * planetas, la Luna y el foco) o la ligera; y, en Fobos y Deimos con su forma ya cargada, esa esfera
+   * deformada con ella.
+   */
+  private geometryFor(visual: BodyVisual, focusIndex: number | null): BufferGeometry {
+    if (visual.moon && visual.body.index === focusIndex && this.moonSphere) return this.moonSphere;
+    const detailed = this.detailed(visual.body, focusIndex);
+    const shape = this.shapes.get(visual.body.index);
+    if (shape?.grid) {
+      const radiusKm = visual.body.radiusKm;
+      return detailed
+        ? (shape.detailed ??= shapeGeometry(this.sphere, shape.grid, radiusKm))
+        : (shape.coarse ??= shapeGeometry(this.coarseSphere, shape.grid, radiusKm));
+    }
+    return detailed ? this.sphere : this.coarseSphere;
+  }
+
+  /**
+   * Pide la forma real de una luna irregular (`SHAPE_FILES`), una vez: cuando llega, su malla pasa a
+   * la esfera deformada. Si falla, sigue como esfera y se vuelve a pedir la próxima vez que haga falta.
+   */
+  private requestShape(visual: BodyVisual): void {
+    const file = SHAPE_FILES[visual.body.id];
+    const load = this.options.loadShape;
+    const index = visual.body.index;
+    if (!file || !load || this.shapes.has(index)) return;
+    const state: ShapeState = { grid: null, detailed: null, coarse: null };
+    this.shapes.set(index, state);
+    load(file.path)
+      .then((buffer) => {
+        if (this.disposed || this.shapes.get(index) !== state) return;
+        state.grid = decodeShape(buffer, file);
+        visual.mesh.geometry = this.geometryFor(visual, this.focusIndex);
+        this.options.invalidate();
+      })
+      .catch((error: unknown) => {
+        if (this.shapes.get(index) === state) this.shapes.delete(index);
+        console.warn(`[formas] No se ha podido cargar la de «${visual.body.id}»:`, error);
+      });
+  }
+
+  /**
    * Pide (o suelta, con `null`) el mapa de normales del relieve de un cuerpo, al nivel del primer
    * plano. Fuera del primer plano se libera: en la vista general no se vería y ocupa memoria.
    */
@@ -741,7 +898,8 @@ export class World {
     const previous = relief.loaded;
     relief.loaded = loaded;
     visual.uniforms.uNormalMap.value = loaded.texture;
-    visual.uniforms.uNormalStrength.value = 1;
+    // La Tierra realzada (fase 9b, D46): su relieve, más marcado; los demás, sin exagerar.
+    visual.uniforms.uNormalStrength.value = visual.earth ? VISUAL_CONFIG.earth.enhanced.relief : 1;
     if (previous && previous.texture !== loaded.texture) releaseTexture(previous.texture);
     this.options.invalidate();
   }
@@ -1064,30 +1222,116 @@ export class World {
   updateLarge(screen: readonly ScreenBody[]): void {
     let changed = false;
     for (const body of screen) {
-      const was = this.large[body.index] === 1;
       const radius = Number.isFinite(body.radiusPx) ? body.radiusPx : Infinity;
+      const was = this.large[body.index] === 1;
       const is = was ? radius >= LARGE_EXIT_PX : body.onScreen && radius >= LARGE_ENTER_PX;
       if (is !== was) {
         this.large[body.index] = is ? 1 : 0;
+        changed = true;
+      }
+      // Las lunas con mapa, también al verse grandes sin su sistema enfocado (fase 9b).
+      if (this.visuals[body.index]?.body.kind !== 'moon') continue;
+      const wasSeen = this.seen[body.index] === 1;
+      const isSeen = wasSeen ? radius >= SEEN_EXIT_PX : body.onScreen && radius >= SEEN_ENTER_PX;
+      if (isSeen !== wasSeen) {
+        this.seen[body.index] = isSeen ? 1 : 0;
         changed = true;
       }
     }
     if (changed) this.requestTextures(this.focusIndex);
   }
 
-  /** Cuánto primer plano del Sol hay (0–1): recoge su halo y enciende la granulación. */
-  private sunCloseUp = 0;
+  /**
+   * Solo en captura (`?medida=limbo`): el Sol para medir su limbo, sin halo, corona, granulación ni
+   * manchas y con su fotosfera por debajo de la compresión del tone mapping.
+   */
+  private sunMeasure = false;
+  /** El instante de las manchas pintadas (no se recalculan si no cambia). */
+  private spotsTimeMs = Number.NaN;
 
   /**
-   * Aspecto del Sol según el encuadre (configuración visual) y el reloj de pared de la granulación
-   * (0 con movimiento reducido o en captura: quieta).
+   * El aspecto del Sol en este frame: su primer plano (`closeUp`, 0–1: recoge el halo y apaga su
+   * resplandor ancho, enciende la granulación, la corona si tiene brillo y los bucles de plasma; el
+   * borde fino y los rayos van siempre), el reloj de pared de su granulación, de su estructura y de
+   * los rayos y los bucles (s; 0 con movimiento reducido y en las capturas) y si lleva bloom (si está
+   * encendido: el halo, más tenue). Se llama después de `update`, con la escala del Sol de este frame.
    */
-  setSunAppearance(closeUp: number, timeSeconds: number): void {
-    this.sunCloseUp = closeUp;
-    this.sun.uniforms.uGranulation.value = GRANULATION.amplitude * closeUp;
-    this.sun.uniforms.uIntensity.value =
-      SUN_INTENSITY.overview + (SUN_INTENSITY.closeUp - SUN_INTENSITY.overview) * closeUp;
-    this.sun.uniforms.uTime.value = timeSeconds * GRANULATION.rate;
+  setSunAppearance(closeUp: number, timeSeconds: number, bloom: boolean): void {
+    const measure = this.sunMeasure;
+    const sun = this.sun.uniforms;
+    sun.uGranulation.value = measure ? 0 : GRANULATION.amplitude * closeUp;
+    sun.uIntensity.value = measure
+      ? SUN_MEASURE_INTENSITY
+      : SUN_INTENSITY.overview + (SUN_INTENSITY.closeUp - SUN_INTENSITY.overview) * closeUp;
+    sun.uTime.value = timeSeconds * GRANULATION.rate;
+    sun.uStructureTime.value = timeSeconds * ENHANCED_SUN.structure.rate;
+    sun.uFaculae.value = measure ? 0 : VISUAL_CONFIG.sun.faculae;
+    const scale = this.visuals[this.sunIndex]?.mesh.scale.x ?? 1;
+    const halo = this.haloMaterial.uniforms;
+    halo.uRadius.value =
+      scale * (HALO.overview.radii + (HALO.closeUp.radii - HALO.overview.radii) * closeUp);
+    halo.uSunRadius.value = scale;
+    halo.uIntensity.value =
+      (HALO.overview.intensity + (HALO.closeUp.intensity - HALO.overview.intensity) * closeUp) *
+      (bloom ? HALO.withBloom : 1);
+    halo.uCorona.value = CORONA.closeUp * closeUp;
+    halo.uProminences.value = closeUp;
+    halo.uProminenceTime.value = timeSeconds * ENHANCED_SUN.prominences.rate;
+  }
+
+  /** Solo en captura: el Sol para medir su limbo (`?medida=limbo`; ver `sunMeasure`). */
+  setSunMeasure(measure: boolean): void {
+    this.sunMeasure = measure;
+    // El limbo se mide en el Sol de la luz visible (D41), sin el realzado de D46.
+    this.sun.uniforms.uEnhance.value = measure ? 0 : 1;
+    this.sun.uniforms.uStructure.value = measure ? 0 : ENHANCED_SUN.structure.amplitude;
+    this.spotsTimeMs = Number.NaN;
+    this.updateHaloVisibility();
+  }
+
+  /**
+   * Los cuerpos que tapan el Sol en este frame (`sunOccluders`), en la capa del bloom: los demás, no
+   * (así el render del bloom solo dibuja los que hacen falta).
+   */
+  setSunOccluders(indices: readonly number[]): void {
+    for (const visual of this.visuals) visual.mesh.layers.disable(OCCLUDER_LAYER);
+    for (const index of indices) this.visuals[index]?.mesh.layers.enable(OCCLUDER_LAYER);
+  }
+
+  /** El halo se ve con el Sol (también aislado, en su miniatura), salvo al medir su limbo. */
+  private updateHaloVisibility(): void {
+    const isolated = this.isolated;
+    this.halo.visible =
+      !this.sunMeasure && (isolated === null || this.visuals[isolated]?.body.kind === 'star');
+  }
+
+  /**
+   * Las manchas (ilustrativas) del instante `timeMs` en los uniformes del Sol: su dirección en el
+   * sistema propio de la malla (Y, el polo; la longitud este hacia −Z, como los marcadores de la
+   * Tierra) y el radio de su umbra; con su presencia (ninguna al medir el limbo).
+   */
+  private updateSunspots(timeMs: number): void {
+    if (timeMs === this.spotsTimeMs) return;
+    this.spotsTimeMs = timeMs;
+    const spots = this.sunMeasure ? [] : sunspotsAt(timeMs, SPOTS);
+    const directions = this.sun.uniforms.uSpots.value;
+    const presence = this.sun.uniforms.uSpotPresence.value;
+    for (let k = 0; k < MAX_SUNSPOTS; k++) {
+      const spot = spots[k];
+      if (!spot) {
+        presence[k] = 0;
+        continue;
+      }
+      const lat = (spot.latitudeDeg * Math.PI) / 180;
+      const lon = (spot.longitudeDeg * Math.PI) / 180;
+      directions[k]?.set(
+        Math.cos(lat) * Math.cos(lon),
+        Math.sin(lat),
+        -Math.cos(lat) * Math.sin(lon),
+        (spot.umbraDeg * Math.PI) / 180,
+      );
+      presence[k] = spot.presence;
+    }
   }
 
   /**
@@ -1102,8 +1346,16 @@ export class World {
   }
 
   /** Relleno ilustrativo de los cuerpos (configuración visual), en fracción de la luz del Sol. */
-  setFill(fill: number): void {
-    for (const visual of this.visuals) if (visual.uniforms) visual.uniforms.uFill.value = fill;
+  /**
+   * El relleno ilustrativo (`fillLight`) para `closeUp` de primer plano. La cara nocturna de la Tierra
+   * lleva el de la vista general, en gris, y nada en primer plano (fase 9b, D40): de cerca, de noche,
+   * solo se ven las luces, el limbo de la atmósfera y las estrellas que tapa.
+   */
+  setFill(fill: number, closeUp = 0): void {
+    for (const visual of this.visuals) {
+      if (visual.uniforms) visual.uniforms.uFill.value = fill;
+      if (visual.earth) visual.earth.uNightFill.value = fill * (1 - closeUp);
+    }
     if (this.ringMaterial) this.ringMaterial.uniforms.uFill.value = fill;
   }
 
@@ -1124,6 +1376,29 @@ export class World {
   setPixelRatio(pixelRatio: number): void {
     this.stars?.setPixelRatio(pixelRatio);
     this.markerMaterial.uniforms.uPixelRatio.value = pixelRatio;
+    this.haloMaterial.uniforms.uPixelRatio.value = pixelRatio;
+  }
+
+  /**
+   * Venus «Bajo las nubes» (fase 9b, D44): la textura del radar de Magellan y su fundido con las nubes
+   * (0: las nubes; 1: el radar), los que lleva `scene/venus-radar.ts`. Su brillo, calibrado como el
+   * de una textura de Venus (su disco lleno, al albedo geométrico de Venus), por `brightness`; la
+   * neblina del limbo, por `haze` (`VISUAL_CONFIG.venus.radar`). La textura la libera esa capa.
+   */
+  setVenusRadar(texture: Texture | null, mix: number): void {
+    const visual = this.visuals.find((v) => v.radar);
+    const radar = visual?.radar;
+    if (!visual || !radar) return;
+    radar.uRadarMap.value = texture;
+    radar.uRadarMix.value = texture ? Math.min(Math.max(mix, 0), 1) : 0;
+    const luminance = TEXTURE_MEAN_LUMINANCE['venus-radar'];
+    const { brightness, haze } = VISUAL_CONFIG.venus.radar;
+    const scale =
+      visual.photometry && luminance !== undefined
+        ? bodyAlbedoScale(visual.body.id, visual.photometry, luminance)
+        : 1;
+    radar.uRadar.value.set(scale * brightness, haze);
+    this.options.invalidate();
   }
 
   /** Memoria de vídeo estimada (texturas + geometría), en bytes. */
@@ -1177,6 +1452,11 @@ export class World {
     this.sphere.dispose();
     this.coarseSphere.dispose();
     this.moonSphere?.dispose();
+    for (const shape of this.shapes.values()) {
+      shape.detailed?.dispose();
+      shape.coarse?.dispose();
+    }
+    this.shapes.clear();
     // Los puntos no son mallas: su geometría no la libera el recorrido de arriba.
     this.markers?.geometry.dispose();
     for (const visual of this.visuals) {
@@ -1216,6 +1496,10 @@ export class World {
       uHaze: body.uHaze,
       uHazeColor: hazeColor,
       uSunDirection: body.uSunDirection,
+      // El borde de la Tierra realzada (fase 9b, D46), más azul y brillante; los demás, sin tinte.
+      ...(mesh.name === 'tierra'
+        ? { uTint: new Uniform(new Vector3(...VISUAL_CONFIG.earth.enhanced.rim)) }
+        : {}),
     });
     const shell = new Mesh(this.coarseSphere, material);
     shell.name = `${mesh.name}-atmosphere`;
@@ -1267,11 +1551,13 @@ export class World {
       if (visual.photometry?.contrast)
         visual.uniforms.uContrast.value = visual.photometry.contrast.value;
       if (visual.photometry && luminance !== undefined) {
-        visual.uniforms.uAlbedoScale.value = bodyAlbedoScale(
-          visual.body.id,
-          visual.photometry,
-          luminance,
-        );
+        // Jápeto (fase 9b): su hemisferio trasero, al albedo de la NASA, y no la media del mapa al de
+        // su cara oscura del catálogo.
+        const reference = visual.textureId ? TEXTURE_ALBEDO_REFERENCE[visual.textureId] : undefined;
+        visual.uniforms.uAlbedoScale.value =
+          reference && visual.photometry.calibrateAlbedo
+            ? albedoScale(reference.albedo, reference.luminance, visual.photometry.photometry)
+            : bodyAlbedoScale(visual.body.id, visual.photometry, luminance);
       }
     }
     if (previous && previous.texture !== loaded.texture) releaseTexture(previous.texture);
@@ -1344,15 +1630,19 @@ export class World {
   }
 
   private updateSunAndRings(frame: WorldFrame): void {
-    const sunVisual = this.visuals.find((v) => v.body.kind === 'star');
+    const sunVisual = this.visuals[this.sunIndex];
     if (sunVisual) {
+      // El halo va con el Sol; su tamaño, su brillo y su corona, con su primer plano
+      // (`setSunAppearance`).
       this.halo.position.copy(sunVisual.mesh.position);
-      const t = this.sunCloseUp;
-      const radii = HALO.overview.radii + (HALO.closeUp.radii - HALO.overview.radii) * t;
-      this.haloMaterial.uniforms.uRadius.value = sunVisual.mesh.scale.x * radii;
-      this.haloMaterial.uniforms.uIntensity.value =
-        HALO.overview.intensity + (HALO.closeUp.intensity - HALO.overview.intensity) * t;
-      this.haloMaterial.uniforms.uViewportHeight.value = frame.viewport.height;
+      const halo = this.haloMaterial.uniforms;
+      halo.uViewportHeight.value = frame.viewport.height;
+      // Las serpentinas de la corona salen del ecuador del Sol: el ángulo en pantalla de su polo norte
+      // (el eje Y de su malla, en la vista de la cámara, ya orientada para este frame).
+      tmpVector.set(0, 1, 0).applyQuaternion(sunVisual.mesh.quaternion);
+      tmpVector.applyQuaternion(tmpQuaternion.copy(this.camera.quaternion).invert());
+      halo.uPoleAngle.value = Math.atan2(tmpVector.y, tmpVector.x);
+      this.updateSunspots(frame.state.timeMs);
     }
     const saturn = this.visuals.find((v) => v.body.id === 'saturno');
     if (!saturn?.uniforms || !this.ringMaterial) return;
@@ -1401,10 +1691,24 @@ export class World {
 function configureEarth(earth: EarthUniforms): void {
   const config = VISUAL_CONFIG.earth;
   earth.uEarth.value.set(config.cloudAlbedo, config.nightLights, config.glint, config.cloudShadow);
+  earth.uNightTint.value.setRGB(...config.nightTint);
   const scatter = new Color(config.scatter.color).multiplyScalar(config.scatter.intensity);
   earth.uScatter.value.set(scatter.r, scatter.g, scatter.b, config.scatter.limb);
   earth.uTwilightColor.value.set(config.twilight);
   earth.uArid.value.set(config.arid.knee, config.arid.warmFrom, config.arid.warmTo);
+  // La Tierra realzada del explorador (fase 9b, D46): el océano, las nubes, la tierra y el reflejo;
+  // la rodilla de lo árido, la suya (de día: la noche sigue con la de arriba, D40).
+  const { ocean, clouds, glint, land } = config.enhanced;
+  earth.uEnhancedAridKnee.value = land.aridKnee;
+  earth.uOcean.value.set(...ocean.albedo, 1);
+  earth.uOceanDetail.value.set(ocean.waterLuminance, ocean.detail);
+  earth.uCloudShape.value.set(clouds.from, clouds.to, clouds.max, 1);
+  earth.uLand.value.set(...land.aridTint, land.saturation);
+  earth.uVegetationTint.value.set(...land.vegetationTint);
+  earth.uEarth.value.z = glint.intensity;
+  earth.uGlintShape.value.set(glint.wide, glint.exponent, glint.core, 1);
+  earth.uGlintFresnel.value.set(glint.f0, glint.fresnelMax);
+  earth.uGlintTint.value.set(...glint.tint);
 }
 
 /**

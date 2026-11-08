@@ -31,6 +31,7 @@ import type { TextureLevel } from './quality';
 export type TextureId =
   | 'mercury'
   | 'venus'
+  | 'venus-radar'
   | 'earth-day'
   | 'earth-night'
   | 'earth-clouds'
@@ -60,6 +61,14 @@ export type TextureId =
   | 'rhea'
   | 'iapetus'
   | 'triton'
+  | 'deimos'
+  | 'miranda'
+  | 'ariel'
+  | 'umbriel'
+  | 'titania'
+  | 'oberon'
+  | 'proteus'
+  | 'proteus-normal'
   | 'milky-way';
 
 export interface TextureMeta {

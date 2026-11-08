@@ -111,6 +111,16 @@
   background: var(--color-surface-raised);
 }
 
+/*
+ * Con el fondo del hover y la sombra de «hay más abajo» encima, el gris de los valores (y de los
+ * nombres de las lunas) de la última fila visible bajaba a 4,48:1 (axe, en el e2e del móvil, según
+ * dónde quedaba el puntero; cierre de la fase 9b): en el hover, el color del texto.
+ */
+.row:hover .row__value,
+.tree__item--moon > .row:hover .row__name {
+  color: var(--color-text);
+}
+
 /* Elegido: fondo, nombre en acento y una barra en acento (la forma, no solo el color). */
 .tree__item[aria-selected='true'] > .row {
   background: var(--color-surface-raised);

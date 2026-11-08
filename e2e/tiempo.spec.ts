@@ -120,9 +120,12 @@ test.describe('Tiempo y URL', () => {
     const date = page.locator('#time-date');
     await date.focus();
     await page.keyboard.type(keys);
-    await page.waitForTimeout(1500);
-    // Las 14:00 de Madrid del 15 de marzo de 2031 (UTC+1): un solo salto y una sola URL.
-    expect(await simTime(page)).toBe(Date.parse('2031-03-15T13:00:00Z'));
+    // Las 14:00 de Madrid del 15 de marzo de 2031 (UTC+1): un solo salto y una sola URL. La fecha se
+    // aplica tras una pausa al teclear: se espera a que llegue (con el CI cargado, una espera fija de
+    // 1,5 s a veces no bastaba; cierre de la fase 9b) y después se cuentan los saltos.
+    await expect
+      .poll(() => simTime(page), { timeout: 15_000 })
+      .toBe(Date.parse('2031-03-15T13:00:00Z'));
     expect(await page.evaluate(() => window.__e2eTimeChanges ?? 0)).toBe(1);
     expect(await urlChanges(page)).toBe(1);
     expect(await page.evaluate(() => document.body.dataset['e2eAlert'] ?? 'no')).toBe('no');

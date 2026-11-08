@@ -9,7 +9,7 @@ import {
 } from '../ephemeris/photometry';
 import { BODY_DATA } from './body-data';
 import { BODY_INDEX } from './body-index';
-import { BODY_PHOTOMETRY, RING_SPECTRA } from './photometry';
+import { BODY_PHOTOMETRY, COLOR_INDICES, RING_SPECTRA } from './photometry';
 
 const DEG = Math.PI / 180;
 
@@ -80,6 +80,32 @@ describe('fotometría de los cuerpos', () => {
       expect(luminance(entry.chromaticity.rgb), id).toBeCloseTo(1, 2);
       expect(entry.chromaticity.source, id).toMatch(/https:\/\//);
     }
+  });
+
+  it('el color de las lunas en gris sale de su B−V publicado frente al del Sol (fase 9b, D42)', () => {
+    const { sun, bandsNm, moons } = COLOR_INDICES;
+    expect(sun.bv).toBe(0.653);
+    expect(sun.source).toMatch(/https:\/\/arxiv\.org\/abs\/1204\.0828/);
+    expect(bandsNm.source).toMatch(/Johnson/);
+    for (const [id, entry] of Object.entries(moons)) {
+      // R_B / R_V = 10^(−0,4 · Δ(B−V)), con la V a 1.
+      const ratio = 10 ** (-0.4 * (entry.bv - sun.bv));
+      const expected = bandChromaticity([
+        { nm: bandsNm.B, value: ratio },
+        { nm: bandsNm.V, value: 1 },
+      ]);
+      const chromaticity = BODY_PHOTOMETRY[id as keyof typeof moons].chromaticity;
+      expect(chromaticity?.mix, id).toBe(1);
+      expected.forEach((value, k) => expect(chromaticity?.rgb[k], id).toBeCloseTo(value, 3));
+      expect(entry.source, id).toMatch(/https:\/\//);
+    }
+    // Más rojizas que el Sol las de B−V mayor (Titania y Tritón), casi neutras las demás.
+    const [r, , b] = BODY_PHOTOMETRY.titania.chromaticity?.rgb ?? [1, 1, 1];
+    expect(r).toBeGreaterThan(b);
+    expect(Math.abs((BODY_PHOTOMETRY.ariel.chromaticity?.rgb[0] ?? 0) - 1)).toBeLessThan(0.01);
+    // Miranda y Proteo, sin B−V publicado (o neutro, Proteo): gris.
+    expect(BODY_PHOTOMETRY.miranda.chromaticity?.rgb).toEqual([1, 1, 1]);
+    expect(BODY_PHOTOMETRY.proteo.chromaticity?.rgb).toEqual([1, 1, 1]);
   });
 
   it('el color de los anillos sale de su reflectividad por bandas medida por el Hubble: el B, tostado, no azulado (fase 7, D36)', () => {

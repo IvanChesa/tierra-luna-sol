@@ -34,7 +34,61 @@ li + li {
   font-weight: var(--font-weight-strong);
 }
 
+/* Las licencias, con una zona de al menos 24 px de alto (WCAG 2.5.8; la fase 9c las midió en 19). */
+.licenses dt a {
+  display: inline-block;
+  line-height: 1.5rem;
+}
+
 .licenses dd {
   margin: var(--space-1) 0 0;
   color: var(--color-text-muted);
+}
+
+/*
+ * Lo recreado de cada luna (fase 9b, D45): como las tablas de «Sobre el proyecto». La tabla, en una
+ * región que se desplaza en las pantallas estrechas y se enfoca con el teclado.
+ */
+.recreation {
+  max-width: 100%;
+  margin-top: var(--space-3);
+  overflow-x: auto;
+}
+
+.recreation table {
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.recreation caption {
+  padding-bottom: var(--space-2);
+  color: var(--color-text-muted);
+  text-align: left;
+}
+
+.recreation th,
+.recreation td {
+  padding: var(--space-2) var(--space-3) var(--space-2) 0;
+  border-top: var(--border-width) solid var(--color-line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.recreation thead th {
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-regular);
+  border-top: 0;
+}
+
+.recreation tbody th {
+  font-weight: var(--font-weight-regular);
+}
+
+.recreation td {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+#lunas-recreadas {
+  scroll-margin-top: var(--space-8);
 }

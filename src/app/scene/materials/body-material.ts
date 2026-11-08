@@ -23,6 +23,9 @@
  *   tierra, como en las fotos de EPIC, sin el velo blanquecino de la fase 3b). Y la sombra de la
  *   Luna en los eclipses (D20): desde cada punto, la fracción del disco del Sol que tapa la Luna,
  *   con la Luna y el Sol en el sistema propio de la Tierra (geometría real, calculada en float64).
+ *   En el explorador, con color realzado (fase 9b, D46; ilustrativo y avisado): el océano de un azul
+ *   vivo, la tierra más saturada y lo árido más cálido, nubes más finas y un reflejo del Sol grande y
+ *   suave, con Fresnel. La cara nocturna y las luces (D40), igual.
  *
  * - La Luna (fase 6, `moon: true`, `#define TLS_MOON`): su malla (una esfera cúbica cuando se ve de
  *   cerca) se desplaza con la elevación del LOLA (16 bits en R y G, D15) a escala física (la
@@ -37,6 +40,11 @@
  *   en los eclipses de Luna (D20), como la de la Luna sobre la Tierra, con el radio de la Tierra de
  *   la regla de Danjon (`EARTH_SHADOW_RADIUS_KM`): dentro de la umbra, la luz del Sol que refracta la
  *   atmósfera de la Tierra, rojiza y más tenue hacia el eje (ilustrativa, de la configuración visual).
+ *
+ * - Venus «Bajo las nubes» (fase 9b, D44; `radar: true`, `#define TLS_RADAR`): el mosaico del radar de
+ *   Magellan en lugar de las nubes, con un fundido (`uRadarMix`) y con la misma luz y la misma
+ *   fotometría de Venus; su brillo, calibrado como el de una textura de Venus, y la neblina del limbo,
+ *   atenuada (`VISUAL_CONFIG.venus.radar`). Lo lleva `scene/venus-radar.ts`.
  *
  * La geometría es la esfera unidad (Y = polo, meridiano 0 en +X, longitud este hacia −Z, como
  * `SphereGeometry`); el elipsoide sale de la escala de la malla (radio ecuatorial, polar, ecuatorial).
@@ -108,8 +116,14 @@ void main() {
     displaced = position * (1.0 + uElevation.x + uElevation.y * (packed.r * 65280.0 + packed.g * 255.0) / 65535.0);
   }
 #endif
-  // En la esfera unidad, la normal es la posición (la esfera cúbica de la Luna no lleva normales).
+#ifdef TLS_MOON
+  // La esfera cúbica de la Luna no lleva normales: en la esfera unidad, son la posición.
   vNormal = normalize(normalMatrix * position);
+#else
+  // Las de la geometría: en la esfera, la posición; en las formas de Fobos y Deimos (fase 9b), las de
+  // su rejilla (scene/shapes.ts).
+  vNormal = normalize(normalMatrix * normal);
+#endif
   // Marco tangente del relieve: este y norte en el sistema propio, llevados a la vista.
   vec3 up = normalize(position);
   vec3 east = vec3(up.z, 0.0, -up.x);
@@ -214,6 +228,11 @@ uniform float uHasSpecular;
 uniform float uCloudOffset;
 // Opacidad de las nubes y de su sombra: 1 con el disco entero a la vista; menos en los primeros planos.
 uniform float uCloudOpacity;
+// Las luces de la noche (fase 9b, D40): su mapa es en gris (Black Marble) y este, su tono (rgb lineal
+// de luminancia 1); y el relleno de la cara nocturna, en gris neutro (en la vista general; 0 en
+// primer plano).
+uniform vec3 uNightTint;
+uniform float uNightFill;
 // (albedo de las nubes, intensidad de las luces, brillo del océano, oscuridad de la sombra)
 uniform vec4 uEarth;
 // Luz dispersada por la atmósfera (color lineal × intensidad) y refuerzo hacia el limbo.
@@ -221,6 +240,35 @@ uniform vec4 uScatter;
 uniform vec3 uTwilightColor;
 // Tierras áridas: (rodilla de la compresión, calidez desde la que empieza, calidez a la que es entera).
 uniform vec3 uArid;
+// La rodilla de lo árido de la Tierra realzada (D46), de día; 0: la de uArid.
+uniform float uEnhancedAridKnee;
+// La Tierra realzada del explorador (fase 9b, D46; ilustrativa). Con w = 0 en uOcean, uCloudShape y
+// uGlintShape, uLand = (1, 1, 1, 1), uVegetationTint = (1, 1, 1) y uEnhancedAridKnee = 0, la de la
+// fase 5, ajustada con EPIC (salvo el relieve, que en la Tierra siempre pierde el escalón de
+// cuantización de su mapa: ver reliefNormal).
+// - uOcean: el albedo lineal del océano (rgb) y cuánto sustituye al de la textura (w), en el agua de la
+//   máscara especular; uOceanDetail: la luminancia del agua en la textura que vale 1 y el exponente con
+//   que se conserva su variación (0: nada; 1: en proporción).
+// - uCloudShape: la cobertura de las nubes, smoothstep(x, y) × z (w = 1: realzada; si no, la de la
+//   textura).
+// - uLand: el tinte lineal de lo árido (rgb) y la saturación de la tierra (w; 1: la de la textura);
+//   uVegetationTint: el de la vegetación (donde el verde supera al rojo y al azul).
+// - uGlintShape: el reflejo del Sol en el agua: el peso de su lóbulo ancho (x), su exponente (y) y el
+//   del núcleo (z); w = 1: realzado, por Fresnel (uGlintFresnel: F0 y su máximo relativo a la
+//   incidencia normal) y con el lóbulo ancho de su tono (uGlintTint, lineal).
+uniform vec4 uOcean;
+uniform vec2 uOceanDetail;
+uniform vec4 uCloudShape;
+uniform vec4 uLand;
+uniform vec3 uVegetationTint;
+uniform vec4 uGlintShape;
+uniform vec2 uGlintFresnel;
+uniform vec3 uGlintTint;
+
+// La cobertura de las nubes: la de la textura o, realzada (D46), sin las más finas y menos opaca.
+float tlsCloudCover(float raw) {
+  return uCloudShape.w > 0.5 ? smoothstep(uCloudShape.x, uCloudShape.y, raw) * uCloudShape.z : raw;
+}
 #endif
 #if defined(TLS_EARTH) || defined(TLS_MOON) || defined(TLS_SHADOWS)
 // La sombra en p (D20) de un cuerpo que tapa el Sol: occluder y sun, sus centros (radios
@@ -281,6 +329,15 @@ uniform vec3 uUmbraLight;
 uniform float uUmbraAxis;
 #endif
 
+#ifdef TLS_RADAR
+// Venus bajo las nubes (fase 9b, D44): el mosaico del radar de Magellan (en gris) y su fundido con las
+// nubes (0: las nubes; 1: el radar); uRadar = (lo que lleva la textura del radar al albedo de Venus, la
+// parte de la neblina del limbo que queda con el radar).
+uniform sampler2D uRadarMap;
+uniform float uRadarMix;
+uniform vec2 uRadar;
+#endif
+
 float ringShadow() {
   // Punto de la superficie en radios ecuatoriales, en el sistema propio (Y = polo).
   vec3 p = vLocal * vec3(1.0, uPolarScale, 1.0);
@@ -302,7 +359,15 @@ vec3 reliefNormal(vec3 geometric, vec2 uv) {
 #else
   vec3 t = texture2D(uNormalMap, uv).xyz * 2.0 - 1.0;
 #endif
+#ifdef TLS_EARTH
+  // El relieve realzado de la Tierra (fase 9b, D46): sin el escalón de cuantización del mapa (unos
+  // 1,5 niveles de 8 bits; amplificado, dibujaba rectángulos en las llanuras), las pendientes suaves,
+  // amplificadas, y las fuertes, saturadas por debajo de unos 45° (con fuerza 1, casi igual).
+  t.xy = sign(t.xy) * max(abs(t.xy) - 0.012, 0.0) * uNormalStrength;
+  t.xy /= sqrt(1.0 + dot(t.xy, t.xy));
+#else
   t.xy *= uNormalStrength;
+#endif
 #ifdef TLS_MOON
   // El este, por píxel: el polo por la normal (solo degenera en el polo exacto).
   vec3 east = cross(vPoleView, geometric);
@@ -339,13 +404,38 @@ void main() {
     base *= (uMeanLuminance + (luminance - uMeanLuminance) * uContrast) / luminance;
   }
   vec3 albedo = base * uAlbedoScale;
+#ifdef TLS_RADAR
+  // El radar, sin el contraste ni el color de las nubes (los de Venus): su mosaico, centrado en el
+  // meridiano 0 del modelo, como el de las nubes (sin desplazamiento).
+  if (uRadarMix > 0.0) albedo = mix(albedo, texture2D(uRadarMap, vUv).rgb * uRadar.x, uRadarMix);
+#endif
 #ifdef TLS_EARTH
   // Las tierras áridas de la textura, casi tan claras como las nubes (en EPIC, un tercio): su brillo,
   // comprimido, L / (1 + L / rodilla), solo en la tierra cálida ((R − B) / L): ni el océano ni el
   // hielo (neutros), y apenas los bosques (oscuros).
   float aridLum = max(dot(albedo, vec3(0.2126, 0.7152, 0.0722)), 1e-4);
   float arid = smoothstep(uArid.y, uArid.z, (albedo.r - albedo.b) / aridLum);
-  albedo *= mix(1.0, 1.0 / (1.0 + aridLum / uArid.x), arid);
+  // El de la fase 5 (con EPIC): el de la cara nocturna (D40), que la Tierra realzada no cambia.
+  vec3 nightAlbedo = albedo * mix(1.0, 1.0 / (1.0 + aridLum / uArid.x), arid);
+  // De día, la rodilla de la Tierra realzada (D46: el desierto, más claro), si la hay.
+  float knee = uEnhancedAridKnee > 0.0 ? uEnhancedAridKnee : uArid.x;
+  albedo *= mix(1.0, 1.0 / (1.0 + aridLum / knee), arid);
+  // El agua (la máscara especular, 1 en el agua): para el océano realzado y para el reflejo.
+  float water = uHasSpecular > 0.5 ? texture2D(uSpecularMap, uv).r : 0.0;
+  if (uOcean.w > 0.0) {
+    // El océano realzado (D46): un azul vivo, con la variación de brillo de la textura (los bajos
+    // fondos, más claros) en la proporción de uOceanDetail.
+    float oceanLum = max(dot(albedo, vec3(0.2126, 0.7152, 0.0722)), 1e-4);
+    vec3 ocean = uOcean.rgb * pow(oceanLum / uOceanDetail.x, uOceanDetail.y);
+    albedo = mix(albedo, ocean, water * uOcean.w);
+  }
+  // La tierra realzada (D46): más saturada; lo árido y la vegetación (lo verde: ni la nieve ni las
+  // salinas, que son neutras), cada uno con su tinte.
+  float landLum = max(dot(albedo, vec3(0.2126, 0.7152, 0.0722)), 1e-4);
+  float vegetation = smoothstep(0.0, 0.3, (albedo.g - max(albedo.r, albedo.b)) / landLum);
+  vec3 land = max(mix(vec3(landLum), albedo, uLand.w), 0.0);
+  land *= mix(vec3(1.0), uLand.rgb, arid) * mix(vec3(1.0), uVegetationTint, vegetation);
+  albedo = mix(albedo, land, 1.0 - water);
 #endif
   vec3 geometric = normalize(vNormal);
   vec3 normal = uNormalStrength > 0.0 ? reliefNormal(geometric, uv) : geometric;
@@ -360,6 +450,9 @@ void main() {
   float light = tlsReflectance(dot(normal, toSun), dot(normal, toViewer), alpha, cosAlpha);
   float muViewer = dot(geometric, toViewer);
   float haze = tlsHaze(dot(geometric, toSun), muViewer, cosAlpha);
+#ifdef TLS_RADAR
+  haze *= mix(1.0, uRadar.y, uRadarMix);
+#endif
   if (uRingShadow > 0.5 && (light > 0.0 || haze > 0.0)) {
     float shadow = ringShadow();
     light *= shadow;
@@ -382,21 +475,32 @@ void main() {
   haze *= sunVisible;
   // Nubes: la cobertura de su capa, que deriva en longitud (ilustrativo).
   vec2 cloudUv = vec2(uv.x + uCloudOffset, uv.y);
-  float cloud = uHasClouds > 0.5 ? texture2D(uCloudMap, cloudUv).r * uCloudOpacity : 0.0;
+  float cloudRaw = uHasClouds > 0.5 ? texture2D(uCloudMap, cloudUv).r : 0.0;
+  // La de la textura (la de la noche, D40) y, de día, la realzada (D46), si lo está.
+  float cloudCover = cloudRaw * uCloudOpacity;
+  float cloud = uHasClouds > 0.5 ? tlsCloudCover(cloudRaw) * uCloudOpacity : 0.0;
   // Su sombra: la misma capa, un poco desplazada hacia el Sol en el plano tangente (aproximación).
   float shadow = 0.0;
   if (uHasClouds > 0.5 && muSun > 0.0) {
     vec2 towardSun = vec2(dot(toSun, normalize(vEast)), dot(toSun, normalize(vNorth)));
-    shadow = texture2D(uCloudMap, cloudUv + towardSun * vec2(0.0016, 0.0032)).r * uCloudOpacity;
+    shadow = tlsCloudCover(texture2D(uCloudMap, cloudUv + towardSun * vec2(0.0016, 0.0032)).r)
+      * uCloudOpacity;
   }
   vec3 surface = albedo * light * (1.0 - uEarth.w * shadow * (1.0 - cloud));
   // El Sol reflejado en el agua, sin nubes delante.
   if (uHasSpecular > 0.5 && muSun > 0.0) {
-    float water = texture2D(uSpecularMap, uv).r;
-    float facing = max(dot(geometric, normalize(toSun + toViewer)), 0.0);
-    float glint = pow(facing, 400.0) + 0.12 * pow(facing, 40.0);
-    surface += vec3(uEarth.z * water * (1.0 - cloud) * glint * smoothstep(0.0, 0.1, muSun))
-      * sunVisible;
+    vec3 halfway = normalize(toSun + toViewer);
+    float facing = max(dot(geometric, halfway), 0.0);
+    vec3 glint = vec3(pow(facing, 400.0) + 0.12 * pow(facing, 40.0));
+    if (uGlintShape.w > 0.5) {
+      // Realzado (D46): el núcleo, blanco, y un lóbulo ancho, grande y suave, con su tono (el del agua
+      // que lo refleja), por Fresnel (Schlick, relativo a la incidencia normal y con su máximo).
+      float f0 = uGlintFresnel.x;
+      float fresnel = (f0 + (1.0 - f0) * pow(1.0 - max(dot(toViewer, halfway), 0.0), 5.0)) / f0;
+      glint = (vec3(uGlintShape.z * pow(facing, 400.0))
+        + uGlintTint * uGlintShape.x * pow(facing, uGlintShape.y)) * min(fresnel, uGlintFresnel.y);
+    }
+    surface += uEarth.z * water * (1.0 - cloud) * glint * smoothstep(0.0, 0.1, muSun) * sunVisible;
   }
   // Las nubes, blancas y difusas, con el mismo terminador que la superficie.
   vec3 clouds = vec3(uEarth.x) * max(muSun, 0.0) * 1.15 * sunVisible;
@@ -411,10 +515,17 @@ void main() {
   if (uHasNight > 0.5) {
     // (Los bordes de smoothstep, en orden: al revés, GLSL ES no define el resultado.)
     float night = 1.0 - smoothstep(-0.15, 0.0, muSun);
-    color += texture2D(uNightMap, uv).rgb * uEarth.y * night * (1.0 - 0.85 * cloud);
+    // Las nubes que las tapan, las de la textura (D40: la Tierra realzada no cambia la noche).
+    color += texture2D(uNightMap, uv).r * uNightTint * uEarth.y * night * (1.0 - 0.85 * cloudCover);
   }
+  // El relleno ilustrativo: del lado del día, con el color de la superficie; del de la noche, en gris
+  // neutro y solo el de la vista general (D40: sin el azul del océano en la cara nocturna), con el
+  // albedo y las nubes de la fase 5: así su disco se sigue leyendo igual en la vista general.
   vec3 composite = mix(albedo, vec3(uEarth.x), cloud);
-  vec3 earthFill = composite * uFill * (0.25 + 0.75 * max(muViewer, 0.0));
+  float dayFill = smoothstep(-0.1, 0.1, muSun);
+  vec3 nightComposite = mix(nightAlbedo, vec3(uEarth.x), cloudCover);
+  vec3 nightFill = vec3(dot(nightComposite, vec3(0.2126, 0.7152, 0.0722)) * uNightFill);
+  vec3 earthFill = mix(nightFill, composite * uFill, dayFill) * (0.25 + 0.75 * max(muViewer, 0.0));
   gl_FragColor = vec4(color + uHazeColor.rgb * haze + earthFill, 1.0);
 #else
   vec3 lit = vec3(light);
@@ -484,6 +595,10 @@ export interface EarthUniforms {
   readonly uCloudOffset: Uniform<number>;
   /** Opacidad de las nubes y de su sombra (`cloudOpacity`; 1 con el disco entero a la vista). */
   readonly uCloudOpacity: Uniform<number>;
+  /** El tono de las luces de la noche (rgb lineal de luminancia 1; `VISUAL_CONFIG.earth.nightTint`). */
+  readonly uNightTint: Uniform<Color>;
+  /** El relleno de la cara nocturna, en gris neutro: el de la vista general, 0 en primer plano. */
+  readonly uNightFill: Uniform<number>;
   /** (albedo de las nubes, intensidad de las luces, brillo del océano, oscuridad de su sombra). */
   readonly uEarth: Uniform<Vector4>;
   /** Luz dispersada por la atmósfera (rgb lineal) y su refuerzo hacia el limbo (w). */
@@ -491,6 +606,27 @@ export interface EarthUniforms {
   readonly uTwilightColor: Uniform<Color>;
   /** Tierras áridas: (rodilla, calidez desde, calidez hasta); `VISUAL_CONFIG.earth.arid`. */
   readonly uArid: Uniform<Vector3>;
+  /** La rodilla de lo árido de la Tierra realzada (fase 9b, D46), de día; 0: la de `uArid`. */
+  readonly uEnhancedAridKnee: Uniform<number>;
+  /**
+   * La Tierra realzada (fase 9b, D46; `VISUAL_CONFIG.earth.enhanced`): el albedo lineal del océano y
+   * cuánto sustituye al de la textura (w; 0: el de EPIC de la fase 5).
+   */
+  readonly uOcean: Uniform<Vector4>;
+  /** La luminancia del agua en la textura que vale 1 y el exponente con que se conserva su variación. */
+  readonly uOceanDetail: Uniform<Vector2>;
+  /** Las nubes: smoothstep(x, y) de su cobertura × z; w = 1 si van realzadas. */
+  readonly uCloudShape: Uniform<Vector4>;
+  /** La tierra: el tinte lineal de lo árido (rgb) y la saturación (w; 1: la de la textura). */
+  readonly uLand: Uniform<Vector4>;
+  /** El tinte lineal de la vegetación (donde el verde supera al rojo y al azul). */
+  readonly uVegetationTint: Uniform<Vector3>;
+  /** El reflejo: peso y exponente del lóbulo ancho, peso del núcleo y w = 1 si va realzado. */
+  readonly uGlintShape: Uniform<Vector4>;
+  /** El Fresnel del reflejo realzado: F0 y su máximo relativo a la incidencia normal. */
+  readonly uGlintFresnel: Uniform<Vector2>;
+  /** El tono (lineal) del lóbulo ancho del reflejo realzado; el núcleo, blanco. */
+  readonly uGlintTint: Uniform<Vector3>;
   /** Centro de la Luna en el sistema propio de la Tierra (radios ecuatoriales) y su radio (w). */
   readonly uOccluderLocal: Uniform<Vector4>;
   /** Centro del Sol en el sistema propio de la Tierra (radios ecuatoriales) y su radio (w). */
@@ -515,6 +651,16 @@ export interface MoonUniforms {
   /** Normales de los casquetes polares (`moon-normal-poles`, por encima de 76°; revisión de la fase 6). */
   readonly uPoleNormalMap: Uniform<Texture | null>;
   readonly uHasPoleNormals: Uniform<number>;
+}
+
+/** Uniformes del radar de Venus (fase 9b, D44): solo con `radar: true`. */
+export interface RadarUniforms {
+  /** El mosaico del radar de Magellan (`venus-radar`), o `null` mientras no se pide. */
+  readonly uRadarMap: Uniform<Texture | null>;
+  /** El fundido: 0, las nubes; 1, el radar. */
+  readonly uRadarMix: Uniform<number>;
+  /** (Lo que lleva la textura del radar al albedo de Venus, la parte de la neblina que queda.) */
+  readonly uRadar: Uniform<Vector2>;
 }
 
 /** Cuántas sombras de otros cuerpos recibe un cuerpo como mucho (`TLS_SHADOWS`, fase 7). */
@@ -545,6 +691,8 @@ export interface BodyMaterialOptions {
   readonly moon?: boolean;
   /** Recibe sombras de otros cuerpos (`TLS_SHADOWS`, fase 7): sus lunas o su planeta. */
   readonly shadows?: boolean;
+  /** Venus: la capa del radar de Magellan, «Bajo las nubes» (`TLS_RADAR`, fase 9b, D44). */
+  readonly radar?: boolean;
 }
 
 export function createBodyMaterial(options: BodyMaterialOptions) {
@@ -579,11 +727,23 @@ export function createBodyMaterial(options: BodyMaterialOptions) {
         uHasSpecular: new Uniform(0),
         uCloudOffset: new Uniform(0),
         uCloudOpacity: new Uniform(1),
+        uNightTint: new Uniform(new Color(1, 1, 1)),
+        uNightFill: new Uniform(0),
         uEarth: new Uniform(new Vector4(0.8, 1, 1, 0.35)),
         uScatter: new Uniform(new Vector4(0, 0, 0, 0)),
         uTwilightColor: new Uniform(new Color(1, 0.6, 0.35)),
         // Sin compresión hasta que se configura (rodilla enorme).
         uArid: new Uniform(new Vector3(1e6, 0.25, 0.4)),
+        uEnhancedAridKnee: new Uniform(0),
+        // Sin el realzado de D46 hasta que se configura.
+        uOcean: new Uniform(new Vector4(0, 0, 0, 0)),
+        uOceanDetail: new Uniform(new Vector2(1, 0)),
+        uCloudShape: new Uniform(new Vector4(0, 1, 1, 0)),
+        uLand: new Uniform(new Vector4(1, 1, 1, 1)),
+        uVegetationTint: new Uniform(new Vector3(1, 1, 1)),
+        uGlintShape: new Uniform(new Vector4(0, 1, 1, 0)),
+        uGlintFresnel: new Uniform(new Vector2(1, 1)),
+        uGlintTint: new Uniform(new Vector3(1, 1, 1)),
         // Sin datos, la Luna lejísimos y del otro lado: no tapa nada.
         uOccluderLocal: new Uniform(new Vector4(0, 0, 1e6, 0)),
         uSunLocal: new Uniform(new Vector4(23_455, 0, 0, 109)),
@@ -612,17 +772,28 @@ export function createBodyMaterial(options: BodyMaterialOptions) {
         uShadowSun: new Uniform(new Vector4(1e4, 0, 0, 100)),
       }
     : null;
+  const radar: RadarUniforms | null = options.radar
+    ? {
+        uRadarMap: new Uniform<Texture | null>(null),
+        uRadarMix: new Uniform(0),
+        uRadar: new Uniform(new Vector2(1, 1)),
+      }
+    : null;
   const defines = {
     ...(options.earth ? { TLS_EARTH: '' } : {}),
+    ...(options.radar ? { TLS_RADAR: '' } : {}),
     ...(options.moon ? { TLS_MOON: '' } : {}),
     ...(options.shadows ? { TLS_SHADOWS: '' } : {}),
   };
   const material = sceneShaderMaterial({
     name: options.earth ? 'tls-earth' : options.moon ? 'tls-moon' : 'tls-body',
-    uniforms: { ...uniforms, ...earth, ...moon, ...shadows } as unknown as Record<string, Uniform>,
+    uniforms: { ...uniforms, ...earth, ...moon, ...shadows, ...radar } as unknown as Record<
+      string,
+      Uniform
+    >,
     vertexShader,
     fragmentShader,
     ...(Object.keys(defines).length > 0 ? { defines } : {}),
   });
-  return { material, uniforms, earth, moon, shadows };
+  return { material, uniforms, earth, moon, shadows, radar };
 }

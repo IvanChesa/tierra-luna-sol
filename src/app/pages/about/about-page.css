@@ -103,6 +103,15 @@ td {
   vertical-align: top;
 }
 
+/*
+ * Los enlaces solos en su celda (los informes de cada medida): una zona de al menos 24 px de alto
+ * (WCAG 2.5.8; la fase 9c los midió en 16). En línea con el texto, cada línea de 24 px.
+ */
+td > a:only-child {
+  display: inline-block;
+  line-height: 1.5rem;
+}
+
 thead th {
   color: var(--color-text-muted);
   font-weight: var(--font-weight-regular);

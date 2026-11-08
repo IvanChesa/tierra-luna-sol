@@ -113,13 +113,21 @@ describe('texturas: manifiesto y alineación del meridiano 0', () => {
     ).toBeLessThan(1e-9);
   });
 
-  it('las lunas con mosaico (fase 7): la longitud 0 del mapa mira a su planeta y el hemisferio delantero, a 90° O (en Tritón, retrógrada, a 90° E)', () => {
+  it('las lunas con mapa (fase 7; fase 9b): la longitud 0 del mapa mira a su planeta y el hemisferio delantero, a 90° O (en Tritón y en las de Urano, que giran al revés respecto a su polo norte de la IAU, a 90° E)', () => {
     const model = createSolarSystemModel();
     const orientations = new OrientationModel(SCENE_BODIES);
     const moons = (Object.entries(BODY_TEXTURES) as [BodyId, TextureId][]).filter(
       ([id]) => sceneBody(id).kind === 'moon' && id !== 'luna',
     );
     expect(moons.map(([id]) => id)).toContain('triton');
+    const RETROGRADE = new Set<BodyId>([
+      'triton',
+      'miranda',
+      'ariel',
+      'umbriel',
+      'titania',
+      'oberon',
+    ]);
     const angleDeg = (a: Vector3, b: Vector3) => (a.angleTo(b) * 180) / Math.PI;
     const toThree = (v: { x: number; y: number; z: number }) => {
       const t = eclToThree(v);
@@ -141,7 +149,9 @@ describe('texturas: manifiesto y alineación del meridiano 0', () => {
         // separa unos grados de la perpendicular al radio.
         const next = later.parentOffsetOf(id);
         const ahead = toThree({ x: next.x - offset.x, y: next.y - offset.y, z: next.z - offset.z });
-        const leading = id === 'triton' ? 0.75 : 0.25;
+        // Tritón (retrógrada) y las de Urano (Urano y sus lunas giran al revés respecto al polo norte de
+        // la IAU, el del lado norte del plano invariable): su hemisferio delantero, a 90° E.
+        const leading = RETROGRADE.has(id) ? 0.75 : 0.25;
         expect(angleDeg(rotate(toWorld, vertexAt(leading)), ahead), id).toBeLessThan(3);
       }
     }

@@ -41,6 +41,9 @@ test.describe('Accesibilidad (axe)', () => {
     // En el móvil, elegir no abre la ficha (decisión del 08-11): con la fila de su sistema, y con
     // «ⓘ», arriba, la ficha.
     const info = page.getByRole('button', { name: 'Ver la ficha de Saturno' });
+    // Primero, que salga la ficha (escritorio) o «ⓘ» (móvil): `isVisible()` no espera, y justo tras
+    // tocar la fila «ⓘ» podía no estar aún (cierre de la fase 9b).
+    await expect(page.locator('#card-title').or(info).first()).toBeVisible();
     if (await info.isVisible()) {
       expect(await seriousViolations(page)).toEqual([]);
       await info.click();
@@ -97,6 +100,22 @@ test.describe('Accesibilidad (axe)', () => {
       await openExplorer(page, path);
       await expect(page.locator('.time__play')).toHaveAccessibleName(/Pausar/);
       expect(await seriousViolations(page), path).toEqual([]);
+    }
+  });
+
+  test('las páginas de lectura, también a 320 px de ancho', async ({ page }, testInfo) => {
+    // WCAG 1.4.10 y 2.1.1: a 320 px, lo que se desplaza tiene que poder enfocarse (la tabla de lo
+    // recreado de /creditos no podía: revisión de la fase 9b, hallazgo 3). Una vez, en el móvil.
+    test.skip(testInfo.project.name !== 'movil', 'Una vez basta: en el móvil.');
+    test.setTimeout(600_000);
+    await page.setViewportSize({ width: 320, height: 640 });
+    const explorer = new Set(['/', '/explorar/tierra', '/explorar/luna', '/cielo']);
+    const reading = ROUTES.filter((route) => !explorer.has(route));
+    expect(reading.length).toBeGreaterThan(10);
+    for (const route of reading) {
+      await page.goto(route);
+      await settlePage(page);
+      expect(await seriousViolations(page), route).toEqual([]);
     }
   });
 

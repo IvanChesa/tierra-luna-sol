@@ -8,6 +8,7 @@ import {
 import { Vec3, length, sub, vec3 } from '../ephemeris/vec3';
 import { FRAME_TRANSITION_MS, FrameController, easeInOutCubic, frameFor } from './frames';
 import {
+  MOON_SYSTEMS,
   NEPTUNE_SEMI_MAJOR_AXIS_AU,
   RADII_KM,
   SCENE_BODIES,
@@ -24,6 +25,7 @@ const inputAt = (iso: string): PlacementInput => {
     parentOffset: state.parentOffset,
     parentIndex: state.layout.parentIndex,
     radiusKm: RADII_KM,
+    moons: MOON_SYSTEMS,
   };
 };
 const at = (frames: FrameController, id: string): Vec3 => {
@@ -137,7 +139,7 @@ describe('frames: origen flotante y transiciones', () => {
       // Un punto de la órbita de Saturno en su posición actual coincide con Saturno…
       expect(length(frames.helioPoint(state.heliocentricOf('saturno')))).toBeLessThan(1e-9);
       // …y uno de la órbita de Titán en su posición actual, con Titán.
-      const titan = frames.moonPoint(saturn, state.parentOffsetOf('titan'));
+      const titan = frames.moonPoint(ix('titan'), state.parentOffsetOf('titan'));
       const scale = Math.max(1, length(at(frames, 'titan')));
       expect(length(sub(titan, at(frames, 'titan'))) / scale).toBeLessThan(1e-9);
     }

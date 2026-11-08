@@ -1,8 +1,8 @@
-# Textos de los cuerpos: lista de revisión (generada el 2026-11-03)
+# Textos de los cuerpos: lista de revisión (generada el 2026-11-08)
 
 Generada por `scripts/build-body-texts.mjs` a partir de `scripts/content/body-texts.json`. Cada texto
 lleva su fuente y las citas literales en inglés que lo respaldan; el script comprueba que cada cita
-está en su página. Revisados: **0 de 120**. Para dar uno por revisado, pon
+está en su página. Revisados: **0 de 140**. Para dar uno por revisado, pon
 `"reviewed": true` en el JSON y vuelve a ejecutar el script.
 
 ## Sol (`sol`)
@@ -29,6 +29,11 @@ está en su página. Revisados: **0 de 120**. Para dar uno por revisado, pon
   - > named for British astronomer Richard Carrington who observed the Sept. 1, 1859, solar flare that triggered the event.
   - > Telegraph systems worldwide went haywire.
   - > The auroras, or Northern Lights, were visible as far south as Cuba, the Bahamas, Jamaica, El Salvador, and Hawaii.
+- [ ] **Sobre su mapa.** En las fotos, el Sol se ve blanco: emite a la vez todos los colores que vemos. En este explorador se ve en color realzado, como en las imágenes de los observatorios, que lo miran con filtros y pasan lo que ven a colores.
+  - Fuente: <https://svs.gsfc.nasa.gov/vis/a010000/a013800/a013859/script_31299_00.html>
+  - > In photos, the Sun appears white because it emits all the colors we can see at once.
+  - > SDO uses instruments with special filters to see the Sun in 10 different wavelengths of light, including many that we can’t see with our own eyes.
+  - > For us to see them, Scientists convert SDO’s data to colors we can see.
 
 _Nota de redacción:_ El resumen no da la edad del Sol: la página dice «4.5 billion-year-old» en la introducción y «about 4.6 billion years ago» en «Formation».
 
@@ -265,6 +270,8 @@ _Nota de redacción:_ La página no nombra la nave soviética que sobrevoló la 
   - > The most prominent feature on Mars' moon Phobos is Stickney crater.
   - > Stickney Crater, which is named for Chloe Angeline Stickney Hall, mathematician and wife of astronomer Asaph Hall.
   - > Asaph Hall discovered both the Red Planet's moons in 1877.
+- [ ] **Sobre su mapa.** Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.
+  - Sin fuente externa: dice lo que el explorador recrea (el método y lo medido, en /creditos).
 
 _Nota de redacción:_ No se da el tamaño del cráter Stickney: esta página da 9 km (pie de foto) y 9,7 km (texto), y https://science.nasa.gov/mars/moons/facts/ da 10 km. Tampoco se usa que «takes up about half the moon's surface»: esa otra página dice «nearly half the width of the moon itself».
 
@@ -291,6 +298,8 @@ _Nota de redacción:_ No se da el tamaño del cráter Stickney: esta página da 
   - Fuente: <https://science.nasa.gov/mars/moons/deimos/>
   - > Hall named Mars' moons for the mythological sons of Ares, the Greek counterpart of the Roman god, Mars.
   - > Deimos, whose name means dread, is the brother of Phobos.
+- [ ] **Sobre su mapa.** Lo que su mapa no cartografió (el norte y una franja junto al meridiano de 180°) se recrea, en este explorador, con su propio terreno, y lo que solo se fotografió de lejos lleva detalle recreado: es ilustrativo.
+  - Sin fuente externa: dice lo que el explorador recrea (el método y lo medido, en /creditos).
 
 _Nota de redacción:_ La primera curiosidad procede de https://science.nasa.gov/mars/moons/facts/. Esa página llama «Angelina» a la esposa de Hall y la de Fobos, «Chloe Angeline Stickney Hall»; por eso el texto no da su nombre.
 
@@ -314,6 +323,8 @@ _Nota de redacción:_ La primera curiosidad procede de https://science.nasa.gov/
   - > cuts across the planet's powerful magnetic lines of force, thus turning Io into a electric generator.
   - > Io can develop 400,000 volts across itself and create an electric current of 3 million amperes.
   - > This current takes the path of least resistance along Jupiter's magnetic field lines to the planet's surface, creating lightning in Jupiter's upper atmosphere.
+- [ ] **Sobre su mapa.** Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.
+  - Sin fuente externa: dice lo que el explorador recrea (el método y lo medido, en /creditos).
 
 _Nota de redacción:_ El resumen y la curiosidad 1 salen de la página principal de Ío; las curiosidades 2 y 3, de su ficha «Facts». La cita del generador conserva la errata del original («a electric generator»).
 
@@ -335,6 +346,8 @@ _Nota de redacción:_ El resumen y la curiosidad 1 salen de la página principal
   - Fuente: <https://science.nasa.gov/jupiter/jupiter-moons/europa/europa-facts/>
   - > One of the most important discoveries made by Galileo showed how Jupiter's magnetic field was disrupted in the space around Europa.
   - > Based on Europa's icy composition, scientists think the most likely material to create this magnetic signature is a global ocean of salty water.
+- [ ] **Sobre su mapa.** Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.
+  - Sin fuente externa: dice lo que el explorador recrea (el método y lo medido, en /creditos).
 
 _Nota de redacción:_ La curiosidad 3 no dice que el campo magnético sea «la mejor prueba» del océano: la página dice «still the best evidence we have», que puede dejar de ser cierto.
 
@@ -359,6 +372,8 @@ _Nota de redacción:_ La curiosidad 3 no dice que el campo magnético sea «la m
   - > Forty percent of the surface is covered by highly cratered dark regions
   - > and the remaining sixty percent is covered by a light grooved terrain
   - > Some of the groove ridges are as high as 2,000 feet (700 meters), and the grooves run for thousands of miles across Ganymede's surface.
+- [ ] **Sobre su mapa.** Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.
+  - Sin fuente externa: dice lo que el explorador recrea (el método y lo medido, en /creditos).
 
 _Nota de redacción:_ El 40 % y el 60 % van en letra porque la página los da en letra («Forty percent», «sixty percent»). La página da «2,000 feet (700 meters)», cifras que no cuadran entre sí (2000 pies son unos 610 m); se usa la de metros. Dos citas se cortan antes de un enlace para que coincidan con cualquier forma de extraer el texto. Coordinación: se quitó la altura de las crestas (700 m) porque la página de la NASA la da de forma incoherente («2,000 feet (700 meters)»).
 
@@ -382,6 +397,8 @@ _Nota de redacción:_ El 40 % y el 60 % van en letra porque la página los da en
   - Fuente: <https://science.nasa.gov/jupiter/jupiter-moons/callisto/>
   - > Callisto and Jupiter’s three other largest moons were discovered in 1610 by Italian scientist Galileo Galilei.
   - > Almost 400 years later, a spacecraft bearing his name—the Galileo orbiter—began the first in depth study of the Jovian system, including Callisto and its sister moons.
+- [ ] **Sobre su mapa.** Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.
+  - Sin fuente externa: dice lo que el explorador recrea (el método y lo medido, en /creditos).
 
 _Nota de redacción:_ La ficha «Facts» matiza que el océano podría estar más hondo de lo que se pensaba o no existir («or may not exist at all»); por eso el resumen dice «podría». «Cuatro mil millones» va en letra porque la página dice «4 billion».
 
@@ -404,6 +421,8 @@ _Nota de redacción:_ La ficha «Facts» matiza que el océano podría estar má
   - Fuente: <https://science.nasa.gov/saturn/moons/mimas/>
   - > Mimas was discovered on Sept. 17, 1789, by English astronomer William Herschel, using his 40-foot reflector telescope.
   - > At a mean distance just over 115,000 miles (186,000 kilometers) from the massive planet, Mimas takes only 22 hours and 36 minutes to complete an orbit.
+- [ ] **Sobre su mapa.** Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.
+  - Sin fuente externa: dice lo que el explorador recrea (el método y lo medido, en /creditos).
 
 _Nota de redacción:_ En el resumen, las dos primeras citas son fragmentos: en el HTML la frase original empieza con «C<span>rater-covered», y la palabra partida podría fallar en una comprobación que sustituya etiquetas por espacios. Se ha evitado la «prueba de Mimas» de la página (dice que Mimas parece congelada por completo), porque un estudio de 2024 (Lainey et al., Nature) propone un océano interno joven; esto no se ha verificado en esta tarea. Revisión de la fase 1: se sustituyó la curiosidad mitológica, porque la página de la NASA sitúa a Mimas en «la guerra entre los titanes y los dioses del Olimpo» y, según la revisión, Mimas era uno de los gigantes de la Gigantomaquia.
 
@@ -429,6 +448,8 @@ _Nota de redacción:_ En el resumen, las dos primeras citas son fragmentos: en e
   - Fuente: <https://science.nasa.gov/saturn/moons/enceladus/>
   - > The E ring is mostly made of ice droplets, but among them are peculiar nanograins of silica, which can only be generated where liquid water and rock interact at temperatures above about 200 degrees Fahrenheit (90 degrees Celsius).
   - > This, among other evidence, points to hydrothermal vents deep beneath Enceladus’ icy shell, not unlike the hydrothermal vents that dot Earth’s ocean floor.
+- [ ] **Sobre su mapa.** Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.
+  - Sin fuente externa: dice lo que el explorador recrea (el método y lo medido, en /creditos).
 
 _Nota de redacción:_ «Rayas de tigre» traduce «tiger stripes». Se ha omitido la comparación con Arizona, poco útil para un público español.
 
@@ -455,6 +476,8 @@ _Nota de redacción:_ «Rayas de tigre» traduce «tiger stripes». Se ha omitid
   - > Tethys has gravitationally locked two smaller moons into its own subsystem — Telesto and Calypso.
   - > These smaller moons are held in Lagrangian points (L4 and L5, respectively), where objects are stable with the larger controlling body.
   - > These three moons complete their orbits around Saturn moving as a unit, spaced out at 60-degree intervals first Telesto, then Tethys, followed by Calypso.
+- [ ] **Sobre su mapa.** Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.
+  - Sin fuente externa: dice lo que el explorador recrea (el método y lo medido, en /creditos).
 
 _Nota de redacción:_ «Odiseo» traduce el nombre oficial «Odysseus»; «Ithaca Chasma» se deja tal cual porque es el nombre oficial de la UAI. «Calipso» es Calypso. La página da otra hipótesis para Ithaca Chasma (el impacto de Odiseo); el texto usa «pudo» para no presentarla como única.
 
@@ -480,6 +503,8 @@ _Nota de redacción:_ «Odiseo» traduce el nombre oficial «Odysseus»; «Ithac
   - > Dione is in resonance with two nearby moons, Mimas and Enceladus.
   - > That is, these moons speed up slightly as they approach each other and slow down as they draw away, causing their orbits to vary slightly in a long series of complex changes, which helps keep them locked in their positions.
   - > Dione keeps Enceladus locked at a period exactly one half that of its own orbital period.
+- [ ] **Sobre su mapa.** Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.
+  - Sin fuente externa: dice lo que el explorador recrea (el método y lo medido, en /creditos).
 
 _Nota de redacción:_ «Finas líneas brillantes» corresponde a las «wisps» de la página. La cifra de 377 400 km aparece en la cita junto a su equivalente en millas.
 
@@ -505,6 +530,8 @@ _Nota de redacción:_ «Finas líneas brillantes» corresponde a las «wisps» d
   - Fuente: <https://science.nasa.gov/saturn/moons/rhea/>
   - > Cassini spacecraft measurements from a close encounter showed a moment of inertia about its axis (a measure of how difficult it is to change its rotation) of a higher value than what would be expected if Rhea has a rocky core.
   - > Thus, it is thought that Rhea is composed of a homogenous mixture of ice and rock — a frozen dirty snowball.
+- [ ] **Sobre su mapa.** Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.
+  - Sin fuente externa: dice lo que el explorador recrea (el método y lo medido, en /creditos).
 
 _Nota de redacción:_ «5 trillion» (escala corta inglesa) se traduce como «5 billones» (escala larga española). Se ha evitado lo que dice la página sobre anillos alrededor de Rea (indicios de 2008): búsquedas posteriores con imágenes de la propia sonda Cassini no los confirmaron (Tiscareno et al., 2010); esto no se ha verificado en esta tarea. También se ha evitado «sin aire» en el resumen para no chocar con la exosfera del primer dato.
 
@@ -555,6 +582,8 @@ _Nota de redacción:_ El resumen sale de la ficha «Facts», que añade el océa
   - Fuente: <https://science.nasa.gov/saturn/moons/iapetus/>
   - > The second most notable feature of Iapetus is its "equatorial ridge," a chain of 6-mile (10-km) high mountains girdling the moon's equator.
   - > Some scientists think the ridge was formed at an earlier time when Iapetus rotated much faster than it does today; others think the ridge is made of material left from the collapse of a ring.
+- [ ] **Sobre su mapa.** Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.
+  - Sin fuente externa: dice lo que el explorador recrea (el método y lo medido, en /creditos).
 
 _Nota de redacción:_ La página dice que la segregación térmica es «probablemente» el principal mecanismo del hemisferio oscuro; el segundo dato describe el proceso tal como lo explica la página, sin afirmar que sea la única causa.
 
@@ -578,6 +607,10 @@ _Nota de redacción:_ La página dice que la segregación térmica es «probable
   - Fuente: <https://science.nasa.gov/uranus/moons/miranda/>
   - > Miranda was discovered in telescopic photos of the Uranian system by Gerard P. Kuiper on Feb. 16, 1948 at the McDonald Observatory in western Texas.
   - > It was the last moon of Uranus to be discovered prior to Voyager 2's visit in 1986.
+- [ ] **Sobre su mapa.** Cuando pasó la Voyager 2, el Sol solo iluminaba el hemisferio sur de Miranda y de las demás lunas de Urano. Su norte, en este explorador, es una recreación ilustrativa hecha con su propio terreno.
+  - Fuente: <https://www.nasa.gov/history/35-years-ago-voyager-2-explores-uranus/>
+  - > Due to this unusual orientation, the Sun illuminated only the southern hemispheres of the planet and its moons.
+  - > Right: Trajectory of Voyager 2 through the Uranian system.
 
 _Nota de redacción:_ La página presenta dos hipótesis sobre el relieve de Miranda y dice que la de los impactos es «perhaps more likely»; la curiosidad 1 conserva ese matiz.
 
@@ -601,6 +634,10 @@ _Nota de redacción:_ La página presenta dos hipótesis sobre el relieve de Mir
   - Fuente: <https://science.nasa.gov/uranus/moons/ariel/>
   - > Ariel is the name for a character in both Shakespeare's "The Tempest" and Pope's poem “The Rape of the Lock.”
   - > This moon was named Ariel by Sir John Herschel (son of Uranus discoverer Sir William Herschel) at the request of the moon's discoverer, William Lassell.
+- [ ] **Sobre su mapa.** Cuando pasó la Voyager 2, el Sol solo iluminaba el hemisferio sur de Ariel y de las demás lunas de Urano. Su norte, en este explorador, es una recreación ilustrativa hecha con su propio terreno.
+  - Fuente: <https://www.nasa.gov/history/35-years-ago-voyager-2-explores-uranus/>
+  - > Due to this unusual orientation, the Sun illuminated only the southern hemispheres of the planet and its moons.
+  - > Right: Trajectory of Voyager 2 through the Uranian system.
 
 _Nota de redacción:_ Títulos en español: «La tempestad» (The Tempest) y «El rizo robado» (The Rape of the Lock); conviene que Iván confirme la traducción preferida del poema de Pope, que también se ha publicado como «El robo del rizo».
 
@@ -623,6 +660,10 @@ _Nota de redacción:_ Títulos en español: «La tempestad» (The Tempest) y «E
   - Fuente: <https://science.nasa.gov/uranus/moons/umbriel/>
   - > Umbriel was discovered on Oct. 24, 1851 by English astronomer William Lassell.
   - > Umbriel is named for a malevolent spirit in English poet Alexander Pope's 18th century poem "Rape of the Lock."
+- [ ] **Sobre su mapa.** Cuando pasó la Voyager 2, el Sol solo iluminaba el hemisferio sur de Umbriel y de las demás lunas de Urano. Su norte, en este explorador, es una recreación ilustrativa hecha con su propio terreno.
+  - Fuente: <https://www.nasa.gov/history/35-years-ago-voyager-2-explores-uranus/>
+  - > Due to this unusual orientation, the Sun illuminated only the southern hemispheres of the planet and its moons.
+  - > Right: Trajectory of Voyager 2 through the Uranian system.
 
 _Nota de redacción:_ La página principal es breve; la curiosidad 2 sale del pie de foto de Photojournal de la imagen de la Voyager 2 (1986). Revisión de la fase 1: el «16 %» de la NASA no es el mismo dato que el albedo geométrico de la tabla de datos (0,21, NSSDC); son medidas distintas de la reflectividad. Decidir si se quita la cifra del texto.
 
@@ -650,6 +691,10 @@ _Nota de redacción:_ La página principal es breve; la curiosidad 2 sale del pi
   - Fuente: <https://science.nasa.gov/uranus/moons/titania/>
   - > Titania was discovered on Jan. 11, 1787 by British astronomer William Herschel.
   - > Titania is named for the queen of the fairies in William Shakespeare's 16th century play "A Midsummer Night's Dream."
+- [ ] **Sobre su mapa.** Cuando pasó la Voyager 2, el Sol solo iluminaba el hemisferio sur de Titania y de las demás lunas de Urano. Su norte, en este explorador, es una recreación ilustrativa hecha con su propio terreno.
+  - Fuente: <https://www.nasa.gov/history/35-years-ago-voyager-2-explores-uranus/>
+  - > Due to this unusual orientation, the Sun illuminated only the southern hemispheres of the planet and its moons.
+  - > Right: Trajectory of Voyager 2 through the Uranian system.
 
 _Nota de redacción:_ Curiosidad 1: la página principal da «nearly 1,000 miles (1,609 kilometers)», que es una conversión de las millas; se usa la cifra original del pie de foto de Photojournal (1500 km). Curiosidad 2: resultado de modelos, no una detección (nota de prensa del JPL del 4 de mayo de 2023); el texto mantiene «probablemente» y «podría». Se cita la copia de nasa.gov porque jpl.nasa.gov responde 403 a curl sin navegador.
 
@@ -674,6 +719,10 @@ _Nota de redacción:_ Curiosidad 1: la página principal da «nearly 1,000 miles
   - Fuente: <https://science.nasa.gov/uranus/moons/oberon/>
   - > Oberon was discovered in Jan. 11, 1787 by William Herschel.
   - > Named by Herschel's son John in early 19th century for the king of the fairies in Shakespeare's "A Midsummer Night's Dream."
+- [ ] **Sobre su mapa.** Cuando pasó la Voyager 2, el Sol solo iluminaba el hemisferio sur de Oberón y de las demás lunas de Urano. Su norte, en este explorador, es una recreación ilustrativa hecha con su propio terreno.
+  - Fuente: <https://www.nasa.gov/history/35-years-ago-voyager-2-explores-uranus/>
+  - > Due to this unusual orientation, the Sun illuminated only the southern hemispheres of the planet and its moons.
+  - > Right: Trajectory of Voyager 2 through the Uranian system.
 
 _Nota de redacción:_ El pie de foto de 1986 llama a Oberón «Uranus' outermost moon»; hoy se conocen lunas irregulares más alejadas, así que el texto solo dice que es la más exterior de las cinco grandes (dato de la página de lunas de Urano).
 
@@ -697,6 +746,10 @@ _Nota de redacción:_ El pie de foto de 1986 llama a Oberón «Uranus' outermost
   - Fuente: <https://science.nasa.gov/neptune/moons/facts/>
   - > Neptune's gravity acts as a drag on the counter-orbiting Triton, slowing it down and making it drop closer and closer to the planet.
   - > Millions of years from now, Triton will come close enough for gravitational forces to break it apart – possibly forming a ring around Neptune bright enough for Lassell to have seen with his telescope.
+- [ ] **Sobre su mapa.** La Voyager 2 fotografió unos dos tercios de Tritón. El resto de su mapa, en este explorador, es una recreación ilustrativa hecha con su propio terreno.
+  - Fuente: <https://science.nasa.gov/mission/voyager/voyager-2/>
+  - > Voyager photographed two-thirds of Neptune's largest moon Triton
+  - > Voyager 2 is the only spacecraft to study all four of the solar system's giant planets at close range.
 
 _Nota de redacción:_ La página de Tritón dice «Neptune's 13 moons», cifra desfasada (otras páginas de la NASA dan 16); el texto no da ningún recuento. Temperatura: se usa −235 °C (medida de la Voyager 2, igual que en la ficha de Neptuno); la página de lunas de Neptuno da «about -400 degrees Fahrenheit (-240 degrees Celsius)».
 
@@ -720,5 +773,8 @@ _Nota de redacción:_ La página de Tritón dice «Neptune's 13 moons», cifra d
   - > Proteus was discovered in 1989 by the Voyager 2 spacecraft.
   - > Proteus was originally designated S/1989 N 1.
   - > Proteus is named after the shape-changing sea god of Greek mythology.
+- [ ] **Sobre su mapa.** Proteo es irregular y está lleno de cráteres, pero no hay un mapa de su superficie. En este explorador, sus cráteres son una recreación ilustrativa, y su forma, una esfera.
+  - Fuente: <https://science.nasa.gov/neptune/moons/proteus/>
+  - > Proteus is irregularly shaped and heavily cratered, but it shows no sign of geological modification.
 
 _Nota de redacción:_ La página de Proteo dice que Nereida se descubrió «33 years earlier» que Proteo (1989), pero Nereida es de 1949 (40 años antes); se ha evitado esa cifra y la curiosidad 2 usa la página de lunas de Neptuno. Revisión de la fase 1: el «seis por ciento» de la NASA no es el mismo dato que el albedo geométrico de la tabla de datos (0,10, NSSDC); son medidas distintas de la reflectividad. Decidir si se quita la cifra del texto.

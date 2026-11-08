@@ -32,7 +32,7 @@ import { attachPointerControls } from './camera/pointer';
 import { SimClock } from './clock';
 import { FRAME_TRANSITION_MS, FrameController, frameFor } from './frames';
 import { LabelInfo, LabelLayer, MARKER_RADIUS_PX, layoutLabels } from './labels';
-import { ScreenBody, pickBody, projectBodies } from './picking';
+import { ScreenBody, pickBody, projectBodies, sunOccluders } from './picking';
 import {
   AdaptiveQuality,
   DEFAULT_ADAPTIVE_OPTIONS,
@@ -42,9 +42,10 @@ import {
   detectQuality,
 } from './quality';
 import { OrientationModel } from './orientations';
-import type { RendererFactory, RendererPort, ResolvedDepthMode } from './renderer';
+import type { RendererFactory, RendererPort, ResolvedDepthMode, SunBloomOptions } from './renderer';
 import { StarField } from './stars';
 import {
+  MOON_SYSTEMS,
   NEPTUNE_SEMI_MAJOR_AXIS_AU,
   RADII_KM,
   SCENE_BODIES,
@@ -53,7 +54,8 @@ import {
   sceneBody,
   systemPlanetOf,
 } from './system';
-import type { TextureId, TextureMeta, TextureSource } from './textures';
+import { releaseTexture, type TextureId, type TextureMeta, type TextureSource } from './textures';
+import { VenusRadarLayer, type VenusRadarState } from './venus-radar';
 import type {
   BodyId,
   DepthMode,
@@ -87,6 +89,7 @@ import {
   exposureFor,
   fillLight,
   moonPresence,
+  overviewMoonPresence,
 } from './visual-config';
 import { illustrativeDistance } from '../ephemeris/scale';
 import { BODY_DATA } from '../data/body-data';
@@ -210,6 +213,14 @@ const INSETS_SMOOTHING_MS = 180;
  */
 export const SLOW_SPEED = 60;
 export const SLOW_FRAME_MS = 250;
+/**
+ * El Sol realzado de cerca (fase 9b, D46): su superficie fluye y sus bucles de plasma cambian con el
+ * reloj de pared, también con el tiempo en pausa o a velocidades lentas. Mientras se ve de cerca (su
+ * primer plano, desde `SUN_ANIMATION_CLOSE_UP`), se pinta cada 50 ms aunque nada más se mueva: su
+ * movimiento es lento y basta. Con movimiento reducido y en las capturas, quieto y sin estos frames.
+ */
+export const SUN_FRAME_MS = 50;
+export const SUN_ANIMATION_CLOSE_UP = 0.5;
 
 export interface FrameScheduler {
   /** Pide un frame; con `delayMs`, no antes de que pase ese tiempo (el render a 4 Hz). */
@@ -247,6 +258,11 @@ export interface EngineDeps {
    * vista del cielo. Sin ellas (en los tests, o si fallan), el cielo se ve sin constelaciones.
    */
   readonly loadConstellations?: () => Promise<unknown>;
+  /**
+   * Las formas de Fobos y Deimos (`public/data/shapes/`, fase 9b): se piden cuando la luna se ve con
+   * su mapa. Sin ellas (en los tests, o si fallan), la luna es una esfera.
+   */
+  readonly loadShape?: (path: string) => Promise<ArrayBuffer>;
 }
 
 /** El lugar del cielo por defecto (el Montsec, decisión de Iván del 26-10). */
@@ -296,6 +312,8 @@ interface ActiveFlight extends Flight {
 type Listener<K extends SceneEngineEventName> = (event: SceneEngineEvents[K]) => void;
 
 const SUN_INDEX = SCENE_BODIES.findIndex((body) => body.kind === 'star');
+/** Venus: el radar de Magellan solo se enciende con ella enfocada (fase 9b, D44). */
+const VENUS_INDEX = SCENE_BODIES.findIndex((body) => body.id === 'venus');
 /** Índice del planeta de cada luna (−1 en el Sol y los planetas). */
 const MOON_PARENT = SCENE_BODIES.map((body) =>
   body.kind === 'moon' && body.parent ? sceneBody(body.parent).index : -1,
@@ -364,6 +382,8 @@ export class SceneEngine implements SceneEngineApi {
   private readonly listeners = new Map<SceneEngineEventName, Set<Listener<SceneEngineEventName>>>();
   private readonly unsubscribe: (() => void)[] = [];
   private readonly uploads: { texture: Texture; resolve: () => void }[] = [];
+  /** Las cargas de texturas en vuelo (`countedLoads`). */
+  private texturesLoading = 0;
   private readonly reducedMotion: boolean;
   private readonly captureMode: boolean;
   private qualitySetting: QualitySetting;
@@ -429,6 +449,19 @@ export class SceneEngine implements SceneEngineApi {
   private readonly isolated: boolean;
   /** Solo en captura: el foco, en el marco de la vista general (`illustrativeFocus`). */
   private readonly illustrativeFocus: boolean;
+  /** Solo en captura: el Sol para medir su limbo (`sunMeasure`), sin bloom. */
+  private readonly sunMeasure: boolean;
+  /** Solo en captura: Venus enfocada con el radar de Magellan (`venusRadar`, `?radar=1`). */
+  private readonly radarCapture: boolean;
+  /** Venus «Bajo las nubes» (fase 9b, D44): la capa del radar de Magellan. */
+  private readonly venusRadar: VenusRadarLayer;
+  /** ¿Lleva bloom el Sol en este frame? (`applyLighting`, con la pantalla de este frame). */
+  private sunBloomOn = false;
+  /** Los sombreados del bloom ya están compilados (hasta entonces, solo el halo: nunca de golpe). */
+  private sunBloomCompiled = false;
+  private sunBloomCompiling = false;
+  /** El primer plano del Sol en este frame (0–1): la fuerza de su bloom. */
+  private sunCloseUp = 0;
   /** Exposición que tiene ahora el renderer (configuración visual; −1: aún ninguna). */
   private exposure = -1;
   private ready = false;
@@ -491,18 +524,28 @@ export class SceneEngine implements SceneEngineApi {
       anisotropy: () => Math.min(this.profile.anisotropy, caps.maxAnisotropy),
       upload: (texture) => this.queueUpload(texture),
     });
+    const source = textures ? this.countedLoads(textures.source) : null;
     const rings = BODY_DATA.saturno.rings;
     this.world = new World({
       bodies: SCENE_BODIES,
       profile: this.profile,
       orbitSources,
-      textures: textures?.source ?? null,
+      textures: source,
       textureMeta: textures?.meta ?? null,
       rings: {
         innerKm: rings?.innerRadiusKm.value ?? 0,
         outerKm: rings?.outerRadiusKm.value ?? 0,
       },
+      loadShape: this.deps.loadShape ?? null,
       invalidate: () => this.invalidate(),
+    });
+    this.venusRadar = new VenusRadarLayer({
+      textures: source,
+      apply: (texture, mix) => this.world.setVenusRadar(texture, mix),
+      release: releaseTexture,
+      onState: (state) => this.emit('venusRadar', { state }),
+      invalidate: () => this.invalidate(),
+      fadeMs: VISUAL_CONFIG.venus.radar.fadeMs,
     });
 
     const initial =
@@ -517,7 +560,11 @@ export class SceneEngine implements SceneEngineApi {
     this.viewFrom = this.captureMode ? (options.viewFrom ?? null) : null;
     this.isolated = this.captureMode && (options.isolate ?? false) && initial.focus !== null;
     this.illustrativeFocus = this.captureMode && (options.illustrativeFocus ?? false);
+    this.sunMeasure = this.captureMode && (options.sunMeasure ?? false);
+    this.radarCapture =
+      this.captureMode && (options.venusRadar ?? false) && initial.focus === VENUS_INDEX;
     if (this.isolated) this.world.setIsolated(initial.focus);
+    if (this.sunMeasure) this.world.setSunMeasure(true);
     this.frames = new FrameController(
       this.frameSpec(initial.focus),
       initial.focus ?? SUN_INDEX,
@@ -610,6 +657,11 @@ export class SceneEngine implements SceneEngineApi {
   get qualityLevel(): QualityLevel {
     return this.level;
   }
+  /** Venus «Bajo las nubes» (fase 9b, D44): el estado del radar de Magellan. */
+  get venusRadarState(): VenusRadarState {
+    return this.venusRadar.state;
+  }
+
   get skyView(): SkyView {
     return this.skyRig.pose;
   }
@@ -683,6 +735,9 @@ export class SceneEngine implements SceneEngineApi {
     if (this.disposed || view === this._view) return;
     const fromSky = this._view === 'sky';
     this._view = view;
+    // El bloom del Sol solo va en la vista del sistema solar: fuera de ella, su memoria se suelta.
+    if (view !== 'system') this.renderer.sunBloom?.release();
+    if (view !== 'system') this.venusRadar.release();
     if (view === 'sky') {
       this.enterSky();
       return;
@@ -715,6 +770,18 @@ export class SceneEngine implements SceneEngineApi {
     if (this.disposed || !Number.isFinite(azimuthDeg) || !Number.isFinite(altitudeDeg)) return;
     this.skyRig.lookAt(azimuthDeg, altitudeDeg, this.instant());
     if (this._view === 'sky') this.invalidate();
+  }
+
+  /**
+   * Venus «Bajo las nubes» (fase 9b, D44): el radar de Magellan en lugar de las nubes, solo con Venus
+   * enfocada en la vista del sistema solar. Se pide al encenderlo, con un fundido (un corte con
+   * movimiento reducido), y se suelta al apagarlo o al dejar de enfocar Venus. Su estado, en el evento
+   * `venusRadar`.
+   */
+  setVenusRadar(on: boolean): void {
+    if (this.disposed) return;
+    if (on && (this.focusIndex !== VENUS_INDEX || this._view !== 'system')) return;
+    this.venusRadar.set(on, this.profile.focusTexture, this.instant());
   }
 
   setConstellationsVisible(visible: boolean): void {
@@ -847,13 +914,36 @@ export class SceneEngine implements SceneEngineApi {
       triangles: info.triangles,
       geometries: info.geometries,
       textures: info.textures,
-      vramMB: (this.world.vramBytes() + (this.sky?.vramBytes() ?? 0)) / 1_048_576,
+      vramMB:
+        (this.world.vramBytes() +
+          this.venusRadar.vramBytes +
+          (this.sky?.vramBytes() ?? 0) +
+          (this.renderer.sunBloom?.vramBytes() ?? 0)) /
+        1_048_576,
       renderedFrames: this.renderedFrames,
+      texturesLoading: this.texturesLoading,
       aliased: SCENE_BODIES.filter((body) => this.aliasing.orbit[body.index] === 1).map(
         (body) => body.id,
       ),
       quality: this.level,
       depth: this.renderer.capabilities.depth,
+    };
+  }
+
+  /**
+   * La fuente de texturas, contando las cargas en vuelo (`stats().texturesLoading`): las pedidas que no
+   * han llegado (ni fallado). Con ellas, «en reposo» también es «sin texturas por llegar» (cierre de la
+   * fase 9b: en el CI, una textura podía tardar más en decodificarse que la espera sin frames de los
+   * e2e, y la memoria «en caliente» salía sin ella).
+   */
+  private countedLoads(source: TextureSource): TextureSource {
+    return {
+      load: (id, level) => {
+        this.texturesLoading++;
+        return source.load(id, level).finally(() => {
+          this.texturesLoading--;
+        });
+      },
     };
   }
 
@@ -874,6 +964,7 @@ export class SceneEngine implements SceneEngineApi {
     this.labels.dispose();
     this.sky?.dispose();
     this.sky = null;
+    this.venusRadar.release();
     this.world.dispose();
     this.renderer.dispose();
     this.listeners.clear();
@@ -910,6 +1001,8 @@ export class SceneEngine implements SceneEngineApi {
       this.world.setStars(stars);
       this.emit('progress', { loaded: 2, total, step: 'Compilando sombreados' });
       await this.renderer.compile(this.world.scene, this.world.camera);
+      // El bloom del Sol, también antes del primer frame (en la vista general, el Sol se ve).
+      await this.compileSunBloom();
       // Si se entra por la vista del cielo, su escena también, antes del primer frame.
       if (this._view === 'sky') {
         const sky = this.ensureSky();
@@ -928,6 +1021,7 @@ export class SceneEngine implements SceneEngineApi {
       if (this._view === 'sky') this.world.releaseCloseUps();
       else this.world.setFocus(this.textureFocus(this.focusIndex));
       if (this._view === 'sky') this.enterSky();
+      if (this.radarCapture) this.setVenusRadar(true);
       this.invalidate();
     } catch (error) {
       if (this.disposed) return;
@@ -975,9 +1069,10 @@ export class SceneEngine implements SceneEngineApi {
     } else if (this.clock.playing) {
       this.emitTime(false);
     }
+    const fading = this.venusRadar.step(dt, this.instant());
     const moving = this.renderFrame(timeMs, true, dt);
     const uploading = this.processUpload();
-    const animating = this.clock.playing || moving || this.frames.animating;
+    const animating = this.clock.playing || moving || fading || this.frames.animating;
     // Reproducción lenta y nada más en marcha: 4 frames por segundo bastan (y no se miden FPS).
     const slow =
       this.clock.playing &&
@@ -990,11 +1085,24 @@ export class SceneEngine implements SceneEngineApi {
       const lower = this.adaptive.sample(this.deps.now(), animating && !slow, this.level);
       if (lower) this.applyQuality(lower, 'auto');
     }
+    const sun = this.sunAnimates();
     if (animating || uploading || this.uploads.length > 0) {
-      this.invalidate(slow ? SLOW_FRAME_MS : 0);
+      this.invalidate(slow ? (sun ? SUN_FRAME_MS : SLOW_FRAME_MS) : 0);
+    } else if (sun) {
+      this.invalidate(SUN_FRAME_MS);
     } else {
       this.lastFrameMs = null;
     }
+  }
+
+  /** ¿Se ve el Sol de cerca, con su superficie y sus bucles en movimiento? (`SUN_FRAME_MS`) */
+  private sunAnimates(): boolean {
+    return (
+      !this.instant() &&
+      this._view === 'system' &&
+      this.sunCloseUp >= SUN_ANIMATION_CLOSE_UP &&
+      (this.screen[SUN_INDEX]?.onScreen ?? false)
+    );
   }
 
   /**
@@ -1071,6 +1179,8 @@ export class SceneEngine implements SceneEngineApi {
     this.applyLighting();
     if (!paint) return moving;
     this.renderer.render(this.world.scene, camera);
+    if (this.sunBloomOn)
+      this.renderer.sunBloom?.render(this.world.scene, camera, this.sunBloomOptions());
     this.renderedFrames++;
     this.frameTimes.push(timeMs);
     if (this.frameTimes.length > 240) this.frameTimes.splice(0, this.frameTimes.length - 240);
@@ -1080,6 +1190,63 @@ export class SceneEngine implements SceneEngineApi {
       this.emit('frameStats', this.stats());
     }
     return moving;
+  }
+
+  /** El bloom del Sol para su primer plano de este frame (`VISUAL_CONFIG.sun.bloom`, interpolado). */
+  private sunBloomOptions(): SunBloomOptions {
+    const { overview, closeUp } = VISUAL_CONFIG.sun.bloom;
+    const t = this.sunCloseUp;
+    const mix = (a: number, b: number) => a + (b - a) * t;
+    const f = (k: number) => mix(overview.factors[k] as number, closeUp.factors[k] as number);
+    return {
+      strength: mix(overview.strength, closeUp.strength),
+      factors: [f(0), f(1), f(2), f(3), f(4)],
+    };
+  }
+
+  /**
+   * Compila los sombreados del bloom sin bloquear (si está encendido, el nivel lo lleva y aún no lo
+   * están): al arrancar y al subir a mano desde el nivel bajo. La compilación reserva su render target:
+   * si la vista no lo usa, se suelta.
+   */
+  private async compileSunBloom(): Promise<void> {
+    const bloom = this.renderer.sunBloom;
+    if (!bloom || !VISUAL_CONFIG.sun.bloom.enabled || !this.profile.sunBloom || this.sunMeasure) {
+      return;
+    }
+    if (this.sunBloomCompiled || this.sunBloomCompiling) return;
+    this.sunBloomCompiling = true;
+    try {
+      await bloom.compile(this.world.scene, this.world.camera);
+      this.sunBloomCompiled = true;
+    } catch {
+      // Sin compilar no se pinta: queda el halo.
+    } finally {
+      this.sunBloomCompiling = false;
+    }
+    if (this.disposed) return;
+    if (!this.sunBloomWanted()) bloom.release();
+    this.invalidate();
+  }
+
+  /**
+   * ¿Puede llevar bloom el Sol? Si está encendido (`VISUAL_CONFIG.sun.bloom.enabled`; con el Sol
+   * realzado de D46, apagado: su resplandor lo pinta el halo), en los niveles alto y medio, si el
+   * renderer lo tiene, en la vista del sistema solar, salvo al medir su limbo o en la miniatura aislada
+   * de otro cuerpo. En las vistas Tierra
+   * y Luna, no: el Sol casi nunca está en pantalla (y, si lo está, es pequeño y basta su halo), y sus
+   * texturas de primer plano llenan la VRAM (en alto, la vista Tierra llega a unos 277 MB de 300: con el
+   * bloom y una pantalla de densidad 2, pasaría).
+   */
+  private sunBloomWanted(): boolean {
+    return (
+      VISUAL_CONFIG.sun.bloom.enabled &&
+      this.profile.sunBloom &&
+      this._view === 'system' &&
+      !this.sunMeasure &&
+      this.renderer.sunBloom !== undefined &&
+      (!this.isolated || this.focusIndex === SUN_INDEX)
+    );
   }
 
   /**
@@ -1242,6 +1409,7 @@ export class SceneEngine implements SceneEngineApi {
     const { position, radius } = this.frames.output;
     const camera = this.world.camera.position;
     const focalPx = this.viewport.height / (2 * Math.tan((BASE_FOV_DEG * Math.PI) / 360));
+    const overview = this.frames.targetSpec.kind === 'illustrative';
     for (let k = 0; k < SCENE_BODIES.length; k++) {
       const p = MOON_PARENT[k] as number;
       if (p < 0 || k === this.focusIndex) {
@@ -1260,7 +1428,10 @@ export class SceneEngine implements SceneEngineApi {
         (position[3 * k + 1] as number) - py,
         (position[3 * k + 2] as number) - pz,
       );
-      this.presence[k] = moonPresence(distance, r, radiusPx);
+      // En la vista general, según lo que miden el planeta y la luna (fase 9b, `overviewMoonsPx`).
+      this.presence[k] = overview
+        ? overviewMoonPresence(radius[k] as number, r, radiusPx)
+        : moonPresence(distance, r, radiusPx);
     }
   }
 
@@ -1308,18 +1479,25 @@ export class SceneEngine implements SceneEngineApi {
     const focus = this.focusIndex;
     const radiusPx = focus === null ? null : (this.screen[focus]?.radiusPx ?? null);
     const closeUp = closeUpAmount(radiusPx);
-    this.world.setFill(fillLight(closeUp));
+    this.world.setFill(fillLight(closeUp), closeUp);
     const albedo = focus === null ? null : (FOCUS_ALBEDO[focus] ?? null);
     const lit =
       focus === null || albedo === null
         ? 1
         : this.litBrightness(focus, this.world.phaseAngleOf(focus));
     const exposure = exposureFor(closeUp, albedo, lit);
-    // El Sol: halo y granulación según su primer plano; la granulación cambia con el reloj de pared
-    // (quieta con movimiento reducido y en las capturas).
+    // El Sol: halo, granulación y corona según su primer plano; la granulación cambia con el reloj de
+    // pared (quieta con movimiento reducido y en las capturas). Su bloom, si se ve en pantalla, con los
+    // cuerpos que lo tapan.
+    const occluders =
+      this.sunBloomWanted() && this.sunBloomCompiled ? sunOccluders(this.screen, SUN_INDEX) : null;
+    this.sunBloomOn = occluders !== null && (this.screen[SUN_INDEX]?.onScreen ?? false);
+    this.sunCloseUp = focus === SUN_INDEX ? closeUp : 0;
+    if (this.sunBloomOn && occluders) this.world.setSunOccluders(occluders);
     this.world.setSunAppearance(
-      focus === SUN_INDEX ? closeUp : 0,
+      this.sunCloseUp,
       this.instant() ? 0 : this.deps.now() / 1000,
+      this.sunBloomOn,
     );
     // Las nubes de la Tierra derivan con el tiempo real de los frames pintados (quietas con
     // movimiento reducido y en las capturas), no con el simulado: a 3 días por segundo darían vueltas
@@ -1433,6 +1611,8 @@ export class SceneEngine implements SceneEngineApi {
     }
     this.focusIndex = index;
     this.framing = framing;
+    // El radar de Venus, solo con Venus enfocada (fase 9b, D44): al dejarla, se suelta.
+    if (index !== VENUS_INDEX) this.venusRadar.release();
     // La vista general vuelve siempre a su encuadre (todo el sistema a la vista).
     const arrival = framing.kind === 'overview' ? OVERVIEW_ANGLES : angles;
     const duration = this.instant() ? 0 : kind === 'view' ? VIEW_TRIP_MS : FOCUS_FLIGHT_MS;
@@ -1708,7 +1888,9 @@ export class SceneEngine implements SceneEngineApi {
     const bodies: SkyBody[] = skyBodies(date, place);
     const eclThreeToSky = eclThreeToSkyThree(date, place);
     const state = this.system.at(ms);
-    const moonOrientation = this.orientations.at(state)[MOON_INDEX];
+    const orientations = this.orientations.at(state);
+    const moonOrientation = orientations[MOON_INDEX];
+    const sunOrientation = orientations[SUN_INDEX];
     const toSky = (ecl: { x: number; y: number; z: number }) =>
       mulMat3Vec(eclThreeToSky, normalize(mulMat3Vec(ECL_TO_THREE, ecl)));
     const shadow = earthShadow(date);
@@ -1730,6 +1912,8 @@ export class SceneEngine implements SceneEngineApi {
       moonOrientation: moonOrientation
         ? mulMat3(eclThreeToSky, eclRotationToThree(moonOrientation))
         : null,
+      // El polo del Sol (el eje z de su orientación, en ECL), para las serpentinas de la corona.
+      sunPole: sunOrientation ? toSky(columnOf(sunOrientation, 2)) : null,
       moonShadow: {
         moonGeocentric: toSky(moonGeocentric(date)),
         antisolar: toSky(scaleVec(sunApparentGeocentricEcl(date), -1)),
@@ -1791,6 +1975,11 @@ export class SceneEngine implements SceneEngineApi {
       this.level = level;
       this.profile = QUALITY_PROFILES[level];
       this.world.setQuality(this.profile);
+      this.venusRadar.setLevel(this.profile.focusTexture);
+      // El nivel bajo no lleva bloom: sus render targets se sueltan. Al subir a mano desde él, sus
+      // sombreados se compilan sin bloquear (hasta entonces, el halo).
+      if (!this.profile.sunBloom) this.renderer.sunBloom?.release();
+      else void this.compileSunBloom();
       this.applySize();
       this.invalidate();
     }
@@ -1915,6 +2104,7 @@ function placementInput(
     radiusKm: RADII_KM,
     rings,
     screen,
+    moons: MOON_SYSTEMS,
   };
 }
 

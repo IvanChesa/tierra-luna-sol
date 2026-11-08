@@ -2,7 +2,8 @@
 // motor, solo y centrado (modo de captura con `aislado=1`: sin estrellas, órbitas, etiquetas ni los
 // demás cuerpos), recortado alrededor de su disco y en WebP pequeño en public/img/cuerpos/<id>.webp.
 // Las texturas son las de la escena (docs/FUENTES.md): desde la fase 7, las lunas con mosaico global
-// salen con él; las demás (Deimos, Proteo y las de Urano), con su color esquemático.
+// salen con él; desde la fase 9b, todas (Deimos y las de Urano, con los mapas del JPL; Proteo, con su
+// campo de cráteres generado; Fobos y Deimos, con su forma real), salvo Titán, por su neblina.
 //
 // Uso: npm run build && node scripts/build-body-thumbnails.mjs [--swiftshader]
 import { mkdir } from 'node:fs/promises';

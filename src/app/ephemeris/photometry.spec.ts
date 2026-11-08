@@ -25,6 +25,7 @@ import {
   solarLimbDarkening,
   srgbLuminance,
   twilightWidth,
+  terminatorDarkening,
 } from './photometry';
 
 const DEG = Math.PI / 180;
@@ -175,6 +176,24 @@ describe('fotometría: albedo y color', () => {
 
   it('sin luminancia conocida, el factor es neutro', () => {
     expect(albedoScale(0.3, 0, LAMBERT)).toBe(1);
+  });
+
+  it('el terminador suave de una neblina (Titán, fase 9b): × min(1, μ₀/μ)^e, neutro en fase llena', () => {
+    const titan: Photometry = { ...minnaert(0.9), terminatorExponent: 1.15 };
+    const plain = minnaert(0.9);
+    expect(terminatorDarkening(0.5, 0.5, plain)).toBe(1);
+    expect(terminatorDarkening(-0.1, 0.5, titan)).toBe(0);
+    // Hacia el terminador (μ₀ < μ), cada vez más oscuro; del lado del limbo iluminado (μ₀ > μ), nada.
+    expect(terminatorDarkening(0.25, 0.5, titan)).toBeCloseTo(0.5 ** 1.15, 12);
+    expect(terminatorDarkening(0.8, 0.2, titan)).toBe(1);
+    expect(reflectance(0.1, 0.8, 1, titan)).toBeLessThan(reflectance(0.1, 0.8, 1, plain));
+    expect(reflectance(0, 0.8, 1, titan)).toBe(0);
+    // En fase llena (μ₀ = μ) no cambia nada: ni el disco ni la calibración con el albedo.
+    expect(discFactor(titan)).toBe(discFactor(plain));
+    // (salvo en el borde extremo, donde μ se acota a MIN_MU: 4·10⁻⁶ del disco).
+    expect(discBrightness(0, titan)).toBeCloseTo(discBrightness(0, plain), 4);
+    // A media fase, el disco se oscurece hacia el terminador: menos luz en total.
+    expect(integratedPhase(90 * DEG, titan)).toBeLessThan(integratedPhase(90 * DEG, plain));
   });
 
   it('la luminancia sRGB pasa a lineal con los pesos de Rec. 709', () => {

@@ -928,12 +928,19 @@ select.control {
   color: var(--color-accent);
 }
 
-/* Un contorno nítido del color del fondo (no un halo difuso): las órbitas no cruzan las letras. */
+/*
+ * Un contorno nítido del color del fondo (no un halo difuso): las órbitas no cruzan las letras. Y una
+ * placa del fondo casi opaca, como los nombres de la fila de fichas (`.chip__name`): sobre un disco
+ * brillante (Urano, la Tierra o el Sol), el contraste bajaba a 1,0–3,9 (crítica del 08-11; cierre de
+ * la fase 9b).
+ */
 .scene-label__name {
   position: absolute;
   top: 0;
   left: 0;
   padding: 1px 4px;
+  background: color-mix(in srgb, var(--color-bg) 88%, transparent);
+  border-radius: var(--radius-sm);
   text-shadow:
     1px 0 0 var(--color-bg),
     -1px 0 0 var(--color-bg),

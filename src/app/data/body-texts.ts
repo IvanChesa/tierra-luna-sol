@@ -1,4 +1,4 @@
-// GENERADO por scripts/build-body-texts.mjs el 2026-11-03 a partir de scripts/content/body-texts.json.
+// GENERADO por scripts/build-body-texts.mjs el 2026-11-08 a partir de scripts/content/body-texts.json.
 // No se edita a mano: se cambia el JSON y se vuelve a generar. Las citas que respaldan cada texto
 // están en docs/datos/textos-cuerpos.md.
 import type { BodyId, BodyTexts } from './body.model';
@@ -27,6 +27,11 @@ export const BODY_TEXTS: Record<BodyId, BodyTexts> = {
         reviewed: false,
       },
     ],
+    mapNote: {
+      text: 'En las fotos, el Sol se ve blanco: emite a la vez todos los colores que vemos. En este explorador se ve en color realzado, como en las imágenes de los observatorios, que lo miran con filtros y pasan lo que ven a colores.',
+      source: 'https://svs.gsfc.nasa.gov/vis/a010000/a013800/a013859/script_31299_00.html',
+      reviewed: false,
+    },
   },
   mercurio: {
     summary: {
@@ -267,6 +272,11 @@ export const BODY_TEXTS: Record<BodyId, BodyTexts> = {
         reviewed: false,
       },
     ],
+    mapNote: {
+      text: 'Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.',
+      source: null,
+      reviewed: false,
+    },
   },
   deimos: {
     summary: {
@@ -291,6 +301,11 @@ export const BODY_TEXTS: Record<BodyId, BodyTexts> = {
         reviewed: false,
       },
     ],
+    mapNote: {
+      text: 'Lo que su mapa no cartografió (el norte y una franja junto al meridiano de 180°) se recrea, en este explorador, con su propio terreno, y lo que solo se fotografió de lejos lleva detalle recreado: es ilustrativo.',
+      source: null,
+      reviewed: false,
+    },
   },
   io: {
     summary: {
@@ -315,6 +330,11 @@ export const BODY_TEXTS: Record<BodyId, BodyTexts> = {
         reviewed: false,
       },
     ],
+    mapNote: {
+      text: 'Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.',
+      source: null,
+      reviewed: false,
+    },
   },
   europa: {
     summary: {
@@ -339,6 +359,11 @@ export const BODY_TEXTS: Record<BodyId, BodyTexts> = {
         reviewed: false,
       },
     ],
+    mapNote: {
+      text: 'Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.',
+      source: null,
+      reviewed: false,
+    },
   },
   ganimedes: {
     summary: {
@@ -363,6 +388,11 @@ export const BODY_TEXTS: Record<BodyId, BodyTexts> = {
         reviewed: false,
       },
     ],
+    mapNote: {
+      text: 'Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.',
+      source: null,
+      reviewed: false,
+    },
   },
   calisto: {
     summary: {
@@ -387,6 +417,11 @@ export const BODY_TEXTS: Record<BodyId, BodyTexts> = {
         reviewed: false,
       },
     ],
+    mapNote: {
+      text: 'Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.',
+      source: null,
+      reviewed: false,
+    },
   },
   mimas: {
     summary: {
@@ -411,6 +446,11 @@ export const BODY_TEXTS: Record<BodyId, BodyTexts> = {
         reviewed: false,
       },
     ],
+    mapNote: {
+      text: 'Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.',
+      source: null,
+      reviewed: false,
+    },
   },
   encelado: {
     summary: {
@@ -435,6 +475,11 @@ export const BODY_TEXTS: Record<BodyId, BodyTexts> = {
         reviewed: false,
       },
     ],
+    mapNote: {
+      text: 'Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.',
+      source: null,
+      reviewed: false,
+    },
   },
   tetis: {
     summary: {
@@ -459,6 +504,11 @@ export const BODY_TEXTS: Record<BodyId, BodyTexts> = {
         reviewed: false,
       },
     ],
+    mapNote: {
+      text: 'Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.',
+      source: null,
+      reviewed: false,
+    },
   },
   dione: {
     summary: {
@@ -483,6 +533,11 @@ export const BODY_TEXTS: Record<BodyId, BodyTexts> = {
         reviewed: false,
       },
     ],
+    mapNote: {
+      text: 'Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.',
+      source: null,
+      reviewed: false,
+    },
   },
   rea: {
     summary: {
@@ -507,6 +562,11 @@ export const BODY_TEXTS: Record<BodyId, BodyTexts> = {
         reviewed: false,
       },
     ],
+    mapNote: {
+      text: 'Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.',
+      source: null,
+      reviewed: false,
+    },
   },
   titan: {
     summary: {
@@ -555,6 +615,11 @@ export const BODY_TEXTS: Record<BodyId, BodyTexts> = {
         reviewed: false,
       },
     ],
+    mapNote: {
+      text: 'Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.',
+      source: null,
+      reviewed: false,
+    },
   },
   miranda: {
     summary: {
@@ -579,6 +644,11 @@ export const BODY_TEXTS: Record<BodyId, BodyTexts> = {
         reviewed: false,
       },
     ],
+    mapNote: {
+      text: 'Cuando pasó la Voyager 2, el Sol solo iluminaba el hemisferio sur de Miranda y de las demás lunas de Urano. Su norte, en este explorador, es una recreación ilustrativa hecha con su propio terreno.',
+      source: 'https://www.nasa.gov/history/35-years-ago-voyager-2-explores-uranus/',
+      reviewed: false,
+    },
   },
   ariel: {
     summary: {
@@ -603,6 +673,11 @@ export const BODY_TEXTS: Record<BodyId, BodyTexts> = {
         reviewed: false,
       },
     ],
+    mapNote: {
+      text: 'Cuando pasó la Voyager 2, el Sol solo iluminaba el hemisferio sur de Ariel y de las demás lunas de Urano. Su norte, en este explorador, es una recreación ilustrativa hecha con su propio terreno.',
+      source: 'https://www.nasa.gov/history/35-years-ago-voyager-2-explores-uranus/',
+      reviewed: false,
+    },
   },
   umbriel: {
     summary: {
@@ -627,6 +702,11 @@ export const BODY_TEXTS: Record<BodyId, BodyTexts> = {
         reviewed: false,
       },
     ],
+    mapNote: {
+      text: 'Cuando pasó la Voyager 2, el Sol solo iluminaba el hemisferio sur de Umbriel y de las demás lunas de Urano. Su norte, en este explorador, es una recreación ilustrativa hecha con su propio terreno.',
+      source: 'https://www.nasa.gov/history/35-years-ago-voyager-2-explores-uranus/',
+      reviewed: false,
+    },
   },
   titania: {
     summary: {
@@ -652,6 +732,11 @@ export const BODY_TEXTS: Record<BodyId, BodyTexts> = {
         reviewed: false,
       },
     ],
+    mapNote: {
+      text: 'Cuando pasó la Voyager 2, el Sol solo iluminaba el hemisferio sur de Titania y de las demás lunas de Urano. Su norte, en este explorador, es una recreación ilustrativa hecha con su propio terreno.',
+      source: 'https://www.nasa.gov/history/35-years-ago-voyager-2-explores-uranus/',
+      reviewed: false,
+    },
   },
   oberon: {
     summary: {
@@ -676,6 +761,11 @@ export const BODY_TEXTS: Record<BodyId, BodyTexts> = {
         reviewed: false,
       },
     ],
+    mapNote: {
+      text: 'Cuando pasó la Voyager 2, el Sol solo iluminaba el hemisferio sur de Oberón y de las demás lunas de Urano. Su norte, en este explorador, es una recreación ilustrativa hecha con su propio terreno.',
+      source: 'https://www.nasa.gov/history/35-years-ago-voyager-2-explores-uranus/',
+      reviewed: false,
+    },
   },
   triton: {
     summary: {
@@ -700,6 +790,11 @@ export const BODY_TEXTS: Record<BodyId, BodyTexts> = {
         reviewed: false,
       },
     ],
+    mapNote: {
+      text: 'La Voyager 2 fotografió unos dos tercios de Tritón. El resto de su mapa, en este explorador, es una recreación ilustrativa hecha con su propio terreno.',
+      source: 'https://science.nasa.gov/mission/voyager/voyager-2/',
+      reviewed: false,
+    },
   },
   proteo: {
     summary: {
@@ -724,5 +819,10 @@ export const BODY_TEXTS: Record<BodyId, BodyTexts> = {
         reviewed: false,
       },
     ],
+    mapNote: {
+      text: 'Proteo es irregular y está lleno de cráteres, pero no hay un mapa de su superficie. En este explorador, sus cráteres son una recreación ilustrativa, y su forma, una esfera.',
+      source: 'https://science.nasa.gov/neptune/moons/proteus/',
+      reviewed: false,
+    },
   },
 };

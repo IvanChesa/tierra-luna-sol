@@ -51,8 +51,9 @@ export const GUIDED_VIEWS: readonly GuidedView[] = [
   {
     id: 'tierra-completa',
     title: 'La Tierra completa',
-    text: 'La Tierra entera, de día: océanos, continentes y nubes, como la fotografía la cámara EPIC de la NASA desde el espacio, entre la Tierra y el Sol.',
-    sources: ['https://epic.gsfc.nasa.gov/about/epic'],
+    // Fase 9b (D46): en color realzado; ya no es como la fotografía la cámara EPIC.
+    text: 'La Tierra entera, de día y en color realzado: el océano, que cubre cerca del 71 % de su superficie, los continentes y las nubes.',
+    sources: ['https://science.nasa.gov/earth/facts/'],
     reviewed: false,
     latDeg: 15,
     lonDeg: 10,

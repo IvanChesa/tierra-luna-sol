@@ -9,7 +9,7 @@
 //
 // Uso: npm run build && node scripts/build-text-review.mjs [--forzar]
 import './lib/ts-resolve.mjs';
-import { readFile, stat, writeFile } from 'node:fs/promises';
+import { readFile, readdir, stat, writeFile } from 'node:fs/promises';
 
 const ROOT = new URL('../', import.meta.url);
 const OUT = new URL('docs/revision-textos.md', ROOT);
@@ -107,9 +107,9 @@ push(
   '',
   '## Índice',
   '',
-  '1. [Por cuerpo](#por-cuerpo): los 30, con su resumen y sus tres curiosidades (120 textos).',
+  `1. [Por cuerpo](#por-cuerpo): los ${bodies.length}, con su resumen y sus tres curiosidades; en ${bodies.filter((b) => b.mapNote && b.kind === 'moon').length} lunas, la línea sobre su mapa, y en el Sol, la de su color realzado (${bodies.length * 4 + bodies.filter((b) => b.mapNote).length} textos).`,
   '2. [Por vista](#por-vista): el sistema solar, la Tierra y sus vistas guiadas, la Luna, sus vistas y su recorrido, y el cielo.',
-  '3. [Las páginas](#las-paginas): los índices, los eclipses, «Sobre el proyecto», los créditos y la 404; y [los textos fijos](#los-textos-fijos) de las fichas, del pie y del menú.',
+  '3. [Las páginas](#las-paginas): los índices, los eclipses, «Sobre el proyecto», los créditos y la 404; [los textos fijos](#los-textos-fijos) de las fichas, del pie y del menú; y [la interfaz del explorador](#la-interfaz).',
   '4. [Las descriptions](#las-descriptions): lo que se ve al compartir cada página.',
   '5. [Los nombres de las constelaciones](#los-nombres-de-las-constelaciones).',
   '',
@@ -121,6 +121,15 @@ for (const body of bodies) {
   push(`### ${body.name}`, '');
   entry('Resumen', body.summary.text, [body.summary.source]);
   body.facts.forEach((fact, k) => entry(`Curiosidad ${k + 1}`, fact.text, [fact.source]));
+  // La línea sobre su mapa (fase 9b, D45), en las lunas con parte de su mapa recreada, y la de su
+  // color realzado en el Sol (D46).
+  if (body.mapNote) {
+    const star = body.kind === 'star';
+    entry(star ? 'Sobre su color' : 'Sobre su mapa', body.mapNote.text, [
+      body.mapNote.source ??
+        (star ? '/sobre-el-proyecto#ilustrativo' : '/creditos#lunas-recreadas'),
+    ]);
+  }
 }
 
 // --- 2. Por vista -----------------------------------------------------------------------------------
@@ -255,6 +264,94 @@ const menuNote = /<p[^>]*class="site-nav__extra site-nav__privacy"[^>]*>([\s\S]*
   await page('/'),
 )?.[1];
 if (menuNote) entry('El menú del móvil', text(menuNote));
+
+// --- 3 ter. La interfaz del explorador --------------------------------------------------------------
+// Los textos de los controles (fase 9c y Venus «Bajo las nubes», 9b.e; sección 12 del informe de la
+// 9c): no están en el HTML prerenderizado (la interfaz llega en un @defer), así que salen de sus
+// plantillas, de la línea de autoría y del recorrido de la portada, sin copiarlos a mano.
+push(
+  '<a id="la-interfaz"></a>',
+  '',
+  '## 3 ter. La interfaz del explorador',
+  '',
+  'Los textos de los controles del explorador, de las plantillas de \`src/app/features/\`: lo que se lee y lo que oyen los lectores de pantalla (\`aria-label\` y \`title\`). Lo que se compone con datos sale con «…» en el sitio del dato (el nombre del cuerpo, la fecha). Además, la línea de autoría y los rótulos y el anuncio del recorrido de la portada. Textos nuevos de la fase 9c y de Venus «Bajo las nubes» (9b.e), con \`reviewed: false\`.',
+  '',
+);
+const { AUTHORSHIP } = await import('../src/app/features/viewer/authorship.ts');
+const { homeTourSteps } = await import('../src/app/features/tour/home-tour.ts');
+entry('La línea de autoría', AUTHORSHIP.text, [
+  `${AUTHORSHIP.source.path}#${AUTHORSHIP.source.fragment}`,
+]);
+// El recorrido, con un anfitrión que solo apunta lo que dice (con y sin la parada de la Luna).
+const spain = GUIDED_VIEWS.find((view) => view.id === 'espana');
+const tourTexts = new Set();
+for (const moon of [true, false]) {
+  const record = {
+    announce: (value) => tourTexts.add(value),
+    caption: (value) => tourTexts.add(value),
+  };
+  const host = new Proxy(record, { get: (target, key) => target[key] ?? (() => undefined) });
+  for (const step of homeTourSteps(spain, { moon }).steps) step.run(host);
+}
+for (const value of tourTexts) entry('El recorrido de la portada', value);
+
+/** Los textos de una plantilla de Angular: atributos legibles, literales y texto, sin el control de flujo. */
+function templateTexts(template) {
+  const found = [];
+  const add = (value) => {
+    const clean = text(value)
+      .replace(/\s*…\s*/g, ' … ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    // Con al menos dos letras seguidas (ni símbolos, ni números, ni el «…» de un dato solo).
+    if (/\p{L}{2}/u.test(clean)) found.push(clean);
+  };
+  const source = template.replace(/<!--[\s\S]*?-->/g, '');
+  for (const m of source.matchAll(/(?<![\w.\-\[(])(aria-label|title|placeholder)="([^"]*)"/g)) {
+    if (!m[2].includes('{{')) add(m[2]);
+  }
+  // Los literales de las interpolaciones con texto («Ver los datos»): con un espacio o una mayúscula.
+  for (const m of source.matchAll(/\{\{([\s\S]*?)\}\}/g)) {
+    for (const literal of m[1].matchAll(/'([^']*)'/g)) {
+      if (/\s|^\p{Lu}/u.test(literal[1])) add(literal[1]);
+    }
+  }
+  const body = source
+    // El control de flujo (@if (…; as x) {, } @else {, @for (…; track …) {, @let x = …;) y las llaves
+    // que lo cierran.
+    .replace(
+      /@(?:if|else if|else|for|switch|case|default|defer|placeholder|loading|empty)\b[^{\n]*\{/g,
+      '\u0000',
+    )
+    .replace(/@let\b[^;]*;/g, '\u0000')
+    .replace(/\{\{[\s\S]*?\}\}/g, '…')
+    // Las etiquetas, también con «>» dentro de sus atributos (`[x]="n > 0"`).
+    .replace(/<(?:[^>"']|"[^"]*"|'[^']*')*>/g, '\u0000')
+    .replace(/[{}]/g, '\u0000');
+  // Cada trozo entre etiquetas, entero (una frase partida en dos líneas por Prettier sigue junta).
+  for (const chunk of body.split('\u0000')) add(chunk);
+  return found;
+}
+const FEATURES = new URL('src/app/features/', ROOT);
+const featureFiles = [];
+for (const dir of (await readdir(FEATURES, { withFileTypes: true })).filter((d) =>
+  d.isDirectory(),
+)) {
+  for (const name of (await readdir(new URL(`${dir.name}/`, FEATURES))).sort()) {
+    if (/\.spec\.ts$/.test(name) || !/\.(html|ts)$/.test(name)) continue;
+    featureFiles.push(`${dir.name}/${name}`);
+  }
+}
+for (const file of featureFiles.sort()) {
+  const source = await readFile(new URL(file, FEATURES), 'utf8');
+  const templates = file.endsWith('.html')
+    ? [source]
+    : [...source.matchAll(/template: `([\s\S]*?)`/g)].map((m) => m[1]);
+  const values = [...new Set(templates.flatMap(templateTexts))];
+  if (!values.length) continue;
+  push(`#### \`${file}\``, '');
+  for (const value of values) entry('Texto', value);
+}
 
 // --- 4. Las descriptions ----------------------------------------------------------------------------
 push(

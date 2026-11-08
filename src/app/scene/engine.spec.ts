@@ -1,6 +1,8 @@
 import starsBin from '../../../public/data/stars.bin' with { loader: 'binary' };
+import deimosBin from '../../../public/data/shapes/deimos.bin' with { loader: 'binary' };
+import phobosBin from '../../../public/data/shapes/phobos.bin' with { loader: 'binary' };
 import { Libration } from 'astronomy-engine';
-import { BackSide, FrontSide, Quaternion, Texture, Vector3, Vector4 } from 'three';
+import { BackSide, Color, FrontSide, Mesh, Quaternion, Texture, Vector3, Vector4 } from 'three';
 import type { BodyId } from '../data/body.model';
 import { BODY_PHOTOMETRY } from '../data/photometry';
 import { KM_PER_AU } from '../ephemeris/constants';
@@ -8,6 +10,7 @@ import { subsolarPoint } from '../ephemeris/coordinates';
 import { earthShadow, moonShadowCenter, satelliteShadowPoint } from '../ephemeris/eclipse';
 import { NASA_ECLIPSE_2026_08_12, USNO_MOON_PHASES } from '../ephemeris/fixtures/fixtures';
 import { moonPhase } from '../ephemeris/ephemeris';
+import { albedoScale } from '../ephemeris/photometry';
 import { illustrativeRadius } from '../ephemeris/scale';
 import { MAX_DATE, toAstroTime } from '../ephemeris/time';
 import { length, scale } from '../ephemeris/vec3';
@@ -26,11 +29,18 @@ import { QUALITY_PROFILES } from './quality';
 import type { TextureLevel } from './quality';
 import { chooseTextureFile, textureVramBytes } from './textures';
 import type { LoadedTexture, TextureId } from './textures';
-import { TEXTURE_FILES } from './texture-files';
+import { TEXTURE_ALBEDO_REFERENCE, TEXTURE_FILES } from './texture-files';
+import { SHAPE_FILES } from './shape-files';
 import { hasDepthChunks } from './materials/depth';
 import { ORBIT_WIDTH_PX, trailColor } from './orbits';
 import { VISUAL_CONFIG } from './visual-config';
-import type { RendererCapabilities, RendererInfo, RendererPort } from './renderer';
+import type {
+  RendererCapabilities,
+  RendererInfo,
+  RendererPort,
+  SunBloomOptions,
+  SunBloomPort,
+} from './renderer';
 import { SCENE_BODIES, createSolarSystemModel, sceneBody } from './system';
 import type { SceneEngineEventName, SceneEngineEvents, SceneEngineOptions } from './types';
 
@@ -41,6 +51,30 @@ const START = new Date('2026-10-24T00:00:00Z');
 const BODY_RADII = framingDistanceRadii(FRAMING_FILL.body, 40, WIDTH / HEIGHT);
 const DETAIL_RADII = framingDistanceRadii(FRAMING_FILL.detail, 40, WIDTH / HEIGHT);
 
+/** El bloom del Sol falso (fase 9b): cuenta lo que se le pide; existe (y ocupa) desde que se usa. */
+class FakeSunBloom implements SunBloomPort {
+  compiles = 0;
+  releases = 0;
+  readonly renders: SunBloomOptions[] = [];
+  private alive = false;
+  compile(): Promise<void> {
+    this.compiles++;
+    this.alive = true;
+    return Promise.resolve();
+  }
+  render(_scene: unknown, _camera: unknown, options: SunBloomOptions): void {
+    this.renders.push(options);
+    this.alive = true;
+  }
+  vramBytes(): number {
+    return this.alive ? 7 * 1_048_576 : 0;
+  }
+  release(): void {
+    this.releases++;
+    this.alive = false;
+  }
+}
+
 /** Renderer falso: cuenta lo que se le pide y permite simular la pérdida del contexto. */
 class FakeRenderer implements RendererPort {
   readonly capabilities: RendererCapabilities = {
@@ -49,6 +83,7 @@ class FakeRenderer implements RendererPort {
     depth: 'logarithmic',
     reversedDepthSupported: false,
   };
+  readonly sunBloom = new FakeSunBloom();
   renders = 0;
   compiles = 0;
   /** Si se pone, las compilaciones esperan a esta promesa (para ver qué pasa mientras compilan). */
@@ -200,6 +235,7 @@ async function createHarness(
     timeChanged: [],
     limitReached: [],
     travel: [],
+    venusRadar: [],
   } as unknown as Harness['events'];
   for (const name of Object.keys(events) as SceneEngineEventName[]) {
     engine.on(name, (event) => (events[name] as unknown[]).push(event));
@@ -613,6 +649,349 @@ describe('SceneEngine: calidad adaptativa, contexto WebGL y limpieza', () => {
     h.engine.focus('marte');
     expect(h.scheduler.waiting).toBe(0);
     expect(SCENE_BODIES).toHaveLength(30);
+  });
+});
+
+describe('SceneEngine: el bloom del Sol (fase 9b, D41)', () => {
+  const SUN = sceneBody('sol').index;
+  const sunOnScreen = (h: Harness) =>
+    (h.engine as unknown as { screen: { onScreen: boolean }[] }).screen[SUN]?.onScreen;
+  // Con el Sol realzado (D46, segunda vuelta) el bloom está apagado (su resplandor lo pinta el halo):
+  // su mecánica se prueba con el interruptor encendido.
+  const bloomSwitch = VISUAL_CONFIG.sun.bloom as { enabled: boolean };
+  const bloomEnabled = bloomSwitch.enabled;
+  beforeEach(() => {
+    bloomSwitch.enabled = true;
+  });
+  afterEach(() => {
+    bloomSwitch.enabled = bloomEnabled;
+  });
+
+  it('en el nivel alto se compila antes del primer frame y va en cada frame con el Sol en pantalla; su VRAM cuenta', async () => {
+    const h = await createHarness();
+    const bloom = h.renderer.sunBloom;
+    // Antes del primer frame (en la vista general, el Sol se ve desde el primero).
+    expect(bloom.compiles).toBe(1);
+    settle(h);
+    expect(sunOnScreen(h)).toBe(true);
+    expect(bloom.renders.length).toBeGreaterThan(0);
+    expect(bloom.renders.length).toBe(h.renderer.renders);
+    // La VRAM de las estadísticas lleva la del bloom (7 MB en el falso).
+    const withBloom = h.engine.stats().vramMB;
+    bloom.release();
+    expect(h.engine.stats().vramMB).toBeCloseTo(withBloom - 7, 6);
+    h.engine.dispose();
+  });
+
+  it('en el medio también; en el bajo, solo el halo, y al bajar a él sus render targets se liberan', async () => {
+    const medium = await createHarness({ quality: 'medium' });
+    settle(medium);
+    const bloom = medium.renderer.sunBloom;
+    expect(bloom.compiles).toBe(1);
+    expect(bloom.renders.length).toBeGreaterThan(0);
+    medium.engine.setQuality('low');
+    settle(medium);
+    expect(bloom.releases).toBe(1);
+    expect(bloom.vramBytes()).toBe(0);
+    const before = bloom.renders.length;
+    medium.engine.setTime(new Date('2030-01-01T00:00:00Z'));
+    settle(medium);
+    expect(bloom.renders.length).toBe(before);
+    medium.engine.dispose();
+    const low = await createHarness({ quality: 'low' });
+    settle(low);
+    expect(low.renderer.sunBloom.compiles).toBe(0);
+    expect(low.renderer.sunBloom.renders).toEqual([]);
+    low.engine.dispose();
+  });
+
+  it('su fuerza y su forma: las de la vista general y, con el Sol de cerca, las del primer plano', async () => {
+    const { overview, closeUp } = VISUAL_CONFIG.sun.bloom;
+    const far = await createHarness();
+    settle(far);
+    const wide = far.renderer.sunBloom.renders.at(-1);
+    expect(wide?.strength).toBeCloseTo(overview.strength, 9);
+    wide?.factors.forEach((f, k) => expect(f).toBeCloseTo(overview.factors[k] as number, 9));
+    far.engine.dispose();
+    const near = await createHarness({ focus: 'sol' });
+    settle(near);
+    const tight = near.renderer.sunBloom.renders.at(-1);
+    expect(tight?.strength).toBeCloseTo(closeUp.strength, 9);
+    tight?.factors.forEach((f, k) => expect(f).toBeCloseTo(closeUp.factors[k] as number, 9));
+    near.engine.dispose();
+  });
+
+  it('en las vistas Tierra, Luna y cielo, sin bloom y sin su memoria; al volver al sistema solar, vuelve sin compilar otra vez', async () => {
+    const h = await createHarness({ view: 'earth' });
+    settle(h);
+    const bloom = h.renderer.sunBloom;
+    // Se compila al arrancar (para no hacerlo de golpe después), pero su memoria se suelta.
+    expect(bloom.compiles).toBe(1);
+    expect(bloom.releases).toBeGreaterThanOrEqual(1);
+    expect(bloom.vramBytes()).toBe(0);
+    expect(bloom.renders).toEqual([]);
+    h.engine.setView('system');
+    h.engine.skipTransition();
+    settle(h);
+    expect(sunOnScreen(h)).toBe(true);
+    expect(bloom.renders.length).toBeGreaterThan(0);
+    expect(bloom.compiles).toBe(1);
+    const releases = bloom.releases;
+    h.engine.setView('moon');
+    settle(h);
+    expect(bloom.releases).toBe(releases + 1);
+    expect(bloom.vramBytes()).toBe(0);
+    const renders = bloom.renders.length;
+    h.engine.setTime(new Date('2030-01-01T00:00:00Z'));
+    settle(h);
+    expect(bloom.renders.length).toBe(renders);
+    h.engine.dispose();
+  });
+
+  it('al subir a mano desde el nivel bajo, sus sombreados se compilan sin bloquear y después se pinta', async () => {
+    const h = await createHarness({ quality: 'low' });
+    settle(h);
+    const bloom = h.renderer.sunBloom;
+    expect(bloom.compiles).toBe(0);
+    h.engine.setQuality('medium');
+    for (let k = 0; k < 3; k++) await flush();
+    expect(bloom.compiles).toBe(1);
+    settle(h);
+    expect(bloom.renders.length).toBeGreaterThan(0);
+    h.engine.dispose();
+  });
+
+  it('sin bloom al medir el limbo (solo en captura) ni en la miniatura aislada de otro cuerpo', async () => {
+    const measure = await createHarness({ capture: true, focus: 'sol', sunMeasure: true });
+    settle(measure);
+    expect(measure.renderer.sunBloom.compiles).toBe(0);
+    expect(measure.renderer.sunBloom.renders).toEqual([]);
+    measure.engine.dispose();
+    // Fuera del modo de captura, la opción no hace nada.
+    const normal = await createHarness({ focus: 'sol', sunMeasure: true });
+    settle(normal);
+    expect(normal.renderer.sunBloom.renders.length).toBeGreaterThan(0);
+    normal.engine.dispose();
+    const jupiter = await createHarness({ capture: true, focus: 'jupiter', isolate: true });
+    settle(jupiter);
+    expect(jupiter.renderer.sunBloom.renders).toEqual([]);
+    jupiter.engine.dispose();
+    // La miniatura del propio Sol, sí.
+    const sun = await createHarness({ capture: true, focus: 'sol', isolate: true });
+    settle(sun);
+    expect(sun.renderer.sunBloom.renders.length).toBeGreaterThan(0);
+    sun.engine.dispose();
+  });
+
+  interface SunInternals {
+    world: {
+      sun: { uniforms: { uTime: { value: number }; uGranulation: { value: number } } };
+      haloMaterial: { uniforms: { uIntensity: { value: number } } };
+    };
+  }
+  const sunOf = (h: Harness) => (h.engine as unknown as SunInternals).world;
+
+  it('la granulación del Sol de cerca se mueve con el reloj de pared; con movimiento reducido y en las capturas, quieta', async () => {
+    const moving = await createHarness({ focus: 'sol' });
+    settle(moving);
+    moving.engine.setSpeed(3600);
+    moving.engine.setPlaying(true);
+    moving.frames(500);
+    const before = sunOf(moving).sun.uniforms.uTime.value;
+    moving.frames(500);
+    expect(sunOf(moving).sun.uniforms.uTime.value).toBeGreaterThan(before);
+    expect(sunOf(moving).sun.uniforms.uGranulation.value).toBeGreaterThan(0);
+    moving.engine.dispose();
+    for (const options of [{ reducedMotion: true }, { capture: true }]) {
+      const still = await createHarness({ focus: 'sol', ...options });
+      settle(still);
+      still.engine.setSpeed(3600);
+      still.engine.setPlaying(true);
+      still.frames(1000);
+      expect(sunOf(still).sun.uniforms.uTime.value).toBe(0);
+      still.engine.dispose();
+    }
+  });
+
+  interface EnhancedSunInternals {
+    world: {
+      sun: {
+        uniforms: {
+          uEnhance: { value: number };
+          uStructure: { value: number };
+          uStructureTime: { value: number };
+        };
+      };
+      haloMaterial: {
+        uniforms: {
+          uProminences: { value: number };
+          uProminenceTime: { value: number };
+          uRays: { value: number };
+        };
+      };
+    };
+  }
+  const enhancedOf = (h: Harness) => (h.engine as unknown as EnhancedSunInternals).world;
+
+  it('el Sol del explorador, realzado (D46): su estructura y sus protuberancias se mueven con el reloj de pared y las protuberancias, solo de cerca; con movimiento reducido y en las capturas, quietas; con ?medida=limbo, el de la luz visible', async () => {
+    const moving = await createHarness({ focus: 'sol' });
+    settle(moving);
+    moving.engine.setSpeed(3600);
+    moving.engine.setPlaying(true);
+    moving.frames(500);
+    const world = enhancedOf(moving);
+    const structure = world.sun.uniforms.uStructureTime.value;
+    const prominences = world.haloMaterial.uniforms.uProminenceTime.value;
+    moving.frames(500);
+    expect(world.sun.uniforms.uEnhance.value).toBe(1);
+    expect(world.sun.uniforms.uStructure.value).toBe(
+      VISUAL_CONFIG.sun.enhanced.structure.amplitude,
+    );
+    expect(world.sun.uniforms.uStructureTime.value).toBeGreaterThan(structure);
+    expect(world.haloMaterial.uniforms.uProminenceTime.value).toBeGreaterThan(prominences);
+    expect(world.haloMaterial.uniforms.uProminences.value).toBeGreaterThan(0.9);
+    expect(world.haloMaterial.uniforms.uRays.value).toBe(VISUAL_CONFIG.sun.enhanced.rays.intensity);
+    moving.engine.dispose();
+    for (const options of [{ reducedMotion: true }, { capture: true }]) {
+      const still = await createHarness({ focus: 'sol', ...options });
+      settle(still);
+      still.engine.setSpeed(3600);
+      still.engine.setPlaying(true);
+      still.frames(1000);
+      expect(enhancedOf(still).sun.uniforms.uStructureTime.value).toBe(0);
+      expect(enhancedOf(still).haloMaterial.uniforms.uProminenceTime.value).toBe(0);
+      still.engine.dispose();
+    }
+    // En la vista general, el Sol mide unos píxeles: sin protuberancias, pero realzado.
+    const overview = await createHarness();
+    settle(overview);
+    expect(enhancedOf(overview).haloMaterial.uniforms.uProminences.value).toBeLessThan(0.1);
+    expect(enhancedOf(overview).sun.uniforms.uEnhance.value).toBe(1);
+    overview.engine.dispose();
+    // Para medir el limbo (D41, `?medida=limbo`, solo en captura), el Sol de la luz visible, sin su
+    // estructura.
+    const measure = await createHarness({ capture: true, focus: 'sol', sunMeasure: true });
+    settle(measure);
+    expect(enhancedOf(measure).sun.uniforms.uEnhance.value).toBe(0);
+    expect(enhancedOf(measure).sun.uniforms.uStructure.value).toBe(0);
+    measure.engine.dispose();
+  });
+
+  it('con bloom, el halo del Sol es más tenue: el resplandor lo pone el bloom', async () => {
+    const withBloom = await createHarness();
+    settle(withBloom);
+    const dimmed = sunOf(withBloom).haloMaterial.uniforms.uIntensity.value;
+    withBloom.engine.dispose();
+    const low = await createHarness({ quality: 'low' });
+    settle(low);
+    const full = sunOf(low).haloMaterial.uniforms.uIntensity.value;
+    low.engine.dispose();
+    expect(full).toBeCloseTo(VISUAL_CONFIG.sun.halo.overview.intensity, 9);
+    expect(dimmed).toBeCloseTo(full * VISUAL_CONFIG.sun.halo.withBloom, 9);
+  });
+});
+
+describe('SceneEngine: el Sol realzado, segunda vuelta (fase 9b, D46)', () => {
+  interface HaloInternals {
+    world: {
+      sun: { uniforms: { uStructureTime: { value: number }; uTime: { value: number } } };
+      haloMaterial: {
+        uniforms: {
+          uIntensity: { value: number };
+          uRim: { value: number };
+          uRays: { value: number };
+          uSoftGlow: { value: { w: number } };
+          uCorona: { value: number };
+          uProminences: { value: number };
+          uProminenceTime: { value: number };
+        };
+      };
+    };
+  }
+  const internals = (h: Harness) => (h.engine as unknown as HaloInternals).world;
+
+  it('sin bloom en ningún nivel: el resplandor es el halo, sin atenuar, con su borde fino y sus rayos y sin corona', async () => {
+    const { enhanced, halo } = VISUAL_CONFIG.sun;
+    expect(VISUAL_CONFIG.sun.bloom.enabled).toBe(false);
+    for (const quality of ['high', 'medium', 'low'] as const) {
+      const h = await createHarness({ quality });
+      settle(h);
+      expect(h.renderer.sunBloom.compiles).toBe(0);
+      expect(h.renderer.sunBloom.renders).toEqual([]);
+      expect(h.renderer.sunBloom.vramBytes()).toBe(0);
+      const uniforms = internals(h).haloMaterial.uniforms;
+      expect(uniforms.uIntensity.value).toBeCloseTo(halo.overview.intensity, 9);
+      expect(uniforms.uRim.value).toBe(enhanced.rim.intensity);
+      expect(uniforms.uRays.value).toBe(enhanced.rays.intensity);
+      expect(uniforms.uSoftGlow.value.w).toBe(enhanced.glow.soft.widthRadii);
+      h.engine.dispose();
+    }
+    // De cerca, sin el resplandor ancho ni la corona; con los bucles de plasma.
+    const near = await createHarness({ focus: 'sol' });
+    settle(near);
+    const uniforms = internals(near).haloMaterial.uniforms;
+    expect(uniforms.uIntensity.value).toBeLessThan(halo.closeUp.intensity + 0.002);
+    expect(uniforms.uCorona.value).toBe(0);
+    expect(uniforms.uProminences.value).toBeGreaterThan(0.9);
+    near.engine.dispose();
+  });
+
+  it('de cerca, su superficie y sus bucles se mueven también con el tiempo en pausa (un frame cada 50 ms); con movimiento reducido, en las capturas y en la vista general, sin esos frames', async () => {
+    const near = await createHarness({ focus: 'sol' });
+    settle(near);
+    // En pausa (el arnés no reproduce): sigue pidiendo frames, con su espera, y el tiempo de la
+    // superficie y de los bucles avanza con el reloj de pared.
+    expect(near.scheduler.waiting).toBe(1);
+    const world = internals(near);
+    const structure = world.sun.uniforms.uStructureTime.value;
+    const loops = world.haloMaterial.uniforms.uProminenceTime.value;
+    const renders = near.renderer.renders;
+    const delayed = near.scheduler.delayed;
+    near.frames(1000);
+    // Cada 50 ms, en el primer frame de 60 Hz que toca: de 15 a 20 por segundo.
+    expect(near.renderer.renders - renders).toBeGreaterThanOrEqual(14);
+    expect(near.renderer.renders - renders).toBeLessThanOrEqual(21);
+    expect(near.scheduler.delayed).toBeGreaterThan(delayed);
+    expect(world.sun.uniforms.uStructureTime.value).toBeGreaterThan(structure);
+    expect(world.haloMaterial.uniforms.uProminenceTime.value).toBeGreaterThan(loops);
+    near.engine.dispose();
+    for (const options of [{ reducedMotion: true }, { capture: true }]) {
+      const still = await createHarness({ focus: 'sol', ...options });
+      settle(still);
+      expect(still.scheduler.waiting).toBe(0);
+      const before = still.renderer.renders;
+      still.frames(1000);
+      expect(still.renderer.renders).toBe(before);
+      expect(internals(still).sun.uniforms.uStructureTime.value).toBe(0);
+      still.engine.dispose();
+    }
+    // En la vista general, el Sol mide unos píxeles: en pausa, en reposo (render bajo demanda).
+    const overview = await createHarness();
+    settle(overview);
+    expect(overview.scheduler.waiting).toBe(0);
+    overview.engine.dispose();
+  });
+
+  it('el halo, sin derivadas (dentro de su rama no están definidas: con D3D dejaban puntos oscuros en el borde del Sol pequeño); lo que mide un píxel, con la densidad del renderer', async () => {
+    interface HaloPixel {
+      world: {
+        haloMaterial: {
+          material: { fragmentShader: string };
+          uniforms: { uPixelRatio: { value: number } };
+        };
+      };
+    }
+    const h = await createHarness();
+    settle(h);
+    const halo = (h.engine as unknown as HaloPixel).world.haloMaterial;
+    const code = halo.material.fragmentShader
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/\/\/.*$/gm, '');
+    expect(code).not.toMatch(/\b(fwidth|dFdx|dFdy)\s*\(/);
+    h.engine.resize(WIDTH, HEIGHT, 3);
+    expect(h.renderer.size.pixelRatio).toBeGreaterThan(1);
+    expect(halo.uniforms.uPixelRatio.value).toBe(h.renderer.size.pixelRatio);
+    h.engine.dispose();
   });
 });
 
@@ -1189,9 +1568,92 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
       2,
     );
     expect(earth.uOccluderLocal.value.w).toBeCloseTo(0.272, 2);
-    // Y las tierras áridas, con su compresión de la configuración visual (calibrada con EPIC).
+    // Y las tierras áridas, con su compresión de la configuración visual (calibrada con EPIC; de
+    // noche, también con la Tierra realzada).
     const { knee, warmFrom, warmTo } = VISUAL_CONFIG.earth.arid;
     expect(earth.uArid.value.toArray()).toEqual([knee, warmFrom, warmTo]);
+    h.engine.dispose();
+  });
+
+  it('la Tierra del explorador, realzada (fase 9b, D46): el océano, las nubes, la tierra, el reflejo y el borde de su atmósfera, con VISUAL_CONFIG.earth.enhanced; el halo de los demás, sin tinte', async () => {
+    const h = await createHarness({ reducedMotion: true, focus: 'tierra' });
+    settle(h);
+    interface EnhancedVisual {
+      body: { id: string };
+      earth: {
+        uOcean: { value: Vector4 };
+        uOceanDetail: { value: { x: number; y: number } };
+        uCloudShape: { value: Vector4 };
+        uLand: { value: Vector4 };
+        uVegetationTint: { value: Vector3 };
+        uGlintShape: { value: Vector4 };
+        uGlintFresnel: { value: { x: number; y: number } };
+        uGlintTint: { value: Vector3 };
+        uEarth: { value: Vector4 };
+        uEnhancedAridKnee: { value: number };
+      } | null;
+      atmosphere: { uniforms: { uTint?: { value: Vector3 } } } | null;
+    }
+    const visuals = (internals(h).world as unknown as { visuals: EnhancedVisual[] }).visuals;
+    const visual = visuals.find((v) => v.body.id === 'tierra');
+    const earth = visual?.earth;
+    if (!earth) throw new Error('Sin uniformes de la Tierra');
+    const { ocean, clouds, glint, land, rim } = VISUAL_CONFIG.earth.enhanced;
+    expect(earth.uOcean.value.toArray()).toEqual([...ocean.albedo, 1]);
+    expect(earth.uOceanDetail.value).toMatchObject({ x: ocean.waterLuminance, y: ocean.detail });
+    expect(earth.uCloudShape.value.toArray()).toEqual([clouds.from, clouds.to, clouds.max, 1]);
+    expect(earth.uLand.value.toArray()).toEqual([...land.aridTint, land.saturation]);
+    expect(earth.uVegetationTint.value.toArray()).toEqual([...land.vegetationTint]);
+    expect(earth.uGlintShape.value.toArray()).toEqual([glint.wide, glint.exponent, glint.core, 1]);
+    expect(earth.uGlintFresnel.value).toMatchObject({ x: glint.f0, y: glint.fresnelMax });
+    expect(earth.uGlintTint.value.toArray()).toEqual([...glint.tint]);
+    expect(earth.uEarth.value.z).toBe(glint.intensity);
+    expect(earth.uEnhancedAridKnee.value).toBe(land.aridKnee);
+    // Los umbrales de las nubes, en orden, y su opacidad, sin pasar de la de la textura.
+    expect(clouds.from).toBeLessThan(clouds.to);
+    expect(clouds.max).toBeLessThanOrEqual(1);
+    expect(visual?.atmosphere?.uniforms.uTint?.value.toArray()).toEqual([...rim]);
+    // Los demás halos, sin tinte (y sin `TLS_TINT`: su shader, el de siempre).
+    for (const other of visuals.filter((v) => v.body.id !== 'tierra' && v.atmosphere)) {
+      expect(other.atmosphere?.uniforms.uTint, other.body.id).toBeUndefined();
+    }
+    h.engine.dispose();
+  });
+
+  it('cuenta las texturas en vuelo: las pedidas que aún no han llegado ni fallado (cierre de la fase 9b)', async () => {
+    // Una fuente que no responde hasta que se le dice: todas las cargas, en vuelo.
+    const pending: (() => void)[] = [];
+    const source = {
+      load: (id: TextureId, level: TextureLevel): Promise<LoadedTexture | null> =>
+        new Promise((resolve) => {
+          pending.push(() =>
+            resolve({
+              texture: new Texture(),
+              file: { level, path: `${id}.webp`, width: 4, height: 2, bytes: 1 },
+              vramBytes: 32,
+            }),
+          );
+        }),
+    };
+    const h = await createHarness(
+      { reducedMotion: true },
+      { textures: () => ({ source, meta: TEXTURE_META }) },
+    );
+    settle(h);
+    for (let k = 0; k < 5; k++) await flush();
+    expect(pending.length).toBeGreaterThan(0);
+    expect(h.engine.stats().texturesLoading).toBe(pending.length);
+    // Al llegar (también las que se pidan al llegar otras), ninguna en vuelo.
+    let settled = 0;
+    for (let round = 0; round < 5 && settled < pending.length; round++) {
+      const batch = pending.slice(settled);
+      settled = pending.length;
+      for (const resolve of batch) resolve();
+      settle(h);
+      for (let k = 0; k < 5; k++) await flush();
+    }
+    expect(settled).toBe(pending.length);
+    expect(h.engine.stats().texturesLoading).toBe(0);
     h.engine.dispose();
   });
 
@@ -1216,7 +1678,8 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
       );
       settle(h);
       for (let k = 0; k < 5; k++) await flush();
-      const { vramMB } = h.engine.stats();
+      // Las texturas, sin los render targets del bloom del Sol (fase 9b), que se cuentan aparte.
+      const vramMB = h.engine.stats().vramMB - h.renderer.sunBloom.vramBytes() / 1_048_576;
       h.engine.dispose();
       return { requests, vramMB };
     };
@@ -1314,6 +1777,96 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
       expect(h.engine.stats().vramMB, view).toBeLessThan(60);
       h.engine.dispose();
     }
+  });
+
+  /** Los uniformes del radar de Venus (fase 9b, D44), en su material. */
+  const venusRadarUniforms = (h: Harness) => {
+    interface RadarVisual {
+      body: { id: string };
+      radar: {
+        uRadarMap: { value: Texture | null };
+        uRadarMix: { value: number };
+        uRadar: { value: { x: number; y: number } };
+      } | null;
+    }
+    const { world } = h.engine as unknown as { world: { visuals: RadarVisual[] } };
+    const venus = world.visuals.find((visual) => visual.body.id === 'venus');
+    // Solo Venus lleva la capa (`TLS_RADAR`): ningún otro cuerpo cambia.
+    expect(world.visuals.filter((visual) => visual.radar).map((v) => v.body.id)).toEqual(['venus']);
+    if (!venus?.radar) throw new Error('Venus sin la capa del radar');
+    return venus.radar;
+  };
+
+  it('Venus «Bajo las nubes» (fase 9b, D44): el radar se pide al encenderlo con Venus enfocada, entra con un fundido, cuenta en la VRAM y se suelta al dejar Venus', async () => {
+    const fake = realisticTextures();
+    const h = await createHarness({ focus: 'venus' }, { textures: fake.textures });
+    settle(h);
+    for (let k = 0; k < 5; k++) await flush();
+    const radar = venusRadarUniforms(h);
+    // Apagado, no se pide ni ocupa nada.
+    expect(fake.requests.filter((name) => name.startsWith('venus-radar'))).toEqual([]);
+    expect(radar.uRadarMix.value).toBe(0);
+    const before = h.engine.stats().vramMB;
+    h.engine.setVenusRadar(true);
+    for (let k = 0; k < 5; k++) await flush();
+    expect(fake.requests).toContain('venus-radar@4k');
+    expect(h.events.venusRadar.map((event) => event.state)).toEqual(['loading', 'on']);
+    expect(radar.uRadarMap.value?.name).toBe('venus-radar@4k');
+    // Su brillo, el de una textura de Venus; la neblina del limbo, atenuada.
+    expect(radar.uRadar.value.x).toBeGreaterThan(0);
+    expect(radar.uRadar.value.y).toBe(VISUAL_CONFIG.venus.radar.haze);
+    // El fundido, frame a frame (el motor sigue pidiendo frames mientras dura).
+    h.frames(VISUAL_CONFIG.venus.radar.fadeMs / 2);
+    expect(radar.uRadarMix.value).toBeGreaterThan(0.3);
+    expect(radar.uRadarMix.value).toBeLessThan(0.8);
+    settle(h);
+    expect(radar.uRadarMix.value).toBe(1);
+    // §5, con la textura cargada: su VRAM cuenta (la de 4k con mipmaps, unos 45 MB).
+    expect(h.engine.stats().vramMB - before).toBeCloseTo(
+      textureVramBytes(4096, 2048) / 1_048_576,
+      1,
+    );
+    // Al dejar Venus, se suelta y vuelven las nubes.
+    h.engine.focus('marte');
+    expect(fake.released).toContain('venus-radar@4k');
+    expect(radar.uRadarMap.value).toBeNull();
+    expect(radar.uRadarMix.value).toBe(0);
+    expect(h.events.venusRadar.at(-1)?.state).toBe('off');
+    // Sin Venus enfocada, no se enciende.
+    h.engine.setVenusRadar(true);
+    for (let k = 0; k < 5; k++) await flush();
+    expect(fake.requests.filter((name) => name.startsWith('venus-radar'))).toHaveLength(1);
+    h.engine.dispose();
+  });
+
+  it('Venus «Bajo las nubes», con movimiento reducido: un corte; y en captura, ?radar=1 lo enciende ya cargado', async () => {
+    const reduced = realisticTextures();
+    const h = await createHarness(
+      { focus: 'venus', reducedMotion: true },
+      { textures: reduced.textures },
+    );
+    settle(h);
+    h.engine.setVenusRadar(true);
+    for (let k = 0; k < 5; k++) await flush();
+    h.frames(16);
+    expect(venusRadarUniforms(h).uRadarMix.value).toBe(1);
+    // Apagarlo también es un corte: se suelta ya.
+    h.engine.setVenusRadar(false);
+    expect(reduced.released).toContain('venus-radar@4k');
+    expect(venusRadarUniforms(h).uRadarMix.value).toBe(0);
+    h.engine.dispose();
+
+    const captured = realisticTextures();
+    const c = await createHarness(
+      { focus: 'venus', capture: true, venusRadar: true },
+      { textures: captured.textures },
+    );
+    settle(c);
+    for (let k = 0; k < 5; k++) await flush();
+    settle(c);
+    expect(captured.requests).toContain('venus-radar@4k');
+    expect(venusRadarUniforms(c).uRadarMix.value).toBe(1);
+    c.engine.dispose();
   });
 
   it('las sombras que recibe Júpiter (sus cuatro galileanas) y la que recibe Ío (Júpiter), con la geometría de satelliteShadowPoint (fase 7)', async () => {
@@ -1504,6 +2057,106 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     h.engine.dispose();
   });
 
+  it('Jápeto, con su dicotomía: el cociente de sus dos caras, el de la NASA, y su brillo calibrado con el hemisferio trasero (fase 9b, D42)', async () => {
+    const reference = TEXTURE_ALBEDO_REFERENCE.iapetus;
+    // El material oscuro del hemisferio delantero frente al trasero: 0,04 / 0,55 (NASA), medido en el mapa.
+    expect(reference?.albedo).toBe(0.55);
+    expect(reference?.ratio ?? 0).toBeCloseTo(0.04 / 0.55, 2);
+    const source = {
+      load: (id: TextureId, level: TextureLevel): Promise<LoadedTexture> =>
+        Promise.resolve({
+          texture: new Texture(),
+          file: { level, path: `${id}.webp`, width: 4, height: 2, bytes: 1 },
+          vramBytes: 32,
+        }),
+    };
+    const h = await createHarness(
+      { reducedMotion: true },
+      { textures: () => ({ source, meta: TEXTURE_META }) },
+    );
+    h.engine.focus('saturno');
+    for (let round = 0; round < 2; round++) {
+      settle(h);
+      for (let k = 0; k < 5; k++) await flush();
+    }
+    const visual = (
+      internals(h).world as unknown as {
+        visuals: { body: { id: string }; uniforms: { uAlbedoScale: { value: number } } | null }[];
+      }
+    ).visuals.find((v) => v.body.id === 'japeto');
+    // Con su textura, el hemisferio trasero al 0,55; no la media del mapa al 0,05 del catálogo.
+    expect(visual?.uniforms?.uAlbedoScale.value).toBeCloseTo(
+      albedoScale(0.55, reference?.luminance ?? 0, BODY_PHOTOMETRY.japeto.photometry),
+      9,
+    );
+    h.engine.dispose();
+  });
+
+  it('Fobos y Deimos, con su forma real cuando se ven con su mapa; rehecha al cambiar de calidad y liberada al cerrar (fase 9b, D42)', async () => {
+    const source = {
+      load: (id: TextureId, level: TextureLevel): Promise<LoadedTexture> =>
+        Promise.resolve({
+          texture: new Texture(),
+          file: { level, path: `${id}.webp`, width: 4, height: 2, bytes: 1 },
+          vramBytes: 32,
+        }),
+    };
+    const files: Record<string, Uint8Array> = { phobos: phobosBin, deimos: deimosBin };
+    const loadShape = vi.fn((path: string) => {
+      const bytes = files[path.replace(/^data\/shapes\/(\w+)\.bin.*$/, '$1')];
+      if (!bytes) return Promise.reject(new Error(path));
+      return Promise.resolve(
+        bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer,
+      );
+    });
+    const h = await createHarness(
+      { reducedMotion: true },
+      { textures: () => ({ source, meta: TEXTURE_META }), loadShape },
+    );
+    const step = async () => {
+      for (let round = 0; round < 2; round++) {
+        settle(h);
+        for (let k = 0; k < 5; k++) await flush();
+      }
+    };
+    await step();
+    // En la vista general, sin sus mapas: tampoco su forma.
+    expect(loadShape).not.toHaveBeenCalled();
+    const scene = internals(h).world.scene;
+    const geometryOf = (id: string) => (scene.getObjectByName(id) as Mesh).geometry;
+    const sphere = geometryOf('fobos');
+    h.engine.focus('marte');
+    await step();
+    expect(loadShape.mock.calls.map(([path]) => path).sort()).toEqual(
+      [SHAPE_FILES.deimos?.path, SHAPE_FILES.fobos?.path].sort(),
+    );
+    // La esfera deformada: con normales y más larga que la esfera (13,9 km de 11,08).
+    const phobos = geometryOf('fobos');
+    expect(phobos).not.toBe(sphere);
+    expect(phobos.getAttribute('normal')).toBeDefined();
+    expect(phobos.boundingSphere?.radius ?? 0).toBeGreaterThan(1.2);
+    expect(geometryOf('deimos')).not.toBe(sphere);
+    // Enfocada, sobre la esfera detallada; al cambiar de calidad, rehecha y la anterior liberada.
+    h.engine.focus('fobos');
+    await step();
+    const focused = geometryOf('fobos');
+    expect(focused).not.toBe(phobos);
+    let disposed = false;
+    focused.addEventListener('dispose', () => (disposed = true));
+    h.engine.setQuality('low');
+    await step();
+    expect(disposed).toBe(true);
+    expect(geometryOf('fobos')).not.toBe(focused);
+    expect(geometryOf('fobos').getAttribute('normal')).toBeDefined();
+    // Se pide una sola vez.
+    expect(loadShape).toHaveBeenCalledTimes(2);
+    const last = geometryOf('fobos');
+    let released = false;
+    last.addEventListener('dispose', () => (released = true));
+    h.engine.dispose();
+    expect(released).toBe(true);
+  });
+
   it('el halo de Titán, con su propio color (casi neutro) y el disco, con el naranja de su neblina (fase 7)', async () => {
     const h = await createHarness({ reducedMotion: true });
     interface HaloVisual {
@@ -1621,6 +2274,97 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     }
   }, 60_000);
 
+  it('una luna que se ve grande lleva su mapa sin su sistema enfocado, y lo suelta al alejarse (fase 9b, D42)', async () => {
+    const requests: string[] = [];
+    const released: string[] = [];
+    const source = {
+      load: (id: TextureId, level: TextureLevel): Promise<LoadedTexture> => {
+        const texture = new Texture();
+        texture.name = `${id}@${level}`;
+        texture.addEventListener('dispose', () => released.push(texture.name));
+        requests.push(texture.name);
+        return Promise.resolve({
+          texture,
+          file: { level, path: `${id}.webp`, width: 4, height: 2, bytes: 1 },
+          vramBytes: 32,
+        });
+      },
+    };
+    const h = await createHarness(
+      { reducedMotion: true },
+      { textures: () => ({ source, meta: TEXTURE_META }) },
+    );
+    const step = async () => {
+      for (let k = 0; k < 5; k++) await flush();
+    };
+    settle(h);
+    await step();
+    const world = internals(h).world as unknown as {
+      seen: Uint8Array;
+      updateLarge(screen: readonly { index: number; onScreen: boolean; radiusPx: number }[]): void;
+    };
+    const ganymede = sceneBody('ganimedes').index;
+    const at = async (radiusPx: number, onScreen = true) => {
+      world.updateLarge([{ index: ganymede, onScreen, radiusPx }]);
+      await step();
+      return world.seen[ganymede];
+    };
+    // En la vista general, sin su mapa: su disco de color.
+    expect(requests.filter((r) => r.startsWith('ganymede@'))).toEqual([]);
+    expect(await at(20)).toBe(0);
+    // Desde 24 px, su mapa al nivel de la vista general (1k), sin enfocar Júpiter.
+    expect(await at(24)).toBe(1);
+    expect(requests).toEqual(expect.arrayContaining(['ganymede@1k']));
+    // Entre 18 y 24 lo conserva; por debajo de 18 lo suelta (y vuelve a su color).
+    expect(await at(20)).toBe(1);
+    expect(released).not.toContain('ganymede@1k');
+    expect(await at(17)).toBe(0);
+    expect(released).toContain('ganymede@1k');
+    // Fuera de la pantalla no lo pide; los planetas no cuentan (su regla es la de C4, 160 px).
+    expect(await at(40, false)).toBe(0);
+    world.updateLarge([{ index: sceneBody('marte').index, onScreen: true, radiusPx: 40 }]);
+    expect(world.seen[sceneBody('marte').index]).toBe(0);
+    h.engine.dispose();
+  });
+
+  it('con una luna enfocada, su planeta, que se ve grande detrás, lleva su textura del primer plano (fase 9b, D42; de la fase 10)', async () => {
+    const requests: string[] = [];
+    const source = {
+      load: (id: TextureId, level: TextureLevel): Promise<LoadedTexture> => {
+        const texture = new Texture();
+        texture.name = `${id}@${level}`;
+        requests.push(texture.name);
+        return Promise.resolve({
+          texture,
+          file: { level, path: `${id}.webp`, width: 4, height: 2, bytes: 1 },
+          vramBytes: 32,
+        });
+      },
+    };
+    // A esa hora, Júpiter queda detrás de Ío vista desde la cámara de su encuadre; a otras de su vuelta
+    // (1,8 días), detrás de la cámara.
+    const h = await createHarness(
+      { reducedMotion: true, time: new Date('2026-10-24T18:00:00Z') },
+      { textures: () => ({ source, meta: TEXTURE_META }) },
+    );
+    const step = async () => {
+      for (let round = 0; round < 3; round++) {
+        settle(h);
+        for (let k = 0; k < 5; k++) await flush();
+      }
+    };
+    await step();
+    const focusLevel = QUALITY_PROFILES.high.focusTexture;
+    expect(requests).not.toContain(`jupiter@${focusLevel}`);
+    // Ío enfocada: Júpiter, a 5,9 de sus radios, ocupa buena parte del fondo.
+    h.engine.focus('io');
+    await step();
+    const world = internals(h).world as unknown as { large: Uint8Array };
+    expect(world.large[sceneBody('jupiter').index]).toBe(1);
+    expect(requests).toContain(`jupiter@${focusLevel}`);
+    h.engine.dispose();
+  });
+
   it('C4: un cuerpo se ve grande desde 160 px y deja de verse grande por debajo de 120 (histéresis)', async () => {
     const h = await createHarness({ reducedMotion: true });
     settle(h);
@@ -1660,7 +2404,9 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
       } | null;
     };
     expect(world.moonSphere).toBeNull();
-    const overview = h.engine.stats().vramMB;
+    // Sin los render targets del bloom del Sol (fase 9b), que se sueltan al salir del sistema solar.
+    const vram = () => h.engine.stats().vramMB - h.renderer.sunBloom.vramBytes() / 1_048_576;
+    const overview = vram();
     h.engine.setView('moon');
     settle(h);
     const sphere = world.moonSphere;
@@ -1669,7 +2415,7 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     const bytes =
       Object.values(sphere.attributes).reduce((sum, a) => sum + a.array.byteLength, 0) +
       (sphere.index?.array.byteLength ?? 0);
-    expect(h.engine.stats().vramMB - overview).toBeCloseTo(bytes / 1_048_576, 1);
+    expect(vram() - overview).toBeCloseTo(bytes / 1_048_576, 1);
     // Al cambiar de calidad con la Luna enfocada, se rehace con los segmentos del nivel nuevo.
     let replaced = false;
     sphere.addEventListener('dispose', () => (replaced = true));
@@ -1775,6 +2521,38 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     settle(h);
     expect(opacity()).toBe(1);
     h.engine.dispose();
+  });
+
+  it('la cara nocturna de la Tierra: el relleno de la vista general, en gris; en primer plano, nada, y las luces con su tono (fase 9b, D40)', async () => {
+    interface EarthVisual {
+      uniforms: { uFill: { value: number } } | null;
+      earth: { uNightFill: { value: number }; uNightTint: { value: Color } } | null;
+    }
+    const earthOf = (h: Harness) =>
+      (internals(h).world as unknown as { visuals: EarthVisual[] }).visuals.find(
+        (visual) => visual.earth,
+      );
+    // En la vista general, el mismo relleno ilustrativo (la Tierra de noche se lee como un disco).
+    const overview = await createHarness({ reducedMotion: true });
+    settle(overview);
+    const far = earthOf(overview);
+    expect(far?.uniforms?.uFill.value).toBeCloseTo(VISUAL_CONFIG.fill.overview, 6);
+    expect(far?.earth?.uNightFill.value).toBeCloseTo(VISUAL_CONFIG.fill.overview, 6);
+    const [r, g, b] = VISUAL_CONFIG.earth.nightTint;
+    expect(far?.earth?.uNightTint.value.r).toBeCloseTo(r, 6);
+    expect(far?.earth?.uNightTint.value.g).toBeCloseTo(g, 6);
+    expect(far?.earth?.uNightTint.value.b).toBeCloseTo(b, 6);
+    // El tono, cálido y de luminancia 1 (el mapa en gris pone el brillo).
+    expect(0.2126 * r + 0.7152 * g + 0.0722 * b).toBeCloseTo(1, 2);
+    expect(r).toBeGreaterThan(b);
+    overview.engine.dispose();
+    // En la vista Tierra (primer plano), el de la cara nocturna desaparece: solo las luces.
+    const close = await createHarness({ reducedMotion: true, view: 'earth' });
+    settle(close);
+    const near = earthOf(close);
+    expect(near?.uniforms?.uFill.value).toBeLessThan(0.01);
+    expect(near?.earth?.uNightFill.value).toBeLessThan(1e-4);
+    close.engine.dispose();
   });
 
   it('las lunas de un sistema que no se distingue no se dibujan; al enfocar su planeta, sí (fase 4b)', async () => {

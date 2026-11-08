@@ -5,6 +5,8 @@
  * Uniformes por cuerpo:
  * - `uPhotometryA` = (L₀, s, k, B₀) y `uPhotometryB` = (h, g₁, f, g₂): la reflectancia.
  * - `uPhaseNorm` = 1 / Φ(0), para normalizar la función de fase (se calcula en JS).
+ * - `uTerminatorExponent` = e: el oscurecimiento hacia el terminador, min(1, μ₀/μ)^e (Titán, fase 9b;
+ *   0 en los demás).
  * - `uHaze` = (intensidad, exponente del limbo, crepúsculo, refuerzo a contraluz) y `uHazeColor` =
  *   (color lineal, asimetría del refuerzo): la atmósfera.
  */
@@ -21,6 +23,7 @@ export const SHADING_PARS = /* glsl */ `
 uniform vec4 uPhotometryA;
 uniform vec4 uPhotometryB;
 uniform float uPhaseNorm;
+uniform float uTerminatorExponent;
 uniform vec4 uHaze;
 uniform vec4 uHazeColor;
 
@@ -46,7 +49,9 @@ float tlsReflectance(float mu0, float mu, float alpha, float cosAlpha) {
   float k = uPhotometryA.z;
   float minnaert = pow(mu0, k) * pow(m, k - 1.0);
   float weight = clamp(uPhotometryA.x - uPhotometryA.y * alpha, 0.0, 1.0);
-  return mix(minnaert, lommelSeeliger, weight) * tlsPhase(alpha, cosAlpha) * uPhaseNorm;
+  // El oscurecimiento hacia el terminador (terminatorDarkening en ephemeris/photometry.ts).
+  float darkening = uTerminatorExponent > 0.0 ? pow(min(1.0, mu0 / m), uTerminatorExponent) : 1.0;
+  return mix(minnaert, lommelSeeliger, weight) * darkening * tlsPhase(alpha, cosAlpha) * uPhaseNorm;
 }
 
 // Atmósfera: crece hacia el limbo, sigue al Sol hasta el crepúsculo y se refuerza a contraluz.
@@ -64,6 +69,7 @@ export interface ShadingUniforms {
   readonly uPhotometryA: Uniform<Vector4>;
   readonly uPhotometryB: Uniform<Vector4>;
   readonly uPhaseNorm: Uniform<number>;
+  readonly uTerminatorExponent: Uniform<number>;
   readonly uHaze: Uniform<Vector4>;
   readonly uHazeColor: Uniform<Vector4>;
 }
@@ -93,6 +99,7 @@ export function shadingUniforms(
       ),
     ),
     uPhaseNorm: new Uniform(1 / phaseFunction(0, photometry)),
+    uTerminatorExponent: new Uniform(photometry.terminatorExponent ?? 0),
     uHaze: new Uniform(
       haze
         ? new Vector4(haze.strength, haze.limbExponent, haze.twilight, haze.forwardBoost)

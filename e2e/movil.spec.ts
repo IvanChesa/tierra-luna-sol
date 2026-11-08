@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { coveredFocus, indexToggle, openExplorer, simTime, treeRow } from './support';
+import { TAP_MIN_PX, coveredFocus, indexToggle, openExplorer, simTime, treeRow } from './support';
 
 /**
  * Desliza el dedo desde el centro de `selector`, `dy` píxeles (hacia abajo, positivo), a paso de
@@ -65,6 +65,34 @@ test.describe('Móvil', () => {
     await expect(page.locator('.site-focus')).toHaveCount(0);
     // Vuelve el H1 (la descripción ya se ha plegado al usar el explorador).
     await expect.poll(async () => (await intro.boundingBox())?.height ?? 0).toBeGreaterThan(20);
+  });
+
+  test('Venus «Bajo las nubes» (fase 9b, D44): en la ficha en reposo, el botón y, al tocarlo, su aviso a la vista', async ({
+    page,
+  }) => {
+    await openExplorer(page, '/?captura=1&cuerpo=venus');
+    await page.getByRole('button', { name: 'Ver la ficha de Venus' }).tap();
+    const panel = page.locator('.panel');
+    await expect(panel.locator('#card-title')).toHaveText('Venus');
+    const button = panel.getByRole('button', { name: 'Bajo las nubes' });
+    await expect(button).toBeVisible();
+    await expect(button).toHaveAttribute('aria-pressed', 'false');
+    // Su zona táctil, de al menos 44 px de alto.
+    expect((await button.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(TAP_MIN_PX);
+    await button.tap();
+    await expect(button).toHaveAttribute('aria-pressed', 'true');
+    const note = panel.locator('#card-radar-note');
+    await expect(note).toHaveText(
+      'Imagen de radar de la sonda Magellan, no lo que verían tus ojos.',
+    );
+    await expect(note).toBeInViewport();
+    // Al cerrar la ficha (y con ella el aviso), vuelven las nubes.
+    await page.getByRole('button', { name: 'Cerrar la ficha' }).tap();
+    await page.getByRole('button', { name: 'Ver la ficha de Venus' }).tap();
+    await expect(panel.getByRole('button', { name: 'Bajo las nubes' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
   });
 
   test('con el teclado: «ⓘ» abre la ficha con el foco en su contenido; nada tapado; Esc la cierra y el foco vuelve a «ⓘ» (decisión del 08-11)', async ({
@@ -181,8 +209,8 @@ test.describe('Móvil', () => {
     );
     expect(sizes).toHaveLength(9);
     for (const [width, height] of sizes) {
-      expect(width).toBeGreaterThanOrEqual(44);
-      expect(height).toBeGreaterThanOrEqual(44);
+      expect(width).toBeGreaterThanOrEqual(TAP_MIN_PX);
+      expect(height).toBeGreaterThanOrEqual(TAP_MIN_PX);
     }
     // No caben todas: la fila se desplaza (la página, no).
     expect(await row.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(true);
@@ -200,7 +228,7 @@ test.describe('Móvil', () => {
     for (const height of await moons
       .getByRole('button')
       .evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().height))) {
-      expect(height).toBeGreaterThanOrEqual(44);
+      expect(height).toBeGreaterThanOrEqual(TAP_MIN_PX);
     }
   });
 

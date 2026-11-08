@@ -18,6 +18,14 @@ import { BASE, PAGE_OPTIONS, openBrowser, openViewer, rendererName } from './cap
 
 /** Contadores en la página, antes de cargar nada: rAF, tareas largas, LCP y desplazamientos. */
 const INIT = () => {
+  // El recorrido de la portada y las pistas (fase 9c), ya vistos: la primera vez en `/` sin parámetros
+  // arrancaría el recorrido, y esto mide el arranque de siempre (sección 12 del informe de la 9c).
+  try {
+    localStorage.setItem('tls.recorrido', 'visto');
+    localStorage.setItem('tls.pistas', 'visto');
+  } catch {
+    // Sin almacenamiento, no hay recorrido que evitar (no se sabe si se ha visto).
+  }
   const original = window.requestAnimationFrame.bind(window);
   window.__raf = 0;
   window.requestAnimationFrame = (callback) => {

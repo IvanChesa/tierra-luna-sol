@@ -211,6 +211,15 @@ export class ExplorerUi implements OnInit {
   /** El 3D se ve: los controles de cámara aparecen (antes, y si falla, no harían nada). */
   protected readonly ready3d = signal(false);
   /**
+   * Venus «Bajo las nubes» (fase 9b, D44): el estado del radar para la ficha de Venus, en la vista del
+   * sistema solar y con el 3D a la vista; `null` (sin botón) en las demás.
+   */
+  protected readonly venusRadar = computed(() =>
+    this.panelBody() === 'venus' && this.view() === 'system' && this.ready3d()
+      ? this.session.radar()
+      : null,
+  );
+  /**
    * Ya se ha usado el explorador (un clic, un toque o una tecla dentro de él). Al cambiar de vista
    * vuelve a `false`: se ve el texto de la vista nueva hasta la siguiente interacción.
    */
@@ -317,6 +326,16 @@ export class ExplorerUi implements OnInit {
       this.tour?.stop();
     });
     this.followFocus();
+    // El radar de Venus, solo con su ficha a la vista (donde está su aviso): si se cierra, si cambia el
+    // cuerpo o la vista, vuelven las nubes (el motor, un sistema externo). Con `?radar=1` (solo en
+    // captura), lo decide la URL: en el móvil, la ficha no se abre sola.
+    effect(() => {
+      const offered = this.venusRadar() !== null || this.session.params.venusRadar;
+      const state = this.session.radar();
+      if (!offered && (state === 'on' || state === 'loading')) {
+        untracked(() => this.session.setVenusRadar(false));
+      }
+    });
 
     this.hintsPending = hasSeen(this.storage, 'tls.pistas') !== true && !this.session.capture;
     this.session.setTourHandler(() => this.startTour());

@@ -24,6 +24,8 @@ describe('parámetros del explorador', () => {
       toneMapping: null,
       isolate: false,
       illustrativeFocus: false,
+      sunMeasure: false,
+      venusRadar: false,
       place: null,
       skyView: null,
       shadow: false,
@@ -62,14 +64,22 @@ describe('parámetros del explorador', () => {
       true,
     );
     expect(parseViewerParams('?captura=1&cuerpo=jupiter&marco=real').illustrativeFocus).toBe(false);
+    // El Sol para medir su limbo (fase 9b).
+    expect(parseViewerParams('?captura=1&cuerpo=sol&medida=limbo').sunMeasure).toBe(true);
+    expect(parseViewerParams('?captura=1&cuerpo=sol&medida=otra').sunMeasure).toBe(false);
+    // Venus con el radar de Magellan (fase 9b, D44).
+    expect(parseViewerParams('?captura=1&cuerpo=venus&radar=1').venusRadar).toBe(true);
+    expect(parseViewerParams('?captura=1&cuerpo=venus&radar=si').venusRadar).toBe(false);
     // Fuera del modo de captura no existen.
     const normal = parseViewerParams(
-      '?desde=tierra&tonemapping=aces&aislado=1&cuerpo=jupiter&marco=ilustrativo',
+      '?desde=tierra&tonemapping=aces&aislado=1&cuerpo=jupiter&marco=ilustrativo&medida=limbo&radar=1',
     );
     expect(normal.viewFrom).toBeNull();
     expect(normal.toneMapping).toBeNull();
     expect(normal.isolate).toBe(false);
     expect(normal.illustrativeFocus).toBe(false);
+    expect(normal.sunMeasure).toBe(false);
+    expect(normal.venusRadar).toBe(false);
   });
 
   it('ignora lo que no es válido sin romper nada y explica cada parámetro ignorado', () => {
@@ -88,6 +98,8 @@ describe('parámetros del explorador', () => {
       toneMapping: null,
       isolate: false,
       illustrativeFocus: false,
+      sunMeasure: false,
+      venusRadar: false,
       place: null,
       skyView: null,
       shadow: false,

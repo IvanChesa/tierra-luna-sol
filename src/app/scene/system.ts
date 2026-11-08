@@ -9,6 +9,7 @@ import type { BodyId, BodyKind } from '../data/body.model';
 import { MOON_ELEMENTS } from '../data/moon-elements';
 import { isGalilean, isMeanElementsMoon } from '../data/solar-system';
 import { KM_PER_AU } from '../ephemeris/constants';
+import { createMoonSystems } from '../ephemeris/scale';
 import { GalileanId, PlanetId, isPlanetId } from '../ephemeris/ids';
 import { MeanElements } from '../ephemeris/moons';
 import { IauBodyId } from '../ephemeris/orientation';
@@ -82,3 +83,18 @@ function neptuneSemiMajorAxisAu(): number {
 
 /** Semieje mayor de Neptuno (UA, de la ficha de la NASA): la referencia de la escala real global. */
 export const NEPTUNE_SEMI_MAJOR_AXIS_AU = neptuneSemiMajorAxisAu();
+
+/**
+ * Los sistemas de lunas de la vista general (fase 9b, D39): el tamaño y la órbita ilustrativa de cada
+ * luna, del catálogo (radio, semieje y excentricidad), y lo que ocupa Saturno con sus anillos.
+ */
+export const MOON_SYSTEMS = createMoonSystems(
+  RADII_KM,
+  Int16Array.from(SCENE_BODIES, (body) => (body.parent ? sceneBody(body.parent).index : -1)),
+  Float64Array.from(SCENE_BODIES, (body) => BODY_DATA[body.id].orbit?.semiMajorAxisKm.value ?? 0),
+  Float64Array.from(SCENE_BODIES, (body) => BODY_DATA[body.id].orbit?.eccentricity.value ?? 0),
+  Float64Array.from(SCENE_BODIES, (body) => {
+    const rings = BODY_DATA[body.id].rings;
+    return rings ? rings.outerRadiusKm.value / body.radiusKm : 1;
+  }),
+);

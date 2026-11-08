@@ -157,9 +157,12 @@ export class FrameController {
     return this.relative(this.pointIn(this.root, { kind: 'helio', pointAu }));
   }
 
-  /** Punto de la órbita de una luna (desplazamiento respecto a su planeta, UA), relativo al foco. */
-  moonPoint(parentIndex: number, offsetAu: Vec3): Vec3 {
-    return this.relative(this.pointIn(this.root, { kind: 'moon', parentIndex, offsetAu }));
+  /**
+   * Punto de la órbita de la luna `moonIndex` (desplazamiento respecto a su planeta, UA), relativo al
+   * foco: con la escala de su órbita y la compresión de su sistema en la vista general (D39).
+   */
+  moonPoint(moonIndex: number, offsetAu: Vec3): Vec3 {
+    return this.relative(this.pointIn(this.root, { kind: 'moon', moonIndex, offsetAu }));
   }
 
   private relative(p: Vec3): Vec3 {
@@ -201,19 +204,23 @@ export class FrameController {
 
 type PointSpec =
   | { readonly kind: 'helio'; readonly pointAu: Vec3 }
-  | { readonly kind: 'moon'; readonly parentIndex: number; readonly offsetAu: Vec3 };
+  | { readonly kind: 'moon'; readonly moonIndex: number; readonly offsetAu: Vec3 };
 
 function placePoint(leaf: FrameLeaf, point: PointSpec, input: PlacementInput): Vec3 {
   if (point.kind === 'helio') return placeHeliocentricPoint(leaf.spec, point.pointAu);
-  const parent = point.parentIndex;
+  const moon = point.moonIndex;
+  const parent = input.parentIndex[moon];
+  if (parent === undefined || parent < 0) throw new RangeError('No es una luna.');
   return placeMoonPoint(
     leaf.spec,
     {
       position: positionOf(leaf.placement, parent),
       radius: leaf.placement.radius[parent] as number,
-      radiusKm: input.radiusKm[parent] as number,
+      core: input.moons.core[parent] as number,
+      compression: leaf.placement.compression[parent] as number,
     },
     point.offsetAu,
+    input.moons.scale[moon] as number,
   );
 }
 
