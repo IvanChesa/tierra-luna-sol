@@ -226,9 +226,14 @@ kbd {
     box-shadow: 0 -12px 32px rgb(0 0 0 / 0.4);
   }
 
+  /*
+   * Entra con un fundido y sube poco: en su primer fotograma no llega a los controles de la barra. En
+   * un móvil lento la animación se puede quedar un rato al principio (sin fotogramas), y con 2 rem la
+   * hoja, aún transparente, tapaba reproducir (el e2e del CI lo vio): la barra, siempre a mano.
+   */
   @starting-style {
     .panel {
-      translate: 0 2rem;
+      translate: 0 0.5rem;
     }
   }
 

@@ -59,6 +59,34 @@ test.describe('Móvil', () => {
     await expect(page.locator('[data-e2e-last]')).toBeFocused();
   });
 
+  test('al abrirse la ficha, aunque su animación no avance (un móvil lento), la barra se puede pulsar', async ({
+    page,
+  }) => {
+    await openExplorer(page, '/?captura=1');
+    // Las animaciones, congeladas en su principio: como en el CI, con SwiftShader y casi sin
+    // fotogramas, donde la hoja (2 rem más abajo al entrar, aún transparente) tapaba reproducir.
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Animation.enable');
+    await cdp.send('Animation.setPlaybackRate', { playbackRate: 0 });
+    await page
+      .getByRole('toolbar', { name: 'Sol y planetas' })
+      .getByRole('button', { name: 'Marte', exact: true })
+      .tap();
+    await expect(page.locator('.panel #card-title')).toHaveText('Marte');
+    for (const name of ['Reproducir', 'Controles', 'Ficha completa de Marte']) {
+      const control = page.getByRole(name.startsWith('Ficha') ? 'link' : 'button', {
+        name,
+        exact: true,
+      });
+      const covered = await control.evaluate((element) => {
+        const box = element.getBoundingClientRect();
+        const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+        return hit === null || !element.contains(hit);
+      });
+      expect(covered, name).toBe(false);
+    }
+  });
+
   test('durante un viaje con la ficha abierta, «Saltar el viaje» queda encima de la ficha', async ({
     page,
   }) => {
