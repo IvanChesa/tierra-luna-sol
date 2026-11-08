@@ -189,7 +189,9 @@ export const VISUAL_CONFIG = {
    *   desborda la parte visible del lienzo (su radio en pantalla entre la mitad del lado más corto de
    *   esa parte): opacidad completa hasta `from` (el disco entero a la vista: las comparativas con
    *   EPIC y la medida de R3 no cambian) y, al acercarse, baja suavemente hasta `min` en `to`. Su
-   *   sombra, igual (`cloudOpacity`);
+   *   sombra, igual (`cloudOpacity`). Con la Tierra realzada (fase 9b, D46), `min` baja de 0,3 a
+   *   0,15: de cerca, la textura de las nubes no da para el zoom y sus restos salían como velos
+   *   borrosos;
    * - `markers`: los marcadores de los lugares del cielo desde España (vista «España»): su color, el
    *   de su borde (sRGB; los separa del océano y de las nubes) y su diámetro en px CSS.
    */
@@ -203,32 +205,36 @@ export const VISUAL_CONFIG = {
     scatter: { color: '#5b8fe6', intensity: 0.035, limb: 1.5 },
     twilight: '#ffb488',
     cloudDrift: 0.0004,
-    cloudFade: { from: 1, to: 2.2, min: 0.3 },
+    cloudFade: { from: 1, to: 2.2, min: 0.15 },
     markers: { color: '#e8c46f', edge: '#38455a', sizePx: 7 },
     /**
      * **La Tierra realzada del explorador** (fase 9b, D46, decisión de Iván del 06-11: «La tierra
      * también se tiene que mejorar»), ilustrativa y avisada, como la referencia (earth.ethanplus.ai, con
      * las mismas texturas de Solar System Scope): manda sobre los ajustes de EPIC de arriba donde se
-     * contradicen (`scripts/measure-earth-epic.mjs` queda como registro). Medida frente a capturas
-     * propias de la referencia (`scripts/measure-d46.mjs`, en CIELAB: el 15-01-2026, con África y Europa
-     * de día). La cara nocturna (D40) y las luces no cambian.
+     * contradicen (`scripts/measure-earth-epic.mjs` queda como registro). Calibrada frente a capturas
+     * propias de la referencia (`scripts/measure-d46.mjs --solo=tierra`, en CIELAB: el 15-01-2026, con
+     * África y Europa de día; `docs/informes/fase-9b-entrega-tierra.md`). La cara nocturna (D40) y las
+     * luces no cambian.
      * - `ocean`: el albedo lineal del océano (en la máscara de agua de siempre), un azul vivo, y lo que
      *   conserva de la variación de brillo de la textura (su luminancia en el agua, 0,0477 de mediana, y
-     *   el exponente: 0, nada; 1, en proporción).
+     *   el exponente: 0, nada; 1, en proporción): el Atlántico sur y el Índico, en el tono de la
+     *   referencia (h 275–280°, frente a 277–286°) y con más croma (33 frente a 21–27).
      * - `clouds`: la cobertura de la textura, llevada a smoothstep(`from`, `to`) × `max`: sin las nubes
-     *   más finas y con menos opacidad (los continentes se leen enteros), sin borrar los grandes
-     *   sistemas. Su sombra, igual.
-     * - `glint`: el reflejo del Sol en el agua: un lóbulo ancho (`wide`, su peso, y `exponent`: con 16,
-     *   la mitad de su brillo a unos 17° de arco del punto del reflejo, un tercio del radio del disco)
-     *   además del núcleo de siempre (`core`), por Fresnel (Schlick con la F0 del agua, `f0`, relativo a
-     *   la incidencia normal y hasta `fresnelMax` veces más hacia el borde), con su brillo en la
-     *   incidencia normal (`intensity`, en lugar del `glint` de arriba): grande, suave y sin quemar a
-     *   blanco.
+     *   finas ni los velos (de cerca, la textura no da para ellos y salían borrosos) y con menos
+     *   opacidad, sin borrar los grandes sistemas; los continentes se leen enteros (el 1,5 % del disco
+     *   con nubes, frente al 9,8 % de antes y el 0,7 % de la referencia). Su sombra, igual.
+     * - `glint`: el reflejo del Sol en el agua: un lóbulo ancho (`wide`, su peso; `exponent`: con 12, la
+     *   mitad de su brillo a unos 19° de arco del punto del reflejo, un tercio del radio del disco) y de
+     *   su tono (`tint`, lineal: el cian del agua que lo refleja, como en la referencia), además del
+     *   núcleo de siempre (`core`, blanco), por Fresnel (Schlick con la F0 del agua, `f0`, relativo a la
+     *   incidencia normal y hasta `fresnelMax` veces más hacia el borde), con su brillo en la incidencia
+     *   normal (`intensity`, en lugar del `glint` de arriba): grande, suave y sin quemar a blanco.
      * - `land`: la saturación de la tierra (1: la de la textura), la rodilla de la compresión de lo
-     *   árido (en lugar de `arid.knee`, más alta: el desierto, más claro) y el tinte de lo árido (lineal,
-     *   en la misma zona cálida: más amarillo).
+     *   árido (en lugar de `arid.knee`; más alta: el desierto, más claro, L\* 63 frente a 65 en la
+     *   referencia) y el tinte lineal de lo árido (la misma zona cálida: más amarillo) y de la
+     *   vegetación (donde el verde supera al rojo y al azul: más verde; ni la nieve ni las salinas).
      * - `relief`: la fuerza del mapa de normales de la Tierra (1: el relieve sin exagerar): las montañas
-     *   se ven desde la Tierra completa.
+     *   se ven desde la Tierra completa. Con más de 6 salen los bloques de compresión del mapa.
      * - `rim`: el borde de la atmósfera, su tinte (lineal) sobre el halo: más azul y brillante.
      */
     enhanced: {
@@ -237,15 +243,24 @@ export const VISUAL_CONFIG = {
         waterLuminance: 0.0477,
         detail: 0.5,
       },
-      clouds: { from: 0.3, to: 0.95, max: 0.8 },
-      glint: { intensity: 0.5, core: 1, wide: 1, exponent: 16, f0: 0.02, fresnelMax: 4 },
-      land: {
-        saturation: 1.35,
-        aridKnee: 1.2,
-        aridTint: [1, 1.04, 0.92] as readonly [number, number, number],
+      clouds: { from: 0.45, to: 0.95, max: 0.8 },
+      glint: {
+        intensity: 0.5,
+        core: 1,
+        wide: 1.4,
+        exponent: 12,
+        tint: [0.25, 0.6, 1] as readonly [number, number, number],
+        f0: 0.02,
+        fresnelMax: 4,
       },
-      relief: 2.5,
-      rim: [0.8, 1.1, 1.8] as readonly [number, number, number],
+      land: {
+        saturation: 1.4,
+        aridKnee: 2.5,
+        aridTint: [0.97, 1, 0.86] as readonly [number, number, number],
+        vegetationTint: [0.9, 1.08, 0.8] as readonly [number, number, number],
+      },
+      relief: 5,
+      rim: [3, 4.5, 8] as readonly [number, number, number],
     },
   },
   /**
