@@ -112,6 +112,37 @@
   line-height: 1.55;
 }
 
+/*
+ * Venus «Bajo las nubes» (fase 9b, D44): el botón (un control con aria-pressed, como las vistas guiadas)
+ * y, debajo, lo que enseña: el aviso de que es una imagen de radar. Junto al resumen: en el móvil, a la
+ * vista también con la hoja en reposo.
+ */
+.card__radar {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-6);
+}
+
+.card__radar-note,
+.card__note {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+/* La línea del Sol en color realzado (fase 9b, D46), antes de sus datos. */
+.card__note {
+  margin-bottom: var(--space-6);
+}
+
+@media (pointer: coarse) {
+  .card__radar-toggle {
+    min-height: var(--tap-target);
+  }
+}
+
 .card__section {
   margin: 0 0 var(--space-2);
   color: var(--color-text-muted);
@@ -165,6 +196,11 @@
 }
 
 .card__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0 var(--space-3);
   flex: none;
   padding: var(--space-1) var(--space-6);
   border-top: var(--border-width) solid var(--color-line);
@@ -199,5 +235,43 @@
 
   .card__foot {
     padding: 0 var(--space-4);
+  }
+}
+
+/* Al abrir la ficha con «ⓘ» en el móvil, el foco llega al resumen: el anillo, por dentro. */
+.card__body:focus-visible {
+  outline-offset: calc(-1 * var(--focus-ring-width));
+}
+
+/* «Ver los datos»: solo en el móvil (en escritorio, la tarjeta lo enseña todo). */
+.card__more {
+  display: none;
+}
+
+@media (max-width: 63.99rem) {
+  .card__more {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--tap-target);
+    padding: 0 var(--space-2);
+    background: transparent;
+    color: var(--color-accent);
+    border: 0;
+    font: inherit;
+    font-size: var(--text-sm);
+    cursor: pointer;
+  }
+
+  /* En reposo, la hoja no pasa del 45 % de la pantalla: el nombre, el resumen y «Ficha completa». */
+  :host-context(.panel:not(.is-expanded)) .card__rest {
+    display: none;
+  }
+
+  :host-context(.panel:not(.is-expanded)) .card__summary {
+    margin-bottom: var(--space-2);
+  }
+
+  :host-context(.panel:not(.is-expanded)) .card__radar {
+    margin-bottom: var(--space-2);
   }
 }

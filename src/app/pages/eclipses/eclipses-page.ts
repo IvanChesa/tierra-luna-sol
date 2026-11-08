@@ -3,8 +3,10 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { formatLongDateInZone } from '../../core/format';
 import { EclipseEntry, toEclipseEntry } from '../../data/eclipse-entry';
 import { ECLIPSES_BY_PLACE, ECLIPSES_FROM } from '../../data/eclipses';
-import { DEFAULT_PLACE_ID, SKY_PLACES, placeOptionLabel } from '../../data/places';
+import { DEFAULT_PLACE_ID, SKY_PLACES } from '../../data/places';
 import { skyPlaceOf } from '../../data/sky-place';
+import { placeShortLabel } from '../../features/sky-panel/place-label';
+import { Breadcrumbs } from '../shared/breadcrumbs';
 import {
   amountText,
   eclipseDate,
@@ -44,23 +46,31 @@ interface Row {
 @Component({
   selector: 'tls-eclipses-page',
   host: { class: 'page' },
-  imports: [RouterLink],
+  imports: [Breadcrumbs, RouterLink],
   templateUrl: './eclipses-page.html',
   styleUrl: './eclipses-page.css',
 })
 export class EclipsesPage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  /** «Inicio › Eclipses», como las fichas y sus índices (crítica de la 9c). */
+  protected readonly crumbs = [{ label: 'Inicio', link: '/' }, { label: 'Eclipses' }];
   protected readonly places = SKY_PLACES;
-  protected readonly optionLabel = placeOptionLabel;
+  /** «Montsec (Lleida)»: corto, para que quepa entero en el selector (fase 9c). */
+  protected readonly optionLabel = placeShortLabel;
   protected readonly placeId = signal<string>(this.initialPlace());
   protected readonly place = computed(() => skyPlaceOf(this.placeId()));
   /** La lista que se ve: la generada hasta que el navegador la recalcula. */
   private readonly entries = signal<readonly EclipseEntry[]>(
     ECLIPSES_BY_PLACE[this.placeId()] ?? [],
   );
+  /**
+   * Lo que dice el HTML prerenderizado: el día en que se generó la lista (`ECLIPSES_FROM`, de
+   * `scripts/build-eclipses.mjs`; el build no la regenera), dicho como el de la lista y no como el de
+   * hoy (fase 9c, 9c.7 y revisión, hallazgo 13). En el navegador, la de hoy.
+   */
   protected readonly calculated = signal(
-    `Calculado el ${formatLongDateInZone(new Date(`${ECLIPSES_FROM}T12:00:00Z`), 'Europe/Madrid')} con astronomy-engine.`,
+    `Lista calculada el ${formatLongDateInZone(new Date(`${ECLIPSES_FROM}T12:00:00Z`), 'Europe/Madrid')} con astronomy-engine.`,
   );
   protected readonly busy = signal(false);
   private run = 0;

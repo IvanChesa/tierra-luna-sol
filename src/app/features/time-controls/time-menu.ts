@@ -5,6 +5,7 @@ import type { QualitySetting, ScaleMode } from '../../scene';
 import { ExplorerStore } from '../../state/explorer.store';
 import { SimulationStore } from '../../state/simulation.store';
 import { SPEED_STEPS } from '../../state/speeds';
+import { ZOOM_STEP } from '../camera-controls/camera-controls';
 import { ExplorerSession } from '../explorer-ui/explorer-session';
 import { Icon } from '../viewer/icon';
 import { fromInputValues, toDateInputValue, toTimeInputValue } from './time-input';
@@ -32,11 +33,12 @@ const SCALE_OPTIONS: readonly { readonly value: ScaleMode; readonly label: strin
 ];
 
 /**
- * «Controles +» (fase 3c, tarea 4): lo menos usado de la barra de tiempo, en un panel que se
+ * «Controles» (fase 3c, tarea 4; fase 9c, D47): lo menos usado del explorador, en un panel que se
  * despliega (un `popover` del navegador: se cierra con `Esc` o al pulsar fuera, y el foco vuelve a su
- * botón). La fecha y la hora con inputs nativos en la hora local con su zona o en UTC, «Ahora», la
- * calidad, la escala (fase 7), la vista limpia y los atajos; en móvil, también la velocidad y la
- * fuente de los datos.
+ * botón). El tiempo (la fecha y la hora con inputs nativos en la hora local con su zona o en UTC,
+ * «Ahora», el sentido y, en el móvil, la velocidad), la cámara (acercar y alejar en el móvil, donde no
+ * están sobre el 3D, la vista general y la vista limpia), la escena (la calidad y la escala, fase 7),
+ * los atajos (no en el móvil) y la fuente de los datos.
  *
  * Los inputs no se actualizan mientras tienen el foco: se puede escribir aunque el tiempo corra.
  */
@@ -57,6 +59,7 @@ export class TimeMenu {
   private readonly session = inject(ExplorerSession);
 
   protected readonly speeds = SPEED_STEPS;
+  protected readonly step = ZOOM_STEP;
   protected readonly qualities = QUALITY_OPTIONS;
   protected readonly scales = SCALE_OPTIONS;
   /** Los límites del campo de fecha, en la zona elegida (el final de 2100 es 2101 en Madrid). */
@@ -103,6 +106,23 @@ export class TimeMenu {
     const value = (event.target as HTMLSelectElement).value;
     const mode = SCALE_OPTIONS.find((option) => option.value === value)?.value ?? 'illustrative';
     this.session.setScale(mode);
+  }
+
+  /** Acercar o alejar: el panel se queda abierto, para pulsar varias veces. */
+  protected zoom(factor: number): void {
+    this.session.zoom(factor);
+  }
+
+  /** «Ver el recorrido»: el panel se cierra y empieza (en la vista del sistema solar). */
+  protected tour(): void {
+    this.done.emit();
+    this.session.startTour();
+  }
+
+  /** La vista general: el panel se cierra, para verla. */
+  protected overview(): void {
+    this.done.emit();
+    this.session.overview();
   }
 
   protected cleanView(): void {

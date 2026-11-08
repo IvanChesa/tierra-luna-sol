@@ -1,6 +1,6 @@
 /**
- * Velocidades de la simulación (PLAN, fase 3, 3.b.4; fase 3c, tarea 3: 3 horas, 3 días y 10 días por
- * segundo): segundos simulados por segundo real. El sentido (hacia atrás) va aparte, en el signo de
+ * Velocidades de la simulación (PLAN, fase 3, 3.b.4; fase 3c, tarea 3: 3 horas y 3 días por segundo; la
+ * fase 9c quita «10 días por segundo», casi igual que «1 semana»): segundos simulados por segundo real. El sentido (hacia atrás) va aparte, en el signo de
  * `speed`. El mes y el año son julianos (365,25 días), el año de la astronomía.
  *
  * La velocidad depende del contexto (D33, fase 4b): la vista general del sistema solar va a 3 días por
@@ -14,7 +14,7 @@ const DAY_S = 24 * HOUR_S;
 const JULIAN_YEAR_S = 365.25 * DAY_S;
 
 export interface SpeedStep {
-  readonly id: 'real' | 'hour' | 'hours3' | 'day' | 'days3' | 'week' | 'days10' | 'month' | 'year';
+  readonly id: 'real' | 'hour' | 'hours3' | 'day' | 'days3' | 'week' | 'month' | 'year';
   /** Segundos simulados por segundo real. */
   readonly seconds: number;
   /** Texto de la interfaz (ESTILO §3). */
@@ -28,7 +28,6 @@ export const SPEED_STEPS: readonly SpeedStep[] = [
   { id: 'day', seconds: DAY_S, label: '1 día por segundo' },
   { id: 'days3', seconds: 3 * DAY_S, label: '3 días por segundo' },
   { id: 'week', seconds: 7 * DAY_S, label: '1 semana por segundo' },
-  { id: 'days10', seconds: 10 * DAY_S, label: '10 días por segundo' },
   { id: 'month', seconds: JULIAN_YEAR_S / 12, label: '1 mes por segundo' },
   { id: 'year', seconds: JULIAN_YEAR_S, label: '1 año por segundo' },
 ];

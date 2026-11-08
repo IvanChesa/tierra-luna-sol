@@ -15,6 +15,32 @@ const meta = (page: Page, selector: string) =>
   page.locator(`head meta[${selector}]`).getAttribute('content');
 
 test.describe('Fichas de los cuerpos (fase 9)', () => {
+  test('al final, la ficha anterior y la siguiente; los datos técnicos, después de lo esencial (fase 9c)', async ({
+    page,
+  }) => {
+    await page.goto('/planetas/marte');
+    const pager = page.getByRole('navigation', { name: 'Otras fichas' });
+    // En el orden del atlas: la Tierra, la Luna, Marte, Fobos…
+    await expect(pager.getByRole('link', { name: 'Anterior: Luna' })).toHaveAttribute(
+      'href',
+      '/luna',
+    );
+    await expect(pager.getByRole('link', { name: 'Siguiente: Fobos' })).toHaveAttribute(
+      'href',
+      '/lunas/fobos',
+    );
+    const physical = page.locator('table.facts').first();
+    const headers = await physical.locator('tbody th').allTextContents();
+    const technical = headers.findIndex((text) => text.trim() === 'Datos técnicos');
+    expect(technical).toBeGreaterThan(0);
+    // Lo esencial (el radio) antes; lo técnico (la densidad), después de su rótulo.
+    expect(headers.findIndex((text) => text.includes('Radio'))).toBeLessThan(technical);
+    expect(headers.findIndex((text) => text.includes('Densidad'))).toBeGreaterThan(technical);
+    await pager.getByRole('link', { name: 'Siguiente: Fobos' }).click();
+    await expect(page).toHaveURL(/\/lunas\/fobos$/);
+    await expect(page.locator('h1')).toHaveText('Fobos');
+  });
+
   test('la ficha de Marte: datos con su fuente, «Hoy» calculado en el navegador y «Ver en 3D»', async ({
     page,
   }) => {
@@ -217,11 +243,12 @@ test.describe('Fichas de los cuerpos (fase 9)', () => {
     const nav = page.getByRole('navigation', { name: 'Principal' });
     await expect(nav.getByRole('link', { name: 'Lunas' })).toHaveAttribute('aria-current', 'page');
     await expect(nav.locator('[aria-current]')).toHaveCount(1);
-    // En el menú, «Cielo» en lugar de «Luna».
+    // En el menú, ni «Luna» ni «Cielo» (es una vista del explorador): «Explorar en 3D» (fase 9c).
     await expect(nav.getByRole('link', { name: 'Luna', exact: true })).toHaveCount(0);
-    await nav.getByRole('link', { name: 'Cielo' }).click();
-    await expect(page).toHaveURL(/\/cielo$/);
-    await expect(page.locator('h1')).toHaveText('El cielo desde España');
+    await expect(nav.getByRole('link', { name: 'Cielo' })).toHaveCount(0);
+    await nav.getByRole('link', { name: 'Explorar en 3D' }).click();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.locator('h1')).toHaveText('El sistema solar');
   });
 
   test('desde el explorador, la ficha completa de una luna lleva a /lunas/:id', async ({
@@ -232,6 +259,7 @@ test.describe('Fichas de los cuerpos (fase 9)', () => {
       .getByRole('toolbar', { name: 'Sol y planetas' })
       .getByRole('button', { name: 'Saturno', exact: true })
       .click();
+    // Sus lunas, en la fila de encima (decisión de Iván del 07-11).
     await page
       .getByRole('toolbar', { name: 'Lunas de Saturno' })
       .getByRole('button', { name: 'Titán', exact: true })
@@ -323,13 +351,53 @@ test.describe('Compartir, legal y privacidad (fase 9)', () => {
     );
   });
 
-  test('la nota de privacidad, también en el pie del explorador', async ({ page }) => {
-    await page.goto('/');
-    const foot = page.locator('footer.explorer__foot');
-    await expect(
-      foot.getByRole('link', { name: 'Sin cookies, sin analítica y sin peticiones a terceros' }),
-    ).toBeVisible();
-    await expect(foot.getByRole('link', { name: 'Aviso legal' })).toBeVisible();
+  test('en escritorio, la cabecera de las páginas de lectura, en una fila y sin lo legal (hallazgo 4)', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/planetas/marte');
+    const header = page.locator('header.site-header');
+    const visible = await header
+      .getByRole('link')
+      .evaluateAll((links) =>
+        links
+          .filter((link) => link.checkVisibility({ checkVisibilityCSS: true }))
+          .map((link) => link.textContent?.trim()),
+      );
+    expect(visible).toEqual([
+      'Tierra Luna Sol',
+      'Planetas',
+      'Lunas',
+      'Sol',
+      'Eclipses',
+      'Sobre el proyecto',
+      'Explorar en 3D',
+    ]);
+    // Lo legal y los créditos, en el pie (no en una segunda fila de la cabecera).
+    const height = await header.evaluate((element) => element.getBoundingClientRect().height);
+    expect(height).toBeLessThanOrEqual(60);
+  });
+
+  test('en el explorador, la nota de privacidad y lo legal, en su menú (fase 9c)', async ({
+    page,
+  }) => {
+    await openExplorer(page, '/?captura=1');
+    // La cabecera del explorador, compacta también en escritorio: el nombre y «Menú».
+    const menu = page.getByRole('navigation', { name: 'Principal' });
+    await expect(menu).toBeHidden();
+    await page.getByRole('button', { name: 'Menú' }).click();
+    await expect(menu).toBeVisible();
+    await expect(menu).toContainText('Sin cookies, sin analítica y sin peticiones a terceros');
+    await expect(menu.getByRole('link', { name: 'tu privacidad', exact: true })).toBeVisible();
+    await expect(menu.getByRole('link', { name: 'Aviso legal' })).toBeVisible();
+    await expect(menu.getByRole('link', { name: 'Créditos' })).toBeVisible();
+    // «Explorar en 3D», marcado: es la página.
+    await expect(menu.getByRole('link', { name: 'Explorar en 3D' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    // El pie del explorador ya no lleva lo legal (solo las pistas, la primera vez).
+    await expect(page.locator('footer.explorer__foot a')).toHaveCount(0);
   });
 
   test('si solo cambia la consulta (el lugar de /eclipses), la página no se mueve', async ({

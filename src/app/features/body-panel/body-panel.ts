@@ -1,8 +1,9 @@
-import { Component, computed, inject, input, output } from '@angular/core';
+import { Component, computed, inject, input, model, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { formatAu, formatDistanceKm, formatPeriodHours } from '../../core/format';
 import { getBody } from '../../data/bodies';
 import type { BodyId } from '../../data/body.model';
+import type { VenusRadarState } from '../../scene';
 import { isMeanElementsMoon } from '../../data/solar-system';
 import { SOURCES, Source, SourceId } from '../../data/sources';
 import { SystemPositions } from '../../state/positions';
@@ -53,11 +54,37 @@ const NEAR_KM = 5e6;
 export class BodyPanel {
   readonly bodyId = input.required<BodyId>();
   readonly closed = output<void>();
+  /**
+   * En el móvil, la hoja subida a su altura completa (fase 9c, 9c.2): en reposo, el nombre, el resumen
+   * y «Ficha completa»; subida, también las distancias, los datos y sus fuentes. En escritorio, todo.
+   */
+  readonly expanded = model(false);
+  /**
+   * Venus «Bajo las nubes» (fase 9b, D44): el estado del radar de Magellan, o `null` si no se ofrece
+   * (otro cuerpo, otra vista o sin 3D). Pulsar el botón pide encenderlo o apagarlo (`radarChange`).
+   */
+  readonly radar = input<VenusRadarState | null>(null);
+  readonly radarChange = output<boolean>();
 
   private readonly positions = inject(SystemPositions);
   protected readonly body = computed(() => getBody(this.bodyId()));
   protected readonly kind = computed(() => bodyKindLabel(this.bodyId()));
   protected readonly link = computed(() => bodyPagePath(this.bodyId()));
+  /** El botón del radar, pulsado: encendido o cargándose (lo que ha pedido quien lo pulsó). */
+  protected readonly radarPressed = computed(() => {
+    const state = this.radar();
+    return state === 'on' || state === 'loading';
+  });
+  /** La línea del Sol en color realzado (fase 9b, D46), con su fuente: solo en el Sol. */
+  protected readonly sunNote = computed(() => {
+    const body = this.body();
+    return body.kind === 'star' ? (body.mapNote ?? null) : null;
+  });
+  /** «NASA» por la página de su fuente (las de los textos son de la NASA). */
+  protected sourceName(url: string): string {
+    const host = new URL(url).hostname.replace(/^www./, '');
+    return host.endsWith('nasa.gov') ? 'NASA' : host;
+  }
   /**
    * Las fuentes de los datos de la ficha (ESTILO §5). Si son varias (en las lunas, el radio sale
    * del JPL y la rotación y la órbita de la NSSDCA), cada una dice qué respalda.

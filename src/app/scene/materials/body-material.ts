@@ -41,6 +41,11 @@
  *   la regla de Danjon (`EARTH_SHADOW_RADIUS_KM`): dentro de la umbra, la luz del Sol que refracta la
  *   atmósfera de la Tierra, rojiza y más tenue hacia el eje (ilustrativa, de la configuración visual).
  *
+ * - Venus «Bajo las nubes» (fase 9b, D44; `radar: true`, `#define TLS_RADAR`): el mosaico del radar de
+ *   Magellan en lugar de las nubes, con un fundido (`uRadarMix`) y con la misma luz y la misma
+ *   fotometría de Venus; su brillo, calibrado como el de una textura de Venus, y la neblina del limbo,
+ *   atenuada (`VISUAL_CONFIG.venus.radar`). Lo lleva `scene/venus-radar.ts`.
+ *
  * La geometría es la esfera unidad (Y = polo, meridiano 0 en +X, longitud este hacia −Z, como
  * `SphereGeometry`); el elipsoide sale de la escala de la malla (radio ecuatorial, polar, ecuatorial).
  */
@@ -324,6 +329,15 @@ uniform vec3 uUmbraLight;
 uniform float uUmbraAxis;
 #endif
 
+#ifdef TLS_RADAR
+// Venus bajo las nubes (fase 9b, D44): el mosaico del radar de Magellan (en gris) y su fundido con las
+// nubes (0: las nubes; 1: el radar); uRadar = (lo que lleva la textura del radar al albedo de Venus, la
+// parte de la neblina del limbo que queda con el radar).
+uniform sampler2D uRadarMap;
+uniform float uRadarMix;
+uniform vec2 uRadar;
+#endif
+
 float ringShadow() {
   // Punto de la superficie en radios ecuatoriales, en el sistema propio (Y = polo).
   vec3 p = vLocal * vec3(1.0, uPolarScale, 1.0);
@@ -390,6 +404,11 @@ void main() {
     base *= (uMeanLuminance + (luminance - uMeanLuminance) * uContrast) / luminance;
   }
   vec3 albedo = base * uAlbedoScale;
+#ifdef TLS_RADAR
+  // El radar, sin el contraste ni el color de las nubes (los de Venus): su mosaico, centrado en el
+  // meridiano 0 del modelo, como el de las nubes (sin desplazamiento).
+  if (uRadarMix > 0.0) albedo = mix(albedo, texture2D(uRadarMap, vUv).rgb * uRadar.x, uRadarMix);
+#endif
 #ifdef TLS_EARTH
   // Las tierras áridas de la textura, casi tan claras como las nubes (en EPIC, un tercio): su brillo,
   // comprimido, L / (1 + L / rodilla), solo en la tierra cálida ((R − B) / L): ni el océano ni el
@@ -431,6 +450,9 @@ void main() {
   float light = tlsReflectance(dot(normal, toSun), dot(normal, toViewer), alpha, cosAlpha);
   float muViewer = dot(geometric, toViewer);
   float haze = tlsHaze(dot(geometric, toSun), muViewer, cosAlpha);
+#ifdef TLS_RADAR
+  haze *= mix(1.0, uRadar.y, uRadarMix);
+#endif
   if (uRingShadow > 0.5 && (light > 0.0 || haze > 0.0)) {
     float shadow = ringShadow();
     light *= shadow;
@@ -631,6 +653,16 @@ export interface MoonUniforms {
   readonly uHasPoleNormals: Uniform<number>;
 }
 
+/** Uniformes del radar de Venus (fase 9b, D44): solo con `radar: true`. */
+export interface RadarUniforms {
+  /** El mosaico del radar de Magellan (`venus-radar`), o `null` mientras no se pide. */
+  readonly uRadarMap: Uniform<Texture | null>;
+  /** El fundido: 0, las nubes; 1, el radar. */
+  readonly uRadarMix: Uniform<number>;
+  /** (Lo que lleva la textura del radar al albedo de Venus, la parte de la neblina que queda.) */
+  readonly uRadar: Uniform<Vector2>;
+}
+
 /** Cuántas sombras de otros cuerpos recibe un cuerpo como mucho (`TLS_SHADOWS`, fase 7). */
 export const MAX_SHADOW_CASTERS = 4;
 
@@ -659,6 +691,8 @@ export interface BodyMaterialOptions {
   readonly moon?: boolean;
   /** Recibe sombras de otros cuerpos (`TLS_SHADOWS`, fase 7): sus lunas o su planeta. */
   readonly shadows?: boolean;
+  /** Venus: la capa del radar de Magellan, «Bajo las nubes» (`TLS_RADAR`, fase 9b, D44). */
+  readonly radar?: boolean;
 }
 
 export function createBodyMaterial(options: BodyMaterialOptions) {
@@ -738,17 +772,28 @@ export function createBodyMaterial(options: BodyMaterialOptions) {
         uShadowSun: new Uniform(new Vector4(1e4, 0, 0, 100)),
       }
     : null;
+  const radar: RadarUniforms | null = options.radar
+    ? {
+        uRadarMap: new Uniform<Texture | null>(null),
+        uRadarMix: new Uniform(0),
+        uRadar: new Uniform(new Vector2(1, 1)),
+      }
+    : null;
   const defines = {
     ...(options.earth ? { TLS_EARTH: '' } : {}),
+    ...(options.radar ? { TLS_RADAR: '' } : {}),
     ...(options.moon ? { TLS_MOON: '' } : {}),
     ...(options.shadows ? { TLS_SHADOWS: '' } : {}),
   };
   const material = sceneShaderMaterial({
     name: options.earth ? 'tls-earth' : options.moon ? 'tls-moon' : 'tls-body',
-    uniforms: { ...uniforms, ...earth, ...moon, ...shadows } as unknown as Record<string, Uniform>,
+    uniforms: { ...uniforms, ...earth, ...moon, ...shadows, ...radar } as unknown as Record<
+      string,
+      Uniform
+    >,
     vertexShader,
     fragmentShader,
     ...(Object.keys(defines).length > 0 ? { defines } : {}),
   });
-  return { material, uniforms, earth, moon, shadows };
+  return { material, uniforms, earth, moon, shadows, radar };
 }

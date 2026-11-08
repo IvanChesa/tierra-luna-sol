@@ -50,6 +50,29 @@ export const TEXTURE_FILES: TextureFiles = {
       bytes: 93020,
     },
   ],
+  'venus-radar': [
+    {
+      level: '1k',
+      path: 'textures/1k/venus-radar.b25844391c.webp',
+      width: 1024,
+      height: 512,
+      bytes: 50806,
+    },
+    {
+      level: '2k',
+      path: 'textures/2k/venus-radar.bf6581779e.webp',
+      width: 2048,
+      height: 1024,
+      bytes: 187010,
+    },
+    {
+      level: '4k',
+      path: 'textures/4k/venus-radar.d102b7e682.webp',
+      width: 4096,
+      height: 2048,
+      bytes: 653204,
+    },
+  ],
   'earth-day': [
     {
       level: '1k',
@@ -766,6 +789,7 @@ export const TEXTURE_FILES: TextureFiles = {
 export const TEXTURE_MEAN_LUMINANCE: Readonly<Partial<Record<TextureId, number>>> = {
   mercury: 0.2294,
   venus: 0.554,
+  'venus-radar': 0.2382,
   'earth-day': 0.1195,
   moon: 0.3003,
   mars: 0.1819,

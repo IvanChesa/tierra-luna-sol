@@ -69,8 +69,8 @@ export const compassName = (azimuthDeg: number): string => COMPASS_NAMES[compass
 /** «NE». */
 export const compassShort = (azimuthDeg: number): string => COMPASS_SHORT[compassPoint(azimuthDeg)];
 
-/** «35°» (grados enteros, pegados a la cifra). */
-export const degreesText = (deg: number): string => `${formatNumber(Math.round(deg), 0)}°`;
+/** «35°» (grados enteros, pegados a la cifra; nunca «−0°»). */
+export const degreesText = (deg: number): string => `${formatNumber(Math.round(deg) || 0, 0)}°`;
 
 /** «22:40», en la hora del lugar. */
 export const clockAt = (date: Date, place: SkyPlace): string =>
@@ -186,4 +186,47 @@ export function planetNightText(body: NightBody, place: SkyPlace): string | null
         : ' Con prismáticos o telescopio.';
   parts.push(`Magnitud ${magnitude}, en ${constellationName(body.constellation)}.${eye}`);
   return parts.join(' ');
+}
+
+/** Un cuerpo del cielo para el resumen del panel: su nombre y dónde está ahora. */
+export interface SkySummaryBody {
+  readonly id: string;
+  readonly name: string;
+  readonly up: boolean;
+  /** La altura ahora (grados), para el orden. */
+  readonly altitudeDeg: number;
+  /** «37° SE». */
+  readonly now: string;
+  /** «37° de altura, hacia el sureste». */
+  readonly nowSpoken: string;
+}
+
+/** Cuántos cuerpos caben en la línea de resumen; el resto, en «Esta noche». */
+const SUMMARY_MAX = 3;
+
+/**
+ * La línea de resumen del panel del cielo (fase 9c, 9c.3): la Luna y los planetas que están ahora sobre
+ * el horizonte, los más altos primero («Saturno, 37° SE · Luna, 12° E»), y su lectura para el lector de
+ * pantalla, con los rumbos en palabras. El Sol no: de día ya se dice aparte. La tabla entera, en «Esta
+ * noche».
+ */
+export function skySummary(bodies: readonly SkySummaryBody[]): {
+  readonly text: string;
+  readonly spoken: string;
+} {
+  const up = bodies
+    .filter((body) => body.up && body.id !== 'sol')
+    .sort((a, b) => b.altitudeDeg - a.altitudeDeg);
+  if (up.length === 0) {
+    const text = 'Ni la Luna ni ningún planeta están ahora sobre el horizonte.';
+    return { text, spoken: text };
+  }
+  const shown = up.slice(0, SUMMARY_MAX);
+  const more = up.length - shown.length;
+  const tail = more > 0 ? ` · y ${more} más` : '';
+  const spokenTail = more > 0 ? ` Y ${more} más en «Esta noche».` : '';
+  return {
+    text: `Ahora: ${shown.map((body) => `${body.name}, ${body.now}`).join(' · ')}${tail}`,
+    spoken: `Sobre el horizonte, ahora: ${shown.map((body) => `${body.name}, a ${body.nowSpoken}`).join('; ')}.${spokenTail}`,
+  };
 }

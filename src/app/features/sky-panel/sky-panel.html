@@ -1,8 +1,28 @@
-<section class="sky" aria-labelledby="sky-place-title">
+<!--
+  El panel del cielo (fase 9c, 9c.3): el lugar, la hora y una línea de resumen; «Esta noche» (los
+  textos, la tabla, los eclipses y las constelaciones), a demanda.
+-->
+<!--
+  Móvil y tableta (decisión de Iván del 08-11): en reposo, solo la barra (el lugar, la hora y el
+  resumen), que abre lo demás; abierto, al foco llega su contenido (tabindex="-1") y Esc lo cierra.
+-->
+<tls-sky-bar
+  [place]="placeName()"
+  [clock]="clock()"
+  [summary]="summary().text"
+  [(open)]="open"
+  (openChange)="toggled($event)"
+/>
+
+<section id="sky-now" class="sky" tabindex="-1" aria-labelledby="sky-place-title">
   <h2 id="sky-place-title" class="sky__title">Lugar</h2>
+  <!--
+    El lugar, con su nombre corto entero, y «Usar mi ubicación»: debajo y a lo ancho; si el panel es
+    ancho (la tableta), a su lado.
+  -->
   <div class="sky__place">
     <label class="visually-hidden" for="sky-place">Lugar desde el que ves el cielo</label>
-    <select id="sky-place" class="sky__select" (change)="choosePlace($event)">
+    <select id="sky-place" class="control sky__select" (change)="choosePlace($event)">
       @for (option of places; track option.id) {
         <option [value]="option.id" [selected]="place().id === option.id">
           {{ optionLabel(option) }}
@@ -23,11 +43,9 @@
     </button>
   </div>
   <p class="sky__note" role="status">{{ locationMessage() }}</p>
-</section>
 
-<section class="sky" aria-labelledby="sky-hour-title">
   <div class="sky__row">
-    <label id="sky-hour-title" class="sky__title" for="sky-hour">Hora</label>
+    <label id="sky-hour-title" class="sky__label" for="sky-hour">Hora</label>
     <span class="sky__clock"
       >{{ clock() }}<span class="sky__zone" aria-hidden="true"> · {{ zone() }}</span></span
     >
@@ -49,9 +67,20 @@
   @if (daytime()) {
     <p class="sky__hint sky__day">Ahora es de día: arrastra para ver la noche.</p>
   }
+
+  <!-- El resumen: lo que está sobre el horizonte ahora (la tabla entera, en «Esta noche»). -->
+  <p class="sky__summary-line">
+    <span aria-hidden="true">{{ summary().text }}</span>
+    <span class="visually-hidden">{{ summary().spoken }}</span>
+  </p>
 </section>
 
-<details class="sky sky--tonight" [open]="tonightOpen()" (toggle)="toggleTonight($event)">
+<details
+  id="sky-tonight"
+  class="sky sky--tonight"
+  [open]="tonightOpen()"
+  (toggle)="toggleTonight($event)"
+>
   <summary class="sky__title sky__summary">Esta noche</summary>
   <div class="sky__tonight">
     @if (polarText(); as text) {
@@ -76,52 +105,55 @@
       <p class="sky__text">Ningún planeta se ve esta noche con el cielo oscuro.</p>
     }
 
-    <div class="sky__scroll">
-      <table class="sky__table">
-        <caption>
-          {{
-            tableCaption()
-          }}
-        </caption>
-        <thead>
-          <tr>
-            <th scope="col">Cuerpo</th>
-            <th scope="col">Ahora</th>
-            <th scope="col">Sale</th>
-            <th scope="col">Se pone</th>
-            <th scope="col"><span class="visually-hidden">Mirar</span></th>
+    <!--
+      La tabla; si no cabe en su caja (en el móvil y en la columna del escritorio), cada fila se
+      recompone en dos líneas (sin barra horizontal). Los papeles, explícitos: con otro «display», el
+      navegador dejaría de tratarla como una tabla.
+    -->
+    <table class="sky__table" role="table">
+      <caption>
+        {{
+          tableCaption()
+        }}
+      </caption>
+      <thead role="rowgroup">
+        <tr role="row">
+          <th scope="col" role="columnheader">Cuerpo</th>
+          <th scope="col" role="columnheader">Ahora</th>
+          <th scope="col" role="columnheader">Sale</th>
+          <th scope="col" role="columnheader">Se pone</th>
+          <th scope="col" role="columnheader"><span class="visually-hidden">Mirar</span></th>
+        </tr>
+      </thead>
+      <tbody role="rowgroup">
+        @for (row of rows(); track row.id) {
+          <tr role="row" [class.is-down]="!row.up">
+            <th scope="row" role="rowheader">{{ row.name }}</th>
+            <td role="cell" data-label="Ahora">
+              @if (row.up) {
+                <span aria-hidden="true">{{ row.now }}</span>
+                <span class="visually-hidden">{{ row.nowSpoken }}</span>
+              } @else {
+                {{ row.now }}
+              }
+            </td>
+            <td role="cell" data-label="Sale">{{ row.rise }}</td>
+            <td role="cell" data-label="Se pone">{{ row.set }}</td>
+            <td role="cell" class="sky__look-cell">
+              <button
+                type="button"
+                class="control control--icon sky__look"
+                [attr.aria-label]="row.look"
+                [title]="row.look"
+                (click)="lookAt(row.id)"
+              >
+                <tls-icon name="target" />
+              </button>
+            </td>
           </tr>
-        </thead>
-        <tbody>
-          @for (row of rows(); track row.id) {
-            <tr [class.is-down]="!row.up">
-              <th scope="row">{{ row.name }}</th>
-              <td>
-                @if (row.up) {
-                  <span aria-hidden="true">{{ row.now }}</span>
-                  <span class="visually-hidden">{{ row.nowSpoken }}</span>
-                } @else {
-                  {{ row.now }}
-                }
-              </td>
-              <td>{{ row.rise }}</td>
-              <td>{{ row.set }}</td>
-              <td>
-                <button
-                  type="button"
-                  class="control control--icon sky__look"
-                  [attr.aria-label]="row.look"
-                  [title]="row.look"
-                  (click)="lookAt(row.id)"
-                >
-                  <tls-icon name="target" />
-                </button>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
+        }
+      </tbody>
+    </table>
     <p class="sky__hint">
       Altura sobre el horizonte y rumbo (N, NE, E…) ahora. «Sale» y «Se pone», durante la noche, de
       la puesta a la salida del Sol; «—»: no sale o no se pone en ese tiempo.

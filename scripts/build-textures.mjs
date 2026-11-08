@@ -76,7 +76,9 @@ const RING_HEIGHT = 16;
  * (scripts/lola-polar.mjs; revisión de la fase 6): 2n × n px, el sur a la izquierda y el norte a la
  * derecha. mosaic: el mosaico global de una luna del USGS o del PDS (scripts/usgs-mosaic.mjs, fase 7),
  * con sondas de rasgos con nombre (`MOSAIC_PROBES`); `band`: solo ese canal, en gris; `colorGain`:
- * ganancia por canal en RGB lineal (el balance de color de Ío, revisión del bloque D).
+ * ganancia por canal en RGB lineal (el balance de color de Ío, revisión del bloque D). radar: el
+ * mosaico del radar de Magellan de Venus (fase 9b, D44), como un mosaico pero sin la recreación de las
+ * lunas (D45) y hasta 4k, con todo 0 tomado por hueco (`zerosAreGaps`).
  */
 /**
  * La convención de los mapas del JPL (fase 9b): el borde izquierdo en −180° y las columnas hacia el este,
@@ -99,6 +101,15 @@ const IAPETUS_DICHOTOMY = {
 const TEXTURES = {
   mercury: { file: '8k_mercury.jpg', kind: 'color', quality: 80 },
   venus: { file: '4k_venus_atmosphere.jpg', kind: 'color', quality: 80 },
+  // Venus bajo las nubes (fase 9b, D44): el mosaico del radar de Magellan (C3-MIDR, 2025 m por píxel),
+  // en 1k, 2k y 4k. Sus huecos (las franjas de las órbitas que faltan, a 0), rellenos con lo que hay
+  // alrededor, sin inventar relieve (usgs-mosaic.mjs, `zerosAreGaps`); sus sondas, Maat Mons, Sapas
+  // Mons y Maxwell Montes. La escena lo pide solo al pulsar «Bajo las nubes» (scene/venus-radar.ts).
+  'venus-radar': {
+    file: 'Venus_Magellan_C3-MDIR_Global_Mosaic_2025m.tif',
+    kind: 'radar',
+    quality: 80,
+  },
   'earth-day': {
     file: '8k_earth_daymap.jpg',
     kind: 'color',
@@ -1234,6 +1245,40 @@ for (const [id, spec] of Object.entries(TEXTURES)) {
       // Jápeto: el hemisferio trasero (su ápice, a 90° E), al albedo de la NASA.
       albedoReference[id].luminance = Number((await hemisphereLuminance(list[0], 90)).toFixed(4));
     }
+    console.log(
+      `${id}: ${list.map((f) => `${f.level} ${(f.bytes / 1024).toFixed(0)} kB`).join(' · ')}`,
+    );
+    continue;
+  }
+  if (spec.kind === 'radar') {
+    // Venus bajo las nubes (fase 9b, D44): el radar de Magellan, reducido una vez a 4096 px (el nivel
+    // mayor) con sus huecos rellenos, sus sondas y los niveles de 1k a 4k. Sin la recreación de D45 (es
+    // de las lunas): lo que el radar no vio queda en un gris liso, sin inventar. Su luminancia media
+    // (de lo que hay), para llevar su brillo al de las nubes (`VISUAL_CONFIG.venus.radar`).
+    const top = spec.maxWidth ?? DEFAULT_MAX_WIDTH;
+    const mosaic = await loadMosaic(new URL(spec.file, SRC), top, { zerosAreGaps: true });
+    reports.push(`${id}: ${mosaic.report}`);
+    const probes = checkMosaicProbes(id, mosaic);
+    if (!probes) throw new Error(`«${id}»: sin sondas en MOSAIC_PROBES`);
+    reports.push(probes);
+    const list = [];
+    for (const [level, width] of LEVELS) {
+      if (width > top) continue;
+      const pipeline = sharp(mosaic.data, {
+        raw: { width: mosaic.width, height: mosaic.height, channels: 3 },
+      }).resize(width, width / 2, { fit: 'fill', kernel: 'lanczos3' });
+      list.push(await emit(id, level, pipeline, spec.quality));
+    }
+    files[id] = list;
+    luminance[id] = Number(
+      (
+        await meanLuminance(list[0], {
+          data: mosaic.coverage,
+          width: mosaic.width,
+          height: mosaic.height,
+        })
+      ).toFixed(4),
+    );
     console.log(
       `${id}: ${list.map((f) => `${f.level} ${(f.bytes / 1024).toFixed(0)} kB`).join(' · ')}`,
     );

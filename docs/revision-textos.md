@@ -13,7 +13,7 @@
 
 1. [Por cuerpo](#por-cuerpo): los 30, con su resumen y sus tres curiosidades; en 0 lunas, la línea sobre su mapa, y en el Sol, la de su color realzado (140 textos).
 2. [Por vista](#por-vista): el sistema solar, la Tierra y sus vistas guiadas, la Luna, sus vistas y su recorrido, y el cielo.
-3. [Las páginas](#las-paginas): los índices, los eclipses, «Sobre el proyecto», los créditos y la 404; y [los textos fijos](#los-textos-fijos) de las fichas, del pie y del menú.
+3. [Las páginas](#las-paginas): los índices, los eclipses, «Sobre el proyecto», los créditos y la 404; [los textos fijos](#los-textos-fijos) de las fichas, del pie y del menú; y [la interfaz del explorador](#la-interfaz).
 4. [Las descriptions](#las-descriptions): lo que se ve al compartir cada página.
 5. [Los nombres de las constelaciones](#los-nombres-de-las-constelaciones).
 
@@ -1677,39 +1677,45 @@ Corrección:
 
 Corrección:
 
+**Párrafo 39**
+
+> Venus «Bajo las nubes»: la imagen del radar de Magellan, que mide el eco de cada punto y no la luz que se ve, pintada en gris con la luz del Sol y el brillo de sus nubes. Lo que el radar no cubrió, en un gris liso.
+
+Corrección:
+
 #### Privacidad
 
-**Párrafo 39**
+**Párrafo 40**
 
 > Sin cookies y sin analítica (tampoco la del alojamiento).
 
 Corrección:
 
-**Párrafo 40**
+**Párrafo 41**
 
 > Todo se sirve desde este mismo sitio: ni fuentes, ni scripts, ni imágenes, ni datos de otros dominios.
 
 Corrección:
 
-**Párrafo 41**
+**Párrafo 42**
 
 > Tu navegador guarda solo dos preferencias, en su almacenamiento local: el nivel de calidad del 3D y si quieres los atajos de una sola tecla.
 
 Corrección:
 
-**Párrafo 42**
+**Párrafo 43**
 
 > «Usar mi ubicación», en el cielo, solo pide tu ubicación cuando lo pulsas, y no sale de tu navegador: no va a la dirección de la página ni se guarda.
 
 Corrección:
 
-**Párrafo 43**
+**Párrafo 44**
 
 > El alojamiento, Cloudflare Pages, pide a algunos navegadores (Chrome y Edge) que le envíen un informe cuando una petición a este sitio falla (Network Error Logging). Lo recibe el propio alojamiento, que ya sirve cada página, y solo informa de los fallos.
 
 Corrección:
 
-**Párrafo 44**
+**Párrafo 45**
 
 > La política de privacidad y el aviso legal son los de la web del autor.
 
@@ -1717,7 +1723,7 @@ Corrección:
 
 #### Autor
 
-**Párrafo 45**
+**Párrafo 46**
 
 > Lo ha hecho Iván Chesa Lapena, desarrollador de software: ivanchesa.com. El código es abierto, con licencia MIT, en GitHub; las texturas, los datos y los catálogos de terceros conservan sus licencias (créditos).
 
@@ -1771,23 +1777,29 @@ Corrección:
 
 **Párrafo 7**
 
-> Las lunas: los mosaicos globales del USGS Astrogeology, de dominio público, con imágenes de Viking (Fobos), Voyager y Galileo (Ío, en color, y las demás de Júpiter), Cassini (las de Saturno; los de Tetis y Rea, del DLR, T. Roatsch et al.) y Voyager 2 (Tritón, del Lunar and Planetary Institute, P. Schenk). Mimas, con el mapa del DLR (Roatsch et al., 2018) en el PDS de la NASA. Deimos y las cinco lunas grandes de Urano, con los mapas del Solar System Simulator del JPL (del USGS, con imágenes de las Viking y de la Voyager 2; Caltech/JPL/USGS), «Courtesy NASA/JPL-Caltech», según la política de uso de sus imágenes. Reducidos y en WebP; los que son en gris, con el color de su índice B−V publicado (The Astronomical Almanac, Zellner y Capen, 1974, y Pascu et al., 2006) o, sin él, en gris neutro. En Jápeto, el contraste de sus dos caras, llevado al de sus albedos (0,03–0,05 y 0,5–0,6, NASA).
+> Venus bajo las nubes: el mosaico global del radar de la sonda Magellan (C3-MIDR, 2 km por píxel), del USGS Astrogeology y el PDS Geosciences Node (NASA/JPL), de dominio público. Reducido y en WebP; lo que el radar no cubrió, en un gris liso. Es una imagen de radar, en gris: no lo que verían los ojos.
 
 Corrección:
 
 **Párrafo 8**
 
-> Las formas de Fobos y Deimos: sus modelos de forma (DSK) del servidor del NAIF (los de la Mars Express, del ESA SPICE Service), según sus reglas de uso: el de Fobos, de K. Willner, X. Shi y J. Oberst (DLR, 2014), con imágenes HRSC de la Mars Express; el de Deimos, de P. Thomas, con imágenes de las Viking. Es una versión modificada: este proyecto los reduce a una rejilla de radios por latitud y longitud.
+> Las lunas: los mosaicos globales del USGS Astrogeology, de dominio público, con imágenes de Viking (Fobos), Voyager y Galileo (Ío, en color, y las demás de Júpiter), Cassini (las de Saturno; los de Tetis y Rea, del DLR, T. Roatsch et al.) y Voyager 2 (Tritón, del Lunar and Planetary Institute, P. Schenk). Mimas, con el mapa del DLR (Roatsch et al., 2018) en el PDS de la NASA. Deimos y las cinco lunas grandes de Urano, con los mapas del Solar System Simulator del JPL (del USGS, con imágenes de las Viking y de la Voyager 2; Caltech/JPL/USGS), «Courtesy NASA/JPL-Caltech», según la política de uso de sus imágenes. Reducidos y en WebP; los que son en gris, con el color de su índice B−V publicado (The Astronomical Almanac, Zellner y Capen, 1974, y Pascu et al., 2006) o, sin él, en gris neutro. En Jápeto, el contraste de sus dos caras, llevado al de sus albedos (0,03–0,05 y 0,5–0,6, NASA).
 
 Corrección:
 
 **Párrafo 9**
 
-> Lo que no se vio de las lunas, recreado (ilustrativo): lo que ninguna sonda fotografió (el norte de Tritón y de las lunas de Urano) y lo que el mapa de Deimos no cubre se recrean enteros, y lo que solo se fotografió de lejos lleva detalle recreado, siempre con parches del terreno real de la misma luna, sobre la esfera y sin tocar lo real. Proteo no tiene mapa: sus cráteres son generados. El método y lo medido (el grano y el borde con lo real), en recreacion-lunas.md. La superficie de cada luna, medida en su mapa LunaRealDe lejos (con detalle recreado)No vista (recreada)Fobos91,7 %8,3 %0,0 %Deimos55,5 %32,7 %11,8 %Ío82,9 %17,1 %0,0 %Europa80,0 %19,5 %0,5 %Ganímedes97,9 %1,6 %0,5 %Calisto87,5 %11,5 %1,0 %Mimas80,0 %20,0 %0,0 %Encélado74,1 %25,9 %0,0 %Tetis79,8 %20,2 %0,0 %Dione87,3 %12,7 %0,0 %Rea92,6 %7,4 %0,0 %Jápeto69,2 %30,8 %0,0 %Miranda30,5 %8,9 %60,6 %Ariel24,5 %8,8 %66,7 %Umbriel35,3 %1,1 %63,6 %Titania30,9 %0,4 %68,6 %Oberón33,5 %0,0 %66,5 %Tritón30,6 %36,1 %33,4 %
+> Las formas de Fobos y Deimos: sus modelos de forma (DSK) del servidor del NAIF (los de la Mars Express, del ESA SPICE Service), según sus reglas de uso: el de Fobos, de K. Willner, X. Shi y J. Oberst (DLR, 2014), con imágenes HRSC de la Mars Express; el de Deimos, de P. Thomas, con imágenes de las Viking. Es una versión modificada: este proyecto los reduce a una rejilla de radios por latitud y longitud.
 
 Corrección:
 
 **Párrafo 10**
+
+> Lo que no se vio de las lunas, recreado (ilustrativo): lo que ninguna sonda fotografió (el norte de Tritón y de las lunas de Urano) y lo que el mapa de Deimos no cubre se recrean enteros, y lo que solo se fotografió de lejos lleva detalle recreado, siempre con parches del terreno real de la misma luna, sobre la esfera y sin tocar lo real. Proteo no tiene mapa: sus cráteres son generados. El método y lo medido (el grano y el borde con lo real), en recreacion-lunas.md. La superficie de cada luna, medida en su mapa LunaRealDe lejos (con detalle recreado)No vista (recreada)Fobos91,7 %8,3 %0,0 %Deimos55,5 %32,7 %11,8 %Ío82,9 %17,1 %0,0 %Europa80,0 %19,5 %0,5 %Ganímedes97,9 %1,6 %0,5 %Calisto87,5 %11,5 %1,0 %Mimas80,0 %20,0 %0,0 %Encélado74,1 %25,9 %0,0 %Tetis79,8 %20,2 %0,0 %Dione87,3 %12,7 %0,0 %Rea92,6 %7,4 %0,0 %Jápeto69,2 %30,8 %0,0 %Miranda30,5 %8,9 %60,6 %Ariel24,5 %8,8 %66,7 %Umbriel35,3 %1,1 %63,6 %Titania30,9 %0,4 %68,6 %Oberón33,5 %0,0 %66,5 %Tritón30,6 %36,1 %33,4 %
+
+Corrección:
+
+**Párrafo 11**
 
 > Los lugares con nombre de las vistas y el recorrido de la Luna, y los rasgos con los que se comprueba la alineación de los mosaicos: el Gazetteer of Planetary Nomenclature (IAU y USGS), de dominio público.
 
@@ -1795,25 +1807,25 @@ Corrección:
 
 #### Estrellas, Vía Láctea y constelaciones
 
-**Párrafo 11**
+**Párrafo 12**
 
 > Las estrellas: HYG Database v4.1, de David Nash (Astronomy Nexus), con CC BY-SA 4.0. El catálogo derivado del explorador (las estrellas hasta la magnitud 6,5) mantiene esa licencia.
 
 Corrección:
 
-**Párrafo 12**
+**Párrafo 13**
 
 > La Vía Láctea: «The Milky Way panorama», de ESO/S. Brunier, con CC BY 4.0. Sin sus estrellas (las pone el catálogo), reducida, suavizada y en WebP.
 
 Corrección:
 
-**Párrafo 13**
+**Párrafo 14**
 
 > Las líneas de las constelaciones: las figuras de las cartas de las constelaciones de la IAU (IAU y Sky & Telescope: Roger Sinnott y Rick Fienberg; las figuras, de Alan MacRobert), con CC BY 4.0, tal como las prepara d3-celestial, de Olaf Frohn (BSD de 3 cláusulas, © 2015 Olaf Frohn; su texto y la atribución, junto al fichero).
 
 Corrección:
 
-**Párrafo 14**
+**Párrafo 15**
 
 > Los nombres de las constelaciones: los oficiales de la IAU, de astronomy-engine, y en español, los del Anuario del Real Observatorio de Madrid (© Instituto Geográfico Nacional).
 
@@ -1821,37 +1833,37 @@ Corrección:
 
 #### Datos
 
-**Párrafo 15**
+**Párrafo 16**
 
 > Los datos de los cuerpos: las fichas de la NASA (NSSDCA) y los parámetros de los satélites de la NASA/JPL; cada cifra, con su fuente en su ficha.
 
 Corrección:
 
-**Párrafo 16**
+**Párrafo 17**
 
 > Las órbitas de las lunas: elementos propios, ajustados a JPL Horizons, con los planos de Laplace del JPL y los polos de Urano y Neptuno de la IAU (WGCCRE, 2015). La unidad astronómica, la de la IAU (2012).
 
 Corrección:
 
-**Párrafo 17**
+**Párrafo 18**
 
 > Los lugares del cielo desde España: Fraga, Lleida, el Observatori Fabra y la Puerta del Sol, y las altitudes del Montsec y de la Puerta del Sol (MDT02), © Instituto Geográfico Nacional; el Roque de los Muchachos y el Teide, del Instituto de Astrofísica de Canarias; Calar Alto, del Observatorio de Calar Alto; el Montsec, del Parc Astronòmic Montsec, y la altitud del Fabra, del Servei Meteorològic de Catalunya.
 
 Corrección:
 
-**Párrafo 18**
+**Párrafo 19**
 
 > El brillo y el color de los planetas: las leyes de fase de Hilton (2005) y de astronomy-engine, colores medidos en fotos del Hubble (NASA/ESA) y la reconstrucción de Urano y Neptuno de Irwin et al. (2024).
 
 Corrección:
 
-**Párrafo 19**
+**Párrafo 20**
 
 > El Sol: el oscurecimiento del borde en cada color, con la ley de Hestroffer y Magnan (1998), y la rotación de las manchas, más lenta lejos del ecuador, con la medida por el SDO de Lößnitz et al. (2025). Las manchas, la granulación, la corona y el resplandor son ilustrativos. En el explorador se ve en color realzado, como en las imágenes de los observatorios (con luz visible normal es blanco, como en el cielo): su color, sus zonas claras y oscuras, sus rayos y sus protuberancias, también ilustrativos.
 
 Corrección:
 
-**Párrafo 20**
+**Párrafo 21**
 
 > Las comprobaciones: las posiciones, con JPL Horizons; las fases, las salidas, las puestas y los crepúsculos, con el USNO; y los eclipses, con los catálogos de cinco milenios de la NASA, de Fred Espenak y Jean Meeus (NASA/GSFC).
 
@@ -1859,7 +1871,7 @@ Corrección:
 
 #### Textos
 
-**Párrafo 21**
+**Párrafo 22**
 
 > Los resúmenes y las curiosidades de los cuerpos son textos propios, traducidos y resumidos de páginas de NASA Science: cada uno, con su página en su ficha.
 
@@ -1867,13 +1879,13 @@ Corrección:
 
 #### Las imágenes del propio explorador
 
-**Párrafo 22**
+**Párrafo 23**
 
 > Los pósters del explorador, las miniaturas y las imágenes de las fichas, y la imagen para compartir, son capturas del propio motor con estas texturas: mantienen sus licencias y sus atribuciones.
 
 Corrección:
 
-**Párrafo 23**
+**Párrafo 24**
 
 > Algunas cosas de la escena son una elección de presentación y no un dato: los tamaños y las órbitas de la vista general, con sus sistemas de lunas, la luz de cada vista o el color del cielo. Están, una por una, en lo que es ilustrativo.
 
@@ -1881,19 +1893,19 @@ Corrección:
 
 #### Programas y tipografías
 
-**Párrafo 24**
+**Párrafo 25**
 
 > astronomy-engine, de Don Cross, con MIT.
 
 Corrección:
 
-**Párrafo 25**
+**Párrafo 26**
 
 > three.js y Angular, con MIT.
 
 Corrección:
 
-**Párrafo 26**
+**Párrafo 27**
 
 > Las tipografías Newsreader (Production Type) y Public Sans (USWDS), con la SIL Open Font License 1.1.
 
@@ -1903,7 +1915,7 @@ Corrección:
 
 #### Creative Commons Atribución 4.0 (CC BY 4.0)
 
-**Párrafo 27**
+**Párrafo 28**
 
 > Las texturas de Solar System Scope, la Vía Láctea de ESO/S. Brunier y las figuras de las cartas de la IAU. Permite usar y cambiar, citando al autor y diciendo los cambios.
 
@@ -1911,7 +1923,7 @@ Corrección:
 
 #### Creative Commons Atribución-CompartirIgual 4.0 (CC BY-SA 4.0)
 
-**Párrafo 28**
+**Párrafo 29**
 
 > El catálogo de estrellas HYG y el fichero derivado del explorador, que se distribuye con la misma licencia y su aviso.
 
@@ -1919,7 +1931,7 @@ Corrección:
 
 #### BSD de 3 cláusulas
 
-**Párrafo 29**
+**Párrafo 30**
 
 > d3-celestial, de Olaf Frohn (las líneas de las constelaciones), con su aviso.
 
@@ -1927,7 +1939,7 @@ Corrección:
 
 #### MIT
 
-**Párrafo 30**
+**Párrafo 31**
 
 > astronomy-engine, three.js, Angular y el código propio del explorador.
 
@@ -1935,7 +1947,7 @@ Corrección:
 
 #### SIL Open Font License 1.1
 
-**Párrafo 31**
+**Párrafo 32**
 
 > Las tipografías Newsreader y Public Sans.
 
@@ -1943,7 +1955,7 @@ Corrección:
 
 #### Dominio público
 
-**Párrafo 32**
+**Párrafo 33**
 
 > Los mosaicos y el relieve del USGS, los datos del PDS de la NASA y las tablas del USNO.
 
@@ -1951,7 +1963,7 @@ Corrección:
 
 #### Material de la NASA
 
-**Párrafo 33**
+**Párrafo 34**
 
 > El CGI Moon Kit, las fichas de la NSSDCA, los datos del JPL y las predicciones de eclipses, que se pueden usar citando su origen y sin dar a entender que la NASA respalda el proyecto.
 
@@ -1959,7 +1971,7 @@ Corrección:
 
 #### Datos del IGN
 
-**Párrafo 34**
+**Párrafo 35**
 
 > Uso libre compatible con CC BY 4.0, con la cita «© Instituto Geográfico Nacional».
 
@@ -1967,13 +1979,13 @@ Corrección:
 
 #### El código del explorador
 
-**Párrafo 35**
+**Párrafo 36**
 
 > El código propio tiene licencia MIT (© 2026 Iván Chesa Lapena) y está en GitHub. Las texturas, los datos y los catálogos de terceros conservan sus propias licencias, las de esta página: en particular, el catálogo de estrellas, CC BY-SA 4.0.
 
 Corrección:
 
-**Párrafo 36**
+**Párrafo 37**
 
 > La NASA no respalda este proyecto ni participa en él, como tampoco ninguna de las demás instituciones citadas.
 
@@ -2083,21 +2095,9 @@ Corrección:
 
 Corrección:
 
-**Densidad media**
-
-> Densidad media
-
-Corrección:
-
 **Gravedad en la superficie**
 
 > Gravedad en la superficie. Aclaraciones: «En el ecuador.»
-
-Corrección:
-
-**Velocidad de escape**
-
-> Velocidad de escape
 
 Corrección:
 
@@ -2125,6 +2125,18 @@ Corrección:
 
 Corrección:
 
+**Densidad media**
+
+> Densidad media
+
+Corrección:
+
+**Velocidad de escape**
+
+> Velocidad de escape
+
+Corrección:
+
 **Tipo espectral**
 
 > Tipo espectral
@@ -2143,12 +2155,6 @@ Corrección:
 
 Corrección:
 
-**Achatamiento**
-
-> Achatamiento. Aclaraciones: «Achatamiento f = (a − c) / a (radios ecuatorial y polar).»
-
-Corrección:
-
 **Temperatura media**
 
 > Temperatura media
@@ -2158,12 +2164,6 @@ Corrección:
 **Presión en la superficie**
 
 > Presión en la superficie. Aclaraciones: «De noche.»
-
-Corrección:
-
-**Albedo geométrico**
-
-> Albedo geométrico. Aclaraciones: «Albedo geométrico (visual).», «Cara oscura; la clara llega a 0,5 (la NASA da «0.05 / 0.5»).»
 
 Corrección:
 
@@ -2179,21 +2179,21 @@ Corrección:
 
 Corrección:
 
+**Achatamiento**
+
+> Achatamiento. Aclaraciones: «Achatamiento f = (a − c) / a (radios ecuatorial y polar).»
+
+Corrección:
+
+**Albedo geométrico**
+
+> Albedo geométrico. Aclaraciones: «Albedo geométrico (visual).», «Cara oscura; la clara llega a 0,5 (la NASA da «0.05 / 0.5»).»
+
+Corrección:
+
 **Distancia media**
 
 > Distancia media
-
-Corrección:
-
-**Perihelio**
-
-> Perihelio
-
-Corrección:
-
-**Afelio**
-
-> Afelio
 
 Corrección:
 
@@ -2206,6 +2206,18 @@ Corrección:
 **Velocidad orbital media**
 
 > Velocidad orbital media
+
+Corrección:
+
+**Perihelio**
+
+> Perihelio
+
+Corrección:
+
+**Afelio**
+
+> Afelio
 
 Corrección:
 
@@ -2305,6 +2317,12 @@ Corrección:
 
 Corrección:
 
+**Periodo orbital**
+
+> Periodo orbital
+
+Corrección:
+
 **Perigeo**
 
 > Perigeo. Aclaraciones: «El medio: a lo largo del año, la distancia a la Tierra va de unos 357.000 a 407.000 km.»
@@ -2314,12 +2332,6 @@ Corrección:
 **Apogeo**
 
 > Apogeo. Aclaraciones: «El medio.»
-
-Corrección:
-
-**Periodo orbital**
-
-> Periodo orbital
 
 Corrección:
 
@@ -2571,27 +2583,955 @@ Corrección:
 
 Corrección:
 
-**El pie del explorador: la ayuda**
+**El menú del móvil**
 
-> Arrastra para girar · usa la rueda o pellizca para acercarte · elige un cuerpo
+> Sin cookies, sin analítica y sin peticiones a terceros: tu privacidad.
 
 Corrección:
 
-**El pie del explorador: los créditos**
+<a id="la-interfaz"></a>
+
+## 3 ter. La interfaz del explorador
+
+Los textos de los controles del explorador, de las plantillas de `src/app/features/`: lo que se lee y lo que oyen los lectores de pantalla (`aria-label` y `title`). Lo que se compone con datos sale con «…» en el sitio del dato (el nombre del cuerpo, la fecha). Además, la línea de autoría y los rótulos y el anuncio del recorrido de la portada. Textos nuevos de la fase 9c y de Venus «Bajo las nubes» (9b.e), con `reviewed: false`.
+
+**La línea de autoría**
+
+> Posiciones reales, calculadas en tu navegador.
+
+Fuente: </sobre-el-proyecto#precision>
+
+Corrección:
+
+**El recorrido de la portada**
+
+> Recorrido de unos 30 segundos: Saturno, la Tierra y la Luna. Pulsa «Saltar» o cualquier tecla para pararlo.
+
+Corrección:
+
+**El recorrido de la portada**
+
+> 1 de 4 · Saturno y sus anillos
+
+Corrección:
+
+**El recorrido de la portada**
+
+> 2 de 4 · La Tierra
+
+Corrección:
+
+**El recorrido de la portada**
+
+> 2 de 4 · España y los lugares del cielo: el Montsec, Fabra, Calar Alto, Madrid, Fraga, el Teide y el Roque de los Muchachos
+
+Corrección:
+
+**El recorrido de la portada**
+
+> 3 de 4 · La Luna
+
+Corrección:
+
+**El recorrido de la portada**
+
+> 4 de 4 · El sistema solar, en marcha
+
+Corrección:
+
+**El recorrido de la portada**
+
+> Recorrido de unos 25 segundos: Saturno y la Tierra. Pulsa «Saltar» o cualquier tecla para pararlo.
+
+Corrección:
+
+**El recorrido de la portada**
+
+> 1 de 3 · Saturno y sus anillos
+
+Corrección:
+
+**El recorrido de la portada**
+
+> 2 de 3 · La Tierra
+
+Corrección:
+
+**El recorrido de la portada**
+
+> 2 de 3 · España y los lugares del cielo: el Montsec, Fabra, Calar Alto, Madrid, Fraga, el Teide y el Roque de los Muchachos
+
+Corrección:
+
+**El recorrido de la portada**
+
+> 3 de 3 · El sistema solar, en marcha
+
+Corrección:
+
+#### `body-panel/body-panel.html`
+
+**Texto**
+
+> Cerrar la ficha
+
+Corrección:
+
+**Texto**
+
+> Cerrar la ficha (Esc)
+
+Corrección:
+
+**Texto**
+
+> Ocultar los datos
+
+Corrección:
+
+**Texto**
+
+> Ver los datos
+
+Corrección:
+
+**Texto**
+
+> Bajo las nubes
+
+Corrección:
+
+**Texto**
+
+> Cargando la imagen de radar …
+
+Corrección:
+
+**Texto**
+
+> Imagen de radar de la sonda Magellan, no lo que verían tus ojos.
+
+Corrección:
+
+**Texto**
+
+> No se ha podido cargar la imagen de radar: siguen las nubes.
+
+Corrección:
+
+**Texto**
+
+> Su superficie, como la vio el radar de la sonda Magellan.
+
+Corrección:
+
+**Texto**
+
+> Fuente:
+
+Corrección:
+
+**Texto**
+
+> Lo que es ilustrativo
+
+Corrección:
+
+**Texto**
+
+> Distancia
+
+Corrección:
+
+**Texto**
+
+> Datos
+
+Corrección:
+
+**Texto**
+
+> Datos de
+
+Corrección:
+
+**Texto**
+
+> Ficha completa de …
+
+Corrección:
+
+#### `body-picker/body-picker.html`
+
+**Texto**
+
+> Cuerpos del sistema solar
+
+Corrección:
+
+**Texto**
+
+> Cuerpo
+
+Corrección:
+
+**Texto**
+
+> Distancia
+
+Corrección:
+
+**Texto**
+
+> Planetas: distancia al Sol. Lunas: a su planeta.
+
+Corrección:
+
+#### `camera-controls/camera-controls.ts`
+
+**Texto**
+
+> Cámara
+
+Corrección:
+
+**Texto**
+
+> Acercar (+)
+
+Corrección:
+
+**Texto**
+
+> Alejar (−)
+
+Corrección:
+
+**Texto**
+
+> Acercar
+
+Corrección:
+
+**Texto**
+
+> Alejar
+
+Corrección:
+
+#### `earth-panel/earth-panel.ts`
+
+**Texto**
+
+> Más: la hora del día y el recorrido
+
+Corrección:
+
+**Texto**
+
+> Vista anterior
+
+Corrección:
+
+**Texto**
+
+> Vista siguiente
+
+Corrección:
+
+**Texto**
+
+> Pausar el recorrido
+
+Corrección:
+
+**Texto**
+
+> Recorrer las vistas
+
+Corrección:
+
+**Texto**
+
+> Vistas guiadas
+
+Corrección:
+
+**Texto**
+
+> Más
+
+Corrección:
+
+**Texto**
+
+> Luz del Sol
+
+Corrección:
+
+**Texto**
+
+> Hora del día
+
+Corrección:
+
+**Texto**
+
+> … , sin cambiar la fecha
+
+Corrección:
+
+#### `explorer-ui/explorer-ui.html`
+
+**Texto**
+
+> Ficha del cuerpo elegido
+
+Corrección:
+
+**Texto**
+
+> Índice de cuerpos (I)
+
+Corrección:
+
+**Texto**
+
+> Índice
+
+Corrección:
+
+**Texto**
+
+> Saltar el viaje
+
+Corrección:
+
+**Texto**
+
+> Esc
+
+Corrección:
+
+**Texto**
+
+> Saltar el recorrido
+
+Corrección:
+
+**Texto**
+
+> Ver el recorrido
+
+Corrección:
+
+**Texto**
+
+> Mostrar la interfaz
+
+Corrección:
+
+#### `explorer-ui/index-panel.ts`
+
+**Texto**
+
+> Cerrar el índice
+
+Corrección:
+
+**Texto**
+
+> Cerrar el índice (Esc)
+
+Corrección:
+
+**Texto**
+
+> Índice
+
+Corrección:
+
+#### `explorer-ui/notices.ts`
+
+**Texto**
+
+> Cerrar el aviso
+
+Corrección:
+
+#### `moon-panel/moon-panel.ts`
+
+**Texto**
+
+> Más: la fase y el recorrido
+
+Corrección:
+
+**Texto**
+
+> Parada anterior
+
+Corrección:
+
+**Texto**
+
+> Parada siguiente
+
+Corrección:
+
+**Texto**
+
+> Vistas
+
+Corrección:
+
+**Texto**
+
+> Más
+
+Corrección:
+
+**Texto**
+
+> La Luna está casi nueva: la cara que mira a la Tierra apenas recibe luz del Sol. «Cara visible» la enseña en luna llena.
+
+Corrección:
+
+**Texto**
+
+> Recorrido
+
+Corrección:
+
+**Texto**
+
+> … de … · … .
+
+Corrección:
+
+**Texto**
+
+> Con movimiento reducido, el recorrido va paso a paso.
+
+Corrección:
+
+#### `shortcuts/shortcuts-dialog.ts`
+
+**Texto**
+
+> Cerrar (Esc)
+
+Corrección:
+
+**Texto**
+
+> Atajos de teclado
+
+Corrección:
+
+**Texto**
+
+> Cerrar
+
+Corrección:
+
+**Texto**
+
+> Funcionan en todo el explorador, salvo mientras escribes en un campo.
+
+Corrección:
+
+**Texto**
+
+> Atajos de una sola tecla
+
+Corrección:
+
+**Texto**
+
+> Desactívalos si usas el control por voz o si se te disparan sin querer. Siguen funcionando Esc, las teclas del visor cuando tiene el foco y los botones.
+
+Corrección:
+
+#### `sky-panel/sky-panel.html`
+
+**Texto**
+
+> Lugar
+
+Corrección:
+
+**Texto**
+
+> Lugar desde el que ves el cielo
+
+Corrección:
+
+**Texto**
+
+> Tu ubicación
+
+Corrección:
+
+**Texto**
+
+> Usar mi ubicación
+
+Corrección:
+
+**Texto**
+
+> Hora
+
+Corrección:
+
+**Texto**
+
+> Hora del lugar ( … ), de la puesta a la salida del Sol.
+
+Corrección:
+
+**Texto**
+
+> Ahora es de día: arrastra para ver la noche.
+
+Corrección:
+
+**Texto**
+
+> Esta noche
+
+Corrección:
+
+**Texto**
+
+> Qué planetas se ven y hacia dónde mirar
+
+Corrección:
+
+**Texto**
+
+> Ningún planeta se ve esta noche con el cielo oscuro.
+
+Corrección:
+
+**Texto**
+
+> Cuerpo
+
+Corrección:
+
+**Texto**
+
+> Ahora
+
+Corrección:
+
+**Texto**
+
+> Sale
+
+Corrección:
+
+**Texto**
+
+> Se pone
+
+Corrección:
+
+**Texto**
+
+> Mirar
+
+Corrección:
+
+**Texto**
+
+> Altura sobre el horizonte y rumbo (N, NE, E … ) ahora. «Sale» y «Se pone», durante la noche, de la puesta a la salida del Sol; «—»: no sale o no se pone en ese tiempo.
+
+Corrección:
+
+**Texto**
+
+> Próximos eclipses desde …
+
+Corrección:
+
+**Texto**
+
+> Constelaciones
+
+Corrección:
+
+#### `time-controls/time-controls.html`
+
+**Texto**
+
+> Tiempo de la simulación
+
+Corrección:
+
+**Texto**
+
+> Controles: fecha, hora, cámara, calidad y atajos
+
+Corrección:
+
+**Texto**
+
+> Fecha
+
+Corrección:
+
+**Texto**
+
+> Velocidad
+
+Corrección:
+
+**Texto**
+
+> Controles
+
+Corrección:
+
+#### `time-controls/time-menu.html`
+
+**Texto**
+
+> Cerrar los controles
+
+Corrección:
+
+**Texto**
+
+> Cerrar los controles (Esc)
+
+Corrección:
+
+**Texto**
+
+> Volver a ahora, en tiempo real (N)
+
+Corrección:
+
+**Texto**
+
+> Hacia atrás (R)
+
+Corrección:
+
+**Texto**
+
+> Acercar (+)
+
+Corrección:
+
+**Texto**
+
+> Alejar (−)
+
+Corrección:
+
+**Texto**
+
+> Vista general (G)
+
+Corrección:
+
+**Texto**
+
+> Vista limpia: ocultar la interfaz (V)
+
+Corrección:
+
+**Texto**
+
+> Atajos de teclado (?)
+
+Corrección:
+
+**Texto**
+
+> Controles
+
+Corrección:
+
+**Texto**
+
+> Fecha
+
+Corrección:
+
+**Texto**
+
+> Hora
+
+Corrección:
+
+**Texto**
+
+> Zona
+
+Corrección:
+
+**Texto**
+
+> UTC
+
+Corrección:
+
+**Texto**
+
+> Ahora
+
+Corrección:
+
+**Texto**
+
+> Esa fecha no existe o se sale del rango: elige una entre 1900 y 2100.
+
+Corrección:
+
+**Texto**
+
+> Velocidad
+
+Corrección:
+
+**Texto**
+
+> Hacia atrás
+
+Corrección:
+
+**Texto**
+
+> Cámara
+
+Corrección:
+
+**Texto**
+
+> Acercar
+
+Corrección:
+
+**Texto**
+
+> Alejar
+
+Corrección:
+
+**Texto**
+
+> Vista general
+
+Corrección:
+
+**Texto**
+
+> Vista limpia
+
+Corrección:
+
+**Texto**
+
+> Escena
+
+Corrección:
+
+**Texto**
+
+> Calidad
+
+Corrección:
+
+**Texto**
+
+> Escala
+
+Corrección:
+
+**Texto**
+
+> Ver el recorrido
+
+Corrección:
+
+**Texto**
+
+> Atajos de teclado
+
+Corrección:
+
+**Texto**
 
 > 1900–2100 · NASA/JPL · astronomy-engine
 
 Corrección:
 
-**El pie del explorador: los créditos**
+#### `time-controls/timeline-slider.ts`
 
-> Un proyecto de Iván Chesa Lapena · Aviso legal · Sin cookies, sin analítica y sin peticiones a terceros · Créditos
+**Texto**
+
+> Año anterior (Mayús + Av Pág)
 
 Corrección:
 
-**El menú del móvil**
+**Texto**
 
-> Sin cookies, sin analítica y sin peticiones a terceros: tu privacidad.
+> Año siguiente (Mayús + Re Pág)
+
+Corrección:
+
+**Texto**
+
+> Línea de tiempo
+
+Corrección:
+
+**Texto**
+
+> hoy
+
+Corrección:
+
+**Texto**
+
+> Flechas, un día; Re Pág y Av Pág, un mes; con Mayús, un año; Inicio y Fin, el principio o el final del año.
+
+Corrección:
+
+#### `view-switcher/view-switcher.ts`
+
+**Texto**
+
+> Vistas del explorador
+
+Corrección:
+
+#### `viewer/viewer-canvas.html`
+
+**Texto**
+
+> Rendimiento (solo en desarrollo)
+
+Corrección:
+
+**Texto**
+
+> Usa las flechas para girar alrededor del cuerpo (con Mayús, más deprisa), más y menos para acercar o alejar, e Inicio para la vista general. La misma información está en el índice de cuerpos y en la ficha.
+
+Corrección:
+
+**Texto**
+
+> Preparando la escena 3D …
+
+Corrección:
+
+**Texto**
+
+> No se ha podido mostrar la escena 3D.
+
+Corrección:
+
+**Texto**
+
+> … El índice, la ficha y el tiempo siguen funcionando.
+
+Corrección:
+
+**Texto**
+
+> Reintentar
+
+Corrección:
+
+**Texto**
+
+> FPS
+
+Corrección:
+
+**Texto**
+
+> CPU
+
+Corrección:
+
+**Texto**
+
+> … ms
+
+Corrección:
+
+**Texto**
+
+> Efemérides
+
+Corrección:
+
+**Texto**
+
+> Llamadas
+
+Corrección:
+
+**Texto**
+
+> Triángulos
+
+Corrección:
+
+**Texto**
+
+> Texturas
+
+Corrección:
+
+**Texto**
+
+> VRAM
+
+Corrección:
+
+**Texto**
+
+> … MB
+
+Corrección:
+
+**Texto**
+
+> Calidad
+
+Corrección:
+
+**Texto**
+
+> Profundidad
+
+Corrección:
+
+#### `viewer/viewer-layout.html`
+
+**Texto**
+
+> Explorador
+
+Corrección:
+
+**Texto**
+
+> … Un proyecto de … ·
+
+Corrección:
+
+**Texto**
+
+> Cómo se calcula
 
 Corrección:
 

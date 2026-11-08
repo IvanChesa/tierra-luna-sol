@@ -6,6 +6,9 @@ import { SimulationStore } from '../../state/simulation.store';
 import { ExplorerSession } from '../explorer-ui/explorer-session';
 import { Icon } from '../viewer/icon';
 
+/** Por debajo de esta fracción iluminada, la Luna está «casi nueva» (la nota del panel). */
+export const NEARLY_NEW = 0.05;
+
 /** Segundos que se queda cada parada del recorrido. */
 export const MOON_TOUR_STEP_MS = 12_000;
 
@@ -31,30 +34,51 @@ interface Shown {
 @Component({
   selector: 'tls-moon-panel',
   imports: [Icon],
+  host: { '[class.is-more]': 'more()' },
   template: `
     <section class="moon" aria-labelledby="moon-views-title">
       <div class="moon__row">
         <h2 id="moon-views-title" class="moon__title">Vistas</h2>
         <p class="moon__phase">{{ phaseText() }}</p>
       </div>
-      <div class="moon__views" role="group" aria-labelledby="moon-views-title">
-        @for (view of views; track view.id; let i = $index) {
-          <button
-            type="button"
-            class="control moon__view"
-            [attr.aria-pressed]="isShown('view', i)"
-            (click)="chooseView(i)"
-          >
-            {{ view.title }}
-          </button>
-        }
+      <div class="moon__strip">
+        <div class="moon__views scroll-hint" role="group" aria-labelledby="moon-views-title">
+          @for (view of views; track view.id; let i = $index) {
+            <button
+              type="button"
+              class="control moon__view"
+              [attr.aria-pressed]="isShown('view', i)"
+              (click)="chooseView(i)"
+            >
+              {{ view.title }}
+            </button>
+          }
+        </div>
+        <!-- Solo en el móvil: la fase y el recorrido, plegados para que la Luna se vea (fase 9c). -->
+        <button
+          type="button"
+          class="control moon__toggle"
+          aria-label="Más: la fase y el recorrido"
+          aria-controls="moon-tour"
+          [attr.aria-expanded]="more()"
+          (click)="more.set(!more())"
+        >
+          Más
+        </button>
       </div>
       @if (viewCaption(); as text) {
         <p class="moon__caption">{{ text }}</p>
       }
+      <!-- Con la Luna casi nueva, por qué casi no se ve (fase 9c, 9c.7); también con el panel plegado. -->
+      @if (nearlyNew()) {
+        <p class="moon__new">
+          La Luna está casi nueva: la cara que mira a la Tierra apenas recibe luz del Sol. «Cara
+          visible» la enseña en luna llena.
+        </p>
+      }
     </section>
 
-    <section class="moon" aria-labelledby="moon-tour-title">
+    <section class="moon moon--tour" id="moon-tour" aria-labelledby="moon-tour-title">
       <h2 id="moon-tour-title" class="moon__title">Recorrido</h2>
       <div class="moon__player">
         <button
@@ -103,6 +127,8 @@ export class MoonPanel {
   /** Con movimiento reducido, el recorrido no avanza solo. */
   readonly stepByStep = this.session.reducedMotion;
   readonly shown = signal<Shown | null>(null);
+  /** En el móvil, la fase, los subtítulos y el recorrido desplegados (en reposo, la fila de las vistas). */
+  readonly more = signal(false);
   readonly touring = signal(false);
 
   /** «Gibosa creciente · 87 % iluminada». */
@@ -110,6 +136,8 @@ export class MoonPanel {
     const phase = moonPhase(this.sim.time());
     return `${phase.name} · ${Math.round(phase.illuminatedFraction * 100)} % iluminada`;
   });
+  /** Menos del 5 % iluminada: la cara visible, casi a oscuras (con la fase que ya se calcula). */
+  readonly nearlyNew = computed(() => moonPhase(this.sim.time()).illuminatedFraction < NEARLY_NEW);
   readonly viewCaption = computed(() => {
     const shown = this.shown();
     return shown?.kind === 'view' ? (this.views[shown.index]?.text ?? null) : null;

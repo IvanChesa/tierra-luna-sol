@@ -1,6 +1,7 @@
 /*
- * Fichas de cuerpos (fase 3c): la miniatura redonda y el nombre, sobre el velo de la franja de abajo
- * (docs/DISENO.md: el acento solo en lo elegido). La fila de lunas flota encima de la de planetas.
+ * Fichas de cuerpos (fase 3c; fase 9c): los planetas, la miniatura redonda y el nombre debajo, sin
+ * caja; las lunas, pastillas con la miniatura y el nombre al lado (decisión de Iván del 07-11: se
+ * distinguen a simple vista). El acento, solo en lo elegido (docs/DISENO.md).
  */
 :host {
   position: relative;
@@ -8,10 +9,17 @@
   min-width: 0;
 }
 
-/* Centrada si cabe; si no, se desplaza en horizontal (el foco y la elección la mueven, body-chips.ts). */
+/*
+ * Centrada si cabe; si no, se desplaza en horizontal (el foco y la elección la mueven, body-chips.ts).
+ * Del ancho de sus fichas: el resto de la franja deja pasar los gestos al lienzo (fase 9c, 9c.1).
+ */
 .row {
   display: flex;
+  align-items: center;
   justify-content: safe center;
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
   gap: var(--space-1);
   padding: var(--space-1);
   overflow-x: auto;
@@ -23,6 +31,15 @@
 /* La fila no es una parada del tabulador (tabindex="-1"); el foco va a sus fichas. */
 .row:focus {
   outline: none;
+}
+
+/* En el móvil, entre el planeta y sus lunas. */
+.row__divider {
+  flex: none;
+  align-self: stretch;
+  width: 1px;
+  margin: var(--space-2) var(--space-1);
+  background: var(--color-control);
 }
 
 .chip {
@@ -50,6 +67,16 @@
   border-radius: 50%;
   box-shadow: 0 0 0 1px var(--color-line);
   transition: box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+/*
+ * Sin velo bajo la fila (fase 9c): el nombre, sobre una placa casi opaca del color del fondo. Legible
+ * sobre un planeta brillante (crítica de la 9c, AA): con blanco detrás, más de 5:1 (measure-ui.mjs).
+ */
+.chip__name {
+  padding: 0 var(--space-1);
+  background: color-mix(in srgb, var(--color-bg) 88%, transparent);
+  border-radius: var(--radius-sm);
 }
 
 .chip:hover {
@@ -94,7 +121,7 @@
   outline-offset: 0;
 }
 
-/* --- Lunas: botones más pequeños, opacos, flotando sobre el lienzo. --- */
+/* --- Lunas: pastillas, con su fondo y sin borde, como los botones (fase 9c, 9c.5). --- */
 
 .moons {
   --chrome-edge: bottom;
@@ -116,9 +143,9 @@
   gap: var(--space-2);
   min-height: 2.25rem;
   padding: 0 var(--space-3) 0 var(--space-1);
-  background: var(--color-surface);
+  background: var(--color-surface-raised);
   color: var(--color-text-muted);
-  border: var(--border-width) solid var(--color-line);
+  border: 0;
   border-radius: var(--radius-md);
   font: inherit;
   font-size: var(--text-sm);
@@ -133,14 +160,14 @@
 }
 
 .moon:hover {
+  background: var(--color-line);
   color: var(--color-text);
-  border-color: var(--color-control);
 }
 
+/* Elegida: el nombre en latón y su subrayado, como un botón pulsado (la forma, no solo el color). */
 .moon[aria-pressed='true'] {
   color: var(--color-accent);
-  border-color: var(--color-accent);
-  box-shadow: inset 0 0 0 1px var(--color-accent);
+  box-shadow: inset 0 -2px 0 var(--color-accent);
 }
 
 @media (pointer: coarse) {

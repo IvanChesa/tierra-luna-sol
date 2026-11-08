@@ -1,0 +1,67 @@
+/*
+ * La barra del cielo (móvil y tableta; decisión de Iván del 08-11): en la fila de la barra de tiempo, en
+ * lugar de la fecha (styles.css la coloca; time-controls.css esconde la fecha). En escritorio, no hay.
+ */
+:host {
+  display: none;
+}
+
+@media (max-width: 63.99rem) {
+  :host {
+    display: block;
+    min-width: 0;
+  }
+}
+
+/* El lugar y la hora en una línea, con la flecha; lo que hay sobre el horizonte, debajo. */
+.bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--space-2);
+  width: 100%;
+  min-height: var(--tap-target);
+  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-3);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 0;
+  border-radius: var(--radius-md);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.bar:focus-visible {
+  outline-offset: calc(-1 * var(--focus-ring-width));
+}
+
+.bar__place,
+.bar__summary {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bar__place {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-strong);
+  line-height: 1.3;
+}
+
+.bar__summary {
+  grid-column: 1 / -1;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  line-height: 1.3;
+}
+
+/* Hacia arriba, cerrado; hacia abajo, abierto. Con movimiento reducido, sin giro (styles.css). */
+.bar__chevron {
+  color: var(--color-accent);
+  rotate: -90deg;
+  transition: rotate var(--duration-fast) var(--ease-standard);
+}
+
+[aria-expanded='true'] .bar__chevron {
+  rotate: 90deg;
+}

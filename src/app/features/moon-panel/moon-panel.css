@@ -1,18 +1,25 @@
 /* Panel de la vista Luna (fase 6): dos bloques opacos sobre el lienzo, como el de la vista Tierra. */
 /*
  * Su sitio en la rejilla del explorador (el anfitrión de la interfaz es `display: contents`): en
- * escritorio, en la columna de la presentación, debajo de ella, sin apartar el encuadre; en móvil,
+ * escritorio, en la columna de la presentación, debajo de ella, con el encuadre a su derecha; en móvil,
  * al pie del lienzo, encima de las fichas, y el encuadre sube por encima de él.
  */
 :host {
-  --chrome-edge: none;
+  /* En escritorio, el encuadre se aparta a su derecha: la región de una vista guiada (España), en la
+     zona libre (crítica de la 9c). */
+  --chrome-edge: left;
   position: relative;
   z-index: 2;
   display: grid;
   grid-area: index;
   align-self: start;
+  align-content: start;
   gap: var(--space-2);
+  /* Nunca pasa de su área (en un escritorio bajo, 1024 × 768): se desplaza dentro (fase 9c, 9c.4). */
+  max-height: 100%;
   margin: var(--space-2) var(--space-4) 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 @media (max-width: 63.99rem) {
@@ -29,7 +36,6 @@
   gap: var(--space-2);
   padding: var(--space-3) var(--space-4);
   background: var(--color-surface);
-  border: var(--border-width) solid var(--color-line);
   border-radius: var(--radius-md);
 }
 
@@ -73,6 +79,24 @@
   padding-inline: var(--space-2);
 }
 
+.moon__strip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.moon__strip .moon__views {
+  flex: 1;
+  min-width: 0;
+}
+
+/* «Más» (la fase y el recorrido): solo en el móvil (en escritorio se ve todo el panel). */
+.moon__toggle {
+  display: none;
+  flex: none;
+}
+
 .moon__player {
   display: flex;
   gap: var(--space-1);
@@ -100,6 +124,13 @@
   .moon__view {
     min-height: var(--tap-target);
   }
+}
+
+.moon__new {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  line-height: 1.45;
 }
 
 .moon__caption {
@@ -148,5 +179,14 @@
 
   .moon__caption {
     font-size: var(--text-xs, 0.75rem);
+  }
+
+  /* En reposo, una sola fila: las vistas y «Más», que despliega la fase y el recorrido. */
+  .moon__toggle {
+    display: inline-flex;
+  }
+
+  :host(:not(.is-more)) :is(.moon__phase, .moon__caption, .moon--tour) {
+    display: none;
   }
 }

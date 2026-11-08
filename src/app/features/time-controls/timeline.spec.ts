@@ -86,6 +86,9 @@ describe('timeline: la línea de tiempo del año de la fecha mostrada', () => {
     expect(iso(shiftYears(utc('2028-02-29T10:00:00Z'), -1, 'utc'))).toBe(
       '2027-02-28T10:00:00.000Z',
     );
+    expect(iso(shiftYears(utc('2026-03-17T10:00:00Z'), -10, 'utc'))).toBe(
+      '2016-03-17T10:00:00.000Z',
+    );
   });
 
   it('en la hora local se conserva la hora de reloj', () => {

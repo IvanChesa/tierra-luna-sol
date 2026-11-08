@@ -10,12 +10,17 @@ test.describe('El cielo desde España (fase 8)', () => {
   }) => {
     const problems = trackProblems(page);
     await openExplorer(page, '/cielo?fecha=2026-11-01T21:00Z');
-    // «Cielo», en las vistas del explorador y en el menú del sitio (decisión de Iván del 03-11).
-    for (const nav of ['Vistas del explorador', 'Principal']) {
-      await expect(
-        page.getByRole('navigation', { name: nav }).getByRole('link', { name: 'Cielo' }),
-      ).toHaveAttribute('aria-current', 'page');
-    }
+    // «Cielo», en las vistas del explorador; en el menú del sitio, «Explorar en 3D» (fase 9c).
+    await expect(
+      page
+        .getByRole('navigation', { name: 'Vistas del explorador' })
+        .getByRole('link', { name: 'Cielo' }),
+    ).toHaveAttribute('aria-current', 'page');
+    // (El menú del sitio, en el explorador, está cerrado: el enlace se busca por su clase.)
+    await expect(page.locator('#site-menu a.site-nav__explore')).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
     await expect(page.locator('h1')).toHaveText('El cielo desde España');
     const select = page.getByLabel('Lugar desde el que ves el cielo');
     await expect(select).toHaveValue('montsec');
@@ -119,6 +124,7 @@ test.describe('El cielo desde España (fase 8)', () => {
     const denied = await browser.newContext({ locale: 'es-ES', timezoneId: 'Europe/Madrid' });
     const page = await denied.newPage();
     await openExplorer(page, '/cielo?fecha=2026-11-01T21:00Z');
+    // «Usar mi ubicación», un botón debajo del selector (revisión de la 9c, hallazgo 5).
     await page.getByRole('button', { name: 'Usar mi ubicación' }).click();
     await expect(page.locator('.sky__note')).toContainText(
       'Sigues viendo el cielo desde el Parque Astronómico del Montsec',
@@ -142,6 +148,42 @@ test.describe('El cielo desde España (fase 8)', () => {
     await granted.close();
   });
 
+  test('recorrer los lugares con las flechas no pide la ubicación; los nombres caben enteros', async ({
+    page,
+  }) => {
+    // Cada petición de la ubicación, contada (sin pedirla de verdad).
+    await page.addInitScript(() => {
+      const count = () => {
+        const root = document.documentElement;
+        root.dataset['geo'] = String(Number(root.dataset['geo'] ?? '0') + 1);
+      };
+      Object.defineProperty(navigator, 'geolocation', {
+        configurable: true,
+        value: { getCurrentPosition: count, watchPosition: count, clearWatch: () => undefined },
+      });
+    });
+    await openExplorer(page, '/cielo?fecha=2026-11-01T21:00Z');
+    const select = page.getByLabel('Lugar desde el que ves el cielo');
+    await select.focus();
+    for (let step = 0; step < 9; step++) await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowUp');
+    const calls = () => page.evaluate(() => document.documentElement.dataset['geo'] ?? '0');
+    expect(await calls()).toBe('0');
+    // Las opciones, cortas (sin el tipo de lugar) y enteras en el ancho del selector.
+    await expect(select.locator('option')).toHaveText([
+      'Montsec (Lleida)',
+      'Observatori Fabra (Barcelona)',
+      'Roque de los Muchachos (La Palma)',
+      'Teide (Tenerife)',
+      'Calar Alto (Almería)',
+      'Puerta del Sol (Madrid)',
+      'Fraga (Huesca)',
+    ]);
+    // Solo el botón la pide.
+    await page.getByRole('button', { name: 'Usar mi ubicación' }).click();
+    await expect.poll(calls).toBe('1');
+  });
+
   test('la tecla 4 lleva al cielo y la 1 vuelve al sistema solar, con el mismo motor', async ({
     page,
   }) => {
@@ -156,7 +198,62 @@ test.describe('El cielo desde España (fase 8)', () => {
   });
 });
 
+test.describe('El cielo desde España: los rápidos de la crítica de la 9c', () => {
+  test('«Esta noche», con su marcador de abierto o cerrado; «Constelaciones», de 24 px de alto', async ({
+    page,
+  }) => {
+    await openExplorer(page, '/cielo?fecha=2026-11-01T21:00Z');
+    const summary = page.locator('.sky__summary');
+    const marker = () =>
+      summary.evaluate((element) => {
+        const style = getComputedStyle(element);
+        return `${style.display} ${style.listStyleType}`;
+      });
+    // En escritorio, abierto al entrar; al pulsarlo, se pliega y el marcador lo dice.
+    await expect.poll(marker).toBe('list-item disclosure-open');
+    const toggle = await page.locator('.sky__toggle').boundingBox();
+    expect(toggle?.height ?? 0).toBeGreaterThanOrEqual(24);
+    await summary.click();
+    await expect.poll(marker).toBe('list-item disclosure-closed');
+  });
+});
+
 test.describe('Próximos eclipses (fase 8)', () => {
+  test('con migas y la medida de lectura del sitio, de unos 68 caracteres (crítica de la 9c)', async ({
+    page,
+  }) => {
+    await page.goto('/eclipses');
+    const crumbs = page.getByRole('navigation', { name: 'Migas de pan' });
+    await expect(crumbs.getByRole('link', { name: 'Inicio' })).toHaveAttribute('href', '/');
+    await expect(crumbs.locator('[aria-current="page"]')).toHaveText('Eclipses');
+    // La línea más larga de cada párrafo, en caracteres (letra a letra, por la altura de su caja).
+    const longest = await page.evaluate(() =>
+      [
+        ...document.querySelectorAll<HTMLElement>(
+          '.eclipses__intro, .eclipses__sources, .eclipse p',
+        ),
+      ].map((paragraph) => {
+        const lines = new Map<number, number>();
+        const walker = document.createTreeWalker(paragraph, NodeFilter.SHOW_TEXT);
+        const range = document.createRange();
+        for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+          const text = node.textContent ?? '';
+          for (let i = 0; i < text.length; i++) {
+            range.setStart(node, i);
+            range.setEnd(node, i + 1);
+            const rect = range.getClientRects()[0];
+            if (!rect) continue;
+            const top = Math.round(rect.top);
+            lines.set(top, (lines.get(top) ?? 0) + 1);
+          }
+        }
+        return Math.max(0, ...lines.values());
+      }),
+    );
+    expect(Math.max(...longest)).toBeGreaterThanOrEqual(60);
+    expect(Math.max(...longest)).toBeLessThanOrEqual(80);
+  });
+
   test('la lista prerenderizada se lee sin JavaScript', async ({ browser }) => {
     const context = await browser.newContext({ javaScriptEnabled: false, locale: 'es-ES' });
     const page = await context.newPage();
@@ -164,7 +261,7 @@ test.describe('Próximos eclipses (fase 8)', () => {
     await expect(page.locator('h1')).toHaveText('Próximos eclipses visibles desde España');
     await expect(page.locator('.eclipse').first()).toBeVisible();
     await expect(page.locator('.eclipses__note')).toContainText(
-      'Calculado el 1 de noviembre de 2026',
+      'Lista calculada el 1 de noviembre de 2026 con astronomy-engine.',
     );
     await context.close();
   });

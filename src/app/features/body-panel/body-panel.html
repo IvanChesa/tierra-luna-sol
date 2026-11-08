@@ -15,13 +15,78 @@
     </button>
   </header>
 
-  <div class="card__body">
+  <!-- tabindex="-1": al abrir la ficha con «ⓘ» en el móvil, el foco llega aquí (a su contenido). -->
+  <div class="card__body" id="card-body" tabindex="-1">
     <p class="card__summary">{{ body().summary.text }}</p>
 
-    @if (distances().length > 0) {
-      <h3 class="card__section">Distancia</h3>
+    <!-- Venus «Bajo las nubes» (fase 9b, D44): solo con Venus enfocada y el 3D a la vista. -->
+    @if (radar(); as state) {
+      <div class="card__radar">
+        <button
+          type="button"
+          class="control card__radar-toggle"
+          [attr.aria-pressed]="radarPressed()"
+          aria-describedby="card-radar-note"
+          (click)="radarChange.emit(!radarPressed())"
+        >
+          Bajo las nubes
+        </button>
+        <p class="card__radar-note" id="card-radar-note">
+          @switch (state) {
+            @case ('loading') {
+              Cargando la imagen de radar…
+            }
+            @case ('on') {
+              Imagen de radar de la sonda Magellan, no lo que verían tus ojos.
+            }
+            @case ('error') {
+              No se ha podido cargar la imagen de radar: siguen las nubes.
+            }
+            @default {
+              Su superficie, como la vio el radar de la sonda Magellan.
+            }
+          }
+        </p>
+      </div>
+    }
+
+    <!-- En el móvil, en reposo, no se ve: «Ver los datos» (o subir la hoja) lo despliega. -->
+    <div class="card__rest" id="card-rest">
+      <!-- El Sol, en color realzado (fase 9b, D46): lo dice, con su fuente. -->
+      @if (sunNote(); as note) {
+        <p class="card__note">
+          {{ note.text }}
+          @if (note.source; as source) {
+            Fuente: <a [href]="source" hreflang="en">{{ sourceName(source) }}</a
+            >.
+          }
+          <a routerLink="/sobre-el-proyecto" fragment="ilustrativo">Lo que es ilustrativo</a>.
+        </p>
+      }
+
+      @if (distances().length > 0) {
+        <h3 class="card__section">Distancia</h3>
+        <dl class="card__data">
+          @for (row of distances(); track row.label) {
+            <div class="card__row">
+              <dt>{{ row.label }}</dt>
+              <dd>
+                <span class="card__number">{{ row.value.number }}</span>
+                @if (row.value.unit) {
+                  <span class="card__unit">&nbsp;{{ row.value.unit }}</span>
+                }
+                @if (row.detail) {
+                  <span class="card__detail">{{ row.detail }}</span>
+                }
+              </dd>
+            </div>
+          }
+        </dl>
+      }
+
+      <h3 class="card__section">Datos</h3>
       <dl class="card__data">
-        @for (row of distances(); track row.label) {
+        @for (row of facts(); track row.label) {
           <div class="card__row">
             <dt>{{ row.label }}</dt>
             <dd>
@@ -36,45 +101,37 @@
           </div>
         }
       </dl>
-    }
 
-    <h3 class="card__section">Datos</h3>
-    <dl class="card__data">
-      @for (row of facts(); track row.label) {
-        <div class="card__row">
-          <dt>{{ row.label }}</dt>
-          <dd>
-            <span class="card__number">{{ row.value.number }}</span>
-            @if (row.value.unit) {
-              <span class="card__unit">&nbsp;{{ row.value.unit }}</span>
-            }
-            @if (row.detail) {
-              <span class="card__detail">{{ row.detail }}</span>
-            }
-          </dd>
-        </div>
-      }
-    </dl>
-
-    @let cited = citations();
-    <p class="card__source">
-      @if (cited.length === 1 && cited[0]; as only) {
-        Datos de <a [href]="only.source.url">{{ only.source.publisher }}</a
-        >.
-      } @else {
-        @for (citation of cited; track citation.source.url) {
-          {{ citation.what }}: <a [href]="citation.source.url">{{ citation.source.publisher }}</a
+      @let cited = citations();
+      <p class="card__source">
+        @if (cited.length === 1 && cited[0]; as only) {
+          Datos de <a [href]="only.source.url">{{ only.source.publisher }}</a
           >.
+        } @else {
+          @for (citation of cited; track citation.source.url) {
+            {{ citation.what }}: <a [href]="citation.source.url">{{ citation.source.publisher }}</a
+            >.
+          }
         }
-      }
-      {{ calculation() }}
-    </p>
+        {{ calculation() }}
+      </p>
+    </div>
   </div>
 
   <!-- Siempre a la vista, aunque los datos se desplacen (escritorio bajo, hoja del móvil). -->
-  @if (link(); as path) {
-    <footer class="card__foot">
+  <footer class="card__foot">
+    @if (link(); as path) {
       <a class="card__link" [routerLink]="path">Ficha completa de {{ body().name }}</a>
-    </footer>
-  }
+    }
+    <!-- Solo en el móvil: sube o baja la hoja (también con su tirador). -->
+    <button
+      type="button"
+      class="card__more"
+      aria-controls="card-rest"
+      [attr.aria-expanded]="expanded()"
+      (click)="expanded.set(!expanded())"
+    >
+      {{ expanded() ? 'Ocultar los datos' : 'Ver los datos' }}
+    </button>
+  </footer>
 </article>

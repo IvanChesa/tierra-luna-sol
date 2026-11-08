@@ -5,86 +5,51 @@
     <span class="visually-hidden">{{ playLabel() }}</span>
   </button>
 
-  <!-- En móvil, sin caja: la lectura y el calendario van a la primera fila de la barra. -->
-  <div class="time__date">
-    <!-- Siempre tres líneas (no cambia de alto al reproducir): en escritorio, el rótulo, la fecha y
-         la zona; en móvil, la fecha, la zona y la velocidad (su selector está en «Controles +»). -->
-    <p class="time__readout">
-      <span class="time__label">Fecha</span>
-      <time [attr.datetime]="sim.time().toISOString()">{{ readout() }}</time>
-      <span class="time__zone">{{ zoneText() }}</span>
-      <span class="time__speedtext">{{ speedText() }}</span>
-    </p>
-    <!--
-      El calendario nativo: el botón lo abre sobre un campo de fecha que no se ve ni recibe el foco
-      (para escribir la fecha está el de «Controles +»).
-    -->
-    <span class="time__calendar">
-      <button
-        type="button"
-        class="control control--icon"
-        title="Elegir la fecha en el calendario"
-        (click)="openCalendar(picker)"
-      >
-        <tls-icon name="calendar" />
-        <span class="visually-hidden">Elegir la fecha en el calendario</span>
-      </button>
-      <input
-        #picker
-        class="time__picker"
-        type="date"
-        tabindex="-1"
-        aria-hidden="true"
-        [min]="minDate()"
-        [max]="maxDate()"
-        [value]="dateValue()"
-        (change)="pickDate(picker)"
-      />
-    </span>
-  </div>
+  <!--
+    Siempre las mismas líneas (no cambia de alto al reproducir): en escritorio, el rótulo, la fecha y
+    la zona; en el móvil, la fecha y la velocidad (su selector está en «Controles»). La fecha se
+    cambia en la línea del año o en «Controles», con sus campos (fase 9c: una sola forma de cada
+    cosa a la vista).
+  -->
+  <p class="time__readout">
+    <span class="time__label">Fecha</span>
+    <time [attr.datetime]="sim.time().toISOString()">{{ readout() }}</time>
+    <span class="time__zone">{{ zoneText() }}</span>
+    <span class="time__speedtext">{{ speedText() }}</span>
+  </p>
 
   <tls-timeline class="time__line" [zone]="zone()" />
 
   <div class="field time__speed">
     <label class="field__label" for="time-speed">Velocidad</label>
-    <div class="field__group">
-      <select id="time-speed" class="control" (change)="changeSpeed($event)">
-        @for (step of speeds; track step.id) {
-          <option [value]="step.id" [selected]="speedId() === step.id">{{ step.label }}</option>
-        }
-      </select>
-      <button
-        type="button"
-        class="control control--icon"
-        [attr.aria-pressed]="sim.reverse()"
-        title="Hacia atrás (R)"
-        (click)="toggleReverse()"
-      >
-        <tls-icon name="reverse" />
-        <span class="visually-hidden">Hacia atrás</span>
-      </button>
-    </div>
+    <select id="time-speed" class="control" (change)="changeSpeed($event)">
+      @for (step of speeds; track step.id) {
+        <option [value]="step.id" [selected]="speedId() === step.id">{{ step.label }}</option>
+      }
+    </select>
   </div>
 
-  <!-- «Controles +»; en los teléfonos estrechos, solo su icono (distinto del «+» de la cámara). -->
+  <!-- «Controles»: el resto (la fecha y la hora, el sentido, la cámara, la escena y los atajos). -->
   <button
     #more
     type="button"
     class="control time__more"
     popovertarget="time-menu"
-    title="Controles: fecha, hora, calidad y atajos"
+    title="Controles: fecha, hora, cámara, calidad y atajos"
     [attr.aria-expanded]="menuOpen()"
     (pointerdown)="pressMore(true)"
     (click)="pressMore(false)"
   >
-    <span class="time__more-label">Controles</span>
-    <tls-icon class="time__more-sign" [name]="menuOpen() ? 'minus' : 'plus'" />
     <tls-icon class="time__more-icon" name="sliders" />
+    <span class="time__more-label">Controles</span>
   </button>
+  <!-- Abierto, cuenta en el encuadre (data-chrome): la cámara aparta el cuerpo (crítica de la 9c). -->
   <tls-time-menu
     id="time-menu"
     popover
+    data-chrome
     role="group"
+    tabindex="-1"
     aria-labelledby="time-menu-title"
     [(zone)]="zone"
     (done)="closeMenu()"

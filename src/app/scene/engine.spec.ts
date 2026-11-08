@@ -235,6 +235,7 @@ async function createHarness(
     timeChanged: [],
     limitReached: [],
     travel: [],
+    venusRadar: [],
   } as unknown as Harness['events'];
   for (const name of Object.keys(events) as SceneEngineEventName[]) {
     engine.on(name, (event) => (events[name] as unknown[]).push(event));
@@ -1739,6 +1740,96 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
       expect(h.engine.stats().vramMB, view).toBeLessThan(60);
       h.engine.dispose();
     }
+  });
+
+  /** Los uniformes del radar de Venus (fase 9b, D44), en su material. */
+  const venusRadarUniforms = (h: Harness) => {
+    interface RadarVisual {
+      body: { id: string };
+      radar: {
+        uRadarMap: { value: Texture | null };
+        uRadarMix: { value: number };
+        uRadar: { value: { x: number; y: number } };
+      } | null;
+    }
+    const { world } = h.engine as unknown as { world: { visuals: RadarVisual[] } };
+    const venus = world.visuals.find((visual) => visual.body.id === 'venus');
+    // Solo Venus lleva la capa (`TLS_RADAR`): ningún otro cuerpo cambia.
+    expect(world.visuals.filter((visual) => visual.radar).map((v) => v.body.id)).toEqual(['venus']);
+    if (!venus?.radar) throw new Error('Venus sin la capa del radar');
+    return venus.radar;
+  };
+
+  it('Venus «Bajo las nubes» (fase 9b, D44): el radar se pide al encenderlo con Venus enfocada, entra con un fundido, cuenta en la VRAM y se suelta al dejar Venus', async () => {
+    const fake = realisticTextures();
+    const h = await createHarness({ focus: 'venus' }, { textures: fake.textures });
+    settle(h);
+    for (let k = 0; k < 5; k++) await flush();
+    const radar = venusRadarUniforms(h);
+    // Apagado, no se pide ni ocupa nada.
+    expect(fake.requests.filter((name) => name.startsWith('venus-radar'))).toEqual([]);
+    expect(radar.uRadarMix.value).toBe(0);
+    const before = h.engine.stats().vramMB;
+    h.engine.setVenusRadar(true);
+    for (let k = 0; k < 5; k++) await flush();
+    expect(fake.requests).toContain('venus-radar@4k');
+    expect(h.events.venusRadar.map((event) => event.state)).toEqual(['loading', 'on']);
+    expect(radar.uRadarMap.value?.name).toBe('venus-radar@4k');
+    // Su brillo, el de una textura de Venus; la neblina del limbo, atenuada.
+    expect(radar.uRadar.value.x).toBeGreaterThan(0);
+    expect(radar.uRadar.value.y).toBe(VISUAL_CONFIG.venus.radar.haze);
+    // El fundido, frame a frame (el motor sigue pidiendo frames mientras dura).
+    h.frames(VISUAL_CONFIG.venus.radar.fadeMs / 2);
+    expect(radar.uRadarMix.value).toBeGreaterThan(0.3);
+    expect(radar.uRadarMix.value).toBeLessThan(0.8);
+    settle(h);
+    expect(radar.uRadarMix.value).toBe(1);
+    // §5, con la textura cargada: su VRAM cuenta (la de 4k con mipmaps, unos 45 MB).
+    expect(h.engine.stats().vramMB - before).toBeCloseTo(
+      textureVramBytes(4096, 2048) / 1_048_576,
+      1,
+    );
+    // Al dejar Venus, se suelta y vuelven las nubes.
+    h.engine.focus('marte');
+    expect(fake.released).toContain('venus-radar@4k');
+    expect(radar.uRadarMap.value).toBeNull();
+    expect(radar.uRadarMix.value).toBe(0);
+    expect(h.events.venusRadar.at(-1)?.state).toBe('off');
+    // Sin Venus enfocada, no se enciende.
+    h.engine.setVenusRadar(true);
+    for (let k = 0; k < 5; k++) await flush();
+    expect(fake.requests.filter((name) => name.startsWith('venus-radar'))).toHaveLength(1);
+    h.engine.dispose();
+  });
+
+  it('Venus «Bajo las nubes», con movimiento reducido: un corte; y en captura, ?radar=1 lo enciende ya cargado', async () => {
+    const reduced = realisticTextures();
+    const h = await createHarness(
+      { focus: 'venus', reducedMotion: true },
+      { textures: reduced.textures },
+    );
+    settle(h);
+    h.engine.setVenusRadar(true);
+    for (let k = 0; k < 5; k++) await flush();
+    h.frames(16);
+    expect(venusRadarUniforms(h).uRadarMix.value).toBe(1);
+    // Apagarlo también es un corte: se suelta ya.
+    h.engine.setVenusRadar(false);
+    expect(reduced.released).toContain('venus-radar@4k');
+    expect(venusRadarUniforms(h).uRadarMix.value).toBe(0);
+    h.engine.dispose();
+
+    const captured = realisticTextures();
+    const c = await createHarness(
+      { focus: 'venus', capture: true, venusRadar: true },
+      { textures: captured.textures },
+    );
+    settle(c);
+    for (let k = 0; k < 5; k++) await flush();
+    settle(c);
+    expect(captured.requests).toContain('venus-radar@4k');
+    expect(venusRadarUniforms(c).uRadarMix.value).toBe(1);
+    c.engine.dispose();
   });
 
   it('las sombras que recibe Júpiter (sus cuatro galileanas) y la que recibe Ío (Júpiter), con la geometría de satelliteShadowPoint (fase 7)', async () => {

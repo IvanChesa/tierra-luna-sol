@@ -1,18 +1,25 @@
 /* Panel de la vista Tierra: dos bloques opacos sobre el lienzo, como la tarjeta y el índice. */
 /*
  * Su sitio en la rejilla del explorador (el anfitrión de la interfaz es `display: contents`): en
- * escritorio, en la columna de la presentación, debajo de ella, sin apartar el encuadre; en móvil,
+ * escritorio, en la columna de la presentación, debajo de ella, con el encuadre a su derecha; en móvil,
  * al pie del lienzo, encima de las fichas, y el encuadre sube por encima de él.
  */
 :host {
-  --chrome-edge: none;
+  /* En escritorio, el encuadre se aparta a su derecha: la región de una vista guiada (España), en la
+     zona libre (crítica de la 9c). */
+  --chrome-edge: left;
   position: relative;
   z-index: 2;
   display: grid;
   grid-area: index;
   align-self: start;
+  align-content: start;
   gap: var(--space-2);
+  /* Nunca pasa de su área (en un escritorio bajo, 1024 × 768): se desplaza dentro (fase 9c, 9c.4). */
+  max-height: 100%;
   margin: var(--space-2) var(--space-4) 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 @media (max-width: 63.99rem) {
@@ -29,7 +36,6 @@
   gap: var(--space-2);
   padding: var(--space-3) var(--space-4);
   background: var(--color-surface);
-  border: var(--border-width) solid var(--color-line);
   border-radius: var(--radius-md);
 }
 
@@ -61,6 +67,7 @@
 
 .earth__slider {
   width: 100%;
+  min-height: 1.5rem;
   accent-color: var(--color-accent);
 }
 
@@ -70,16 +77,43 @@
   font-size: var(--text-xs, 0.75rem);
 }
 
-/* Las vistas guiadas: botones compactos que se reparten en filas. */
+/*
+ * Las vistas guiadas, en dos columnas (fase 9c, 9c.7: con el reparto en filas, «El Himalaya» se quedaba
+ * solo en la suya); la última, si sobra, a lo ancho. En el móvil, una fila que se desplaza (abajo).
+ */
 .earth__views {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-1);
 }
 
+.earth__view:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+/* Con el relleno de los demás botones (con 4 px, apretadas; crítica de la 9c). */
 .earth__view {
-  min-height: 2rem;
-  padding-inline: var(--space-2);
+  min-height: 2.25rem;
+  padding: var(--space-2) var(--space-3);
+  line-height: 1.2;
+}
+
+.earth__strip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.earth__strip .earth__views {
+  flex: 1;
+  min-width: 0;
+}
+
+/* «Más» (la hora y el recorrido): solo en el móvil (en escritorio se ve todo el panel). */
+.earth__toggle {
+  display: none;
+  flex: none;
 }
 
 .earth__player {
@@ -157,7 +191,7 @@
 
   /* Las vistas, en una sola fila que se desplaza: el panel no tapa media pantalla. */
   .earth__views {
-    flex-wrap: nowrap;
+    display: flex;
     overflow-x: auto;
     scrollbar-width: none;
   }
@@ -168,5 +202,14 @@
 
   .earth__caption {
     font-size: var(--text-xs, 0.75rem);
+  }
+
+  /* En reposo, una sola fila: las vistas y «Más», que despliega la hora del día y el recorrido. */
+  .earth__toggle {
+    display: inline-flex;
+  }
+
+  :host(:not(.is-more)) :is(.earth__player, .earth__caption, .earth--sun) {
+    display: none;
   }
 }

@@ -31,6 +31,7 @@ import type { TextureLevel } from './quality';
 export type TextureId =
   | 'mercury'
   | 'venus'
+  | 'venus-radar'
   | 'earth-day'
   | 'earth-night'
   | 'earth-clouds'

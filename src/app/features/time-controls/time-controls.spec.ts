@@ -69,7 +69,7 @@ describe('TimeControls: barra de tiempo', () => {
     expect(play.textContent).toContain('Pausar');
   });
 
-  it('la velocidad tiene los nueve escalones del plan y el botón de hacia atrás invierte el sentido', () => {
+  it('la velocidad tiene ocho escalones (sin «10 días», fase 9c) y «Hacia atrás» invierte el sentido', () => {
     const { $, fixture, sim } = render();
     const speed = $<HTMLSelectElement>('#time-speed');
     expect([...speed.options].map((o) => o.textContent?.trim())).toEqual([
@@ -79,7 +79,6 @@ describe('TimeControls: barra de tiempo', () => {
       '1 día por segundo',
       '3 días por segundo',
       '1 semana por segundo',
-      '10 días por segundo',
       '1 mes por segundo',
       '1 año por segundo',
     ]);
@@ -87,11 +86,36 @@ describe('TimeControls: barra de tiempo', () => {
     speed.value = 'day';
     speed.dispatchEvent(new Event('change'));
     expect(sim.speed()).toBe(86_400);
-    const reverse = $<HTMLButtonElement>('[aria-pressed]');
+    // «Hacia atrás» está en «Controles», con su nombre a la vista (fase 9c).
+    const reverse = $<HTMLButtonElement>('tls-time-menu .menu__reverse');
+    expect(reverse.textContent?.trim()).toBe('Hacia atrás');
     reverse.click();
     fixture.detectChanges();
     expect(sim.speed()).toBe(-86_400);
     expect(reverse.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('la barra: reproducir, la fecha, la línea del año, la velocidad y «Controles» (fase 9c)', () => {
+    const { root } = render();
+    const bar = [...root.querySelectorAll('.time > button, .time > .field select')];
+    expect(
+      bar.map((el) => el.className.split(' ').find((c) => c.startsWith('time__')) ?? el.id),
+    ).toEqual(['time__play', 'time-speed', 'time__more']);
+    // Ni el calendario ni el sentido en la barra: los campos y «Hacia atrás», en «Controles».
+    expect(root.querySelector('.time__calendar, .time__picker')).toBeNull();
+    const names = [...root.querySelectorAll('tls-time-menu button')].map((b) =>
+      b.textContent?.trim(),
+    );
+    expect(names).toEqual(
+      expect.arrayContaining([
+        'Ahora',
+        'Hacia atrás',
+        'Acercar',
+        'Alejar',
+        'Vista general',
+        'Vista limpia',
+      ]),
+    );
   });
 
   it('los inputs nativos llevan la fecha en UTC al elegir UTC y saltan a la fecha escrita', () => {
