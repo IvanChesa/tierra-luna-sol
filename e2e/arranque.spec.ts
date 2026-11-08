@@ -3,6 +3,39 @@ import { openExplorer, openIndex, simTime, treeRow } from './support';
 
 const HOUR_MS = 3_600_000;
 
+test.describe('Arranque del explorador sin que el navegador quede libre (cierre de la fase 9b)', () => {
+  test('la interfaz y el 3D llegan aunque requestIdleCallback no se dispare nunca por sí solo', async ({
+    page,
+  }) => {
+    // Un navegador que nunca queda libre (el CI con SwiftShader y dos workers): requestIdleCallback
+    // solo llama por su `timeout`. Sin él, el `@defer (on idle)` del explorador esperaba para siempre.
+    await page.addInitScript(() => {
+      const timers = new Map<number, ReturnType<typeof setTimeout>>();
+      let next = 1;
+      window.requestIdleCallback = (callback, options) => {
+        const id = next++;
+        if (options?.timeout !== undefined) {
+          timers.set(
+            id,
+            setTimeout(
+              () => callback({ didTimeout: true, timeRemaining: () => 0 }),
+              options.timeout,
+            ),
+          );
+        }
+        return id;
+      };
+      window.cancelIdleCallback = (id) => {
+        clearTimeout(timers.get(id));
+        timers.delete(id);
+      };
+    });
+    await page.goto('/');
+    await expect(page.locator('tls-viewer-canvas')).toHaveClass(/is-ready/, { timeout: 60_000 });
+    await expect(page.locator('tls-time-controls')).toBeVisible();
+  });
+});
+
 test.describe('Arranque en movimiento (D31) y velocidad según el contexto (D33)', () => {
   test('al entrar, el sistema se mueve a 3 días por segundo desde ahora', async ({ page }) => {
     await openExplorer(page, '/');

@@ -40,7 +40,13 @@
     la 9c). Los créditos, lo legal y la nota de privacidad, en el menú del sitio; la fuente de los
     datos, en «Controles».
   -->
-  @defer (on idle) {
+  <!--
+    La interfaz y el 3D llegan cuando el navegador queda libre, y como muy tarde a los 3 s (el
+    `timeout` de requestIdleCallback): con el hilo principal ocupado sin pausa (en el CI, con
+    SwiftShader y dos workers), la llamada de idle podía no llegar nunca y el explorador no cargaba
+    (cierre de la fase 9b: la traza de un e2e del CI, sin pedir el chunk en 90 s).
+  -->
+  @defer (on idle(3s)) {
     <tls-explorer-ui [view]="view()" (ready)="onReady()" />
   }
 </section>
