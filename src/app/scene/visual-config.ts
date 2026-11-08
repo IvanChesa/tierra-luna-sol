@@ -122,6 +122,39 @@ export const VISUAL_CONFIG = {
       overview: { strength: 0.8, factors: [1, 0.5, 0.2, 0.05, 0.012] },
       closeUp: { strength: 0.1, factors: [1, 0.35, 0.04, 0, 0] },
     },
+    /**
+     * **El Sol realzado del explorador** (fase 9b, D46, decisión de Iván del 06-11: «quiero uno más como
+     * el de la imagen»), ilustrativo y avisado: con luz visible normal el Sol es blanco (D41: el de
+     * `/cielo`, otro shader, y el de `?medida=limbo`, que no cambian); aquí, naranja, como en las
+     * imágenes con filtro de los observatorios y como la referencia (earth.ethanplus.ai). Medido frente a
+     * capturas propias de la referencia (`scripts/measure-d46.mjs`, en CIELAB; informe de la fase 9b).
+     * - `palette`: el color lineal del centro del disco y del borde. El de cada punto sale de mezclarlos
+     *   de μ = 0,05 a 0,95, por el brillo del oscurecimiento del limbo por canal de la 9b.c (su
+     *   luminancia: la forma del perfil sigue siendo la medida). Elegidos para que, tras el tone mapping
+     *   neutro y con la intensidad del primer plano, el centro y el borde queden en el tono y el croma
+     *   de la referencia (centro: h 81°, C\* 51,5; borde, de μ 0,15 a 0,35: h 76°, C\* 53,4).
+     * - `structure`: zonas claras y oscuras a gran escala (como las regiones activas y la red que las
+     *   une), procedurales en el shader: su amplitud (fracción del brillo; también mueven el color, lo
+     *   claro hacia el del centro y lo oscuro hacia el del borde) y su ritmo (unidades de ruido por
+     *   segundo de reloj de pared mientras se pinta; quietas con movimiento reducido y en las capturas).
+     * - `rays`: los rayos suaves del resplandor: cuánto modulan el halo alrededor del disco.
+     * - `prominences`: las protuberancias del limbo en primer plano (bucles de plasma que suben y bajan
+     *   despacio, como los de la referencia; solo fuera del disco): su brillo, su color lineal y su ritmo
+     *   (como el de la granulación).
+     */
+    enhanced: {
+      palette: {
+        center: [0.84, 0.51, 0.154] as readonly [number, number, number],
+        limb: [1.06, 0.544, 0.14] as readonly [number, number, number],
+      },
+      structure: { amplitude: 0.5, rate: 0.03 },
+      rays: 0.5,
+      prominences: {
+        intensity: 1.2,
+        color: [1, 0.42, 0.12] as readonly [number, number, number],
+        rate: 1,
+      },
+    },
   },
   /**
    * La Tierra (fase 5). Valores de presentación, ajustados frente a las fotos de EPIC (DSCOVR;
@@ -172,6 +205,48 @@ export const VISUAL_CONFIG = {
     cloudDrift: 0.0004,
     cloudFade: { from: 1, to: 2.2, min: 0.3 },
     markers: { color: '#e8c46f', edge: '#38455a', sizePx: 7 },
+    /**
+     * **La Tierra realzada del explorador** (fase 9b, D46, decisión de Iván del 06-11: «La tierra
+     * también se tiene que mejorar»), ilustrativa y avisada, como la referencia (earth.ethanplus.ai, con
+     * las mismas texturas de Solar System Scope): manda sobre los ajustes de EPIC de arriba donde se
+     * contradicen (`scripts/measure-earth-epic.mjs` queda como registro). Medida frente a capturas
+     * propias de la referencia (`scripts/measure-d46.mjs`, en CIELAB: el 15-01-2026, con África y Europa
+     * de día). La cara nocturna (D40) y las luces no cambian.
+     * - `ocean`: el albedo lineal del océano (en la máscara de agua de siempre), un azul vivo, y lo que
+     *   conserva de la variación de brillo de la textura (su luminancia en el agua, 0,0477 de mediana, y
+     *   el exponente: 0, nada; 1, en proporción).
+     * - `clouds`: la cobertura de la textura, llevada a smoothstep(`from`, `to`) × `max`: sin las nubes
+     *   más finas y con menos opacidad (los continentes se leen enteros), sin borrar los grandes
+     *   sistemas. Su sombra, igual.
+     * - `glint`: el reflejo del Sol en el agua: un lóbulo ancho (`wide`, su peso, y `exponent`: con 16,
+     *   la mitad de su brillo a unos 17° de arco del punto del reflejo, un tercio del radio del disco)
+     *   además del núcleo de siempre (`core`), por Fresnel (Schlick con la F0 del agua, `f0`, relativo a
+     *   la incidencia normal y hasta `fresnelMax` veces más hacia el borde), con su brillo en la
+     *   incidencia normal (`intensity`, en lugar del `glint` de arriba): grande, suave y sin quemar a
+     *   blanco.
+     * - `land`: la saturación de la tierra (1: la de la textura), la rodilla de la compresión de lo
+     *   árido (en lugar de `arid.knee`, más alta: el desierto, más claro) y el tinte de lo árido (lineal,
+     *   en la misma zona cálida: más amarillo).
+     * - `relief`: la fuerza del mapa de normales de la Tierra (1: el relieve sin exagerar): las montañas
+     *   se ven desde la Tierra completa.
+     * - `rim`: el borde de la atmósfera, su tinte (lineal) sobre el halo: más azul y brillante.
+     */
+    enhanced: {
+      ocean: {
+        albedo: [0.006, 0.03, 0.11] as readonly [number, number, number],
+        waterLuminance: 0.0477,
+        detail: 0.5,
+      },
+      clouds: { from: 0.3, to: 0.95, max: 0.8 },
+      glint: { intensity: 0.5, core: 1, wide: 1, exponent: 16, f0: 0.02, fresnelMax: 4 },
+      land: {
+        saturation: 1.35,
+        aridKnee: 1.2,
+        aridTint: [1, 1.04, 0.92] as readonly [number, number, number],
+      },
+      relief: 2.5,
+      rim: [0.8, 1.1, 1.8] as readonly [number, number, number],
+    },
   },
   /**
    * Radio mínimo en pantalla de los planetas en la vista general (px CSS; revisión del bloque C, C3,

@@ -10,7 +10,8 @@
 //   puede ser nube o reflejo), la fracción del disco cubierta por nubes (L* ≥ 70 y C* ≤ 12, sin el
 //   reflejo), el Sáhara, el Sahel y el Amazonas oriental (la tierra de la máscara, su mediana) y el
 //   máximo del reflejo del Sol en el agua.
-// Uso: npm run build && node scripts/measure-d46.mjs [--solo-referencia]
+// Uso: npm run build && node scripts/measure-d46.mjs [--solo-referencia] [--solo=sol|tierra]
+// (`--solo=sol`, solo el Sol; `--solo=tierra`, solo la Tierra: cada sesión mide lo suyo.)
 // (Sus funciones, `render` y `earthMetrics`, sirven también para calibrar cambiando los uniformes en la
 // página: así no hay que rehacer el build por cada prueba.)
 import { readFile, readdir } from 'node:fs/promises';
@@ -24,6 +25,9 @@ import { sunMetrics } from './lib/disc-metrics.mjs';
 const ROOT = new URL('../', import.meta.url);
 const REF = new URL('assets-src/referencias/', ROOT);
 const onlyReference = process.argv.includes('--solo-referencia');
+/** `--solo=sol` o `--solo=tierra`: solo esa parte (la referencia y lo nuestro). */
+const only = process.argv.find((arg) => arg.startsWith('--solo='))?.slice('--solo='.length) ?? null;
+const wants = (part) => !only || only === part;
 const D = Math.PI / 180;
 
 const meta = JSON.parse(await readFile(new URL('capturas-referencia.json', REF), 'utf8')).capturas;
@@ -151,7 +155,7 @@ export const show = (c) =>
 // --- La referencia ---------------------------------------------------------------------------------
 async function measureReference() {
   console.log('Referencia (earth.ethanplus.ai, capturas del 06-11):');
-  for (const device of ['escritorio', 'movil']) {
+  for (const device of wants('sol') ? ['escritorio', 'movil'] : []) {
     const name = `ref-sol-cerca-${device}`;
     const image = await sharp(fileURLToPath(new URL(`${name}-limpia.png`, REF)))
       .removeAlpha()
@@ -162,7 +166,7 @@ async function measureReference() {
       `- el Sol de cerca (${device}): centro ${show(m.center.lab)}; borde ${show(m.limb.lab)}; contraste σL* ${m.contrast.toFixed(2)}`,
     );
   }
-  for (const device of ['escritorio', 'movil']) {
+  for (const device of wants('tierra') ? ['escritorio', 'movil'] : []) {
     const name = `ref-planeta-africa-${device}`;
     const entry = meta[`${name}.png`];
     const [lat, lon] = entry.estado.coordenadas
@@ -310,18 +314,21 @@ async function measureOurs() {
       ['movil', MOBILE],
     ]) {
       // El Sol de cerca, en la vista limpia (sin paneles).
-      const sunView = await openViewer(browser, `/?captura=1&cuerpo=sol&fecha=${DATE}`, size);
-      await sunView.page.keyboard.press('v');
-      await waitForIdle(sunView.page);
-      const sunShot = await render(sunView.page, { sun: true });
-      await sunView.page.close();
-      const m = sunMetrics(sunShot.image, sunShot.disc);
-      console.log(
-        `- el Sol de cerca (${device}): centro ${show(m.center.lab)}; borde ${show(m.limb.lab)}; contraste σL* ${m.contrast.toFixed(2)}`,
-      );
-      if (sunView.problems.length) console.log(sunView.problems.join('\n'));
+      if (wants('sol')) {
+        const sunView = await openViewer(browser, `/?captura=1&cuerpo=sol&fecha=${DATE}`, size);
+        await sunView.page.keyboard.press('v');
+        await waitForIdle(sunView.page);
+        const sunShot = await render(sunView.page, { sun: true });
+        await sunView.page.close();
+        const m = sunMetrics(sunShot.image, sunShot.disc);
+        console.log(
+          `- el Sol de cerca (${device}): centro ${show(m.center.lab)}; borde ${show(m.limb.lab)}; contraste σL* ${m.contrast.toFixed(2)}`,
+        );
+        if (sunView.problems.length) console.log(sunView.problems.join('\n'));
+      }
 
       // La Tierra completa (la vista guiada: 15° N, 10° E, a mediodía), en la vista limpia.
+      if (!wants('tierra')) continue;
       const earthView = await openViewer(browser, `/explorar/tierra?captura=1&fecha=${DATE}`, size);
       await earthView.page.getByRole('button', { name: 'La Tierra completa', exact: true }).click();
       await earthView.page.keyboard.press('v');
