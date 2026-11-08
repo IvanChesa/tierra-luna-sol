@@ -9,7 +9,10 @@
 //   táctil) o de menos de 24 × 24 (en todas las páginas; WCAG 2.5.8, sin los enlaces dentro de una
 //   frase, que la norma exceptúa);
 // - texto: lo legible por debajo de 11 px;
-// - la hoja del cuerpo en el móvil: su alto sobre el de la ventana, y si la pausa se puede pulsar;
+// - la ficha del cuerpo en el móvil, en reposo (desde el 08-11, la barra fina): su alto sobre el de la
+//   ventana, y si la pausa se puede pulsar; abierta (el estado «ficha»), el alto de la hoja;
+// - el centro del cuerpo elegido en el hueco libre (el que dejan los márgenes del encuadre): el
+//   centroide de lo que brilla en una captura de ese hueco, respecto a su centro (decisión del 08-11);
 // - el velo de abajo (el fondo de la barra de tiempo): la parte del lienzo que tapa (9c.2, ≤ 10 %);
 // - el contraste de los nombres de la fila de fichas, en el peor caso (blanco o negro detrás; ≥ 4,5:1);
 // - recortes (revisión de la 9c, hallazgos 6, 7 y 18): los contenedores que se desbordan en horizontal
@@ -21,6 +24,7 @@
 //   grupos: explorador (las vistas en los cuatro tamaños), estados (Controles, el Índice y «Más»
 //   abiertos), paginas (las fichas, los índices y /eclipses).
 import { writeFile } from 'node:fs/promises';
+import sharp from 'sharp';
 import { openBrowser, openViewer, pageOptions, BASE } from './capture-lib.mjs';
 
 const args = process.argv.slice(2);
@@ -60,7 +64,49 @@ const STATES = [
   ['controles', '.time__more', ['portada', 'Saturno', 'Tierra', 'Luna', 'Cielo']],
   ['índice', '.index-toggle', ['portada', 'Saturno', 'Tierra', 'Luna', 'Cielo']],
   ['más', '.earth__toggle, .moon__toggle', ['Tierra', 'Luna']],
+  // La hoja de la ficha, abierta desde la barra fina (móvil y tableta; decisión del 08-11).
+  ['ficha', '.bar__toggle', ['Saturno']],
 ];
+
+/** Las vistas con un cuerpo elegido en el sistema solar: su centro, en el hueco libre. */
+const CENTRED = new Set(['Saturno', 'Saturno, sin ficha']);
+
+/**
+ * El centro del cuerpo elegido en el hueco libre del lienzo (el que dejan `--view-*`): el centroide de
+ * lo que brilla (luminancia > 110 de 255) en una captura del hueco, respecto a su centro, en fracción
+ * de su ancho y de su alto. Las órbitas y las estrellas, más tenues o diminutas, apenas cuentan.
+ */
+async function bodyCentre(page) {
+  const area = await page.evaluate(() => {
+    const explorer = document.querySelector('.explorer');
+    const style = getComputedStyle(explorer);
+    const px = (name) => parseFloat(style.getPropertyValue(name)) || 0;
+    const box = explorer.getBoundingClientRect();
+    const top = Math.max(box.top + px('--view-top'), 0);
+    const bottom = Math.min(box.bottom - px('--view-bottom'), innerHeight);
+    const left = box.left + px('--view-left');
+    const right = box.right - px('--view-right');
+    return { x: left, y: top, width: right - left, height: bottom - top };
+  });
+  if (area.width < 10 || area.height < 10) return null;
+  const png = await page.screenshot({ clip: area, animations: 'disabled' });
+  const { data, info } = await sharp(png).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  let count = 0;
+  let sumX = 0;
+  let sumY = 0;
+  for (let y = 0; y < info.height; y++) {
+    for (let x = 0; x < info.width; x++) {
+      const i = (y * info.width + x) * info.channels;
+      const luminance = 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
+      if (luminance <= 110) continue;
+      count++;
+      sumX += x;
+      sumY += y;
+    }
+  }
+  if (count < 200) return null;
+  return { dx: sumX / count / info.width - 0.5, dy: sumY / count / info.height - 0.5 };
+}
 
 const PAGES = [
   '/planetas',
@@ -357,6 +403,7 @@ try {
         const { page } = await openViewer(browser, path, options);
         if (arrive) await arrive(page);
         const result = await page.evaluate(inspect, { explorer: true });
+        result.centre = CENTRED.has(view) ? await bodyCentre(page) : null;
         report.explorer.push({ size: Number(size), view, ...result });
         await page.close();
         console.error(
@@ -414,28 +461,34 @@ try {
 }
 
 const pct = (value) => `${(value * 100).toFixed(1)} %`;
+/** El desvío del centro del cuerpo: «+1,2 % / −0,8 %» del ancho y del alto del hueco libre. */
+const signed = (value) => `${value >= 0 ? '+' : '−'}${Math.abs(value * 100).toFixed(1)} %`;
+const centre = (value) => (value ? `${signed(value.dx)} / ${signed(value.dy)}` : '—');
 /** Los recortes de una medida: controles, contenedores y opciones. */
 const cuts = (r) => r.cut.length + r.overflowing.length + r.cutOptions.length;
 if (report.explorer.length) {
   console.log(
-    '| Tamaño | Vista | Zona útil | Velo | Controles visibles | Tapados | Recortes | Zonas < objetivo | Textos < 11 px | Contraste de los nombres | Hoja (alto, pausa) |',
+    '| Tamaño | Vista | Zona útil | Velo | Controles visibles | Tapados | Recortes | Zonas < objetivo | Textos < 11 px | Contraste de los nombres | Ficha en reposo (alto, pausa) | Centro del cuerpo (Δx, Δy) |',
   );
-  console.log('|---|---|---|---|---|---|---|---|---|---|---|');
+  console.log('|---|---|---|---|---|---|---|---|---|---|---|---|');
   for (const r of report.explorer) {
     const sheet = r.sheet
       ? `${pct(r.sheet.share)}, ${r.sheet.playReachable ? 'a mano' : 'no'}`
       : '—';
     console.log(
-      `| ${r.size} | ${r.view} | ${pct(r.useful)} | ${r.veil === undefined ? '—' : pct(r.veil)} | ${r.controls} | ${r.covered.length} | ${cuts(r)} | ${r.small.length} | ${r.tiny.length} | ${r.nameContrast === null ? '—' : r.nameContrast.toFixed(1) + ':1'} | ${sheet} |`,
+      `| ${r.size} | ${r.view} | ${pct(r.useful)} | ${r.veil === undefined ? '—' : pct(r.veil)} | ${r.controls} | ${r.covered.length} | ${cuts(r)} | ${r.small.length} | ${r.tiny.length} | ${r.nameContrast === null ? '—' : r.nameContrast.toFixed(1) + ':1'} | ${sheet} | ${centre(r.centre)} |`,
     );
   }
 }
 if (report.states.length) {
-  console.log('\n| Tamaño | Vista | Abierto | Controles visibles | Tapados | Recortes |');
-  console.log('|---|---|---|---|---|---|');
+  console.log(
+    '\n| Tamaño | Vista | Abierto | Controles visibles | Tapados | Recortes | Zona útil | Hoja |',
+  );
+  console.log('|---|---|---|---|---|---|---|---|');
   for (const r of report.states) {
+    const sheet = r.state === 'ficha' && r.sheet ? pct(r.sheet.share) : '—';
     console.log(
-      `| ${r.size} | ${r.view} | ${r.state} | ${r.controls} | ${r.covered.length} | ${cuts(r)} |`,
+      `| ${r.size} | ${r.view} | ${r.state} | ${r.controls} | ${r.covered.length} | ${cuts(r)} | ${pct(r.useful)} | ${sheet} |`,
     );
   }
 }
