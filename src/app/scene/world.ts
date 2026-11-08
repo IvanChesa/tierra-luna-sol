@@ -1371,6 +1371,7 @@ export class World {
   setPixelRatio(pixelRatio: number): void {
     this.stars?.setPixelRatio(pixelRatio);
     this.markerMaterial.uniforms.uPixelRatio.value = pixelRatio;
+    this.haloMaterial.uniforms.uPixelRatio.value = pixelRatio;
   }
 
   /** Memoria de vídeo estimada (texturas + geometría), en bytes. */

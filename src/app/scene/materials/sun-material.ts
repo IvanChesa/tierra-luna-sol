@@ -359,17 +359,22 @@ uniform float uRadius;
 uniform float uSunRadius;
 uniform float uMinPixels;
 uniform float uViewportHeight;
+uniform float uPixelRatio;
 varying vec2 vOffset;
 varying float vDisc;
+varying float vPixel;
 
 void main() {
   vOffset = position.xy;
   vec4 center = modelViewMatrix * vec4(0.0, 0.0, 0.0, 1.0);
-  // Unidades de escena por píxel a la distancia del Sol (perspectiva).
+  // Unidades de escena por píxel (CSS) a la distancia del Sol (perspectiva).
   float unitsPerPixel = -center.z * 2.0 / (uViewportHeight * projectionMatrix[1][1]);
   float size = max(uRadius, uMinPixels * unitsPerPixel);
   // El radio del disco del Sol en las unidades del cuadrado (para la corona).
   vDisc = uSunRadius / size;
+  // Lo que mide un píxel del lienzo en las unidades del cuadrado (el cuadrado mira a la cámara: igual en
+  // todo él).
+  vPixel = unitsPerPixel / (size * uPixelRatio);
   gl_Position = projectionMatrix * (center + vec4(position.xy * size, 0.0, 0.0));
   ${DEPTH_VERTEX}
 }
@@ -409,6 +414,7 @@ uniform vec3 uProminenceColor;
 uniform float uProminenceTime;
 varying vec2 vOffset;
 varying float vDisc;
+varying float vPixel;
 ${CORONA_GLSL}
 
 float tlsHaloHash(float n) {
@@ -503,6 +509,11 @@ void main() {
   ${DEPTH_FRAGMENT}
   float r = length(vOffset);
   if (r > 1.0) discard;
+  // Lo que cambia r de un píxel al siguiente (lo mismo que fwidth(r)), sin derivadas: dentro de la rama
+  // de abajo, que no siguen todos los píxeles de su cuadro de 2 × 2, una derivada no está definida, y el
+  // compilador de D3D la mete en la rama aunque se calcule antes. Con el Sol pequeño, el cuadro que cruza
+  // ρ = 0,97 la daba casi 0: el borde fino perdía su ancho mínimo y dejaba puntos oscuros en el limbo.
+  float pixel = vPixel * (abs(vOffset.x) + abs(vOffset.y)) / max(r, 1e-6);
   vec3 color = uColor * pow(1.0 - r, uGlowExponent) * uIntensity;
   float angle = atan(vOffset.y, vOffset.x);
   float rho = r / vDisc;
@@ -510,7 +521,7 @@ void main() {
   // el hueco lleva el borde y no el fondo (en el resto, el disco tapa el halo).
   if (rho > 0.97) {
     // Un píxel, en radios del disco, y la altura sobre el limbo.
-    float px = max(fwidth(r) / vDisc, 1e-5);
+    float px = max(pixel / vDisc, 1e-5);
     float x = max(rho - 1.0, 0.0);
     float theta = angle - uPoleAngle;
     // El borde fino, pegado al limbo: dos caídas exponenciales (con un ancho mínimo en píxeles).
@@ -552,6 +563,8 @@ export function createHaloMaterial() {
     uSunRadius: new Uniform(0.5),
     uMinPixels: new Uniform(26),
     uViewportHeight: new Uniform(800),
+    /** Densidad de píxeles del lienzo (la del renderer): lo que mide un píxel, sin derivadas. */
+    uPixelRatio: new Uniform(1),
     /** El resplandor ancho: su color (lineal), su brillo y el exponente de su caída. */
     uColor: new Uniform(new Color(1, 0.78, 0.5)),
     uIntensity: new Uniform(1.1),

@@ -970,6 +970,28 @@ describe('SceneEngine: el Sol realzado, segunda vuelta (fase 9b, D46)', () => {
     expect(overview.scheduler.waiting).toBe(0);
     overview.engine.dispose();
   });
+
+  it('el halo, sin derivadas (dentro de su rama no están definidas: con D3D dejaban puntos oscuros en el borde del Sol pequeño); lo que mide un píxel, con la densidad del renderer', async () => {
+    interface HaloPixel {
+      world: {
+        haloMaterial: {
+          material: { fragmentShader: string };
+          uniforms: { uPixelRatio: { value: number } };
+        };
+      };
+    }
+    const h = await createHarness();
+    settle(h);
+    const halo = (h.engine as unknown as HaloPixel).world.haloMaterial;
+    const code = halo.material.fragmentShader
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/\/\/.*$/gm, '');
+    expect(code).not.toMatch(/\b(fwidth|dFdx|dFdy)\s*\(/);
+    h.engine.resize(WIDTH, HEIGHT, 3);
+    expect(h.renderer.size.pixelRatio).toBeGreaterThan(1);
+    expect(halo.uniforms.uPixelRatio.value).toBe(h.renderer.size.pixelRatio);
+    h.engine.dispose();
+  });
 });
 
 describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas y aliasing)', () => {
