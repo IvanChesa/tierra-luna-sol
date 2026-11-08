@@ -10,10 +10,16 @@ const HOUR_MS = 3_600_000;
 const nextReadout = (page: Page) =>
   page.evaluate(
     () =>
-      new Promise<{ sim: number; wall: number }>((resolve) => {
+      new Promise<{ sim: number; wall: number }>((resolve, reject) => {
         const time = document.querySelector('.time__readout time') as Node;
+        // Con SwiftShader, un frame puede tardar segundos; si la barra no cambia en 20 s, falla claro.
+        const timer = setTimeout(() => {
+          observer.disconnect();
+          reject(new Error('La barra de tiempo no ha cambiado en 20 s'));
+        }, 20_000);
         const observer = new MutationObserver(() => {
           observer.disconnect();
+          clearTimeout(timer);
           const value = (time as Element).getAttribute('datetime') ?? '';
           resolve({ sim: Date.parse(value), wall: Date.now() });
         });

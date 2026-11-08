@@ -117,6 +117,13 @@ export async function canvasImage(page: Page): Promise<string> {
   });
 }
 
+/**
+ * El mínimo de una zona táctil (44 px CSS), con la tolerancia del redondeo a píxeles del dispositivo:
+ * en el Pixel 7 (2,625 píxeles por px CSS), 44 px son 115,5 píxeles, y Chrome devuelve 43,99994
+ * (un e2e intermitente del CI; cierre de la fase 9b).
+ */
+export const TAP_MIN_PX = 44 - 0.01;
+
 /** El instante que muestra la barra de tiempo (el `datetime` de su `<time>`, en UTC). */
 export async function simTime(page: Page): Promise<number> {
   const value = await page.locator('.time__readout time').getAttribute('datetime');

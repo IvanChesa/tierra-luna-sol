@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { coveredFocus, indexToggle, openExplorer, simTime, treeRow } from './support';
+import { TAP_MIN_PX, coveredFocus, indexToggle, openExplorer, simTime, treeRow } from './support';
 
 /**
  * Desliza el dedo desde el centro de `selector`, `dy` píxeles (hacia abajo, positivo), a paso de
@@ -78,7 +78,7 @@ test.describe('Móvil', () => {
     await expect(button).toBeVisible();
     await expect(button).toHaveAttribute('aria-pressed', 'false');
     // Su zona táctil, de al menos 44 px de alto.
-    expect((await button.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
+    expect((await button.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(TAP_MIN_PX);
     await button.tap();
     await expect(button).toHaveAttribute('aria-pressed', 'true');
     const note = panel.locator('#card-radar-note');
@@ -209,8 +209,8 @@ test.describe('Móvil', () => {
     );
     expect(sizes).toHaveLength(9);
     for (const [width, height] of sizes) {
-      expect(width).toBeGreaterThanOrEqual(44);
-      expect(height).toBeGreaterThanOrEqual(44);
+      expect(width).toBeGreaterThanOrEqual(TAP_MIN_PX);
+      expect(height).toBeGreaterThanOrEqual(TAP_MIN_PX);
     }
     // No caben todas: la fila se desplaza (la página, no).
     expect(await row.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(true);
@@ -228,7 +228,7 @@ test.describe('Móvil', () => {
     for (const height of await moons
       .getByRole('button')
       .evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().height))) {
-      expect(height).toBeGreaterThanOrEqual(44);
+      expect(height).toBeGreaterThanOrEqual(TAP_MIN_PX);
     }
   });
 
