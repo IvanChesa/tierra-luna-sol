@@ -6,6 +6,7 @@
  * (`display: none`): aquí solo se da caja al abierto.
  */
 :host {
+  --chrome-edge: right;
   inset: auto var(--space-4) calc(var(--view-bottom, 8.25rem) + var(--space-2)) auto;
   width: min(25rem, calc(100vw - 2 * var(--space-4)));
   /* Por debajo de la cabecera y de las pestañas (unos 7,5 rem): no las tapa en un escritorio bajo. */
@@ -129,11 +130,16 @@
 
 /* Móvil: una hoja inferior, como el índice y la ficha. */
 @media (max-width: 63.99rem) {
-  /* Encima de la barra de tiempo, que sigue a la vista (reproducir y pausar, a mano). */
+  /*
+   * Encima de la barra de tiempo, que sigue a la vista (reproducir y pausar, a mano). Una hoja baja, como
+   * mucho el 45 % de la pantalla (crítica de la 9c): el 3D se ve mientras se usa, y la cámara aparta el
+   * cuerpo por encima de ella. Lo que no cabe, se desplaza dentro.
+   */
   :host {
+    --chrome-edge: bottom;
     inset: auto 0 var(--explorer-bar, 3.75rem);
     width: auto;
-    max-height: calc(100svh - var(--explorer-bar, 3.75rem) - 4rem);
+    max-height: min(45svh, calc(100svh - var(--explorer-bar, 3.75rem) - 4rem));
     padding: var(--space-4) var(--space-4) var(--space-6);
     border-radius: var(--radius-md) var(--radius-md) 0 0;
     box-shadow: 0 -12px 32px rgb(0 0 0 / 0.4);

@@ -106,15 +106,17 @@ function isShown(element: Element | null | undefined): element is HTMLElement {
 function offsetWithin(element: HTMLElement, root: HTMLElement): { left: number; top: number } {
   let left = 0;
   let top = 0;
-  for (
-    let node: HTMLElement | null = element;
-    node && node !== root;
-    node = node.offsetParent as HTMLElement | null
-  ) {
+  let node: HTMLElement | null = element;
+  for (; node && node !== root; node = node.offsetParent as HTMLElement | null) {
     left += node.offsetLeft;
     top += node.offsetTop;
   }
-  return { left, top };
+  if (node === root) return { left, top };
+  // Lo que está en la capa superior del navegador («Controles», un `popover` fijo) no cuelga de `root`:
+  // su caja en la ventana, respecto a la de `root`.
+  const box = element.getBoundingClientRect();
+  const base = root.getBoundingClientRect();
+  return { left: box.left - base.left, top: box.top - base.top };
 }
 
 /**

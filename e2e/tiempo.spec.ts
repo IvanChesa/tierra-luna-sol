@@ -280,7 +280,28 @@ test.describe('Tiempo y URL', () => {
     page,
   }) => {
     await openExplorer(page, '/?fecha=2030-06-01T12:00Z&cuerpo=saturno');
+    const viewRight = () =>
+      page.evaluate(() =>
+        parseFloat(
+          getComputedStyle(document.querySelector('.explorer') as HTMLElement).getPropertyValue(
+            '--view-right',
+          ),
+        ),
+      );
+    // El margen de la derecha, menos lo que el panel tapa desde el borde derecho del explorador.
+    const uncovered = () =>
+      page.evaluate(() => {
+        const explorer = document.querySelector('.explorer') as HTMLElement;
+        const menu = document.querySelector('#time-menu') as HTMLElement;
+        const inset = parseFloat(getComputedStyle(explorer).getPropertyValue('--view-right'));
+        return explorer.getBoundingClientRect().right - menu.getBoundingClientRect().left - inset;
+      });
+    const before = await viewRight();
     await openControls(page);
+    // El panel cuenta en el encuadre (crítica de la 9c): el margen de la derecha llega a su borde, y la
+    // cámara aparta Saturno a la izquierda.
+    await expect.poll(viewRight).toBeGreaterThan(before);
+    await expect.poll(uncovered).toBeLessThanOrEqual(1);
     // Ninguna ficha (ni los planetas ni las lunas, encima) queda debajo del panel.
     const covered = await page.evaluate(() =>
       [...document.querySelectorAll<HTMLElement>('tls-body-chips button')]

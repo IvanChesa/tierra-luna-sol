@@ -240,8 +240,18 @@ test.describe('Móvil', () => {
     const box = await page.locator('#time-menu').boundingBox();
     const viewport = page.viewportSize();
     expect(box && viewport && Math.round(box.x + box.width)).toBe(viewport?.width);
-    // Deja a la vista, arriba, la cabecera y algo del 3D (fase 9c: ya no ocupa la pantalla entera).
-    expect(box?.y ?? 0).toBeGreaterThan(100);
+    // Una hoja baja, como mucho el 45 % de la pantalla (crítica de la 9c): el 3D se ve mientras se usa,
+    // y cuenta en el encuadre (el margen de abajo crece hasta su borde).
+    expect((box?.height ?? 0) / (viewport?.height ?? 1)).toBeLessThanOrEqual(0.45);
+    // El margen de abajo, menos lo que la hoja deja por encima del borde de abajo del explorador.
+    const uncovered = () =>
+      page.evaluate(() => {
+        const explorer = document.querySelector('.explorer') as HTMLElement;
+        const menu = document.querySelector('#time-menu') as HTMLElement;
+        const inset = parseFloat(getComputedStyle(explorer).getPropertyValue('--view-bottom'));
+        return explorer.getBoundingClientRect().bottom - menu.getBoundingClientRect().top - inset;
+      });
+    await expect.poll(uncovered).toBeLessThanOrEqual(1);
     await page.mouse.click(20, (box?.y ?? 200) - 20);
     await expect(page.locator('#time-date')).toBeHidden();
     // Su botón de cerrar (la hoja tapa el de «Controles»): el foco vuelve a «Controles».
