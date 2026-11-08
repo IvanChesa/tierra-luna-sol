@@ -802,6 +802,70 @@ describe('SceneEngine: el bloom del Sol (fase 9b, D41)', () => {
     }
   });
 
+  interface EnhancedSunInternals {
+    world: {
+      sun: {
+        uniforms: {
+          uEnhance: { value: number };
+          uStructure: { value: number };
+          uStructureTime: { value: number };
+        };
+      };
+      haloMaterial: {
+        uniforms: {
+          uProminences: { value: number };
+          uProminenceTime: { value: number };
+          uRays: { value: number };
+        };
+      };
+    };
+  }
+  const enhancedOf = (h: Harness) => (h.engine as unknown as EnhancedSunInternals).world;
+
+  it('el Sol del explorador, realzado (D46): su estructura y sus protuberancias se mueven con el reloj de pared y las protuberancias, solo de cerca; con movimiento reducido y en las capturas, quietas; con ?medida=limbo, el de la luz visible', async () => {
+    const moving = await createHarness({ focus: 'sol' });
+    settle(moving);
+    moving.engine.setSpeed(3600);
+    moving.engine.setPlaying(true);
+    moving.frames(500);
+    const world = enhancedOf(moving);
+    const structure = world.sun.uniforms.uStructureTime.value;
+    const prominences = world.haloMaterial.uniforms.uProminenceTime.value;
+    moving.frames(500);
+    expect(world.sun.uniforms.uEnhance.value).toBe(1);
+    expect(world.sun.uniforms.uStructure.value).toBe(
+      VISUAL_CONFIG.sun.enhanced.structure.amplitude,
+    );
+    expect(world.sun.uniforms.uStructureTime.value).toBeGreaterThan(structure);
+    expect(world.haloMaterial.uniforms.uProminenceTime.value).toBeGreaterThan(prominences);
+    expect(world.haloMaterial.uniforms.uProminences.value).toBeGreaterThan(0.9);
+    expect(world.haloMaterial.uniforms.uRays.value).toBe(VISUAL_CONFIG.sun.enhanced.rays.intensity);
+    moving.engine.dispose();
+    for (const options of [{ reducedMotion: true }, { capture: true }]) {
+      const still = await createHarness({ focus: 'sol', ...options });
+      settle(still);
+      still.engine.setSpeed(3600);
+      still.engine.setPlaying(true);
+      still.frames(1000);
+      expect(enhancedOf(still).sun.uniforms.uStructureTime.value).toBe(0);
+      expect(enhancedOf(still).haloMaterial.uniforms.uProminenceTime.value).toBe(0);
+      still.engine.dispose();
+    }
+    // En la vista general, el Sol mide unos píxeles: sin protuberancias, pero realzado.
+    const overview = await createHarness();
+    settle(overview);
+    expect(enhancedOf(overview).haloMaterial.uniforms.uProminences.value).toBeLessThan(0.1);
+    expect(enhancedOf(overview).sun.uniforms.uEnhance.value).toBe(1);
+    overview.engine.dispose();
+    // Para medir el limbo (D41, `?medida=limbo`, solo en captura), el Sol de la luz visible, sin su
+    // estructura.
+    const measure = await createHarness({ capture: true, focus: 'sol', sunMeasure: true });
+    settle(measure);
+    expect(enhancedOf(measure).sun.uniforms.uEnhance.value).toBe(0);
+    expect(enhancedOf(measure).sun.uniforms.uStructure.value).toBe(0);
+    measure.engine.dispose();
+  });
+
   it('con bloom, el halo del Sol es más tenue: el resplandor lo pone el bloom', async () => {
     const withBloom = await createHarness();
     settle(withBloom);
