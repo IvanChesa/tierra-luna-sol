@@ -207,23 +207,9 @@
   }
 }
 
-/* Al abrir la hoja en el móvil, el foco llega al resumen: el anillo, por dentro. */
+/* Al abrir la ficha con «ⓘ» en el móvil, el foco llega al resumen: el anillo, por dentro. */
 .card__body:focus-visible {
   outline-offset: calc(-1 * var(--focus-ring-width));
-}
-
-/*
- * Móvil y tableta (decisión de Iván del 08-11): la barra fina (body-bar.ts) hace de cabecera, con el
- * nombre y ×; en reposo, solo ella. La hoja (el resumen, «Ficha completa» y «Ver los datos»), a demanda.
- */
-@media (max-width: 63.99rem) {
-  .card__head {
-    display: none;
-  }
-
-  :host-context(.panel:not(.is-open)) :is(.card__body, .card__foot) {
-    display: none;
-  }
 }
 
 /* «Ver los datos»: solo en el móvil (en escritorio, la tarjeta lo enseña todo). */

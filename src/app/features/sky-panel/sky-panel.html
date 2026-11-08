@@ -2,7 +2,19 @@
   El panel del cielo (fase 9c, 9c.3): el lugar, la hora y una línea de resumen; «Esta noche» (los
   textos, la tabla, los eclipses y las constelaciones), a demanda.
 -->
-<section class="sky" aria-labelledby="sky-place-title">
+<!--
+  Móvil y tableta (decisión de Iván del 08-11): en reposo, solo la barra (el lugar, la hora y el
+  resumen), que abre lo demás; abierto, al foco llega su contenido (tabindex="-1") y Esc lo cierra.
+-->
+<tls-sky-bar
+  [place]="placeName()"
+  [clock]="clock()"
+  [summary]="summary().text"
+  [(open)]="open"
+  (openChange)="toggled($event)"
+/>
+
+<section id="sky-now" class="sky" tabindex="-1" aria-labelledby="sky-place-title">
   <h2 id="sky-place-title" class="sky__title">Lugar</h2>
   <!--
     El lugar, con su nombre corto entero, y «Usar mi ubicación»: debajo y a lo ancho; si el panel es
@@ -63,7 +75,12 @@
   </p>
 </section>
 
-<details class="sky sky--tonight" [open]="tonightOpen()" (toggle)="toggleTonight($event)">
+<details
+  id="sky-tonight"
+  class="sky sky--tonight"
+  [open]="tonightOpen()"
+  (toggle)="toggleTonight($event)"
+>
   <summary class="sky__title sky__summary">Esta noche</summary>
   <div class="sky__tonight">
     @if (polarText(); as text) {

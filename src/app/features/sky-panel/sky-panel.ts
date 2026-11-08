@@ -1,4 +1,14 @@
-import { Component, DOCUMENT, computed, inject, linkedSignal, signal } from '@angular/core';
+import {
+  Component,
+  DOCUMENT,
+  ElementRef,
+  Injector,
+  afterNextRender,
+  computed,
+  inject,
+  linkedSignal,
+  signal,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { formatNumber } from '../../core/format';
 import { SKY_PLACES } from '../../data/places';
@@ -9,7 +19,10 @@ import { SimulationStore } from '../../state/simulation.store';
 import type { SkyPlace } from '../../data/sky-place';
 import { ExplorerSession, LocationResult } from '../explorer-ui/explorer-session';
 import { Icon } from '../viewer/icon';
+import { mediaQuery } from '../viewer/media';
 import { placeShortLabel } from './place-label';
+import { SkyBar } from './sky-bar';
+import { skyPlaceShortLabel } from './sky-place-label';
 import { sliderNight, sliderNightHolds, sliderRange } from './night-slider';
 import {
   BODY_NAMES,
@@ -62,7 +75,11 @@ interface TableRow {
  */
 @Component({
   selector: 'tls-sky-panel',
-  imports: [Icon, RouterLink],
+  imports: [Icon, RouterLink, SkyBar],
+  host: {
+    '[class.is-open]': 'open()',
+    '(document:keydown)': 'onKeydown($event)',
+  },
   templateUrl: './sky-panel.html',
   styleUrl: './sky-panel.css',
 })
@@ -77,6 +94,14 @@ export class SkyPanel {
   protected readonly optionLabel = placeShortLabel;
   protected readonly place = this.explorer.skyPlace;
   protected readonly constellations = this.explorer.constellations;
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly injector = inject(Injector);
+  /** El móvil y la tableta: en reposo, solo la barra del cielo (decisión de Iván del 08-11). */
+  private readonly compact = mediaQuery(COMPACT_MEDIA);
+  /** En el móvil y la tableta, el panel entero, abierto desde la barra. */
+  protected readonly open = signal(false);
+  /** El lugar en la barra: corto («Montsec (Lleida)»). */
+  protected readonly placeName = computed(() => skyPlaceShortLabel(this.place()));
   protected readonly locating = signal(false);
   protected readonly locationMessage = signal<string | null>(null);
   protected readonly tonightOpen = signal(
@@ -111,6 +136,34 @@ export class SkyPanel {
   protected readonly valueText = computed(() => `${this.clock()}, hora del lugar (${this.zone()})`);
 
   protected readonly placeLabel = computed(() => placePhrase(this.place()));
+
+  /** La barra abre o cierra el panel: abierto, el foco va a su contenido; cerrado, a la barra. */
+  protected toggled(open: boolean): void {
+    this.focusSheet(open);
+  }
+
+  /**
+   * Esc, con el panel abierto en el móvil: se cierra y el foco vuelve a la barra. Después de la interfaz
+   * (que cierra antes la ficha, el índice o «Controles», si están abiertos, y marca la tecla).
+   */
+  protected onKeydown(event: KeyboardEvent): void {
+    if (event.key !== 'Escape' || event.defaultPrevented || !this.open() || !this.compact()) return;
+    event.preventDefault();
+    this.open.set(false);
+    this.focusSheet(false);
+  }
+
+  private focusSheet(open: boolean): void {
+    afterNextRender(
+      () => {
+        const target = this.host.nativeElement.querySelector<HTMLElement>(
+          open ? '#sky-now' : 'tls-sky-bar .bar',
+        );
+        target?.focus();
+      },
+      { injector: this.injector },
+    );
+  }
   /** `/eclipses?lugar=…` (sin el parámetro para el Montsec, el de por defecto). */
   protected readonly eclipsesQuery = computed(() => {
     const id = this.place().id;

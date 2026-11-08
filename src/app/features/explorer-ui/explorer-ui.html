@@ -19,16 +19,15 @@
 <!-- tabindex="-1": el foco llega aquí cuando la ficha tapa lo que lo tenía (la hoja del móvil). -->
 <aside
   #panel
+  id="ficha"
   class="panel"
   data-chrome
   tabindex="-1"
   [hidden]="!panelBody()"
-  [class.is-open]="sheetOpen()"
   [class.is-expanded]="sheetExpanded()"
   aria-label="Ficha del cuerpo elegido"
 >
-  <!-- El tirador, con la hoja abierta (cerrada, se desliza la barra fina: body-bar.ts). -->
-  @if (panelBody() && sheetOpen()) {
+  @if (panelBody()) {
     <div
       class="panel__grip"
       aria-hidden="true"
@@ -39,13 +38,7 @@
   }
   <!-- Una ficha por cuerpo: al cambiar de cuerpo se crea otra y entra con un fundido. -->
   @for (id of panelBodies(); track id) {
-    <tls-body-panel
-      [bodyId]="id"
-      [(open)]="sheetOpen"
-      [(expanded)]="sheetExpanded"
-      (openChange)="sheetToggled($event)"
-      (closed)="closePanel()"
-    />
+    <tls-body-panel [bodyId]="id" [(expanded)]="sheetExpanded" (closed)="closePanel()" />
   }
 </aside>
 

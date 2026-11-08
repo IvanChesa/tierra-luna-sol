@@ -187,7 +187,7 @@ describe('ExplorerUi: panel «Índice» y texto de presentación (fase 3c)', () 
     expect(explorer.indexOpen()).toBe(false);
   });
 
-  it('en móvil (hoja inferior), elegir en el índice lo cierra y abre la ficha', async () => {
+  it('en móvil (hoja inferior), elegir en el índice lo cierra; la ficha no se abre: la abre «ⓘ», arriba (decisión del 08-11)', async () => {
     const original = window.matchMedia;
     window.matchMedia = ((query: string) =>
       ({
@@ -201,7 +201,7 @@ describe('ExplorerUi: panel «Índice» y texto de presentación (fase 3c)', () 
       host.querySelector<HTMLElement>('#tree-venus .row')?.click();
       fixture.detectChanges();
       expect(sim.selectedBodyId()).toBe('venus');
-      expect(explorer.panelOpen()).toBe(true);
+      expect(explorer.panelOpen()).toBe(false);
       expect(explorer.indexOpen()).toBe(false);
     } finally {
       window.matchMedia = original;
@@ -344,43 +344,24 @@ describe('ExplorerUi: panel «Índice» y texto de presentación (fase 3c)', () 
     expect(host.classList.contains('has-moons')).toBe(false);
   });
 
-  it('la ficha del móvil (decisión de Iván del 08-11): la barra abre la hoja; el tirador la sube, la baja y la devuelve a la barra', async () => {
+  it('la ficha del móvil, de dos alturas: el tirador la sube, la baja y, abajo, la cierra', async () => {
     const { fixture, host, explorer } = await render();
     const panel = host.querySelector<HTMLElement>('.panel');
-    const toggle = host.querySelector<HTMLButtonElement>('.bar__toggle');
-    if (!panel || !toggle) throw new Error('Sin ficha');
-    const drag = (element: Element, from: number, to: number) => {
-      element.dispatchEvent(new PointerEvent('pointerdown', { clientY: from, bubbles: true }));
-      element.dispatchEvent(new PointerEvent('pointerup', { clientY: to, bubbles: true }));
+    const grip = host.querySelector<HTMLElement>('.panel__grip');
+    if (!panel || !grip) throw new Error('Sin ficha');
+    const drag = (from: number, to: number) => {
+      grip.dispatchEvent(new PointerEvent('pointerdown', { clientY: from, bubbles: true }));
+      grip.dispatchEvent(new PointerEvent('pointerup', { clientY: to, bubbles: true }));
       fixture.detectChanges();
     };
-    // Al elegir, solo la barra: la hoja, cerrada y sin tirador.
-    expect(panel.classList.contains('is-open')).toBe(false);
-    expect(toggle.getAttribute('aria-expanded')).toBe('false');
-    expect(host.querySelector('.panel__grip')).toBeNull();
-    // Un toque (o Intro) la abre.
-    toggle.click();
-    fixture.detectChanges();
-    expect(panel.classList.contains('is-open')).toBe(true);
-    expect(toggle.getAttribute('aria-expanded')).toBe('true');
-    const grip = host.querySelector<HTMLElement>('.panel__grip');
-    if (!grip) throw new Error('Sin tirador');
-    drag(grip, 500, 400);
+    expect(panel.classList.contains('is-expanded')).toBe(false);
+    drag(500, 400);
     expect(panel.classList.contains('is-expanded')).toBe(true);
     expect(host.classList.contains('is-sheet-expanded')).toBe(true);
-    drag(grip, 400, 520);
+    drag(400, 520);
     expect(panel.classList.contains('is-expanded')).toBe(false);
-    expect(panel.classList.contains('is-open')).toBe(true);
-    // Abajo del todo, vuelve a la barra; la ficha sigue.
-    drag(grip, 400, 520);
-    expect(panel.classList.contains('is-open')).toBe(false);
     expect(explorer.panelOpen()).toBe(true);
-    // La barra, hacia arriba, abre la hoja y, hacia abajo, la cierra; cerrada, cierra la ficha.
-    drag(toggle, 500, 440);
-    expect(panel.classList.contains('is-open')).toBe(true);
-    drag(toggle, 400, 520);
-    expect(panel.classList.contains('is-open')).toBe(false);
-    drag(toggle, 400, 520);
+    drag(400, 520);
     expect(explorer.panelOpen()).toBe(false);
   });
 });

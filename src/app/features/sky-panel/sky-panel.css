@@ -282,6 +282,11 @@
     gap: var(--space-1);
   }
 
+  /* En reposo, solo la barra (sky-bar.ts): el panel entero, a demanda (decisión de Iván del 08-11). */
+  :host(:not(.is-open)) :is(.sky, .sky--tonight) {
+    display: none;
+  }
+
   .sky {
     gap: var(--space-1);
     padding: var(--space-2) var(--space-3);

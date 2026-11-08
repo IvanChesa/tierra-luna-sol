@@ -38,15 +38,15 @@ test.describe('Accesibilidad (axe)', () => {
     expect(await seriousViolations(page)).toEqual([]);
 
     await page.locator('#tree-saturno > .row').click();
+    // En el móvil, elegir no abre la ficha (decisión del 08-11): con la fila de su sistema, y con
+    // «ⓘ», arriba, la ficha.
+    const info = page.getByRole('button', { name: 'Ver la ficha de Saturno' });
+    if (await info.isVisible()) {
+      expect(await seriousViolations(page)).toEqual([]);
+      await info.click();
+    }
     await expect(page.locator('#card-title')).toHaveText('Saturno');
     expect(await seriousViolations(page)).toEqual([]);
-    // En el móvil, la ficha es una barra fina (decisión del 08-11): su hoja, abierta, también.
-    const bar = page.locator('.bar__toggle');
-    if (await bar.isVisible()) {
-      await bar.click();
-      await expect(bar).toHaveAttribute('aria-expanded', 'true');
-      expect(await seriousViolations(page)).toEqual([]);
-    }
 
     await page.goto('/explorar/tierra?captura=1');
     await expect(page.locator('tls-viewer-canvas')).toHaveClass(/is-ready/, { timeout: 90_000 });
@@ -61,6 +61,15 @@ test.describe('Accesibilidad (axe)', () => {
     await expect(page.locator('tls-viewer-canvas')).toHaveClass(/is-ready/, { timeout: 90_000 });
     await expect(page.locator('table.sky__table')).toBeAttached();
     expect(await seriousViolations(page)).toEqual([]);
+    // En el móvil, el panel del cielo, abierto desde su barra (decisión del 08-11).
+    const skyBar = page.locator('tls-sky-bar .bar');
+    if (await skyBar.isVisible()) {
+      await skyBar.click();
+      await expect(skyBar).toHaveAttribute('aria-expanded', 'true');
+      expect(await seriousViolations(page)).toEqual([]);
+      await page.keyboard.press('Escape');
+      await expect(skyBar).toHaveAttribute('aria-expanded', 'false');
+    }
 
     // «Controles +» abierto y, dentro, el botón de los atajos.
     await openControls(page);

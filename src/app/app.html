@@ -18,6 +18,40 @@
         <span aria-hidden="true">‹</span> Sistema solar
       </button>
       <span class="site-focus__name" aria-hidden="true">{{ body.name }}</span>
+      <!-- «ⓘ»: la ficha del cuerpo, a media pantalla (decisión de Iván del 08-11: no al elegirlo). -->
+      <button
+        type="button"
+        class="site-focus__info"
+        aria-controls="ficha"
+        [attr.aria-expanded]="focus.sheetOpen()"
+        [attr.aria-label]="'Ver la ficha de ' + body.name"
+        [title]="'Ver la ficha de ' + body.name"
+        (click)="focus.toggleSheet()"
+      >
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 11v6M12 7.5v.5" />
+        </svg>
+      </button>
+    </div>
+  }
+  <!--
+    El cielo en el móvil y la tableta, igual (decisión de Iván del 08-11): «‹», su título y el lugar, y
+    «Menú». El H1 de la vista lo dice al lector; el lugar, también la barra del cielo, abajo.
+  -->
+  @if (focus.sky(); as sky) {
+    <div class="site-focus">
+      <button
+        type="button"
+        class="explorer__back"
+        aria-label="Volver al sistema solar"
+        title="Volver al sistema solar"
+        (click)="focus.back()"
+      >
+        <span aria-hidden="true">‹</span>
+      </button>
+      <span class="site-focus__name" aria-hidden="true">El cielo</span>
+      <span class="site-focus__place" aria-hidden="true">{{ sky.place }}</span>
     </div>
   }
   <a class="site-name" routerLink="/">{{ site.name }}</a>

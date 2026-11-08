@@ -170,6 +170,34 @@ describe('ExplorerSession: la URL, la selección y el motor', () => {
     }
   });
 
+  it('en el móvil, elegir un cuerpo en el sistema solar no abre su ficha: la abre «ⓘ» (decisión del 08-11)', async () => {
+    const original = window.matchMedia;
+    window.matchMedia = ((query: string) =>
+      ({
+        matches: query.includes('63.99rem'),
+        media: query,
+      }) as MediaQueryList) as typeof window.matchMedia;
+    try {
+      const { session, sim, explorer } = await setup('?cuerpo=saturno');
+      // El cuerpo de la URL, elegido y sin su ficha (como al tocarlo).
+      expect(sim.selectedBodyId()).toBe('saturno');
+      expect(explorer.panelOpen()).toBe(false);
+      // Del planeta a una luna: tampoco.
+      session.select('mimas');
+      expect(sim.selectedBodyId()).toBe('mimas');
+      expect(explorer.panelOpen()).toBe(false);
+      session.openPanel();
+      expect(explorer.panelOpen()).toBe(true);
+      // La vista general la cierra; sin cuerpo, «ⓘ» no abre nada.
+      session.overview();
+      expect(explorer.panelOpen()).toBe(false);
+      session.openPanel();
+      expect(explorer.panelOpen()).toBe(false);
+    } finally {
+      window.matchMedia = original;
+    }
+  });
+
   it('un parámetro no válido se ignora y se avisa; el aviso se puede cerrar', async () => {
     const { session, sim } = await setup('?fecha=hola&escala=gigante');
     expect(session.warnings()).toHaveLength(2);

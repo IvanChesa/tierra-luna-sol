@@ -153,6 +153,32 @@
   }
 }
 
+/*
+ * El cielo en el móvil y la tableta (decisión de Iván del 08-11): en reposo, su barra (el lugar, la hora y
+ * el resumen; sky-bar.ts) va en lugar de la fecha, entre reproducir y «Controles», que se queda en su
+ * icono. Con el panel del cielo o la ficha abiertos, la fecha vuelve.
+ */
+@media (max-width: 63.99rem) {
+  :host-context(.explorer--sky:not(:has(tls-sky-panel.is-open, tls-explorer-ui.has-panel)))
+    .time__readout {
+    visibility: hidden;
+  }
+
+  :host-context(.explorer--sky) .time__more {
+    width: var(--tap-target);
+    padding: 0;
+  }
+
+  :host-context(.explorer--sky) .time__more-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
 /* Teléfonos: «Controles» se queda en su icono; el nombre sigue para el lector (y en `title`). */
 @media (max-width: 29.99rem) {
   .time__more {

@@ -9,6 +9,12 @@ import { DOCUMENT, DestroyRef, Signal, inject, signal } from '@angular/core';
 export const PHONE_QUERY = '(max-width: 47.99rem)';
 
 /**
+ * El móvil y la tableta (por debajo de 64 rem): la ficha, el índice y «Controles» suben como hojas, y
+ * elegir un cuerpo en el sistema solar no abre su ficha (decisión de Iván del 08-11: «ⓘ», arriba).
+ */
+export const SHEETS_QUERY = '(max-width: 63.99rem)';
+
+/**
  * Una consulta de medios como signal (el navegador es un sistema externo: se escucha su cambio y se
  * deja de escuchar al destruirse). Sin `matchMedia` (jsdom, el prerenderizado), `false`. Se llama en
  * un contexto de inyección (un inicializador de campo o el constructor).
