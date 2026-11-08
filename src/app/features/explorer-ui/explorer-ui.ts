@@ -82,6 +82,11 @@ interface FocusState {
   readonly index: boolean;
 }
 
+/** La portada, sin parámetros (sin consulta). */
+function isPlainHome(location: Location | undefined): boolean {
+  return location?.pathname === '/' && !location.search;
+}
+
 /** ¿Se ve el elemento? Sin `checkVisibility` (jsdom, navegadores antiguos), se supone que sí. */
 function isShown(element: Element | null | undefined): element is HTMLElement {
   if (!(element instanceof HTMLElement) || !element.isConnected) return false;
@@ -247,6 +252,13 @@ export class ExplorerUi implements OnInit {
   /** El almacenamiento del navegador (las preferencias de la primera vez). */
   private readonly storage = safeStorage(this.host.nativeElement.ownerDocument.defaultView);
   /**
+   * Se llegó a la portada sin parámetros (la URL de llegada, antes de que la interfaz la cambie sola:
+   * con movimiento reducido arranca en pausa y escribe `?fecha=`). Un enlace profundo no tiene recorrido.
+   */
+  private readonly arrivedPlain = isPlainHome(
+    this.host.nativeElement.ownerDocument.defaultView?.location,
+  );
+  /**
    * Un fundido por cada paso entre el espacio y el cielo (la pista del `@for`): cada uno crea el
    * velo de nuevo y su animación CSS lo desvanece. Con movimiento reducido, ninguno (un corte).
    */
@@ -360,19 +372,19 @@ export class ExplorerUi implements OnInit {
   }
 
   /**
-   * El recorrido que arranca solo, ahora: en la portada sin parámetros (mirados ahora, no al crear la
-   * interfaz) y sin que nadie haya empezado a usarla. Las fichas, la barra y el Índice funcionan antes
-   * que el 3D: con una red lenta, quien llega por primera vez puede haber elegido o pausado ya.
+   * El recorrido que arranca solo, ahora: se llegó a la portada sin parámetros y nadie ha empezado a
+   * usar el explorador. Las fichas, la barra y el Índice funcionan antes que el 3D: con una red lenta,
+   * quien llega por primera vez puede haber elegido (`?cuerpo=`), tocado algo o pausado ya. Sin
+   * movimiento reducido, el explorador arranca en marcha (D31): en pausa, alguien lo ha pausado.
    */
   private tourStillFits(): boolean {
-    const location = this.host.nativeElement.ownerDocument.defaultView?.location;
     return (
-      location?.pathname === '/' &&
-      !location.search &&
+      this.arrivedPlain &&
       !this.session.capture &&
       this.view() === 'system' &&
       !this.acted() &&
-      this.sim.selectedBodyId() === null
+      this.sim.selectedBodyId() === null &&
+      (this.session.reducedMotion || this.sim.playing())
     );
   }
 
