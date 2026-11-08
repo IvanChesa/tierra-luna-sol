@@ -1,7 +1,8 @@
 // Las recetas de la recreación de D45 (fase 9b): en lo que no se vio de cada luna, qué unidad de su
 // propio terreno real va dónde y con qué brillo regional. Es ilustrativo, por analogía con lo visto, y
 // no se presenta como ciencia; la receta de cada luna va escrita también en el informe de la fase.
-// EN CURSO (entrega 9b.d): por ahora, solo Tritón.
+// Solo Tritón lleva receta propia (su casquete); las demás, la de por defecto: lo no visto, con
+// parches de todo lo real de la misma luna y el brillo de lo visto extendido sobre la esfera.
 
 import { gaussianBlur } from './moon-maps.mjs';
 
@@ -147,6 +148,8 @@ function triton({ rgb, classes, W, H, ...options }) {
   const isCap = (lat, lon) => lat < -25 || (lat > 0 && northCap(lat, lon) > 0.5);
   const capShare = (lat, lon) => (lat < -25 ? 1 : northCap(lat, lon));
   return {
+    // Su nombre, para el informe y para docs/datos/recreacion-lunas.md.
+    name: 'el casquete de Tritón',
     pool: (srcLat, _srcLon, tLat, tLon) => (isCap(tLat, tLon) ? srcLat < -20 : srcLat > -30),
     target: (lat, lon, filled) => {
       const t = lat > 0 ? capShare(lat, lon) : 0;

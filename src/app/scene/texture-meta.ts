@@ -142,8 +142,40 @@ export const TEXTURE_META: Readonly<Record<TextureId, TextureMeta>> = {
     'Mosaico Cassini–Voyager de Jápeto del USGS (783 m), alineado con su georreferencia. Sondas de borde: Valdebron (Feature/14489) y Dapamort (Feature/14462); con el mapa girado 180° o reflejado, falla alguna.',
   ),
   triton: grayMosaic(
-    'Canal naranja del mosaico Voyager 2 de Tritón del USGS (600 m), alineado con su georreferencia; el norte que no vio Voyager 2 (38 %), con el gris de la franja vecina y el borde difuminado. Sondas: Doro Macula (Feature/1583), Namazu Macula (Feature/4125) y Kikimora Maculae (Feature/3029), oscuras; con el mapa girado 180° o reflejado, fallan.',
+    'Canal naranja del mosaico Voyager 2 de Tritón del USGS (600 m), alineado con su georreferencia; el norte que no vio Voyager 2, recreado a partir de su propio terreno (D45, fase 9b). Sondas: Doro Macula (Feature/1583), Namazu Macula (Feature/4125) y Kikimora Maculae (Feature/3029), oscuras; con el mapa girado 180° o reflejado, fallan.',
   ),
+  // Deimos y las cinco de Urano (fase 9b, D42 y D43): los mapas del JPL, sin georreferencia; su
+  // longitud, la que dan por buena sus sondas (scripts/build-textures.mjs).
+  deimos: grayMosaic(
+    'Mapa del JPL de Deimos (de las imágenes de las Viking, procesadas por el USGS; 4 px/°), sin georreferencia: su longitud, la que eligen sus sondas (build-textures.mjs); lo que su carta no cartografía (su fondo claro), recreado, y lo visto de lejos, con detalle (D45).',
+  ),
+  miranda: grayMosaic(
+    'Mapa del JPL de Miranda (del USGS, con las imágenes de la Voyager 2; 4 px/°), sin georreferencia: su longitud, la que eligen sus sondas del Gazetteer (build-textures.mjs); el norte que no se vio, recreado (D45).',
+  ),
+  ariel: grayMosaic(
+    'Mapa del JPL de Ariel (del USGS, con las imágenes de la Voyager 2; 4 px/°), sin georreferencia: su longitud, la que eligen sus sondas del Gazetteer (build-textures.mjs); el norte que no se vio, recreado (D45).',
+  ),
+  umbriel: grayMosaic(
+    'Mapa del JPL de Umbriel (del USGS, con las imágenes de la Voyager 2; 4 px/°), sin georreferencia: su longitud, la que eligen sus sondas del Gazetteer (build-textures.mjs); el norte que no se vio, recreado (D45).',
+  ),
+  titania: grayMosaic(
+    'Mapa del JPL de Titania (del USGS, con las imágenes de la Voyager 2; 4 px/°), sin georreferencia: su longitud, la que eligen sus sondas del Gazetteer (build-textures.mjs); el norte que no se vio, recreado (D45).',
+  ),
+  oberon: grayMosaic(
+    'Mapa del JPL de Oberón (del USGS, con las imágenes de la Voyager 2; 4 px/°), sin georreferencia: su longitud, la que eligen sus sondas del Gazetteer (build-textures.mjs); el norte que no se vio, recreado (D45).',
+  ),
+  // Proteo (fase 9b, D45): un campo de cráteres generado (ilustrativo), con su mapa de normales.
+  proteus: grayMosaic(
+    'Generado (scripts/lib/crater-field.mjs): un campo de cráteres sobre la esfera, ilustrativo; sin accidentes reales que alinear.',
+  ),
+  'proteus-normal': {
+    colorSpace: 'data',
+    alpha: false,
+    projection: 'equirectangular',
+    primeMeridianU: 0.5,
+    alignment:
+      'Normales de la elevación del mismo campo de cráteres que «proteus», en el mismo encuadre (la longitud 0 en el centro).',
+  },
   'milky-way': {
     colorSpace: 'srgb',
     alpha: false,

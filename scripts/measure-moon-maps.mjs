@@ -36,6 +36,16 @@ export const MOON_MOSAICS = {
   rea: { file: 'Rhea_Cassini_Voyager_mosaic_global_417m.tif' },
   japeto: { file: 'Iapetus_Cassini_Voyager_mosaic_global_783m.tif' },
   triton: { file: 'Triton_Voyager2_ClrMosaic_GlobalFill_600m.tif', band: 0 },
+  // Los mapas del JPL (fase 9b), con la convención de build-textures.mjs (`JPL_MAP`).
+  deimos: {
+    file: 'mar2kuu2.tif',
+    plain: { leftEdgeEastDeg: -180, eastward: true, background: { above: 165, blurPx: 8 } },
+  },
+  miranda: { file: 'ura5vuu2.tif', plain: { leftEdgeEastDeg: -180, eastward: true } },
+  ariel: { file: 'ura1vuu2.tif', plain: { leftEdgeEastDeg: -180, eastward: true } },
+  umbriel: { file: 'ura2vuu2.tif', plain: { leftEdgeEastDeg: -180, eastward: true } },
+  titania: { file: 'ura3vuu2.tif', plain: { leftEdgeEastDeg: -180, eastward: true } },
+  oberon: { file: 'ura4vuu2.tif', plain: { leftEdgeEastDeg: -180, eastward: true } },
 };
 
 /**

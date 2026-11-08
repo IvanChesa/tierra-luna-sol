@@ -44,6 +44,8 @@ import {
 import { POLAR_EDGE_DEG, buildPolarNormalAtlas } from './lola-polar.mjs';
 import { checkMosaicProbes, loadMosaic } from './usgs-mosaic.mjs';
 import { RECREATION_CRITERIA, recreateMosaic, writeMask } from './lib/moon-map-build.mjs';
+import { craterField } from './lib/crater-field.mjs';
+import { applyDichotomy } from './lib/dichotomy.mjs';
 import { checkRingFeatures, loadUvisProfile, ringStripTau } from './ring-profile.mjs';
 
 const ROOT = new URL('../', import.meta.url);
@@ -76,6 +78,24 @@ const RING_HEIGHT = 16;
  * con sondas de rasgos con nombre (`MOSAIC_PROBES`); `band`: solo ese canal, en gris; `colorGain`:
  * ganancia por canal en RGB lineal (el balance de color de Ío, revisión del bloque D).
  */
+/**
+ * La convención de los mapas del JPL (fase 9b): el borde izquierdo en −180° y las columnas hacia el este,
+ * la única con la que pasan sus sondas (usgs-mosaic.mjs, MOSAIC_PROBES).
+ */
+const JPL_MAP = { leftEdgeEastDeg: -180, eastward: true };
+
+/**
+ * La dicotomía de Jápeto (fase 9b, D42): los valores centrales de los albedos de la NASA, «albedo
+ * 0.03-0.05» del hemisferio delantero y «0.5-0.6» del trasero
+ * (https://science.nasa.gov/saturn/moons/iapetus/, consultada el 07-11-2026; el Astronomical Almanac,
+ * «Bright side, 0.5; faint side, 0.05»). La escena calibra su brillo con el del hemisferio trasero.
+ */
+const IAPETUS_DICHOTOMY = {
+  dark: 0.04,
+  bright: 0.55,
+  source: 'https://science.nasa.gov/saturn/moons/iapetus/',
+};
+
 const TEXTURES = {
   mercury: { file: '8k_mercury.jpg', kind: 'color', quality: 80 },
   venus: { file: '4k_venus_atmosphere.jpg', kind: 'color', quality: 80 },
@@ -155,7 +175,14 @@ const TEXTURES = {
   tethys: { file: 'Tethys_Cassini_mosaic_global_293m.tif', kind: 'mosaic', quality: 80 },
   dione: { file: 'Dione_Cassini_Voyager_mosaic_global_154m.tif', kind: 'mosaic', quality: 80 },
   rhea: { file: 'Rhea_Cassini_Voyager_mosaic_global_417m.tif', kind: 'mosaic', quality: 80 },
-  iapetus: { file: 'Iapetus_Cassini_Voyager_mosaic_global_783m.tif', kind: 'mosaic', quality: 80 },
+  // Jápeto, con su dicotomía (fase 9b, D42): el material oscuro del hemisferio delantero llevado al
+  // cociente de los albedos de la NASA (scripts/lib/dichotomy.mjs).
+  iapetus: {
+    file: 'Iapetus_Cassini_Voyager_mosaic_global_783m.tif',
+    kind: 'mosaic',
+    quality: 80,
+    dichotomy: IAPETUS_DICHOTOMY,
+  },
   // Tritón: un mosaico en falso color (naranja, violeta y ultravioleta en R, G y B); solo su canal
   // naranja, el más cercano al visible, en gris.
   triton: {
@@ -164,8 +191,35 @@ const TEXTURES = {
     quality: 80,
     band: 0,
   },
+  // Deimos y las cinco de Urano (fase 9b, D42 y D43): los mapas en gris del JPL (1440 × 720, 4 px/°), sin
+  // georreferencia: `plain`, la convención de longitud que dan por buena sus sondas (usgs-mosaic.mjs).
+  // Se generan también a 2k: lo que no se vio o se vio de lejos, recreado (D45).
+  // Deimos: una carta aerografiada (de las imágenes de la Viking) sobre un fondo claro, que es lo no
+  // cartografiado (su brillo a gran escala, por encima de 165; lo cartografiado, de 60 a 160).
+  deimos: {
+    file: 'mar2kuu2.tif',
+    kind: 'mosaic',
+    quality: 80,
+    plain: { ...JPL_MAP, background: { above: 165, blurPx: 8 } },
+  },
+  miranda: { file: 'ura5vuu2.tif', kind: 'mosaic', quality: 80, plain: JPL_MAP },
+  ariel: { file: 'ura1vuu2.tif', kind: 'mosaic', quality: 80, plain: JPL_MAP },
+  umbriel: { file: 'ura2vuu2.tif', kind: 'mosaic', quality: 80, plain: JPL_MAP },
+  titania: { file: 'ura3vuu2.tif', kind: 'mosaic', quality: 80, plain: JPL_MAP },
+  oberon: { file: 'ura4vuu2.tif', kind: 'mosaic', quality: 80, plain: JPL_MAP },
   uranus: { file: '2k_uranus.jpg', kind: 'color', quality: 82 },
   neptune: { file: '2k_neptune.jpg', kind: 'color', quality: 82 },
+  // Proteo (fase 9b, D45): sin mosaico (la Voyager 2 lo vio de lejos) ni forma (la de Stooke solo se
+  // baja a mano: PENDIENTES.md). Su superficie, un campo de cráteres generado sobre la esfera
+  // (scripts/lib/crater-field.mjs): «cráteres generados con su albedo», como pide D45. Ilustrativo.
+  proteus: {
+    kind: 'crater-field',
+    body: 'proteo',
+    normalId: 'proteus-normal',
+    seed: 7,
+    quality: 80,
+    normalQuality: 85,
+  },
   'milky-way': { file: 'eso0932a.tif', kind: 'panorama', quality: 80, maxWidth: 2048 },
 };
 
@@ -376,6 +430,34 @@ async function checkAlignment(id, file) {
  * Luminancia lineal media (Rec. 709) de un mapa equirrectangular de color, ponderada por el área de
  * cada fila (cos φ). Con ella, la escena lleva cada cuerpo a su albedo geométrico (D29).
  */
+/**
+ * Luminancia lineal media (Rec. 709) de un hemisferio de un mapa equirrectangular (los píxeles a menos de
+ * 90° de su ápice, en el ecuador y en la longitud este `apexLonDeg`), ponderada por el área.
+ */
+async function hemisphereLuminance(file, apexLonDeg) {
+  const { data, info } = await sharp(fileURLToPath(new URL(file.path, PUBLIC)))
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  let sum = 0;
+  let weights = 0;
+  for (let y = 0; y < info.height; y++) {
+    const lat = (90 - ((y + 0.5) * 180) / info.height) * (Math.PI / 180);
+    for (let x = 0; x < info.width; x++) {
+      const lon = (((x + 0.5) / info.width) * 360 - 180) * (Math.PI / 180);
+      if (Math.cos(lat) * Math.cos(lon - (apexLonDeg * Math.PI) / 180) <= 0) continue;
+      const k = (y * info.width + x) * info.channels;
+      const w = Math.cos(lat);
+      sum +=
+        w *
+        (0.2126 * srgbToLinear(data[k] / 255) +
+          0.7152 * srgbToLinear(data[k + 1] / 255) +
+          0.0722 * srgbToLinear(data[k + 2] / 255));
+      weights += w;
+    }
+  }
+  return sum / weights;
+}
+
 async function meanLuminance(file, coverage = null) {
   const { data, info } = await sharp(fileURLToPath(new URL(file.path, PUBLIC)))
     .raw()
@@ -415,6 +497,11 @@ if (!RINGS) throw new Error('Faltan los anillos de Saturno en body-data.ts');
 
 const srgbToLinear = (c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
 const linearToSrgb = (v) => (v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055);
+/**
+ * El gris medio (lineal) del albedo de un campo de cráteres generado (Proteo): la escena lo lleva a su
+ * albedo geométrico (D29), así que solo importa que deje margen para sus variaciones en 8 bits.
+ */
+const CRATER_GRAY = 0.2;
 const smooth = (t) => {
   const x = Math.min(Math.max(t, 0), 1);
   return x * x * (3 - 2 * x);
@@ -812,6 +899,28 @@ async function checkPanorama(file) {
  * visto (por el área de la esfera), la receta, el grano de lo recreado frente a lo real vecino, el salto
  * en el borde frente al de bordes ficticios dentro de lo real, lo real en el WebP y su máscara.
  */
+/** El cuerpo del catálogo de cada mosaico de luna (para data/moon-recreation.ts). */
+const MOSAIC_BODY = {
+  phobos: 'fobos',
+  deimos: 'deimos',
+  io: 'io',
+  europa: 'europa',
+  ganymede: 'ganimedes',
+  callisto: 'calisto',
+  mimas: 'mimas',
+  enceladus: 'encelado',
+  tethys: 'tetis',
+  dione: 'dione',
+  rhea: 'rea',
+  iapetus: 'japeto',
+  miranda: 'miranda',
+  ariel: 'ariel',
+  umbriel: 'umbriel',
+  titania: 'titania',
+  oberon: 'oberon',
+  triton: 'triton',
+};
+
 async function writeRecreationDoc(list, date) {
   const pct = (x) => `${(100 * x).toFixed(1).replace('.', ',')} %`;
   const num = (x, d = 2) => (x === null || x === undefined ? '—' : x.toFixed(d).replace('.', ','));
@@ -841,6 +950,37 @@ Lo que no se vio de cada luna, recreado a partir del terreno real de la misma lu
 ${rows.join('\n')}
 `;
   await writeFile(new URL('docs/datos/recreacion-lunas.md', ROOT), text);
+  // Y lo medido de cada luna, para la tabla de /creditos (data/moon-recreation.ts, GENERADO).
+  const entries = Object.entries(list)
+    .filter(([id]) => MOSAIC_BODY[id])
+    .map(
+      ([id, r]) =>
+        `  { body: '${MOSAIC_BODY[id]}', real: ${r.real.toFixed(4)}, far: ${r.far.toFixed(4)}, none: ${r.none.toFixed(4)} },`,
+    );
+  const ts = `// GENERADO por scripts/build-textures.mjs el ${date}. No se edita a mano.
+// D45 (fase 9b): de cada luna con mosaico, la fracción de su superficie (por el área de la esfera) que
+// es real con detalle, la que solo se fotografió de lejos (con detalle recreado) y la que no se vio
+// (recreada entera), medidas en su mapa de 2k (scripts/measure-moon-maps.mjs). El método y las demás
+// medidas, en docs/datos/recreacion-lunas.md.
+import type { BodyId } from './body.model';
+
+export interface MoonRecreation {
+  readonly body: BodyId;
+  readonly real: number;
+  readonly far: number;
+  readonly none: number;
+}
+
+export const MOON_RECREATION: readonly MoonRecreation[] = [
+${entries.join('\n')}
+];
+`;
+  await writeFile(new URL('src/app/data/moon-recreation.ts', ROOT), ts);
+  execFileSync(
+    process.execPath,
+    ['node_modules/prettier/bin/prettier.cjs', '--write', 'src/app/data/moon-recreation.ts'],
+    { cwd: ROOT, stdio: 'inherit' },
+  );
 }
 
 /** Las lunas con sondas en su mosaico (`MOSAIC_PROBES`): se comprueban otra vez tras recrear. */
@@ -898,6 +1038,11 @@ for (const [level] of LEVELS) {
 
 const files = {};
 const luminance = {};
+/**
+ * Las texturas cuyo brillo se calibra con una región y no con su media (Jápeto, fase 9b): su albedo y la
+ * luminancia lineal media de esa región en el nivel 1k.
+ */
+const albedoReference = {};
 const reports = [];
 let ringStrip = null;
 /** Lo que se recreó de cada luna (D45), para docs/datos/recreacion-lunas.md. */
@@ -953,11 +1098,48 @@ for (const [id, spec] of Object.entries(TEXTURES)) {
     );
     continue;
   }
+  if (spec.kind === 'crater-field') {
+    // Proteo (fase 9b, D45): un campo de cráteres generado, en dos texturas por nivel: el albedo (en
+    // gris, casi uniforme, alrededor de un gris medio: la escena lo lleva a su albedo geométrico, D29) y
+    // el mapa de normales de su elevación (la luz del Sol marca los cráteres). Ilustrativo.
+    const radiusKm = BODY_DATA[spec.body].physical.radiusKm.value;
+    const albedoList = [];
+    const normalList = [];
+    for (const [level, width] of LEVELS) {
+      if (width > 2048) continue;
+      const height = width / 2;
+      const field = craterField({ width, radiusKm, seed: spec.seed });
+      const gray = Buffer.alloc(width * height * 3);
+      for (let k = 0; k < width * height; k++) {
+        const v = Math.round(255 * linearToSrgb(Math.min(1, CRATER_GRAY * field.albedo[k])));
+        gray[3 * k] = gray[3 * k + 1] = gray[3 * k + 2] = v;
+      }
+      const raw = { raw: { width, height, channels: 3 } };
+      albedoList.push(await emit(id, level, sharp(gray, raw), spec.quality));
+      const normals = normalMap(field.elevation, width, height, radiusKm * 1000, 1, 0.02);
+      normalList.push(await emit(spec.normalId, level, sharp(normals, raw), spec.normalQuality));
+      if (width === 2048) {
+        reports.push(
+          `${id}: D45, sin mosaico ni forma: un campo de ${field.count} cráteres generado sobre la esfera (semilla ${spec.seed}; ilustrativo), con su mapa de normales («${spec.normalId}»)`,
+        );
+      }
+    }
+    files[id] = albedoList;
+    files[spec.normalId] = normalList;
+    luminance[id] = Number((await meanLuminance(albedoList[0])).toFixed(4));
+    console.log(
+      `${id}: ${albedoList.map((f) => `${f.level} ${(f.bytes / 1024).toFixed(0)} kB`).join(' · ')}; ${spec.normalId}: ${normalList.map((f) => `${f.level} ${(f.bytes / 1024).toFixed(0)} kB`).join(' · ')}`,
+    );
+    continue;
+  }
   if (spec.kind === 'mosaic') {
     // El mosaico, a 2048 px y centrado en la longitud 0 (con sus huecos rellenos); sus sondas; y los
     // niveles de 1k y 2k. La luminancia media, como la de los mapas de color, para el albedo (D29),
     // solo de lo que hay: con los huecos, el gris del relleno movería el brillo de la luna entera.
-    const mosaic = await loadMosaic(new URL(spec.file, SRC), 2048, { band: spec.band });
+    const mosaic = await loadMosaic(new URL(spec.file, SRC), 2048, {
+      band: spec.band,
+      plain: spec.plain,
+    });
     reports.push(`${id}: ${mosaic.report}`);
     const probes = checkMosaicProbes(id, mosaic);
     if (probes) reports.push(probes);
@@ -977,16 +1159,42 @@ for (const [id, spec] of Object.entries(TEXTURES)) {
       );
     }
     // D45 (fase 9b): lo que no se vio, recreado a partir del terreno real de la misma luna, y detalle
-    // sobre lo visto de lejos (scripts/lib/moon-map-build.mjs). Lo real queda igual byte a byte; las
-    // sondas se miden otra vez en el mapa recreado (lo real no cambia, y sus coronas solo cuentan lo que
-    // hay); y la máscara de cada clase va al informe.
+    // sobre lo visto de lejos (scripts/lib/moon-map-build.mjs), sobre el mosaico tal como llega (con el
+    // balance de color de Ío, que no cambia su contraste). Lo real queda igual byte a byte; las sondas se
+    // miden otra vez en el mapa recreado, solo sobre lo real; y la máscara de cada clase va al informe.
     const recreation = recreateMosaic(id, mosaic);
     reports.push(recreation.report);
     if (MOSAIC_PROBES_IDS.has(id)) {
-      const again = checkMosaicProbes(id, { ...mosaic, data: recreation.data });
+      // Solo sobre lo real (igual byte a byte): una sonda en lo visto de lejos mide el detalle fino que
+      // la recreación sustituye a propósito (ya pasó en el mosaico).
+      const real = Float32Array.from(recreation.classes, (c) => (c === 0 ? 1 : 0));
+      const again = checkMosaicProbes(
+        id,
+        { ...mosaic, data: recreation.data, coverage: real },
+        { onlyCovered: true },
+      );
       reports.push(
         `${id}: las sondas, en el mapa recreado: ${again.slice(again.indexOf(':') + 2)}`,
       );
+    }
+    // Lo real del mapa final, para comprobarlo tras la compresión: el mosaico, con la misma calibración
+    // que el mapa recreado.
+    let reference = mosaic;
+    if (spec.dichotomy) {
+      // Jápeto: después de las sondas y de la recreación (sus sondas son de borde: con el material
+      // oscuro a 0,045, su gradiente se pierde en 8 bits). El factor se mide en el mosaico y se aplica
+      // igual al mosaico y al mapa recreado: lo real sigue igual en los dos.
+      const { dark, bright } = spec.dichotomy;
+      const calibrated = Buffer.from(mosaic.data);
+      const result = applyDichotomy(calibrated, mosaic.width, mosaic.height, dark / bright, {
+        alsoApplyTo: [recreation.data],
+      });
+      const ratio = (x) => x.toFixed(3).replace('.', ',');
+      reports.push(
+        `${id}: la dicotomía, con los albedos de la NASA (${dark} y ${bright}): el material oscuro del hemisferio delantero (el ${(100 * result.darkFraction).toFixed(1).replace('.', ',')} % de la luna) pasa de ${ratio(result.before)} a ${ratio(result.after)} del hemisferio trasero (objetivo ${ratio(dark / bright)}; factor ${ratio(result.darkGain)}), en el mosaico y, con el mismo factor, en el mapa recreado`,
+      );
+      albedoReference[id] = { albedo: bright, ratio: result.after };
+      reference = { ...mosaic, data: calibrated };
     }
     await writeMask(
       new URL(`${id}.webp`, MASKS),
@@ -1006,7 +1214,7 @@ for (const [id, spec] of Object.entries(TEXTURES)) {
     files[id] = list;
     const tolerance = await checkRealAfterCompression(
       id,
-      mosaic,
+      reference,
       recreation.classes,
       list.find((f) => f.width === mosaic.width),
       spec.quality,
@@ -1022,6 +1230,10 @@ for (const [id, spec] of Object.entries(TEXTURES)) {
         })
       ).toFixed(4),
     );
+    if (albedoReference[id]) {
+      // Jápeto: el hemisferio trasero (su ápice, a 90° E), al albedo de la NASA.
+      albedoReference[id].luminance = Number((await hemisphereLuminance(list[0], 90)).toFixed(4));
+    }
     console.log(
       `${id}: ${list.map((f) => `${f.level} ${(f.bytes / 1024).toFixed(0)} kB`).join(' · ')}`,
     );
@@ -1181,6 +1393,15 @@ ${entries}
  * el nivel 1k: con ella, la escena lleva cada cuerpo a su albedo geométrico (D29).
  */
 export const TEXTURE_MEAN_LUMINANCE: Readonly<Partial<Record<TextureId, number>>> = ${JSON.stringify(luminance)};
+
+/**
+ * Las texturas cuyo brillo se calibra con una región y no con su media (fase 9b, D42): Jápeto, con su
+ * hemisferio trasero al albedo de la NASA (0,5–0,6: 0,55) y su material oscuro, al cociente publicado
+ * (\`ratio\`, medido en el mapa). \`luminance\`: la de esa región en el nivel 1k.
+ */
+export const TEXTURE_ALBEDO_REFERENCE: Readonly<
+  Partial<Record<TextureId, { readonly albedo: number; readonly ratio: number; readonly luminance: number }>>
+> = ${JSON.stringify(albedoReference)};
 
 /**
  * Radios (km) que cubre la tira de los anillos de Saturno (fase 7, D36): de por dentro del anillo C a

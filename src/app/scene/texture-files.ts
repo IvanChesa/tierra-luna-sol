@@ -1,4 +1,4 @@
-// GENERADO por scripts/build-textures.mjs el 2026-11-04. No se edita a mano.
+// GENERADO por scripts/build-textures.mjs el 2026-11-08. No se edita a mano.
 // WebP por niveles con hash (public/textures/), a partir de los originales de assets-src/textures/
 // (origen y licencia de cada uno en docs/FUENTES.md).
 import type { TextureFiles, TextureId } from './textures';
@@ -398,187 +398,283 @@ export const TEXTURE_FILES: TextureFiles = {
   phobos: [
     {
       level: '1k',
-      path: 'textures/1k/phobos.2e6bff2683.webp',
+      path: 'textures/1k/phobos.b0e520bc24.webp',
       width: 1024,
       height: 512,
-      bytes: 86814,
+      bytes: 86718,
     },
     {
       level: '2k',
-      path: 'textures/2k/phobos.c75986cfab.webp',
+      path: 'textures/2k/phobos.ad94af215d.webp',
       width: 2048,
       height: 1024,
-      bytes: 264724,
+      bytes: 265488,
     },
   ],
   io: [
-    { level: '1k', path: 'textures/1k/io.1661caba04.webp', width: 1024, height: 512, bytes: 49922 },
+    { level: '1k', path: 'textures/1k/io.5ca653a817.webp', width: 1024, height: 512, bytes: 50594 },
     {
       level: '2k',
-      path: 'textures/2k/io.0e496650dd.webp',
+      path: 'textures/2k/io.75ffbfeb73.webp',
       width: 2048,
       height: 1024,
-      bytes: 135538,
+      bytes: 141118,
     },
   ],
   europa: [
     {
       level: '1k',
-      path: 'textures/1k/europa.921478a739.webp',
+      path: 'textures/1k/europa.8be0fa61f5.webp',
       width: 1024,
       height: 512,
-      bytes: 82824,
+      bytes: 92664,
     },
     {
       level: '2k',
-      path: 'textures/2k/europa.5c2de63bc2.webp',
+      path: 'textures/2k/europa.3299120974.webp',
       width: 2048,
       height: 1024,
-      bytes: 319886,
+      bytes: 373312,
     },
   ],
   ganymede: [
     {
       level: '1k',
-      path: 'textures/1k/ganymede.160ff1d2e9.webp',
+      path: 'textures/1k/ganymede.5d68f8011b.webp',
       width: 1024,
       height: 512,
-      bytes: 48152,
+      bytes: 49754,
     },
     {
       level: '2k',
-      path: 'textures/2k/ganymede.7581914b57.webp',
+      path: 'textures/2k/ganymede.80a28d357e.webp',
       width: 2048,
       height: 1024,
-      bytes: 192246,
+      bytes: 197900,
     },
   ],
   callisto: [
     {
       level: '1k',
-      path: 'textures/1k/callisto.d37c424bc9.webp',
+      path: 'textures/1k/callisto.17ebbc6910.webp',
       width: 1024,
       height: 512,
-      bytes: 50476,
+      bytes: 52944,
     },
     {
       level: '2k',
-      path: 'textures/2k/callisto.6e30eb340a.webp',
+      path: 'textures/2k/callisto.b0b1d3169b.webp',
       width: 2048,
       height: 1024,
-      bytes: 209686,
+      bytes: 222858,
     },
   ],
   mimas: [
     {
       level: '1k',
-      path: 'textures/1k/mimas.aad4ef0807.webp',
+      path: 'textures/1k/mimas.df430b92db.webp',
       width: 1024,
       height: 512,
-      bytes: 127158,
+      bytes: 133028,
     },
     {
       level: '2k',
-      path: 'textures/2k/mimas.6c22b2ac3e.webp',
+      path: 'textures/2k/mimas.079eafc349.webp',
       width: 2048,
       height: 1024,
-      bytes: 298022,
+      bytes: 328700,
     },
   ],
   enceladus: [
     {
       level: '1k',
-      path: 'textures/1k/enceladus.17c6f7988c.webp',
+      path: 'textures/1k/enceladus.c16f996b0f.webp',
       width: 1024,
       height: 512,
-      bytes: 151828,
+      bytes: 163346,
     },
     {
       level: '2k',
-      path: 'textures/2k/enceladus.1cb8c97cd9.webp',
+      path: 'textures/2k/enceladus.b53c34beb6.webp',
       width: 2048,
       height: 1024,
-      bytes: 583114,
+      bytes: 656428,
     },
   ],
   tethys: [
     {
       level: '1k',
-      path: 'textures/1k/tethys.ed5332891b.webp',
+      path: 'textures/1k/tethys.499715ab39.webp',
       width: 1024,
       height: 512,
-      bytes: 164288,
+      bytes: 175418,
     },
     {
       level: '2k',
-      path: 'textures/2k/tethys.182c707179.webp',
+      path: 'textures/2k/tethys.8219b35078.webp',
       width: 2048,
       height: 1024,
-      bytes: 524542,
+      bytes: 586298,
     },
   ],
   dione: [
     {
       level: '1k',
-      path: 'textures/1k/dione.297ada4522.webp',
+      path: 'textures/1k/dione.b0c42dec0b.webp',
       width: 1024,
       height: 512,
-      bytes: 174560,
+      bytes: 185914,
     },
     {
       level: '2k',
-      path: 'textures/2k/dione.6b5835cc11.webp',
+      path: 'textures/2k/dione.07e7ea2466.webp',
       width: 2048,
       height: 1024,
-      bytes: 613704,
+      bytes: 660756,
     },
   ],
   rhea: [
     {
       level: '1k',
-      path: 'textures/1k/rhea.c15b4d6c00.webp',
+      path: 'textures/1k/rhea.6dca072718.webp',
       width: 1024,
       height: 512,
-      bytes: 103674,
+      bytes: 108560,
     },
     {
       level: '2k',
-      path: 'textures/2k/rhea.25d56195f4.webp',
+      path: 'textures/2k/rhea.5598082db9.webp',
       width: 2048,
       height: 1024,
-      bytes: 332470,
+      bytes: 347380,
     },
   ],
   iapetus: [
     {
       level: '1k',
-      path: 'textures/1k/iapetus.2447d3c2a0.webp',
+      path: 'textures/1k/iapetus.886b7d5fe6.webp',
       width: 1024,
       height: 512,
-      bytes: 135050,
+      bytes: 142330,
     },
     {
       level: '2k',
-      path: 'textures/2k/iapetus.47bbe1d2b0.webp',
+      path: 'textures/2k/iapetus.2971e171fc.webp',
       width: 2048,
       height: 1024,
-      bytes: 415570,
+      bytes: 463402,
     },
   ],
   triton: [
     {
       level: '1k',
-      path: 'textures/1k/triton.406792fbd1.webp',
+      path: 'textures/1k/triton.100bdd75d0.webp',
       width: 1024,
       height: 512,
-      bytes: 32198,
+      bytes: 75256,
     },
     {
       level: '2k',
-      path: 'textures/2k/triton.92e914831a.webp',
+      path: 'textures/2k/triton.4bc50ff05c.webp',
       width: 2048,
       height: 1024,
-      bytes: 104064,
+      bytes: 276026,
+    },
+  ],
+  deimos: [
+    {
+      level: '1k',
+      path: 'textures/1k/deimos.e3d064ec32.webp',
+      width: 1024,
+      height: 512,
+      bytes: 22012,
+    },
+    {
+      level: '2k',
+      path: 'textures/2k/deimos.a1dd6c682c.webp',
+      width: 2048,
+      height: 1024,
+      bytes: 54362,
+    },
+  ],
+  miranda: [
+    {
+      level: '1k',
+      path: 'textures/1k/miranda.d3e2f70d56.webp',
+      width: 1024,
+      height: 512,
+      bytes: 55528,
+    },
+    {
+      level: '2k',
+      path: 'textures/2k/miranda.f808c52c29.webp',
+      width: 2048,
+      height: 1024,
+      bytes: 146496,
+    },
+  ],
+  ariel: [
+    {
+      level: '1k',
+      path: 'textures/1k/ariel.6ceeb9696b.webp',
+      width: 1024,
+      height: 512,
+      bytes: 40542,
+    },
+    {
+      level: '2k',
+      path: 'textures/2k/ariel.1ff4b46592.webp',
+      width: 2048,
+      height: 1024,
+      bytes: 109686,
+    },
+  ],
+  umbriel: [
+    {
+      level: '1k',
+      path: 'textures/1k/umbriel.59656a187b.webp',
+      width: 1024,
+      height: 512,
+      bytes: 19374,
+    },
+    {
+      level: '2k',
+      path: 'textures/2k/umbriel.3e807bcdcf.webp',
+      width: 2048,
+      height: 1024,
+      bytes: 47962,
+    },
+  ],
+  titania: [
+    {
+      level: '1k',
+      path: 'textures/1k/titania.0d9c7180e8.webp',
+      width: 1024,
+      height: 512,
+      bytes: 59170,
+    },
+    {
+      level: '2k',
+      path: 'textures/2k/titania.078ab9635f.webp',
+      width: 2048,
+      height: 1024,
+      bytes: 164704,
+    },
+  ],
+  oberon: [
+    {
+      level: '1k',
+      path: 'textures/1k/oberon.4097f32466.webp',
+      width: 1024,
+      height: 512,
+      bytes: 39116,
+    },
+    {
+      level: '2k',
+      path: 'textures/2k/oberon.0af66d3ac2.webp',
+      width: 2048,
+      height: 1024,
+      bytes: 95056,
     },
   ],
   uranus: [
@@ -613,6 +709,38 @@ export const TEXTURE_FILES: TextureFiles = {
       bytes: 15774,
     },
   ],
+  proteus: [
+    {
+      level: '1k',
+      path: 'textures/1k/proteus.4167697807.webp',
+      width: 1024,
+      height: 512,
+      bytes: 1608,
+    },
+    {
+      level: '2k',
+      path: 'textures/2k/proteus.f7c0484b29.webp',
+      width: 2048,
+      height: 1024,
+      bytes: 5672,
+    },
+  ],
+  'proteus-normal': [
+    {
+      level: '1k',
+      path: 'textures/1k/proteus-normal.045508e3d8.webp',
+      width: 1024,
+      height: 512,
+      bytes: 114360,
+    },
+    {
+      level: '2k',
+      path: 'textures/2k/proteus-normal.e86febe601.webp',
+      width: 2048,
+      height: 1024,
+      bytes: 329534,
+    },
+  ],
   'milky-way': [
     {
       level: '1k',
@@ -643,21 +771,42 @@ export const TEXTURE_MEAN_LUMINANCE: Readonly<Partial<Record<TextureId, number>>
   mars: 0.1819,
   jupiter: 0.4093,
   saturn: 0.6154,
-  phobos: 0.2739,
-  io: 0.2629,
-  europa: 0.3133,
+  phobos: 0.2737,
+  io: 0.2627,
+  europa: 0.3135,
   ganymede: 0.0754,
   callisto: 0.0481,
-  mimas: 0.1852,
-  enceladus: 0.1431,
-  tethys: 0.2009,
-  dione: 0.2238,
-  rhea: 0.162,
-  iapetus: 0.1906,
-  triton: 0.3194,
+  mimas: 0.1843,
+  enceladus: 0.1415,
+  tethys: 0.1999,
+  dione: 0.2232,
+  rhea: 0.1621,
+  iapetus: 0.1508,
+  triton: 0.3199,
+  deimos: 0.151,
+  miranda: 0.1548,
+  ariel: 0.1517,
+  umbriel: 0.2134,
+  titania: 0.277,
+  oberon: 0.221,
   uranus: 0.5649,
   neptune: 0.1231,
+  proteus: 0.201,
 };
+
+/**
+ * Las texturas cuyo brillo se calibra con una región y no con su media (fase 9b, D42): Jápeto, con su
+ * hemisferio trasero al albedo de la NASA (0,5–0,6: 0,55) y su material oscuro, al cociente publicado
+ * (`ratio`, medido en el mapa). `luminance`: la de esa región en el nivel 1k.
+ */
+export const TEXTURE_ALBEDO_REFERENCE: Readonly<
+  Partial<
+    Record<
+      TextureId,
+      { readonly albedo: number; readonly ratio: number; readonly luminance: number }
+    >
+  >
+> = { iapetus: { albedo: 0.55, ratio: 0.07273433035391054, luminance: 0.2026 } };
 
 /**
  * Radios (km) que cubre la tira de los anillos de Saturno (fase 7, D36): de por dentro del anillo C a

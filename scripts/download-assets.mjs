@@ -23,6 +23,16 @@
 //   «NASA Earth Observatory images by Joshua Stevens, using Suomi NPP VIIRS data from Miguel Román,
 //   NASA GSFC»), material de la NASA: «generally are not subject to copyright in the United States»
 //   y se puede usar en simulaciones y webs (https://www.nasa.gov/nasa-brand-center/images-and-media/).
+// - Los mapas de Deimos y de las cinco lunas de Urano (fase 9b, D42 y D43): los del Solar System
+//   Simulator del JPL («From the USGS, mosaicked with Voyager imagery» y «From Viking images, processed
+//   at the USGS»; Caltech/JPL/USGS), con la política de uso de imágenes del JPL: «may be used for any
+//   purpose without prior permission», con el crédito «Courtesy NASA/JPL-Caltech»
+//   (https://www.jpl.nasa.gov/jpl-image-use-policy/).
+// - Las formas de Fobos y Deimos (fase 9b, D42; decisión de Iván del 06-11): los DSK del servidor del
+//   NAIF (los de la Mars Express, del ESA SPICE Service), en su exportación OBJ (DSKEXP, el mismo modelo
+//   en texto). Reglas del NAIF: «SPICE kernels placed on the NAIF server may be downloaded and used by
+//   anyone» (https://naif.jpl.nasa.gov/naif/rules.html). Fobos: Willner, Shi y Oberst (2014, DLR, de
+//   las imágenes HRSC de la Mars Express); Deimos: P. Thomas (de las imágenes de las Viking).
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 
@@ -59,6 +69,10 @@ const MERCURY_DEM_PAGE =
 const BLACK_MARBLE =
   'https://assets.science.nasa.gov/content/dam/science/esd/eo/images/imagerecords/144000/144897/BlackMarble_2016_3km_gray.jpg';
 const BLACK_MARBLE_PAGE = 'https://science.nasa.gov/earth/earth-observatory/earth-at-night/maps/';
+/** Los mapas del Solar System Simulator del JPL (fase 9b, D43). */
+const JPL_TMAPS = 'https://space.jpl.nasa.gov/tmaps/';
+/** Los DSK de la Mars Express en el servidor del NAIF (fase 9b, D42). */
+const NAIF_MEX_DSK = 'https://naif.jpl.nasa.gov/pub/naif/MEX/kernels/dsk/';
 
 /** [fichero local, URL, página de la fuente (para el Referer y FUENTES.md)] */
 const ASSETS = [
@@ -128,7 +142,32 @@ const ASSETS = [
   // Las luces de la Tierra de noche (fase 9b, D40): solo las luces, sin la base azul de la textura de
   // Solar System Scope.
   ['BlackMarble_2016_3km_gray.jpg', BLACK_MARBLE, BLACK_MARBLE_PAGE],
+  // Deimos y las cinco lunas de Urano (fase 9b, D42 y D43): los mapas en gris del JPL, de 1440 × 720 px
+  // (4 px/°). El número es el de la luna en su sistema (1 Ariel, 2 Umbriel, 3 Titania, 4 Oberón y
+  // 5 Miranda; 2 Deimos).
+  ...[
+    ['mar2kuu2.tif', 'mars.html'],
+    ['ura1vuu2.tif', 'uranus.html'],
+    ['ura2vuu2.tif', 'uranus.html'],
+    ['ura3vuu2.tif', 'uranus.html'],
+    ['ura4vuu2.tif', 'uranus.html'],
+    ['ura5vuu2.tif', 'uranus.html'],
+  ].map(([name, page]) => [name, JPL_TMAPS + 'pix/' + name, JPL_TMAPS + page]),
 ];
+
+/**
+ * Las formas de Fobos y Deimos (fase 9b, D42): a assets-src/shapes/, con su propio manifiesto. Los DSK
+ * de la Mars Express en el servidor del NAIF, en su exportación OBJ (vértices en km en el sistema fijo
+ * del cuerpo, IAU_PHOBOS e IAU_DEIMOS: Z, el polo norte; X, el meridiano 0). Fobos: el modelo del DLR
+ * centrado en el centro de figura (PHOBOS_K275_DLR_V02, 137 439 vértices); Deimos: el de P. Thomas
+ * (DEIMOS_K005_THO_V02, una rejilla de 5°, con la rotación de 180° corregida en su versión 2).
+ */
+const SHAPES_OUT = new URL('assets-src/shapes/', ROOT);
+const SHAPES = ['PHOBOS_K275_DLR_V02', 'DEIMOS_K005_THO_V02'].map((name) => [
+  `${name}.OBJ`,
+  `${NAIF_MEX_DSK}${name}.OBJ`,
+  NAIF_MEX_DSK + 'aareadme.txt',
+]);
 
 /**
  * Anillos de Saturno (fase 7, D36): el perfil radial de la profundidad óptica normal de la ocultación
@@ -255,6 +294,14 @@ const constellationsManifest = (await exists(constellationsManifestUrl))
 await downloadAll(CONSTELLATIONS, CONSTELLATIONS_OUT, constellationsManifest);
 await writeFile(constellationsManifestUrl, `${JSON.stringify(constellationsManifest, null, 2)}\n`);
 
+await mkdir(SHAPES_OUT, { recursive: true });
+const shapesManifestUrl = new URL('manifest.json', SHAPES_OUT);
+const shapesManifest = (await exists(shapesManifestUrl))
+  ? JSON.parse(await readFile(shapesManifestUrl, 'utf8'))
+  : {};
+await downloadAll(SHAPES, SHAPES_OUT, shapesManifest);
+await writeFile(shapesManifestUrl, `${JSON.stringify(shapesManifest, null, 2)}\n`);
+
 for (const [file, url] of KTX2) {
   const target = new URL(file, KTX2_OUT);
   if (!FORCE && (await exists(target))) continue;
@@ -262,5 +309,5 @@ for (const [file, url] of KTX2) {
   console.log(`↓ ktx2/${file} (${bytes.byteLength} B)`);
 }
 console.log(
-  'Listo: assets-src/textures/, assets-src/elevation/, assets-src/rings/, assets-src/constellations/ y assets-src/ktx2/',
+  'Listo: assets-src/textures/, assets-src/elevation/, assets-src/rings/, assets-src/constellations/, assets-src/shapes/ y assets-src/ktx2/',
 );

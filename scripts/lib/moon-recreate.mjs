@@ -1,5 +1,6 @@
 // La recreación de lo que no se vio de una luna (D45, fase 9b; adenda del 05-11). Determinista, sin
-// dependencias, sobre la esfera. EN CURSO (entrega 9b.d): aún no la usa `build-textures.mjs`.
+// dependencias, sobre la esfera. La usa `build-textures.mjs` (scripts/lib/moon-map-build.mjs) en las
+// 18 lunas con mapa.
 //
 // 1. El mapa equirrectangular de 2k (RGB, de 0 a 1) se lleva a un cubo equiangular de seis caras de
 //    `N` × `N` (90° por cara: 512 en 2k), con un margen de `P` píxeles por lado. En un cubo equiangular

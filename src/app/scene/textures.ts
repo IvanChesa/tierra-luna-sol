@@ -60,6 +60,14 @@ export type TextureId =
   | 'rhea'
   | 'iapetus'
   | 'triton'
+  | 'deimos'
+  | 'miranda'
+  | 'ariel'
+  | 'umbriel'
+  | 'titania'
+  | 'oberon'
+  | 'proteus'
+  | 'proteus-normal'
   | 'milky-way';
 
 export interface TextureMeta {

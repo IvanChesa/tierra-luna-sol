@@ -49,10 +49,12 @@ export function assertRealUnchanged(id, mosaicData, recreatedData, classes) {
 }
 
 /**
- * Recrea un mosaico (`loadMosaic`, a 2048 × 1024, RGB de 8 bits) con la receta de su luna. Devuelve el
- * mapa nuevo (Buffer RGB), sus clases, la fracción de cada una (real, de lejos y no visto, por el área de
- * la esfera), la calidad antes y después (`recreationQuality`) y un informe. Falla si lo real cambia o si
- * la recreación no cumple los criterios de D45.
+ * Recrea un mosaico (`loadMosaic`, a 2048 × 1024, RGB de 8 bits) con la receta de su luna, antes de
+ * cualquier calibración que cambie su contraste (la dicotomía de Jápeto va después: lo real o lo visto
+ * de lejos es cosa de la resolución de origen, no del brillo). Devuelve el mapa nuevo (Buffer RGB), sus
+ * clases, la fracción de cada una (real, de lejos y no visto, por el área de la esfera), la calidad
+ * antes y después (`recreationQuality`) y un informe. Falla si lo real cambia o si la recreación no
+ * cumple los criterios de D45.
  */
 export function recreateMosaic(id, mosaic) {
   const { width: W, height: H } = mosaic;
