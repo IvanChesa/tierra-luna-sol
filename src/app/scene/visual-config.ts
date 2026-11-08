@@ -147,11 +147,19 @@ export const VISUAL_CONFIG = {
         center: [0.84, 0.51, 0.154] as readonly [number, number, number],
         limb: [1.06, 0.544, 0.14] as readonly [number, number, number],
       },
-      structure: { amplitude: 0.5, rate: 0.03 },
-      rays: 0.5,
+      structure: {
+        amplitude: 0.5,
+        edges: [-0.35, 0.35] as readonly [number, number],
+        rate: 0.03,
+      },
+      glow: {
+        halo: [1, 0.55, 0.22] as readonly [number, number, number],
+        corona: [1, 0.66, 0.36] as readonly [number, number, number],
+      },
+      rays: { intensity: 0.6, color: [1, 0.5, 0.18] as readonly [number, number, number] },
       prominences: {
-        intensity: 1.2,
-        color: [1, 0.42, 0.12] as readonly [number, number, number],
+        intensity: 0.9,
+        color: [1, 0.35, 0.08] as readonly [number, number, number],
         rate: 1,
       },
     },

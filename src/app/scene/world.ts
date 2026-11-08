@@ -314,6 +314,7 @@ const {
   measureIntensity: SUN_MEASURE_INTENSITY,
   spots: SPOTS,
   corona: CORONA,
+  enhanced: ENHANCED_SUN,
 } = VISUAL_CONFIG.sun;
 /** La Luna y los radios de la Luna y del Sol, para la sombra de los eclipses en la Tierra. */
 const LUNA_INDEX = sceneBody('luna').index;
@@ -460,8 +461,24 @@ export class World {
     shade.set(SPOTS.umbra, SPOTS.penumbra, SPOTS.penumbraRatio);
     this.sun.uniforms.uGranuleScale.value = GRANULATION.scale;
     this.sun.uniforms.uFaculae.value = VISUAL_CONFIG.sun.faculae;
+    // El Sol realzado del explorador (fase 9b, D46): su paleta, su estructura, los rayos de su
+    // resplandor y el color de sus protuberancias (su brillo va con el primer plano, en
+    // `setSunAppearance`). Con `?medida=limbo`, el de la luz visible (`setSunMeasure`).
+    const enhanced = this.sun.uniforms;
+    enhanced.uEnhance.value = 1;
+    enhanced.uEnhanceCenter.value.setRGB(...ENHANCED_SUN.palette.center);
+    enhanced.uEnhanceLimb.value.setRGB(...ENHANCED_SUN.palette.limb);
+    enhanced.uStructure.value = ENHANCED_SUN.structure.amplitude;
     this.haloMaterial = createHaloMaterial();
     this.haloMaterial.uniforms.uRoundness.value = CORONA.roundness;
+    this.haloMaterial.uniforms.uRays.value = ENHANCED_SUN.rays.intensity;
+    this.haloMaterial.uniforms.uRayColor.value.setRGB(...ENHANCED_SUN.rays.color);
+    this.haloMaterial.uniforms.uColor.value.setRGB(...ENHANCED_SUN.glow.halo);
+    this.haloMaterial.uniforms.uCoronaColor.value.setRGB(...ENHANCED_SUN.glow.corona);
+    enhanced.uStructureEdges.value.set(...ENHANCED_SUN.structure.edges);
+    this.haloMaterial.uniforms.uProminenceColor.value
+      .setRGB(...ENHANCED_SUN.prominences.color)
+      .multiplyScalar(ENHANCED_SUN.prominences.intensity);
     this.halo = new Mesh(new PlaneGeometry(2, 2), this.haloMaterial.material);
     this.halo.name = 'sun-halo';
     this.halo.frustumCulled = false;
@@ -1205,9 +1222,10 @@ export class World {
 
   /**
    * El aspecto del Sol en este frame: su primer plano (`closeUp`, 0–1: recoge el halo, enciende la
-   * granulación y la corona), el reloj de pared de su granulación (s; 0 con movimiento reducido y en las
-   * capturas) y si lleva bloom (en los niveles alto y medio: el halo, más tenue). Se llama después de
-   * `update`, con la escala del Sol de este frame.
+   * granulación, la corona y las protuberancias), el reloj de pared de su granulación, de su estructura
+   * y de sus protuberancias (s; 0 con movimiento reducido y en las capturas) y si lleva bloom (en los
+   * niveles alto y medio: el halo, más tenue). Se llama después de `update`, con la escala del Sol de
+   * este frame.
    */
   setSunAppearance(closeUp: number, timeSeconds: number, bloom: boolean): void {
     const measure = this.sunMeasure;
@@ -1217,6 +1235,7 @@ export class World {
       ? SUN_MEASURE_INTENSITY
       : SUN_INTENSITY.overview + (SUN_INTENSITY.closeUp - SUN_INTENSITY.overview) * closeUp;
     sun.uTime.value = timeSeconds * GRANULATION.rate;
+    sun.uStructureTime.value = timeSeconds * ENHANCED_SUN.structure.rate;
     sun.uFaculae.value = measure ? 0 : VISUAL_CONFIG.sun.faculae;
     const scale = this.visuals[this.sunIndex]?.mesh.scale.x ?? 1;
     const halo = this.haloMaterial.uniforms;
@@ -1227,11 +1246,16 @@ export class World {
       (HALO.overview.intensity + (HALO.closeUp.intensity - HALO.overview.intensity) * closeUp) *
       (bloom ? HALO.withBloom : 1);
     halo.uCorona.value = CORONA.closeUp * closeUp;
+    halo.uProminences.value = closeUp;
+    halo.uProminenceTime.value = timeSeconds * ENHANCED_SUN.prominences.rate;
   }
 
   /** Solo en captura: el Sol para medir su limbo (`?medida=limbo`; ver `sunMeasure`). */
   setSunMeasure(measure: boolean): void {
     this.sunMeasure = measure;
+    // El limbo se mide en el Sol de la luz visible (D41), sin el realzado de D46.
+    this.sun.uniforms.uEnhance.value = measure ? 0 : 1;
+    this.sun.uniforms.uStructure.value = measure ? 0 : ENHANCED_SUN.structure.amplitude;
     this.spotsTimeMs = Number.NaN;
     this.updateHaloVisibility();
   }
