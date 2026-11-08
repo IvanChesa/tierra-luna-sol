@@ -4,6 +4,7 @@ import { SITE_CONFIG } from '../../core/site.config';
 import type { ExplorerView } from '../../scene';
 import { ExplorerUi } from '../explorer-ui/explorer-ui';
 import { ViewSwitcher } from '../view-switcher/view-switcher';
+import { AUTHORSHIP } from './authorship';
 import { ViewerPoster } from './viewer-poster';
 
 const VIEWS: readonly ExplorerView[] = ['system', 'earth', 'moon', 'sky'];
@@ -29,6 +30,7 @@ const POSTER_FADE_MS = 400;
 export class ViewerLayout {
   private readonly route = inject(ActivatedRoute);
   protected readonly site = SITE_CONFIG;
+  protected readonly authorship = AUTHORSHIP;
   protected readonly view = signal<ExplorerView>('system');
   /** El 3D ya está pintado: el póster puede irse. */
   protected readonly posterGone = signal(false);

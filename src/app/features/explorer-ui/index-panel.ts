@@ -47,7 +47,6 @@ import { Icon } from '../viewer/icon';
       min-height: 0;
       margin: 0 0 var(--space-2) var(--space-4);
       background: var(--color-surface);
-      border: var(--border-width) solid var(--color-line);
       border-radius: var(--radius-md);
       box-shadow: 0 12px 32px rgb(0 0 0 / 0.35);
       transition:
@@ -125,8 +124,6 @@ import { Icon } from '../viewer/icon';
         align-self: end;
         max-height: 80%;
         margin: 0;
-        border: 0;
-        border-top: var(--border-width) solid var(--color-control);
         border-radius: var(--radius-md) var(--radius-md) 0 0;
         box-shadow: 0 -12px 32px rgb(0 0 0 / 0.4);
       }

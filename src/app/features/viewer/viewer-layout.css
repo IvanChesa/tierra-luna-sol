@@ -21,13 +21,24 @@
   /* Columna del texto de presentación y del índice; tarjeta de la derecha. */
   --explorer-start: 20rem;
   --explorer-panel: 22rem;
-  /* Filas de la franja de abajo, reservadas desde el HTML prerenderizado (sin saltos al cargar). */
+  /*
+   * Filas de la franja de abajo, reservadas desde el HTML prerenderizado (sin saltos al cargar). La
+   * barra, del alto de su control más alto: en escritorio, la velocidad con su rótulo (unos 55 px); en
+   * el móvil, en una fila, la lectura de tres líneas (no cambia al reproducir).
+   */
   --explorer-chips: 4.5rem;
-  --explorer-bar: 4.5rem;
+  --explorer-bar: 3.75rem;
+  /*
+   * El fundido de encima de la barra (fase 9c: corto). Con la barra, el velo no tapa más del 10 % del
+   * lienzo, tampoco a 1024 × 768 (68 de 712 px; revisión, hallazgo 15).
+   */
+  --explorer-fade: 0.5rem;
   position: relative;
   display: grid;
   flex: 1;
   min-height: 30rem;
+  /* Las zonas seguras (`viewport-fit=cover`): la barra de tiempo, por encima de la del inicio. */
+  padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   overflow: hidden;
   background: var(--color-bg);
   grid-template-areas:
@@ -47,20 +58,20 @@
 }
 
 /*
- * La franja de abajo: un velo del color del fondo que se funde hacia arriba (sin desenfoques ni
- * transparencias en los paneles: los controles van encima, opacos). El 3D se ve a través de su borde
- * de arriba, pero el motor encuadra por encima de ella.
+ * El fondo de la barra de tiempo: un velo del color del fondo con un fundido corto encima (sin
+ * desenfoques). Las fichas de cuerpos flotan sobre el 3D, con sombra en el nombre (fase 9c, D47: el
+ * velo de antes, de 170–180 px, tapaba él solo el 19–23 % del lienzo). El motor encuadra por encima.
  */
 .explorer__dock {
   --chrome-edge: bottom;
   position: relative;
   z-index: 1;
-  grid-area: chips / 1 / -1 / -1;
+  grid-area: bar / 1 / bar / -1;
+  margin-top: calc(-1 * var(--explorer-fade));
   background: linear-gradient(
-    to top,
-    var(--color-bg) calc(100% - var(--explorer-chips)),
-    color-mix(in srgb, var(--color-bg) 72%, transparent) calc(100% - 0.55 * var(--explorer-chips)),
-    transparent
+    to bottom,
+    transparent,
+    color-mix(in srgb, var(--color-bg) 90%, transparent) var(--explorer-fade)
   );
   pointer-events: none;
 }
@@ -99,37 +110,25 @@
   min-width: 0;
 }
 
-/* Cómo se usa, para quien llega con el dedo (en el escritorio lo dice el pie). */
-.explorer__touch {
-  display: none;
+/* La autoría: discreta, en el color secundario y en letra pequeña. Su enlace, en una sola línea. */
+.explorer__credit {
+  max-width: 32rem;
   margin: 0;
   color: var(--color-text-muted);
   font-size: 0.75rem;
+  line-height: 1.45;
 }
 
-.explorer__foot {
-  position: relative;
-  z-index: 2;
-  grid-area: foot;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 0 var(--space-6);
-  padding: 0 var(--space-4) var(--space-2);
-  color: var(--color-text-muted);
-  font-size: 0.75rem;
-  line-height: 1.5;
+.explorer__credit a {
+  white-space: nowrap;
 }
 
-.explorer__foot p {
-  max-width: none;
-  margin: 0;
-}
-
-.explorer__credits {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 var(--space-4);
+/*
+ * En el cielo, la columna de la izquierda, algo más ancha: el lugar más largo del selector («Roque de
+ * los Muchachos (La Palma)») cabe entero (revisión, hallazgo 6). En el móvil no hay columnas.
+ */
+.explorer--sky {
+  --explorer-start: 22rem;
 }
 
 /*
@@ -149,7 +148,7 @@
 }
 
 /* La vista limpia oculta el marco (la interfaz diferida pone la clase en su anfitrión). */
-.explorer:has(> tls-explorer-ui.is-clean) > :is(.explorer__lead, .explorer__dock, .explorer__foot) {
+.explorer:has(> tls-explorer-ui.is-clean) > :is(.explorer__lead, .explorer__dock) {
   display: none;
 }
 
@@ -160,8 +159,6 @@
    */
   .explorer {
     --explorer-chips: 4.25rem;
-    /* La barra de tiempo, en dos filas (la lectura, siempre de tres líneas: no cambia al reproducir). */
-    --explorer-bar: 7rem;
     min-height: 0;
     grid-template-areas:
       'lead'
@@ -199,23 +196,16 @@
     );
     mask-image: none;
   }
-
-  /* Los créditos están en el menú del sitio; las pistas no caben. */
-  .explorer__foot {
-    display: none;
-  }
 }
 
-@media (max-width: 63.99rem) and (pointer: coarse) {
-  .explorer__touch {
-    display: block;
-  }
-}
-
-/* En los móviles bajos, con el H1 compacto, no cabe. */
-@media (max-width: 63.99rem) and (max-height: 45rem) {
-  .explorer__touch {
-    display: none;
+/*
+ * En el móvil, las vistas Tierra y Luna no tienen fila de fichas (fase 9c: «‹ Sistema solar», en su
+ * título), ni el cielo (su selector es la tabla de «Esta noche»). En la tableta y el PC, sí: los
+ * planetas y, encima, las lunas del sistema elegido (decisión de Iván del 07-11).
+ */
+@media (max-width: 47.99rem) {
+  .explorer:is(.explorer--detail, .explorer--sky) {
+    --explorer-chips: 0px;
   }
 }
 
@@ -227,8 +217,8 @@
  */
 @media (max-width: 63.99rem) and (max-height: 30rem) {
   .explorer {
-    /* La cabecera (3,5 rem) y la primera fila de la barra: su relleno, reproducir y la fecha. */
-    --explorer-arrival: calc(3.5rem + 3.75rem);
+    /* La cabecera (3,5 rem) y la barra: su relleno, reproducir y la fecha. */
+    --explorer-arrival: calc(3.5rem + var(--explorer-bar));
     overflow: visible;
     grid-template-areas:
       'view'
@@ -236,7 +226,7 @@
       'chips'
       'foot';
     grid-template-rows:
-      calc(100svh - var(--explorer-arrival)) minmax(var(--explorer-bar), auto)
+      calc(100dvh - var(--explorer-arrival)) minmax(var(--explorer-bar), auto)
       var(--explorer-chips) auto;
   }
 
@@ -246,7 +236,8 @@
   }
 
   .explorer__dock {
-    grid-area: bar / 1 / -1 / -1;
+    grid-area: bar / 1 / bar / -1;
+    margin-top: 0;
     background: var(--color-bg);
   }
 }

@@ -23,6 +23,7 @@ describe('parámetros del explorador', () => {
       viewFrom: null,
       toneMapping: null,
       isolate: false,
+      illustrativeFocus: false,
       place: null,
       skyView: null,
       shadow: false,
@@ -56,11 +57,19 @@ describe('parámetros del explorador', () => {
     expect(parseViewerParams('?captura=1&tonemapping=filmico').toneMapping).toBeNull();
     expect(parseViewerParams('?captura=1&cuerpo=jupiter&aislado=1').isolate).toBe(true);
     expect(parseViewerParams('?captura=1&cuerpo=jupiter&aislado=si').isolate).toBe(false);
+    // El sistema de lunas de la vista general, de cerca (fase 9b).
+    expect(parseViewerParams('?captura=1&cuerpo=jupiter&marco=ilustrativo').illustrativeFocus).toBe(
+      true,
+    );
+    expect(parseViewerParams('?captura=1&cuerpo=jupiter&marco=real').illustrativeFocus).toBe(false);
     // Fuera del modo de captura no existen.
-    const normal = parseViewerParams('?desde=tierra&tonemapping=aces&aislado=1');
+    const normal = parseViewerParams(
+      '?desde=tierra&tonemapping=aces&aislado=1&cuerpo=jupiter&marco=ilustrativo',
+    );
     expect(normal.viewFrom).toBeNull();
     expect(normal.toneMapping).toBeNull();
     expect(normal.isolate).toBe(false);
+    expect(normal.illustrativeFocus).toBe(false);
   });
 
   it('ignora lo que no es válido sin romper nada y explica cada parámetro ignorado', () => {
@@ -78,6 +87,7 @@ describe('parámetros del explorador', () => {
       viewFrom: null,
       toneMapping: null,
       isolate: false,
+      illustrativeFocus: false,
       place: null,
       skyView: null,
       shadow: false,

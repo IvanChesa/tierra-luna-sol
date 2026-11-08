@@ -16,6 +16,8 @@
  *   `tonemapping=neutral|agx|aces`.
  * - Solo en captura, para las miniaturas de las fichas (fase 3c): `aislado=1`, el cuerpo de
  *   `cuerpo=` solo y centrado.
+ * - Solo en captura, para ver de cerca un sistema de lunas de la vista general (fase 9b):
+ *   `marco=ilustrativo`, el cuerpo de `cuerpo=` enfocado sin pasar a su sistema local físico.
  * - `lugar=teide` (fase 8): el lugar del cielo desde España (los del selector; por defecto, el
  *   Montsec, que no se escribe). «Mi ubicación» nunca va a la URL: no sale del navegador.
  * - Solo en captura, la cámara del cielo (fase 8): `rumbo=180` (desde el norte, hacia el este),
@@ -53,6 +55,8 @@ export interface ViewerParams {
   readonly toneMapping: ToneMappingMode | null;
   /** Solo en captura: el cuerpo, solo y centrado (miniaturas). */
   readonly isolate: boolean;
+  /** Solo en captura: el cuerpo enfocado en el marco de la vista general (`marco=ilustrativo`). */
+  readonly illustrativeFocus: boolean;
   /** El lugar del cielo desde España (`lugar=`), o `null` (el de por defecto). */
   readonly place: PlaceId | null;
   /** Solo en captura: hacia dónde mira la cámara del cielo. */
@@ -179,6 +183,7 @@ export function parseViewerParams(search: string): ViewerParams {
     viewFrom: capture ? parseViewFrom(params) : null,
     toneMapping: capture ? (TONE_MAPPING[params.get('tonemapping') ?? ''] ?? null) : null,
     isolate: capture && params.get('aislado') === '1',
+    illustrativeFocus: capture && params.get('marco') === 'ilustrativo',
     place: place as PlaceId | null,
     skyView: capture ? parseSkyView(params) : null,
     shadow: params.get('sombra') === '1' && time !== null,

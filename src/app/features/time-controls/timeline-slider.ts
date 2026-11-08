@@ -1,10 +1,18 @@
-import { Component, computed, inject, input, linkedSignal, signal, untracked } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  signal,
+  untracked,
+} from '@angular/core';
 import { TimeZoneChoice, formatLongDate } from '../../core/format';
 import { MAX_DATE, MIN_DATE } from '../../ephemeris/constants';
 import { SimulationStore } from '../../state/simulation.store';
 import { ExplorerSession } from '../explorer-ui/explorer-session';
 import { CAPTURE_DATE } from '../viewer/viewer-params';
-import { Icon } from '../viewer/icon';
 import {
   dateAtDay,
   dayOfYear,
@@ -15,51 +23,51 @@ import {
   yearOf,
 } from './timeline';
 
+/** Mantener ‹ o › más que esto pasa a décadas (crítica de la 9c: «pulsación larga»). */
+const LONG_PRESS_MS = 500;
+/** Cada cuánto avanza una década mientras se mantiene. */
+const DECADE_REPEAT_MS = 350;
+
 /**
  * Línea de tiempo de la barra (fase 3c, tarea 2): el año de la fecha mostrada, de enero a diciembre,
- * con el año a la vista, botones para pasar al anterior o al siguiente y una marca en «hoy».
+ * con el año a la vista y una marca en «hoy». El año, como mando del mismo control (crítica de la 9c:
+ * «1900–2100» con mando en la barra): «‹ 2026 ›», con el ratón o el dedo un año y, mantenido, por
+ * décadas; con el teclado, Mayús + RePág y AvPág en la línea (su descripción lo dice). Una sola parada
+ * del tabulador: no suma controles a la barra (D47).
  *
  * Es un `input type="range"` nativo (ratón, táctil y teclado de serie) con `aria-valuetext` («17 de
  * marzo de 2026»). La pista solo llega a los días que caen entre 1900 y 2100 en la zona elegida.
  *
- * El teclado se lleva aquí (timeline.ts): las flechas, un día; RePág y AvPág, un mes; Inicio y Fin,
- * el año, pasando de año en los extremos. Con el foco del teclado y el tiempo en marcha, lo que se
+ * El teclado se lleva aquí (timeline.ts): las flechas, un día; RePág y AvPág, un mes (con Mayús, un
+ * año); Inicio y Fin, el año, pasando de año en los extremos. Con el foco del teclado y el tiempo en marcha, lo que se
  * anuncia se queda quieto (el lector no anuncia cada día) y cada tecla parte de la fecha anunciada:
  * → es siempre el día siguiente al que se ha oído. Con el ratón o el dedo, la línea sigue a la fecha.
  */
 @Component({
   selector: 'tls-timeline',
-  imports: [Icon],
   template: `
-    <div class="year">
-      <button
-        type="button"
-        class="step"
-        [disabled]="year() <= firstYear()"
-        title="Año anterior"
-        (click)="shiftYear(-1)"
+    <span class="year" aria-hidden="true">
+      <span
+        class="year__step"
+        title="Año anterior (Mayús + Av Pág)"
+        (pointerdown)="holdYear($event, -1)"
+        >‹</span
       >
-        <tls-icon class="back" name="chevron" />
-        <span class="visually-hidden">Año anterior</span>
-      </button>
-      <span class="year__label">{{ year() }}</span>
-      <button
-        type="button"
-        class="step"
-        [disabled]="year() >= lastYear()"
-        title="Año siguiente"
-        (click)="shiftYear(1)"
+      <span class="year__value">{{ year() }}</span>
+      <span
+        class="year__step"
+        title="Año siguiente (Mayús + Re Pág)"
+        (pointerdown)="holdYear($event, 1)"
+        >›</span
       >
-        <tls-icon name="chevron" />
-        <span class="visually-hidden">Año siguiente</span>
-      </button>
-    </div>
+    </span>
     <div class="track">
       <input
         #line
         type="range"
         class="range"
         aria-label="Línea de tiempo"
+        aria-describedby="timeline-keys"
         [min]="range().first"
         [max]="range().last"
         step="1"
@@ -77,6 +85,10 @@ import {
         >
       }
     </div>
+    <span id="timeline-keys" class="visually-hidden"
+      >Flechas, un día; Re Pág y Av Pág, un mes; con Mayús, un año; Inicio y Fin, el principio o el
+      final del año.</span
+    >
   `,
   styleUrl: './timeline-slider.css',
 })
@@ -89,6 +101,13 @@ export class TimelineSlider {
 
   /** El foco ha llegado con el ratón o el dedo (la línea sigue a la fecha). */
   private pointer = false;
+  /** ‹ o › mantenido: la espera hasta las décadas y su repetición. */
+  private holdDelay: ReturnType<typeof setTimeout> | null = null;
+  private holdRepeat: ReturnType<typeof setInterval> | null = null;
+
+  constructor() {
+    inject(DestroyRef).onDestroy(() => this.stopHold());
+  }
   /** El foco es del teclado: con el tiempo en marcha, lo anunciado se queda quieto. */
   private readonly keyboard = signal(false);
   /** Lo que se muestra con el foco del teclado y el tiempo en marcha (sin anuncios a cada día). */
@@ -101,9 +120,6 @@ export class TimelineSlider {
   );
 
   protected readonly year = computed(() => yearOf(this.shown(), this.zone()));
-  /** El primer y el último año del rango en la zona (en Madrid, 1899 y 2101: timeline.ts). */
-  protected readonly firstYear = computed(() => yearOf(MIN_DATE, this.zone()));
-  protected readonly lastYear = computed(() => yearOf(MAX_DATE, this.zone()));
   /** Los días de la pista: los del año que caen dentro de 1900–2100. */
   protected readonly range = computed(() =>
     reachableDays(this.year(), this.zone(), MIN_DATE, MAX_DATE),
@@ -154,6 +170,12 @@ export class TimelineSlider {
   protected onKeydown(event: KeyboardEvent): void {
     if (!isTimelineKey(event.key) || event.altKey || event.ctrlKey || event.metaKey) return;
     event.preventDefault();
+    if (event.shiftKey && (event.key === 'PageUp' || event.key === 'PageDown')) {
+      this.pointer = false;
+      this.keyboard.set(true);
+      this.go(shiftYears(this.shown(), event.key === 'PageUp' ? 1 : -1, this.zone()));
+      return;
+    }
     // Desde la fecha anunciada; desde aquí, el foco es del teclado aunque llegara con el ratón.
     const next = stepDate(this.shown(), event.key, this.zone());
     this.pointer = false;
@@ -161,8 +183,38 @@ export class TimelineSlider {
     this.go(next);
   }
 
-  protected shiftYear(years: number): void {
-    this.go(shiftYears(this.shown(), years, this.zone()));
+  /**
+   * ‹ o ›: un año al pulsar y, si se mantiene, una década cada `DECADE_REPEAT_MS` (el store lo deja
+   * dentro de 1900–2100). Con el puntero capturado: soltar fuera también para.
+   */
+  protected holdYear(event: PointerEvent, direction: 1 | -1): void {
+    event.preventDefault();
+    const target = event.currentTarget as HTMLElement;
+    target.setPointerCapture?.(event.pointerId);
+    this.stopHold();
+    this.go(shiftYears(this.shown(), direction, this.zone()));
+    this.holdDelay = setTimeout(() => {
+      this.holdRepeat = setInterval(
+        () => this.go(shiftYears(this.shown(), 10 * direction, this.zone())),
+        DECADE_REPEAT_MS,
+      );
+    }, LONG_PRESS_MS);
+    const release = () => {
+      this.stopHold();
+      for (const type of ['pointerup', 'pointercancel', 'lostpointercapture'] as const) {
+        target.removeEventListener(type, release);
+      }
+    };
+    for (const type of ['pointerup', 'pointercancel', 'lostpointercapture'] as const) {
+      target.addEventListener(type, release);
+    }
+  }
+
+  private stopHold(): void {
+    if (this.holdDelay !== null) clearTimeout(this.holdDelay);
+    if (this.holdRepeat !== null) clearInterval(this.holdRepeat);
+    this.holdDelay = null;
+    this.holdRepeat = null;
   }
 
   /** Salta a ese instante (el store lo lleva a 1900–2100) y lo muestra, también con el foco. */

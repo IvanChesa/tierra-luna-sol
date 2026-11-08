@@ -1,19 +1,23 @@
 /*
  * «Controles +»: un panel opaco (docs/DISENO.md) en la capa superior del navegador (`popover`). En
- * escritorio, encima de la barra de tiempo, a la derecha; en móvil, una hoja inferior. Cerrado, el
- * navegador lo oculta (`display: none`): aquí solo se da caja al abierto.
+ * escritorio, encima de la franja de abajo, a la derecha: por encima de todo lo que la tapa (la barra,
+ * las fichas y, si está, la fila de lunas), el margen de abajo del encuadre que mide la interfaz
+ * (`--view-bottom`, explorer-ui.ts); en móvil, una hoja inferior. Cerrado, el navegador lo oculta
+ * (`display: none`): aquí solo se da caja al abierto.
  */
 :host {
-  inset: auto var(--space-4) calc(var(--explorer-bar, 4.5rem) + var(--space-8)) auto;
+  --chrome-edge: right;
+  inset: auto var(--space-4) calc(var(--view-bottom, 8.25rem) + var(--space-2)) auto;
   width: min(25rem, calc(100vw - 2 * var(--space-4)));
-  max-height: calc(100svh - var(--explorer-bar, 4.5rem) - 7rem);
+  /* Por debajo de la cabecera y de las pestañas (unos 7,5 rem): no las tapa en un escritorio bajo. */
+  max-height: calc(100svh - var(--view-bottom, 8.25rem) - 8rem);
   margin: 0;
   padding: var(--space-4);
   overflow-y: auto;
   overscroll-behavior: contain;
   background: var(--color-surface);
   color: var(--color-text);
-  border: var(--border-width) solid var(--color-control);
+  border: 0;
   border-radius: var(--radius-md);
   box-shadow: 0 16px 48px rgb(0 0 0 / 0.5);
 }
@@ -75,8 +79,18 @@
   font-size: var(--text-sm);
 }
 
-.menu__speed .field__group .control:not(.control--icon) {
-  flex: 1;
+/* Los grupos (la cámara, la escena): un rótulo pequeño, como el de los campos. */
+.menu__group {
+  margin: var(--space-2) 0 calc(-1 * var(--space-1));
+  color: var(--color-text-muted);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: var(--font-weight-strong);
+}
+
+/* El foco llega al panel al abrirlo (no a un campo de fecha): el anillo, por dentro. */
+:host(:focus-visible) {
+  outline-offset: calc(-1 * var(--focus-ring-width));
 }
 
 .menu__source {
@@ -99,25 +113,83 @@
   }
 }
 
-/* En escritorio, la velocidad está en la barra y la fuente de los datos en el pie. */
+/* En escritorio, la velocidad está en la barra, y acercar y alejar, sobre el 3D. */
 @media (min-width: 64rem) {
   .menu__speed,
-  .menu__source {
+  .menu__zoom {
+    display: none;
+  }
+}
+
+/* Con pantalla táctil (sin teclado físico), los atajos de teclado no sirven. */
+@media (pointer: coarse) {
+  .menu__help {
     display: none;
   }
 }
 
 /* Móvil: una hoja inferior, como el índice y la ficha. */
 @media (max-width: 63.99rem) {
+  /*
+   * Encima de la barra de tiempo, que sigue a la vista (reproducir y pausar, a mano). Una hoja baja, como
+   * mucho el 45 % de la pantalla (crítica de la 9c), y en un teléfono bajo, menos: bajo el título quedan
+   * unos 150 px de 3D (maquetacion.spec.ts), con 10 rem de hoja como mínimo. El 3D se ve mientras se
+   * usa, y la cámara aparta el cuerpo por encima de ella. Lo que no cabe, se desplaza dentro.
+   */
   :host {
-    inset: auto 0 0;
+    --chrome-edge: bottom;
+    /* Encima de la barra, que sube con la zona segura de abajo (`viewport-fit=cover`). */
+    inset: auto 0 calc(var(--explorer-bar, 3.75rem) + env(safe-area-inset-bottom));
     width: auto;
-    max-height: 75svh;
+    max-height: min(45svh, max(10rem, calc(100svh - var(--explorer-bar, 3.75rem) - 20rem)));
     padding: var(--space-4) var(--space-4) var(--space-6);
-    border: 0;
-    border-top: var(--border-width) solid var(--color-control);
     border-radius: var(--radius-md) var(--radius-md) 0 0;
     box-shadow: 0 -12px 32px rgb(0 0 0 / 0.4);
+  }
+}
+
+/*
+ * En horizontal (o con el zoom al 200 %), una hoja abajo no deja ver nada: un panel a la derecha, de
+ * debajo de las pestañas (no las tapa, como en escritorio) a la barra, con el 3D a su izquierda (la
+ * cámara aparta el cuerpo).
+ */
+@media (max-width: 63.99rem) and (max-height: 30rem) {
+  :host {
+    --chrome-edge: right;
+    inset: 7rem env(safe-area-inset-right)
+      calc(var(--explorer-bar, 3.75rem) + env(safe-area-inset-bottom)) auto;
+    width: min(22rem, 60vw);
+    /* De arriba abajo (el `popover` del navegador trae `height: fit-content`). */
+    height: auto;
+    max-height: none;
+    border-radius: var(--radius-md) 0 0 0;
+    box-shadow: -12px 0 32px rgb(0 0 0 / 0.4);
+  }
+}
+
+/*
+ * En escritorio, con la ficha del cuerpo abierta (a la derecha), el panel se abre a su izquierda: no la
+ * tapa (fase 9c, 9c.3).
+ */
+@media (min-width: 64rem) {
+  :host-context(tls-explorer-ui.has-panel) {
+    right: calc(var(--explorer-panel, 22rem) + 2 * var(--space-4));
+  }
+}
+
+/* En el móvil, más compacto: la hoja deja a la vista la cabecera y algo del 3D. */
+@media (max-width: 63.99rem) {
+  .menu {
+    gap: var(--space-2) var(--space-3);
+  }
+
+  .menu__group {
+    margin-top: var(--space-1);
+  }
+
+  /* La velocidad, a lo ancho: «1 semana por segundo» cabe entera (en media fila, no). */
+  .menu__speed {
+    grid-column: 1 / -1;
   }
 }
 

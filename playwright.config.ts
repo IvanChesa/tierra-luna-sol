@@ -10,8 +10,21 @@ import { defineConfig, devices } from '@playwright/test';
 /**
  * Un puerto poco común y en 127.0.0.1 (el servidor no escucha en otra dirección). En este equipo
  * pueden estar en marcha los `astro dev` y `preview` de ivanchesa.es (4321, 4322, 4330…).
+ * `E2E_PORT` lo cambia (4391 por defecto), para que dos sesiones en paralelo no se pisen el puerto.
+ * Si trae otra cosa que un puerto sin privilegios, falla: no cae en silencio en el de por defecto.
  */
-const PORT = 4391;
+function portFromEnv(name: string, fallback: number): number {
+  const raw = process.env[name]?.trim();
+  if (!raw) return fallback;
+  const port = Number(raw);
+  if (!/^\d+$/.test(raw) || port < 1024 || port > 65535) {
+    throw new Error(
+      `${name}=${process.env[name]} no es un puerto válido (un entero de 1024 a 65535).`,
+    );
+  }
+  return port;
+}
+const PORT = portFromEnv('E2E_PORT', 4391);
 const ORIGIN = `http://127.0.0.1:${PORT}`;
 const SWIFTSHADER = ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'];
 
@@ -29,6 +42,12 @@ export default defineConfig({
     locale: 'es-ES',
     timezoneId: 'Europe/Madrid',
     trace: 'retain-on-failure',
+    // El recorrido de la portada (fase 9c), ya visto: arranca la primera vez en `/` sin parámetros y
+    // pararía las pruebas que entran así. Las suyas (`recorrido.spec.ts`) empiezan sin nada guardado.
+    storageState: {
+      cookies: [],
+      origins: [{ origin: ORIGIN, localStorage: [{ name: 'tls.recorrido', value: 'visto' }] }],
+    },
   },
   projects: [
     {

@@ -9,7 +9,8 @@
 // - copia los `<link rel="modulepreload">` del HTML a una cabecera `Link`, tal cual, como hace Pages
 //   para los Early Hints (el navegador la resuelve contra la URL de la página, no contra `<base>`).
 // Lo que `_headers` no dice, sin caché (`no-store`). Solo para uso local.
-// Uso: node scripts/serve-dist.mjs [puerto]   (por defecto, 4340; el 4321 es el de Astro)
+// Uso: node scripts/serve-dist.mjs [puerto]   (por defecto, `CAPTURE_PORT` o 4340; el 4321 es el
+// de Astro)
 import { createReadStream } from 'node:fs';
 import { readFile, stat } from 'node:fs/promises';
 import { createServer } from 'node:http';
@@ -18,6 +19,27 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('../dist/tierra-luna-sol/browser/', import.meta.url));
 export const HOST = '127.0.0.1';
+
+/**
+ * El puerto de una variable de entorno, o `fallback` si no está o está vacía. Si trae otra cosa que
+ * un puerto sin privilegios (1024–65535), falla en vez de caer en silencio en el de por defecto: dos
+ * sesiones que trabajan a la vez se repartirían mal los puertos sin enterarse.
+ */
+export function portFromEnv(name, fallback, env = process.env) {
+  const raw = env[name]?.trim();
+  if (!raw) return fallback;
+  const port = Number(raw);
+  if (!/^\d+$/.test(raw) || port < 1024 || port > 65535) {
+    throw new Error(`${name}=${env[name]} no es un puerto válido (un entero de 1024 a 65535).`);
+  }
+  return port;
+}
+
+/**
+ * El puerto de las capturas y las mediciones (`scripts/capture-lib.mjs`) y el de este servidor sin
+ * argumento: `CAPTURE_PORT`, o 4340. Así, dos sesiones en paralelo no se pisan el puerto.
+ */
+export const CAPTURE_PORT = portFromEnv('CAPTURE_PORT', 4340);
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -107,7 +129,7 @@ async function earlyHints(file) {
   return links.length ? { link: links.join(', ') } : {};
 }
 
-export async function startServer(port = 4340) {
+export async function startServer(port = CAPTURE_PORT) {
   const headerRules = parseHeaders(await readFile(join(ROOT, '_headers'), 'utf8').catch(() => ''));
   const redirects = parseRedirects(
     await readFile(join(ROOT, '_redirects'), 'utf8').catch(() => ''),
@@ -180,7 +202,8 @@ export async function startServer(port = 4340) {
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  const port = Number(process.argv[2] ?? 4340);
+  // El argumento, con la misma validación que las variables de entorno.
+  const port = portFromEnv('puerto', CAPTURE_PORT, { puerto: process.argv[2] });
   await startServer(port);
   console.log(`Sirviendo dist en http://${HOST}:${port}`);
 }

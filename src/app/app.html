@@ -2,8 +2,63 @@
 <a class="skip-link" [href]="skipHref()">Saltar al contenido</a>
 
 <header class="site-header">
+  <!--
+    En el móvil y la tableta, con un cuerpo elegido en el explorador, la cabecera es una sola franja (en
+    lugar de la cabecera y las pestañas; decisión de Iván del 08-11): «‹ Sistema solar», el nombre del
+    cuerpo (el H1 de la vista lo dice al lector) y «Menú». En escritorio no se ve.
+  -->
+  @if (focus.body(); as body) {
+    <div class="site-focus">
+      <button
+        type="button"
+        class="explorer__back"
+        aria-label="Volver al sistema solar"
+        (click)="focus.back()"
+      >
+        <span aria-hidden="true">‹</span> Sistema solar
+      </button>
+      <span class="site-focus__name" aria-hidden="true">{{ body.name }}</span>
+      <!-- «ⓘ»: la ficha del cuerpo, a media pantalla (decisión de Iván del 08-11: no al elegirlo). -->
+      <button
+        type="button"
+        class="site-focus__info"
+        aria-controls="ficha"
+        [attr.aria-expanded]="focus.sheetOpen()"
+        [attr.aria-label]="'Ver la ficha de ' + body.name"
+        [title]="'Ver la ficha de ' + body.name"
+        (click)="focus.toggleSheet()"
+      >
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 11v6M12 7.5v.5" />
+        </svg>
+      </button>
+    </div>
+  }
+  <!--
+    El cielo en el móvil y la tableta, igual (decisión de Iván del 08-11): «‹», su título y el lugar, y
+    «Menú». El H1 de la vista lo dice al lector; el lugar, también la barra del cielo, abajo.
+  -->
+  @if (focus.sky(); as sky) {
+    <div class="site-focus">
+      <button
+        type="button"
+        class="explorer__back"
+        aria-label="Volver al sistema solar"
+        title="Volver al sistema solar"
+        (click)="focus.back()"
+      >
+        <span aria-hidden="true">‹</span>
+      </button>
+      <span class="site-focus__name" aria-hidden="true">El cielo</span>
+      <span class="site-focus__place" aria-hidden="true">{{ sky.place }}</span>
+    </div>
+  }
   <a class="site-name" routerLink="/">{{ site.name }}</a>
-  <!-- En móvil, la navegación va en un menú (Popover API: funciona sin JavaScript). -->
+  <!--
+    En el móvil, y en el explorador en todos los tamaños, la navegación va en un menú (Popover API:
+    funciona sin JavaScript; styles.css).
+  -->
   <button type="button" class="site-menu-button" popovertarget="site-menu">
     <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
       <path d="M4 7h16M4 12h16M4 17h16" />
@@ -13,19 +68,27 @@
   <nav id="site-menu" class="site-nav" aria-label="Principal" popover>
     <ul>
       @for (link of links; track link.path) {
-        <li [class.site-nav__extra]="link.extra">
-          <a [routerLink]="link.path" routerLinkActive="is-active" ariaCurrentWhenActive="page">{{
-            link.label
-          }}</a>
+        <li>
+          <a
+            [routerLink]="link.path"
+            [class.site-nav__explore]="link.path === '/'"
+            [class.is-active]="current(link.path)"
+            [attr.aria-current]="current(link.path) ? 'page' : null"
+            >{{ link.label }}</a
+          >
         </li>
       }
-      <li class="site-nav__extra"><a [href]="site.legal.notice">Aviso legal</a></li>
-      <li class="site-nav__extra"><a [href]="site.legal.privacy">Política de privacidad</a></li>
+    </ul>
+    <!-- Solo en el menú, aparte y abajo (en las páginas de lectura, en el pie). -->
+    <ul class="site-nav__extra site-nav__legal">
+      <li><a routerLink="/creditos">Créditos</a></li>
+      <li><a [href]="site.legal.notice">Aviso legal</a></li>
+      <li><a [href]="site.legal.privacy">Política de privacidad</a></li>
     </ul>
     <p class="site-nav__extra site-nav__author">
       Un proyecto de <a [href]="site.author.url">{{ site.author.name }}</a>
     </p>
-    <!-- En el móvil, el explorador no tiene pie: la nota de privacidad va aquí (fase 9, D24). -->
+    <!-- El explorador no tiene pie del sitio: la nota de privacidad va aquí (fase 9, D24). -->
     <p class="site-nav__extra site-nav__privacy">
       Sin cookies, sin analítica y sin peticiones a terceros:
       <a routerLink="/sobre-el-proyecto" fragment="privacidad">tu privacidad</a>.

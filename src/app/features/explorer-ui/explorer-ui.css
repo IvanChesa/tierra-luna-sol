@@ -48,7 +48,6 @@
   min-height: 0;
   margin: var(--space-4) var(--space-4) var(--panel-bottom) 0;
   background: var(--color-surface);
-  border: var(--border-width) solid var(--color-line);
   border-radius: var(--radius-md);
   box-shadow: 0 12px 32px rgb(0 0 0 / 0.35);
   transition:
@@ -86,17 +85,15 @@
   margin-left: var(--space-4);
 }
 
-/* Las fichas, en la misma fila, centradas en el ancho y con sitio para el botón a cada lado. */
+/*
+ * Las fichas, en la misma fila, centradas en el ancho y con sitio para el botón a cada lado. Tapan el
+ * lienzo por abajo (sin velo, fase 9c): el encuadre se aparta, y la cámara queda por encima de ellas.
+ */
 .chips {
+  --chrome-edge: bottom;
   grid-area: chips;
   align-self: center;
   margin-inline: calc(var(--index-toggle-width) + 2 * var(--space-4));
-}
-
-.index-toggle[aria-expanded='true'] {
-  background: var(--color-surface-raised);
-  color: var(--color-accent);
-  border-color: var(--color-accent);
 }
 
 /*
@@ -123,9 +120,29 @@
   bottom: calc(var(--view-bottom, 0px) + var(--space-4));
 }
 
-/* Con «Controles +» abierto, el panel tapa la cámara: fuera de la vista y del foco. En su propia regla:
+/* Con «Controles» abierto, el panel tapa la cámara: fuera de la vista y del foco. En su propia regla:
    sin `:popover-open` en el navegador, se descartaría con todo lo que la acompañara. */
 :host:has(#time-menu:popover-open) .camera {
+  visibility: hidden;
+}
+
+/*
+ * Las vistas Tierra y Luna y el cielo, sin el Índice (`no-index`, fase 9c; en el cielo, su tabla es la
+ * de «Esta noche»). En el móvil, tampoco con fichas: en Tierra y Luna, «‹ Sistema solar» en el título;
+ * en el cielo, «Esta noche», con «Mirar» en cada cuerpo.
+ */
+:host(.no-index) .index-toggle {
+  display: none;
+}
+
+@media (max-width: 47.99rem) {
+  :host(.no-index) .chips {
+    display: none;
+  }
+}
+
+/* El Índice es la versión en tabla de las fichas: abierto, las sustituye (fase 9c, 9c.3). */
+:host(.has-index) .chips {
   visibility: hidden;
 }
 
@@ -166,6 +183,13 @@ kbd {
   font-size: 0.75rem;
 }
 
+/* Con el dedo no hay `Esc`. */
+@media (pointer: coarse) {
+  kbd {
+    display: none;
+  }
+}
+
 /*
  * Paneles de las vistas Tierra y Luna (`.view-panel`, fases 5 y 6; su sitio, en earth-panel.css y
  * moon-panel.css): el índice usa su misma área.
@@ -185,23 +209,31 @@ kbd {
 }
 
 @media (max-width: 63.99rem) {
-  /* La ficha sube como una hoja inferior sobre el lienzo y la franja de abajo. */
+  /*
+   * La ficha sube como una hoja inferior, de dos alturas (fase 9c): en reposo, como mucho el 45 % de
+   * la pantalla (el nombre, el resumen y «Ficha completa»); subida, hasta arriba. Siempre encima de la
+   * barra de tiempo, que no tapa: reproducir y pausar, siempre a mano.
+   */
   .panel {
     --chrome-edge: bottom;
-    grid-area: view / 1 / -1 / -1;
+    grid-row: view-start / bar-start;
+    grid-column: 1 / -1;
     align-self: end;
     width: auto;
-    max-height: 72%;
+    max-height: min(45svh, 100%);
     margin: 0;
-    border: 0;
-    border-top: var(--border-width) solid var(--color-control);
     border-radius: var(--radius-md) var(--radius-md) 0 0;
     box-shadow: 0 -12px 32px rgb(0 0 0 / 0.4);
   }
 
+  /*
+   * Entra con un fundido y sube poco: en su primer fotograma no llega a los controles de la barra. En
+   * un móvil lento la animación se puede quedar un rato al principio (sin fotogramas), y con 2 rem la
+   * hoja, aún transparente, tapaba reproducir (el e2e del CI lo vio): la barra, siempre a mano.
+   */
   @starting-style {
     .panel {
-      translate: 0 2rem;
+      translate: 0 0.5rem;
     }
   }
 
@@ -227,35 +259,35 @@ kbd {
     margin-left: var(--space-3);
   }
 
-  /* En móvil, las fichas ocupan el resto de la fila y se desplazan. */
+  /* En móvil, las fichas ocupan el resto de la fila y se desplazan; sin Índice, toda. */
   .chips {
     margin-inline: calc(var(--index-toggle-width) + var(--space-3) + var(--space-2)) 0;
   }
 
-  /*
-   * Una columna pegada a la derecha que tapa el lienzo por ese lado (`right`): el encuadre se aparta
-   * y no pisa el borde de la Tierra o de la Luna en sus vistas. Su sitio no depende de `--view-right`
-   * (que ya la incluye): en móvil no hay paneles a la derecha.
-   */
+  :host(.no-index) .chips {
+    margin-inline: 0;
+  }
+
+  :host(.is-sheet-expanded) .panel {
+    max-height: 100%;
+  }
+
+  /* En el móvil y la tableta, acercar y alejar están en «Controles»: el 3D, sin la columna de botones. */
   .camera {
-    --chrome-edge: right;
-    right: var(--space-3);
-    bottom: calc(var(--view-bottom, 0px) + var(--space-3));
-  }
-
-  /* La barra de tiempo desplegada que no cabe se desplaza (viewer-layout.css). */
-  .dock {
-    min-height: 0;
-    overflow-y: auto;
-    overscroll-behavior: contain;
+    display: none;
   }
 
   /*
-   * Las hojas tapan la franja de abajo y la cámara: mientras están abiertas, lo que tapan sale del
-   * orden del foco y del árbol accesible (el foco pasa a la hoja, explorer-ui.ts).
+   * Las hojas tapan lo de debajo: mientras están abiertas, sale del orden del foco y del árbol
+   * accesible (el foco pasa a la hoja, explorer-ui.ts). La ficha deja a la vista la barra de tiempo.
    */
-  :host(.has-panel) :is(.camera, .index-toggle, .chips, .dock, .view-panel),
-  :host(.has-index) :is(.camera, .index-toggle, .chips, .dock, .panel) {
+  :host(.has-panel) :is(.index-toggle, .chips, .view-panel),
+  :host(.has-index) :is(.index-toggle, .chips, .dock, .panel) {
+    visibility: hidden;
+  }
+
+  /* «Controles» sube sobre la barra de tiempo, como otra hoja: tapa la ficha, las fichas y el panel. */
+  :host:has(#time-menu:popover-open) :is(.panel, .index-toggle, .chips, .view-panel, .notices) {
     visibility: hidden;
   }
 
@@ -264,14 +296,11 @@ kbd {
     margin-bottom: calc(var(--space-2) + 3rem);
   }
 
-  /*
-   * Los avisos ocupan el ancho del lienzo y acaban por encima de la cámara (dos filas de botones,
-   * abajo a la derecha); si no caben, se desplazan.
-   */
+  /* Los avisos ocupan el ancho del lienzo; si no caben, se desplazan. */
   .notices {
     grid-area: view;
     justify-self: stretch;
-    max-height: calc(100% - 3 * var(--space-3) - 2 * var(--tap-target) - var(--space-1));
+    max-height: calc(100% - 2 * var(--space-3));
     margin: var(--space-3) var(--space-3) 0;
   }
 

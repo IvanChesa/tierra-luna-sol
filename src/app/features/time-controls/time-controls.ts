@@ -8,13 +8,11 @@ import {
   viewChild,
 } from '@angular/core';
 import { TimeZoneChoice, formatDateTime, utcOffsetLabel } from '../../core/format';
-import { MAX_DATE, MIN_DATE } from '../../ephemeris/constants';
 import { ExplorerStore } from '../../state/explorer.store';
 import { SimulationStore } from '../../state/simulation.store';
 import { SPEED_STEPS } from '../../state/speeds';
 import { Icon } from '../viewer/icon';
 import { closePopover } from './popover';
-import { fromInputValues, toDateInputValue, toTimeInputValue } from './time-input';
 import { TimeMenu } from './time-menu';
 import { TimelineSlider } from './timeline-slider';
 
@@ -23,11 +21,11 @@ const NBSP = ' ';
 const unbreakable = (text: string): string => text.replaceAll(' ', NBSP);
 
 /**
- * Barra de tiempo compacta (fase 3c, tarea 2; D31): reproducir y pausar (lo primero de la barra,
- * WCAG 2.2.2), la fecha legible con su calendario, la línea de tiempo del año, la velocidad (9
- * escalones, también hacia atrás) y «Controles +», que despliega lo menos usado (`TimeMenu`). En
- * móvil, en dos filas (el DOM sigue su orden: reproducir, la fecha y el calendario; la línea de
- * tiempo y «Controles +»), y la velocidad dentro de «Controles +».
+ * Barra de tiempo compacta (fase 3c, tarea 2; D31; fase 9c, D47): reproducir y pausar (lo primero de
+ * la barra, WCAG 2.2.2), la fecha legible, la línea de tiempo del año, la velocidad y «Controles», que
+ * despliega lo demás (`TimeMenu`: los campos de la fecha y la hora, el sentido, la cámara y la
+ * escena). Una sola forma de cada cosa a la vista. En el móvil, en una fila, con la velocidad escrita
+ * (su selector, en «Controles»); en las vistas Tierra y Luna, plegada a reproducir y la fecha.
  */
 @Component({
   selector: 'tls-time-controls',
@@ -44,8 +42,6 @@ export class TimeControls {
    * explorador: el panel de la Tierra y sus vistas guiadas usan la misma.
    */
   protected readonly zone: WritableSignal<TimeZoneChoice> = inject(ExplorerStore).timeZone;
-  protected readonly minDate = computed(() => toDateInputValue(MIN_DATE, this.zone()));
-  protected readonly maxDate = computed(() => toDateInputValue(MAX_DATE, this.zone()));
   /** «Controles +» desplegado (lo dice el propio panel con su evento `toggle`). */
   protected readonly menuOpen = signal(false);
   /** Se está pulsando «Controles»: su clic cerrará el panel (el foco que sale de él, no). */
@@ -70,7 +66,6 @@ export class TimeControls {
     const label = step.label.charAt(0).toUpperCase() + step.label.slice(1);
     return this.sim.reverse() ? `${label}, hacia atrás` : label;
   });
-  protected readonly dateValue = computed(() => toDateInputValue(this.sim.time(), this.zone()));
   protected readonly speedId = computed(() => this.sim.speedStep()?.id ?? 'real');
   protected readonly playLabel = computed(() => (this.sim.playing() ? 'Pausar' : 'Reproducir'));
 
@@ -84,30 +79,6 @@ export class TimeControls {
     if (step) this.sim.setSpeed((this.sim.reverse() ? -1 : 1) * step.seconds);
   }
 
-  protected toggleReverse(): void {
-    this.sim.toggleReverse();
-  }
-
-  /**
-   * El icono del calendario abre el selector nativo de fechas (`showPicker`). Donde no existe, abre
-   * «Controles +», donde está el campo de la fecha.
-   */
-  protected openCalendar(picker: HTMLInputElement): void {
-    try {
-      picker.showPicker();
-    } catch {
-      const menu = this.menu().nativeElement;
-      if (typeof menu.showPopover === 'function') menu.showPopover();
-    }
-  }
-
-  /** Una fecha elegida en el calendario: ese día, a la misma hora. */
-  protected pickDate(picker: HTMLInputElement): void {
-    const time = toTimeInputValue(this.sim.time(), this.zone());
-    const instant = fromInputValues(picker.value, time, this.zone());
-    if (instant) this.sim.setTime(instant);
-  }
-
   /**
    * Del `pointerdown` al `click` de «Controles». Un método y no una asignación en la plantilla: si la
    * expresión de un evento da `false`, Angular cancela su acción por defecto (y el panel no se abre).
@@ -117,13 +88,14 @@ export class TimeControls {
   }
 
   /**
-   * El panel se abre o se cierra. Al abrirse, el foco entra en su primer campo; al cerrarse (con su
-   * botón, `Esc` o un clic fuera), el navegador lo devuelve al botón «Controles».
+   * El panel se abre o se cierra. Al abrirse, el foco entra en el propio panel (el lector dice
+   * «Controles»), no en el campo de la fecha, que en Android abriría el calendario; al cerrarse (con
+   * su botón, `Esc` o un clic fuera), el navegador lo devuelve al botón «Controles».
    */
   protected onMenuToggle(event: Event): void {
     const open = (event as ToggleEvent).newState === 'open';
     this.menuOpen.set(open);
-    if (open) this.menu().nativeElement.querySelector<HTMLElement>('.menu input')?.focus();
+    if (open) this.menu().nativeElement.focus();
   }
 
   /**

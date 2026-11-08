@@ -13,16 +13,18 @@
   Orden del foco: el lienzo, su cámara, la tarjeta del cuerpo elegido, el botón «Índice» y su panel,
   las fichas de cuerpos y la barra de tiempo (con reproducir y pausar en primer lugar).
 -->
-<!-- En móvil, la cámara es una columna a la derecha que cuenta en el encuadre (data-chrome). -->
+<!-- Acercar y alejar, en escritorio (en el móvil y la tableta están en «Controles»). -->
 <tls-camera-controls class="camera" data-chrome />
 
 <!-- tabindex="-1": el foco llega aquí cuando la ficha tapa lo que lo tenía (la hoja del móvil). -->
 <aside
   #panel
+  id="ficha"
   class="panel"
   data-chrome
   tabindex="-1"
   [hidden]="!panelBody()"
+  [class.is-expanded]="sheetExpanded()"
   aria-label="Ficha del cuerpo elegido"
 >
   @if (panelBody()) {
@@ -36,7 +38,7 @@
   }
   <!-- Una ficha por cuerpo: al cambiar de cuerpo se crea otra y entra con un fundido. -->
   @for (id of panelBodies(); track id) {
-    <tls-body-panel [bodyId]="id" (closed)="closePanel()" />
+    <tls-body-panel [bodyId]="id" [(expanded)]="sheetExpanded" (closed)="closePanel()" />
   }
 </aside>
 
@@ -76,18 +78,42 @@
   <tls-sky-panel class="view-panel" data-chrome />
 }
 
-<tls-body-chips class="chips" />
+<!-- Flotan sobre el 3D: cuentan en el margen de abajo del encuadre (data-chrome). -->
+<tls-body-chips class="chips" data-chrome />
 
 <tls-time-controls class="dock" />
 
 <tls-notices class="notices" />
 
-@if (explorer.travelling() === 'view') {
+<!-- Durante el recorrido, sus viajes los para «Saltar el recorrido» (que deja la escena donde está). -->
+@if (explorer.travelling() === 'view' && !touring()) {
   <button type="button" class="control skip" (click)="session.skipTravel()">
     <tls-icon name="skip" />
     Saltar el viaje
     <kbd>Esc</kbd>
   </button>
+}
+
+<!--
+  El recorrido de la portada (fase 9c, 9c.6) y las pistas de la primera vez, junto a la fila de fichas
+  (crítica de la 9c): el rótulo de cada parada con «Saltar el recorrido» (siempre a la vista y con el
+  foco), «Ver el recorrido» o, al acabar, «Ahora tú: elige un cuerpo abajo…».
+-->
+@if (touring() || showsTourOffer() || hint()) {
+  <tls-callout [text]="touring() ? tourCaption() : hint()">
+    @if (touring()) {
+      <button #tourSkip type="button" class="control callout__skip" (click)="skipTour()">
+        <tls-icon name="skip" />
+        Saltar el recorrido
+        <kbd>Esc</kbd>
+      </button>
+    } @else if (showsTourOffer()) {
+      <button type="button" class="control" (click)="startTour()">
+        <tls-icon name="play" />
+        Ver el recorrido
+      </button>
+    }
+  </tls-callout>
 }
 
 @if (explorer.cleanView()) {

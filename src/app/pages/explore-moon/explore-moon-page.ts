@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
 /**
  * La Luna en detalle (fase 2: encuadre básico; la fase 6 añade el relieve y el recorrido).
@@ -6,7 +7,16 @@ import { Component } from '@angular/core';
  */
 @Component({
   selector: 'tls-explore-moon-page',
+  imports: [RouterLink],
   template: `
+    <!-- La vuelta a la vista general (fase 9c, 9c.2: en lugar de la fila de los planetas). -->
+    <a
+      class="explorer__back"
+      routerLink="/"
+      queryParamsHandling="preserve"
+      aria-label="Volver al sistema solar"
+      ><span aria-hidden="true">‹</span> Sistema solar</a
+    >
     <h1>La Luna</h1>
     <p>Nuestro satélite con su libración real: la cara que ves cambia un poco cada día.</p>
   `,

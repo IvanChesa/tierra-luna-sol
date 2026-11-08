@@ -89,6 +89,11 @@ export interface SceneEngineOptions {
    * de cuerpos (`?aislado=1`, `scripts/build-body-thumbnails.mjs`).
    */
   readonly isolate?: boolean;
+  /**
+   * Solo en captura: el cuerpo enfocado sin pasar a su sistema local físico (`?marco=ilustrativo`):
+   * su sistema de lunas como en la vista general, de cerca (las capturas de la fase 9b, D39).
+   */
+  readonly illustrativeFocus?: boolean;
   /** Base de las URL de los recursos (por defecto, la raíz del sitio). */
   readonly assetsBaseUrl?: string;
   /** El lugar de la vista del cielo (fase 8); por defecto, el Montsec. */

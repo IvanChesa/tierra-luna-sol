@@ -110,7 +110,15 @@ const NBSP = ' ';
     }
 
     /* El enlace cubre la tarjeta: toda ella lleva a la ficha (y el foco la rodea entera). */
+    /*
+     * El nombre: el enlace a la ficha, que ocupa toda la tarjeta (con ::after). Su propia caja, de 24 px
+     * de alto como mínimo (fase 9c, 9c.7: medía 19).
+     */
     a {
+      display: inline-flex;
+      align-items: center;
+      min-width: 1.5rem;
+      min-height: 1.5rem;
       color: var(--color-text);
       text-decoration: none;
     }

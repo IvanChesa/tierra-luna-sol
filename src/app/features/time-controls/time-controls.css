@@ -36,15 +36,9 @@
   background: var(--color-focus);
 }
 
-.time__date {
-  display: flex;
-  flex: none;
-  align-items: center;
-  gap: var(--space-2);
-}
-
 .time__readout {
   display: grid;
+  flex: none;
   margin: 0;
   line-height: 1.25;
 }
@@ -59,9 +53,12 @@
   white-space: nowrap;
 }
 
-/* El ancho de la fecha más larga («30 sept 2026, 23:59», cifras tabulares): no baila al reproducir. */
+/*
+ * El ancho de la fecha más larga («30 sept 2026, 23:59», cifras tabulares): no baila al reproducir,
+ * tampoco con los meses largos. En `ch` de la propia fuente, con margen.
+ */
 .time__readout time {
-  min-width: 9.9em;
+  min-width: 18.5ch;
   font-weight: var(--font-weight-strong);
   white-space: nowrap;
 }
@@ -69,21 +66,6 @@
 /* En escritorio, la velocidad la dice su selector. */
 .time__speedtext {
   display: none;
-}
-
-.time__calendar {
-  position: relative;
-  flex: none;
-}
-
-/* El campo del calendario nativo, bajo su botón: no se ve ni recibe el ratón (lo abre el botón). */
-.time__picker {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  pointer-events: none;
 }
 
 .time__line {
@@ -107,17 +89,6 @@
   flex: none;
 }
 
-/* Abierto, como «Índice» y «Menú»: borde y texto en latón. */
-.time__more[aria-expanded='true'] {
-  background: var(--color-surface-raised);
-  color: var(--color-accent);
-  border-color: var(--color-accent);
-}
-
-.time__more-icon {
-  display: none;
-}
-
 /* Sin `popover` en el navegador (Firefox anterior al 125), el botón no abriría nada (popover.ts). */
 @supports not selector(:popover-open) {
   .time__more {
@@ -126,44 +97,32 @@
 }
 
 /*
- * Móvil: dos filas que siguen el orden del DOM (y del foco). Arriba, reproducir, la lectura y el
- * calendario; abajo, la línea de tiempo y «Controles +».
+ * Móvil y tableta: una sola fila (fase 9c), en el orden del DOM (y del foco): reproducir, la lectura
+ * (la fecha, la zona y la velocidad), la línea del año y «Controles».
  */
 @media (max-width: 63.99rem) {
   .time {
     display: grid;
-    grid-template-areas:
-      'play date calendar'
-      'line line more';
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
     align-items: center;
-    gap: var(--space-1) var(--space-3);
-    height: auto;
-    padding: var(--space-2) var(--space-3);
+    gap: var(--space-3);
+    height: 100%;
+    padding: var(--space-1) var(--space-3);
   }
 
   .time__play {
-    grid-area: play;
     width: var(--tap-target);
     height: var(--tap-target);
-  }
-
-  .time__date {
-    display: contents;
-  }
-
-  .time__readout {
-    grid-area: date;
-    min-width: 0;
-  }
-
-  .time__calendar {
-    grid-area: calendar;
   }
 
   .time__label,
   .time__speed {
     display: none;
+  }
+
+  .time__readout {
+    min-width: 0;
+    line-height: 1.2;
   }
 
   .time__readout time {
@@ -176,12 +135,47 @@
   }
 
   .time__line {
-    grid-area: line;
     min-width: 0;
   }
 
-  .time__more {
-    grid-area: more;
+  /*
+   * Las vistas Tierra y Luna, y el cielo (su noche tiene su propio deslizador): plegada a reproducir y
+   * la fecha; para cambiar de año, la fecha de «Controles».
+   */
+  :host-context(.explorer--detail) .time,
+  :host-context(.explorer--sky) .time {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  :host-context(.explorer--detail) .time__line,
+  :host-context(.explorer--sky) .time__line {
+    display: none;
+  }
+}
+
+/*
+ * El cielo en el móvil y la tableta (decisión de Iván del 08-11): en reposo, su barra (el lugar, la hora y
+ * el resumen; sky-bar.ts) va en lugar de la fecha, entre reproducir y «Controles», que se queda en su
+ * icono. Con el panel del cielo o la ficha abiertos, la fecha vuelve.
+ */
+@media (max-width: 63.99rem) {
+  :host-context(.explorer--sky:not(:has(tls-sky-panel.is-open, tls-explorer-ui.has-panel)))
+    .time__readout {
+    visibility: hidden;
+  }
+
+  :host-context(.explorer--sky) .time__more {
+    width: var(--tap-target);
+    padding: 0;
+  }
+
+  :host-context(.explorer--sky) .time__more-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 }
 
@@ -199,13 +193,5 @@
     overflow: hidden;
     clip-path: inset(50%);
     white-space: nowrap;
-  }
-
-  .time__more-sign {
-    display: none;
-  }
-
-  .time__more-icon {
-    display: inline-flex;
   }
 }

@@ -44,12 +44,62 @@ describe('TimelineSlider: la línea de tiempo de la barra', () => {
 
   it('el año de la fecha, de enero a diciembre, y la fecha en aria-valuetext', () => {
     const { root, line, text } = render('2031-03-15T13:00Z');
-    expect(root.querySelector('.year__label')?.textContent).toBe('2031');
+    expect(root.querySelector('.year__value')?.textContent).toBe('2031');
     expect(line.getAttribute('aria-label')).toBe('Línea de tiempo');
     expect(line.min).toBe('0');
     expect(line.max).toBe('364');
     expect(line.value).toBe('73');
     expect(text()).toBe('15 de marzo de 2031');
+  });
+
+  it('el año, como mando (crítica de la 9c): ‹ y › un año; mantenido, por décadas; Mayús + RePág y AvPág', () => {
+    const { root, line, fixture } = render('2031-03-15T13:00Z');
+    const year = () => root.querySelector('.year__value')?.textContent;
+    const [back, forward] = [...root.querySelectorAll<HTMLElement>('.year__step')];
+    if (!back || !forward) throw new Error('Sin ‹ ni ›');
+    const press = (element: HTMLElement, type: string) => {
+      element.dispatchEvent(new PointerEvent(type, { bubbles: true, pointerId: 1 }));
+      fixture.detectChanges();
+    };
+    press(forward, 'pointerdown');
+    press(forward, 'pointerup');
+    expect(year()).toBe('2032');
+    expect(line.getAttribute('aria-valuetext')).toBe('15 de marzo de 2032');
+    // Mantenido: un año al pulsar y, pasado el medio segundo, una década cada poco.
+    press(back, 'pointerdown');
+    expect(year()).toBe('2031');
+    vi.advanceTimersByTime(500 + 350 * 2);
+    fixture.detectChanges();
+    expect(year()).toBe('2011');
+    press(back, 'pointerup');
+    vi.advanceTimersByTime(2000);
+    fixture.detectChanges();
+    expect(year()).toBe('2011');
+    // Con el teclado, en la línea: Mayús + RePág, un año más; Mayús + AvPág, uno menos.
+    const shifted = (key: string) => {
+      line.dispatchEvent(
+        new KeyboardEvent('keydown', { key, shiftKey: true, bubbles: true, cancelable: true }),
+      );
+      fixture.detectChanges();
+    };
+    shifted('PageUp');
+    expect(year()).toBe('2012');
+    shifted('PageDown');
+    shifted('PageDown');
+    expect(year()).toBe('2010');
+    expect(line.getAttribute('aria-describedby')).toBe('timeline-keys');
+    expect(root.querySelector('#timeline-keys')?.textContent).toContain('con Mayús, un año');
+  });
+
+  it('el año no pasa de 1900–2100 por mucho que se mantenga', () => {
+    const { root, fixture } = render('2095-06-15T13:00Z');
+    const forward = root.querySelectorAll<HTMLElement>('.year__step')[1];
+    if (!forward) throw new Error('Sin ›');
+    forward.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 1 }));
+    vi.advanceTimersByTime(5000);
+    fixture.detectChanges();
+    expect(root.querySelector('.year__value')?.textContent).toBe('2100');
+    forward.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 1 }));
   });
 
   it('con el foco del teclado y el tiempo en marcha, lo anunciado se queda quieto; → parte de ello', () => {
@@ -87,11 +137,9 @@ describe('TimelineSlider: la línea de tiempo de la barra', () => {
     sim.pause();
   });
 
-  it('en 1900 y en 2100 no se pasa del rango: sin año anterior o siguiente', () => {
+  it('en 1900 y en 2100 no se pasa del rango (y no hay botones del año: fase 9c)', () => {
     const start = render('1900-01-01T00:00Z');
-    const previous = () =>
-      start.root.querySelector<HTMLButtonElement>('button[title="Año anterior"]');
-    expect(previous()?.disabled).toBe(true);
+    expect(start.root.querySelectorAll('button')).toHaveLength(0);
     start.key('ArrowLeft');
     // El store no baja de 1900: la fecha se queda y la línea con ella.
     expect(start.sim.time().toISOString()).toBe('1900-01-01T00:00:00.000Z');
@@ -99,8 +147,6 @@ describe('TimelineSlider: la línea de tiempo de la barra', () => {
     TestBed.resetTestingModule();
 
     const end = render('2100-12-31T23:59Z');
-    const next = end.root.querySelector<HTMLButtonElement>('button[title="Año siguiente"]');
-    expect(next?.disabled).toBe(true);
     expect(end.line.max).toBe('364');
     end.key('End');
     expect(end.sim.time().getUTCFullYear()).toBe(2100);
@@ -110,7 +156,7 @@ describe('TimelineSlider: la línea de tiempo de la barra', () => {
     'en la hora de Madrid, el final de 2100 es 2101, con un solo día en la pista',
     () => {
       const { root, line, text } = render('2100-12-31T23:59Z', 'local');
-      expect(root.querySelector('.year__label')?.textContent).toBe('2101');
+      expect(root.querySelector('.year__value')?.textContent).toBe('2101');
       expect(line.min).toBe('0');
       expect(line.max).toBe('0');
       expect(text()).toBe('1 de enero de 2101');

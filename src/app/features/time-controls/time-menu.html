@@ -13,9 +13,9 @@
 </header>
 
 <div class="menu">
+  <!-- El tiempo: la fecha, la hora y la zona, «Ahora», la velocidad (en el móvil) y el sentido. -->
   <div class="field">
     <label class="field__label" for="time-date">Fecha</label>
-    <!-- Al abrir el panel, el foco entra aquí (time-controls.ts) y vuelve a su botón al cerrarlo. -->
     <input
       #date
       id="time-date"
@@ -68,28 +68,53 @@
     </p>
   }
 
-  <!-- En móvil, la velocidad (en escritorio está en la barra). -->
-  <div class="field menu__wide menu__speed">
+  <!-- En el móvil, la velocidad (en escritorio está en la barra). -->
+  <div class="field menu__speed">
     <label class="field__label" for="time-speed-menu">Velocidad</label>
-    <div class="field__group">
-      <select id="time-speed-menu" class="control" (change)="changeSpeed($event)">
-        @for (step of speeds; track step.id) {
-          <option [value]="step.id" [selected]="speedId() === step.id">{{ step.label }}</option>
-        }
-      </select>
-      <button
-        type="button"
-        class="control control--icon"
-        [attr.aria-pressed]="sim.reverse()"
-        title="Hacia atrás (R)"
-        (click)="sim.toggleReverse()"
-      >
-        <tls-icon name="reverse" />
-        <span class="visually-hidden">Hacia atrás</span>
-      </button>
-    </div>
+    <select id="time-speed-menu" class="control" (change)="changeSpeed($event)">
+      @for (step of speeds; track step.id) {
+        <option [value]="step.id" [selected]="speedId() === step.id">{{ step.label }}</option>
+      }
+    </select>
   </div>
 
+  <!-- El sentido, con su nombre a la vista (el icono ⇆ no se confunde con los chevrones). -->
+  <button
+    type="button"
+    class="control menu__reverse"
+    [attr.aria-pressed]="sim.reverse()"
+    title="Hacia atrás (R)"
+    (click)="sim.toggleReverse()"
+  >
+    <tls-icon name="reverse" />
+    Hacia atrás
+  </button>
+
+  <!-- La cámara: acercar y alejar (en el móvil no están sobre el 3D), la vista general y la limpia. -->
+  <h3 class="menu__group menu__wide">Cámara</h3>
+  <button type="button" class="control menu__zoom" title="Acercar (+)" (click)="zoom(1 / step)">
+    <tls-icon name="plus" />
+    Acercar
+  </button>
+  <button type="button" class="control menu__zoom" title="Alejar (−)" (click)="zoom(step)">
+    <tls-icon name="minus" />
+    Alejar
+  </button>
+  <button type="button" class="control" title="Vista general (G)" (click)="overview()">
+    <tls-icon name="overview" />
+    Vista general
+  </button>
+  <button
+    type="button"
+    class="control"
+    title="Vista limpia: ocultar la interfaz (V)"
+    (click)="cleanView()"
+  >
+    <tls-icon name="clean" />
+    Vista limpia
+  </button>
+
+  <h3 class="menu__group menu__wide">Escena</h3>
   <div class="field">
     <label class="field__label" for="time-quality">Calidad</label>
     <select id="time-quality" class="control" (change)="changeQuality($event)">
@@ -112,19 +137,16 @@
     </select>
   </div>
 
-  <button
-    type="button"
-    class="control"
-    title="Vista limpia: ocultar la interfaz (V)"
-    (click)="cleanView()"
-  >
-    <tls-icon name="clean" />
-    Vista limpia
+  <!-- El recorrido de la portada, cuando se quiera (fase 9c, 9c.6). -->
+  <button type="button" class="control menu__wide" (click)="tour()">
+    <tls-icon name="play" />
+    Ver el recorrido
   </button>
 
+  <!-- Sin teclado físico (el móvil), los atajos no sirven: no se ofrecen. -->
   <button
     type="button"
-    class="control menu__wide"
+    class="control menu__wide menu__help"
     aria-haspopup="dialog"
     title="Atajos de teclado (?)"
     (click)="openHelp()"
@@ -133,6 +155,5 @@
     Atajos de teclado
   </button>
 
-  <!-- En móvil no hay pie: la fuente de los datos va aquí. -->
   <p class="menu__wide menu__source">1900–2100 · NASA/JPL · astronomy-engine</p>
 </div>
