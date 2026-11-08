@@ -134,18 +134,22 @@ export const VISUAL_CONFIG = {
      *   neutro y con la intensidad del primer plano, el centro y el borde queden en el tono y el croma
      *   de la referencia (centro: h 81°, C\* 51,5; borde, de μ 0,15 a 0,35: h 76°, C\* 53,4).
      * - `structure`: zonas claras y oscuras a gran escala (como las regiones activas y la red que las
-     *   une), procedurales en el shader: su amplitud (fracción del brillo; también mueven el color, lo
-     *   claro hacia el del centro y lo oscuro hacia el del borde) y su ritmo (unidades de ruido por
-     *   segundo de reloj de pared mientras se pinta; quietas con movimiento reducido y en las capturas).
-     * - `rays`: los rayos suaves del resplandor: cuánto modulan el halo alrededor del disco.
+     *   une), procedurales en el shader: un ruido a tres escalas, retorcido por otro, llevado a manchas
+     *   (smoothstep entre `edges`); su amplitud (el brillo, por exp(amplitud · ±1); también mueven el
+     *   color, lo claro hacia el del centro y lo oscuro hacia el del borde) y su ritmo (unidades de ruido
+     *   por segundo de reloj de pared mientras se pinta; quietas con movimiento reducido y en las
+     *   capturas). Con 0,5, el contraste a gran escala de la superficie (σL\* sin el perfil del limbo)
+     *   pasa del de la referencia, 4,13.
+     * - `glow`: el color lineal del halo y de la corona (en la 9b.c, blanco cálido): el resplandor naranja.
+     * - `rays`: los rayos suaves del resplandor: finos y cortos, junto al limbo (su brillo y su color).
      * - `prominences`: las protuberancias del limbo en primer plano (bucles de plasma que suben y bajan
      *   despacio, como los de la referencia; solo fuera del disco): su brillo, su color lineal y su ritmo
      *   (como el de la granulación).
      */
     enhanced: {
       palette: {
-        center: [0.84, 0.51, 0.154] as readonly [number, number, number],
-        limb: [1.06, 0.544, 0.14] as readonly [number, number, number],
+        center: [0.84, 0.49, 0.14] as readonly [number, number, number],
+        limb: [1.06, 0.52, 0.12] as readonly [number, number, number],
       },
       structure: {
         amplitude: 0.5,
@@ -154,9 +158,9 @@ export const VISUAL_CONFIG = {
       },
       glow: {
         halo: [1, 0.55, 0.22] as readonly [number, number, number],
-        corona: [1, 0.66, 0.36] as readonly [number, number, number],
+        corona: [1, 0.58, 0.28] as readonly [number, number, number],
       },
-      rays: { intensity: 0.6, color: [1, 0.5, 0.18] as readonly [number, number, number] },
+      rays: { intensity: 0.4, color: [1, 0.5, 0.18] as readonly [number, number, number] },
       prominences: {
         intensity: 0.9,
         color: [1, 0.35, 0.08] as readonly [number, number, number],

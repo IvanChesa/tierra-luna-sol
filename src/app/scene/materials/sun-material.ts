@@ -151,10 +151,10 @@ float tlsSunStructure(vec3 p, float t) {
     tlsValueNoise(p * 1.7 + drift.zyx + 13.7)
   ) - 0.5;
   vec3 q = p + 0.45 * warp;
-  float large = tlsValueNoise(q * 2.6 + drift);
-  float medium = tlsValueNoise(q * 6.5 - drift * 1.7 + 17.0);
-  float small = tlsValueNoise(q * 15.0 + drift * 2.3 + 41.0);
-  return (0.55 * large + 0.3 * medium + 0.15 * small - 0.5) * 2.0;
+  float large = tlsValueNoise(q * 3.2 + drift);
+  float medium = tlsValueNoise(q * 8.0 - drift * 1.7 + 17.0);
+  float small = tlsValueNoise(q * 19.0 + drift * 2.3 + 41.0);
+  return (0.42 * large + 0.36 * medium + 0.22 * small - 0.5) * 2.0;
 }
 
 void main() {
@@ -378,7 +378,7 @@ void main() {
     float fine = tlsAngularNoise(angle, 160.0, 1.0);
     float coarse = tlsAngularNoise(angle, 47.0, 9.0);
     float rays = 0.3 + 0.7 * fine * (0.4 + 0.6 * coarse);
-    float near = exp(-(rho - 1.0) / 0.22) * smoothstep(1.0, 1.012, rho);
+    float near = exp(-(rho - 1.0) / 0.16) * smoothstep(1.0, 1.012, rho);
     color += uRayColor * uRays * rays * near;
   }
   // Las protuberancias, junto al limbo (en primer plano).
