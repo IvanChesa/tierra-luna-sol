@@ -191,32 +191,34 @@ Las cifras y las fechas del boceto son marcadores.
 │     Hora local · 3 días/s      │     de tiempo en una fila
 └────────────────────────────────┘
 ```
-Con un cuerpo elegido (decisión de Iván del 08-11), arriba, una sola franja en lugar de la cabecera y las pestañas; al elegirlo, abajo, solo una barra fina, que abre la hoja de su ficha:
+Con un cuerpo elegido (decisiones de Iván del 08-11), arriba, una sola franja con «‹ Sistema solar», el nombre, «ⓘ» (su ficha) y «Menú»; abajo, la fila de su sistema (en el teléfono, el planeta, una raya y sus lunas; en la tableta, dos filas). Elegir no abre la ficha:
 ```
 ┌────────────────────────────────┐
-│ ‹ Sistema solar  Saturno ≡ Menú│ ← una sola franja (3 rem): la
-│                                │    cabecera y las pestañas, fuera
-│              (♄)               │ ← el cuerpo, en el centro del
-│                                │    hueco libre
-│ Saturno          Ver ficha ⌃ × │ ← la barra fina (≤ 12 %): un botón
-│ Planeta · Radio ecuatorial: …  │    que abre la hoja (y se desliza)
+│ ‹ Sistema solar  Saturno ⓘ ≡ M…│ ← una sola franja; «ⓘ», la ficha
+│                                │
+│              (♄)               │ ← el cuerpo, en el centro del hueco
+│                                │
+│ (♄) │ [◐ Mimas] [◐ Encélado] → │ ← al elegir, su sistema: del planeta
+│ Sat.│                          │    a sus lunas, de un toque
 │ (▶) 24 oct 2026, 02:00 ──●─ [⚙]│
 └────────────────────────────────┘
 ```
-En el teléfono (< 768 px), con un planeta con lunas elegido y la ficha cerrada, la fila es la de su sistema; en la tableta, como en el PC, dos filas:
+El cielo, igual: arriba, una sola franja; abajo, su barra, en la fila de la barra de tiempo:
 ```
 ┌────────────────────────────────┐
-│ ‹ Sistema solar  Saturno ≡ Menú│ ← la franja del cuerpo elegido
-│              …                 │
-│ (♄) │ [◐ Mimas] [◐ Encélado] → │ ← el planeta, una raya y sus
-│ Sat.│                          │    lunas en pastillas (desplazable)
-│ (▶) 24 oct 2026, 02:00 ──●─ [⚙]│
+│ ‹ El cielo  Montsec (Lleida)  ≡│ ← una sola franja
+│                                │
+│       el cielo (≥ 80 %)        │
+│                                │
+│ (▶) [Montsec · 02:00     ⌃] [⚙]│ ← su barra, en lugar de la fecha:
+│     [Ahora: Urano, 57° SE · …] │    abre el panel (≤ media pantalla)
 └────────────────────────────────┘
 ```
-- **La ficha** (decisión de Iván del 08-11: la hoja en reposo era «muy invasora»): al elegir un cuerpo, solo una barra fina encima de la barra de tiempo, con el nombre, el tipo y el radio, «Ver ficha» y × (como mucho el 12 % de la pantalla). Es un botón con `aria-expanded` que abre la hoja: un toque, Intro o deslizarla hacia arriba. La hoja, a media pantalla, con el resumen, «Ficha completa» y «Ver los datos» (que la sube entera, con los datos y sus fuentes); deslizarla hacia abajo, o Esc, la devuelve a la barra. El foco va a la barra al elegir el cuerpo; al abrir la hoja, a su contenido; Esc lo devuelve a la barra. Reproducir y pausar, siempre a mano, debajo.
-- **Arriba, con un cuerpo elegido, una sola franja:** «‹ Sistema solar», el nombre y «Menú», en la cabecera del sitio (de 3 rem), en lugar de la cabecera y las pestañas. La presentación se recoge: el H1 y su tipo, solo para el lector; la autoría, fuera.
+- **La ficha** (decisiones de Iván del 08-11): elegir un cuerpo (las fichas, el índice, el lienzo o la URL) no la abre; la abre «ⓘ», junto al nombre en la franja de arriba («Ver la ficha de Saturno», `aria-expanded`): una hoja de media pantalla, con el resumen, «Ficha completa» y «Ver los datos» (que la sube entera, con los datos y sus fuentes), y el foco en su contenido. Esc, × o deslizarla hacia abajo la cierran, y el foco vuelve a «ⓘ». Reproducir y pausar, siempre a mano, debajo.
+- **Arriba, con un cuerpo elegido, una sola franja:** «‹ Sistema solar», el nombre, «ⓘ» y «Menú», en la cabecera del sitio (de 3 rem), en lugar de la cabecera y las pestañas. La presentación se recoge: el H1 y su tipo, solo para el lector; la autoría, fuera.
+- **El alto, el de lo que se ve** (`dvh`; `svh` donde no lo hay) y las zonas seguras (`viewport-fit=cover`): en Safari de iOS, con sus barras recogidas, sin franjas vacías bajo la barra de tiempo, que se aparta de la barra del inicio.
 - **El índice y «Controles»** suben como hojas, con su título y su botón de cerrar. Lo que tapan sale del orden del foco. «Controles» es una hoja baja, como mucho el 45 % de la pantalla (lo demás se desplaza dentro): el 3D se ve encima mientras se usa, y la cámara aparta el cuerpo por encima de ella. En un teléfono bajo, deja al menos unos 150 px de 3D bajo el título; en horizontal (o con el zoom al 200 %), es un panel a la derecha, de debajo de las pestañas a la barra, con el 3D a su izquierda.
-- **Tierra y Luna:** en el teléfono, sin fichas (en el título, «‹ Sistema solar»); su panel en una fila (las vistas, desplazables, y «Más» para el resto) y la barra plegada a reproducir, la fecha y «Controles». **El Cielo:** el lugar (su nombre corto, «Montsec (Lleida)») con «Usar mi ubicación» debajo (en la tableta, a su lado), la hora y una línea de resumen; «Esta noche», a demanda (con su marcador de abierto o cerrado), con la tabla en dos líneas por fila si no cabe en su caja (también en la columna del escritorio); en el teléfono, sin fichas.
+- **Tierra y Luna:** en el teléfono, sin fichas (en el título, «‹ Sistema solar»); su panel en una fila (las vistas, desplazables, y «Más» para el resto) y la barra plegada a reproducir, la fecha y «Controles». **El Cielo** (decisión de Iván del 08-11): arriba, una sola franja («‹», «El cielo», el lugar y «Menú»); en reposo, su barra (el lugar, la hora y lo que hay sobre el horizonte, un botón con `aria-expanded`) va en la fila de la barra de tiempo, entre reproducir y «Controles», en lugar de la fecha, y el cielo ocupa al menos el 80 % de la pantalla (también a 390 × 660, el alto de Safari con sus barras). El panel entero, a demanda, en una hoja de media pantalla como mucho: el lugar (su nombre corto, «Montsec (Lleida)») con «Usar mi ubicación», la hora y una línea de resumen; «Esta noche» (con su marcador de abierto o cerrado), con la tabla en dos líneas por fila si no cabe en su caja (también en la columna del escritorio), y las constelaciones. Esc la cierra y el foco vuelve a la barra. En el teléfono, sin fichas.
 - **En los teléfonos bajos** (en horizontal o con el zoom al 200 %), la página se desplaza: al llegar se ven el lienzo y, justo debajo, la barra con su pausa.
 
 ### Ficha completa (`/planetas/marte`) · sin 3D
