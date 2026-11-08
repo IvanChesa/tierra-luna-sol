@@ -1,8 +1,8 @@
 # Informe: Fase 9c (la interfaz)
 
 - **Rama:** `fase-9c-interfaz` (desde `main` en `0963b9f`), en el worktree `.claude/worktrees/fase-9c-interfaz-bf1527`
-- **Fecha:** 2026-11-06 (preparación) a 2026-11-08 (las siete tareas, el cierre, la revisión, la decisión de Iván del 07-11 y la tanda de arreglos de la crítica repetida, por decisión de Iván del 08-11)
-- **Estado:** **lista para revisión, sin fusionar** (adenda, §5.3: la sesión de revisión repasa la fase y repite la crítica de impeccable antes de que Iván autorice la fusión). Hechas las tareas 9c.1–9c.7; la revisión por subagente (`docs/revisiones/fase-9c.md`), aplicada, con la decisión de Iván del 07-11 sobre el selector («Respuesta a la revisión», al final); la crítica repetida (`docs/revisiones/fase-9c-critica.md`, 31/40), con sus problemas 1 a 6 y los rápidos arreglados («Respuesta a la crítica», al final; lo demás, al backlog: §10); `npm run check` y los e2e, en verde.
+- **Fecha:** 2026-11-06 (preparación) a 2026-11-08 (las siete tareas, el cierre, la revisión, la decisión de Iván del 07-11, la tanda de arreglos de la crítica repetida y la ficha del móvil, menos invasora: las dos, decisiones de Iván del 08-11)
+- **Estado:** **lista para revisión, sin fusionar** (adenda, §5.3: la sesión de revisión repasa la fase y repite la crítica de impeccable antes de que Iván autorice la fusión). Hechas las tareas 9c.1–9c.7; la revisión por subagente (`docs/revisiones/fase-9c.md`), aplicada, con la decisión de Iván del 07-11 sobre el selector («Respuesta a la revisión», al final); la crítica repetida (`docs/revisiones/fase-9c-critica.md`, 31/40), con sus problemas 1 a 6 y los rápidos arreglados («Respuesta a la crítica», al final; lo demás, al backlog: §10); la ficha del móvil, una barra fina con la hoja a demanda y una sola franja arriba (decisión de Iván del 08-11, al final); `npm run check` y los e2e, en verde.
 
 ## 0. Plan
 
@@ -110,16 +110,16 @@ Los de la adenda (`docs/decisiones/FASE-9c-INTERFAZ.md`, §4), medidos con `scri
 | Criterio | ✅/❌ | Evidencia |
 |---|---|---|
 | **Zona útil del 3D:** 390 × 844, ≥ 65 % en `/` y ≥ 50 % en Tierra, Luna y Cielo; 768 × 1024, ≥ 75 % y ≥ 65 %; 1440 × 900, ≥ 82 % y ≥ 75 % | ✅ | 390: `/` 83,5 % (antes 46,7); Tierra 86,0, Luna 86,2 y Cielo 60,2 % (antes 25,2, 27,4 y 27,7). 768: `/` 87,7 % (59,7); Tierra 84,4, Luna 84,4 y Cielo 69,6 % (40,0, 43,2 y 43,1). 1440: `/` 90,7 % (74,5); Tierra 82,2, Luna 85,9 y Cielo 78,0 % (63,6, 65,9 y 64,1) |
-| **Controles visibles:** en escritorio, ≤ 24 en `/` y ≤ 32 con un cuerpo elegido (≤ 30 en la adenda; ≤ 32 por la decisión de Iván del 07-11, §4); en el móvil, ≤ 16 en cualquier vista | ✅ (la tableta, con el de escritorio: §4) | 1440: 23 en `/`; con un cuerpo, Saturno 32 (30 con la ficha cerrada), Tierra 32, Luna 30 y el Cielo con Saturno 32; el Cielo sin cuerpo, 25 (§4) (antes 37 en `/`, 46 con Saturno, 47 en Tierra, 45 en Luna y 41 en el Cielo). 1024: 23 en `/`; con un cuerpo, Saturno 32 (30 con la ficha cerrada), Tierra 32, Luna 30 y el Cielo con Saturno 32; el Cielo sin cuerpo, 25 (§4). Móvil (390): `/` 16, Saturno 12 (14 con la ficha cerrada), Tierra 13, Luna 14, Cielo 12 (12 con Saturno) y, con «Más» abierto, Tierra 17 y Luna 17 (antes 22, 8, 30, 30 y 26). Tableta (768): de 12 a 28, dentro de los de escritorio; en `/`, 20 Con los arreglos de la crítica (08-11), las mismas cifras: ninguno añade una parada. |
-| **La hoja del cuerpo en el móvil, en reposo:** ≤ 45 % de la pantalla, con el cuerpo visible y la pausa a mano (e2e) | ✅ | 37,3 % a 390 y 28,6 % a 768 (antes 60,2 y 62,3 %, sin la pausa). e2e `movil.spec.ts`, «la ficha, en reposo…»: ≤ 45 %, el encuadre por encima de la hoja (el cuerpo, en el hueco libre) y reproducir pulsable, también con la hoja subida |
+| **Controles visibles:** en escritorio, ≤ 24 en `/` y ≤ 32 con un cuerpo elegido (≤ 30 en la adenda; ≤ 32 por la decisión de Iván del 07-11, §4); en el móvil, ≤ 16 en cualquier vista | ✅ (la tableta, con el de escritorio: §4) | 1440: 23 en `/`; con un cuerpo, Saturno 32 (30 con la ficha cerrada), Tierra 32, Luna 30 y el Cielo con Saturno 32; el Cielo sin cuerpo, 25 (§4) (antes 37 en `/`, 46 con Saturno, 47 en Tierra, 45 en Luna y 41 en el Cielo). 1024: 23 en `/`; con un cuerpo, Saturno 32 (30 con la ficha cerrada), Tierra 32, Luna 30 y el Cielo con Saturno 32; el Cielo sin cuerpo, 25 (§4). Móvil (390): `/` 16, Saturno 12 (14 con la ficha cerrada), Tierra 13, Luna 14, Cielo 12 (12 con Saturno) y, con «Más» abierto, Tierra 17 y Luna 17 (antes 22, 8, 30, 30 y 26). Tableta (768): de 12 a 28, dentro de los de escritorio; en `/`, 20 Con los arreglos de la crítica (08-11), las mismas cifras: ninguno añade una parada. En el móvil y la tableta, con un cuerpo elegido y la barra fina (decisión del 08-11): 7 (antes 12); con la ficha cerrada, 9 a 390 (antes 14). |
+| **La ficha del cuerpo en el móvil, en reposo** (cambio del 08-11, decisión de Iván, que sustituye a «la hoja ≤ 45 %»; adenda, §4): con un cuerpo elegido, la barra fina ≤ 12 % de la pantalla; la interfaz en reposo tapa ≤ 30 % (zona útil del 3D ≥ 70 %) a 390 y a 768; el cuerpo, centrado en el hueco libre; la pausa, a mano (e2e) | ✅ | La barra: 6,9 % a 390 y 5,7 % a 768 (la hoja en reposo de antes: 37,3 y 28,6 %; antes de la fase, 60,2 y 62,3 %). Con Saturno elegido, la zona útil: 90,3 % a 390 y 90,9 % a 768 (con la hoja en reposo, 54,0 y 65,2 %); por alto, la franja de arriba, la barra y la barra de tiempo tapan el 19,7 % y el 16,2 %. El centro del cuerpo en el hueco libre, en alto: +0,9 % a 390 y +1,8 % a 768 (en ancho, −4,5 y −4,6 %: el lado en sombra del planeta no brilla; en escritorio, igual, de −4,0 a −5,6 %). La hoja, abierta: 35,4 % a 390 y 27,1 % a 768, sin nada tapado. e2e `movil.spec.ts`: la barra (≤ 12 %, el encuadre hasta su borde y la pausa a mano), la hoja con un toque, con el dedo y con el teclado, el foco y la franja de arriba |
 | **Los gestos:** el e2e de 9c.1 en verde a 390 y 768 | ✅ | `e2e/gestos.spec.ts`: 2 de 2 (arrastrar sobre el título gira la escena y no selecciona texto) |
 | **Sin solapes:** el script de 9c.4 sin fallos en los cuatro tamaños | ✅ | 0 controles tapados en las 28 vistas (390, 768, 1024 y 1440, también con un cuerpo y la ficha cerrada) y 0 en los 30 estados con «Controles», el Índice o «Más» abiertos (antes, de 12 a 26 tapados con «Controles» abierto en el móvil y en la tableta). 0 recortes: ningún contenedor desbordado, ningún control recortado y ningún lugar del selector cortado (revisión, hallazgos 6, 7 y 18) Con los arreglos de la crítica, igual (el script ya no cuenta como desbordadas las capas de etiquetas de la escena, que recortan a propósito lo que sale del lienzo: §6.2). |
 | **El velo de abajo** (9c.2): ≤ 10 % del lienzo | ✅ | 8,6 % a 390, 7,0 % a 768, 9,6 % a 1024 × 768 y 8,1 % a 1440 (antes, el 19–23 %; a 1024 × 768, el 10,7 % en la primera ronda: §5.5) |
 | **Zonas táctiles:** 44 × 44 en el explorador en el móvil y ≥ 24 × 24 en todas las páginas; nada legible por debajo de 11 px | ✅ en esta fase; ❌ en dos páginas de la otra sesión (§12) | El explorador: ninguna zona pequeña en los cuatro tamaños. Las páginas de esta fase (`/planetas`, `/planetas/marte`, `/lunas`, `/lunas/titan`, `/luna`, `/sol`, `/eclipses`): ninguna (antes, las notas «Fuente N» de 24 × 22). «Sobre el proyecto» (los enlaces «Fase N», 16 px de alto) y los créditos (las licencias, 19 px) son de la 9b. Texto de menos de 11 px: ninguno (antes, los nombres latinos de las constelaciones, 9 px, y «hoy», 10) |
 | **axe sin violaciones en todas las rutas;** el teclado y el lector de pantalla, como hoy o mejor (el orden de Tab, el foco visible y nunca tapado, las alternativas de un solo puntero) | ✅ | `e2e/accesibilidad.spec.ts` (las 40 rutas, los estados del explorador y el explorador en marcha): sin violaciones graves ni críticas. El Tab no se para en lo tapado (`movil.spec.ts`, con la ficha y con «Controles» abiertos); el foco vuelve a «Controles» tras la vista limpia (`camara.spec.ts`); el enlace de la autoría plegada vuelve a verse al recibir el foco; acercar y alejar, con botones en la cámara (escritorio) y en «Controles» (móvil) (`maquetacion.spec.ts`) |
 | **El recorrido:** e2e de que arranca la primera vez; de que «Saltar», `Esc` y un toque lo paran; de que no arranca con movimiento reducido, con `?captura=1` ni con enlaces profundos | ✅ | `e2e/recorrido.spec.ts`: 6 de 6 (además, llega al final y no llena el historial; con una red lenta no arranca si ya se ha elegido un cuerpo; al saltarlo con Intro, el foco no se pierde). Con la crítica del 08-11: «Saltar» y `Esc` llevan a la vista general en marcha (sin «Saltar el viaje» ni anillo de foco tras el ratón), un clic o la rueda lo paran donde está, cada parada lleva su rótulo, la Luna solo si se ve y, al final, «Ahora tú: elige un cuerpo abajo…» |
-| **El presupuesto:** `npm run check` en verde, con el JS inicial y el código propio inicial (15 kB) sin subirlo | ✅ | §6: JS inicial 311,02 kB (aviso a 320; 310,14 antes de la crítica: la placa del recorrido proyecta su botón); código propio inicial 10,96 kB de 15 (antes 14,88). Sin avisos de presupuesto (tampoco de los estilos por componente) |
-| **Capturas antes y después** a 390, 768 y 1440: la portada (también durante el recorrido), Saturno con la hoja en el móvil, la Tierra, la Luna y el Cielo, una ficha completa, `/lunas` y `/eclipses` | ✅ | §7: 24 de antes y 33 de después (rehechas el 08-11 con los arreglos de la crítica; tres de ellas, nuevas: «Controles» abierto con Saturno) |
+| **El presupuesto:** `npm run check` en verde, con el JS inicial y el código propio inicial (15 kB) sin subirlo | ✅ | §6: JS inicial 312,64 kB (aviso a 320; 311,02 antes de la ficha del móvil y 310,14 antes de la crítica); código propio inicial 12,07 kB de 15 (10,96 antes de la ficha del móvil: la franja de la cabecera y `ExplorerFocus`; antes de la fase, 14,88). Sin avisos de presupuesto (tampoco de los estilos por componente) |
+| **Capturas antes y después** a 390, 768 y 1440: la portada (también durante el recorrido), Saturno con la hoja en el móvil, la Tierra, la Luna y el Cielo, una ficha completa, `/lunas` y `/eclipses` | ✅ | §7: 24 de antes y 35 de después (rehechas el 08-11 con la crítica y con la ficha del móvil; nuevas: «Controles» abierto y, en el móvil y la tableta, la hoja abierta desde la barra) |
 | **El detector de impeccable** (`detect --json src/app`), sin hallazgos reales nuevos | ✅ | 6 hallazgos `broken-image`, los mismos falsos positivos de la crítica: `<img>` con `[src]` o `[ngSrc]` de Angular, que el análisis estático lee como «sin src» (`body-chips.html` ×3, uno más que en la primera ronda porque la pastilla de la luna está en las dos filas; `body-detail-page.html`; `body-card.ts` ×2). Repetido el 08-11, tras los arreglos de la crítica: los mismos 6. El motor de la caché (0.1.16), sin descargas |
 | **`docs/DISENO.md`:** los bocetos de escritorio y móvil y la navegación, al día | ✅ | Las reglas de la interfaz (fase 9c), la navegación y los bocetos del visor en escritorio y en el móvil y de la ficha completa; con la decisión de Iván del 07-11, las reglas del selector (planetas y lunas, distintos), el boceto de escritorio con las dos filas y uno del móvil con la fila del sistema y su raya; con la crítica del 08-11, el recorrido y las pistas, los avisos sobre el 3D, lo plegado que se despliega con el foco, el año como mando, «Controles» en el encuadre y como hoja baja (y en horizontal, a la derecha), la placa de los nombres y las migas |
 | **El rendimiento (FPS)** no se mide aquí | — | Se repite al cerrar el bloque, con el PC libre (la otra sesión lo carga) |
@@ -156,6 +156,7 @@ Todas para cumplir los criterios de la adenda sin quitar ninguna función; las d
 - **El Cielo sin cuerpo, en escritorio, con 25 controles:** el tope de 24 es el de `/`; en el Cielo, «Usar mi ubicación», otra vez un botón (hallazgo 5), suma uno a los 24 de antes.
 - **La línea de autoría, solo en la portada**, la «primera pantalla» de la decisión 3. En todas las vistas, el Cielo del teléfono pasaba a 17 controles.
 - **Lo técnico de las fichas, separado (no plegado):** después de lo esencial, bajo el rótulo «Datos técnicos». La adenda deja elegir («plegado o separado»), y así la ficha se sigue leyendo entera sin JavaScript.
+- **La ficha del móvil, una barra fina (decisión de Iván del 08-11; una línea en la adenda, §4):** el criterio de la hoja en reposo (≤ 45 %) pasa a ser otro: con un cuerpo elegido, la barra fina, ≤ 12 % de la pantalla; la interfaz en reposo tapa como mucho el 30 % (zona útil del 3D ≥ 70 %) a 390 y a 768; y el cuerpo, centrado en el hueco libre. Arriba, con un cuerpo elegido, una sola franja («‹ Sistema solar», el nombre y «Menú») en lugar de la cabecera y las pestañas. Para que la cabecera del sitio sepa el cuerpo, `ExplorerFocus` (sin dependencias) pasa de `features/explorer-ui/` a `core/`: el JS inicial sube 1,62 kB y el código propio inicial, de 10,96 a 12,07 kB (de 15).
 - **`--measure` pasa de 68ch a 30em.** Es el ancho de lectura de todo el sitio: también se estrechan los textos de «Sobre el proyecto» y de los créditos (§12).
 - **768 × 1024 (la tableta) se mide con el criterio de escritorio en los controles,** y lleva el selector del PC (el mismo corte, 768 px): la adenda distingue «escritorio» y «móvil». En la portada son 20 controles: ≤ 24 de escritorio sí, ≤ 16 del móvil no (las nueve fichas caben a ese ancho). §2 lo dice en su fila.
 
@@ -262,24 +263,27 @@ Un mapa de la interfaz antes de cambiarla, para la adenda y para el plan de §0.
 
 ## 6. Salida de los checks
 
-**Al cerrar** (el código final, con la revisión, la decisión de Iván del 07-11 y los arreglos de la crítica; 08-11):
+**Al cerrar** (el código final, con la revisión, la decisión de Iván del 07-11, los arreglos de la crítica y la ficha del móvil; 08-11):
 
 ```
 npm run check
 - lint y Prettier: «All files pass linting.»
-- tests: 742 de 742 en 78 ficheros (antes de la fase, 715 en 75), sin avisos; cobertura de ephemeris/:
+- tests: 747 de 747 en 79 ficheros (antes de la fase, 715 en 75), sin avisos; cobertura de ephemeris/:
   98,9 % de sentencias, 93,85 % de ramas, 100 % de funciones y 99,76 % de líneas
 - build: 40 rutas prerenderizadas, sin avisos de presupuesto (tampoco de los estilos por componente)
-  JS inicial 311,02 kB, 88,44 kB comprimido (antes de la crítica, 310,14; antes de la fase, 314,23)
+  JS inicial 312,64 kB, 88,85 kB comprimido (antes de la ficha del móvil, 311,02; antes de la crítica,
+  310,14; antes de la fase, 314,23)
 - check-initial-bundle: ninguna de las 40 páginas lleva three, astronomy-engine, los stores ni los
-  controles del visor en su JS inicial; código propio inicial, 10,96 kB de 15 (antes 14,88: los
-  estilos de la cabecera, de app.css a styles.css)
+  controles del visor en su JS inicial; código propio inicial, 12,07 kB de 15 (10,96 antes de la
+  ficha del móvil: la franja de la cabecera y ExplorerFocus; antes de la fase, 14,88)
 - check-links: 1216 enlaces internos bien (antes 1161: la ficha anterior y la siguiente, y las migas
   de /eclipses)
 
-npx playwright test (E2E_PORT=4401, SwiftShader): 128 de 128 en 7,0 min, con los dos proyectos (antes de la fase, 107)
+npx playwright test (E2E_PORT=4401, SwiftShader): 130 de 130 en 7,1 min, con los dos proyectos (antes de la fase, 107)
 impeccable detect --json src/app (el motor 0.1.16 de la caché): 6 «broken-image», falsos positivos (§2)
 ```
+
+Antes de la ficha del móvil (con la tanda de la crítica, 08-11): 742 tests en 78 ficheros, JS inicial 311,02 kB y 128 de 128 e2e.
 
 Tras la revisión (08-11, antes de la crítica): 738 tests en 78 ficheros, JS inicial 310,14 kB y 122 de 122 e2e.
 
@@ -329,40 +333,40 @@ Coincide con la crítica: de 37 a 47 controles a la vista en escritorio, y en el
 
 ### 6.2 La interfaz después, medida
 
-Con el mismo script y las mismas condiciones que §6.1 (`scripts/measure-ui.mjs`, `?captura=1`, 390 y 768 táctiles, 1024 y 1440 con ratón), sobre el build final (08-11, con la revisión, la decisión de Iván del 07-11 y los arreglos de la crítica). Entre paréntesis, antes (con este mismo script sobre el build de `main`; las dos vistas con la ficha cerrada no se midieron entonces). «Velo»: la parte del lienzo bajo el fondo de la barra de tiempo (9c.2, ≤ 10 %). «Recortes»: contenedores que se desbordan en horizontal, controles recortados y opciones del selector que no caben.
+Con el mismo script y las mismas condiciones que §6.1 (`scripts/measure-ui.mjs`, `?captura=1`, 390 y 768 táctiles, 1024 y 1440 con ratón), sobre el build final (08-11, con la revisión, la decisión de Iván del 07-11, los arreglos de la crítica y la ficha del móvil). «La ficha en reposo»: en el móvil y la tableta, la barra fina (decisión del 08-11; antes de ella, la hoja en reposo, 37,3 y 28,6 %). «Centro del cuerpo»: el centroide de lo que brilla en una captura del hueco libre, respecto a su centro, en fracción de su ancho y de su alto (el lado en sombra no brilla: en ancho sale un −4 o −5 % en todos los tamaños). Entre paréntesis, antes (con este mismo script sobre el build de `main`; las dos vistas con la ficha cerrada no se midieron entonces). «Velo»: la parte del lienzo bajo el fondo de la barra de tiempo (9c.2, ≤ 10 %). «Recortes»: contenedores que se desbordan en horizontal, controles recortados y opciones del selector que no caben.
 
-| Tamaño | Vista | Zona útil | Velo | Controles visibles | Tapados | Recortes | Zonas < objetivo | Textos < 11 px | Contraste de los nombres | La hoja del cuerpo (alto, la pausa) |
-|---|---|---|---|---|---|---|---|---|---|---|
-| 390 | portada | 83,5 % (46,7) | 8,6 % | 16 (22) | 0 | 0 | 0 | 0 (1) | 5,4:1 | — |
-| 390 | Saturno | 54,0 % (24,8) | 8,6 % | 12 (8) | 0 | 0 | 0 | 0 (0) | — | 37,3 %, a mano (60,2 %, no) |
-| 390 | Saturno, sin ficha | 84,5 % | 8,6 % | 14 | 0 | 0 | 0 | 0 | 6,2:1 | — |
-| 390 | Tierra | 86,0 % (25,2) | 8,6 % | 13 (30) | 0 | 0 | 0 | 0 (1) | — | — |
-| 390 | Luna | 86,2 % (27,4) | 8,6 % | 14 (30) | 0 | 0 | 0 | 0 (1) | — | — |
-| 390 | Cielo | 60,2 % (27,7) | 8,6 % | 12 (26) | 0 | 0 | 0 (2) | 0 (4) | — | — |
-| 390 | Cielo, Saturno sin ficha | 59,9 % | 8,6 % | 12 | 0 | 0 | 0 | 0 | — | — |
-| 768 | portada | 87,7 % (59,7) | 7,0 % | 20 (26) | 0 | 0 | 0 | 0 (1) | 5,4:1 | — |
-| 768 | Saturno | 65,2 % (25,2) | 7,0 % | 12 (9) | 0 | 0 | 0 | 0 (0) | — | 28,6 %, a mano (62,3 %, no) |
-| 768 | Saturno, sin ficha | 84,3 % | 7,0 % | 27 | 0 | 0 | 0 | 0 | 5,4:1 | — |
-| 768 | Tierra | 84,4 % (40,0) | 7,0 % | 25 (36) | 0 | 0 | 0 | 0 (1) | 5,4:1 | — |
-| 768 | Luna | 84,4 % (43,2) | 7,0 % | 24 (34) | 0 | 0 | 0 | 0 (1) | 5,4:1 | — |
-| 768 | Cielo | 69,6 % (43,1) | 7,0 % | 21 (30) | 0 | 0 | 0 (2) | 0 (6) | 5,4:1 | — |
-| 768 | Cielo, Saturno sin ficha | 65,3 % | 7,0 % | 28 | 0 | 0 | 0 | 0 | 5,4:1 | — |
-| 1024 | portada | 87,1 % (63,9) | 9,6 % | 23 (37) | 0 | 0 | 0 | 0 (1) | 5,4:1 | — |
-| 1024 | Saturno | 59,5 % (42,4) | 9,6 % | 32 (46) | 0 | 0 | 0 | 0 (1) | 5,4:1 | — (la tarjeta de la derecha) |
-| 1024 | Saturno, sin ficha | 83,5 % | 9,6 % | 30 | 0 | 0 | 0 | 0 | 5,4:1 | — |
-| 1024 | Tierra | 73,3 % (49,6) | 9,6 % | 32 (47) | 0 | 0 | 0 (1) | 0 (1) | 5,4:1 | — |
-| 1024 | Luna | 78,9 % (52,4) | 9,6 % | 30 (45) | 0 | 0 | 0 | 0 (1) | 5,4:1 | — |
-| 1024 | Cielo | 72,1 % (52,9) | 9,6 % | 25 (41) | 0 | 0 | 0 (2) | 0 (7) | 5,4:1 | — |
-| 1024 | Cielo, Saturno sin ficha | 65,2 % | 9,6 % | 32 | 0 | 0 | 0 | 0 | 5,4:1 | — |
-| 1440 | portada | 90,7 % (74,5) | 8,1 % | 23 (37) | 0 | 0 | 0 | 0 (1) | 5,4:1 | — |
-| 1440 | Saturno | 70,6 % (55,3) | 8,1 % | 32 (46) | 0 | 0 | 0 | 0 (1) | 5,4:1 | — (la tarjeta de la derecha) |
-| 1440 | Saturno, sin ficha | 88,8 % | 8,1 % | 30 | 0 | 0 | 0 | 0 | 5,4:1 | — |
-| 1440 | Tierra | 82,2 % (63,6) | 8,1 % | 32 (47) | 0 | 0 | 0 (1) | 0 (1) | 5,4:1 | — |
-| 1440 | Luna | 85,9 % (65,9) | 8,1 % | 30 (45) | 0 | 0 | 0 | 0 (1) | 5,4:1 | — |
-| 1440 | Cielo | 78,0 % (64,1) | 8,1 % | 25 (41) | 0 | 0 | 0 (2) | 0 (7) | 5,4:1 | — |
-| 1440 | Cielo, Saturno sin ficha | 73,8 % | 8,1 % | 32 | 0 | 0 | 0 | 0 | 5,4:1 | — |
+| Tamaño | Vista | Zona útil | Velo | Controles visibles | Tapados | Recortes | Zonas < objetivo | Textos < 11 px | Contraste de los nombres | La ficha en reposo (alto, la pausa) | Centro del cuerpo (Δx, Δy) |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 390 | portada | 83,5 % (46,7) | 8,6 % | 16 (22) | 0 | 0 | 0 | 0 (1) | 5,4:1 | — | — |
+| 390 | Saturno | 90,3 % (24,8) | 8,5 % | 7 (8) | 0 | 0 | 0 | 0 (0) | — | 6,9 %, a mano (60,2 %, no) | −4,5 % / +0,9 % |
+| 390 | Saturno, sin ficha | 89,7 % | 8,5 % | 9 | 0 | 0 | 0 | 0 | 6,2:1 | — | −4,5 % / +0,9 % |
+| 390 | Tierra | 86,0 % (25,2) | 8,6 % | 13 (30) | 0 | 0 | 0 | 0 (1) | — | — | — |
+| 390 | Luna | 86,2 % (27,4) | 8,6 % | 14 (30) | 0 | 0 | 0 | 0 (1) | — | — | — |
+| 390 | Cielo | 60,2 % (27,7) | 8,6 % | 12 (26) | 0 | 0 | 0 (2) | 0 (4) | — | — | — |
+| 390 | Cielo, Saturno sin ficha | 59,9 % | 8,6 % | 12 | 0 | 0 | 0 | 0 | — | — | — |
+| 768 | portada | 87,7 % (59,7) | 7,0 % | 20 (26) | 0 | 0 | 0 | 0 (1) | 5,4:1 | — | — |
+| 768 | Saturno | 90,9 % (25,2) | 7,0 % | 7 (9) | 0 | 0 | 0 | 0 (0) | — | 5,7 %, a mano (62,3 %, no) | −4,6 % / +1,8 % |
+| 768 | Saturno, sin ficha | 86,5 % | 7,0 % | 22 | 0 | 0 | 0 | 0 | 5,4:1 | — | −4,6 % / +2,1 % |
+| 768 | Tierra | 84,4 % (40,0) | 7,0 % | 25 (36) | 0 | 0 | 0 | 0 (1) | 5,4:1 | — | — |
+| 768 | Luna | 84,4 % (43,2) | 7,0 % | 24 (34) | 0 | 0 | 0 | 0 (1) | 5,4:1 | — | — |
+| 768 | Cielo | 69,6 % (43,1) | 7,0 % | 21 (30) | 0 | 0 | 0 (2) | 0 (6) | 5,4:1 | — | — |
+| 768 | Cielo, Saturno sin ficha | 65,3 % | 7,0 % | 28 | 0 | 0 | 0 | 0 | 5,4:1 | — | — |
+| 1024 | portada | 87,1 % (63,9) | 9,6 % | 23 (37) | 0 | 0 | 0 | 0 (1) | 5,4:1 | — | — |
+| 1024 | Saturno | 59,5 % (42,4) | 9,6 % | 32 (46) | 0 | 0 | 0 | 0 (1) | 5,4:1 | — (la tarjeta de la derecha) | −5,6 % / −0,2 % |
+| 1024 | Saturno, sin ficha | 83,5 % | 9,6 % | 30 | 0 | 0 | 0 | 0 | 5,4:1 | — | −4,8 % / −0,1 % |
+| 1024 | Tierra | 73,3 % (49,6) | 9,6 % | 32 (47) | 0 | 0 | 0 (1) | 0 (1) | 5,4:1 | — | — |
+| 1024 | Luna | 78,9 % (52,4) | 9,6 % | 30 (45) | 0 | 0 | 0 | 0 (1) | 5,4:1 | — | — |
+| 1024 | Cielo | 72,1 % (52,9) | 9,6 % | 25 (41) | 0 | 0 | 0 (2) | 0 (7) | 5,4:1 | — | — |
+| 1024 | Cielo, Saturno sin ficha | 65,2 % | 9,6 % | 32 | 0 | 0 | 0 | 0 | 5,4:1 | — | — |
+| 1440 | portada | 90,7 % (74,5) | 8,1 % | 23 (37) | 0 | 0 | 0 | 0 (1) | 5,4:1 | — | — |
+| 1440 | Saturno | 70,6 % (55,3) | 8,1 % | 32 (46) | 0 | 0 | 0 | 0 (1) | 5,4:1 | — (la tarjeta de la derecha) | −4,4 % / +0,6 % |
+| 1440 | Saturno, sin ficha | 88,8 % | 8,1 % | 30 | 0 | 0 | 0 | 0 | 5,4:1 | — | −4,0 % / +0,6 % |
+| 1440 | Tierra | 82,2 % (63,6) | 8,1 % | 32 (47) | 0 | 0 | 0 (1) | 0 (1) | 5,4:1 | — | — |
+| 1440 | Luna | 85,9 % (65,9) | 8,1 % | 30 (45) | 0 | 0 | 0 | 0 (1) | 5,4:1 | — | — |
+| 1440 | Cielo | 78,0 % (64,1) | 8,1 % | 25 (41) | 0 | 0 | 0 (2) | 0 (7) | 5,4:1 | — | — |
+| 1440 | Cielo, Saturno sin ficha | 73,8 % | 8,1 % | 32 | 0 | 0 | 0 | 0 | 5,4:1 | — | — |
 
-- **Con «Controles», el Índice o «Más» abiertos** (30 estados, en los cuatro tamaños): 0 controles tapados y 0 recortes (antes, con «Controles» abierto, 12 tapados en la portada del móvil, 20 en Tierra y Luna y 16 en el Cielo; en la tableta, de 16 a 26). En el móvil, 17 controles con «Más» abierto en Tierra y en Luna, y 17 o 18 con «Controles» (23 antes de la crítica, con la hoja más alta).
+- **Con «Controles», el Índice, «Más» o la hoja de la ficha abiertos** (32 estados, en los cuatro tamaños): 0 controles tapados y 0 recortes (antes, con «Controles» abierto, 12 tapados en la portada del móvil, 20 en Tierra y Luna y 16 en el Cielo; en la tableta, de 16 a 26). En el móvil, 17 controles con «Más» abierto en Tierra y en Luna, y de 14 a 18 con «Controles» (23 antes de la crítica, con la hoja más alta). La hoja de la ficha, abierta desde la barra (decisión del 08-11): 35,4 % de la pantalla a 390 y 27,1 % a 768, con 9 controles y una zona útil del 60,3 y el 68,9 %.
 - **«Contraste de los nombres»:** el de los nombres de la fila sobre su placa, en el peor caso (blanco o negro detrás; crítica de la 9c, ≥ 4,5:1). «—»: sin fichas a la vista (Tierra, Luna y el Cielo en el teléfono, o con la hoja de la ficha).
 - **Las capas de etiquetas de la escena** (`.scene-labels` y `.sky-labels`, de `scene/labels.ts`) ya no cuentan como contenedores desbordados: recortan a propósito lo que sale del lienzo. Con esta tanda, a 768 en el Cielo con Saturno, un rótulo en el borde la hacía salir «desbordada» (778 > 768).
 - **Las páginas** (390 y 1440, la página entera): ninguna zona de menos de 24 px, ningún texto de menos de 11 ni ningún recorte en `/planetas`, `/planetas/marte`, `/lunas`, `/lunas/titan`, `/luna`, `/sol` y `/eclipses` (antes, de 9 a 21 notas «Fuente N» de 24 × 22 en cada ficha). En «Sobre el proyecto» (390: 12, 1440: 14 enlaces «Fase N» de 16 px de alto; a 390, además, su diagrama y dos tablas, que se desplazan en horizontal) y en los créditos (390: 5, 1440: 5 licencias de 19 px): de la otra sesión (§12).
@@ -370,7 +374,7 @@ Con el mismo script y las mismas condiciones que §6.1 (`scripts/measure-ui.mjs`
 
 ## 7. Capturas
 
-En `docs/informes/img/fase-9c/`, con `scripts/capture-interface.mjs` (`CAPTURE_PORT=4350`, de una en una): `antes-<tamaño>-<vista>.webp` (24, del build de `main`) y `despues-<tamaño>-<vista>.webp` (33, rehechas el 08-11 sobre el build final, con los arreglos de la crítica). Tamaños 390 (móvil, ×2), 768 (tableta) y 1440 (escritorio); vistas `portada`, `saturno` (con la hoja en el móvil), `saturno-fichas` (solo después: el selector con Saturno elegido y la ficha cerrada, la decisión de Iván del 07-11: dos filas en la tableta y el PC, una con la raya en el móvil), `saturno-controles` (solo después: «Controles» abierto con Saturno; en el PC, la cámara aparta el planeta a la izquierda del panel; en el móvil y la tableta, la hoja baja con el 3D encima), `tierra`, `luna`, `cielo` (las del explorador, con `?captura=1`), `ficha-marte`, `lunas` y `eclipses` (la página entera) y, solo después, `recorrido` (la portada a los 6 s del recorrido, con el rótulo de su parada y «Saltar el recorrido», junto a la fila).
+En `docs/informes/img/fase-9c/`, con `scripts/capture-interface.mjs` (`CAPTURE_PORT=4350`, de una en una): `antes-<tamaño>-<vista>.webp` (24, del build de `main`) y `despues-<tamaño>-<vista>.webp` (35, rehechas el 08-11 sobre el build final, con los arreglos de la crítica y la ficha del móvil). Tamaños 390 (móvil, ×2), 768 (tableta) y 1440 (escritorio); vistas `portada`, `saturno` (en el móvil y la tableta, desde el 08-11, con la barra fina y la franja de arriba), `saturno-fichas` (solo después: el selector con Saturno elegido y la ficha cerrada, la decisión de Iván del 07-11: dos filas en la tableta y el PC, una con la raya en el móvil), `saturno-hoja` (solo después, a 390 y 768: la hoja de la ficha abierta desde la barra fina; decisión de Iván del 08-11), `saturno-controles` (solo después: «Controles» abierto con Saturno; en el PC, la cámara aparta el planeta a la izquierda del panel; en el móvil y la tableta, la hoja baja con el 3D encima), `tierra`, `luna`, `cielo` (las del explorador, con `?captura=1`), `ficha-marte`, `lunas` y `eclipses` (la página entera) y, solo después, `recorrido` (la portada a los 6 s del recorrido, con el rótulo de su parada y «Saltar el recorrido», junto a la fila).
 
 ## 8. Dependencias añadidas
 
@@ -379,7 +383,7 @@ Ninguna.
 ## 9. Pendientes y `TODO(ivan)`
 
 `docs/PENDIENTES.md` es de la otra sesión mientras trabaja: lo que haya que apuntar allí va en §12.
-- **Para Iván:** revisar los textos nuevos de la interfaz (§12, «Los textos nuevos» y «Los textos nuevos de la crítica»); probar en el móvil la hoja de dos alturas, las filas desplazables, el recorrido, las pistas y «Controles» como hoja baja (no bloquea); y decidir si quiere el año también en la barra del teléfono (§10).
+- **Para Iván:** revisar los textos nuevos de la interfaz (§12, «Los textos nuevos» y «Los textos nuevos de la crítica»); probar en el móvil la barra fina de la ficha y su hoja (con el dedo: deslizarla hacia arriba y hacia abajo), la franja de arriba, las filas desplazables, el recorrido, las pistas y «Controles» como hoja baja (no bloquea); y decidir si quiere el año también en la barra del teléfono (§10).
 - **La crítica de impeccable, otra vez:** la repitió la sesión de revisión el 08-11 (31/40, `docs/revisiones/fase-9c-critica.md`); tras esta tanda, repasa solo lo que cambia (su recomendación, punto 2). El rendimiento (FPS), al cerrar el bloque con el PC libre.
 - **Para decidir con la sesión de revisión e Iván** (§4): el Cielo del móvil sin fichas (su selector es «Esta noche»); el Cielo de escritorio sin cuerpo, con 25 controles; «Más» y «Controles» abiertos en el móvil, por encima de 16; y las sugerencias 19a (la cabecera compacta del explorador también en escritorio) y 19c (la tableta, medida con el tope de escritorio).
 
@@ -424,7 +428,7 @@ npm run build && CAPTURE_PORT=4350 node scripts/serve-dist.mjs   # http://127.0.
 
 Qué mirar:
 - `/` en una ventana privada (la primera vez): el recorrido de unos 30 s, con su rótulo junto a la fila («1 de 4 · Saturno y sus anillos») y «Saltar el recorrido», que lleva a la vista general en marcha; al acabar, «Ahora tú: elige un cuerpo abajo…», 7 s; la línea de autoría se pliega a los 8 s.
-- Elegir Saturno: el título (y el de la pestaña del navegador) dice «Saturno», con «‹ Sistema solar»; en el PC, sus lunas, en pastillas, encima de los planetas; en el móvil, la ficha sube hasta la mitad, con la pausa debajo, y «Ver los datos» la sube entera; al cerrarla, la fila de su sistema, con la raya.
+- Elegir Saturno: el título (y el de la pestaña del navegador) dice «Saturno», con «‹ Sistema solar»; en el PC, sus lunas, en pastillas, encima de los planetas; en el móvil, arriba una sola franja («‹ Sistema solar», «Saturno» y «Menú») y abajo solo una barra fina («Ver ficha»): un toque, o deslizarla hacia arriba, abre la hoja (el resumen y «Ficha completa»), y «Ver los datos» la sube entera; deslizarla hacia abajo, o Esc, la devuelve a la barra; al cerrarla (×), la fila de su sistema, con la raya.
 - Tierra, Luna y Cielo en el móvil: el panel en una fila con «Más»; el Cielo, con el resumen de lo que hay sobre el horizonte, «Usar mi ubicación» y «Esta noche». En el PC, Tierra y Luna con los planetas y la Luna encima.
 - «Controles»: el tiempo, la cámara y la escena; «Ver el recorrido». En el PC, abierto, la cámara aparta el cuerpo; en el móvil, una hoja baja con el 3D encima.
 - El año en la barra (PC y tableta): «‹ 2026 ›», y mantenido, por décadas; con el teclado, Mayús + Re Pág y Av Pág en la línea del año.
@@ -463,6 +467,8 @@ Lo que esta fase necesita del lado de la 9b (o lo que hay que repasar al juntar 
   - **una precarga de texturas en la API de la escena** (`scene/index.ts`, `scene/textures.ts`), para que el recorrido pida la Tierra y la Luna durante la parada de Saturno: si la textura llega tarde, se ve una esfera azul lisa. La interfaz la llamaría desde `runTour` (`features/tour/home-tour.ts`);
   - **los nombres de los lugares sobre los puntos de España** (los marcadores de la vista guiada, `earth-markers`): hoy los dice el rótulo de la parada del recorrido.
 - **Los textos nuevos de la crítica** (`reviewed: false`): los rótulos del recorrido («1 de 4 · Saturno y sus anillos», «La Tierra», «España y los lugares del cielo: el Montsec, Fabra, Calar Alto, Madrid, Fraga, el Teide y el Roque de los Muchachos», «La Luna», «El sistema solar, en marcha»; con la Luna casi nueva, «… de 3»), su anuncio («Recorrido de unos 30 segundos: Saturno, la Tierra y la Luna. Pulsa «Saltar» o cualquier tecla para pararlo.»), las pistas («Ahora tú: elige un cuerpo abajo · arrastra para girar · usa la rueda para acercarte», o «pellizca para acercarte»), las flechas del año («Año anterior (Mayús + Av Pág)», «Año siguiente (Mayús + Re Pág)»), la descripción de la línea del año («Flechas, un día; Re Pág y Av Pág, un mes; con Mayús, un año; Inicio y Fin, el principio o el final del año.») y las migas de `/eclipses` («Inicio › Eclipses»).
+- **Los textos nuevos de la ficha del móvil** (`reviewed: false`; decisión de Iván del 08-11): «Ver ficha» y «Ver menos» (la barra fina), y su línea, que se compone con el tipo y el primer dato de la ficha («Planeta · Radio ecuatorial: 60.268 km»).
+- **`ExplorerFocus` pasa a `core/explorer-focus.ts`** (decisión de Iván del 08-11: la cabecera del sitio lo lee para la franja del cuerpo elegido). Si la 9b lo importa desde `features/explorer-ui/`, al fusionar cambia la ruta.
 - **Las pistas, junto a la fila:** los scripts que abren `/` sin `?captura=1` las verán 7 s al acabar o saltar el recorrido (o, sin recorrido, al pintarse el 3D), salvo con `localStorage['tls.pistas'] = 'visto'`.
 - **Al fusionar** (adenda, §5.3): D47 en el plan (§2 y la fase), con el criterio de controles de la decisión de Iván del 07-11 (≤ 32 con un cuerpo elegido), una línea en `PENDIENTES.md` y otra en el `DIARIO`.
 
@@ -526,3 +532,26 @@ La crítica repetida (`docs/revisiones/fase-9c-critica.md`: 31/40, a un punto de
 - `/eclipses` usaba `--space-5`, que no existe en la escala (1, 2, 3, 4, 6, 8…): el margen del selector y el de las fuentes se quedaban en 0. Ahora, `--space-6`. Una búsqueda de variables sin definir en `src/` no encuentra otra;
 - la placa del recorrido proyecta su botón (`<ng-content>`): el JS inicial sube 0,88 kB (311,02 kB, con el aviso a 320), porque las instrucciones de proyección van al chunk compartido inicial. El código propio inicial no cambia (10,96 kB de 15);
 - con la ficha y «Controles» abiertos a 1024, el encuadre libre queda en 240 px: Saturno se ve, pequeño, en vez de quedar tapado por el panel; y el rótulo 3D de «Saturno» cae sobre el título de la presentación (es de la escena: §12).
+
+## Decisión de Iván del 08-11: la ficha del móvil, menos invasora
+
+Iván, tras probar la vista previa: «sobre todo cuando clicas algún planeta… abajo salta, es muy invasor». La sesión de revisión lo midió a 375 × 812, con la Tierra y Saturno elegidos: la hoja en reposo ocupaba el 37 % de la pantalla y, con la cabecera y las pestañas (otro 14 %) y la barra de tiempo, casi el 60 % quedaba tapado, con el planeta apretado arriba y la descripción entera a la vista. Se ha hecho después de la tanda de la crítica, en esta rama y sin fusionar, solo en el móvil y la tableta (por debajo de 64 rem, el corte de las hojas). Los commits: `1b176b2` (la barra fina y la hoja a demanda), `edfb195` (la franja de arriba), `cc6f430` (las medidas y las capturas) y el de este informe, DISENO y la adenda.
+
+| Lo que pedía | Qué se ha hecho | Evidencia |
+|---|---|---|
+| 1. Al elegir un cuerpo, solo una barra fina (≤ 12 %) | `tls-body-bar` (`features/body-panel/body-bar.ts`), encima de la barra de tiempo: el nombre, el tipo y un dato clave (el radio: «Planeta · Radio ecuatorial: 60.268 km»), «Ver ficha» y ×, sin la descripción. El dato es uno que no cambia: el nombre del botón no se mueve mientras corre la simulación. Las fichas de la fila, ocultas tras ella como antes tras la hoja | `measure-ui.mjs`: 6,9 % a 390 y 5,7 % a 768 |
+| 2. La hoja a media pantalla, solo si se pide | Un toque o Intro en la barra (es «Ver ficha»), o deslizarla hacia arriba: la hoja, con el resumen, «Ficha completa» y «Ver los datos» (que la sube entera). Deslizarla hacia abajo (la barra o su tirador), o Esc, la devuelve a la barra; con la barra, deslizar hacia abajo cierra la ficha. Con movimiento reducido, sin animación (las duraciones, a 0) | e2e (un toque, el dedo y el teclado); `measure-ui.mjs`, estado «ficha»: la hoja, 35,4 % a 390 y 27,1 % a 768, sin nada tapado |
+| 3. Arriba, una sola franja | La cabecera del sitio, de 3 rem, con «‹ Sistema solar», el nombre y «Menú», en lugar de la cabecera y las pestañas. Las pestañas, «‹ Sistema solar» de la presentación y la autoría salen; el H1 y su tipo quedan para el lector. La cabecera lee el cuerpo de `ExplorerFocus`, que pasa a `core/` | e2e «con un cuerpo elegido, arriba, una sola franja…»: la cabecera, ≤ 49 px; el menú, a mano; «‹ Sistema solar» la quita |
+| 4. La pausa, siempre a mano | La barra fina y la hoja, encima de la barra de tiempo | e2e: reproducir se pulsa con la barra y con la hoja abierta (también con las animaciones congeladas) |
+| 5. La accesibilidad, igual o mejor | La barra es un botón con `aria-expanded` y `aria-controls` (el resumen, `#card-body`); el foco va a la barra al elegir (también con el teclado, desde el índice), al abrir la hoja a su contenido (`tabindex="-1"`) y, con Esc, de vuelta a la barra; lo que no se ve no está en el orden del foco | e2e del teclado y del foco (a 390 y a 768, ninguna parada en algo que no se ve); axe sin violaciones con la barra y con la hoja abierta |
+
+**Los criterios nuevos** (en §2, en lugar del de la hoja en reposo, y en la adenda, §4): con un cuerpo elegido, la barra fina, ≤ 12 % (6,9 y 5,7 %); la interfaz en reposo, ≤ 30 % (zona útil del 90,3 y el 90,9 %; por alto, el 19,7 y el 16,2 %); el cuerpo, centrado en el hueco libre (en alto, +0,9 y +1,8 %).
+
+**Con «Controles» (el punto 6 de la crítica), no choca:** con «Controles» abierto, la barra y la hoja se ocultan, como antes la hoja, y las dos siguen el mismo patrón: suben sobre la barra de tiempo, no pasan de media pantalla, Esc las cierra y el foco vuelve a su botón.
+
+**Encontrado al hacerlo:**
+- el encuadre contaba lo que estaba oculto (las fichas tras la barra, `visibility: hidden`): con la barra fina, el cuerpo quedaba 6 px (a 390) y 34 px (a 768) por encima del centro del hueco. Ya no cuenta;
+- el comprobador del bundle inicial no deja nada de `features/explorer-ui/` en el JS inicial: `ExplorerFocus`, que es una señal sin dependencias, pasa a `core/`. El JS inicial sube 1,62 kB (312,64) y el código propio inicial, a 12,07 kB de 15;
+- en los e2e, un gesto emulado demasiado rápido es para Chrome un lanzamiento, y el toque siguiente solo lo para (sin clic): el gesto de los e2e lleva los tiempos de un dedo;
+- con la barra hay menos paradas del tabulador: el e2e que buscaba lo último fuera de la ficha seis paradas más allá acababa en la cabecera, fuera del explorador; ahora, tres;
+- el tirador captura el puntero, como la barra: con el ratón (en una tableta con ratón), soltar fuera de él también cuenta.

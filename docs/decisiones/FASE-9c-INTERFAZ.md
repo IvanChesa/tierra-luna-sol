@@ -169,6 +169,7 @@ Se miden con un script de la fase (`scripts/measure-ui.mjs` o parecido; los scri
   - en el móvil, ≤ 16 en cualquier vista.
   - **Cambio del 07-11 (decisión de Iván):** con un cuerpo elegido en escritorio, ≤ 32 (en lugar de ≤ 30). Planetas y lunas vuelven a distinguirse en el selector de abajo: en el PC y la tableta, dos filas (los planetas, redondos con el nombre debajo; encima, las lunas del sistema elegido, en pastillas con la miniatura y el nombre al lado), también en las vistas Tierra y Luna; en el móvil, una sola fila (el planeta, una raya y sus lunas) con «‹ Sistema solar» para volver.
 - [ ] **La hoja del cuerpo en el móvil, en reposo:** ≤ 45 % de la pantalla, con el cuerpo visible y la pausa a mano (e2e).
+  - **Cambio del 08-11 (decisión de Iván; sustituye al criterio de arriba):** en el móvil y la tableta, al elegir un cuerpo, solo una barra fina encima de la barra de tiempo (el nombre, el tipo, un dato clave, «Ver ficha» y ×), y la hoja, a demanda; arriba, una sola franja con «‹ Sistema solar» y el nombre. Con un cuerpo elegido, la barra fina ≤ 12 % de la pantalla; la interfaz en reposo tapa como mucho el 30 % (zona útil del 3D ≥ 70 %) a 390 y a 768; y el cuerpo, centrado en el hueco libre.
 - [ ] **Los gestos:** el e2e de 9c.1 en verde a 390 y 768.
 - [ ] **Sin solapes:** el script de 9c.4 sin fallos en los cuatro tamaños.
 - [ ] **Zonas táctiles:** 44×44 en el explorador en el móvil y ≥ 24×24 en todas las páginas; nada legible por debajo de 11 px.

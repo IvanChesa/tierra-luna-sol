@@ -191,18 +191,30 @@ Las cifras y las fechas del boceto son marcadores.
 │     Hora local · 3 días/s      │     de tiempo en una fila
 └────────────────────────────────┘
 ```
-En el teléfono (< 768 px), con un planeta con lunas elegido (y la ficha cerrada), la fila es la de su sistema; en la tableta, como en el PC, dos filas:
+Con un cuerpo elegido (decisión de Iván del 08-11), arriba, una sola franja en lugar de la cabecera y las pestañas; al elegirlo, abajo, solo una barra fina, que abre la hoja de su ficha:
 ```
 ┌────────────────────────────────┐
-│ ‹ Sistema solar                │ ← el título dice el cuerpo, con
-│ Saturno                        │    «‹ Sistema solar» para volver
+│ ‹ Sistema solar  Saturno ≡ Menú│ ← una sola franja (3 rem): la
+│                                │    cabecera y las pestañas, fuera
+│              (♄)               │ ← el cuerpo, en el centro del
+│                                │    hueco libre
+│ Saturno          Ver ficha ⌃ × │ ← la barra fina (≤ 12 %): un botón
+│ Planeta · Radio ecuatorial: …  │    que abre la hoja (y se desliza)
+│ (▶) 24 oct 2026, 02:00 ──●─ [⚙]│
+└────────────────────────────────┘
+```
+En el teléfono (< 768 px), con un planeta con lunas elegido y la ficha cerrada, la fila es la de su sistema; en la tableta, como en el PC, dos filas:
+```
+┌────────────────────────────────┐
+│ ‹ Sistema solar  Saturno ≡ Menú│ ← la franja del cuerpo elegido
 │              …                 │
 │ (♄) │ [◐ Mimas] [◐ Encélado] → │ ← el planeta, una raya y sus
 │ Sat.│                          │    lunas en pastillas (desplazable)
 │ (▶) 24 oct 2026, 02:00 ──●─ [⚙]│
 └────────────────────────────────┘
 ```
-- **La ficha** es una hoja de dos alturas encima de la barra (que sigue a la vista: reproducir y pausar, siempre a mano): en reposo, como mucho el 45 % de la pantalla, con el nombre, el resumen, «Ficha completa» y «Ver los datos»; subida, los datos y sus fuentes.
+- **La ficha** (decisión de Iván del 08-11: la hoja en reposo era «muy invasora»): al elegir un cuerpo, solo una barra fina encima de la barra de tiempo, con el nombre, el tipo y el radio, «Ver ficha» y × (como mucho el 12 % de la pantalla). Es un botón con `aria-expanded` que abre la hoja: un toque, Intro o deslizarla hacia arriba. La hoja, a media pantalla, con el resumen, «Ficha completa» y «Ver los datos» (que la sube entera, con los datos y sus fuentes); deslizarla hacia abajo, o Esc, la devuelve a la barra. El foco va a la barra al elegir el cuerpo; al abrir la hoja, a su contenido; Esc lo devuelve a la barra. Reproducir y pausar, siempre a mano, debajo.
+- **Arriba, con un cuerpo elegido, una sola franja:** «‹ Sistema solar», el nombre y «Menú», en la cabecera del sitio (de 3 rem), en lugar de la cabecera y las pestañas. La presentación se recoge: el H1 y su tipo, solo para el lector; la autoría, fuera.
 - **El índice y «Controles»** suben como hojas, con su título y su botón de cerrar. Lo que tapan sale del orden del foco. «Controles» es una hoja baja, como mucho el 45 % de la pantalla (lo demás se desplaza dentro): el 3D se ve encima mientras se usa, y la cámara aparta el cuerpo por encima de ella. En un teléfono bajo, deja al menos unos 150 px de 3D bajo el título; en horizontal (o con el zoom al 200 %), es un panel a la derecha, de debajo de las pestañas a la barra, con el 3D a su izquierda.
 - **Tierra y Luna:** en el teléfono, sin fichas (en el título, «‹ Sistema solar»); su panel en una fila (las vistas, desplazables, y «Más» para el resto) y la barra plegada a reproducir, la fecha y «Controles». **El Cielo:** el lugar (su nombre corto, «Montsec (Lleida)») con «Usar mi ubicación» debajo (en la tableta, a su lado), la hora y una línea de resumen; «Esta noche», a demanda (con su marcador de abierto o cerrado), con la tabla en dos líneas por fila si no cabe en su caja (también en la columna del escritorio); en el teléfono, sin fichas.
 - **En los teléfonos bajos** (en horizontal o con el zoom al 200 %), la página se desplaza: al llegar se ven el lienzo y, justo debajo, la barra con su pausa.
