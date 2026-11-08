@@ -1422,11 +1422,9 @@ export class World {
       uHazeColor: hazeColor,
       uSunDirection: body.uSunDirection,
       // El borde de la Tierra realzada (fase 9b, D46), más azul y brillante; los demás, sin tinte.
-      uTint: new Uniform(
-        new Vector3(
-          ...(mesh.name === 'tierra' ? VISUAL_CONFIG.earth.enhanced.rim : ([1, 1, 1] as const)),
-        ),
-      ),
+      ...(mesh.name === 'tierra'
+        ? { uTint: new Uniform(new Vector3(...VISUAL_CONFIG.earth.enhanced.rim)) }
+        : {}),
     });
     const shell = new Mesh(this.coarseSphere, material);
     shell.name = `${mesh.name}-atmosphere`;

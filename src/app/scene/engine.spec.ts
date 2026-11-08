@@ -1413,7 +1413,7 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
         uEarth: { value: Vector4 };
         uEnhancedAridKnee: { value: number };
       } | null;
-      atmosphere: { uniforms: { uTint: { value: Vector3 } } } | null;
+      atmosphere: { uniforms: { uTint?: { value: Vector3 } } } | null;
     }
     const visuals = (internals(h).world as unknown as { visuals: EnhancedVisual[] }).visuals;
     const visual = visuals.find((v) => v.body.id === 'tierra');
@@ -1433,9 +1433,10 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     // Los umbrales de las nubes, en orden, y su opacidad, sin pasar de la de la textura.
     expect(clouds.from).toBeLessThan(clouds.to);
     expect(clouds.max).toBeLessThanOrEqual(1);
-    expect(visual?.atmosphere?.uniforms.uTint.value.toArray()).toEqual([...rim]);
+    expect(visual?.atmosphere?.uniforms.uTint?.value.toArray()).toEqual([...rim]);
+    // Los demás halos, sin tinte (y sin `TLS_TINT`: su shader, el de siempre).
     for (const other of visuals.filter((v) => v.body.id !== 'tierra' && v.atmosphere)) {
-      expect(other.atmosphere?.uniforms.uTint.value.toArray(), other.body.id).toEqual([1, 1, 1]);
+      expect(other.atmosphere?.uniforms.uTint, other.body.id).toBeUndefined();
     }
     h.engine.dispose();
   });
