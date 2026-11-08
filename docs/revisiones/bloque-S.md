@@ -55,6 +55,7 @@ La revisión de la fase hizo bien su trabajo: vio el cambio de criterio de D45 y
 | S4 | Menor (fase 10) | §10 del informe de la fase 9b | Las propuestas de la fase, sin sitio en el plan. | En la fase 10 (abajo, «Propuestas de la fase 9b»). |
 | S5 | Menor (fase 10) | `scripts/build-text-review.mjs:110`; `docs/revision-textos.md:15` | El índice de la revisión de textos dice «en 0 lunas, la línea sobre su mapa». Filtra por `kind`, que `body-texts.json` no tiene. Las líneas sí están en la lista. | Contar las lunas sin `kind` (o añadirlo) y regenerar, con la comprobación de los textos (decisión 6). |
 | S6 | Menor (antes de la fase 11) | `src/app/core/site.config.ts:48`; el pie | **ivanchesa.com sigue sin existir** (NXDOMAIN el 08-11). Los enlaces del pie (el aviso legal, la privacidad y el autor) llevan a un dominio que no resuelve, y el subdominio de la fase 11 (`tierra-luna-sol.ivanchesa.com`) necesita su zona. En ivanchesa.es, las dos páginas legales responden (200). | Se queda ivanchesa.com (D37). La fase 11 empieza cuando el dominio exista (lo lleva la sesión de ivanchesa.com). Si para entonces no tiene las páginas legales, los enlaces pasan provisionalmente a las de ivanchesa.es. |
+| S8 | **Importante** (fase 10; decisión de Iván del 08-11) | El Sol del explorador: su orientación en la escena, `sun-material.ts` y `sunspotsAt` | **«El sol está rotando, no debe rotar»** (Iván, en su PC, después de esta revisión). El disco gira con la rotación del Sol, de unos 14° al día en el ecuador. A 3 días/s, la velocidad de la vista general, son unos 42° por segundo, y a 1 h/s, una vuelta en unos 10 minutos. Las manchas, además, derivan con su rotación diferencial. | **El Sol del explorador, sin girar:** el disco, con su eje pero sin el giro sobre él; las manchas, quietas (sin la deriva de la rotación diferencial); y, si giran, también los rayos del halo. Se queda el fluir lento de la superficie que Iván aprobó en la segunda vuelta. Comprobado a 3 días/s y a 1 h/s con `scripts/capture-sun-motion.mjs`. Los textos que hablan del giro de las manchas (`/creditos`, «Lo que es ilustrativo» y la ficha del Sol, si lo nombra), al día. |
 | S7 | Menor (ahora) | El plan, `PROMPTS.md`, `PENDIENTES.md` y `CLAUDE.md` | El bloque S, sin cerrar en los documentos, y las decisiones de abajo, sin apuntar. | «Para aplicar esta revisión», abajo. |
 
 ## Decisiones que Iván delegó (08-11)
@@ -183,7 +184,7 @@ Esta revisión ya está en `main` (la subió la sesión de revisión). El bloque
   2. **Crea la rama de la fase 10 y sigue el ciclo de siempre.**
      - **La tarea 6 (la regresión visual) va al final, después de juntar la 10.a,** para que sus referencias partan de las lunas buenas.
      - **Las medidas de rendimiento de la tarea 4, con el equipo libre:** cuando la sesión 2 haya terminado.
-     - S2 va en la tarea 4, y S3, en la 8.
+     - S2 va en la tarea 4, y S3 y S8, en la 8. S8, de las primeras: es una petición de Iván.
   3. **Integra la 10.a** con `--no-ff` (como la 9b) y cierra la fase.
 
 ### Sesión 2, «Bloque F: las lunas, segunda vuelta (10.a)»
