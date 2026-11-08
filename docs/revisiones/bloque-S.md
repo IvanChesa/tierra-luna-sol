@@ -107,7 +107,14 @@ El borde se mide con los dos criterios, porque miden cosas distintas. Y lo real 
 - **También va aquí** el matiz del subtítulo de Shackleton (`PENDIENTES.md`).
 
 ### 5. GitHub y dependencias
-- **Los PR 1 y 3 de Dependabot:** los fusiona esta sesión el 08-11, con el CI de `main` en verde. Primero el 3 y luego el 1, cada uno con `@dependabot rebase` y su CI en verde. Son versiones de parche.
+- **Dependabot:**
+  - **El PR 3** (Angular 22.2.x, versiones de parche): fusionado el 08-11 por esta sesión, con su CI en verde (`6db55df`).
+  - **El PR 1** lo cerró Dependabot y lo sustituyó por **el PR 4**, que agrupa seis herramientas: `@playwright/test` 1.65.0, `vitest` y `@vitest/coverage-v8` 5.1.0, `eslint` 10.14.0, `typescript-eslint` 8.72.1 y `jsdom` 31.0.0 (versión mayor).
+  - **El CI del PR 4 falla en un test.** `labels.spec.ts:189` compara el `transform` como texto, y jsdom 31 lo normaliza: `translate3d(100px, 200px, 0px)` en lugar de `translate3d(100.0px, 200.0px, 0)`. No es un fallo de la aplicación.
+  - **Lo fusiona la sesión 1 al empezar,** antes de la tarea 6 (la regresión visual), para que sus referencias salgan con el Playwright final:
+    1. el test, en `main`, comparando los números, de modo que pase con las dos versiones de jsdom;
+    2. `@dependabot rebase` en el PR 4;
+    3. con su CI en verde, la fusión.
 - **`@lhci/cli`: aprobado** para la tarea 7 de la fase 10, como dependencia de desarrollo, con tres condiciones:
   - los informes, solo en el disco del CI (nunca `temporary-public-storage`, que los sube a un tercero);
   - contra el build local;
@@ -158,19 +165,21 @@ Esta revisión ya está en `main` (la subió la sesión de revisión). El bloque
 - **Dónde:** en la carpeta del proyecto, en la rama `fase-10-pulido`.
 - **Prompt:** `Aplica docs/revisiones/bloque-S.md y continúa con el bloque F.`
 - **Pasos:**
-  1. **En `main`,** tras traer `origin/main` (con los PR de Dependabot ya fusionados, decisión 5) y hacer `npm ci`, pon al día:
-     - **el plan:**
-       - D48 y D49 en §1, y `@lhci/cli` en la lista cerrada;
-       - en §6, el bloque S ✅ (revisado en `bloque-S.md`);
-       - la fase 10, con la entrega 10.a, las decisiones 4 y 6 y las propuestas de la 9b;
-       - la tarea 9 (el bloom), «quitarlo»;
-       - el backlog 15, sin lo que pasa a la fase 10;
-     - **`PROMPTS.md`:** el bloque S ✅; en el F, «Antes de empezar»: ✅ `@lhci/cli`, aprobado; el iPhone, cuando Iván pueda (no bloquea);
-     - **`PENDIENTES.md`:**
-       - lo decidido aquí, marcado con su fecha y «delegado por Iván en la sesión de revisión»;
-       - lo que sigue siendo de Iván: sus pruebas en el móvil, el zip de Proteo (opcional), «Sobre el proyecto» (opcional) y la lista corta de textos, cuando exista;
-     - **`CLAUDE.md`:** en «Decisiones ya tomadas», `@lhci/cli`, aprobado y con sus condiciones;
-     - **el `DIARIO`:** una línea.
+  1. **En `main`,** tras traer `origin/main` y hacer `npm ci`:
+     - **el PR 4 de Dependabot,** como dice la decisión 5: el test, `@dependabot rebase`, el CI en verde y la fusión; después, otra vez `npm ci`;
+     - **los documentos, al día:**
+       - **el plan:**
+         - D48 y D49 en §1, y `@lhci/cli` en la lista cerrada;
+         - en §6, el bloque S ✅ (revisado en `bloque-S.md`);
+         - la fase 10, con la entrega 10.a, las decisiones 4 y 6 y las propuestas de la 9b;
+         - la tarea 9 (el bloom), «quitarlo»;
+         - el backlog 15, sin lo que pasa a la fase 10;
+       - **`PROMPTS.md`:** el bloque S ✅; en el F, «Antes de empezar»: ✅ `@lhci/cli`, aprobado; el iPhone, cuando Iván pueda (no bloquea);
+       - **`PENDIENTES.md`:**
+         - lo decidido aquí, marcado con su fecha y «delegado por Iván en la sesión de revisión»;
+         - lo que sigue siendo de Iván: sus pruebas en el móvil, el zip de Proteo (opcional), «Sobre el proyecto» (opcional) y la lista corta de textos, cuando exista;
+       - **`CLAUDE.md`:** en «Decisiones ya tomadas», `@lhci/cli`, aprobado y con sus condiciones;
+       - **el `DIARIO`:** una línea.
   2. **Crea la rama de la fase 10 y sigue el ciclo de siempre.**
      - **La tarea 6 (la regresión visual) va al final, después de juntar la 10.a,** para que sus referencias partan de las lunas buenas.
      - **Las medidas de rendimiento de la tarea 4, con el equipo libre:** cuando la sesión 2 haya terminado.
