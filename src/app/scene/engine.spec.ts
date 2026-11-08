@@ -1453,9 +1453,55 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
       2,
     );
     expect(earth.uOccluderLocal.value.w).toBeCloseTo(0.272, 2);
-    // Y las tierras áridas, con su compresión de la configuración visual (calibrada con EPIC).
+    // Y las tierras áridas, con su compresión de la configuración visual (calibrada con EPIC; de
+    // noche, también con la Tierra realzada).
     const { knee, warmFrom, warmTo } = VISUAL_CONFIG.earth.arid;
     expect(earth.uArid.value.toArray()).toEqual([knee, warmFrom, warmTo]);
+    h.engine.dispose();
+  });
+
+  it('la Tierra del explorador, realzada (fase 9b, D46): el océano, las nubes, la tierra, el reflejo y el borde de su atmósfera, con VISUAL_CONFIG.earth.enhanced; el halo de los demás, sin tinte', async () => {
+    const h = await createHarness({ reducedMotion: true, focus: 'tierra' });
+    settle(h);
+    interface EnhancedVisual {
+      body: { id: string };
+      earth: {
+        uOcean: { value: Vector4 };
+        uOceanDetail: { value: { x: number; y: number } };
+        uCloudShape: { value: Vector4 };
+        uLand: { value: Vector4 };
+        uVegetationTint: { value: Vector3 };
+        uGlintShape: { value: Vector4 };
+        uGlintFresnel: { value: { x: number; y: number } };
+        uGlintTint: { value: Vector3 };
+        uEarth: { value: Vector4 };
+        uEnhancedAridKnee: { value: number };
+      } | null;
+      atmosphere: { uniforms: { uTint?: { value: Vector3 } } } | null;
+    }
+    const visuals = (internals(h).world as unknown as { visuals: EnhancedVisual[] }).visuals;
+    const visual = visuals.find((v) => v.body.id === 'tierra');
+    const earth = visual?.earth;
+    if (!earth) throw new Error('Sin uniformes de la Tierra');
+    const { ocean, clouds, glint, land, rim } = VISUAL_CONFIG.earth.enhanced;
+    expect(earth.uOcean.value.toArray()).toEqual([...ocean.albedo, 1]);
+    expect(earth.uOceanDetail.value).toMatchObject({ x: ocean.waterLuminance, y: ocean.detail });
+    expect(earth.uCloudShape.value.toArray()).toEqual([clouds.from, clouds.to, clouds.max, 1]);
+    expect(earth.uLand.value.toArray()).toEqual([...land.aridTint, land.saturation]);
+    expect(earth.uVegetationTint.value.toArray()).toEqual([...land.vegetationTint]);
+    expect(earth.uGlintShape.value.toArray()).toEqual([glint.wide, glint.exponent, glint.core, 1]);
+    expect(earth.uGlintFresnel.value).toMatchObject({ x: glint.f0, y: glint.fresnelMax });
+    expect(earth.uGlintTint.value.toArray()).toEqual([...glint.tint]);
+    expect(earth.uEarth.value.z).toBe(glint.intensity);
+    expect(earth.uEnhancedAridKnee.value).toBe(land.aridKnee);
+    // Los umbrales de las nubes, en orden, y su opacidad, sin pasar de la de la textura.
+    expect(clouds.from).toBeLessThan(clouds.to);
+    expect(clouds.max).toBeLessThanOrEqual(1);
+    expect(visual?.atmosphere?.uniforms.uTint?.value.toArray()).toEqual([...rim]);
+    // Los demás halos, sin tinte (y sin `TLS_TINT`: su shader, el de siempre).
+    for (const other of visuals.filter((v) => v.body.id !== 'tierra' && v.atmosphere)) {
+      expect(other.atmosphere?.uniforms.uTint, other.body.id).toBeUndefined();
+    }
     h.engine.dispose();
   });
 

@@ -870,7 +870,8 @@ export class World {
     const previous = relief.loaded;
     relief.loaded = loaded;
     visual.uniforms.uNormalMap.value = loaded.texture;
-    visual.uniforms.uNormalStrength.value = 1;
+    // La Tierra realzada (fase 9b, D46): su relieve, más marcado; los demás, sin exagerar.
+    visual.uniforms.uNormalStrength.value = visual.earth ? VISUAL_CONFIG.earth.enhanced.relief : 1;
     if (previous && previous.texture !== loaded.texture) releaseTexture(previous.texture);
     this.options.invalidate();
   }
@@ -1444,6 +1445,10 @@ export class World {
       uHaze: body.uHaze,
       uHazeColor: hazeColor,
       uSunDirection: body.uSunDirection,
+      // El borde de la Tierra realzada (fase 9b, D46), más azul y brillante; los demás, sin tinte.
+      ...(mesh.name === 'tierra'
+        ? { uTint: new Uniform(new Vector3(...VISUAL_CONFIG.earth.enhanced.rim)) }
+        : {}),
     });
     const shell = new Mesh(this.coarseSphere, material);
     shell.name = `${mesh.name}-atmosphere`;
@@ -1640,6 +1645,19 @@ function configureEarth(earth: EarthUniforms): void {
   earth.uScatter.value.set(scatter.r, scatter.g, scatter.b, config.scatter.limb);
   earth.uTwilightColor.value.set(config.twilight);
   earth.uArid.value.set(config.arid.knee, config.arid.warmFrom, config.arid.warmTo);
+  // La Tierra realzada del explorador (fase 9b, D46): el océano, las nubes, la tierra y el reflejo;
+  // la rodilla de lo árido, la suya (de día: la noche sigue con la de arriba, D40).
+  const { ocean, clouds, glint, land } = config.enhanced;
+  earth.uEnhancedAridKnee.value = land.aridKnee;
+  earth.uOcean.value.set(...ocean.albedo, 1);
+  earth.uOceanDetail.value.set(ocean.waterLuminance, ocean.detail);
+  earth.uCloudShape.value.set(clouds.from, clouds.to, clouds.max, 1);
+  earth.uLand.value.set(...land.aridTint, land.saturation);
+  earth.uVegetationTint.value.set(...land.vegetationTint);
+  earth.uEarth.value.z = glint.intensity;
+  earth.uGlintShape.value.set(glint.wide, glint.exponent, glint.core, 1);
+  earth.uGlintFresnel.value.set(glint.f0, glint.fresnelMax);
+  earth.uGlintTint.value.set(...glint.tint);
 }
 
 /**
