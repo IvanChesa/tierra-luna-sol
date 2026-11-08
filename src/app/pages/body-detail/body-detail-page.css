@@ -65,6 +65,12 @@
   font-size: var(--text-sm);
 }
 
+/* Las direcciones de las fuentes («svs.gsfc.nasa.gov/vis/a010000/…», la del Sol realzado, D46) no
+   tienen espacios: sin esto, a 320 px de ancho ensanchaban la página (WCAG 1.4.10). */
+.body__note a {
+  overflow-wrap: anywhere;
+}
+
 /* «Hoy»: dos líneas por fila (la cifra y, debajo, los km o la fase) desde el HTML: nada se mueve. */
 .today {
   display: grid;
