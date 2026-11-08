@@ -69,11 +69,14 @@
   transition: box-shadow var(--duration-fast) var(--ease-standard);
 }
 
-/* Sin velo debajo (fase 9c): una sombra del color del fondo hace el nombre legible sobre el 3D. */
+/*
+ * Sin velo bajo la fila (fase 9c): el nombre, sobre una placa casi opaca del color del fondo. Legible
+ * sobre un planeta brillante (crítica de la 9c, AA): con blanco detrás, más de 5:1 (measure-ui.mjs).
+ */
 .chip__name {
-  text-shadow:
-    0 0 3px var(--color-bg),
-    0 1px 2px var(--color-bg);
+  padding: 0 var(--space-1);
+  background: color-mix(in srgb, var(--color-bg) 88%, transparent);
+  border-radius: var(--radius-sm);
 }
 
 .chip:hover {

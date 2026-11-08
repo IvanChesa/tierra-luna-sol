@@ -11,6 +11,7 @@
 // - texto: lo legible por debajo de 11 px;
 // - la hoja del cuerpo en el móvil: su alto sobre el de la ventana, y si la pausa se puede pulsar;
 // - el velo de abajo (el fondo de la barra de tiempo): la parte del lienzo que tapa (9c.2, ≤ 10 %);
+// - el contraste de los nombres de la fila de fichas, en el peor caso (blanco o negro detrás; ≥ 4,5:1);
 // - recortes (revisión de la 9c, hallazgos 6, 7 y 18): los contenedores que se desbordan en horizontal
 //   sin ser una fila desplazable (`.scroll-hint`), los controles que recortan, y las opciones de un
 //   `select` que no caben enteras en él.
@@ -293,6 +294,45 @@ function inspect({ explorer }) {
     result.veil = (w * h) / ((right - left) * (bottom - top));
   }
 
+  // El contraste de los nombres de la fila de fichas sobre su placa (o su fondo), en el peor caso: con
+  // blanco o con negro detrás de lo que no es opaco (crítica de la 9c, AA: ≥ 4,5:1).
+  const rgba = (value) => {
+    const numbers = (value.match(/[\d.]+/g) ?? []).map(Number);
+    const unit = value.startsWith('color(') ? 1 : 255;
+    const [r = 0, g = 0, b = 0] = numbers.slice(0, 3).map((n) => n / unit);
+    const a = numbers.length > 3 ? numbers[3] : 1;
+    return [r, g, b, a];
+  };
+  const over = ([r, g, b, a], [R, G, B]) => [
+    r * a + R * (1 - a),
+    g * a + G * (1 - a),
+    b * a + B * (1 - a),
+  ];
+  const luminance = (channels) => {
+    const [r, g, b] = channels.map((c) =>
+      c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4,
+    );
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const ratio = (x, y) => {
+    const [hi, lo] = [luminance(x), luminance(y)].sort((p, q) => q - p);
+    return (hi + 0.05) / (lo + 0.05);
+  };
+  const contrasts = [...document.querySelectorAll('tls-body-chips :is(.chip__name, .moon)')]
+    .filter((el) => el.checkVisibility({ checkVisibilityCSS: true, visibilityProperty: true }))
+    .flatMap((el) => {
+      const style = getComputedStyle(el);
+      const plate = rgba(style.backgroundColor);
+      return [
+        [0, 0, 0],
+        [1, 1, 1],
+      ].map((behind) => {
+        const background = over(plate, behind);
+        return ratio(over(rgba(style.color), background), background);
+      });
+    });
+  result.nameContrast = contrasts.length ? Math.min(...contrasts) : null;
+
   // La hoja del cuerpo (móvil): su alto sobre el de la ventana, y la pausa a mano.
   const panel = document.querySelector('.panel');
   if (panel && !panel.hidden && panel.checkVisibility()) {
@@ -376,15 +416,15 @@ const pct = (value) => `${(value * 100).toFixed(1)} %`;
 const cuts = (r) => r.cut.length + r.overflowing.length + r.cutOptions.length;
 if (report.explorer.length) {
   console.log(
-    '| Tamaño | Vista | Zona útil | Velo | Controles visibles | Tapados | Recortes | Zonas < objetivo | Textos < 11 px | Hoja (alto, pausa) |',
+    '| Tamaño | Vista | Zona útil | Velo | Controles visibles | Tapados | Recortes | Zonas < objetivo | Textos < 11 px | Contraste de los nombres | Hoja (alto, pausa) |',
   );
-  console.log('|---|---|---|---|---|---|---|---|---|---|');
+  console.log('|---|---|---|---|---|---|---|---|---|---|---|');
   for (const r of report.explorer) {
     const sheet = r.sheet
       ? `${pct(r.sheet.share)}, ${r.sheet.playReachable ? 'a mano' : 'no'}`
       : '—';
     console.log(
-      `| ${r.size} | ${r.view} | ${pct(r.useful)} | ${r.veil === undefined ? '—' : pct(r.veil)} | ${r.controls} | ${r.covered.length} | ${cuts(r)} | ${r.small.length} | ${r.tiny.length} | ${sheet} |`,
+      `| ${r.size} | ${r.view} | ${pct(r.useful)} | ${r.veil === undefined ? '—' : pct(r.veil)} | ${r.controls} | ${r.covered.length} | ${cuts(r)} | ${r.small.length} | ${r.tiny.length} | ${r.nameContrast === null ? '—' : r.nameContrast.toFixed(1) + ':1'} | ${sheet} |`,
     );
   }
 }
