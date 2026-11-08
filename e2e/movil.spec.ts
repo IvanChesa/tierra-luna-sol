@@ -340,3 +340,37 @@ test.describe('Móvil', () => {
     });
   }
 });
+
+// Crítica de la 9c (P1): con un cuerpo elegido, lo que la hoja recoge de la presentación («‹ Sistema
+// solar», «Cómo se calcula») se despliega al recibir el foco. Ninguna parada del tabulador cae en algo
+// que no se ve.
+for (const [width, height] of [
+  [390, 844],
+  [768, 1024],
+] as const) {
+  test.describe(`A ${width} px`, () => {
+    test.use({ viewport: { width, height } });
+
+    test('con un cuerpo elegido, el tabulador no se para en nada que no se vea', async ({
+      page,
+    }) => {
+      await openExplorer(page, '/?captura=1&cuerpo=saturno');
+      await expect(page.locator('.panel #card-title')).toHaveText('Saturno');
+      const visited: string[] = [];
+      // Desde el principio de la página hasta el lienzo: la cabecera, las pestañas y la presentación.
+      for (let k = 0; k < 15; k++) {
+        await page.keyboard.press('Tab');
+        const name = await page.evaluate(() => {
+          const element = document.activeElement as HTMLElement | null;
+          if (!element || element.tagName === 'CANVAS') return null;
+          return (element.getAttribute('aria-label') ?? element.textContent ?? '').trim();
+        });
+        if (name === null) break;
+        visited.push(name);
+        expect(await coveredFocus(page), name).toBeNull();
+      }
+      expect(visited).toContain('Volver al sistema solar');
+      expect(visited).toContain('Cómo se calcula');
+    });
+  });
+}

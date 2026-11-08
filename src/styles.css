@@ -579,10 +579,12 @@ tls-root:has(tls-explorer-ui.is-clean) .site-header {
  * - Móviles bajos: la descripción, y el H1 se queda compacto (resuelve la duda de la fase 3); muy
  *   bajos (en horizontal), también el H1: las pestañas ya dicen dónde estás.
  * - Escritorio, con el índice abierto: todo el texto, para que el índice gane alto.
+ * Lo recogido que recibe el foco del teclado («‹ Sistema solar», «Cómo se calcula») se despliega al
+ * momento: nunca un foco en algo que no se ve (WCAG 2.4.7; crítica de la 9c, P1).
  */
 @media (max-width: 63.99rem) {
   .explorer:has(.panel:not([hidden]), .index-panel:not([hidden]))
-    :is(.explorer__intro, .explorer__credit) {
+    :is(.explorer__intro, .explorer__credit):not(:focus-within) {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -593,7 +595,7 @@ tls-root:has(tls-explorer-ui.is-clean) .site-header {
 }
 
 @media (max-width: 63.99rem) and (max-height: 45rem) {
-  :is(.explorer__intro p, .explorer__credit) {
+  :is(.explorer__intro p, .explorer__credit:not(:focus-within)) {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -609,7 +611,7 @@ tls-root:has(tls-explorer-ui.is-clean) .site-header {
 }
 
 @media (max-width: 63.99rem) and (max-height: 30rem) {
-  :is(.explorer__intro, .explorer__credit) {
+  :is(.explorer__intro, .explorer__credit):not(:focus-within) {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -620,7 +622,8 @@ tls-root:has(tls-explorer-ui.is-clean) .site-header {
 }
 
 @media (min-width: 64rem) {
-  .explorer:has(.index-panel:not([hidden])) :is(.explorer__intro, .explorer__credit) {
+  .explorer:has(.index-panel:not([hidden]))
+    :is(.explorer__intro, .explorer__credit):not(:focus-within) {
     position: absolute;
     width: 1px;
     height: 1px;
