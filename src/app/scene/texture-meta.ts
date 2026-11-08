@@ -39,6 +39,11 @@ export const TEXTURE_META: Readonly<Record<TextureId, TextureMeta>> = {
     'Sondas: el cráter Kuiper (11,3° S, 31,5° O) brillante frente a la llanura vecina.',
   ),
   venus: clouds('Capa de nubes de Venus: sin accidentes fijos (la superficie no se ve).'),
+  // Venus bajo las nubes (fase 9b, D44): el radar de Magellan, en gris, centrado en su longitud 0. La
+  // escena lo pide solo al pulsar «Bajo las nubes» (scene/venus-radar.ts).
+  'venus-radar': surface(
+    'Mosaico C3-MIDR del radar de Magellan, con su georreferencia (de −180° a 180°, longitud este; usgs-mosaic.mjs). Sondas: Maat Mons (0,5° N, 194,6° E), Sapas Mons (8,5° N, 188,3° E) y Maxwell Montes (65,2° N, 3,3° E), más claros en el radar que lo que los rodea; girado 180° o reflejado, no pasan.',
+  ),
   'earth-day': surface('Sondas: el Sáhara (23° N, 10° E) claro frente al Pacífico (0°, 150° O).'),
   'earth-night': earthData('srgb'),
   'earth-clouds': earthData('data'),
