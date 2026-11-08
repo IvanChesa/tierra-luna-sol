@@ -34,6 +34,12 @@ li + li {
   font-weight: var(--font-weight-strong);
 }
 
+/* Las licencias, con una zona de al menos 24 px de alto (WCAG 2.5.8; la fase 9c las midió en 19). */
+.licenses dt a {
+  display: inline-block;
+  line-height: 1.5rem;
+}
+
 .licenses dd {
   margin: var(--space-1) 0 0;
   color: var(--color-text-muted);
