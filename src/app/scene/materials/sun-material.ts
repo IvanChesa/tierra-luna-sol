@@ -108,6 +108,8 @@ uniform vec3 uStructureGainDark;
 // (la frecuencia de su primera octava, en ciclos por radio; lo que pesa cada octava frente a la
 // anterior; y su forma, de 0, lineal, a 1)
 uniform vec3 uStructureOctaves;
+// (lo más que oscurece y lo más que aclara, en unidades de estructura: un límite suave, tanh)
+uniform vec2 uStructureLimits;
 uniform float uStructureTime;
 varying vec3 vNormal;
 varying vec3 vViewPosition;
@@ -258,6 +260,10 @@ void main() {
       ? uStructure * mix(0.45, 1.0, smoothstep(0.05, 0.45, mu)) * tlsSunStructure(p, uStructureTime, footprint)
       : 0.0;
     float value = structure + grain;
+    // Con un límite suave: sin manchas pardas ni blancas en los extremos del ruido.
+    value = value < 0.0
+      ? -uStructureLimits.x * tanh(-value / uStructureLimits.x)
+      : uStructureLimits.y * tanh(value / uStructureLimits.y);
     vec3 enhanced =
       palette * profile * exp(max(value, 0.0) * uStructureGain + min(value, 0.0) * uStructureGainDark);
     surface = mix(surface, enhanced, uEnhance);
@@ -303,6 +309,8 @@ export function createSunMaterial(color: Color) {
     uStructureGainDark: new Uniform(new Vector3(0.17, 0.38, 0.6)),
     /** Sus octavas: la frecuencia de la primera (ciclos por radio), el peso relativo y la forma. */
     uStructureOctaves: new Uniform(new Vector3(2.2, 0.8, 0)),
+    /** Lo más que oscurece y aclara su estructura (un límite suave). */
+    uStructureLimits: new Uniform(new Vector2(10, 10)),
     /** Tiempo (s) de su evolución lenta. */
     uStructureTime: new Uniform(0),
   };
@@ -382,6 +390,8 @@ uniform float uRoundness;
 // - el borde fino naranja rojizo pegado al limbo: su brillo, su color y su forma (el peso de la caída
 //   ancha, el ancho de la estrecha y el de la ancha, en radios del disco), con un ancho mínimo en
 //   píxeles para cuando el Sol se ve pequeño;
+// - el resplandor suave naranja que lo envuelve, algo más ancho que el borde: su color por su brillo
+//   (rgb) y su ancho (w, radios del disco; como mínimo, el triple del mínimo del borde);
 // - los rayos cortos y finos: su brillo, su color y su longitud media (radios del disco);
 // - los bucles de plasma de primer plano: su brillo y su color;
 // - el tiempo (s) de los rayos y los bucles, que cambian despacio (quietos con movimiento reducido y en
@@ -390,6 +400,7 @@ uniform float uRim;
 uniform vec3 uRimColor;
 uniform vec3 uRimShape;
 uniform float uRimMinPixels;
+uniform vec4 uSoftGlow;
 uniform float uRays;
 uniform vec3 uRayColor;
 uniform float uRayLength;
@@ -509,6 +520,10 @@ void main() {
       float rim = (1.0 - uRimShape.x) * exp(-x / narrow) + uRimShape.x * exp(-x / wide);
       color += uRimColor * uRim * rim;
     }
+    // El resplandor suave naranja que lo envuelve.
+    if (uSoftGlow.w > 0.0) {
+      color += uSoftGlow.rgb * exp(-x / max(uSoftGlow.w, 3.0 * uRimMinPixels * px));
+    }
     // Los rayos cortos y finos.
     if (uRays > 0.0) {
       float cellPx = 6.2831853 * rho / (${RAYS_PER_TURN}.0 * px);
@@ -553,6 +568,8 @@ export function createHaloMaterial() {
     uRimColor: new Uniform(new Color(1, 0.17, 0.035)),
     uRimShape: new Uniform(new Vector3(0.3, 0.016, 0.05)),
     uRimMinPixels: new Uniform(1.2),
+    /** El resplandor suave: su color por su brillo (rgb, lineal) y su ancho (w, radios; 0: sin él). */
+    uSoftGlow: new Uniform(new Vector4(0, 0, 0, 0)),
     /** Los rayos (0: sin ellos), su color (lineal) y su longitud media (radios del disco). */
     uRays: new Uniform(0),
     uRayColor: new Uniform(new Color(1, 0.2, 0.05)),

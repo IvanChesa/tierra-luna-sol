@@ -480,6 +480,7 @@ export class World {
     );
     enhanced.uStructureGain.value.set(...structure.gain.bright);
     enhanced.uStructureGainDark.value.set(...structure.gain.dark);
+    enhanced.uStructureLimits.value.set(structure.limits.dark, structure.limits.bright);
     enhanced.uSpotWarmth.value.set(...ENHANCED_SUN.spots.warmth);
     this.haloMaterial = createHaloMaterial();
     const halo = this.haloMaterial.uniforms;
@@ -492,6 +493,9 @@ export class World {
     halo.uRimColor.value.setRGB(...rim.color);
     halo.uRimShape.value.set(rim.shape.wide, rim.shape.narrowRadii, rim.shape.wideRadii);
     halo.uRimMinPixels.value = rim.minPixels;
+    const [sr, sg, sb] = glow.soft.color;
+    const soft = glow.soft.intensity;
+    halo.uSoftGlow.value.set(sr * soft, sg * soft, sb * soft, glow.soft.widthRadii);
     halo.uRays.value = rays.intensity;
     halo.uRayColor.value.setRGB(...rays.color);
     halo.uRayLength.value = rays.lengthRadii;

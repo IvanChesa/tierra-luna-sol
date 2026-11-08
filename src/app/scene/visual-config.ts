@@ -159,18 +159,25 @@ export const VISUAL_CONFIG = {
      *   Hasta el último 0,5 % del radio (μ < 0,1), el brillo de μ = 0,1: sin el borde negro y dentado.
      * - `structure`: las manchas claras y oscuras a escala media y grande, procedurales en el shader:
      *   ruido de gradiente propio en cinco octavas (`octaves`: la frecuencia de la primera, 2,2 ciclos
-     *   por radio; el peso de cada una frente a la anterior; y la forma, que aplana lo intermedio para
-     *   que queden manchas sueltas sobre un naranja casi uniforme), retorcido por un campo ancho que
+     *   por radio; el peso de cada una frente a la anterior; y la forma, que aplana algo lo intermedio
+     *   para que queden manchas sueltas sobre un naranja casi uniforme), retorcido por un campo ancho que
      *   cambia con el tiempo (la superficie fluye). Su amplitud y lo que mueve cada canal por unidad
      *   (`gain`, exp(valor · ganancia)): en lo claro, más el verde y el azul (más amarillo, como lo claro
-     *   de la referencia); en lo oscuro, más todavía (más rojo). Su ritmo, en unidades de ruido por
-     *   segundo de reloj de pared mientras se pinta (quieta con movimiento reducido y en las capturas):
-     *   en 6 s se ve cambiar, en un minuto cambia del todo. Con estas cifras, el contraste a gran escala
-     *   (σL\* sin el perfil del limbo) pasa del de la referencia, 4,13.
+     *   de la referencia); en lo oscuro, más todavía (más rojo). Con un límite suave (`limits`, tanh) de
+     *   lo que oscurece y aclara: sin él, en algunos instantes salían zonas pardas (el 5 % más oscuro del
+     *   disco, hasta L\* 57) y el contraste bajaba de golpe al calmarse el ruido. Su ritmo, en unidades
+     *   de ruido por segundo de reloj de pared mientras se pinta (quieta con movimiento reducido y en las
+     *   capturas): en 6 s se ve cambiar, en un minuto cambia del todo. Con estas cifras, el contraste a
+     *   gran escala (σL\* sin el perfil del limbo) queda de 4,9 a 5,8 en diez instantes de cinco minutos
+     *   (la referencia, 4,13; antes del límite, de 4,1 a 6,3).
      * - `spots`: lo que oscurece cada canal la sombra de una mancha (la sombra elevada a cada valor): el
      *   verde y el azul, más, para que lo oscuro sea pardo rojizo y no oliva.
      * - `glow`: el color lineal del resplandor ancho (`halo`, en la vista general), el exponente de su
-     *   caída ((1 − r)^exponente hasta el borde del cuadrado del halo) y el de la corona (sin ella ahora).
+     *   caída ((1 − r)^exponente hasta el borde del cuadrado del halo), el resplandor suave naranja que
+     *   envuelve el disco, algo más ancho que el borde (`soft`: su brillo, su color y su ancho, en radios;
+     *   como en la referencia, un naranja suave alrededor del disco además del borde fino; de cerca, a
+     *   0,1 radios del limbo ya casi no está, y no llega a los planetas) y el de la corona (sin ella
+     *   ahora).
      * - `rim`: el borde fino naranja rojizo pegado al limbo, fuera del disco: su brillo, su color y su
      *   forma, dos caídas exponenciales (el peso de la ancha y los dos anchos, en radios del disco: de
      *   cerca, unos 2 y 7 px), con un ancho mínimo en píxeles para cuando el Sol se ve pequeño. Como el de
@@ -187,24 +194,30 @@ export const VISUAL_CONFIG = {
      */
     enhanced: {
       palette: {
-        center: [0.92, 0.51, 0.135] as readonly [number, number, number],
-        limb: [1.13, 0.5, 0.12] as readonly [number, number, number],
+        center: [0.957, 0.53, 0.14] as readonly [number, number, number],
+        limb: [1.175, 0.52, 0.125] as readonly [number, number, number],
         muEdges: [0, 0.6] as readonly [number, number],
         limbSoftening: 0.55,
       },
       structure: {
-        amplitude: 5,
-        octaves: { frequency: 2.2, persistence: 0.6, shape: 1 },
+        amplitude: 6,
+        octaves: { frequency: 2.2, persistence: 0.62, shape: 0.5 },
         gain: {
           bright: [0.17, 0.33, 0.45] as readonly [number, number, number],
           dark: [0.2, 0.45, 0.7] as readonly [number, number, number],
         },
+        limits: { dark: 1.1, bright: 2 },
         rate: 0.05,
       },
       spots: { warmth: [1, 1.6, 2.2] as readonly [number, number, number] },
       glow: {
         halo: [1, 0.6, 0.3] as readonly [number, number, number],
         exponent: 1.2,
+        soft: {
+          intensity: 0.05,
+          color: [1, 0.42, 0.12] as readonly [number, number, number],
+          widthRadii: 0.09,
+        },
         corona: [1, 0.58, 0.28] as readonly [number, number, number],
       },
       rim: {

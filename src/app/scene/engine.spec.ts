@@ -899,6 +899,7 @@ describe('SceneEngine: el Sol realzado, segunda vuelta (fase 9b, D46)', () => {
           uIntensity: { value: number };
           uRim: { value: number };
           uRays: { value: number };
+          uSoftGlow: { value: { w: number } };
           uCorona: { value: number };
           uProminences: { value: number };
           uProminenceTime: { value: number };
@@ -921,6 +922,7 @@ describe('SceneEngine: el Sol realzado, segunda vuelta (fase 9b, D46)', () => {
       expect(uniforms.uIntensity.value).toBeCloseTo(halo.overview.intensity, 9);
       expect(uniforms.uRim.value).toBe(enhanced.rim.intensity);
       expect(uniforms.uRays.value).toBe(enhanced.rays.intensity);
+      expect(uniforms.uSoftGlow.value.w).toBe(enhanced.glow.soft.widthRadii);
       h.engine.dispose();
     }
     // De cerca, sin el resplandor ancho ni la corona; con los bucles de plasma.
