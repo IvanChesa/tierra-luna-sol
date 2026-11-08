@@ -252,8 +252,11 @@ tls-root {
     min-width: 0;
   }
 
+  /* Con su zona táctil también cuando es solo «‹» (la franja del cielo). */
   .site-focus .explorer__back {
     flex: none;
+    justify-content: center;
+    min-width: var(--tap-target);
     margin: 0;
   }
 

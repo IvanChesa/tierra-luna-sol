@@ -283,6 +283,9 @@ function inspect({ explorer }) {
       const style = getComputedStyle(el);
       if (style.display === 'none' || style.display === 'contents') return false;
       if (style.overflowX === 'visible') return false;
+      // Un texto cortado a propósito, con puntos suspensivos (el entero está en otro sitio: la barra del
+      // cielo, con su panel).
+      if (style.textOverflow === 'ellipsis') return false;
       // Lo de 1 px es lo que solo leen los lectores de pantalla (`.visually-hidden`): no se ve.
       return el.scrollWidth > el.clientWidth + 1 && el.clientWidth > 1;
     })
