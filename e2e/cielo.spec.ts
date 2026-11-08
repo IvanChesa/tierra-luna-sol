@@ -219,6 +219,41 @@ test.describe('El cielo desde España: los rápidos de la crítica de la 9c', ()
 });
 
 test.describe('Próximos eclipses (fase 8)', () => {
+  test('con migas y la medida de lectura del sitio, de unos 68 caracteres (crítica de la 9c)', async ({
+    page,
+  }) => {
+    await page.goto('/eclipses');
+    const crumbs = page.getByRole('navigation', { name: 'Migas de pan' });
+    await expect(crumbs.getByRole('link', { name: 'Inicio' })).toHaveAttribute('href', '/');
+    await expect(crumbs.locator('[aria-current="page"]')).toHaveText('Eclipses');
+    // La línea más larga de cada párrafo, en caracteres (letra a letra, por la altura de su caja).
+    const longest = await page.evaluate(() =>
+      [
+        ...document.querySelectorAll<HTMLElement>(
+          '.eclipses__intro, .eclipses__sources, .eclipse p',
+        ),
+      ].map((paragraph) => {
+        const lines = new Map<number, number>();
+        const walker = document.createTreeWalker(paragraph, NodeFilter.SHOW_TEXT);
+        const range = document.createRange();
+        for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+          const text = node.textContent ?? '';
+          for (let i = 0; i < text.length; i++) {
+            range.setStart(node, i);
+            range.setEnd(node, i + 1);
+            const rect = range.getClientRects()[0];
+            if (!rect) continue;
+            const top = Math.round(rect.top);
+            lines.set(top, (lines.get(top) ?? 0) + 1);
+          }
+        }
+        return Math.max(0, ...lines.values());
+      }),
+    );
+    expect(Math.max(...longest)).toBeGreaterThanOrEqual(60);
+    expect(Math.max(...longest)).toBeLessThanOrEqual(80);
+  });
+
   test('la lista prerenderizada se lee sin JavaScript', async ({ browser }) => {
     const context = await browser.newContext({ javaScriptEnabled: false, locale: 'es-ES' });
     const page = await context.newPage();

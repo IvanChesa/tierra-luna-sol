@@ -6,6 +6,7 @@ import { ECLIPSES_BY_PLACE, ECLIPSES_FROM } from '../../data/eclipses';
 import { DEFAULT_PLACE_ID, SKY_PLACES } from '../../data/places';
 import { skyPlaceOf } from '../../data/sky-place';
 import { placeShortLabel } from '../../features/sky-panel/place-label';
+import { Breadcrumbs } from '../shared/breadcrumbs';
 import {
   amountText,
   eclipseDate,
@@ -45,13 +46,15 @@ interface Row {
 @Component({
   selector: 'tls-eclipses-page',
   host: { class: 'page' },
-  imports: [RouterLink],
+  imports: [Breadcrumbs, RouterLink],
   templateUrl: './eclipses-page.html',
   styleUrl: './eclipses-page.css',
 })
 export class EclipsesPage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  /** «Inicio › Eclipses», como las fichas y sus índices (crítica de la 9c). */
+  protected readonly crumbs = [{ label: 'Inicio', link: '/' }, { label: 'Eclipses' }];
   protected readonly places = SKY_PLACES;
   /** «Montsec (Lleida)»: corto, para que quepa entero en el selector (fase 9c). */
   protected readonly optionLabel = placeShortLabel;
