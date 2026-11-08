@@ -131,13 +131,22 @@
     --thumb: 1.5rem;
   }
 
+  /* Con el dedo (la tableta), las flechas del año, de 44 px como todo el explorador. */
+  .year__step {
+    width: var(--tap-target);
+    height: var(--tap-target);
+  }
+
   .range {
     height: var(--tap-target);
   }
 }
 
-/* En la fila de la barra del móvil, el año ya está en la fecha. */
-@media (max-width: 63.99rem) {
+/*
+ * En el teléfono, la línea apenas mide 100 px: el año, en la fecha y en «Controles». En la tableta, sí
+ * (crítica de la 9c).
+ */
+@media (max-width: 47.99rem) {
   .year {
     display: none;
   }
