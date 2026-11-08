@@ -46,7 +46,14 @@ export class BodyDetailPage {
   /** Las fuentes de los textos (el resumen y las curiosidades), sin repetir. */
   protected readonly textSources = computed(() => {
     const body = this.body();
-    return [...new Set([body.summary.source, ...body.facts.map((fact) => fact.source)])];
+    const map = body.mapNote?.source;
+    return [
+      ...new Set([
+        body.summary.source,
+        ...body.facts.map((fact) => fact.source),
+        ...(map ? [map] : []),
+      ]),
+    ];
   });
   protected readonly explorer = computed(() => explorerLinkOf(this.bodyId()));
   /** «Inicio › Planetas › Marte», «Inicio › Lunas › Titán»; la Luna, también en Lunas (decisión de Iván del 04-11). */

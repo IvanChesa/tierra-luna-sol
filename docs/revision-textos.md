@@ -1,6 +1,6 @@
 # Revisión de los textos
 
-> GENERADO por `scripts/build-text-review.mjs` el 2026-11-05, desde los datos y el HTML del build: es lo que se publica. Decisión de Iván al lanzar el bloque E (fase 9, tarea 7).
+> GENERADO por `scripts/build-text-review.mjs` el 2026-11-08, desde los datos y el HTML del build: es lo que se publica. Decisión de Iván al lanzar el bloque E (fase 9, tarea 7).
 
 ## Cómo se usa
 
@@ -11,7 +11,7 @@
 
 ## Índice
 
-1. [Por cuerpo](#por-cuerpo): los 30, con su resumen y sus tres curiosidades (120 textos).
+1. [Por cuerpo](#por-cuerpo): los 30, con su resumen y sus tres curiosidades y, en 19 lunas, la línea sobre su mapa (139 textos).
 2. [Por vista](#por-vista): el sistema solar, la Tierra y sus vistas guiadas, la Luna, sus vistas y su recorrido, y el cielo.
 3. [Las páginas](#las-paginas): los índices, los eclipses, «Sobre el proyecto», los créditos y la 404; y [los textos fijos](#los-textos-fijos) de las fichas, del pie y del menú.
 4. [Las descriptions](#las-descriptions): lo que se ve al compartir cada página.
@@ -395,6 +395,14 @@ Fuente: <https://science.nasa.gov/mars/moons/phobos/>
 
 Corrección:
 
+**Sobre su mapa**
+
+> Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.
+
+Fuente: </creditos#lunas-recreadas>
+
+Corrección:
+
 ### Deimos
 
 **Resumen**
@@ -426,6 +434,14 @@ Corrección:
 > Asaph Hall bautizó las lunas de Marte con los nombres de los hijos de Ares, el equivalente griego del dios romano Marte. Deimos significa «terror» y es hermano de Fobos.
 
 Fuente: <https://science.nasa.gov/mars/moons/deimos/>
+
+Corrección:
+
+**Sobre su mapa**
+
+> Lo que su mapa no cartografió (el norte y una franja junto al meridiano de 180°) se recrea, en este explorador, con su propio terreno, y lo que solo se fotografió de lejos lleva detalle recreado: es ilustrativo.
+
+Fuente: </creditos#lunas-recreadas>
 
 Corrección:
 
@@ -463,6 +479,14 @@ Fuente: <https://science.nasa.gov/jupiter/jupiter-moons/io/facts/>
 
 Corrección:
 
+**Sobre su mapa**
+
+> Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.
+
+Fuente: </creditos#lunas-recreadas>
+
+Corrección:
+
 ### Europa
 
 **Resumen**
@@ -494,6 +518,14 @@ Corrección:
 > La sonda Galileo comprobó que el campo magnético de Júpiter se altera alrededor de Europa. Según los científicos, lo más probable es que esa huella magnética la cause un océano global de agua salada.
 
 Fuente: <https://science.nasa.gov/jupiter/jupiter-moons/europa/europa-facts/>
+
+Corrección:
+
+**Sobre su mapa**
+
+> Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.
+
+Fuente: </creditos#lunas-recreadas>
 
 Corrección:
 
@@ -531,6 +563,14 @@ Fuente: <https://science.nasa.gov/jupiter/jupiter-moons/ganymede/facts/>
 
 Corrección:
 
+**Sobre su mapa**
+
+> Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.
+
+Fuente: </creditos#lunas-recreadas>
+
+Corrección:
+
 ### Calisto
 
 **Resumen**
@@ -562,6 +602,14 @@ Corrección:
 > Galileo Galilei descubrió Calisto en 1610. Casi 400 años después, la sonda Galileo, que lleva su nombre, inició el primer estudio a fondo del sistema de Júpiter, Calisto incluida.
 
 Fuente: <https://science.nasa.gov/jupiter/jupiter-moons/callisto/>
+
+Corrección:
+
+**Sobre su mapa**
+
+> Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.
+
+Fuente: </creditos#lunas-recreadas>
 
 Corrección:
 
@@ -599,6 +647,14 @@ Fuente: <https://science.nasa.gov/saturn/moons/mimas/>
 
 Corrección:
 
+**Sobre su mapa**
+
+> Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.
+
+Fuente: </creditos#lunas-recreadas>
+
+Corrección:
+
 ### Encélado
 
 **Resumen**
@@ -630,6 +686,14 @@ Corrección:
 > Entre el hielo del anillo E hay nanogranos de sílice, que solo se forman donde el agua líquida y la roca interactúan a más de unos 90 °C. Es uno de los indicios de fuentes hidrotermales bajo el hielo de Encélado.
 
 Fuente: <https://science.nasa.gov/saturn/moons/enceladus/>
+
+Corrección:
+
+**Sobre su mapa**
+
+> Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.
+
+Fuente: </creditos#lunas-recreadas>
 
 Corrección:
 
@@ -667,6 +731,14 @@ Fuente: <https://science.nasa.gov/saturn/moons/tethys/>
 
 Corrección:
 
+**Sobre su mapa**
+
+> Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.
+
+Fuente: </creditos#lunas-recreadas>
+
+Corrección:
+
 ### Dione
 
 **Resumen**
@@ -701,6 +773,14 @@ Fuente: <https://science.nasa.gov/saturn/moons/dione/>
 
 Corrección:
 
+**Sobre su mapa**
+
+> Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.
+
+Fuente: </creditos#lunas-recreadas>
+
+Corrección:
+
 ### Rea
 
 **Resumen**
@@ -732,6 +812,14 @@ Corrección:
 > La sonda Cassini midió en Rea un momento de inercia más alto del esperado si tuviera un núcleo rocoso. Por eso se cree que es una mezcla homogénea de hielo y roca: una bola de nieve sucia y congelada.
 
 Fuente: <https://science.nasa.gov/saturn/moons/rhea/>
+
+Corrección:
+
+**Sobre su mapa**
+
+> Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.
+
+Fuente: </creditos#lunas-recreadas>
 
 Corrección:
 
@@ -803,6 +891,14 @@ Fuente: <https://science.nasa.gov/saturn/moons/iapetus/>
 
 Corrección:
 
+**Sobre su mapa**
+
+> Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.
+
+Fuente: </creditos#lunas-recreadas>
+
+Corrección:
+
 ### Miranda
 
 **Resumen**
@@ -834,6 +930,14 @@ Corrección:
 > Gerard P. Kuiper descubrió Miranda el 16 de febrero de 1948 en fotografías tomadas en el Observatorio McDonald, en Texas. Fue la última luna de Urano descubierta antes de la visita de la Voyager 2, en 1986.
 
 Fuente: <https://science.nasa.gov/uranus/moons/miranda/>
+
+Corrección:
+
+**Sobre su mapa**
+
+> Cuando pasó la Voyager 2, el Sol solo iluminaba el hemisferio sur de Miranda y de las demás lunas de Urano. Su norte, en este explorador, es una recreación ilustrativa hecha con su propio terreno.
+
+Fuente: <https://www.nasa.gov/history/35-years-ago-voyager-2-explores-uranus/>
 
 Corrección:
 
@@ -871,6 +975,14 @@ Fuente: <https://science.nasa.gov/uranus/moons/ariel/>
 
 Corrección:
 
+**Sobre su mapa**
+
+> Cuando pasó la Voyager 2, el Sol solo iluminaba el hemisferio sur de Ariel y de las demás lunas de Urano. Su norte, en este explorador, es una recreación ilustrativa hecha con su propio terreno.
+
+Fuente: <https://www.nasa.gov/history/35-years-ago-voyager-2-explores-uranus/>
+
+Corrección:
+
 ### Umbriel
 
 **Resumen**
@@ -902,6 +1014,14 @@ Corrección:
 > El astrónomo inglés William Lassell descubrió Umbriel el 24 de octubre de 1851. Su nombre es el de un espíritu malévolo de «El rizo robado», poema del siglo XVIII de Alexander Pope.
 
 Fuente: <https://science.nasa.gov/uranus/moons/umbriel/>
+
+Corrección:
+
+**Sobre su mapa**
+
+> Cuando pasó la Voyager 2, el Sol solo iluminaba el hemisferio sur de Umbriel y de las demás lunas de Urano. Su norte, en este explorador, es una recreación ilustrativa hecha con su propio terreno.
+
+Fuente: <https://www.nasa.gov/history/35-years-ago-voyager-2-explores-uranus/>
 
 Corrección:
 
@@ -939,6 +1059,14 @@ Fuente: <https://science.nasa.gov/uranus/moons/titania/>
 
 Corrección:
 
+**Sobre su mapa**
+
+> Cuando pasó la Voyager 2, el Sol solo iluminaba el hemisferio sur de Titania y de las demás lunas de Urano. Su norte, en este explorador, es una recreación ilustrativa hecha con su propio terreno.
+
+Fuente: <https://www.nasa.gov/history/35-years-ago-voyager-2-explores-uranus/>
+
+Corrección:
+
 ### Oberón
 
 **Resumen**
@@ -970,6 +1098,14 @@ Corrección:
 > William Herschel descubrió Oberón el 11 de enero de 1787. A principios del siglo XIX, su hijo John le dio el nombre del rey de las hadas de «El sueño de una noche de verano», de Shakespeare.
 
 Fuente: <https://science.nasa.gov/uranus/moons/oberon/>
+
+Corrección:
+
+**Sobre su mapa**
+
+> Cuando pasó la Voyager 2, el Sol solo iluminaba el hemisferio sur de Oberón y de las demás lunas de Urano. Su norte, en este explorador, es una recreación ilustrativa hecha con su propio terreno.
+
+Fuente: <https://www.nasa.gov/history/35-years-ago-voyager-2-explores-uranus/>
 
 Corrección:
 
@@ -1007,6 +1143,14 @@ Fuente: <https://science.nasa.gov/neptune/moons/facts/>
 
 Corrección:
 
+**Sobre su mapa**
+
+> La Voyager 2 fotografió unos dos tercios de Tritón. El resto de su mapa, en este explorador, es una recreación ilustrativa hecha con su propio terreno.
+
+Fuente: <https://science.nasa.gov/mission/voyager/voyager-2/>
+
+Corrección:
+
 ### Proteo
 
 **Resumen**
@@ -1036,6 +1180,14 @@ Corrección:
 **Curiosidad 3**
 
 > La Voyager 2 descubrió Proteo en 1989 y su primera designación fue S/1989 N 1. Debe su nombre al dios marino de la mitología griega capaz de cambiar de forma.
+
+Fuente: <https://science.nasa.gov/neptune/moons/proteus/>
+
+Corrección:
+
+**Sobre su mapa**
+
+> Proteo es irregular y está lleno de cráteres, pero no hay un mapa de su superficie. En este explorador, sus cráteres son una recreación ilustrativa, y su forma, una esfera.
 
 Fuente: <https://science.nasa.gov/neptune/moons/proteus/>
 
@@ -1501,43 +1653,49 @@ Corrección:
 
 **Párrafo 36**
 
-> Deimos, Proteo y las lunas de Urano, con un color esquemático: no hay un mapa completo de su superficie con una licencia clara.
+> Lo que no se vio de las lunas: el norte de Tritón y de las cinco lunas grandes de Urano, que ninguna sonda fotografió, lo que el mapa de Deimos no cubre y el detalle de lo que solo se fotografió de lejos, recreados con el terreno real de cada luna (cuánto, en los créditos). Proteo no tiene mapa: sus cráteres son generados, y su forma, una esfera.
+
+Corrección:
+
+**Párrafo 37**
+
+> Las sombras de Fobos y Deimos sobre Marte, y las que reciben, con su radio medio, como si fueran esferas: sus formas sí son las reales.
 
 Corrección:
 
 #### Privacidad
 
-**Párrafo 37**
+**Párrafo 38**
 
 > Sin cookies y sin analítica (tampoco la del alojamiento).
 
 Corrección:
 
-**Párrafo 38**
+**Párrafo 39**
 
 > Todo se sirve desde este mismo sitio: ni fuentes, ni scripts, ni imágenes, ni datos de otros dominios.
 
 Corrección:
 
-**Párrafo 39**
+**Párrafo 40**
 
 > Tu navegador guarda solo dos preferencias, en su almacenamiento local: el nivel de calidad del 3D y si quieres los atajos de una sola tecla.
 
 Corrección:
 
-**Párrafo 40**
+**Párrafo 41**
 
 > «Usar mi ubicación», en el cielo, solo pide tu ubicación cuando lo pulsas, y no sale de tu navegador: no va a la dirección de la página ni se guarda.
 
 Corrección:
 
-**Párrafo 41**
+**Párrafo 42**
 
 > El alojamiento, Cloudflare Pages, pide a algunos navegadores (Chrome y Edge) que le envíen un informe cuando una petición a este sitio falla (Network Error Logging). Lo recibe el propio alojamiento, que ya sirve cada página, y solo informa de los fallos.
 
 Corrección:
 
-**Párrafo 42**
+**Párrafo 43**
 
 > La política de privacidad y el aviso legal son los de la web del autor.
 
@@ -1545,7 +1703,7 @@ Corrección:
 
 #### Autor
 
-**Párrafo 43**
+**Párrafo 44**
 
 > Lo ha hecho Iván Chesa Lapena, desarrollador de software: ivanchesa.com. El código es abierto, con licencia MIT, en GitHub; las texturas, los datos y los catálogos de terceros conservan sus licencias (créditos).
 
@@ -1599,11 +1757,23 @@ Corrección:
 
 **Párrafo 7**
 
-> Las lunas: los mosaicos globales del USGS Astrogeology, de dominio público, con imágenes de Viking (Fobos), Voyager y Galileo (Ío, en color, y las demás de Júpiter), Cassini (las de Saturno; los de Tetis y Rea, del DLR, T. Roatsch et al.) y Voyager 2 (Tritón, del Lunar and Planetary Institute, P. Schenk). Mimas, con el mapa del DLR (Roatsch et al., 2018) en el PDS de la NASA. Reducidos y en WebP; los que son en gris, con un tinte. En Tritón, el norte que no vio Voyager 2 se rellena con un gris liso. Deimos, Proteo y las lunas de Urano, con un color esquemático (no hay un mapa completo con una licencia clara).
+> Las lunas: los mosaicos globales del USGS Astrogeology, de dominio público, con imágenes de Viking (Fobos), Voyager y Galileo (Ío, en color, y las demás de Júpiter), Cassini (las de Saturno; los de Tetis y Rea, del DLR, T. Roatsch et al.) y Voyager 2 (Tritón, del Lunar and Planetary Institute, P. Schenk). Mimas, con el mapa del DLR (Roatsch et al., 2018) en el PDS de la NASA. Deimos y las cinco lunas grandes de Urano, con los mapas del Solar System Simulator del JPL (del USGS, con imágenes de las Viking y de la Voyager 2; Caltech/JPL/USGS), «Courtesy NASA/JPL-Caltech», según la política de uso de sus imágenes. Reducidos y en WebP; los que son en gris, con el color de su índice B−V publicado (The Astronomical Almanac, Zellner y Capen, 1974, y Pascu et al., 2006) o, sin él, en gris neutro. En Jápeto, el contraste de sus dos caras, llevado al de sus albedos (0,03–0,05 y 0,5–0,6, NASA).
 
 Corrección:
 
 **Párrafo 8**
+
+> Las formas de Fobos y Deimos: sus modelos de forma (DSK) del servidor del NAIF (los de la Mars Express, del ESA SPICE Service), según sus reglas de uso: el de Fobos, de K. Willner, X. Shi y J. Oberst (DLR, 2014), con imágenes HRSC de la Mars Express; el de Deimos, de P. Thomas, con imágenes de las Viking. Es una versión modificada: este proyecto los reduce a una rejilla de radios por latitud y longitud.
+
+Corrección:
+
+**Párrafo 9**
+
+> Lo que no se vio de las lunas, recreado (ilustrativo): lo que ninguna sonda fotografió (el norte de Tritón y de las lunas de Urano) y lo que el mapa de Deimos no cubre se recrean enteros, y lo que solo se fotografió de lejos lleva detalle recreado, siempre con parches del terreno real de la misma luna, sobre la esfera y sin tocar lo real. Proteo no tiene mapa: sus cráteres son generados. El método y lo medido (el grano y el borde con lo real), en recreacion-lunas.md. La superficie de cada luna, medida en su mapa LunaRealDe lejos (con detalle recreado)No vista (recreada)Fobos91,7 %8,3 %0,0 %Deimos55,5 %32,7 %11,8 %Ío82,9 %17,1 %0,0 %Europa80,0 %19,5 %0,5 %Ganímedes97,9 %1,6 %0,5 %Calisto87,5 %11,5 %1,0 %Mimas80,0 %20,0 %0,0 %Encélado74,1 %25,9 %0,0 %Tetis79,8 %20,2 %0,0 %Dione87,3 %12,7 %0,0 %Rea92,6 %7,4 %0,0 %Jápeto69,2 %30,8 %0,0 %Miranda30,5 %8,9 %60,6 %Ariel24,5 %8,8 %66,7 %Umbriel35,3 %1,1 %63,6 %Titania30,9 %0,4 %68,6 %Oberón33,5 %0,0 %66,5 %Tritón30,6 %36,1 %33,4 %
+
+Corrección:
+
+**Párrafo 10**
 
 > Los lugares con nombre de las vistas y el recorrido de la Luna, y los rasgos con los que se comprueba la alineación de los mosaicos: el Gazetteer of Planetary Nomenclature (IAU y USGS), de dominio público.
 
@@ -1611,25 +1781,25 @@ Corrección:
 
 #### Estrellas, Vía Láctea y constelaciones
 
-**Párrafo 9**
+**Párrafo 11**
 
 > Las estrellas: HYG Database v4.1, de David Nash (Astronomy Nexus), con CC BY-SA 4.0. El catálogo derivado del explorador (las estrellas hasta la magnitud 6,5) mantiene esa licencia.
 
 Corrección:
 
-**Párrafo 10**
+**Párrafo 12**
 
 > La Vía Láctea: «The Milky Way panorama», de ESO/S. Brunier, con CC BY 4.0. Sin sus estrellas (las pone el catálogo), reducida, suavizada y en WebP.
 
 Corrección:
 
-**Párrafo 11**
+**Párrafo 13**
 
 > Las líneas de las constelaciones: las figuras de las cartas de las constelaciones de la IAU (IAU y Sky & Telescope: Roger Sinnott y Rick Fienberg; las figuras, de Alan MacRobert), con CC BY 4.0, tal como las prepara d3-celestial, de Olaf Frohn (BSD de 3 cláusulas, © 2015 Olaf Frohn; su texto y la atribución, junto al fichero).
 
 Corrección:
 
-**Párrafo 12**
+**Párrafo 14**
 
 > Los nombres de las constelaciones: los oficiales de la IAU, de astronomy-engine, y en español, los del Anuario del Real Observatorio de Madrid (© Instituto Geográfico Nacional).
 
@@ -1637,37 +1807,37 @@ Corrección:
 
 #### Datos
 
-**Párrafo 13**
+**Párrafo 15**
 
 > Los datos de los cuerpos: las fichas de la NASA (NSSDCA) y los parámetros de los satélites de la NASA/JPL; cada cifra, con su fuente en su ficha.
 
 Corrección:
 
-**Párrafo 14**
+**Párrafo 16**
 
 > Las órbitas de las lunas: elementos propios, ajustados a JPL Horizons, con los planos de Laplace del JPL y los polos de Urano y Neptuno de la IAU (WGCCRE, 2015). La unidad astronómica, la de la IAU (2012).
 
 Corrección:
 
-**Párrafo 15**
+**Párrafo 17**
 
 > Los lugares del cielo desde España: Fraga, Lleida, el Observatori Fabra y la Puerta del Sol, y las altitudes del Montsec y de la Puerta del Sol (MDT02), © Instituto Geográfico Nacional; el Roque de los Muchachos y el Teide, del Instituto de Astrofísica de Canarias; Calar Alto, del Observatorio de Calar Alto; el Montsec, del Parc Astronòmic Montsec, y la altitud del Fabra, del Servei Meteorològic de Catalunya.
 
 Corrección:
 
-**Párrafo 16**
+**Párrafo 18**
 
 > El brillo y el color de los planetas: las leyes de fase de Hilton (2005) y de astronomy-engine, colores medidos en fotos del Hubble (NASA/ESA) y la reconstrucción de Urano y Neptuno de Irwin et al. (2024).
 
 Corrección:
 
-**Párrafo 17**
+**Párrafo 19**
 
 > El Sol: el oscurecimiento del borde en cada color, con la ley de Hestroffer y Magnan (1998), y la rotación de las manchas, más lenta lejos del ecuador, con la medida por el SDO de Lößnitz et al. (2025). Las manchas, la granulación, la corona y el resplandor son ilustrativos.
 
 Corrección:
 
-**Párrafo 18**
+**Párrafo 20**
 
 > Las comprobaciones: las posiciones, con JPL Horizons; las fases, las salidas, las puestas y los crepúsculos, con el USNO; y los eclipses, con los catálogos de cinco milenios de la NASA, de Fred Espenak y Jean Meeus (NASA/GSFC).
 
@@ -1675,7 +1845,7 @@ Corrección:
 
 #### Textos
 
-**Párrafo 19**
+**Párrafo 21**
 
 > Los resúmenes y las curiosidades de los cuerpos son textos propios, traducidos y resumidos de páginas de NASA Science: cada uno, con su página en su ficha.
 
@@ -1683,13 +1853,13 @@ Corrección:
 
 #### Las imágenes del propio explorador
 
-**Párrafo 20**
+**Párrafo 22**
 
 > Los pósters del explorador, las miniaturas y las imágenes de las fichas, y la imagen para compartir, son capturas del propio motor con estas texturas: mantienen sus licencias y sus atribuciones.
 
 Corrección:
 
-**Párrafo 21**
+**Párrafo 23**
 
 > Algunas cosas de la escena son una elección de presentación y no un dato: los tamaños y las órbitas de la vista general, con sus sistemas de lunas, la luz de cada vista o el color del cielo. Están, una por una, en lo que es ilustrativo.
 
@@ -1697,19 +1867,19 @@ Corrección:
 
 #### Programas y tipografías
 
-**Párrafo 22**
+**Párrafo 24**
 
 > astronomy-engine, de Don Cross, con MIT.
 
 Corrección:
 
-**Párrafo 23**
+**Párrafo 25**
 
 > three.js y Angular, con MIT.
 
 Corrección:
 
-**Párrafo 24**
+**Párrafo 26**
 
 > Las tipografías Newsreader (Production Type) y Public Sans (USWDS), con la SIL Open Font License 1.1.
 
@@ -1719,7 +1889,7 @@ Corrección:
 
 #### Creative Commons Atribución 4.0 (CC BY 4.0)
 
-**Párrafo 25**
+**Párrafo 27**
 
 > Las texturas de Solar System Scope, la Vía Láctea de ESO/S. Brunier y las figuras de las cartas de la IAU. Permite usar y cambiar, citando al autor y diciendo los cambios.
 
@@ -1727,7 +1897,7 @@ Corrección:
 
 #### Creative Commons Atribución-CompartirIgual 4.0 (CC BY-SA 4.0)
 
-**Párrafo 26**
+**Párrafo 28**
 
 > El catálogo de estrellas HYG y el fichero derivado del explorador, que se distribuye con la misma licencia y su aviso.
 
@@ -1735,7 +1905,7 @@ Corrección:
 
 #### BSD de 3 cláusulas
 
-**Párrafo 27**
+**Párrafo 29**
 
 > d3-celestial, de Olaf Frohn (las líneas de las constelaciones), con su aviso.
 
@@ -1743,7 +1913,7 @@ Corrección:
 
 #### MIT
 
-**Párrafo 28**
+**Párrafo 30**
 
 > astronomy-engine, three.js, Angular y el código propio del explorador.
 
@@ -1751,7 +1921,7 @@ Corrección:
 
 #### SIL Open Font License 1.1
 
-**Párrafo 29**
+**Párrafo 31**
 
 > Las tipografías Newsreader y Public Sans.
 
@@ -1759,7 +1929,7 @@ Corrección:
 
 #### Dominio público
 
-**Párrafo 30**
+**Párrafo 32**
 
 > Los mosaicos y el relieve del USGS, los datos del PDS de la NASA y las tablas del USNO.
 
@@ -1767,7 +1937,7 @@ Corrección:
 
 #### Material de la NASA
 
-**Párrafo 31**
+**Párrafo 33**
 
 > El CGI Moon Kit, las fichas de la NSSDCA, los datos del JPL y las predicciones de eclipses, que se pueden usar citando su origen y sin dar a entender que la NASA respalda el proyecto.
 
@@ -1775,7 +1945,7 @@ Corrección:
 
 #### Datos del IGN
 
-**Párrafo 32**
+**Párrafo 34**
 
 > Uso libre compatible con CC BY 4.0, con la cita «© Instituto Geográfico Nacional».
 
@@ -1783,13 +1953,13 @@ Corrección:
 
 #### El código del explorador
 
-**Párrafo 33**
+**Párrafo 35**
 
 > El código propio tiene licencia MIT (© 2026 Iván Chesa Lapena) y está en GitHub. Las texturas, los datos y los catálogos de terceros conservan sus propias licencias, las de esta página: en particular, el catálogo de estrellas, CC BY-SA 4.0.
 
 Corrección:
 
-**Párrafo 34**
+**Párrafo 36**
 
 > La NASA no respalda este proyecto ni participa en él, como tampoco ninguna de las demás instituciones citadas.
 

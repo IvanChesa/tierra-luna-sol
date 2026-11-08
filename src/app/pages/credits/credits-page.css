@@ -38,3 +38,46 @@ li + li {
   margin: var(--space-1) 0 0;
   color: var(--color-text-muted);
 }
+
+/* Lo recreado de cada luna (fase 9b, D45): como las tablas de «Sobre el proyecto». */
+.recreation {
+  display: block;
+  max-width: 100%;
+  margin-top: var(--space-3);
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.recreation caption {
+  padding-bottom: var(--space-2);
+  color: var(--color-text-muted);
+  text-align: left;
+}
+
+.recreation th,
+.recreation td {
+  padding: var(--space-2) var(--space-3) var(--space-2) 0;
+  border-top: var(--border-width) solid var(--color-line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.recreation thead th {
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-regular);
+  border-top: 0;
+}
+
+.recreation tbody th {
+  font-weight: var(--font-weight-regular);
+}
+
+.recreation td {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+#lunas-recreadas {
+  scroll-margin-top: var(--space-8);
+}

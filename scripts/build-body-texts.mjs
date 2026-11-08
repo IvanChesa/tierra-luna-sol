@@ -16,7 +16,11 @@ const ROOT = new URL('../', import.meta.url);
 const CACHE = new URL('assets-src/texts/', ROOT);
 const INPUT = new URL('scripts/content/body-texts.json', ROOT);
 const ALLOWED_HOSTS = /^https:\/\/([a-z0-9-]+\.)*(nasa\.gov)\//;
-const LIMITS = { summary: { min: 150, max: 380 }, fact: { min: 40, max: 240 } };
+const LIMITS = {
+  summary: { min: 150, max: 380 },
+  fact: { min: 40, max: 240 },
+  mapNote: { min: 60, max: 260 },
+};
 
 /** Texto visible de una página HTML, con entidades decodificadas y espacios colapsados. */
 function visibleText(html, tagGap) {
@@ -118,6 +122,21 @@ for (const { id, name } of INDEX) {
     ['resumen', entry.summary, LIMITS.summary],
     ...(entry.facts ?? []).map((f, k) => [`curiosidad ${k + 1}`, f, LIMITS.fact]),
   ];
+  // La línea sobre el mapa (fase 9b, D45): con fuente de la NASA y citas, como los demás, o sin fuente
+  // (`source: null`) si solo dice lo que el explorador recrea (el método y lo medido, en /creditos).
+  if (entry.mapNote) {
+    const note = entry.mapNote;
+    const where = `${id}, nota del mapa`;
+    if (!note.text) errors.push(`${where}: falta el texto`);
+    else if (note.source === null) {
+      if (note.quotes?.length) errors.push(`${where}: sin fuente, no lleva citas`);
+      if (note.text.length < LIMITS.mapNote.min || note.text.length > LIMITS.mapNote.max) {
+        warnings.push(
+          `${where}: ${note.text.length} caracteres (se esperan ${LIMITS.mapNote.min}–${LIMITS.mapNote.max})`,
+        );
+      }
+    } else items.push(['nota del mapa', note, LIMITS.mapNote]);
+  }
   for (const [label, item, limit] of items) {
     const where = `${id}, ${label}`;
     if (!item?.text || !item.source || !Array.isArray(item.quotes) || item.quotes.length === 0) {
@@ -158,6 +177,8 @@ if (errors.length) {
 const lit = (s) => `'${s.replaceAll('\\', '\\\\').replaceAll("'", "\\'")}'`;
 const text = (item) =>
   `{ text: ${lit(item.text)}, source: ${lit(item.source)}, reviewed: ${item.reviewed === true} }`;
+const mapNote = (note) =>
+  `{ text: ${lit(note.text)}, source: ${note.source === null ? 'null' : lit(note.source)}, reviewed: ${note.reviewed === true} }`;
 const today = new Date().toISOString().slice(0, 10);
 const ts = `// GENERADO por scripts/build-body-texts.mjs el ${today} a partir de scripts/content/body-texts.json.
 // No se edita a mano: se cambia el JSON y se vuelve a generar. Las citas que respaldan cada texto
@@ -167,7 +188,8 @@ import type { BodyId, BodyTexts } from './body.model';
 export const BODY_TEXTS: Record<BodyId, BodyTexts> = {
 ${INDEX.map(({ id }) => {
   const entry = byId.get(id);
-  return `  ${id}: {\n    summary: ${text(entry.summary)},\n    facts: [\n${entry.facts.map((f) => `      ${text(f)},`).join('\n')}\n    ],\n  },`;
+  const note = entry.mapNote ? `\n    mapNote: ${mapNote(entry.mapNote)},` : '';
+  return `  ${id}: {\n    summary: ${text(entry.summary)},\n    facts: [\n${entry.facts.map((f) => `      ${text(f)},`).join('\n')}\n    ],${note}\n  },`;
 }).join('\n')}
 };
 `;
@@ -185,13 +207,14 @@ execFileSync(
 const mdItem = (label, item) =>
   [
     `- [${item.reviewed === true ? 'x' : ' '}] **${label}.** ${item.text}`,
-    `  - Fuente: <${item.source}>`,
-    ...item.quotes.map((quote) => `  - > ${quote}`),
+    item.source === null
+      ? '  - Sin fuente externa: dice lo que el explorador recrea (el método y lo medido, en /creditos).'
+      : `  - Fuente: <${item.source}>`,
+    ...(item.quotes ?? []).map((quote) => `  - > ${quote}`),
   ].join('\n');
-const total = INDEX.length * 4;
-const reviewed = input
-  .flatMap((e) => [e.summary, ...e.facts])
-  .filter((i) => i.reviewed === true).length;
+const allTexts = input.flatMap((e) => [e.summary, ...e.facts, ...(e.mapNote ? [e.mapNote] : [])]);
+const total = allTexts.length;
+const reviewed = allTexts.filter((i) => i.reviewed === true).length;
 const md = `# Textos de los cuerpos: lista de revisión (generada el ${today})
 
 Generada por \`scripts/build-body-texts.mjs\` a partir de \`scripts/content/body-texts.json\`. Cada texto
@@ -202,7 +225,8 @@ está en su página. Revisados: **${reviewed} de ${total}**. Para dar uno por re
 ${INDEX.map(({ id, name }) => {
   const entry = byId.get(id);
   const notes = entry.notes ? `\n\n_Nota de redacción:_ ${entry.notes}` : '';
-  return `## ${name} (\`${id}\`)\n\n${mdItem('Resumen', entry.summary)}\n${entry.facts.map((f, k) => mdItem(`Curiosidad ${k + 1}`, f)).join('\n')}${notes}`;
+  const map = entry.mapNote ? `\n${mdItem('Sobre su mapa', entry.mapNote)}` : '';
+  return `## ${name} (\`${id}\`)\n\n${mdItem('Resumen', entry.summary)}\n${entry.facts.map((f, k) => mdItem(`Curiosidad ${k + 1}`, f)).join('\n')}${map}${notes}`;
 }).join('\n\n')}
 `;
 await mkdir(new URL('docs/datos/', ROOT), { recursive: true });

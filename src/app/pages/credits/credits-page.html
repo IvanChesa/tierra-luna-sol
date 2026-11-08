@@ -64,9 +64,56 @@
       Lunar and Planetary Institute, P. Schenk). Mimas, con el mapa del DLR (Roatsch et al., 2018)
       en el
       <a href="https://pds-rings.seti.org/holdings/volumes/COISS_3xxx/COISS_3006/">PDS de la NASA</a
-      >. Reducidos y en WebP; los que son en gris, con un tinte. En Tritón, el norte que no vio
-      Voyager 2 se rellena con un gris liso. Deimos, Proteo y las lunas de Urano, con un color
-      esquemático (no hay un mapa completo con una licencia clara).
+      >. <strong>Deimos y las cinco lunas grandes de Urano</strong>, con los mapas del
+      <a href="https://space.jpl.nasa.gov/tmaps/">Solar System Simulator del JPL</a> (del USGS, con
+      imágenes de las Viking y de la Voyager 2; Caltech/JPL/USGS), «Courtesy NASA/JPL-Caltech»,
+      según la <a href="https://www.jpl.nasa.gov/jpl-image-use-policy/">política de uso</a> de sus
+      imágenes. Reducidos y en WebP; los que son en gris, con el color de su índice B−V publicado
+      (The Astronomical Almanac, Zellner y Capen, 1974, y Pascu et al., 2006) o, sin él, en gris
+      neutro. En Jápeto, el contraste de sus dos caras, llevado al de sus albedos (0,03–0,05 y
+      0,5–0,6, <a href="https://science.nasa.gov/saturn/moons/iapetus/">NASA</a>).
+    </li>
+    <li>
+      <strong>Las formas de Fobos y Deimos</strong>: sus modelos de forma (DSK) del
+      <a href="https://naif.jpl.nasa.gov/pub/naif/MEX/kernels/dsk/aareadme.txt"
+        >servidor del NAIF</a
+      >
+      (los de la Mars Express, del ESA SPICE Service), según sus
+      <a href="https://naif.jpl.nasa.gov/naif/rules.html">reglas de uso</a>: el de Fobos, de K.
+      Willner, X. Shi y J. Oberst (DLR, 2014), con imágenes HRSC de la Mars Express; el de Deimos,
+      de P. Thomas, con imágenes de las Viking. Es una versión modificada: este proyecto los reduce
+      a una rejilla de radios por latitud y longitud.
+    </li>
+    <li id="lunas-recreadas">
+      <strong>Lo que no se vio de las lunas, recreado</strong> (ilustrativo): lo que ninguna sonda
+      fotografió (el norte de Tritón y de las lunas de Urano) y lo que el mapa de Deimos no cubre se
+      recrean enteros, y lo que solo se fotografió de lejos lleva detalle recreado, siempre con
+      parches del terreno real de la misma luna, sobre la esfera y sin tocar lo real. Proteo no
+      tiene mapa: sus cráteres son generados. El método y lo medido (el grano y el borde con lo
+      real), en <a [href]="recreationDoc">recreacion-lunas.md</a>.
+      <table class="recreation">
+        <caption>
+          La superficie de cada luna, medida en su mapa
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Luna</th>
+            <th scope="col">Real</th>
+            <th scope="col">De lejos (con detalle recreado)</th>
+            <th scope="col">No vista (recreada)</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of recreation; track row.id) {
+            <tr>
+              <th scope="row">{{ row.name }}</th>
+              <td>{{ row.real }}</td>
+              <td>{{ row.far }}</td>
+              <td>{{ row.none }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
     </li>
     <li>
       <strong>Los lugares con nombre</strong> de las vistas y el recorrido de la Luna, y los rasgos

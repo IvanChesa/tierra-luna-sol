@@ -107,7 +107,7 @@ push(
   '',
   '## Índice',
   '',
-  '1. [Por cuerpo](#por-cuerpo): los 30, con su resumen y sus tres curiosidades (120 textos).',
+  `1. [Por cuerpo](#por-cuerpo): los ${bodies.length}, con su resumen y sus tres curiosidades y, en ${bodies.filter((b) => b.mapNote).length} lunas, la línea sobre su mapa (${bodies.length * 4 + bodies.filter((b) => b.mapNote).length} textos).`,
   '2. [Por vista](#por-vista): el sistema solar, la Tierra y sus vistas guiadas, la Luna, sus vistas y su recorrido, y el cielo.',
   '3. [Las páginas](#las-paginas): los índices, los eclipses, «Sobre el proyecto», los créditos y la 404; y [los textos fijos](#los-textos-fijos) de las fichas, del pie y del menú.',
   '4. [Las descriptions](#las-descriptions): lo que se ve al compartir cada página.',
@@ -121,6 +121,10 @@ for (const body of bodies) {
   push(`### ${body.name}`, '');
   entry('Resumen', body.summary.text, [body.summary.source]);
   body.facts.forEach((fact, k) => entry(`Curiosidad ${k + 1}`, fact.text, [fact.source]));
+  // La línea sobre su mapa (fase 9b, D45), en las lunas con parte de su mapa recreada.
+  if (body.mapNote) {
+    entry('Sobre su mapa', body.mapNote.text, [body.mapNote.source ?? '/creditos#lunas-recreadas']);
+  }
 }
 
 // --- 2. Por vista -----------------------------------------------------------------------------------

@@ -504,7 +504,12 @@
         ]
       }
     ],
-    "notes": "No se da el tamaño del cráter Stickney: esta página da 9 km (pie de foto) y 9,7 km (texto), y https://science.nasa.gov/mars/moons/facts/ da 10 km. Tampoco se usa que «takes up about half the moon's surface»: esa otra página dice «nearly half the width of the moon itself»."
+    "notes": "No se da el tamaño del cráter Stickney: esta página da 9 km (pie de foto) y 9,7 km (texto), y https://science.nasa.gov/mars/moons/facts/ da 10 km. Tampoco se usa que «takes up about half the moon's surface»: esa otra página dice «nearly half the width of the moon itself».",
+    "mapNote": {
+      "text": "Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.",
+      "source": null,
+      "reviewed": false
+    }
   },
   {
     "id": "deimos",
@@ -552,7 +557,12 @@
         ]
       }
     ],
-    "notes": "La primera curiosidad procede de https://science.nasa.gov/mars/moons/facts/. Esa página llama «Angelina» a la esposa de Hall y la de Fobos, «Chloe Angeline Stickney Hall»; por eso el texto no da su nombre."
+    "notes": "La primera curiosidad procede de https://science.nasa.gov/mars/moons/facts/. Esa página llama «Angelina» a la esposa de Hall y la de Fobos, «Chloe Angeline Stickney Hall»; por eso el texto no da su nombre.",
+    "mapNote": {
+      "text": "Lo que su mapa no cartografió (el norte y una franja junto al meridiano de 180°) se recrea, en este explorador, con su propio terreno, y lo que solo se fotografió de lejos lleva detalle recreado: es ilustrativo.",
+      "source": null,
+      "reviewed": false
+    }
   },
   {
     "id": "io",
@@ -597,7 +607,12 @@
         ]
       }
     ],
-    "notes": "El resumen y la curiosidad 1 salen de la página principal de Ío; las curiosidades 2 y 3, de su ficha «Facts». La cita del generador conserva la errata del original («a electric generator»)."
+    "notes": "El resumen y la curiosidad 1 salen de la página principal de Ío; las curiosidades 2 y 3, de su ficha «Facts». La cita del generador conserva la errata del original («a electric generator»).",
+    "mapNote": {
+      "text": "Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.",
+      "source": null,
+      "reviewed": false
+    }
   },
   {
     "id": "europa",
@@ -640,7 +655,12 @@
         ]
       }
     ],
-    "notes": "La curiosidad 3 no dice que el campo magnético sea «la mejor prueba» del océano: la página dice «still the best evidence we have», que puede dejar de ser cierto."
+    "notes": "La curiosidad 3 no dice que el campo magnético sea «la mejor prueba» del océano: la página dice «still the best evidence we have», que puede dejar de ser cierto.",
+    "mapNote": {
+      "text": "Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.",
+      "source": null,
+      "reviewed": false
+    }
   },
   {
     "id": "ganimedes",
@@ -686,7 +706,12 @@
         ]
       }
     ],
-    "notes": "El 40 % y el 60 % van en letra porque la página los da en letra («Forty percent», «sixty percent»). La página da «2,000 feet (700 meters)», cifras que no cuadran entre sí (2000 pies son unos 610 m); se usa la de metros. Dos citas se cortan antes de un enlace para que coincidan con cualquier forma de extraer el texto. Coordinación: se quitó la altura de las crestas (700 m) porque la página de la NASA la da de forma incoherente («2,000 feet (700 meters)»)."
+    "notes": "El 40 % y el 60 % van en letra porque la página los da en letra («Forty percent», «sixty percent»). La página da «2,000 feet (700 meters)», cifras que no cuadran entre sí (2000 pies son unos 610 m); se usa la de metros. Dos citas se cortan antes de un enlace para que coincidan con cualquier forma de extraer el texto. Coordinación: se quitó la altura de las crestas (700 m) porque la página de la NASA la da de forma incoherente («2,000 feet (700 meters)»).",
+    "mapNote": {
+      "text": "Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.",
+      "source": null,
+      "reviewed": false
+    }
   },
   {
     "id": "calisto",
@@ -731,7 +756,12 @@
         ]
       }
     ],
-    "notes": "La ficha «Facts» matiza que el océano podría estar más hondo de lo que se pensaba o no existir («or may not exist at all»); por eso el resumen dice «podría». «Cuatro mil millones» va en letra porque la página dice «4 billion»."
+    "notes": "La ficha «Facts» matiza que el océano podría estar más hondo de lo que se pensaba o no existir («or may not exist at all»); por eso el resumen dice «podría». «Cuatro mil millones» va en letra porque la página dice «4 billion».",
+    "mapNote": {
+      "text": "Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.",
+      "source": null,
+      "reviewed": false
+    }
   },
   {
     "id": "mimas",
@@ -775,7 +805,12 @@
         ]
       }
     ],
-    "notes": "En el resumen, las dos primeras citas son fragmentos: en el HTML la frase original empieza con «C<span>rater-covered», y la palabra partida podría fallar en una comprobación que sustituya etiquetas por espacios. Se ha evitado la «prueba de Mimas» de la página (dice que Mimas parece congelada por completo), porque un estudio de 2024 (Lainey et al., Nature) propone un océano interno joven; esto no se ha verificado en esta tarea. Revisión de la fase 1: se sustituyó la curiosidad mitológica, porque la página de la NASA sitúa a Mimas en «la guerra entre los titanes y los dioses del Olimpo» y, según la revisión, Mimas era uno de los gigantes de la Gigantomaquia."
+    "notes": "En el resumen, las dos primeras citas son fragmentos: en el HTML la frase original empieza con «C<span>rater-covered», y la palabra partida podría fallar en una comprobación que sustituya etiquetas por espacios. Se ha evitado la «prueba de Mimas» de la página (dice que Mimas parece congelada por completo), porque un estudio de 2024 (Lainey et al., Nature) propone un océano interno joven; esto no se ha verificado en esta tarea. Revisión de la fase 1: se sustituyó la curiosidad mitológica, porque la página de la NASA sitúa a Mimas en «la guerra entre los titanes y los dioses del Olimpo» y, según la revisión, Mimas era uno de los gigantes de la Gigantomaquia.",
+    "mapNote": {
+      "text": "Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.",
+      "source": null,
+      "reviewed": false
+    }
   },
   {
     "id": "encelado",
@@ -822,7 +857,12 @@
         ]
       }
     ],
-    "notes": "«Rayas de tigre» traduce «tiger stripes». Se ha omitido la comparación con Arizona, poco útil para un público español."
+    "notes": "«Rayas de tigre» traduce «tiger stripes». Se ha omitido la comparación con Arizona, poco útil para un público español.",
+    "mapNote": {
+      "text": "Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.",
+      "source": null,
+      "reviewed": false
+    }
   },
   {
     "id": "tetis",
@@ -870,7 +910,12 @@
         ]
       }
     ],
-    "notes": "«Odiseo» traduce el nombre oficial «Odysseus»; «Ithaca Chasma» se deja tal cual porque es el nombre oficial de la UAI. «Calipso» es Calypso. La página da otra hipótesis para Ithaca Chasma (el impacto de Odiseo); el texto usa «pudo» para no presentarla como única."
+    "notes": "«Odiseo» traduce el nombre oficial «Odysseus»; «Ithaca Chasma» se deja tal cual porque es el nombre oficial de la UAI. «Calipso» es Calypso. La página da otra hipótesis para Ithaca Chasma (el impacto de Odiseo); el texto usa «pudo» para no presentarla como única.",
+    "mapNote": {
+      "text": "Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.",
+      "source": null,
+      "reviewed": false
+    }
   },
   {
     "id": "dione",
@@ -917,7 +962,12 @@
         ]
       }
     ],
-    "notes": "«Finas líneas brillantes» corresponde a las «wisps» de la página. La cifra de 377 400 km aparece en la cita junto a su equivalente en millas."
+    "notes": "«Finas líneas brillantes» corresponde a las «wisps» de la página. La cifra de 377 400 km aparece en la cita junto a su equivalente en millas.",
+    "mapNote": {
+      "text": "Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.",
+      "source": null,
+      "reviewed": false
+    }
   },
   {
     "id": "rea",
@@ -964,7 +1014,12 @@
         ]
       }
     ],
-    "notes": "«5 trillion» (escala corta inglesa) se traduce como «5 billones» (escala larga española). Se ha evitado lo que dice la página sobre anillos alrededor de Rea (indicios de 2008): búsquedas posteriores con imágenes de la propia sonda Cassini no los confirmaron (Tiscareno et al., 2010); esto no se ha verificado en esta tarea. También se ha evitado «sin aire» en el resumen para no chocar con la exosfera del primer dato."
+    "notes": "«5 trillion» (escala corta inglesa) se traduce como «5 billones» (escala larga española). Se ha evitado lo que dice la página sobre anillos alrededor de Rea (indicios de 2008): búsquedas posteriores con imágenes de la propia sonda Cassini no los confirmaron (Tiscareno et al., 2010); esto no se ha verificado en esta tarea. También se ha evitado «sin aire» en el resumen para no chocar con la exosfera del primer dato.",
+    "mapNote": {
+      "text": "Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.",
+      "source": null,
+      "reviewed": false
+    }
   },
   {
     "id": "titan",
@@ -1058,7 +1113,12 @@
         ]
       }
     ],
-    "notes": "La página dice que la segregación térmica es «probablemente» el principal mecanismo del hemisferio oscuro; el segundo dato describe el proceso tal como lo explica la página, sin afirmar que sea la única causa."
+    "notes": "La página dice que la segregación térmica es «probablemente» el principal mecanismo del hemisferio oscuro; el segundo dato describe el proceso tal como lo explica la página, sin afirmar que sea la única causa.",
+    "mapNote": {
+      "text": "Las zonas de su mapa que solo se fotografiaron de lejos llevan, en este explorador, detalle recreado con su propio terreno: es ilustrativo.",
+      "source": null,
+      "reviewed": false
+    }
   },
   {
     "id": "miranda",
@@ -1103,7 +1163,16 @@
         ]
       }
     ],
-    "notes": "La página presenta dos hipótesis sobre el relieve de Miranda y dice que la de los impactos es «perhaps more likely»; la curiosidad 1 conserva ese matiz."
+    "notes": "La página presenta dos hipótesis sobre el relieve de Miranda y dice que la de los impactos es «perhaps more likely»; la curiosidad 1 conserva ese matiz.",
+    "mapNote": {
+      "text": "Cuando pasó la Voyager 2, el Sol solo iluminaba el hemisferio sur de Miranda y de las demás lunas de Urano. Su norte, en este explorador, es una recreación ilustrativa hecha con su propio terreno.",
+      "source": "https://www.nasa.gov/history/35-years-ago-voyager-2-explores-uranus/",
+      "reviewed": false,
+      "quotes": [
+        "Due to this unusual orientation, the Sun illuminated only the southern hemispheres of the planet and its moons.",
+        "Right: Trajectory of Voyager 2 through the Uranian system."
+      ]
+    }
   },
   {
     "id": "ariel",
@@ -1148,7 +1217,16 @@
         ]
       }
     ],
-    "notes": "Títulos en español: «La tempestad» (The Tempest) y «El rizo robado» (The Rape of the Lock); conviene que Iván confirme la traducción preferida del poema de Pope, que también se ha publicado como «El robo del rizo»."
+    "notes": "Títulos en español: «La tempestad» (The Tempest) y «El rizo robado» (The Rape of the Lock); conviene que Iván confirme la traducción preferida del poema de Pope, que también se ha publicado como «El robo del rizo».",
+    "mapNote": {
+      "text": "Cuando pasó la Voyager 2, el Sol solo iluminaba el hemisferio sur de Ariel y de las demás lunas de Urano. Su norte, en este explorador, es una recreación ilustrativa hecha con su propio terreno.",
+      "source": "https://www.nasa.gov/history/35-years-ago-voyager-2-explores-uranus/",
+      "reviewed": false,
+      "quotes": [
+        "Due to this unusual orientation, the Sun illuminated only the southern hemispheres of the planet and its moons.",
+        "Right: Trajectory of Voyager 2 through the Uranian system."
+      ]
+    }
   },
   {
     "id": "umbriel",
@@ -1192,7 +1270,16 @@
         ]
       }
     ],
-    "notes": "La página principal es breve; la curiosidad 2 sale del pie de foto de Photojournal de la imagen de la Voyager 2 (1986). Revisión de la fase 1: el «16 %» de la NASA no es el mismo dato que el albedo geométrico de la tabla de datos (0,21, NSSDC); son medidas distintas de la reflectividad. Decidir si se quita la cifra del texto."
+    "notes": "La página principal es breve; la curiosidad 2 sale del pie de foto de Photojournal de la imagen de la Voyager 2 (1986). Revisión de la fase 1: el «16 %» de la NASA no es el mismo dato que el albedo geométrico de la tabla de datos (0,21, NSSDC); son medidas distintas de la reflectividad. Decidir si se quita la cifra del texto.",
+    "mapNote": {
+      "text": "Cuando pasó la Voyager 2, el Sol solo iluminaba el hemisferio sur de Umbriel y de las demás lunas de Urano. Su norte, en este explorador, es una recreación ilustrativa hecha con su propio terreno.",
+      "source": "https://www.nasa.gov/history/35-years-ago-voyager-2-explores-uranus/",
+      "reviewed": false,
+      "quotes": [
+        "Due to this unusual orientation, the Sun illuminated only the southern hemispheres of the planet and its moons.",
+        "Right: Trajectory of Voyager 2 through the Uranian system."
+      ]
+    }
   },
   {
     "id": "titania",
@@ -1241,7 +1328,16 @@
         ]
       }
     ],
-    "notes": "Curiosidad 1: la página principal da «nearly 1,000 miles (1,609 kilometers)», que es una conversión de las millas; se usa la cifra original del pie de foto de Photojournal (1500 km). Curiosidad 2: resultado de modelos, no una detección (nota de prensa del JPL del 4 de mayo de 2023); el texto mantiene «probablemente» y «podría». Se cita la copia de nasa.gov porque jpl.nasa.gov responde 403 a curl sin navegador."
+    "notes": "Curiosidad 1: la página principal da «nearly 1,000 miles (1,609 kilometers)», que es una conversión de las millas; se usa la cifra original del pie de foto de Photojournal (1500 km). Curiosidad 2: resultado de modelos, no una detección (nota de prensa del JPL del 4 de mayo de 2023); el texto mantiene «probablemente» y «podría». Se cita la copia de nasa.gov porque jpl.nasa.gov responde 403 a curl sin navegador.",
+    "mapNote": {
+      "text": "Cuando pasó la Voyager 2, el Sol solo iluminaba el hemisferio sur de Titania y de las demás lunas de Urano. Su norte, en este explorador, es una recreación ilustrativa hecha con su propio terreno.",
+      "source": "https://www.nasa.gov/history/35-years-ago-voyager-2-explores-uranus/",
+      "reviewed": false,
+      "quotes": [
+        "Due to this unusual orientation, the Sun illuminated only the southern hemispheres of the planet and its moons.",
+        "Right: Trajectory of Voyager 2 through the Uranian system."
+      ]
+    }
   },
   {
     "id": "oberon",
@@ -1287,7 +1383,16 @@
         ]
       }
     ],
-    "notes": "El pie de foto de 1986 llama a Oberón «Uranus' outermost moon»; hoy se conocen lunas irregulares más alejadas, así que el texto solo dice que es la más exterior de las cinco grandes (dato de la página de lunas de Urano)."
+    "notes": "El pie de foto de 1986 llama a Oberón «Uranus' outermost moon»; hoy se conocen lunas irregulares más alejadas, así que el texto solo dice que es la más exterior de las cinco grandes (dato de la página de lunas de Urano).",
+    "mapNote": {
+      "text": "Cuando pasó la Voyager 2, el Sol solo iluminaba el hemisferio sur de Oberón y de las demás lunas de Urano. Su norte, en este explorador, es una recreación ilustrativa hecha con su propio terreno.",
+      "source": "https://www.nasa.gov/history/35-years-ago-voyager-2-explores-uranus/",
+      "reviewed": false,
+      "quotes": [
+        "Due to this unusual orientation, the Sun illuminated only the southern hemispheres of the planet and its moons.",
+        "Right: Trajectory of Voyager 2 through the Uranian system."
+      ]
+    }
   },
   {
     "id": "triton",
@@ -1332,7 +1437,16 @@
         ]
       }
     ],
-    "notes": "La página de Tritón dice «Neptune's 13 moons», cifra desfasada (otras páginas de la NASA dan 16); el texto no da ningún recuento. Temperatura: se usa −235 °C (medida de la Voyager 2, igual que en la ficha de Neptuno); la página de lunas de Neptuno da «about -400 degrees Fahrenheit (-240 degrees Celsius)»."
+    "notes": "La página de Tritón dice «Neptune's 13 moons», cifra desfasada (otras páginas de la NASA dan 16); el texto no da ningún recuento. Temperatura: se usa −235 °C (medida de la Voyager 2, igual que en la ficha de Neptuno); la página de lunas de Neptuno da «about -400 degrees Fahrenheit (-240 degrees Celsius)».",
+    "mapNote": {
+      "text": "La Voyager 2 fotografió unos dos tercios de Tritón. El resto de su mapa, en este explorador, es una recreación ilustrativa hecha con su propio terreno.",
+      "source": "https://science.nasa.gov/mission/voyager/voyager-2/",
+      "reviewed": false,
+      "quotes": [
+        "Voyager photographed two-thirds of Neptune's largest moon Triton",
+        "Voyager 2 is the only spacecraft to study all four of the solar system's giant planets at close range."
+      ]
+    }
   },
   {
     "id": "proteo",
@@ -1377,6 +1491,14 @@
         ]
       }
     ],
-    "notes": "La página de Proteo dice que Nereida se descubrió «33 years earlier» que Proteo (1989), pero Nereida es de 1949 (40 años antes); se ha evitado esa cifra y la curiosidad 2 usa la página de lunas de Neptuno. Revisión de la fase 1: el «seis por ciento» de la NASA no es el mismo dato que el albedo geométrico de la tabla de datos (0,10, NSSDC); son medidas distintas de la reflectividad. Decidir si se quita la cifra del texto."
+    "notes": "La página de Proteo dice que Nereida se descubrió «33 years earlier» que Proteo (1989), pero Nereida es de 1949 (40 años antes); se ha evitado esa cifra y la curiosidad 2 usa la página de lunas de Neptuno. Revisión de la fase 1: el «seis por ciento» de la NASA no es el mismo dato que el albedo geométrico de la tabla de datos (0,10, NSSDC); son medidas distintas de la reflectividad. Decidir si se quita la cifra del texto.",
+    "mapNote": {
+      "text": "Proteo es irregular y está lleno de cráteres, pero no hay un mapa de su superficie. En este explorador, sus cráteres son una recreación ilustrativa, y su forma, una esfera.",
+      "source": "https://science.nasa.gov/neptune/moons/proteus/",
+      "reviewed": false,
+      "quotes": [
+        "Proteus is irregularly shaped and heavily cratered, but it shows no sign of geological modification."
+      ]
+    }
   }
 ]
