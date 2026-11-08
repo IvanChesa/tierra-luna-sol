@@ -76,7 +76,36 @@ La cara nocturna y las luces (D40) no cambian: medidas antes y después, iguales
 Las nubes, en el percentil 98: antes, 0,603–0,696; después, 0,488–0,504 (menos nubes y menos opacas).
 
 ## 6. §5 (provisional)
-PENDIENTE
+Con la GPU del equipo (una RTX 3060 con ANGLE sobre D3D11), mientras trabajaban también A y C. **Provisional:** se repite al cerrar la fase, con el equipo libre.
+
+**`measure-views.mjs`.** Cada celda: FPS mínimo · VRAM (MB) · llamadas de dibujo.
+
+| Vista | Alto | Medio | Bajo |
+|---|---|---|---|
+| sistema | 60 · 50 · 36 | 60 · 50 · 36 | 60 · 38 · 21 |
+| marte (primer plano) | 60 · 138 · 7 | 60 · 74 · 7 | 59 · 62 · 7 |
+| saturno (primer plano) | 60 · 106 · 12 | 59 · 74 · 12 | 59 · 62 · 12 |
+| dione (luna de saturno) | 60 · 74 · 5 | 59 · 74 · 5 | 59 · 54 · 5 |
+| jupiter (sus lunas) | 60 · 100 · 7 | 59 · 68 · 7 | 59 · 56 · 7 |
+| europa (luna de jupiter) | 59 · 68 · 5 | 59 · 68 · 5 | 59 · 48 · 5 |
+| triton (luna de neptuno) | 60 · 63 · 5 | 59 · 63 · 5 | 59 · 43 · 5 |
+| fobos (luna de marte) | 60 · 63 · 5 | 58 · 63 · 5 | 59 · 43 · 5 |
+| urano (sus lunas) | 60 · 71 · 6 | 60 · 71 · 6 | 60 · 59 · 7 |
+| miranda (luna de urano) | 59 · 71 · 5 | 60 · 71 · 5 | 60 · 51 · 5 |
+| deimos (luna de marte) | 60 · 63 · 5 | 59 · 63 · 5 | 60 · 43 · 5 |
+| sol (primer plano) | 60 · 172 · 23 | 59 · 76 · 23 | 60 · 64 · 8 |
+| **tierra (vista)** | **59 · 278 · 6** | **59 · 86 · 6** | **60 · 86 · 6** |
+| luna (vista) | 60 · 266 · 7 | 60 · 103 · 7 | 60 · 62 · 7 |
+| cielo (vista) | 60 · 39 · 5 | 59 · 39 · 5 | 60 · 38 · 5 |
+
+- **La vista Tierra,** igual que en la 9b.d (60 · 278 · 6, 59 · 86 · 6 y 59 · 86 · 6): ni texturas ni mallas nuevas, solo unas operaciones más en su shader.
+- **`measure.mjs`** (la vista general a 1 día/s):
+  - en la primera pasada salió a 44, 26 y 39 FPS de mínimo, con 26 ms de CPU por frame y las efemérides (JS puro, sin cambios) a 9,5 ms: el equipo estaba cargado por las otras sesiones;
+  - justo después, el build de partida (`d5ce7f8`) dio 60 FPS y 1,7 ms;
+  - el de la rama, repetido, **60 · 59 · 60 FPS** de mínimo y **1,6 · 1,5 · 1,2 ms** de CPU por frame (el de partida, 1,7 · 1,5 · 1,1).
+- **La memoria,** estable:
+  - tras 10 idas y vueltas a una ficha, 10 cambios de vista, 6 de calidad y 10 vueltas por los sistemas de lunas: 11 MB de heap (como al empezar), un contexto WebGL y 25 texturas;
+  - las geometrías, de 15 a 17 tras las vueltas por las lunas (las formas de Fobos y Deimos, como en la 9b.d).
 
 ## 7. Decisiones (con su porqué)
 - **El reflejo, con dos tonos.** El núcleo, blanco (el Sol); el lóbulo ancho, cian (`glint.tint`): sumado en blanco sobre el océano azul salía como una mancha gris. La referencia lo tiene cian. Con `exponent` 12, la mitad de su brillo queda a unos 19° de arco del punto del reflejo, un tercio del radio del disco.
@@ -104,7 +133,22 @@ PENDIENTE
 - **El rendimiento (§6),** provisional: tres sesiones en el mismo equipo.
 
 ## 9. Imágenes del motor
-PENDIENTE
+- **Regeneradas con la Tierra realzada:** la miniatura (`public/img/cuerpos/tierra.webp`, con `build-body-thumbnails.mjs`) y las imágenes de la ficha de la Tierra (`public/img/fichas/tierra-360.webp` y `-720.webp`, con `render-body-images.mjs --solo=tierra`).
+- **Las de los demás cuerpos, sin tocar.** El script de las miniaturas las rehace todas; solo se sube la de la Tierra.
+  - Marte y Titán: con el tinte del halo como uniforme a 1, cambiaban algún píxel (diferencia media 0,02 y 0,56; máxima 7 y 17). Por eso el tinte va con su `#define` (`TLS_TINT`), solo en la Tierra: ahora salen idénticas a las del repo.
+  - Venus cambia de una pasada a otra también con el build de partida (máxima 13), así que no se sube.
+- **Para A:** el póster de la vista general y `og.jpg` (llevan la Tierra), mejor después de juntar el Sol (§8).
 
 ## 10. `npm run check`
-PENDIENTE
+En verde (08-11, sobre `929818c`):
+- lint, sin avisos;
+- Prettier, limpio;
+- **763 tests** (77 ficheros), con la cobertura de `ephemeris/` al 98,93 %;
+- el build;
+- el JS inicial, en 310,81 kB, y el código propio inicial, en **14,86 kB de 15**;
+- three, diferido, en 791,74 kB (en la 9b.d, 785,41: el GLSL nuevo y los bloques `enhanced`);
+- **1183 enlaces internos** bien.
+
+Los e2e de la Tierra, del contenido y del móvil (`E2E_PORT=4411 npx playwright test e2e/tierra.spec.ts e2e/contenido.spec.ts e2e/movil.spec.ts`), en verde: 2 y 31.
+
+**Para la revisión:** el test «las nubes derivan con los frames pintados…» (`engine.spec.ts`, fase 5) falló una vez, en una ejecución parcial con el equipo cargado por las otras sesiones. Pasó en las dos siguientes, también en el check completo. Usa un reloj simulado y no toca nada de esta entrega (ni la deriva ni `cloudDrift` cambian). No he encontrado la causa.
