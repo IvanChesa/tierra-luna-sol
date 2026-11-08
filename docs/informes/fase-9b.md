@@ -728,6 +728,8 @@ Sin avisos de presupuesto. Los tests nuevos: las texturas en vuelo (`engine.spec
 
 **Los e2e completos** (`E2E_PORT=4391 npx playwright test`, en local, con los tres proyectos y cuatro workers): en la primera pasada, 136 de 137 (la velocidad del arranque, 84,9 h/s: §4); con su arreglo, **137 de 137** (6,6 min). En el CI de la rama, en verde (los intermitentes que quedaban, con su causa en §4).
 
+**Tras la revisión** (08-11, con sus correcciones): `npm run check`, otra vez en verde (808 tests, el JS inicial en 315,27 kB y el código propio en 13,81 kB de 15, three en 813,58 kB y 1238 enlaces internos bien), y los e2e completos en local, **138 pasan y 1 se salta** (el de axe a 320 px va solo en el proyecto del móvil).
+
 ## 7. Capturas
 `docs/informes/img/fase-9b/`, `antes-*` (el build del primer commit de la fase, sin la disposición nueva) y `despues-*`, con `scripts/capture-moon-systems.mjs`:
 - Júpiter de cerca: `escritorio-jupiter-cerca` y `movil-jupiter-cerca`; con sus lunas con mapa, `escritorio-jupiter-mapas`.
