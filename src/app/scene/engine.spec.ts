@@ -1,6 +1,8 @@
 import starsBin from '../../../public/data/stars.bin' with { loader: 'binary' };
+import deimosBin from '../../../public/data/shapes/deimos.bin' with { loader: 'binary' };
+import phobosBin from '../../../public/data/shapes/phobos.bin' with { loader: 'binary' };
 import { Libration } from 'astronomy-engine';
-import { BackSide, Color, FrontSide, Quaternion, Texture, Vector3, Vector4 } from 'three';
+import { BackSide, Color, FrontSide, Mesh, Quaternion, Texture, Vector3, Vector4 } from 'three';
 import type { BodyId } from '../data/body.model';
 import { BODY_PHOTOMETRY } from '../data/photometry';
 import { KM_PER_AU } from '../ephemeris/constants';
@@ -8,6 +10,7 @@ import { subsolarPoint } from '../ephemeris/coordinates';
 import { earthShadow, moonShadowCenter, satelliteShadowPoint } from '../ephemeris/eclipse';
 import { NASA_ECLIPSE_2026_08_12, USNO_MOON_PHASES } from '../ephemeris/fixtures/fixtures';
 import { moonPhase } from '../ephemeris/ephemeris';
+import { albedoScale } from '../ephemeris/photometry';
 import { illustrativeRadius } from '../ephemeris/scale';
 import { MAX_DATE, toAstroTime } from '../ephemeris/time';
 import { length, scale } from '../ephemeris/vec3';
@@ -26,7 +29,8 @@ import { QUALITY_PROFILES } from './quality';
 import type { TextureLevel } from './quality';
 import { chooseTextureFile, textureVramBytes } from './textures';
 import type { LoadedTexture, TextureId } from './textures';
-import { TEXTURE_FILES } from './texture-files';
+import { TEXTURE_ALBEDO_REFERENCE, TEXTURE_FILES } from './texture-files';
+import { SHAPE_FILES } from './shape-files';
 import { hasDepthChunks } from './materials/depth';
 import { ORBIT_WIDTH_PX, trailColor } from './orbits';
 import { VISUAL_CONFIG } from './visual-config';
@@ -1701,6 +1705,106 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     h.engine.dispose();
   });
 
+  it('Jápeto, con su dicotomía: el cociente de sus dos caras, el de la NASA, y su brillo calibrado con el hemisferio trasero (fase 9b, D42)', async () => {
+    const reference = TEXTURE_ALBEDO_REFERENCE.iapetus;
+    // El material oscuro del hemisferio delantero frente al trasero: 0,04 / 0,55 (NASA), medido en el mapa.
+    expect(reference?.albedo).toBe(0.55);
+    expect(reference?.ratio ?? 0).toBeCloseTo(0.04 / 0.55, 2);
+    const source = {
+      load: (id: TextureId, level: TextureLevel): Promise<LoadedTexture> =>
+        Promise.resolve({
+          texture: new Texture(),
+          file: { level, path: `${id}.webp`, width: 4, height: 2, bytes: 1 },
+          vramBytes: 32,
+        }),
+    };
+    const h = await createHarness(
+      { reducedMotion: true },
+      { textures: () => ({ source, meta: TEXTURE_META }) },
+    );
+    h.engine.focus('saturno');
+    for (let round = 0; round < 2; round++) {
+      settle(h);
+      for (let k = 0; k < 5; k++) await flush();
+    }
+    const visual = (
+      internals(h).world as unknown as {
+        visuals: { body: { id: string }; uniforms: { uAlbedoScale: { value: number } } | null }[];
+      }
+    ).visuals.find((v) => v.body.id === 'japeto');
+    // Con su textura, el hemisferio trasero al 0,55; no la media del mapa al 0,05 del catálogo.
+    expect(visual?.uniforms?.uAlbedoScale.value).toBeCloseTo(
+      albedoScale(0.55, reference?.luminance ?? 0, BODY_PHOTOMETRY.japeto.photometry),
+      9,
+    );
+    h.engine.dispose();
+  });
+
+  it('Fobos y Deimos, con su forma real cuando se ven con su mapa; rehecha al cambiar de calidad y liberada al cerrar (fase 9b, D42)', async () => {
+    const source = {
+      load: (id: TextureId, level: TextureLevel): Promise<LoadedTexture> =>
+        Promise.resolve({
+          texture: new Texture(),
+          file: { level, path: `${id}.webp`, width: 4, height: 2, bytes: 1 },
+          vramBytes: 32,
+        }),
+    };
+    const files: Record<string, Uint8Array> = { phobos: phobosBin, deimos: deimosBin };
+    const loadShape = vi.fn((path: string) => {
+      const bytes = files[path.replace(/^data\/shapes\/(\w+)\.bin.*$/, '$1')];
+      if (!bytes) return Promise.reject(new Error(path));
+      return Promise.resolve(
+        bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer,
+      );
+    });
+    const h = await createHarness(
+      { reducedMotion: true },
+      { textures: () => ({ source, meta: TEXTURE_META }), loadShape },
+    );
+    const step = async () => {
+      for (let round = 0; round < 2; round++) {
+        settle(h);
+        for (let k = 0; k < 5; k++) await flush();
+      }
+    };
+    await step();
+    // En la vista general, sin sus mapas: tampoco su forma.
+    expect(loadShape).not.toHaveBeenCalled();
+    const scene = internals(h).world.scene;
+    const geometryOf = (id: string) => (scene.getObjectByName(id) as Mesh).geometry;
+    const sphere = geometryOf('fobos');
+    h.engine.focus('marte');
+    await step();
+    expect(loadShape.mock.calls.map(([path]) => path).sort()).toEqual(
+      [SHAPE_FILES.deimos?.path, SHAPE_FILES.fobos?.path].sort(),
+    );
+    // La esfera deformada: con normales y más larga que la esfera (13,9 km de 11,08).
+    const phobos = geometryOf('fobos');
+    expect(phobos).not.toBe(sphere);
+    expect(phobos.getAttribute('normal')).toBeDefined();
+    expect(phobos.boundingSphere?.radius ?? 0).toBeGreaterThan(1.2);
+    expect(geometryOf('deimos')).not.toBe(sphere);
+    // Enfocada, sobre la esfera detallada; al cambiar de calidad, rehecha y la anterior liberada.
+    h.engine.focus('fobos');
+    await step();
+    const focused = geometryOf('fobos');
+    expect(focused).not.toBe(phobos);
+    let disposed = false;
+    focused.addEventListener('dispose', () => (disposed = true));
+    h.engine.setQuality('low');
+    await step();
+    expect(disposed).toBe(true);
+    expect(geometryOf('fobos')).not.toBe(focused);
+    expect(geometryOf('fobos').getAttribute('normal')).toBeDefined();
+    // Se pide una sola vez.
+    expect(loadShape).toHaveBeenCalledTimes(2);
+    const last = geometryOf('fobos');
+    let released = false;
+    last.addEventListener('dispose', () => (released = true));
+    h.engine.dispose();
+    expect(released).toBe(true);
+  });
+
   it('el halo de Titán, con su propio color (casi neutro) y el disco, con el naranja de su neblina (fase 7)', async () => {
     const h = await createHarness({ reducedMotion: true });
     interface HaloVisual {
@@ -1868,6 +1972,44 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     expect(await at(40, false)).toBe(0);
     world.updateLarge([{ index: sceneBody('marte').index, onScreen: true, radiusPx: 40 }]);
     expect(world.seen[sceneBody('marte').index]).toBe(0);
+    h.engine.dispose();
+  });
+
+  it('con una luna enfocada, su planeta, que se ve grande detrás, lleva su textura del primer plano (fase 9b, D42; de la fase 10)', async () => {
+    const requests: string[] = [];
+    const source = {
+      load: (id: TextureId, level: TextureLevel): Promise<LoadedTexture> => {
+        const texture = new Texture();
+        texture.name = `${id}@${level}`;
+        requests.push(texture.name);
+        return Promise.resolve({
+          texture,
+          file: { level, path: `${id}.webp`, width: 4, height: 2, bytes: 1 },
+          vramBytes: 32,
+        });
+      },
+    };
+    // A esa hora, Júpiter queda detrás de Ío vista desde la cámara de su encuadre; a otras de su vuelta
+    // (1,8 días), detrás de la cámara.
+    const h = await createHarness(
+      { reducedMotion: true, time: new Date('2026-10-24T18:00:00Z') },
+      { textures: () => ({ source, meta: TEXTURE_META }) },
+    );
+    const step = async () => {
+      for (let round = 0; round < 3; round++) {
+        settle(h);
+        for (let k = 0; k < 5; k++) await flush();
+      }
+    };
+    await step();
+    const focusLevel = QUALITY_PROFILES.high.focusTexture;
+    expect(requests).not.toContain(`jupiter@${focusLevel}`);
+    // Ío enfocada: Júpiter, a 5,9 de sus radios, ocupa buena parte del fondo.
+    h.engine.focus('io');
+    await step();
+    const world = internals(h).world as unknown as { large: Uint8Array };
+    expect(world.large[sceneBody('jupiter').index]).toBe(1);
+    expect(requests).toContain(`jupiter@${focusLevel}`);
     h.engine.dispose();
   });
 

@@ -108,8 +108,14 @@ void main() {
     displaced = position * (1.0 + uElevation.x + uElevation.y * (packed.r * 65280.0 + packed.g * 255.0) / 65535.0);
   }
 #endif
-  // En la esfera unidad, la normal es la posición (la esfera cúbica de la Luna no lleva normales).
+#ifdef TLS_MOON
+  // La esfera cúbica de la Luna no lleva normales: en la esfera unidad, son la posición.
   vNormal = normalize(normalMatrix * position);
+#else
+  // Las de la geometría: en la esfera, la posición; en las formas de Fobos y Deimos (fase 9b), las de
+  // su rejilla (scene/shapes.ts).
+  vNormal = normalize(normalMatrix * normal);
+#endif
   // Marco tangente del relieve: este y norte en el sistema propio, llevados a la vista.
   vec3 up = normalize(position);
   vec3 east = vec3(up.z, 0.0, -up.x);

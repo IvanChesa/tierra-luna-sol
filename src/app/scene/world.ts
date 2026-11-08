@@ -58,6 +58,8 @@ import {
   createBodyMaterial,
 } from './materials/body-material';
 import { createCubeSphere } from './cube-sphere';
+import { SHAPE_FILES } from './shape-files';
+import { ShapeGrid, decodeShape, shapeGeometry } from './shapes';
 import { OCCLUDER_LAYER, SUN_LAYER } from './layers';
 import { createMarkerMaterial } from './materials/marker-material';
 import { createMilkyWayMaterial } from './materials/milky-way-material';
@@ -68,7 +70,11 @@ import type { ScreenBody } from './picking';
 import type { QualityProfile, TextureLevel } from './quality';
 import { StarField, temperatureToSrgb } from './stars';
 import { SceneBody, sceneBody } from './system';
-import { MOON_ELEVATION_RANGE_M, TEXTURE_MEAN_LUMINANCE } from './texture-files';
+import {
+  MOON_ELEVATION_RANGE_M,
+  TEXTURE_ALBEDO_REFERENCE,
+  TEXTURE_MEAN_LUMINANCE,
+} from './texture-files';
 import { VISUAL_CONFIG } from './visual-config';
 import {
   LoadedTexture,
@@ -107,6 +113,14 @@ export const BODY_TEXTURES: Readonly<Partial<Record<BodyId, TextureId>>> = {
   rea: 'rhea',
   japeto: 'iapetus',
   triton: 'triton',
+  // Fase 9b (D42, D43 y D45): Deimos y las cinco de Urano, con los mapas del JPL; Proteo, generado.
+  deimos: 'deimos',
+  miranda: 'miranda',
+  ariel: 'ariel',
+  umbriel: 'umbriel',
+  titania: 'titania',
+  oberon: 'oberon',
+  proteo: 'proteus',
 };
 
 /**
@@ -118,6 +132,8 @@ export const BODY_RELIEF_TEXTURES: Readonly<Partial<Record<BodyId, TextureId>>> 
   tierra: 'earth-normal',
   luna: 'moon-normal',
   marte: 'mars-normal',
+  // Proteo (fase 9b, D45): el relieve de su campo de cráteres generado.
+  proteo: 'proteus-normal',
 };
 
 /**
@@ -208,8 +224,23 @@ export interface WorldOptions {
   readonly textures: TextureSource | null;
   readonly textureMeta: Readonly<Record<TextureId, TextureMeta>> | null;
   readonly rings: RingRadii;
+  /**
+   * Carga una forma (`SHAPE_FILES`, fase 9b): Fobos y Deimos con su forma real cuando se ven con su
+   * mapa. Sin ella (`null`), son esferas.
+   */
+  readonly loadShape?: ((path: string) => Promise<ArrayBuffer>) | null;
   /** Algo ha cambiado fuera del bucle (por ejemplo, ha llegado una textura): hay que pintar. */
   readonly invalidate: () => void;
+}
+
+/**
+ * La forma de una luna irregular (fase 9b, D42): su rejilla, cuando llega, y la esfera detallada y la
+ * ligera deformadas con ella (se hacen al usarlas; la detallada se rehace al cambiar de calidad).
+ */
+interface ShapeState {
+  grid: ShapeGrid | null;
+  detailed: BufferGeometry | null;
+  coarse: BufferGeometry | null;
 }
 
 export interface WorldFrame {
@@ -377,6 +408,8 @@ export class World {
    * mientras la Luna está enfocada (revisión de la fase 6, hallazgo 11).
    */
   private moonSphere: BufferGeometry | null = null;
+  /** Las formas pedidas (por índice del cuerpo): Fobos y Deimos (fase 9b). */
+  private readonly shapes = new Map<number, ShapeState>();
   private focusIndex: number | null = null;
   /** 1 para los cuerpos que se ven grandes en pantalla (`LARGE_ENTER_PX`). */
   private readonly large: Uint8Array;
@@ -614,6 +647,11 @@ export class World {
     const old = this.sphere;
     this.sphere = this.createSphere(profile.sphereSegments);
     old.dispose();
+    // Las formas, sobre la esfera detallada nueva (se rehacen al usarlas, en `setFocus`).
+    for (const shape of this.shapes.values()) {
+      shape.detailed?.dispose();
+      shape.detailed = null;
+    }
     // La esfera cúbica se rehace con los segmentos del nivel nuevo si la Luna sigue enfocada.
     this.moonSphere?.dispose();
     this.moonSphere = null;
@@ -631,14 +669,7 @@ export class World {
     this.focusIndex = focusIndex;
     const moonFocused = focusIndex !== null && Boolean(this.visuals[focusIndex]?.moon);
     if (moonFocused) this.moonSphere ??= createCubeSphere(this.profile.moonSegments);
-    for (const visual of this.visuals) {
-      visual.mesh.geometry =
-        visual.moon && visual.body.index === focusIndex && this.moonSphere
-          ? this.moonSphere
-          : this.detailed(visual.body, focusIndex)
-            ? this.sphere
-            : this.coarseSphere;
-    }
+    for (const visual of this.visuals) visual.mesh.geometry = this.geometryFor(visual, focusIndex);
     if (!moonFocused && this.moonSphere) {
       this.moonSphere.dispose();
       this.moonSphere = null;
@@ -702,6 +733,8 @@ export class World {
         this.releaseTexture(visual);
         continue;
       }
+      // Con su mapa, la luna irregular lleva también su forma (fase 9b).
+      this.requestShape(visual);
       if (visual.relief) {
         const reliefLevel = visual.earth
           ? this.profile.earthMapsTexture
@@ -740,6 +773,48 @@ export class World {
           textureFailed(id, error);
         });
     }
+  }
+
+  /**
+   * La geometría de un cuerpo: la esfera cúbica de la Luna enfocada; la esfera detallada (el Sol, los
+   * planetas, la Luna y el foco) o la ligera; y, en Fobos y Deimos con su forma ya cargada, esa esfera
+   * deformada con ella.
+   */
+  private geometryFor(visual: BodyVisual, focusIndex: number | null): BufferGeometry {
+    if (visual.moon && visual.body.index === focusIndex && this.moonSphere) return this.moonSphere;
+    const detailed = this.detailed(visual.body, focusIndex);
+    const shape = this.shapes.get(visual.body.index);
+    if (shape?.grid) {
+      const radiusKm = visual.body.radiusKm;
+      return detailed
+        ? (shape.detailed ??= shapeGeometry(this.sphere, shape.grid, radiusKm))
+        : (shape.coarse ??= shapeGeometry(this.coarseSphere, shape.grid, radiusKm));
+    }
+    return detailed ? this.sphere : this.coarseSphere;
+  }
+
+  /**
+   * Pide la forma real de una luna irregular (`SHAPE_FILES`), una vez: cuando llega, su malla pasa a
+   * la esfera deformada. Si falla, sigue como esfera y se vuelve a pedir la próxima vez que haga falta.
+   */
+  private requestShape(visual: BodyVisual): void {
+    const file = SHAPE_FILES[visual.body.id];
+    const load = this.options.loadShape;
+    const index = visual.body.index;
+    if (!file || !load || this.shapes.has(index)) return;
+    const state: ShapeState = { grid: null, detailed: null, coarse: null };
+    this.shapes.set(index, state);
+    load(file.path)
+      .then((buffer) => {
+        if (this.disposed || this.shapes.get(index) !== state) return;
+        state.grid = decodeShape(buffer, file);
+        visual.mesh.geometry = this.geometryFor(visual, this.focusIndex);
+        this.options.invalidate();
+      })
+      .catch((error: unknown) => {
+        if (this.shapes.get(index) === state) this.shapes.delete(index);
+        console.warn(`[formas] No se ha podido cargar la de «${visual.body.id}»:`, error);
+      });
   }
 
   /**
@@ -1301,6 +1376,11 @@ export class World {
     this.sphere.dispose();
     this.coarseSphere.dispose();
     this.moonSphere?.dispose();
+    for (const shape of this.shapes.values()) {
+      shape.detailed?.dispose();
+      shape.coarse?.dispose();
+    }
+    this.shapes.clear();
     // Los puntos no son mallas: su geometría no la libera el recorrido de arriba.
     this.markers?.geometry.dispose();
     for (const visual of this.visuals) {
@@ -1391,11 +1471,13 @@ export class World {
       if (visual.photometry?.contrast)
         visual.uniforms.uContrast.value = visual.photometry.contrast.value;
       if (visual.photometry && luminance !== undefined) {
-        visual.uniforms.uAlbedoScale.value = bodyAlbedoScale(
-          visual.body.id,
-          visual.photometry,
-          luminance,
-        );
+        // Jápeto (fase 9b): su hemisferio trasero, al albedo de la NASA, y no la media del mapa al de
+        // su cara oscura del catálogo.
+        const reference = visual.textureId ? TEXTURE_ALBEDO_REFERENCE[visual.textureId] : undefined;
+        visual.uniforms.uAlbedoScale.value =
+          reference && visual.photometry.calibrateAlbedo
+            ? albedoScale(reference.albedo, reference.luminance, visual.photometry.photometry)
+            : bodyAlbedoScale(visual.body.id, visual.photometry, luminance);
       }
     }
     if (previous && previous.texture !== loaded.texture) releaseTexture(previous.texture);

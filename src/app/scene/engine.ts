@@ -249,6 +249,11 @@ export interface EngineDeps {
    * vista del cielo. Sin ellas (en los tests, o si fallan), el cielo se ve sin constelaciones.
    */
   readonly loadConstellations?: () => Promise<unknown>;
+  /**
+   * Las formas de Fobos y Deimos (`public/data/shapes/`, fase 9b): se piden cuando la luna se ve con
+   * su mapa. Sin ellas (en los tests, o si fallan), la luna es una esfera.
+   */
+  readonly loadShape?: (path: string) => Promise<ArrayBuffer>;
 }
 
 /** El lugar del cielo por defecto (el Montsec, decisión de Iván del 26-10). */
@@ -513,6 +518,7 @@ export class SceneEngine implements SceneEngineApi {
         innerKm: rings?.innerRadiusKm.value ?? 0,
         outerKm: rings?.outerRadiusKm.value ?? 0,
       },
+      loadShape: this.deps.loadShape ?? null,
       invalidate: () => this.invalidate(),
     });
 

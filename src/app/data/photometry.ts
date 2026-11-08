@@ -185,6 +185,61 @@ export const RING_PHOTOMETRY: {
   note: 'Fase de la Luna y un lóbulo hacia delante (8 %, g = 0,75) para el polvo fino; luz de los anillos sobre el planeta, 0,05 de la del Sol por el seno de su elevación: aproximación y ajuste visual.',
 };
 
+/**
+ * El color de las lunas que se ven en gris (fase 9b, D42): su índice B−V publicado frente al del Sol da
+ * su reflectividad relativa en las bandas B y V de Johnson, R_B / R_V = 10^(−0,4 · ((B−V) − (B−V)☉)), y
+ * con `bandChromaticity` (el método de Venus), su cromaticidad. Los valores de `chromaticity` de cada
+ * luna salen de aquí (photometry.spec.ts lo comprueba). Son casi neutros: «The neutral gray color of
+ * Titania is typical of most of the significant Uranian moons» (NASA,
+ * https://science.nasa.gov/uranus/moons/titania/).
+ */
+export const COLOR_INDICES = {
+  sun: {
+    bv: 0.653,
+    source:
+      'Ramírez et al. (2012), «The UBV(RI)c colors of the Sun», ApJ 752, 5: «(B-V)=0.653+/-0.003» (https://arxiv.org/abs/1204.0828)',
+  },
+  /** Las longitudes de onda pivote de las bandas B y V de Johnson (nm). */
+  bandsNm: {
+    B: 439.0,
+    V: 550.1,
+    source:
+      'SVO Filter Profile Service, Generic/Johnson.B y Generic/Johnson.V (WavelengthPivot: 4390,2 y 5501,4 Å): https://svo2.cab.inta-csic.es/theory/fps/index.php?id=Generic/Johnson.B',
+  },
+  moons: {
+    deimos: {
+      bv: 0.65,
+      source:
+        'Zellner y Capen (1974), Icarus 23, 437: «B − V = 0.65 ± 0.03» (https://www.sciencedirect.com/science/article/abs/pii/0019103574900621)',
+    },
+    ariel: {
+      bv: 0.65,
+      source:
+        'The Astronomical Almanac (USNO), sección F, datos físicos de los satélites, 2024 (https://aa.usno.navy.mil/downloads/publications/Satellite_data_web_b_2024_2.txt)',
+    },
+    umbriel: {
+      bv: 0.68,
+      source:
+        'The Astronomical Almanac (USNO), sección F, datos físicos de los satélites, 2024 (https://aa.usno.navy.mil/downloads/publications/Satellite_data_web_b_2024_2.txt)',
+    },
+    titania: {
+      bv: 0.7,
+      source:
+        'The Astronomical Almanac (USNO), sección F, datos físicos de los satélites, 2024, de Andersson (1974) (https://aa.usno.navy.mil/downloads/publications/Satellite_data_web_b_2024_2.txt)',
+    },
+    oberon: {
+      bv: 0.68,
+      source:
+        'The Astronomical Almanac (USNO), sección F, datos físicos de los satélites, 2024, de Andersson (1974) (https://aa.usno.navy.mil/downloads/publications/Satellite_data_web_b_2024_2.txt)',
+    },
+    triton: {
+      bv: 0.7,
+      source:
+        'Pascu et al. (2006), «HST BVI photometry of Triton and Proteus», Icarus 185, 487: «Our (B – V) result of 0.70 ± 0.01» (HST, julio de 1997; su color ha cambiado con los años) (https://www.sciencedirect.com/science/article/abs/pii/S0019103506002648)',
+    },
+  },
+} as const;
+
 /** Las lunas sin atmósfera usan la fotometría de la Luna (aproximación documentada). */
 const airless = (
   note = 'Fotometría de la Luna (aproximación: no hay leyes de fase de cada luna en el proyecto).',
@@ -321,7 +376,15 @@ export const BODY_PHOTOMETRY: Readonly<Record<Exclude<BodyId, 'sol'>, BodyPhotom
     ),
   },
   fobos: airless(),
-  deimos: airless(),
+  deimos: {
+    ...airless(),
+    chromaticity: {
+      rgb: [0.999, 1.0, 1.002],
+      mix: 1,
+      source:
+        'Su B−V (COLOR_INDICES.moons.deimos) frente al del Sol, en las bandas B y V de Johnson, interpolado a los primarios sRGB (fase 9b): https://www.sciencedirect.com/science/article/abs/pii/0019103574900621',
+    },
+  },
   // Ío, sin tinte: su mosaico es en color (revisión del bloque D, D1).
   io: airless(),
   europa: airless(),
@@ -334,7 +397,9 @@ export const BODY_PHOTOMETRY: Readonly<Record<Exclude<BodyId, 'sol'>, BodyPhotom
   rea: airless(),
   titan: {
     kind: 'atmosphere',
-    photometry: giant(0.9),
+    // El terminador suave de su neblina (fase 9b): × min(1, μ₀/μ)^1,15, ajustado a los perfiles del
+    // brillo de PIA06230 a lo largo del Sol y en perpendicular (scripts/measure-titan-terminator.mjs).
+    photometry: { ...giant(0.9), terminatorExponent: 1.15 },
     haze: haze(0.4, 2.5, 0.35, 3),
     hazeColor: '#e3a95c',
     // La caída del halo de PIA06230: diez veces menos brillo de 1,02–1,05 a 1,05–1,1 radios (fase 7).
@@ -355,11 +420,71 @@ export const BODY_PHOTOMETRY: Readonly<Record<Exclude<BodyId, 'sol'>, BodyPhotom
     note: 'Neblina espesa y anaranjada: Minnaert y atmósfera, ajuste visual. Sin textura de superficie: el mosaico del USGS (ISS de Cassini, 938 nm) muestra la superficie en una ventana del metano, y en luz visible la neblina la oculta (PIA06230). Color y halo, de PIA06230 (fase 7).',
   },
   japeto: airless(),
-  miranda: airless(),
-  ariel: airless(),
-  umbriel: airless(),
-  titania: airless(),
-  oberon: airless(),
-  triton: airless(),
-  proteo: airless(),
+  // Miranda, sin B−V en ninguna fuente libre (el Astronomical Almanac lo deja en blanco; Karkoschka, 1997,
+  // la describe como «blue» sin cifras que usar): gris neutro (fase 9b).
+  miranda: {
+    ...airless(),
+    chromaticity: {
+      rgb: [1, 1, 1],
+      mix: 1,
+      source:
+        'Sin índice de color publicado en una fuente libre: gris neutro. The Astronomical Almanac, 2024 (https://aa.usno.navy.mil/downloads/publications/Satellite_data_web_b_2024_2.txt), sin B−V para Miranda; Karkoschka (1997), «Miranda is blue», sin cifras (https://www.sciencedirect.com/science/article/abs/pii/S0019103596956316)',
+    },
+  },
+  ariel: {
+    ...airless(),
+    chromaticity: {
+      rgb: [0.999, 1.0, 1.002],
+      mix: 1,
+      source:
+        'Su B−V (COLOR_INDICES.moons.ariel) frente al del Sol, en las bandas B y V de Johnson, interpolado a los primarios sRGB (fase 9b): https://aa.usno.navy.mil/downloads/publications/Satellite_data_web_b_2024_2.txt',
+    },
+  },
+  umbriel: {
+    ...airless(),
+    chromaticity: {
+      rgb: [1.012, 0.998, 0.98],
+      mix: 1,
+      source:
+        'Su B−V (COLOR_INDICES.moons.umbriel) frente al del Sol, en las bandas B y V de Johnson, interpolado a los primarios sRGB (fase 9b): https://aa.usno.navy.mil/downloads/publications/Satellite_data_web_b_2024_2.txt',
+    },
+  },
+  titania: {
+    ...airless(),
+    chromaticity: {
+      rgb: [1.021, 0.997, 0.965],
+      mix: 1,
+      source:
+        'Su B−V (COLOR_INDICES.moons.titania) frente al del Sol, en las bandas B y V de Johnson, interpolado a los primarios sRGB (fase 9b): https://aa.usno.navy.mil/downloads/publications/Satellite_data_web_b_2024_2.txt',
+    },
+  },
+  oberon: {
+    ...airless(),
+    chromaticity: {
+      rgb: [1.012, 0.998, 0.98],
+      mix: 1,
+      source:
+        'Su B−V (COLOR_INDICES.moons.oberon) frente al del Sol, en las bandas B y V de Johnson, interpolado a los primarios sRGB (fase 9b): https://aa.usno.navy.mil/downloads/publications/Satellite_data_web_b_2024_2.txt',
+    },
+  },
+  triton: {
+    ...airless(),
+    chromaticity: {
+      rgb: [1.021, 0.997, 0.965],
+      mix: 1,
+      source:
+        'Su B−V (COLOR_INDICES.moons.triton) frente al del Sol, en las bandas B y V de Johnson, interpolado a los primarios sRGB (fase 9b): https://www.sciencedirect.com/science/article/abs/pii/S0019103506002648',
+    },
+  },
+  // Proteo (fase 9b): «Color measurements (0.4 to 0.6 µm) of Proteus show a neutral color» (Thomas y
+  // Veverka, 1991, JGR 96, 19261): gris neutro.
+  proteo: {
+    ...airless(),
+    chromaticity: {
+      rgb: [1, 1, 1],
+      mix: 1,
+      source:
+        'Thomas y Veverka (1991), «Neptune’s small inner satellites», JGR 96, 19261: un color neutro de 0,4 a 0,6 µm (https://doi.org/10.1029/91JA01461)',
+    },
+  },
 };

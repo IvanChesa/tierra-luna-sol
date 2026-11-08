@@ -40,6 +40,12 @@ export interface Photometry {
   readonly forwardFraction: number;
   /** Asimetría del lóbulo hacia delante (g₂ > 0). */
   readonly forwardAsymmetry: number;
+  /**
+   * La luz que se apaga poco a poco hacia el terminador (e ≥ 0; 0 o sin él, nada): un factor
+   * min(1, μ₀/μ)^e, neutro en fase llena (μ₀ = μ) y del lado del limbo iluminado. Es el terminador suave
+   * de una neblina espesa (Titán, fase 9b: ajustado a PIA06230, scripts/measure-titan-terminator.mjs).
+   */
+  readonly terminatorExponent?: number;
 }
 
 /**
@@ -85,6 +91,13 @@ export function phaseFunction(alpha: number, p: Photometry): number {
 export const lommelWeight = (alpha: number, p: Photometry): number =>
   Math.min(Math.max(p.lommel - p.lommelSlope * alpha, 0), 1);
 
+/** El oscurecimiento hacia el terminador (`terminatorExponent`): min(1, μ₀/μ)^e. */
+export function terminatorDarkening(mu0: number, mu: number, p: Photometry): number {
+  const e = p.terminatorExponent ?? 0;
+  if (!(e > 0) || mu0 <= 0) return mu0 > 0 ? 1 : 0;
+  return Math.min(1, mu0 / Math.max(mu, MIN_MU)) ** e;
+}
+
 /** La parte geométrica (sin la fase): Lommel–Seeliger y Minnaert, con el peso de la fase α. */
 export function geometricFactor(mu0: number, mu: number, alpha: number, p: Photometry): number {
   if (mu0 <= 0) return 0;
@@ -92,7 +105,7 @@ export function geometricFactor(mu0: number, mu: number, alpha: number, p: Photo
   const lommelSeeliger = (2 * mu0) / (mu0 + m);
   const minnaert = Math.pow(mu0, p.minnaertK) * Math.pow(m, p.minnaertK - 1);
   const weight = lommelWeight(alpha, p);
-  return weight * lommelSeeliger + (1 - weight) * minnaert;
+  return (weight * lommelSeeliger + (1 - weight) * minnaert) * terminatorDarkening(mu0, mu, p);
 }
 
 /** Reflectancia relativa de un punto (1 en μ₀ = μ = 1, α = 0). */
@@ -105,6 +118,7 @@ export function reflectance(mu0: number, mu: number, alpha: number, p: Photometr
  * L + (1 − L) · 2 / (2k + 1). Con él, el albedo geométrico fija el brillo absoluto del cuerpo.
  */
 export function discFactor(p: Photometry): number {
+  // El oscurecimiento hacia el terminador es neutro en fase llena (μ₀ = μ): no cambia.
   return p.lommel + ((1 - p.lommel) * 2) / (2 * p.minnaertK + 1);
 }
 
@@ -139,7 +153,8 @@ export function discBrightness(alpha: number, p: Photometry, muSteps = 96, phiSt
       const phi = ((j + 0.5) / phiSteps) * 2 * Math.PI;
       // El Sol en el plano x–z: x hacia el Sol, z hacia el observador.
       const mu0 = rho * Math.cos(phi) * sinA + mu * cosA;
-      if (mu0 > 0) sum += reflectance(mu0, mu, alpha, p) * mu;
+      // La reflectancia es 0 donde no llega la luz (más allá del terminador y de su luz envolvente).
+      sum += reflectance(mu0, mu, alpha, p) * mu;
     }
   }
   return (sum * 2) / (muSteps * phiSteps); // ∫∫ μ dμ dφ / π
