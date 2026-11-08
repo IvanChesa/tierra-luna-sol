@@ -1,7 +1,7 @@
 // Capturas de la interfaz de la fase 9c (D47; `docs/decisiones/FASE-9c-INTERFAZ.md`, §4), antes y
 // después, a 390, 768 y 1440 px: la portada (y, después, durante el recorrido), Saturno elegido (con
-// la hoja en el móvil y, después, también con la ficha cerrada: el selector), la Tierra, la Luna y el
-// Cielo, una ficha completa, /lunas y /eclipses.
+// la hoja en el móvil y, después, también con la ficha cerrada: el selector, y con «Controles» abierto),
+// la Tierra, la Luna y el Cielo, una ficha completa, /lunas y /eclipses.
 // Uso: npm run build && CAPTURE_PORT=4350 node scripts/capture-interface.mjs <antes|despues> [nombre…]
 import { mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -33,6 +33,8 @@ const SHOTS = [
   // El selector con un planeta con lunas elegido y la ficha cerrada (decisión de Iván del 07-11): en
   // el PC y la tableta, dos filas; en el móvil, una, con la raya.
   ...(stage === 'despues' ? [['saturno-fichas', '/?captura=1&cuerpo=saturno', 'closed']] : []),
+  // «Controles» abierto con Saturno (crítica de la 9c): cuenta en el encuadre; en el móvil, hoja baja.
+  ...(stage === 'despues' ? [['saturno-controles', '/?captura=1&cuerpo=saturno', 'controls']] : []),
   ['tierra', '/explorar/tierra?captura=1', 'viewer'],
   ['luna', '/explorar/luna?captura=1', 'viewer'],
   ['cielo', '/cielo?captura=1', 'viewer'],
@@ -48,11 +50,16 @@ try {
     if (wanted.size && !wanted.has(name)) continue;
     for (const [size, options] of Object.entries(SIZES)) {
       let page;
-      if (kind === 'viewer' || kind === 'closed') {
+      if (kind === 'viewer' || kind === 'closed' || kind === 'controls') {
         ({ page } = await openViewer(browser, path, options));
         if (kind === 'closed') {
           await page.getByRole('button', { name: 'Cerrar la ficha' }).click();
           await page.waitForTimeout(800);
+        }
+        if (kind === 'controls') {
+          await page.locator('.time__more').click();
+          // El encuadre se mide otra vez y la cámara aparta el cuerpo.
+          await page.waitForTimeout(2500);
         }
       } else {
         page = await browser.newPage(pageOptions(options));

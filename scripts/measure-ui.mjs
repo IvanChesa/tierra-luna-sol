@@ -217,8 +217,10 @@ function inspect({ explorer }) {
       return box.right - box.left < r.width - 1;
     })
     .map(describe);
+  // Sin las capas de etiquetas de la escena (`scene/labels.ts`, de la 9b): recortan a propósito lo que
+  // se sale del lienzo (un rótulo en el borde no es un contenedor de la interfaz que se desborde).
   const overflowing = [...document.querySelectorAll('body *')]
-    .filter((el) => !inScroller(el) && !el.closest('[hidden], [inert]'))
+    .filter((el) => !inScroller(el) && !el.closest('[hidden], [inert], .scene-labels, .sky-labels'))
     .filter((el) => {
       const style = getComputedStyle(el);
       if (style.display === 'none' || style.display === 'contents') return false;
