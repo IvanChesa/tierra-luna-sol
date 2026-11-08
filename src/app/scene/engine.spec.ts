@@ -1620,6 +1620,43 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     h.engine.dispose();
   });
 
+  it('cuenta las texturas en vuelo: las pedidas que aún no han llegado ni fallado (cierre de la fase 9b)', async () => {
+    // Una fuente que no responde hasta que se le dice: todas las cargas, en vuelo.
+    const pending: (() => void)[] = [];
+    const source = {
+      load: (id: TextureId, level: TextureLevel): Promise<LoadedTexture | null> =>
+        new Promise((resolve) => {
+          pending.push(() =>
+            resolve({
+              texture: new Texture(),
+              file: { level, path: `${id}.webp`, width: 4, height: 2, bytes: 1 },
+              vramBytes: 32,
+            }),
+          );
+        }),
+    };
+    const h = await createHarness(
+      { reducedMotion: true },
+      { textures: () => ({ source, meta: TEXTURE_META }) },
+    );
+    settle(h);
+    for (let k = 0; k < 5; k++) await flush();
+    expect(pending.length).toBeGreaterThan(0);
+    expect(h.engine.stats().texturesLoading).toBe(pending.length);
+    // Al llegar (también las que se pidan al llegar otras), ninguna en vuelo.
+    let settled = 0;
+    for (let round = 0; round < 5 && settled < pending.length; round++) {
+      const batch = pending.slice(settled);
+      settled = pending.length;
+      for (const resolve of batch) resolve();
+      settle(h);
+      for (let k = 0; k < 5; k++) await flush();
+    }
+    expect(settled).toBe(pending.length);
+    expect(h.engine.stats().texturesLoading).toBe(0);
+    h.engine.dispose();
+  });
+
   it('la Tierra pide sus nubes también en la vista general; la noche, la máscara y las normales, solo de cerca (fase 5)', async () => {
     // Una fuente de texturas falsa que apunta qué se pide (y lo sirve al momento). Los mapas de la
     // Tierra ocupan 1 MiB cada uno, y los demás, casi nada: la VRAM del motor tiene que contarlos.

@@ -73,16 +73,20 @@ export async function openViewer(
   return { page, problems };
 }
 
-/** Espera a que el motor lleve 1,5 s sin pintar (texturas subidas, cámara quieta). */
+/**
+ * Espera a que el motor lleve 1,5 s sin pintar y sin texturas por llegar (texturas subidas, cámara
+ * quieta; cierre de la fase 9b: una textura lenta de decodificar podía quedarse fuera de la captura).
+ */
 export async function waitForIdle(page, timeoutMs = 30_000) {
   const start = Date.now();
   let last = -1;
   let stableSince = Date.now();
   while (Date.now() - start < timeoutMs) {
-    const frames = await page.evaluate(
-      () => window.__tlsViewer?.engine?.stats().renderedFrames ?? 0,
-    );
-    if (frames !== last) {
+    const { frames, loading } = await page.evaluate(() => {
+      const stats = window.__tlsViewer?.engine?.stats();
+      return { frames: stats?.renderedFrames ?? 0, loading: stats?.texturesLoading ?? 0 };
+    });
+    if (frames !== last || loading > 0) {
       last = frames;
       stableSince = Date.now();
     } else if (Date.now() - stableSince > 1500) {

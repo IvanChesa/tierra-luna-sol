@@ -11,6 +11,7 @@ interface E2eEngine {
   readonly speed: number;
   stats(): {
     readonly renderedFrames: number;
+    readonly texturesLoading: number;
     readonly geometries: number;
     readonly textures: number;
     readonly aliased: readonly string[];
@@ -76,16 +77,21 @@ export async function settlePage(page: Page): Promise<void> {
   }
 }
 
-/** Espera a que el motor lleve un rato sin pintar (texturas subidas, cámara quieta). */
+/**
+ * Espera a que el motor lleve un rato sin pintar y sin texturas por llegar (texturas subidas, cámara
+ * quieta). Sin lo segundo, con el CI cargado, una textura que tardaba en decodificarse más que `quietMs`
+ * sin un frame entre medias se quedaba fuera (cierre de la fase 9b).
+ */
 export async function waitForIdle(page: Page, quietMs = 1200): Promise<void> {
   let last = -1;
   let since = Date.now();
   const deadline = Date.now() + 60_000;
   while (Date.now() < deadline) {
-    const frames = await page.evaluate(
-      () => window.__tlsViewer?.engine?.stats().renderedFrames ?? 0,
-    );
-    if (frames !== last) {
+    const { frames, loading } = await page.evaluate(() => {
+      const stats = window.__tlsViewer?.engine?.stats();
+      return { frames: stats?.renderedFrames ?? 0, loading: stats?.texturesLoading ?? 0 };
+    });
+    if (frames !== last || loading > 0) {
       last = frames;
       since = Date.now();
     } else if (Date.now() - since >= quietMs) {

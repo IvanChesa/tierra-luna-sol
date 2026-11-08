@@ -382,6 +382,8 @@ export class SceneEngine implements SceneEngineApi {
   private readonly listeners = new Map<SceneEngineEventName, Set<Listener<SceneEngineEventName>>>();
   private readonly unsubscribe: (() => void)[] = [];
   private readonly uploads: { texture: Texture; resolve: () => void }[] = [];
+  /** Las cargas de texturas en vuelo (`countedLoads`). */
+  private texturesLoading = 0;
   private readonly reducedMotion: boolean;
   private readonly captureMode: boolean;
   private qualitySetting: QualitySetting;
@@ -522,12 +524,13 @@ export class SceneEngine implements SceneEngineApi {
       anisotropy: () => Math.min(this.profile.anisotropy, caps.maxAnisotropy),
       upload: (texture) => this.queueUpload(texture),
     });
+    const source = textures ? this.countedLoads(textures.source) : null;
     const rings = BODY_DATA.saturno.rings;
     this.world = new World({
       bodies: SCENE_BODIES,
       profile: this.profile,
       orbitSources,
-      textures: textures?.source ?? null,
+      textures: source,
       textureMeta: textures?.meta ?? null,
       rings: {
         innerKm: rings?.innerRadiusKm.value ?? 0,
@@ -537,7 +540,7 @@ export class SceneEngine implements SceneEngineApi {
       invalidate: () => this.invalidate(),
     });
     this.venusRadar = new VenusRadarLayer({
-      textures: textures?.source ?? null,
+      textures: source,
       apply: (texture, mix) => this.world.setVenusRadar(texture, mix),
       release: releaseTexture,
       onState: (state) => this.emit('venusRadar', { state }),
@@ -918,11 +921,29 @@ export class SceneEngine implements SceneEngineApi {
           (this.renderer.sunBloom?.vramBytes() ?? 0)) /
         1_048_576,
       renderedFrames: this.renderedFrames,
+      texturesLoading: this.texturesLoading,
       aliased: SCENE_BODIES.filter((body) => this.aliasing.orbit[body.index] === 1).map(
         (body) => body.id,
       ),
       quality: this.level,
       depth: this.renderer.capabilities.depth,
+    };
+  }
+
+  /**
+   * La fuente de texturas, contando las cargas en vuelo (`stats().texturesLoading`): las pedidas que no
+   * han llegado (ni fallado). Con ellas, «en reposo» también es «sin texturas por llegar» (cierre de la
+   * fase 9b: en el CI, una textura podía tardar más en decodificarse que la espera sin frames de los
+   * e2e, y la memoria «en caliente» salía sin ella).
+   */
+  private countedLoads(source: TextureSource): TextureSource {
+    return {
+      load: (id, level) => {
+        this.texturesLoading++;
+        return source.load(id, level).finally(() => {
+          this.texturesLoading--;
+        });
+      },
     };
   }
 

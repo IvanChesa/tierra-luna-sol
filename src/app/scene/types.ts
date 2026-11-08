@@ -127,6 +127,8 @@ export interface FrameStats {
   readonly vramMB: number;
   /** Frames pintados desde el arranque (para comprobar el render bajo demanda). */
   readonly renderedFrames: number;
+  /** Texturas pedidas que aún no han llegado (ni fallado): 0 con todo cargado. */
+  readonly texturesLoading: number;
   /** Cuerpos que se dibujan como su órbita resaltada porque irían a saltos (§4.5). */
   readonly aliased: readonly BodyId[];
   readonly quality: QualityLevel;
