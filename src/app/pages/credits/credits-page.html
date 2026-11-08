@@ -102,29 +102,35 @@
       parches del terreno real de la misma luna, sobre la esfera y sin tocar lo real. Proteo no
       tiene mapa: sus cráteres son generados. El método y lo medido (el grano y el borde con lo
       real), en <a [href]="recreationDoc">recreacion-lunas.md</a>.
-      <table class="recreation">
-        <caption>
-          La superficie de cada luna, medida en su mapa
-        </caption>
-        <thead>
-          <tr>
-            <th scope="col">Luna</th>
-            <th scope="col">Real</th>
-            <th scope="col">De lejos (con detalle recreado)</th>
-            <th scope="col">No vista (recreada)</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (row of recreation; track row.id) {
+      <!--
+        En las pantallas estrechas, la tabla no encoge más: se desplaza, y se enfoca con el teclado
+        (axe, scrollable-region-focusable, a 320 px; cierre de la fase 9b).
+      -->
+      <div class="recreation" tabindex="0" role="region" aria-labelledby="recreation-caption">
+        <table>
+          <caption id="recreation-caption">
+            La superficie de cada luna, medida en su mapa
+          </caption>
+          <thead>
             <tr>
-              <th scope="row">{{ row.name }}</th>
-              <td>{{ row.real }}</td>
-              <td>{{ row.far }}</td>
-              <td>{{ row.none }}</td>
+              <th scope="col">Luna</th>
+              <th scope="col">Real</th>
+              <th scope="col">De lejos (con detalle recreado)</th>
+              <th scope="col">No vista (recreada)</th>
             </tr>
-          }
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            @for (row of recreation; track row.id) {
+              <tr>
+                <th scope="row">{{ row.name }}</th>
+                <td>{{ row.real }}</td>
+                <td>{{ row.far }}</td>
+                <td>{{ row.none }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     </li>
     <li>
       <strong>Los lugares con nombre</strong> de las vistas y el recorrido de la Luna, y los rasgos

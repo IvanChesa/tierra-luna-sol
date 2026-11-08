@@ -103,6 +103,22 @@ test.describe('Accesibilidad (axe)', () => {
     }
   });
 
+  test('las páginas de lectura, también a 320 px de ancho', async ({ page }, testInfo) => {
+    // WCAG 1.4.10 y 2.1.1: a 320 px, lo que se desplaza tiene que poder enfocarse (la tabla de lo
+    // recreado de /creditos no podía: revisión de la fase 9b, hallazgo 3). Una vez, en el móvil.
+    test.skip(testInfo.project.name !== 'movil', 'Una vez basta: en el móvil.');
+    test.setTimeout(600_000);
+    await page.setViewportSize({ width: 320, height: 640 });
+    const explorer = new Set(['/', '/explorar/tierra', '/explorar/luna', '/cielo']);
+    const reading = ROUTES.filter((route) => !explorer.has(route));
+    expect(reading.length).toBeGreaterThan(10);
+    for (const route of reading) {
+      await page.goto(route);
+      await settlePage(page);
+      expect(await seriousViolations(page), route).toEqual([]);
+    }
+  });
+
   test('todas las páginas del sitio', async ({ page }) => {
     // Desde la fase 9, 40 rutas (con las 30 fichas): más que el tiempo por defecto de un test.
     test.setTimeout(600_000);

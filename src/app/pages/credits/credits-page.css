@@ -45,12 +45,17 @@ li + li {
   color: var(--color-text-muted);
 }
 
-/* Lo recreado de cada luna (fase 9b, D45): como las tablas de «Sobre el proyecto». */
+/*
+ * Lo recreado de cada luna (fase 9b, D45): como las tablas de «Sobre el proyecto». La tabla, en una
+ * región que se desplaza en las pantallas estrechas y se enfoca con el teclado.
+ */
 .recreation {
-  display: block;
   max-width: 100%;
   margin-top: var(--space-3);
   overflow-x: auto;
+}
+
+.recreation table {
   border-collapse: collapse;
   font-size: var(--text-sm);
 }
