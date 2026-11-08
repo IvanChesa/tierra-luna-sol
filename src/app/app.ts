@@ -3,6 +3,7 @@ import { Component, DOCUMENT, DestroyRef, afterNextRender, inject, signal } from
 import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { pathOf } from './core/canonical';
 import { SITE_CONFIG } from './core/site.config';
+import { ExplorerFocus } from './core/explorer-focus';
 
 @Component({
   selector: 'tls-root',
@@ -12,6 +13,11 @@ import { SITE_CONFIG } from './core/site.config';
 export class App {
   private readonly location = inject(Location);
   protected readonly site = SITE_CONFIG;
+  /**
+   * El cuerpo elegido en el explorador: en el móvil y la tableta, la cabecera es entonces una sola
+   * franja, con «‹ Sistema solar», su nombre y «Menú» (decisión de Iván del 08-11; styles.css).
+   */
+  protected readonly focus = inject(ExplorerFocus);
   /**
    * La navegación (fase 9c, decisión 2 de Iván): las páginas de lectura y «Explorar en 3D», la portada
    * del explorador. El cielo es una de sus vistas (sus pestañas); la Luna, la primera de /lunas

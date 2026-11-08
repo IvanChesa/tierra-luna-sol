@@ -220,6 +220,64 @@ tls-root {
   border-bottom: var(--border-width) solid var(--color-line);
 }
 
+/*
+ * Con un cuerpo elegido en el explorador, en el móvil y la tableta, la cabecera es una sola franja
+ * (decisión de Iván del 08-11): «‹ Sistema solar», el nombre y «Menú», en lugar de la cabecera y las
+ * pestañas. Las pestañas, «‹ Sistema solar» de la presentación y la autoría salen; el H1 y su tipo
+ * quedan solo para el lector. En escritorio, la franja no se ve.
+ */
+.site-focus {
+  display: none;
+}
+
+@media (max-width: 63.99rem) {
+  .site-header:has(.site-focus) {
+    min-height: 3rem;
+  }
+
+  .site-header:has(.site-focus) .site-name,
+  tls-root:has(.site-focus)
+    :is(tls-view-switcher, .explorer__intro .explorer__back, .explorer__credit),
+  tls-root:has(.site-focus) .explorer__lead::before {
+    display: none;
+  }
+
+  .site-focus {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: var(--space-3);
+    min-width: 0;
+  }
+
+  .site-focus .explorer__back {
+    flex: none;
+    margin: 0;
+  }
+
+  .site-focus__name {
+    overflow: hidden;
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
+    font-weight: var(--font-weight-display);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  tls-root:has(.site-focus) .explorer__lead {
+    padding: 0;
+  }
+
+  tls-root:has(.site-focus) .explorer__intro {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
 /* El nombre lleva a la portada, con su zona táctil (fase 9c, 9c.7: medía 129 × 30). */
 .site-name {
   display: inline-flex;

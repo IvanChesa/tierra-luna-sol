@@ -2,6 +2,24 @@
 <a class="skip-link" [href]="skipHref()">Saltar al contenido</a>
 
 <header class="site-header">
+  <!--
+    En el móvil y la tableta, con un cuerpo elegido en el explorador, la cabecera es una sola franja (en
+    lugar de la cabecera y las pestañas; decisión de Iván del 08-11): «‹ Sistema solar», el nombre del
+    cuerpo (el H1 de la vista lo dice al lector) y «Menú». En escritorio no se ve.
+  -->
+  @if (focus.body(); as body) {
+    <div class="site-focus">
+      <button
+        type="button"
+        class="explorer__back"
+        aria-label="Volver al sistema solar"
+        (click)="focus.back()"
+      >
+        <span aria-hidden="true">‹</span> Sistema solar
+      </button>
+      <span class="site-focus__name" aria-hidden="true">{{ body.name }}</span>
+    </div>
+  }
   <a class="site-name" routerLink="/">{{ site.name }}</a>
   <!--
     En el móvil, y en el explorador en todos los tamaños, la navegación va en un menú (Popover API:

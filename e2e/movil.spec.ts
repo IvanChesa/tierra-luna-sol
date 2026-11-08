@@ -1,5 +1,37 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { coveredFocus, indexToggle, openExplorer, simTime, treeRow } from './support';
+
+/**
+ * Desliza el dedo desde el centro de `selector`, `dy` píxeles (hacia abajo, positivo), a paso de
+ * dedo: con los tiempos de cada evento (50 ms entre uno y otro). Sin ellos, Chrome lo toma por un
+ * lanzamiento, y el toque siguiente solo lo para (no llega a ser un clic).
+ */
+async function swipe(page: Page, selector: string, dy: number): Promise<void> {
+  const box = await page.locator(selector).boundingBox();
+  if (!box) throw new Error(`Sin ${selector}`);
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  const cdp = await page.context().newCDPSession(page);
+  const start = Date.now() / 1000;
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchStart',
+    touchPoints: [{ x, y }],
+    timestamp: start,
+  });
+  for (let step = 1; step <= 4; step++) {
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [{ x, y: y + (dy * step) / 4 }],
+      timestamp: start + step * 0.05,
+    });
+  }
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchEnd',
+    touchPoints: [],
+    timestamp: start + 0.3,
+  });
+  await cdp.detach();
+}
 
 // Proyecto «movil» (Pixel 7, táctil): las hojas inferiores (índice y ficha) y el menú del sitio.
 test.describe('Móvil', () => {
@@ -21,11 +53,15 @@ test.describe('Móvil', () => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Marte');
     await page.getByRole('button', { name: 'Cerrar la ficha' }).tap();
     await expect(panel).toBeHidden();
+    // Marte sigue elegido: arriba, la franja con «‹ Sistema solar» y su nombre (decisión del 08-11).
+    await expect(page.locator('.site-focus__name')).toHaveText('Marte');
+    await page.getByRole('button', { name: 'Volver al sistema solar' }).tap();
+    await expect(page.locator('.site-focus')).toHaveCount(0);
     // Vuelve el H1 (la descripción ya se ha plegado al usar el explorador).
     await expect.poll(async () => (await intro.boundingBox())?.height ?? 0).toBeGreaterThan(20);
   });
 
-  test('con la ficha abierta, el foco va a la ficha y no pasa por lo que tapa la hoja', async ({
+  test('al elegir con el teclado, el foco va a la barra fina y no pasa por lo que tapa (decisión del 08-11)', async ({
     page,
   }) => {
     await openExplorer(page, '/?captura=1');
@@ -38,9 +74,10 @@ test.describe('Móvil', () => {
     await page.keyboard.press('Enter');
     const panel = page.locator('.panel');
     await expect(panel.locator('#card-title')).toHaveText('Marte');
-    await expect(panel).toBeFocused();
-    // El tabulador no se para en nada tapado (el botón «Índice», la barra de tiempo, la cámara).
-    for (let k = 0; k < 6; k++) {
+    await expect(page.locator('.bar__toggle')).toBeFocused();
+    // El tabulador no se para en nada tapado (el botón «Índice», las fichas, la cámara): de la barra
+    // fina a su ×, y a la barra de tiempo.
+    for (let k = 0; k < 3; k++) {
       await page.keyboard.press('Tab');
       expect(await coveredFocus(page)).toBeNull();
     }
@@ -73,11 +110,12 @@ test.describe('Móvil', () => {
       .getByRole('button', { name: 'Marte', exact: true })
       .tap();
     await expect(page.locator('.panel #card-title')).toHaveText('Marte');
-    for (const name of ['Reproducir', 'Controles', 'Ficha completa de Marte']) {
-      const control = page.getByRole(name.startsWith('Ficha') ? 'link' : 'button', {
-        name,
-        exact: true,
-      });
+    const controls = {
+      Reproducir: page.getByRole('button', { name: 'Reproducir', exact: true }),
+      Controles: page.getByRole('button', { name: 'Controles', exact: true }),
+      'la barra de Marte': page.locator('.bar__toggle'),
+    };
+    for (const [name, control] of Object.entries(controls)) {
       const covered = await control.evaluate((element) => {
         const box = element.getBoundingClientRect();
         const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
@@ -173,12 +211,18 @@ test.describe('Móvil', () => {
     }
   });
 
-  test('la ficha, en reposo: como mucho el 45 % de la pantalla, el cuerpo en el hueco libre y la pausa a mano (fase 9c)', async ({
+  test('al elegir un cuerpo, solo una barra fina (≤ 12 %), con el cuerpo en el hueco libre y la pausa a mano; la hoja, a demanda (decisión del 08-11)', async ({
     page,
   }) => {
     await openExplorer(page, '/?captura=1&cuerpo=saturno');
     const panel = page.locator('.panel');
+    const toggle = page.locator('.bar__toggle');
     await expect(panel.locator('#card-title')).toHaveText('Saturno');
+    // Un botón que controla la hoja: el nombre, el tipo y el radio, sin la descripción.
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await expect(toggle).toHaveAttribute('aria-controls', 'card-body');
+    await expect(toggle).toContainText('Planeta · Radio ecuatorial');
+    await expect(page.locator('#card-body')).toBeHidden();
     const geometry = () =>
       page.evaluate(() => {
         const explorer = document.querySelector('.explorer') as HTMLElement;
@@ -191,24 +235,104 @@ test.describe('Móvil', () => {
         const viewBottom = parseFloat(getComputedStyle(explorer).getPropertyValue('--view-bottom'));
         return {
           share: sheet.height / innerHeight,
-          // El encuadre sabe la altura de la hoja: el 3D se encuadra por encima de ella.
-          framedAbove: explorer.getBoundingClientRect().bottom - viewBottom <= sheet.top + 1,
+          // El encuadre acaba justo donde empieza la barra: el cuerpo, en el centro del hueco libre.
+          gap: explorer.getBoundingClientRect().bottom - viewBottom - sheet.top,
           playReachable: hit !== null && hit.closest('.time__play') !== null,
           playBelowSheet: play.top >= sheet.bottom - 1,
         };
       });
-    await expect.poll(async () => (await geometry()).framedAbove).toBe(true);
-    const { share, playReachable, playBelowSheet } = await geometry();
-    expect(share).toBeLessThanOrEqual(0.45);
-    expect(playReachable).toBe(true);
-    expect(playBelowSheet).toBe(true);
-    // Subida («Ver los datos»), los datos; la pausa sigue a mano.
+    await expect.poll(async () => Math.abs((await geometry()).gap)).toBeLessThanOrEqual(1);
+    const rest = await geometry();
+    expect(rest.share).toBeLessThanOrEqual(0.12);
+    expect(rest.playReachable).toBe(true);
+    expect(rest.playBelowSheet).toBe(true);
+    // Un toque en la barra: la hoja, con el resumen y «Ficha completa»; el foco, en su contenido.
+    await toggle.tap();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.locator('#card-body')).toBeVisible();
+    await expect(page.locator('#card-body')).toBeFocused();
+    await expect(page.getByRole('link', { name: 'Ficha completa de Saturno' })).toBeVisible();
+    expect((await geometry()).share).toBeLessThanOrEqual(0.5);
+    await expect.poll(async () => Math.abs((await geometry()).gap)).toBeLessThanOrEqual(1);
+    // «Ver los datos», los datos; la pausa sigue a mano.
     await page.getByRole('button', { name: 'Ver los datos' }).tap();
     await expect(panel.locator('#card-rest')).toBeVisible();
     expect((await geometry()).playReachable).toBe(true);
+    // Deslizar el tirador hacia abajo (con el dedo): los datos se recogen y, otra vez, vuelve la barra.
+    await swipe(page, '.panel__grip', 140);
+    await expect(panel.locator('#card-rest')).toBeHidden();
+    await swipe(page, '.panel__grip', 140);
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await expect(page.locator('#card-body')).toBeHidden();
+    // Y la barra, hacia arriba, abre la hoja.
+    await swipe(page, '.bar__toggle', -80);
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
     await page.locator('.time__play').tap();
     await expect(page.locator('.time__play')).toHaveAccessibleName(/Pausar/);
     await page.locator('.time__play').tap();
+  });
+
+  test('con el teclado: Intro en la barra abre la hoja y lleva el foco a su contenido; Esc la devuelve a la barra, con el foco (decisión del 08-11)', async ({
+    page,
+  }) => {
+    await openExplorer(page, '/?captura=1');
+    await indexToggle(page).focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('#tree-sol')).toBeFocused();
+    for (let k = 0; k < 6; k++) await page.keyboard.press('ArrowDown');
+    await expect(page.locator('#tree-saturno')).toBeFocused();
+    await page.keyboard.press('Enter');
+    const toggle = page.locator('.bar__toggle');
+    await expect(toggle).toBeFocused();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await page.keyboard.press('Enter');
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.locator('#card-body')).toBeFocused();
+    expect(await coveredFocus(page)).toBeNull();
+    // Por la hoja, nada tapado.
+    for (let k = 0; k < 3; k++) {
+      await page.keyboard.press('Tab');
+      expect(await coveredFocus(page)).toBeNull();
+    }
+    await page.keyboard.press('Escape');
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await expect(toggle).toBeFocused();
+    await expect(page.locator('#card-body')).toBeHidden();
+    // Otra vez Esc: la ficha se cierra.
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.panel')).toBeHidden();
+  });
+
+  test('con un cuerpo elegido, arriba, una sola franja: «‹ Sistema solar», su nombre y «Menú» (decisión del 08-11)', async ({
+    page,
+  }) => {
+    await openExplorer(page, '/?captura=1');
+    const tabs = page.locator('tls-view-switcher');
+    await expect(tabs).toBeVisible();
+    await page
+      .getByRole('toolbar', { name: 'Sol y planetas' })
+      .getByRole('button', { name: 'Saturno', exact: true })
+      .tap();
+    // El foco, a la barra fina.
+    await expect(page.locator('.bar__toggle')).toBeFocused();
+    await expect(page.locator('.site-focus__name')).toHaveText('Saturno');
+    await expect(tabs).toBeHidden();
+    await expect(page.locator('.site-name')).toBeHidden();
+    const header = await page.locator('.site-header').boundingBox();
+    expect(header?.height ?? 0).toBeLessThanOrEqual(49);
+    // El H1 sigue, para el lector.
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Saturno');
+    // El menú, a mano.
+    const menu = page.getByRole('navigation', { name: 'Principal' });
+    await page.getByRole('button', { name: 'Menú' }).tap();
+    await expect(menu).toBeVisible();
+    await page.getByRole('button', { name: 'Menú' }).tap();
+    await expect(menu).toBeHidden();
+    // «‹ Sistema solar», a la vista general: vuelven la cabecera y las pestañas.
+    await page.getByRole('button', { name: 'Volver al sistema solar' }).tap();
+    await expect(page.locator('.site-focus')).toHaveCount(0);
+    await expect(tabs).toBeVisible();
+    await expect(page.locator('.site-name')).toBeVisible();
   });
 
   test('la línea de tiempo responde al tacto', async ({ page }) => {
@@ -351,9 +475,9 @@ test.describe('Móvil', () => {
   }
 });
 
-// Crítica de la 9c (P1): con un cuerpo elegido, lo que la hoja recoge de la presentación («‹ Sistema
-// solar», «Cómo se calcula») se despliega al recibir el foco. Ninguna parada del tabulador cae en algo
-// que no se ve.
+// Crítica de la 9c (P1): con un cuerpo elegido, ninguna parada del tabulador cae en algo que no se ve.
+// Desde la decisión de Iván del 08-11, «‹ Sistema solar» va en la franja de arriba, y lo recogido de la
+// presentación (la autoría) sale del orden del foco.
 for (const [width, height] of [
   [390, 844],
   [768, 1024],
@@ -379,8 +503,11 @@ for (const [width, height] of [
         visited.push(name);
         expect(await coveredFocus(page), name).toBeNull();
       }
+      // Arriba, la franja del cuerpo elegido (decisión del 08-11): «‹ Sistema solar» y «Menú»; las
+      // pestañas y la autoría, fuera (ni se ven ni se alcanzan).
       expect(visited).toContain('Volver al sistema solar');
-      expect(visited).toContain('Cómo se calcula');
+      expect(visited).toContain('Menú');
+      expect(visited).not.toContain('Cómo se calcula');
     });
   });
 }
