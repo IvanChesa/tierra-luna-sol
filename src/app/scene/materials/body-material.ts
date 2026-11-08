@@ -341,7 +341,15 @@ vec3 reliefNormal(vec3 geometric, vec2 uv) {
 #else
   vec3 t = texture2D(uNormalMap, uv).xyz * 2.0 - 1.0;
 #endif
+#ifdef TLS_EARTH
+  // El relieve realzado de la Tierra (fase 9b, D46): sin el escalón de cuantización del mapa (unos
+  // 1,5 niveles de 8 bits; amplificado, dibujaba rectángulos en las llanuras), las pendientes suaves,
+  // amplificadas, y las fuertes, saturadas por debajo de unos 45° (con fuerza 1, casi igual).
+  t.xy = sign(t.xy) * max(abs(t.xy) - 0.012, 0.0) * uNormalStrength;
+  t.xy /= sqrt(1.0 + dot(t.xy, t.xy));
+#else
   t.xy *= uNormalStrength;
+#endif
 #ifdef TLS_MOON
   // El este, por píxel: el polo por la normal (solo degenera en el polo exacto).
   vec3 east = cross(vPoleView, geometric);
