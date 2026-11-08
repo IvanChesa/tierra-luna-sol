@@ -13,7 +13,16 @@
  * las líneas de las constelaciones llevan la refracción de `ephemeris/sky.ts` (`refractionDeg`, la
  * `normal` de astronomy-engine), copiada aquí en GLSL.
  */
-import { AdditiveBlending, Color, Matrix3, NormalBlending, Texture, Uniform, Vector3 } from 'three';
+import {
+  AdditiveBlending,
+  Color,
+  Matrix3,
+  NormalBlending,
+  Texture,
+  Uniform,
+  Vector2,
+  Vector3,
+} from 'three';
 import { SOLAR_LIMB_EXPONENTS } from '../../ephemeris/sun';
 import {
   DEPTH_FRAGMENT,
@@ -173,6 +182,11 @@ export function createGroundMaterial() {
     uColor: new Uniform(new Color()),
     /** Una línea de horizonte algo más clara (el borde de la silueta). */
     uRim: new Uniform(new Color()),
+    /**
+     * El degradado del suelo (`VISUAL_CONFIG.sky.ground.glow`): la fracción del color del horizonte
+     * junto a él y el seno de la profundidad a la que se apaga.
+     */
+    uGlow: new Uniform(new Vector2(0, 1)),
   };
   const material = sceneShaderMaterial({
     name: 'tls-sky-ground',
@@ -191,14 +205,19 @@ export function createGroundMaterial() {
       ${DEPTH_FRAGMENT_PARS}
       uniform vec3 uColor;
       uniform vec3 uRim;
+      uniform vec2 uGlow;
       varying vec3 vDirection;
       void main() {
         ${DEPTH_FRAGMENT}
         vec3 d = normalize(vDirection);
         if (d.y > 0.0) discard;
+        // El suelo, con algo del color del horizonte junto a él, que se apaga hacia abajo: se lee como
+        // suelo y no como un hueco.
+        float glow = 1.0 - smoothstep(0.0, uGlow.y, -d.y);
+        vec3 ground = mix(uColor, uRim, uGlow.x * glow * glow);
         // Una franja de unos 0,4° bajo el horizonte, más clara: se lee dónde acaba el cielo.
         float rim = 1.0 - smoothstep(0.0, 0.007, -d.y);
-        gl_FragColor = vec4(mix(uColor, uRim, rim), 1.0);
+        gl_FragColor = vec4(mix(ground, uRim, rim), 1.0);
         ${OUTPUT_FRAGMENT}
       }
     `,

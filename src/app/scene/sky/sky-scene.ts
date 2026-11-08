@@ -460,6 +460,8 @@ export class SkyScene {
       night[2] + (day[2] - night[2]) * daylight,
     );
     this.ground.uniforms.uRim.value.setRGB(...colors.horizon).multiplyScalar(0.55);
+    const glow = VISUAL_CONFIG.sky.ground.glow;
+    this.ground.uniforms.uGlow.value.set(glow.strength, Math.sin((glow.depthDeg * Math.PI) / 180));
 
     // La rotación de lo que está fuera del sistema solar.
     const rotation = frame.eclThreeToSky;

@@ -476,7 +476,11 @@ export const VISUAL_CONFIG = {
    * - `keyframes`: [altura del Sol (°), cénit, horizonte, resplandor hacia el Sol].
    * - `glow`: lo concentrado que está el resplandor alrededor del Sol (exponente del coseno) y lo
    *   que sube sobre el horizonte (exponente de la altura).
-   * - `ground`: el suelo, de noche y de día (una silueta, sin paisaje).
+   * - `ground`: el suelo, de noche y de día (una silueta, sin paisaje), con un degradado (`glow`):
+   *   junto al horizonte toma algo de su color (`strength`, la fracción) y se apaga hacia abajo en
+   *   `depthDeg` grados. Liso y casi negro, bajo el azul marino del horizonte de noche se leía como un
+   *   hueco (en el móvil, una banda de unos 77 px; la 9c, segunda decisión de Iván del 08-11; cierre
+   *   de la fase 9b).
    * - `starLimit`: la magnitud más débil que se ve según la altura del Sol: de día ninguna estrella;
    *   en el civil, las más brillantes y Venus; de noche cerrada, hasta la 6,5 (el catálogo). Los
    *   planetas siguen el mismo límite.
@@ -518,7 +522,7 @@ export const VISUAL_CONFIG = {
       [20, '#3a72c9', '#b6cbe3', '#fff0d2'],
     ] as readonly (readonly [number, string, string, string])[],
     glow: { power: 6, rise: 3 },
-    ground: { night: '#020203', day: '#38372f' },
+    ground: { night: '#020203', day: '#38372f', glow: { strength: 0.6, depthDeg: 14 } },
     starLimit: [
       [-18, 6.5],
       [-12, 5],
