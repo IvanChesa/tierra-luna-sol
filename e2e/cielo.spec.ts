@@ -291,11 +291,24 @@ test.describe('Próximos eclipses (fase 8)', () => {
     const link = solar.getByRole('link', { name: /^Ver en 3D el eclipse/ });
     // El enlace lleva la sombra; el explorador la quita de la URL en cuanto apunta a ella (es de un
     // solo uso), así que se mira en el enlace y no en la URL de llegada, que depende de la velocidad.
-    await expect(link).toHaveAttribute('href', /^\/explorar\/tierra\?fecha=[^&]+&sombra=1$/);
+    // También el tipo de eclipse y el lugar, para el aviso de la llegada (crítica de diseño de la fase 10).
+    await expect(link).toHaveAttribute(
+      'href',
+      /^\/explorar\/tierra\?fecha=[^&]+&sombra=1&eclipse=sol-[a-z]+&lugar=teide$/,
+    );
     await link.click();
     await expect(page).toHaveURL(/\/explorar\/tierra\?fecha=/);
     await expect(page.locator('tls-viewer-canvas')).toHaveClass(/is-ready/, { timeout: 90_000 });
     await expect(page.locator('canvas')).toHaveAccessibleName(/Vista 3D de la Tierra/);
+    // Al llegar, qué eclipse es y desde dónde, y la vuelta a la lista del mismo lugar.
+    const notice = page.locator('.notice--eclipse');
+    await expect(notice).toContainText(
+      /Eclipse \S+ de Sol del .+, en su máximo visto desde el Observatorio del Teide\./,
+    );
+    await expect(notice.getByRole('link', { name: 'Volver a los eclipses' })).toHaveAttribute(
+      'href',
+      '/eclipses?lugar=teide',
+    );
     expect(problems).toEqual([]);
   });
 });

@@ -132,8 +132,11 @@ test.describe('El recorrido de la portada (fase 9c)', () => {
     // La Luna, solo si se ve iluminada: el rótulo cuenta 4 paradas (con ella) o 3.
     const stops = Number(/de (\d)/.exec((await callout(page).textContent()) ?? '')?.[1]);
     await expect(title(page)).toHaveText('La Tierra', { timeout: 30_000 });
-    // España, con sus lugares nombrados en el rótulo.
-    await expect(callout(page)).toContainText('el Montsec, Fabra', { timeout: 30_000 });
+    // España, con los nombres de sus lugares en el mapa, junto a sus puntos (crítica de la fase 10).
+    await expect(callout(page)).toContainText('España y los lugares del cielo', {
+      timeout: 30_000,
+    });
+    await expect(page.locator('.scene-labels').filter({ hasText: 'Montsec' })).toBeVisible();
     if (stops === 4) await expect(title(page)).toHaveText('La Luna', { timeout: 30_000 });
     await expect(title(page)).toHaveText('El sistema solar', { timeout: 30_000 });
     await expect(skip(page)).toBeHidden({ timeout: 30_000 });
