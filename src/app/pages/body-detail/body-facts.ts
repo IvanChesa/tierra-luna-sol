@@ -381,22 +381,23 @@ function ringRows(body: Body): FactRow[] {
   if (!r) return [];
   const edge = (key: string, label: string, data: Sourced<number>): FactRow =>
     row(key, label, data, { number: formatNumber(data.value, 0), unit: 'km' });
+  // Cada región con su preposición y su artículo: «del anillo C», «de la división de Cassini».
   const regions: [keyof typeof r.regions, string][] = [
-    ['c', 'anillo C'],
-    ['b', 'anillo B'],
-    ['cassini', 'división de Cassini'],
-    ['a', 'anillo A'],
+    ['c', 'del anillo C'],
+    ['b', 'del anillo B'],
+    ['cassini', 'de la división de Cassini'],
+    ['a', 'del anillo A'],
   ];
-  const regionRows = regions.flatMap(([key, name]) => {
+  const regionRows = regions.flatMap(([key, ofName]) => {
     const region: RingRegion = r.regions[key];
     return [
       row(
         `${key}.opticalDepth`,
-        `Profundidad óptica normal del ${name}`,
+        `Profundidad óptica normal ${ofName}`,
         region.opticalDepth,
         range(region.opticalDepth.value),
       ),
-      row(`${key}.albedo`, `Albedo del ${name}`, region.albedo, range(region.albedo.value)),
+      row(`${key}.albedo`, `Albedo ${ofName}`, region.albedo, range(region.albedo.value)),
     ];
   });
   return [

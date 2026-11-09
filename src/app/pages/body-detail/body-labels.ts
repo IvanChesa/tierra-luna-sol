@@ -27,16 +27,11 @@ export function kindLineOf(body: BodyIndexEntry): KindLine {
   return { text: 'Luna de', parent: { name: parent.name, path: bodyPagePath(parent.id) } };
 }
 
-/** Las lunas sin mapa de su superficie: en la escena, con su color esquemático (fase 7). */
-const SCHEMATIC = new Set<BodyId>([
-  'deimos',
-  'proteo',
-  'miranda',
-  'ariel',
-  'umbriel',
-  'titania',
-  'oberon',
-]);
+/**
+ * Las lunas sin mapa de su superficie (fase 7): solo Proteo. Deimos y las cinco grandes de Urano ya
+ * tienen el suyo (D43 y D45) y sus imágenes lo enseñan (revisión de los textos, fase 10).
+ */
+const SCHEMATIC = new Set<BodyId>(['proteo']);
 
 /** Lo que muestra la imagen de cada cuerpo (ESTILO §6: qué se ve, no «imagen de»), sin género. */
 function seen(id: BodyId): string {

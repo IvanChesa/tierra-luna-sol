@@ -1,4 +1,4 @@
-// GENERADO por scripts/build-body-texts.mjs el 2026-11-08 a partir de scripts/content/body-texts.json.
+// GENERADO por scripts/build-body-texts.mjs el 2026-11-09 a partir de scripts/content/body-texts.json.
 // No se edita a mano: se cambia el JSON y se vuelve a generar. Las citas que respaldan cada texto
 // están en docs/datos/textos-cuerpos.md.
 import type { BodyId, BodyTexts } from './body.model';
@@ -320,7 +320,7 @@ export const BODY_TEXTS: Record<BodyId, BodyTexts> = {
         reviewed: false,
       },
       {
-        text: 'Las mareas de Júpiter hacen subir y bajar la superficie sólida de Ío hasta 100 m. En la Tierra, donde las mareas son más altas, la diferencia entre bajamar y pleamar es de solo 18 m, y en agua, no en suelo firme.',
+        text: 'Las mareas de Júpiter hacen subir y bajar la superficie sólida de Ío hasta 100 m. En el lugar de la Tierra con las mareas más altas, la diferencia entre bajamar y pleamar es de solo 18 m, y en agua, no en suelo firme.',
         source: 'https://science.nasa.gov/jupiter/jupiter-moons/io/facts/',
         reviewed: false,
       },
@@ -716,7 +716,7 @@ export const BODY_TEXTS: Record<BodyId, BodyTexts> = {
     },
     facts: [
       {
-        text: 'Sus rasgos más llamativos son valles de falla de hasta 1500 km de largo y 75 km de ancho. Las paredes que miran al Sol brillan mucho por el ángulo de la luz, pero también por un material claro, quizá escarcha reciente.',
+        text: 'Sus rasgos más llamativos son valles de falla de hasta 1500 km de largo y 75 km de ancho. En algunos, las paredes que miran al Sol brillan mucho por el ángulo de la luz, pero también por un material claro, quizá escarcha reciente.',
         source: 'https://science.nasa.gov/photojournal/titania-highest-resolution-voyager-picture/',
         reviewed: false,
       },
@@ -740,7 +740,7 @@ export const BODY_TEXTS: Record<BodyId, BodyTexts> = {
   },
   oberon: {
     summary: {
-      text: 'Oberón es la segunda luna más grande de Urano, y apenas se sabía nada de ella hasta que la Voyager 2 pasó a su lado en enero de 1986. Su superficie está plagada de cráteres, como la de Umbriel, y, como todas las grandes lunas de Urano, está formada aproximadamente por mitad de hielo y mitad de roca.',
+      text: 'Oberón es la segunda luna más grande de Urano, y apenas se sabía nada de ella hasta que la Voyager 2 pasó a su lado en enero de 1986. Su superficie está plagada de cráteres, como la de Umbriel. Como todas las grandes lunas de Urano, Oberón está formada aproximadamente por mitad de hielo y mitad de roca.',
       source: 'https://science.nasa.gov/uranus/moons/oberon/',
       reviewed: false,
     },

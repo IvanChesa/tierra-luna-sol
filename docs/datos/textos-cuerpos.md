@@ -1,4 +1,4 @@
-# Textos de los cuerpos: lista de revisión (generada el 2026-11-08)
+# Textos de los cuerpos: lista de revisión (generada el 2026-11-09)
 
 Generada por `scripts/build-body-texts.mjs` a partir de `scripts/content/body-texts.json`. Cada texto
 lleva su fuente y las citas literales en inglés que lo respaldan; el script comprueba que cada cita
@@ -312,7 +312,7 @@ _Nota de redacción:_ La primera curiosidad procede de https://science.nasa.gov/
 - [ ] **Curiosidad 1.** A veces, sus volcanes son tan potentes que se ven desde la Tierra con grandes telescopios. En su superficie hay incluso lagos de lava de silicatos fundidos.
   - Fuente: <https://science.nasa.gov/jupiter/jupiter-moons/io/>
   - > Io’s volcanoes are at times so powerful that they are seen with large telescopes on Earth, and Io even has lakes of molten silicate lava on its surface.
-- [ ] **Curiosidad 2.** Las mareas de Júpiter hacen subir y bajar la superficie sólida de Ío hasta 100 m. En la Tierra, donde las mareas son más altas, la diferencia entre bajamar y pleamar es de solo 18 m, y en agua, no en suelo firme.
+- [ ] **Curiosidad 2.** Las mareas de Júpiter hacen subir y bajar la superficie sólida de Ío hasta 100 m. En el lugar de la Tierra con las mareas más altas, la diferencia entre bajamar y pleamar es de solo 18 m, y en agua, no en suelo firme.
   - Fuente: <https://science.nasa.gov/jupiter/jupiter-moons/io/facts/>
   - > Thus, in its widely varying distances from Jupiter, Io is subjected to tremendous tidal forces.
   - > These forces cause Io's surface to bulge up and down (or in and out) by as much as 330 feet (100 meters).
@@ -675,7 +675,7 @@ _Nota de redacción:_ La página principal es breve; la curiosidad 2 sale del pi
   - > The moon is about 1,000 miles (1,600 kilometers) in diameter.
   - > Images taken by Voyager 2 almost 200 years after Titania's discovery revealed signs that the moon was geologically active.
   - > The troughs break the crust in two directions, an indication of some tectonic extension of Titania's crust.
-- [ ] **Curiosidad 1.** Sus rasgos más llamativos son valles de falla de hasta 1500 km de largo y 75 km de ancho. Las paredes que miran al Sol brillan mucho por el ángulo de la luz, pero también por un material claro, quizá escarcha reciente.
+- [ ] **Curiosidad 1.** Sus rasgos más llamativos son valles de falla de hasta 1500 km de largo y 75 km de ancho. En algunos, las paredes que miran al Sol brillan mucho por el ángulo de la luz, pero también por un material claro, quizá escarcha reciente.
   - Fuente: <https://science.nasa.gov/photojournal/titania-highest-resolution-voyager-picture/>
   - > The most prominent features are fault valleys that stretch across Titania.
   - > They are up to 1,500 km (nearly 1,000 mi) long and as much as 75 km (45 mi) wide.
@@ -700,7 +700,7 @@ _Nota de redacción:_ Curiosidad 1: la página principal da «nearly 1,000 miles
 
 ## Oberón (`oberon`)
 
-- [ ] **Resumen.** Oberón es la segunda luna más grande de Urano, y apenas se sabía nada de ella hasta que la Voyager 2 pasó a su lado en enero de 1986. Su superficie está plagada de cráteres, como la de Umbriel, y, como todas las grandes lunas de Urano, está formada aproximadamente por mitad de hielo y mitad de roca.
+- [ ] **Resumen.** Oberón es la segunda luna más grande de Urano, y apenas se sabía nada de ella hasta que la Voyager 2 pasó a su lado en enero de 1986. Su superficie está plagada de cráteres, como la de Umbriel. Como todas las grandes lunas de Urano, Oberón está formada aproximadamente por mitad de hielo y mitad de roca.
   - Fuente: <https://science.nasa.gov/uranus/moons/oberon/>
   - > Oberon is the second largest moon of Uranus.
   - > Discovered in 1787, little was known about this moon until Voyager 2 passed it during its flyby of Uranus in January 1986.
