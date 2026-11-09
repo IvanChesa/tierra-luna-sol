@@ -45,10 +45,10 @@ export const CRATER_PARAMS = {
   rays: {
     fromScale: 4.2,
     quantile: 0.9,
-    count: [7, 14],
-    width: [0.08, 0.2],
-    reach: [3, 5],
-    strength: 0.3,
+    count: [8, 15],
+    width: [0.05, 0.12],
+    reach: [4, 7],
+    strength: 0.55,
   },
   /** La parte de las manchas que se pintan difusas (sin borde) y no como cráter. */
   blobShare: 0.6,
@@ -281,7 +281,10 @@ export function craterLayer(
       for (let n = 0; n < count; n++) {
         const value = values[Math.floor(random() * values.length)];
         const [lat, lon] = pick();
-        const blob = random() < P.blobShare;
+        // Los claros más brillantes de las escalas grandes, siempre como cráter con rayos (los «rayos
+        // claros» de Oberón y de Titania); los demás, difusos en la parte `blobShare`.
+        const rayed = kind === 'bright' && level.scale >= P.rays.fromScale && value >= rayLimit;
+        const blob = !rayed && random() < P.blobShare;
         const outline = [2, 3, 4].map((order) => ({
           order,
           amplitude: P.outline * random(),
