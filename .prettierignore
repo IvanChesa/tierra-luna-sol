@@ -1,6 +1,7 @@
 dist/
 .angular/
 coverage/
+.lighthouseci/
 node_modules/
 package-lock.json
 # Datos generados por scripts (fixtures de referencia y catálogos derivados).
