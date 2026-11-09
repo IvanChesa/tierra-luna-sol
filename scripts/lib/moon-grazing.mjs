@@ -28,7 +28,8 @@ export const SEAM = 2;
  * - el perfil del terminador: el L* medio de lo real por distancia a lo no visto, en pasos de
  *   `profileStepDeg`; su meseta, la mediana entre `plateauDeg`; y la franja, hasta donde el perfil queda
  *   a menos de `toleranceL` de la meseta y la parte de sombras (L* < `shadowL`) no pasa de `shadowShare`
- *   (o del doble de la de la meseta), entre `minWidthDeg` y `maxWidthDeg`;
+ *   (o del doble de la de la meseta), entre `minWidthDeg` y `maxWidthDeg`; y, hasta `maxWidthDeg`, las
+ *   sombras negras sueltas (L* < `shadowL`) con un anillo de `shadowRing` texeles;
  * - la corrección: las medias por rodajas de `sliceDeg` a lo largo del borde (σ = `alongDeg`), frente a la
  *   de lo real de una banda de `refBandDeg` más allá de la franja; la ganancia, hasta `maxGain`;
  * - el fundido hacia lo recreado: lo corregido pesa de 0 (a `fade[0]` de la anchura) a 1 (a `fade[1]`),
@@ -42,7 +43,8 @@ export const GRAZING_PARAMS = {
   plateauDeg: [8, 14],
   toleranceL: 2,
   shadowL: 10,
-  shadowShare: 0.02,
+  shadowShare: 0.005,
+  shadowRing: 2,
   minWidthDeg: 1,
   maxWidthDeg: 8,
   sliceDeg: 0.5,
@@ -174,7 +176,7 @@ export function grazingClasses(
   classes,
   width,
   height,
-  { widthDeg = 0, seam = false },
+  { widthDeg = 0, seam = false, rgb = null },
   params = {},
 ) {
   const P = { ...GRAZING_PARAMS, ...params };
@@ -183,12 +185,25 @@ export function grazingClasses(
   const kind = new Uint8Array(pixels);
   const none = Uint8Array.from(classes, (c) => (c === NONE ? 1 : 0));
   const widthTex = (widthDeg * width) / 360;
-  const d = distanceTo(none, width, height, Math.ceil(widthTex) + 2);
+  const shadowReach = widthTex > 0 ? (P.maxWidthDeg * width) / 360 : 0;
+  const d = distanceTo(none, width, height, Math.ceil(Math.max(widthTex, shadowReach)) + 2);
+  // Las sombras negras sueltas junto a lo no visto (hasta `maxWidthDeg`), más allá de la franja: también
+  // son luz rasante (unas pocas no mueven el perfil medio, y quedaban como motas negras junto al borde).
+  // Con un anillo de `shadowRing` texeles, la penumbra de su borde.
+  const shadow = new Uint8Array(pixels);
+  if (widthTex > 0 && rgb) {
+    const Y = luminanceOf(rgb, pixels);
+    for (let k = 0; k < pixels; k++) {
+      if (classes[k] !== REAL && classes[k] !== FAR) continue;
+      if (d[k] < shadowReach && lightnessOfY(Y[k]) < P.shadowL) shadow[k] = 1;
+    }
+  }
+  const nearShadow = distanceTo(shadow, width, height, P.shadowRing + 1);
   for (let j = 0; j < height; j++) {
     for (let i = 0; i < width; i++) {
       const k = j * width + i;
       if (classes[k] !== REAL && classes[k] !== FAR) continue;
-      if (widthTex > 0 && d[k] < widthTex) {
+      if (widthTex > 0 && (d[k] < widthTex || nearShadow[k] <= P.shadowRing)) {
         out[k] = GRAZING;
         kind[k] = TERMINATOR;
       } else if (seam && (i < P.seamColumns || i >= width - P.seamColumns)) {
@@ -243,8 +258,24 @@ export function correctGrazing(rgb, grazing, width, height, params = {}) {
       if (classes[k] === REAL && far[k] >= widthTex && far[k] < widthTex + bandTex) band[k] = 1;
     }
     const reference = maskedMean(Y, band, width, height, Math.max(along, 0.75 * widthTex));
+    // La media de la zona (lo visto, sin las sombras sueltas), a 1,5°: la referencia de esas sombras.
+    const zone = maskedMean(
+      Y,
+      Uint8Array.from(classes, (c, k) =>
+        c === NONE || (c === GRAZING && distance[k] >= widthTex) ? 0 : 1,
+      ),
+      width,
+      height,
+      (1.5 * width) / 360,
+    );
     for (let k = 0; k < pixels; k++) {
       if (kind[k] !== TERMINATOR) continue;
+      // Una sombra suelta más allá de la franja: sin corrección (su brillo a gran escala ya es el de lo
+      // real), y con la media de su zona como referencia para fundirla hacia lo recreado.
+      if (distance[k] >= widthTex) {
+        if (!Number.isNaN(zone[k]) && zone[k] > 0) local[k] = zone[k];
+        continue;
+      }
       const u = distance[k] / sliceTex - 0.5;
       const s0 = Math.min(slices - 1, Math.max(0, Math.floor(u)));
       const s1 = Math.min(slices - 1, s0 + 1);

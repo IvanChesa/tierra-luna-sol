@@ -132,6 +132,7 @@ export function recreateMosaic(id, mosaic, { check = true } = {}) {
   const grazing = grazingClasses(measured.classes, W, H, {
     widthDeg: profile?.widthDeg ?? 0,
     seam: recipe.seam ?? false,
+    rgb,
   });
   const { classes, kind } = grazing;
   const corrected = correctGrazing(rgb, grazing, W, H);
