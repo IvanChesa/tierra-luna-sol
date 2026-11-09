@@ -32,6 +32,7 @@ import { attachPointerControls } from './camera/pointer';
 import { SimClock } from './clock';
 import { FRAME_TRANSITION_MS, FrameController, frameFor } from './frames';
 import { LabelInfo, LabelLayer, MARKER_RADIUS_PX, layoutLabels } from './labels';
+import { fastestScreenSpeed, paceDelayMs } from './frame-pacing';
 import { ScreenBody, pickBody, projectBodies } from './picking';
 import {
   AdaptiveQuality,
@@ -211,6 +212,7 @@ const INSETS_SMOOTHING_MS = 180;
 /**
  * Render bajo demanda también al reproducir: hasta esta velocidad (s simulados por s real) nada se
  * mueve un píxel en un frame (a tiempo real, la Tierra gira 0,004° por segundo) y se pinta a 4 Hz.
+ * Por encima, a la frecuencia que pide lo que se mueve en pantalla (`frame-pacing.ts`, fase 10).
  */
 export const SLOW_SPEED = 60;
 export const SLOW_FRAME_MS = 250;
@@ -1099,29 +1101,52 @@ export class SceneEngine implements SceneEngineApi {
       this.emitTime(false);
     }
     const fading = this.venusRadar.step(dt, this.instant());
+    const before = this.screen;
     const moving = this.renderFrame(timeMs, true, dt);
     const uploading = this.processUpload();
     const animating = this.clock.playing || moving || fading || this.frames.animating;
-    // Reproducción lenta y nada más en marcha: 4 frames por segundo bastan (y no se miden FPS).
-    const slow =
+    // Con el tiempo en marcha y nada más moviéndose, no hace falta pintar cada frame (y no se miden
+    // FPS): a las velocidades lentas, a 4 Hz; a las demás, a la frecuencia que pide lo que más corre
+    // en pantalla (fase 10, tarea 4), salvo en el cielo, que no proyecta los cuerpos.
+    const calm =
       this.clock.playing &&
       !moving &&
+      !fading &&
       !this.frames.animating &&
       !uploading &&
-      this.uploads.length === 0 &&
-      Math.abs(this.clock.speed) <= SLOW_SPEED;
+      this.uploads.length === 0;
+    const delay = !calm
+      ? 0
+      : Math.abs(this.clock.speed) <= SLOW_SPEED
+        ? SLOW_FRAME_MS
+        : this._view === 'sky'
+          ? 0
+          : paceDelayMs(this.screenSpeed(before, dt), SLOW_FRAME_MS);
     if (this.qualitySetting === 'auto' && !this.captureMode) {
-      const lower = this.adaptive.sample(this.deps.now(), animating && !slow, this.level);
+      const lower = this.adaptive.sample(this.deps.now(), animating && delay === 0, this.level);
       if (lower) this.applyQuality(lower, 'auto');
     }
     const sun = this.sunAnimates();
     if (animating || uploading || this.uploads.length > 0) {
-      this.invalidate(slow ? (sun ? this.profile.sunFrameMs : SLOW_FRAME_MS) : 0);
+      this.invalidate(delay > 0 ? (sun ? Math.min(delay, this.profile.sunFrameMs) : delay) : 0);
     } else if (sun) {
       this.invalidate(this.profile.sunFrameMs);
     } else {
       this.lastFrameMs = null;
     }
+  }
+
+  /**
+   * Lo que más corre en pantalla desde el frame anterior (px/s, `fastestScreenSpeed`): los cuerpos que
+   * se ven y la superficie de los que giran (los de giro congelado por el aliasing, no).
+   */
+  private screenSpeed(before: readonly ScreenBody[], dtMs: number): number {
+    const daysPerSecond = this.clock.speed / 86_400;
+    return fastestScreenSpeed(before, this.screen, dtMs, (index) => {
+      const spinDays = MOTION_BODIES[index]?.spinDays;
+      if (!spinDays || this.aliasing.spin[index] === 1) return 0;
+      return (2 * Math.PI * daysPerSecond) / spinDays;
+    });
   }
 
   /** ¿Se ve el Sol de cerca, con su superficie y sus bucles en movimiento? (`sunFrameMs`) */

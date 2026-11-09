@@ -599,7 +599,9 @@ describe('SceneEngine: foco, marcos y selección', () => {
 
 describe('SceneEngine: calidad adaptativa, contexto WebGL y limpieza', () => {
   it('con FPS bajos mientras reproduce, baja una vez y no oscila (reloj falso)', async () => {
-    const h = await createHarness({ quality: 'auto' });
+    // Júpiter de cerca a 1 h/s: su superficie corre en pantalla y se pinta cada frame (con lo que
+    // apenas se mueve, el ritmo de pintado baja y no se miden FPS: «frame-pacing.ts», fase 10).
+    const h = await createHarness({ quality: 'auto', focus: 'jupiter' });
     expect(h.engine.qualityLevel).toBe('high');
     settle(h);
     h.engine.setSpeed(3600);
@@ -613,6 +615,28 @@ describe('SceneEngine: calidad adaptativa, contexto WebGL y limpieza', () => {
     expect(h.renderer.size.pixelRatio).toBeLessThanOrEqual(1.5);
     h.engine.dispose();
   }, 30_000);
+
+  it('pinta a la frecuencia que pide lo que se mueve: la Luna de cerca a 1 h/s, pocas veces; la Tierra, cada frame (fase 10)', async () => {
+    const count = async (options: Partial<SceneEngineOptions>) => {
+      const h = await createHarness(options);
+      settle(h);
+      h.engine.setSpeed(3600);
+      h.engine.setPlaying(true);
+      h.frames(500);
+      const renders = h.renderer.renders;
+      h.frames(2000);
+      const perSecond = (h.renderer.renders - renders) / 2;
+      h.engine.dispose();
+      return perSecond;
+    };
+    // La Luna gira una vez en 27,3 días: a 1 h/s, su superficie corre unos píxeles por segundo.
+    const moon = await count({ view: 'moon' });
+    expect(moon).toBeGreaterThanOrEqual(3);
+    expect(moon).toBeLessThan(15);
+    // La Tierra gira una vez al día: a 1 h/s, cada frame de la pantalla.
+    const earth = await count({ view: 'earth' });
+    expect(earth).toBeGreaterThan(50);
+  });
 
   it('pierde y recupera el contexto WebGL sin perder el estado', async () => {
     const h = await createHarness();
