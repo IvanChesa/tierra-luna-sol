@@ -80,6 +80,8 @@ export async function measureMoon(id, spec, farFactor = FAR_FACTOR) {
   const mosaic = await loadMosaic(new URL(spec.file, SRC), WIDTH, {
     band: spec.band,
     plain: spec.plain,
+    // D48: como en build-textures.mjs, la máscara umbralizada antes de reducir.
+    maskAtSource: true,
   });
   return { id, ...classifyMosaic(mosaic, farFactor) };
 }

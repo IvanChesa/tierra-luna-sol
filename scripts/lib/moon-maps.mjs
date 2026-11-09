@@ -290,10 +290,13 @@ export function absorbIslands(classes, width, height, from, to, minArea, keep = 
   }
 }
 
-/** La fracción del área de la esfera de cada clase (0, 1 y 2). */
+/**
+ * La fracción del área de la esfera de cada clase: 0, real; 1, visto de lejos; 2, no visto; 3, real con
+ * luz rasante (D48, scripts/lib/moon-grazing.mjs).
+ */
 export function classShares(classes, width, height) {
   const weights = rowWeights(height);
-  const area = [0, 0, 0];
+  const area = [0, 0, 0, 0];
   let total = 0;
   for (let j = 0; j < height; j++) {
     const w = weights[j];
@@ -604,4 +607,314 @@ export function recreationQuality(values, classes, width, height, options = {}, 
     },
     bands: { ...summary(steps), skipped },
   };
+}
+
+// --- D48 (entrega 10.a): el borde a varias escalas y el contraste a gran escala --------------------
+
+/**
+ * Desenfoque casi gaussiano de σ = `sigma` texeles en un mapa equirrectangular, en tiempo constante por
+ * píxel: tres pasadas de caja (la varianza de tres cajas de ancho 2r + 1 es r (r + 1)), a escala física
+ * como `gaussianBlur` (en longitud, σ / cos φ, con tope y con la vuelta del antimeridiano; en latitud,
+ * repitiendo la fila del polo). Para las medidas a varios grados, donde el núcleo gaussiano entero
+ * costaría cientos de muestras por píxel.
+ */
+export function boxBlur(src, width, height, sigma, physical = true) {
+  const radiusOf = (s) => Math.max(1, Math.round((Math.sqrt(4 * s * s + 1) - 1) / 2));
+  let a = Float32Array.from(src);
+  let b = new Float32Array(src.length);
+  const rowRadius = Int32Array.from({ length: height }, (_, j) => {
+    const cos = Math.cos(((j + 0.5) / height - 0.5) * Math.PI);
+    return radiusOf(physical ? Math.min(sigma / Math.max(cos, 1e-3), width / 6) : sigma);
+  });
+  const colRadius = radiusOf(sigma);
+  for (let pass = 0; pass < 3; pass++) {
+    for (let j = 0; j < height; j++) {
+      const r = Math.min(rowRadius[j], (width >> 1) - 1);
+      const span = 2 * r + 1;
+      const row = j * width;
+      let acc = 0;
+      for (let k = -r; k <= r; k++) acc += a[row + ((k + width) % width)];
+      for (let i = 0; i < width; i++) {
+        b[row + i] = acc / span;
+        acc += a[row + ((i + r + 1) % width)] - a[row + ((i - r + width) % width)];
+      }
+    }
+    [a, b] = [b, a];
+    const span = 2 * colRadius + 1;
+    for (let i = 0; i < width; i++) {
+      const at = (y) => a[Math.min(Math.max(y, 0), height - 1) * width + i];
+      let acc = 0;
+      for (let k = -colRadius; k <= colRadius; k++) acc += at(k);
+      for (let j = 0; j < height; j++) {
+        b[j * width + i] = acc / span;
+        acc += at(j + colRadius + 1) - at(j - colRadius);
+      }
+    }
+    [a, b] = [b, a];
+  }
+  return a;
+}
+
+/** El desenfoque de las medidas: el gaussiano entero hasta σ = 3 texeles; por encima, el de cajas. */
+const measureBlur = (src, width, height, sigma) =>
+  sigma > 3 ? boxBlur(src, width, height, sigma) : gaussianBlur(src, width, height, sigma, true);
+
+/**
+ * El salto del brillo medio en el borde entre `a` y `b` (máscaras, 1 dentro) a la escala σ = `sigma`
+ * texeles (a escala física: en longitud, σ / cos φ): en cada píxel del borde (de un lado, a menos de 1
+ * texel del otro), la media de L* de cada lado, normalizada con solo sus píxeles (y, con `valid`, solo
+ * los válidos), y su diferencia (b − a); por teselas de `tile` texeles, la media de esa diferencia en
+ * sus píxeles del borde (al menos `minBorder`). Cuenta un píxel del borde solo si cada lado pesa al
+ * menos `minWeight` en su entorno (las dos medias, con datos). Devuelve las teselas
+ * ({ tx, ty, delta, count }).
+ */
+export function borderSteps(
+  L,
+  a,
+  b,
+  width,
+  height,
+  { sigma, tile = 64, maxLat = 70, minBorder = 32, minWeight = 0.2, valid = null },
+) {
+  const sideA = new Float32Array(width * height);
+  const sideB = new Float32Array(width * height);
+  for (let k = 0; k < sideA.length; k++) {
+    const ok = !valid || valid[k];
+    sideA[k] = a[k] && ok ? 1 : 0;
+    sideB[k] = b[k] && ok ? 1 : 0;
+  }
+  const wA = measureBlur(sideA, width, height, sigma);
+  const wB = measureBlur(sideB, width, height, sigma);
+  const lA = new Float32Array(width * height);
+  const lB = new Float32Array(width * height);
+  for (let k = 0; k < L.length; k++) {
+    lA[k] = sideA[k] * L[k];
+    lB[k] = sideB[k] * L[k];
+  }
+  const mA = measureBlur(lA, width, height, sigma);
+  const mB = measureBlur(lB, width, height, sigma);
+  const toA = distanceTo(a, width, height, 4);
+  const toB = distanceTo(b, width, height, 4);
+  const list = [];
+  for (let ty = 0; ty < height; ty += tile) {
+    for (let tx = 0; tx < width; tx += tile) {
+      let sum = 0;
+      let count = 0;
+      for (let j = ty; j < Math.min(ty + tile, height); j++) {
+        const lat = 90 - ((j + 0.5) / height) * 180;
+        if (Math.abs(lat) > maxLat) continue;
+        for (let i = tx; i < Math.min(tx + tile, width); i++) {
+          const k = j * width + i;
+          if (!a[k] && !b[k]) continue;
+          const edge = a[k] ? toB[k] <= 1 : toA[k] <= 1;
+          if (!edge || (valid && !valid[k]) || wA[k] < minWeight || wB[k] < minWeight) continue;
+          sum += mB[k] / wB[k] - mA[k] / wA[k];
+          count++;
+        }
+      }
+      if (count >= minBorder) list.push({ tx, ty, delta: sum / count, count });
+    }
+  }
+  return list;
+}
+
+/** El resumen de unas teselas: cuántas, la mediana, el percentil 95 y el máximo de |Δ|. */
+export function stepSummary(list) {
+  const abs = list.map((s) => Math.abs(s.delta)).sort((x, y) => x - y);
+  const q = (p) =>
+    abs.length ? abs[Math.min(abs.length - 1, Math.round(p * (abs.length - 1)))] : 0;
+  return { tiles: list.length, median: q(0.5), p95: q(0.95), max: q(1) };
+}
+
+/**
+ * Lo natural a la escala σ: el mismo salto en bordes ficticios dentro de lo real (`real`), con la
+ * máscara girada 90°, 180° y 270° en longitud, y cada lado solo con lo real (lo que no lo es no cuenta en
+ * las medias). Es la variación del brillo medio del propio terreno a esa escala.
+ */
+export function naturalSteps(L, real, width, height, options) {
+  const list = [];
+  for (const turn of [0.25, 0.5, 0.75]) {
+    const shift = Math.round(turn * width);
+    const a = new Uint8Array(width * height);
+    const b = new Uint8Array(width * height);
+    for (let j = 0; j < height; j++) {
+      for (let i = 0; i < width; i++) {
+        const from = j * width + ((i + shift) % width);
+        a[j * width + i] = real[from];
+        b[j * width + i] = 1 - real[from];
+      }
+    }
+    list.push(...borderSteps(L, a, b, width, height, { ...options, valid: real }));
+  }
+  return list;
+}
+
+/**
+ * El contraste a gran escala de una región (D48): la desviación típica (por el área) de su L* a la
+ * escala σ = `sigma` texeles (la media normalizada, solo con sus píxeles), en los píxeles de la región
+ * cuyo entorno es suyo en al menos `minWeight` y entre ±`maxLat` de latitud.
+ */
+export function lowPassContrast(L, region, width, height, { sigma, maxLat = 70, minWeight = 0.5 }) {
+  const w = new Float32Array(width * height);
+  const lw = new Float32Array(width * height);
+  for (let k = 0; k < L.length; k++) {
+    w[k] = region[k] ? 1 : 0;
+    lw[k] = w[k] * L[k];
+  }
+  const bw = measureBlur(w, width, height, sigma);
+  const bl = measureBlur(lw, width, height, sigma);
+  const weights = rowWeights(height);
+  let s = 0;
+  let s2 = 0;
+  let n = 0;
+  for (let j = 0; j < height; j++) {
+    const lat = 90 - ((j + 0.5) / height) * 180;
+    if (Math.abs(lat) > maxLat) continue;
+    for (let i = 0; i < width; i++) {
+      const k = j * width + i;
+      if (!region[k] || bw[k] < minWeight) continue;
+      const v = bl[k] / bw[k];
+      s += weights[j] * v;
+      s2 += weights[j] * v * v;
+      n += weights[j];
+    }
+  }
+  if (!n) return { sigma: NaN, mean: NaN, area: 0 };
+  const mean = s / n;
+  return { sigma: Math.sqrt(Math.max(0, s2 / n - mean * mean)), mean, area: n };
+}
+
+/**
+ * El salto en el borde entre `a` y `b` a la escala `band` (texeles), sin los degradados (D48): la media
+ * de cada lado en dos bandas, de 0 a `band` texeles del otro lado y de `band` a 2 × `band`, a lo largo
+ * del borde (σ = `along`, por defecto 2 × `band`); la de la banda de dentro, extrapolada al borde con la
+ * pendiente de su propio lado. Así un degradado natural del terreno (que con medias más anchas pasaría por
+ * salto) no cuenta, y un escalón sí, entero: (b₁ − a₁) − ((a₁ − a₂) + (b₂ − b₁)) / 2. Por teselas de
+ * `tile` texeles, la media en sus píxeles del borde (al menos `minBorder`), solo donde las cuatro bandas
+ * tienen datos (`valid`, si se da, limita los dos lados).
+ */
+export function borderJumps(
+  L,
+  a,
+  b,
+  width,
+  height,
+  {
+    band,
+    along = 2 * band,
+    tile = 64,
+    maxLat = 70,
+    minBorder = 32,
+    minWeight = 0.05,
+    valid = null,
+  },
+) {
+  const pixels = width * height;
+  const reach = Math.ceil(2 * band) + 2;
+  const dA = distanceTo(b, width, height, reach); // en `a`, la distancia a `b`
+  const dB = distanceTo(a, width, height, reach); // en `b`, la distancia a `a`
+  const bandMean = (side, dist, from, to) => {
+    const m = new Float32Array(pixels);
+    const ml = new Float32Array(pixels);
+    for (let k = 0; k < pixels; k++) {
+      if (!side[k] || (valid && !valid[k])) continue;
+      if (dist[k] > from && dist[k] <= to) {
+        m[k] = 1;
+        ml[k] = L[k];
+      }
+    }
+    const w = measureBlur(m, width, height, along);
+    const s = measureBlur(ml, width, height, along);
+    return { w, s };
+  };
+  const a1 = bandMean(a, dA, 0, band);
+  const a2 = bandMean(a, dA, band, 2 * band);
+  const b1 = bandMean(b, dB, 0, band);
+  const b2 = bandMean(b, dB, band, 2 * band);
+  const list = [];
+  for (let ty = 0; ty < height; ty += tile) {
+    for (let tx = 0; tx < width; tx += tile) {
+      let sum = 0;
+      let count = 0;
+      for (let j = ty; j < Math.min(ty + tile, height); j++) {
+        const lat = 90 - ((j + 0.5) / height) * 180;
+        if (Math.abs(lat) > maxLat) continue;
+        for (let i = tx; i < Math.min(tx + tile, width); i++) {
+          const k = j * width + i;
+          const edge = a[k] ? dA[k] <= 1 : b[k] ? dB[k] <= 1 : false;
+          if (!edge || (valid && !valid[k])) continue;
+          if (
+            a1.w[k] < minWeight ||
+            a2.w[k] < minWeight ||
+            b1.w[k] < minWeight ||
+            b2.w[k] < minWeight
+          )
+            continue;
+          const ma1 = a1.s[k] / a1.w[k];
+          const ma2 = a2.s[k] / a2.w[k];
+          const mb1 = b1.s[k] / b1.w[k];
+          const mb2 = b2.s[k] / b2.w[k];
+          sum += mb1 - ma1 - (ma1 - ma2 + (mb2 - mb1)) / 2;
+          count++;
+        }
+      }
+      if (count >= minBorder) list.push({ tx, ty, delta: sum / count, count });
+    }
+  }
+  return list;
+}
+
+/** Lo natural de `borderJumps`: el mismo salto en bordes ficticios dentro de lo real (como `naturalSteps`). */
+export function naturalJumps(L, real, width, height, options) {
+  const list = [];
+  for (const turn of [0.25, 0.5, 0.75]) {
+    const shift = Math.round(turn * width);
+    const a = new Uint8Array(width * height);
+    const b = new Uint8Array(width * height);
+    for (let j = 0; j < height; j++) {
+      for (let i = 0; i < width; i++) {
+        const from = j * width + ((i + shift) % width);
+        a[j * width + i] = real[from];
+        b[j * width + i] = 1 - real[from];
+      }
+    }
+    list.push(...borderJumps(L, a, b, width, height, { ...options, valid: real }));
+  }
+  return list;
+}
+
+/**
+ * Solo el grano de `recreationQuality` (D45): el cociente entre la raíz de la media del cuadrado del paso
+ * alto de L* (σ = 1,5 texeles) de lo recreado (clase distinta de 0) a menos de `band` texeles de lo real y
+ * el de lo real a menos de `band` de lo recreado, entre ±`maxLat`. Para calibrar sin la medida entera.
+ */
+export function grainRatio(values, classes, width, height, { maxLat = 70, band = 32 } = {}) {
+  const L = new Float32Array(width * height);
+  for (let k = 0; k < L.length; k++) L[k] = lightness(values[k]);
+  const low = gaussianBlur(L, width, height, 1.5, true);
+  const real = Uint8Array.from(classes, (c) => (c === 0 ? 1 : 0));
+  const synth = Uint8Array.from(classes, (c) => (c === 0 ? 0 : 1));
+  const toReal = distanceTo(real, width, height, band + 1);
+  const toSynth = distanceTo(synth, width, height, band + 1);
+  const weights = rowWeights(height);
+  let sr = 0;
+  let nr = 0;
+  let ss = 0;
+  let ns = 0;
+  for (let j = 0; j < height; j++) {
+    const lat = 90 - ((j + 0.5) / height) * 180;
+    if (Math.abs(lat) > maxLat) continue;
+    for (let i = 0; i < width; i++) {
+      const k = j * width + i;
+      const hp = (L[k] - low[k]) ** 2;
+      if (real[k] && toSynth[k] <= band) {
+        sr += weights[j] * hp;
+        nr += weights[j];
+      } else if (synth[k] && toReal[k] <= band) {
+        ss += weights[j] * hp;
+        ns += weights[j];
+      }
+    }
+  }
+  return nr && ns ? Math.sqrt(ss / ns) / Math.sqrt(sr / nr) : NaN;
 }

@@ -33,10 +33,18 @@ import { tiffGeoInfo } from './build-relief.mjs';
  * (desenfocado `blurPx` píxeles del mapa reducido) es más claro que `above` es el fondo de la carta, lo
  * no cartografiado: cuenta como sin datos. Con `zerosAreGaps` (el radar de Magellan, fase 9b), todo 0
  * es un hueco: en un radar no hay sombras de cráteres a 0 que conservar (`restoreShadowSpecks`), y las
- * franjas de las órbitas que faltan son rayas finas a 0. Devuelve el búfer, su cobertura (de 0 a 1 por
- * píxel: las sondas solo miden lo que hay), la fracción del mapa sin datos y un informe.
+ * franjas de las órbitas que faltan son rayas finas a 0. Con `maskAtSource` (las lunas, desde la entrega
+ * 10.a, D48), la máscara de lo que hay se umbraliza en el original y después se reduce, como con
+ * `zerosAreGaps`, pero conservando las sombras a 0 (`restoreShadowSpecks`): un píxel del borde de un hueco
+ * cuenta por lo que tiene de dato, y su color, por el de ese dato (sin oscurecerse con el hueco). Devuelve
+ * el búfer, su cobertura (de 0 a 1 por píxel: las sondas solo miden lo que hay), la fracción del mapa sin
+ * datos y un informe.
  */
-export async function loadMosaic(url, width, { band, plain, zerosAreGaps = false } = {}) {
+export async function loadMosaic(
+  url,
+  width,
+  { band, plain, zerosAreGaps = false, maskAtSource = false } = {},
+) {
   const path = fileURLToPath(url);
   const source = plain
     ? await plainSource(path, plain)
@@ -60,8 +68,9 @@ export async function loadMosaic(url, width, { band, plain, zerosAreGaps = false
     // reducir: así, la máscara sale binaria y un píxel mezclado con un hueco cuenta como dato entero.
     // Con huecos grandes (las lunas) lo tapa el fundido del borde; con las rayas finas del radar (unos
     // 25 px del original, 3 o 5 del mapa reducido), no: se veían como líneas oscuras. Con
-    // `zerosAreGaps`, la máscara se umbraliza en el original y después se reduce, como la imagen.
-    zerosAreGaps
+    // `zerosAreGaps` (y `maskAtSource`), la máscara se umbraliza en el original y después se reduce,
+    // como la imagen.
+    zerosAreGaps || maskAtSource
       ? fullResolutionMask(open(), source).then(reduce)
       : reduce(open().threshold(1).toColourspace('b-w')),
     // El fondo de una carta aerografiada (sharp desenfoca después de reducir).
