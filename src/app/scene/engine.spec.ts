@@ -1814,6 +1814,31 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     return { requests, released, textures };
   };
 
+  it('entrando por el cielo, solo la Vía Láctea y la Luna; al volver al espacio, lo demás (propuesta de la fase 8)', async () => {
+    const fake = realisticTextures();
+    const h = await createHarness(
+      { view: 'sky', time: new Date('2026-11-02T04:00:00Z'), reducedMotion: true },
+      { textures: fake.textures },
+    );
+    settle(h);
+    for (let k = 0; k < 5; k++) await flush();
+    const ids = () => new Set(fake.requests.map((name) => name.split('@')[0]));
+    expect([...ids()].sort()).toEqual(['milky-way', 'moon']);
+    h.engine.setView('system');
+    for (let round = 0; round < 3; round++) {
+      settle(h);
+      for (let k = 0; k < 5; k++) await flush();
+    }
+    expect(ids()).toContain('earth-day');
+    expect(ids()).toContain('saturn');
+    // Y al volver al cielo, se sueltan otra vez (la de la Tierra, entre ellas).
+    h.engine.setView('sky');
+    settle(h);
+    for (let k = 0; k < 5; k++) await flush();
+    expect(fake.released.some((name) => name.startsWith('earth-day'))).toBe(true);
+    h.engine.dispose();
+  });
+
   it('el recorrido trae por la red las texturas grandes de la Tierra y de la Luna, sin subirlas (propuesta de la 9b)', async () => {
     const fake = realisticTextures();
     const prefetched: string[] = [];

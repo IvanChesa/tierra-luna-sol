@@ -440,6 +440,8 @@ export class World {
   private readonly markerMaterial = createMarkerMaterial(VISUAL_CONFIG.earth.markers);
   private markers: Points | null = null;
   private readonly placeBuffer = new Float64Array(3 * SKY_PLACES.length);
+  /** En la vista del cielo: solo la Vía Láctea y la Luna (`setSkyOnly`). */
+  private skyOnly = false;
   private readonly placeFacing = new Uint8Array(SKY_PLACES.length);
   /** El Sol aparente (geocéntrico, ECL) del último instante, para la sombra de la Luna (fase 5). */
   private apparentSun: { readonly timeMs: number; readonly ecl: Vec3 } | null = null;
@@ -738,6 +740,17 @@ export class World {
   }
 
   /**
+   * La vista del cielo (fase 8): solo pide lo que pinta, la Vía Láctea y el mapa de color de la Luna
+   * (los usa `SkyScene`), y suelta lo demás; al volver al espacio, lo pide otra vez (propuesta de la
+   * fase 8: pedía las texturas de la vista general de los 30 cuerpos).
+   */
+  setSkyOnly(on: boolean): void {
+    if (this.skyOnly === on) return;
+    this.skyOnly = on;
+    this.requestTextures(this.focusIndex);
+  }
+
+  /**
    * Trae por la red (sin subirla) la textura de primer plano de un cuerpo, la que pediría al enfocarlo:
    * para el recorrido de la primera vez, que llega a la Tierra y a la Luna a los pocos segundos
    * (propuesta de la fase 9b). Sin VRAM de más: la sube la carga de siempre, al enfocarlo.
@@ -778,6 +791,13 @@ export class World {
     const focusSystem = focusIndex === null ? null : this.systemOf(focusIndex);
     for (const visual of this.visuals) {
       if (!visual.textureId) continue;
+      // En el cielo, solo la Luna, con el nivel de la vista general; lo demás, suelto.
+      if (this.skyOnly && !visual.moon) {
+        this.releaseTexture(visual);
+        if (visual.relief) this.requestRelief(visual, null);
+        for (const map of visual.maps) this.requestMap(visual, map, null);
+        continue;
+      }
       // Las del primer plano, solo el cuerpo enfocado y los que se ven grandes (C4): el planeta de una
       // luna enfocada, solo si se ve grande.
       const index = visual.body.index;
@@ -793,11 +813,12 @@ export class World {
               : this.profile.focusTexture;
       // Las demás lunas (fase 7), con su sistema enfocado o si se ven grandes (fase 9b); si no, su
       // color esquemático.
-      const level = near
-        ? focusLevel
-        : satellite && focusSystem !== this.systemOf(index) && this.seen[index] !== 1
-          ? null
-          : this.profile.overviewTexture;
+      const level =
+        near && !this.skyOnly
+          ? focusLevel
+          : satellite && focusSystem !== this.systemOf(index) && this.seen[index] !== 1
+            ? null
+            : this.profile.overviewTexture;
       if (level === null) {
         this.releaseTexture(visual);
         continue;

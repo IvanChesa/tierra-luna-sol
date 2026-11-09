@@ -562,6 +562,8 @@ export class SceneEngine implements SceneEngineApi {
       loadShape: this.deps.loadShape ?? null,
       invalidate: () => this.invalidate(),
     });
+    // Entrando por el cielo, el espacio no pide sus texturas (las pedirá al volver a él).
+    if (options.view === 'sky') this.world.setSkyOnly(true);
     this.venusRadar = new VenusRadarLayer({
       textures: source,
       apply: (texture, mix) => this.world.setVenusRadar(texture, mix),
@@ -1940,6 +1942,7 @@ export class SceneEngine implements SceneEngineApi {
     sky.setLabelsVisible(this.labelsWanted);
     sky.setActive(true);
     this.world.releaseCloseUps();
+    this.world.setSkyOnly(true);
     this.skyKey = '';
     this.exposure = -1;
     this.lastFrameMs = null;
@@ -1968,6 +1971,7 @@ export class SceneEngine implements SceneEngineApi {
 
   private leaveSky(): void {
     this.sky?.setActive(false);
+    this.world.setSkyOnly(false);
     this.labels.setVisible(this.labelsWanted && !this.isolated);
     this.placeLabels.setVisible(this.labelsWanted && !this.isolated);
     this.exposure = -1;
