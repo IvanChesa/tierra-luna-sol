@@ -1814,6 +1814,45 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     return { requests, released, textures };
   };
 
+  it('S2: entrando directo en la vista Tierra, mientras llega la 8K, la de la vista general (de paso) y no el color esquemático', async () => {
+    // La 8K tarda: se queda pendiente hasta que se suelta a mano; las demás llegan ya.
+    const fake = realisticTextures();
+    let release8k: (() => void) | null = null;
+    const textures: EngineDeps['textures'] = (context) => {
+      const real = fake.textures(context);
+      if (!real) return null;
+      return {
+        ...real,
+        source: {
+          load: async (id: TextureId, level: TextureLevel) => {
+            if (id === 'earth-day' && level === '8k') {
+              await new Promise<void>((resolve) => (release8k = resolve));
+            }
+            return real.source.load(id, level);
+          },
+        },
+      };
+    };
+    const h = await createHarness({ reducedMotion: true, view: 'earth' }, { textures });
+    settle(h);
+    for (let k = 0; k < 5; k++) await flush();
+    interface EarthMap {
+      world: { visuals: { body: { id: string }; uniforms: { uMap: { value: Texture | null } } }[] };
+    }
+    const earthMap = () =>
+      (h.engine as unknown as EarthMap).world.visuals.find((v) => v.body.id === 'tierra')?.uniforms
+        .uMap.value?.name;
+    expect(earthMap()).toBe('earth-day@1k');
+    expect(release8k).not.toBeNull();
+    (release8k as unknown as () => void)();
+    for (let k = 0; k < 5; k++) await flush();
+    settle(h);
+    expect(earthMap()).toBe('earth-day@8k');
+    // La de paso, liberada al llegar la grande.
+    expect(fake.released).toContain('earth-day@1k');
+    h.engine.dispose();
+  });
+
   it('C4: en la vista Luna, la Tierra (pequeña al fondo) no pide su 8K, y la 8K se libera al salir de la vista Tierra (fase 6)', async () => {
     const fake = realisticTextures();
     const h = await createHarness(

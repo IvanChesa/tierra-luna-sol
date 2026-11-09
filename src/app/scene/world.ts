@@ -82,6 +82,7 @@ import {
   TextureId,
   TextureMeta,
   TextureSource,
+  levelRank,
   meridianOffset,
   releaseTexture,
 } from './textures';
@@ -809,6 +810,7 @@ export class World {
           });
       }
       if (visual.requested === level) continue;
+      const before = visual.requested;
       visual.requested = level;
       const id = visual.textureId;
       // Si falla (red, 404), el cuerpo se queda con su color esquemático y se vuelve a pedir en el
@@ -820,6 +822,15 @@ export class World {
           if (visual.requested === level) visual.requested = null;
           textureFailed(id, error);
         });
+      // Sin ninguna textura puesta ni la de la vista general en camino, también esa, de paso, que
+      // llega mucho antes que la grande (S2; `assignTexture`).
+      const overview = this.profile.overviewTexture;
+      if (visual.loaded === null && before !== overview && levelRank(level) > levelRank(overview)) {
+        source
+          .load(id, overview)
+          .then((loaded) => this.assignTexture(visual, overview, loaded))
+          .catch(() => undefined);
+      }
     }
   }
 
@@ -1564,7 +1575,16 @@ export class World {
     loaded: LoadedTexture | null,
   ): void {
     if (!loaded) return;
-    if (this.disposed || visual.requested !== level) {
+    // Una textura menor que llega mientras se espera la grande, sin ninguna puesta todavía (al enfocar
+    // un cuerpo antes de que llegue la de la vista general, o al entrar directo en la vista Tierra), se
+    // usa mientras tanto (S2 de la revisión del bloque S): si no, se veía su color esquemático hasta que
+    // llegaba la grande (la Tierra, una bola azul lisa de 9 a 17 s con la red móvil).
+    const interim =
+      visual.requested !== null &&
+      visual.requested !== level &&
+      visual.loaded === null &&
+      levelRank(level) < levelRank(visual.requested);
+    if (this.disposed || (visual.requested !== level && !interim)) {
       releaseTexture(loaded.texture);
       return;
     }

@@ -122,6 +122,9 @@ export type TextureFiles = Readonly<Partial<Record<TextureId, readonly TextureFi
 
 const LEVEL_ORDER: readonly TextureLevel[] = ['1k', '2k', '4k', '8k'];
 
+/** El orden de un nivel (el 1k, el menor). */
+export const levelRank = (level: TextureLevel): number => LEVEL_ORDER.indexOf(level);
+
 /**
  * El fichero que se carga: el nivel pedido o, si no existe o no cabe en `maxTextureSize`, el mayor
  * que haya por debajo. `null` si no hay ninguno utilizable.
