@@ -18,6 +18,7 @@ import {
   EngineDeps,
   FRAMING_FILL,
   FrameScheduler,
+  MOTION_BODIES,
   SceneEngine,
   capFitDistance,
   circleFitDistance,
@@ -992,6 +993,66 @@ describe('SceneEngine: el Sol realzado, segunda vuelta (fase 9b, D46)', () => {
     expect(h.renderer.size.pixelRatio).toBeGreaterThan(1);
     expect(halo.uniforms.uPixelRatio.value).toBe(h.renderer.size.pixelRatio);
     h.engine.dispose();
+  });
+});
+
+describe('SceneEngine: el Sol, sin girar (revisión del bloque S, S8)', () => {
+  interface Vec4Like {
+    x: number;
+    y: number;
+    z: number;
+    w: number;
+  }
+  interface SpinInternals {
+    world: {
+      visuals: { body: { id: string }; mesh: { quaternion: Vec4Like } }[];
+      sun: { uniforms: { uSpots: { value: Vec4Like[] }; uSpotPresence: { value: number[] } } };
+    };
+  }
+  const world = (h: Harness) => (h.engine as unknown as SpinInternals).world;
+  const quaternionOf = (h: Harness, id: string): number[] => {
+    const q = world(h).visuals.find((v) => v.body.id === id)?.mesh.quaternion;
+    return q ? [q.x, q.y, q.z, q.w] : [];
+  };
+  const spotsOf = (h: Harness) =>
+    world(h).sun.uniforms.uSpots.value.map((v, k) => ({
+      direction: [v.x, v.y, v.z],
+      umbra: v.w,
+      presence: world(h).sun.uniforms.uSpotPresence.value[k] as number,
+    }));
+
+  it('ni a 3 días/s en la vista general ni a 1 h/s de cerca gira el disco ni se mueven sus manchas; la Tierra, sí gira', async () => {
+    expect(VISUAL_CONFIG.sun.spins).toBe(false);
+    expect(sceneBody('sol').rotation).toEqual({ kind: 'iau', body: 'sol', spins: false });
+    expect(MOTION_BODIES[sceneBody('sol').index]?.spinDays).toBeNull();
+    for (const [speed, overrides] of [
+      [3 * 86_400, {}],
+      [3600, { focus: 'sol' as const }],
+    ] as const) {
+      const h = await createHarness(overrides);
+      settle(h);
+      const sun = quaternionOf(h, 'sol');
+      const earth = quaternionOf(h, 'tierra');
+      const spots = spotsOf(h);
+      h.engine.setSpeed(speed);
+      h.engine.setPlaying(true);
+      h.frames(2000);
+      quaternionOf(h, 'sol').forEach((c, k) => expect(c).toBeCloseTo(sun[k] as number, 12));
+      const turned = quaternionOf(h, 'tierra').some(
+        (c, k) => Math.abs(c - (earth[k] as number)) > 1e-3,
+      );
+      expect(turned).toBe(true);
+      // Cada mancha que sigue en la misma vida (el mismo tamaño), en el mismo sitio.
+      let same = 0;
+      spotsOf(h).forEach((spot, k) => {
+        const before = spots[k];
+        if (!before || before.presence === 0 || spot.umbra !== before.umbra) return;
+        spot.direction.forEach((c, i) => expect(c).toBeCloseTo(before.direction[i] as number, 12));
+        same++;
+      });
+      expect(same).toBeGreaterThan(0);
+      h.engine.dispose();
+    }
   });
 });
 

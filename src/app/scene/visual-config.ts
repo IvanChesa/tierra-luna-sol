@@ -48,11 +48,19 @@ export const VISUAL_CONFIG = {
   },
   /**
    * El Sol (fase 3b, tarea 6; fase 9b, D41: «real y luminoso», el de la luz visible del HMI del SDO; y
-   * D46: en el explorador, realzado). Todo lo que no es la ley del limbo ni la rotación de las manchas
-   * (`ephemeris/sun.ts`) es **ilustrativo**: la intensidad, el halo, la granulación, las manchas, las
-   * fáculas, la corona, el bloom y todo el realzado.
+   * D46: en el explorador, realzado). Todo lo que no es la ley del limbo (`ephemeris/sun.ts`) es
+   * **ilustrativo**: la intensidad, el halo, la granulación, las manchas, las fáculas, la corona, el
+   * bloom, todo el realzado y que no gire.
    */
   sun: {
+    /**
+     * Si gira sobre su eje. **No** (revisión del bloque S, S8; Iván, 08-11: «El sol está rotando, no
+     * debe rotar»): con la rotación de la IAU (unos 14° al día), a 3 días/s el disco giraba unos 42° por
+     * segundo, y a 1 h/s daba una vuelta en unos 10 minutos. Conserva su eje (el polo de la IAU) con el
+     * meridiano quieto en el de J2000 (`bodyFixedToEclWithoutSpin`), y sus manchas no derivan; lo que
+     * se mueve es el fluir lento de su superficie (`enhanced.structure`), con el reloj de pared.
+     */
+    spins: false as boolean,
     /**
      * Intensidad de la fotosfera. Con el Sol realzado (D46, segunda vuelta, 08-11), 1 en la vista
      * general y en primer plano: así el disco no pasa de la compresión del tone mapping neutro, que lo
@@ -87,9 +95,10 @@ export const VISUAL_CONFIG = {
      */
     granulation: { amplitude: 1.7, rate: 0.04, scale: 80 },
     /**
-     * Las manchas (ilustrativas, `sunspotsAt`): cuántas a la vez, su banda de latitud (grados), su vida
-     * (días), el radio de su umbra (grados heliográficos) y lo que tardan en aparecer y en apagarse
-     * (fracción de su vida); el brillo de la umbra y de la penumbra (en fracción de la fotosfera) y el
+     * Las manchas (ilustrativas, `sunspotsAt`; quietas en su sitio, como el Sol, que no gira: S8):
+     * cuántas a la vez, su banda de latitud (grados), su vida (días), el radio de su umbra (grados
+     * heliográficos) y lo que tardan en aparecer y en apagarse (fracción de su vida); el brillo de la
+     * umbra y de la penumbra (en fracción de la fotosfera) y el
      * radio de la penumbra (en radios de la umbra). Sin una fuente del ciclo solar con licencia
      * compatible (las de SILSO son CC BY-NC), su número es fijo y moderado. Con el Sol realzado, la umbra
      * y la penumbra algo más oscuras (0,1 y 0,6; antes, 0,18 y 0,68), de bordes suaves y pardas

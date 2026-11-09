@@ -13,12 +13,17 @@ import { createMoonSystems } from '../ephemeris/scale';
 import { GalileanId, PlanetId, isPlanetId } from '../ephemeris/ids';
 import { MeanElements } from '../ephemeris/moons';
 import { IauBodyId } from '../ephemeris/orientation';
+import { VISUAL_CONFIG } from './visual-config';
 
 export { createSolarSystemModel, offsetFunction } from '../data/solar-system';
 
-/** Cómo se orienta cada cuerpo (D19). */
+/**
+ * Cómo se orienta cada cuerpo (D19). Con el modelo IAU, `spins` dice si gira sobre su eje: todos
+ * menos el Sol del explorador, que conserva su eje sin girar (revisión del bloque S, S8;
+ * `VISUAL_CONFIG.sun.spins`).
+ */
 export type RotationModel =
-  | { readonly kind: 'iau'; readonly body: IauBodyId }
+  | { readonly kind: 'iau'; readonly body: IauBodyId; readonly spins: boolean }
   | { readonly kind: 'galilean'; readonly moon: GalileanId }
   | { readonly kind: 'mean-elements'; readonly elements: MeanElements };
 
@@ -37,7 +42,8 @@ export interface SceneBody {
 }
 
 function rotationOf(id: BodyId): RotationModel {
-  if (id === 'sol' || id === 'luna' || isPlanetId(id)) return { kind: 'iau', body: id };
+  if (id === 'sol') return { kind: 'iau', body: id, spins: VISUAL_CONFIG.sun.spins };
+  if (id === 'luna' || isPlanetId(id)) return { kind: 'iau', body: id, spins: true };
   if (isGalilean(id)) return { kind: 'galilean', moon: id };
   if (isMeanElementsMoon(id))
     return { kind: 'mean-elements', elements: MOON_ELEMENTS[id].elements };

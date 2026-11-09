@@ -356,13 +356,17 @@ export const MOTION_BODIES: readonly MotionBody[] = SCENE_BODIES.map((body) => {
   const data = BODY_DATA[body.id];
   const orbitDays = data.orbit ? Math.abs(data.orbit.periodDays.value) : null;
   const rotationH = data.physical.rotationPeriodH?.value;
+  // Lo que no gira en la escena (el Sol del explorador, S8) no tiene giro que se pueda «aliasar».
+  const still = body.rotation.kind === 'iau' && !body.rotation.spins;
   return {
     orbitDays,
-    spinDays: data.physical.synchronousRotation?.value
-      ? orbitDays
-      : rotationH !== undefined
-        ? Math.abs(rotationH) / 24
-        : null,
+    spinDays: still
+      ? null
+      : data.physical.synchronousRotation?.value
+        ? orbitDays
+        : rotationH !== undefined
+          ? Math.abs(rotationH) / 24
+          : null,
     parentIndex: body.parent ? sceneBody(body.parent).index : -1,
     isMoon: body.kind === 'moon',
   };

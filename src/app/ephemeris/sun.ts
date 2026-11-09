@@ -2,10 +2,12 @@
  * El Sol en luz visible (fase 9b, D41), en TS puro y con tests:
  * - el oscurecimiento del limbo por longitud de onda (la ley de potencia de Hestroffer y Magnan, 1998);
  * - el color del centro del disco que da al disco entero el color de su temperatura efectiva;
- * - la rotación diferencial de las manchas (Lößnitz et al., 2025) respecto al meridiano de la IAU;
  * - un calendario determinista de manchas **ilustrativas** (no son las de ese día: eso pediría datos
- *   en vivo, D24): cada una nace, dura y se apaga, en las bandas de latitud de las manchas, con esa
- *   rotación. Sus tamaños, vidas y bandas los pone la configuración visual (`scene/visual-config.ts`).
+ *   en vivo, D24): cada una nace, dura y se apaga, en las bandas de latitud de las manchas, **quieta**
+ *   en su sitio: el Sol del explorador no gira (revisión del bloque S, S8; Iván, 08-11: «El sol está
+ *   rotando, no debe rotar»), y sus manchas no derivan con la rotación diferencial (la de Lößnitz
+ *   et al., 2025, que se usó hasta entonces; queda en git). Sus tamaños, vidas y bandas los pone la
+ *   configuración visual (`scene/visual-config.ts`).
  */
 
 /**
@@ -62,36 +64,6 @@ export function solarCenterColor(
   return center.map((c) => c * scale) as [number, number, number];
 }
 
-/**
- * La rotación diferencial de las manchas, ω(φ) = A + B·sin²φ + C·sin⁴φ en grados por día sidéreos:
- * la de las manchas α (redondas), con tres parámetros, medida con el HMI del SDO de 2013 a 2024, de
- * Lößnitz et al. (2025), «Differential rotation of solar α sunspots and implications for stellar light
- * curves», tabla A.1 (https://arxiv.org/abs/2508.08196): A = 14,336, B = −2,561 y C = −2,04. En el
- * ecuador, una vuelta en 25,1 días; a 30°, en 26,5.
- */
-export const SUNSPOT_ROTATION = { a: 14.336, b: -2.561, c: -2.04 } as const;
-
-/**
- * Lo que gira el meridiano 0 del Sol de la IAU (W = 84,176° + 14,1844°·d, la que usa astronomy-engine
- * para su orientación), en grados por día: las manchas se mueven respecto a él.
- */
-export const SUN_MERIDIAN_RATE_DEG_PER_DAY = 14.1844;
-
-/** La velocidad de rotación (grados por día, sidérea) de una mancha a esa latitud (grados). */
-export function sunspotRotation(latitudeDeg: number): number {
-  const s = Math.sin((latitudeDeg * Math.PI) / 180) ** 2;
-  const { a, b, c } = SUNSPOT_ROTATION;
-  return a + b * s + c * s * s;
-}
-
-/**
- * Lo que avanza en longitud una mancha a esa latitud en `days` días respecto al meridiano de la IAU
- * (grados; positivo, hacia el este, en el sentido de la rotación): en el ecuador, +0,15° al día; a 30°,
- * −0,62°.
- */
-export const sunspotDrift = (latitudeDeg: number, days: number): number =>
-  (sunspotRotation(latitudeDeg) - SUN_MERIDIAN_RATE_DEG_PER_DAY) * days;
-
 /** Los parámetros, ilustrativos, del calendario de manchas (la configuración visual los da). */
 export interface SunspotSchedule {
   /** Cuántas manchas hay a la vez como mucho (cada una con su vida). */
@@ -107,10 +79,13 @@ export interface SunspotSchedule {
   readonly fadeOut: number;
 }
 
-/** Una mancha en un instante: dónde está (en el sistema de la IAU), su umbra y lo que se ve (0–1). */
+/**
+ * Una mancha en un instante: dónde está (en el sistema propio del Sol, el de la IAU con el meridiano
+ * quieto en J2000: `bodyFixedToEclWithoutSpin`), su umbra y lo que se ve (0–1).
+ */
 export interface Sunspot {
   readonly latitudeDeg: number;
-  /** Longitud planetográfica en el sistema del meridiano de la IAU (grados, de 0 a 360). */
+  /** Longitud planetográfica (grados, de 0 a 360): la de su nacimiento, sin deriva. */
   readonly longitudeDeg: number;
   readonly umbraDeg: number;
   readonly presence: number;
@@ -141,8 +116,8 @@ const EPOCH_MS = Date.UTC(2000, 0, 1, 12);
  * Las manchas ilustrativas de un instante: cada una de las `count` plazas tiene una vida que se repite
  * (con su desfase), y en cada vida una mancha nueva nace en un sitio y con un tamaño que solo dependen
  * de la plaza y de esa vida (la misma fecha da siempre las mismas manchas, como pide el modo de
- * captura), aparece, deriva con la rotación diferencial y se apaga. Al cambiar de vida su presencia es
- * 0: no salta nada que se vea.
+ * captura), aparece y se apaga **sin moverse** (S8). Al cambiar de vida su presencia es 0: no salta
+ * nada que se vea.
  */
 export function sunspotsAt(timeMs: number, schedule: SunspotSchedule): Sunspot[] {
   const days = (timeMs - EPOCH_MS) / 86_400_000;
@@ -158,11 +133,9 @@ export function sunspotsAt(timeMs: number, schedule: SunspotSchedule): Sunspot[]
       (1 - smooth((fraction - (1 - schedule.fadeOut)) / schedule.fadeOut));
     const hemisphere = hash01(k, generation, 3) < 0.5 ? -1 : 1;
     const latitudeDeg = hemisphere * lerp(schedule.latitudeDeg, hash01(k, generation, 4));
-    const birthLongitude = 360 * hash01(k, generation, 5);
-    const longitudeDeg = (((birthLongitude + sunspotDrift(latitudeDeg, age)) % 360) + 360) % 360;
     spots.push({
       latitudeDeg,
-      longitudeDeg,
+      longitudeDeg: 360 * hash01(k, generation, 5),
       umbraDeg: lerp(schedule.umbraDeg, hash01(k, generation, 6)),
       presence,
     });

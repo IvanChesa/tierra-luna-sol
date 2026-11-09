@@ -4,7 +4,10 @@
 // deterministas): el Sol de cerca con `?fecha=` (así el explorador arranca en pausa y el Sol no gira),
 // en la vista limpia, y dos capturas del lienzo separadas `SECONDS` segundos; con y sin
 // `prefers-reduced-motion`. Mide la diferencia media entre las dos en el disco y fuera de él (0–255).
-// Uso: npm run build && node scripts/capture-sun-motion.mjs docs/informes/img/fase-9b [--prefijo=sol2]
+// Con `--giro` (revisión del bloque S, S8: el Sol del explorador no gira), con movimiento reducido (el
+// fluir y los bucles, quietos: lo que cambie es el giro) y el tiempo en marcha a 1 h/s y a 3 días/s:
+// con el Sol sin girar, las dos capturas tienen que ser iguales.
+// Uso: npm run build && node scripts/capture-sun-motion.mjs docs/informes/img/fase-9b [--prefijo=sol2] [--giro]
 import { mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
@@ -56,12 +59,54 @@ function difference(a, b) {
   return { disc: inside / insideN, around: outside / outsideN };
 }
 
+/** Una captura del recorte del Sol, guardada y en bruto para compararla. */
+async function shoot(page, name) {
+  const png = await page.locator('canvas').first().screenshot();
+  const crop = await sharp(png).extract(CROP).png().toBuffer();
+  await sharp(crop).webp({ quality: 90 }).toFile(file(name));
+  return sharp(crop).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+}
+
+/** Las velocidades del giro (S8) y las veces que se pulsa «.» desde la de un cuerpo enfocado (1 h/s). */
+const SPIN_SPEEDS = [
+  ['1h', 0, '1 h/s'],
+  ['3d', 3, '3 días/s'],
+];
+
 const { browser, close } = await openBrowser();
 try {
-  for (const [label, reducedMotion] of [
-    ['movimiento', 'no-preference'],
-    ['movimiento-reducido', 'reduce'],
-  ]) {
+  if (process.argv.includes('--giro')) {
+    const page = await browser.newPage({ ...pageOptions(SIZE), reducedMotion: 'reduce' });
+    await page.goto(BASE + URL_SUN);
+    await page.waitForSelector('canvas');
+    await page.waitForTimeout(SETTLE_S * 1000);
+    await page.keyboard.press('v');
+    await page.mouse.move(0, 0);
+    await page.waitForTimeout(2000);
+    for (const [label, presses, name] of SPIN_SPEEDS) {
+      for (let k = 0; k < presses; k++) await page.keyboard.press('.');
+      // «K»: reproducir; un segundo para que el tiempo coja su velocidad.
+      await page.keyboard.press('k');
+      await page.waitForTimeout(1000);
+      const a = await shoot(page, `${prefix}-giro-${label}-t0.webp`);
+      await page.waitForTimeout(SECONDS * 1000);
+      const b = await shoot(page, `${prefix}-giro-${label}-t${SECONDS}.webp`);
+      await page.keyboard.press('k');
+      for (let k = 0; k < presses; k++) await page.keyboard.press(',');
+      await page.waitForTimeout(500);
+      const { disc, around } = difference(a, b);
+      console.log(
+        `giro a ${name}: en ${SECONDS} s, diferencia media ${disc.toFixed(2)} en el disco y ${around.toFixed(2)} fuera (0–255)`,
+      );
+    }
+    await page.close();
+  }
+  for (const [label, reducedMotion] of process.argv.includes('--giro')
+    ? []
+    : [
+        ['movimiento', 'no-preference'],
+        ['movimiento-reducido', 'reduce'],
+      ]) {
     const page = await browser.newPage({ ...pageOptions(SIZE), reducedMotion });
     await page.goto(BASE + URL_SUN);
     await page.waitForSelector('canvas');

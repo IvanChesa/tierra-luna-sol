@@ -1,14 +1,10 @@
 import {
   SOLAR_CHANNEL_WAVELENGTHS_NM,
   SOLAR_LIMB_EXPONENTS,
-  SUNSPOT_ROTATION,
-  SUN_MERIDIAN_RATE_DEG_PER_DAY,
   SunspotSchedule,
   solarCenterColor,
   solarLimbExponent,
   solarLimbIntensity,
-  sunspotDrift,
-  sunspotRotation,
   sunspotsAt,
 } from './sun';
 
@@ -96,26 +92,6 @@ describe('el Sol en luz visible (fase 9b, D41)', () => {
     expect(center[2] / center[0]).toBeGreaterThan(disc[2] / disc[0]);
   });
 
-  it('la rotación diferencial de las manchas: la de Lößnitz et al. (2025), 25,1 días en el ecuador y más hacia los polos', () => {
-    expect(SUNSPOT_ROTATION).toEqual({ a: 14.336, b: -2.561, c: -2.04 });
-    expect(sunspotRotation(0)).toBeCloseTo(14.336, 12);
-    expect(360 / sunspotRotation(0)).toBeCloseTo(25.11, 2);
-    // sin² 30° = 0,25: 14,336 − 2,561 · 0,25 − 2,04 · 0,0625.
-    expect(sunspotRotation(30)).toBeCloseTo(14.336 - 0.64025 - 0.1275, 9);
-    expect(360 / sunspotRotation(30)).toBeCloseTo(26.53, 2);
-    expect(sunspotRotation(-30)).toBeCloseTo(sunspotRotation(30), 12);
-    let previous = Infinity;
-    for (let lat = 0; lat <= 90; lat += 5) {
-      expect(sunspotRotation(lat)).toBeLessThan(previous);
-      previous = sunspotRotation(lat);
-    }
-    // Respecto al meridiano de la IAU (14,1844°/día): en el ecuador adelantan, a 30° se quedan atrás.
-    expect(SUN_MERIDIAN_RATE_DEG_PER_DAY).toBe(14.1844);
-    expect(sunspotDrift(0, 1)).toBeCloseTo(0.1516, 4);
-    expect(sunspotDrift(30, 1)).toBeCloseTo(-0.61615, 5);
-    expect(sunspotDrift(30, 10)).toBeCloseTo(10 * sunspotDrift(30, 1), 9);
-  });
-
   it('las manchas ilustrativas: deterministas, en su banda, apareciendo y apagándose sin saltos', () => {
     const t = Date.UTC(2026, 9, 24);
     const spots = sunspotsAt(t, SCHEDULE);
@@ -157,16 +133,19 @@ describe('el Sol en luz visible (fase 9b, D41)', () => {
     }
   });
 
-  it('la deriva de cada mancha es la de su latitud', () => {
+  it('las manchas no se mueven: el Sol del explorador no gira (revisión del bloque S, S8)', () => {
     const t = Date.UTC(2026, 9, 24);
     const later = t + 2 * 86_400_000;
     const a = sunspotsAt(t, SCHEDULE);
     const b = sunspotsAt(later, SCHEDULE);
+    let same = 0;
     a.forEach((spot, k) => {
       const next = b[k];
+      // La misma mancha (la misma vida) en los dos instantes: en el mismo sitio.
       if (!next || spot.latitudeDeg !== next.latitudeDeg) return;
-      const moved = ((next.longitudeDeg - spot.longitudeDeg + 540) % 360) - 180;
-      expect(moved).toBeCloseTo(sunspotDrift(spot.latitudeDeg, 2), 6);
+      expect(next.longitudeDeg).toBe(spot.longitudeDeg);
+      same++;
     });
+    expect(same).toBeGreaterThan(0);
   });
 });
