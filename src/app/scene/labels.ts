@@ -8,7 +8,8 @@ import type { ScreenBody } from './picking';
 import type { ViewInsets } from './types';
 import { VISUAL_CONFIG } from './visual-config';
 
-export type LabelKind = 'star' | 'planet' | 'moon';
+/** `place`: los lugares de la vista «España» de la Tierra (sus nombres: propuesta de la fase 9b). */
+export type LabelKind = 'star' | 'planet' | 'moon' | 'place';
 
 export interface LabelInfo {
   readonly id: string;
@@ -56,6 +57,8 @@ const SUN_HALO_VISIBLE = 0.65;
 function priority(info: LabelInfo, index: number, selected: number, focusSystem: number): number {
   if (index === selected) return 1000;
   if (info.kind === 'star') return 900;
+  // Los lugares, en su orden (el Montsec, el lugar por defecto, el primero).
+  if (info.kind === 'place') return 700 - index;
   // La Tierra es la referencia de quien mira: su nombre va antes que el de los demás planetas.
   if (info.id === 'tierra') return 850;
   if (info.kind === 'planet') return 800;

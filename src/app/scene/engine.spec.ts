@@ -586,6 +586,29 @@ describe('SceneEngine: foco, marcos y selección', () => {
     h.engine.dispose();
   });
 
+  it('la vista «España», con los nombres de sus lugares junto a sus puntos; sin ella, ninguno (propuesta de la 9b)', async () => {
+    const h = await createHarness({ view: 'earth', reducedMotion: true });
+    settle(h);
+    const places = () =>
+      [...h.labels.querySelectorAll<HTMLElement>('.scene-label--place')]
+        .filter((el) => !el.hidden)
+        .map((el) => el.dataset['body']);
+    expect(places()).toEqual([]);
+    h.engine.lookAtSurface(36, -7, 2, 14);
+    h.engine.setSurfaceMarkers(true);
+    settle(h);
+    // El Montsec, el lugar por defecto, sale siempre; los de las islas, lejos del grupo, también.
+    expect(places()).toContain('montsec');
+    expect(places()).toContain('teide');
+    // Solo para mirar: sin clic.
+    h.labels.querySelector<HTMLElement>('[data-body="montsec"] span')?.click();
+    expect(h.events.bodyPicked).toEqual([]);
+    h.engine.setSurfaceMarkers(false);
+    settle(h);
+    expect(places()).toEqual([]);
+    h.engine.dispose();
+  });
+
   it('las vistas Tierra y Luna encuadran su cuerpo de cerca', async () => {
     const h = await createHarness({ view: 'earth' });
     settle(h);

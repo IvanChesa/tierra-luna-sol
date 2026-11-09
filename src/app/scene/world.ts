@@ -310,6 +310,7 @@ const tmpMatrix = new Matrix4();
 const orbitViewMatrix = new Matrix4();
 const tmpQuaternion = new Quaternion();
 const tmpVector = new Vector3();
+const tmpCenter = new Vector3();
 const {
   halo: HALO,
   granulation: GRANULATION,
@@ -437,6 +438,8 @@ export class World {
   /** Marcadores de los lugares del cielo desde España, en la Tierra (fase 5). */
   private readonly markerMaterial = createMarkerMaterial(VISUAL_CONFIG.earth.markers);
   private markers: Points | null = null;
+  private readonly placeBuffer = new Float64Array(3 * SKY_PLACES.length);
+  private readonly placeFacing = new Uint8Array(SKY_PLACES.length);
   /** El Sol aparente (geocéntrico, ECL) del último instante, para la sombra de la Luna (fase 5). */
   private apparentSun: { readonly timeMs: number; readonly ecl: Vec3 } | null = null;
   private milkyWayTexture: LoadedTexture | null = null;
@@ -1087,6 +1090,33 @@ export class World {
   /** Marcadores de los lugares del cielo desde España (la vista guiada «España»). */
   setSurfaceMarkers(visible: boolean): void {
     if (this.markers) this.markers.visible = visible;
+  }
+
+  /**
+   * Dónde están los lugares de la vista «España» en la escena (ejes de Three), para sus nombres
+   * (`SceneEngine`), y si miran a la cámara (los de la cara oculta, sin nombre); `null` si sus
+   * marcadores no se ven.
+   */
+  placePositions(): { positions: Float64Array; facing: Uint8Array } | null {
+    const markers = this.markers;
+    if (!markers?.visible || !markers.parent?.visible) return null;
+    markers.updateWorldMatrix(true, false);
+    const attribute = markers.geometry.getAttribute('position');
+    const center = tmpCenter.setFromMatrixPosition(markers.matrixWorld);
+    const camera = this.camera.position;
+    for (let k = 0; k < attribute.count; k++) {
+      const point = tmpVector.fromBufferAttribute(attribute, k).applyMatrix4(markers.matrixWorld);
+      this.placeBuffer[3 * k] = point.x;
+      this.placeBuffer[3 * k + 1] = point.y;
+      this.placeBuffer[3 * k + 2] = point.z;
+      // La normal del suelo (desde el centro de la Tierra) frente a la dirección de la cámara.
+      const facing =
+        (point.x - center.x) * (camera.x - point.x) +
+        (point.y - center.y) * (camera.y - point.y) +
+        (point.z - center.z) * (camera.z - point.z);
+      this.placeFacing[k] = facing > 0 ? 1 : 0;
+    }
+    return { positions: this.placeBuffer, facing: this.placeFacing };
   }
 
   /** Deriva de las nubes de la Tierra (fracción de vuelta; 0 con movimiento reducido o en captura). */

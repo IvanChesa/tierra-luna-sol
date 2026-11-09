@@ -163,3 +163,15 @@ export function findPlace(id: string): Place | undefined {
 export function placeOptionLabel(place: Pick<Place, 'name' | 'province'>): string {
   return `${place.name}, ${place.province.split(' (')[0]}`;
 }
+
+/**
+ * El nombre de un lugar sobre el mapa de la vista «España» de la Tierra, corto (propuesta de la fase
+ * 9b: sus puntos no tenían nombre): sin «Observatorio de…» ni «Parque Astronómico del…» («Montsec»,
+ * «Fabra», «Calar Alto»).
+ */
+export function placeMapLabel(place: Pick<Place, 'name'>): string {
+  return place.name.replace(
+    /^(Parque Astronómico del|Observatorio del|Observatorio de|Observatori) /,
+    '',
+  );
+}

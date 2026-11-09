@@ -958,6 +958,13 @@ select.control {
   color: var(--color-accent);
 }
 
+/* Los lugares de la vista «España» (propuesta de la fase 9b): solo para mirar, sin clic. */
+.scene-label--place {
+  color: var(--color-text);
+  pointer-events: none;
+  cursor: default;
+}
+
 /*
  * Un contorno nítido del color del fondo (no un halo difuso): las órbitas no cruzan las letras. Y una
  * placa del fondo casi opaca, como los nombres de la fila de fichas (`.chip__name`): sobre un disco

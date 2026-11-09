@@ -94,7 +94,7 @@ import {
 import { illustrativeDistance } from '../ephemeris/scale';
 import { BODY_DATA } from '../data/body-data';
 import { BODY_PHOTOMETRY } from '../data/photometry';
-import { DEFAULT_PLACE_ID, findPlace } from '../data/places';
+import { DEFAULT_PLACE_ID, SKY_PLACES, findPlace, placeMapLabel } from '../data/places';
 import { discFactor, interpolateLitBrightness, litBrightnessTable } from '../ephemeris/photometry';
 import type { StarCatalog } from '../ephemeris/stars';
 import {
@@ -342,6 +342,19 @@ const FOCUS_ALBEDO: readonly (number | null)[] = SCENE_BODIES.map((body) => {
   return luminance ? luminance * discFactor(photometry.photometry) : null;
 });
 
+/** Los lugares de la vista «España», con sus nombres cortos (propuesta de la fase 9b). */
+const PLACE_INFOS: readonly LabelInfo[] = SKY_PLACES.map((place) => ({
+  id: place.id,
+  name: placeMapLabel(place),
+  kind: 'place',
+  parentIndex: -1,
+}));
+/** Para proyectarlos: sin radio (son puntos), y en pantalla, lo que mide su marcador. */
+const PLACE_RADII = new Float64Array(SKY_PLACES.length);
+const PLACE_DOT_PX = 3;
+/** Sus puntos ya los pinta la escena: sin el marcador de las etiquetas. */
+const PLACE_NO_MARKER = SKY_PLACES.map(() => 0);
+
 /**
  * Radio que ocupa cada cuerpo para las etiquetas, en radios de su disco: con anillos (Saturno), el
  * borde exterior del anillo A de la ficha de la NASA. Así su nombre no los tapa (fase 3b, tarea 8).
@@ -381,6 +394,7 @@ export class SceneEngine implements SceneEngineApi {
   private readonly renderer: RendererPort;
   private readonly world: World;
   private readonly labels: LabelLayer;
+  private readonly placeLabels: LabelLayer;
   private readonly adaptive = new AdaptiveQuality(DEFAULT_ADAPTIVE_OPTIONS);
   private readonly aliasing = new AliasingState(MOTION_BODIES);
   private readonly listeners = new Map<SceneEngineEventName, Set<Listener<SceneEngineEventName>>>();
@@ -595,7 +609,12 @@ export class SceneEngine implements SceneEngineApi {
     this.labels = new LabelLayer(options.labelLayer, infos, (id) =>
       this.emit('bodyPicked', { id: id as BodyId }),
     );
-    if (this.isolated) this.labels.setVisible(false);
+    // Los nombres de los lugares de la vista «España» (propuesta de la fase 9b): solo para mirar.
+    this.placeLabels = new LabelLayer(options.labelLayer, PLACE_INFOS, () => undefined);
+    if (this.isolated) {
+      this.labels.setVisible(false);
+      this.placeLabels.setVisible(false);
+    }
 
     this.unsubscribe.push(
       attachPointerControls(options.canvas, {
@@ -897,6 +916,7 @@ export class SceneEngine implements SceneEngineApi {
     this.labelsWanted = visible;
     const sky = this._view === 'sky';
     this.labels.setVisible(visible && !this.isolated && !sky);
+    this.placeLabels.setVisible(visible && !this.isolated && !sky);
     this.sky?.setLabelsVisible(visible);
     this.sky?.setActive(sky);
     this.invalidate();
@@ -970,6 +990,7 @@ export class SceneEngine implements SceneEngineApi {
     for (const off of this.unsubscribe.splice(0)) off();
     for (const upload of this.uploads.splice(0)) upload.resolve();
     this.labels.dispose();
+    this.placeLabels.dispose();
     this.sky?.dispose();
     this.sky = null;
     this.venusRadar.release();
@@ -1479,6 +1500,41 @@ export class SceneEngine implements SceneEngineApi {
       },
     );
     this.labels.update(boxes, this.focusIndex ?? -1);
+    this.updatePlaceLabels(width, height);
+  }
+
+  /**
+   * Los nombres de los lugares de la vista «España» (propuesta de la fase 9b: eran puntos sin nombre),
+   * con la misma colocación sin solapes que los de los cuerpos: junto a su punto, los de la cara oculta
+   * no, y en un grupo apretado (el Montsec, Fraga y el Fabra), los que quepan, el Montsec el primero.
+   */
+  private updatePlaceLabels(width: number, height: number): void {
+    const places = this._view === 'earth' ? this.world.placePositions() : null;
+    if (!places || !this.placeLabels.visibleLayer) {
+      this.placeLabels.update([], -1);
+      return;
+    }
+    const screen = projectBodies(
+      this.world.camera,
+      places.positions,
+      PLACE_RADII,
+      width,
+      height,
+    ).map((place) => ({
+      ...place,
+      radiusPx: PLACE_DOT_PX,
+      occluded: places.facing[place.index] !== 1,
+    }));
+    const boxes = layoutLabels(
+      screen,
+      PLACE_INFOS,
+      this.placeLabels.measure(),
+      { width, height },
+      -1,
+      -1,
+      { insets: this.insets, markerRadiusPx: PLACE_NO_MARKER },
+    );
+    this.placeLabels.update(boxes, -1);
   }
 
   /**
@@ -1870,6 +1926,7 @@ export class SceneEngine implements SceneEngineApi {
     if (this.flight) this.endFlight();
     this.frames.finish();
     this.labels.setVisible(false);
+    this.placeLabels.setVisible(false);
     sky.setLabelsVisible(this.labelsWanted);
     sky.setActive(true);
     this.world.releaseCloseUps();
@@ -1902,6 +1959,7 @@ export class SceneEngine implements SceneEngineApi {
   private leaveSky(): void {
     this.sky?.setActive(false);
     this.labels.setVisible(this.labelsWanted && !this.isolated);
+    this.placeLabels.setVisible(this.labelsWanted && !this.isolated);
     this.exposure = -1;
     this.lastFrameMs = null;
   }
