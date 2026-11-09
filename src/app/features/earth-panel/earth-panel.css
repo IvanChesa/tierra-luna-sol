@@ -79,7 +79,7 @@
 
 /*
  * Las vistas guiadas, en dos columnas (fase 9c, 9c.7: con el reparto en filas, «El Himalaya» se quedaba
- * solo en la suya); la última, si sobra, a lo ancho. En el móvil, una fila que se desplaza (abajo).
+ * solo en la suya); la última, si sobra, a lo ancho. En el móvil, todas a la vista, con «Más» (abajo).
  */
 .earth__views {
   display: grid;
@@ -189,15 +189,25 @@
     column-gap: var(--space-3);
   }
 
-  /* Las vistas, en una sola fila que se desplaza: el panel no tapa media pantalla. */
-  .earth__views {
-    display: flex;
-    overflow-x: auto;
-    scrollbar-width: none;
+  /*
+   * Las cinco vistas, a la vista y sin desplazar, con «Más» al final (crítica de la 9c: «España»
+   * quedaba fuera de la fila, con «El Hi…» cortado; revisión del bloque S, decisión 6): todas en la
+   * tira, que baja a una segunda fila (a 390 px, dos; por debajo de unos 380, tres). Su grupo, sin
+   * caja (`display: contents`): la sección ya las nombra para el lector («Vistas guiadas»).
+   */
+  .earth__strip {
+    flex-wrap: wrap;
+    gap: var(--space-1);
   }
 
-  .earth__view {
+  .earth__views {
+    display: contents;
+  }
+
+  .earth__view,
+  .earth__toggle {
     flex: none;
+    padding-inline: var(--space-2);
   }
 
   .earth__caption {
