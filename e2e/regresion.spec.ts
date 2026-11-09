@@ -6,8 +6,10 @@ import { openExplorer } from './support';
  * (`?captura=1`: una fecha fija, sin animación y con las texturas ya subidas) frente a sus referencias,
  * en escritorio y en el móvil. Las referencias son las del CI (Linux, el Chromium de Playwright con
  * SwiftShader): el WebGL por software y las fuentes del sistema cambian de un sistema a otro, así que
- * solo se comparan en Linux. Las genera el trabajo «Referencias de la regresión visual» del CI, en una
- * rama `referencias-*`, y se guardan junto a este fichero (`regresion.spec.ts-snapshots/`).
+ * solo se comparan en Linux. Las genera el trabajo «Referencias de la regresión visual» del CI en un
+ * push cuyo mensaje lleva «[referencias]» (como artefacto del CI; el CI no escribe en el repositorio),
+ * y se guardan junto a este fichero (`regresion.spec.ts-snapshots/`) con un commit normal. Para
+ * rehacerlas tras un cambio visual buscado, lo mismo.
  */
 test.skip(process.platform !== 'linux', 'Las referencias son las del CI (Linux)');
 
@@ -20,7 +22,7 @@ const VIEWS: readonly (readonly [string, string])[] = [
   ['cielo', '/cielo?captura=1&fecha=2026-11-01T21:00Z'],
 ];
 
-test.describe('Regresión visual (fase 10)', () => {
+test.describe('Regresión visual (fase 10)', { tag: '@regresion' }, () => {
   for (const [name, path] of VIEWS) {
     test(name, async ({ page }) => {
       await openExplorer(page, path);
