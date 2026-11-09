@@ -84,6 +84,7 @@ import {
   levelRank,
   meridianOffset,
   releaseTexture,
+  sourceClosed,
 } from './textures';
 import type { ViewProjection } from './view-insets';
 
@@ -1621,6 +1622,7 @@ export class World {
     if (visual.uniforms) {
       visual.uniforms.uMap.value = loaded.texture;
       visual.uniforms.uHasMap.value = 1;
+      visual.uniforms.uMapFlipV.value = loaded.flipV ? 1 : 0;
       visual.uniforms.uMeridianOffset.value = meta ? meridianOffset(meta) : 0;
       const luminance = visual.textureId ? TEXTURE_MEAN_LUMINANCE[visual.textureId] : undefined;
       if (luminance !== undefined) visual.uniforms.uMeanLuminance.value = luminance;
@@ -1647,6 +1649,22 @@ export class World {
   }
 
   /**
+   * Tras recuperar el contexto de WebGL: las texturas que soltaron su `ImageBitmap` al subirse (las de
+   * 8K, `CLOSE_SOURCE_PIXELS`) ya no se pueden volver a subir desde él. Se sueltan y se piden otra vez
+   * (llegan de la caché del navegador); mientras, el cuerpo tiene su color esquemático.
+   */
+  reloadClosedTextures(): void {
+    let reload = false;
+    for (const visual of this.visuals) {
+      if (visual.loaded && sourceClosed(visual.loaded.texture)) {
+        this.releaseTexture(visual);
+        reload = true;
+      }
+    }
+    if (reload) this.requestTextures(this.focusIndex);
+  }
+
+  /**
    * Suelta la textura de un cuerpo (fase 7: una luna cuyo sistema ya no está enfocado): vuelve a su
    * color esquemático, con su albedo.
    */
@@ -1658,6 +1676,7 @@ export class World {
     if (visual.uniforms) {
       visual.uniforms.uMap.value = null;
       visual.uniforms.uHasMap.value = 0;
+      visual.uniforms.uMapFlipV.value = 0;
       // El contraste es el de la textura (Titán): con su color esquemático, el suyo.
       visual.uniforms.uContrast.value = 1;
       if (!visual.photometry?.chromaticity) visual.uniforms.uChromaticity.value.setW(0);

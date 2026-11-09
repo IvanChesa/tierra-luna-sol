@@ -28,7 +28,7 @@ import { SCHEMATIC_COLORS } from './body-colors';
 import { TEXTURE_META } from './texture-meta';
 import { QUALITY_PROFILES } from './quality';
 import type { TextureLevel } from './quality';
-import { chooseTextureFile, textureVramBytes } from './textures';
+import { CLOSE_SOURCE_PIXELS, chooseTextureFile, textureVramBytes } from './textures';
 import type { LoadedTexture, TextureId } from './textures';
 import { TEXTURE_ALBEDO_REFERENCE, TEXTURE_FILES } from './texture-files';
 import { SHAPE_FILES } from './shape-files';
@@ -1671,6 +1671,53 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     });
     return { requests, released, textures };
   };
+
+  it('la 8K de la Tierra: leída con v invertida y, si soltó su ImageBitmap al subirse, pedida otra vez al recuperar el contexto (fase 10)', async () => {
+    const fake = realisticTextures();
+    const textures: EngineDeps['textures'] = (context) => {
+      const real = fake.textures(context);
+      if (!real) return null;
+      return {
+        ...real,
+        source: {
+          // Como el cargador de verdad: la de día, decodificada sin voltear; la 8K, sin su bitmap.
+          load: async (id: TextureId, level: TextureLevel) => {
+            const loaded = await real.source.load(id, level);
+            if (!loaded) return null;
+            if (loaded.file.width * loaded.file.height >= CLOSE_SOURCE_PIXELS) {
+              loaded.texture.userData['sourceClosed'] = true;
+            }
+            return { ...loaded, flipV: TEXTURE_META[id].flipInShader === true };
+          },
+        },
+      };
+    };
+    const h = await createHarness({ reducedMotion: true, view: 'earth' }, { textures });
+    settle(h);
+    for (let k = 0; k < 5; k++) await flush();
+    interface EarthUniforms {
+      world: {
+        visuals: {
+          body: { id: string };
+          uniforms: { uMap: { value: Texture | null }; uMapFlipV: { value: number } };
+        }[];
+      };
+    }
+    const earth = () =>
+      (h.engine as unknown as EarthUniforms).world.visuals.find((v) => v.body.id === 'tierra')
+        ?.uniforms;
+    expect(earth()?.uMap.value?.name).toBe('earth-day@8k');
+    expect(earth()?.uMapFlipV.value).toBe(1);
+    const requested = fake.requests.filter((name) => name === 'earth-day@8k').length;
+    h.renderer.loseContext();
+    h.renderer.restoreContext();
+    expect(fake.released).toContain('earth-day@8k');
+    for (let k = 0; k < 5; k++) await flush();
+    settle(h);
+    expect(fake.requests.filter((name) => name === 'earth-day@8k').length).toBe(requested + 1);
+    expect(earth()?.uMap.value?.name).toBe('earth-day@8k');
+    h.engine.dispose();
+  });
 
   it('entrando por el cielo, solo la Vía Láctea y la Luna; al volver al espacio, lo demás (propuesta de la fase 8)', async () => {
     const fake = realisticTextures();

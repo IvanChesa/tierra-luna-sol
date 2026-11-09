@@ -2106,6 +2106,8 @@ export class SceneEngine implements SceneEngineApi {
   private onContextRestored(): void {
     this.contextLost = false;
     this.lastFrameMs = null;
+    // Las de 8K soltaron su `ImageBitmap` al subirse: se vuelven a pedir (`textures.ts`).
+    this.world.reloadClosedTextures();
     this.applySize();
     this.emit('contextRestored', {});
     this.invalidate();

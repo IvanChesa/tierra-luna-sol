@@ -146,6 +146,8 @@ ${DEPTH_FRAGMENT_PARS}
 ${SHADING_PARS}
 uniform sampler2D uMap;
 uniform float uHasMap;
+// 1: el mapa se decodificó sin voltear (la de día de la Tierra, fase 10) y se lee con v invertida.
+uniform float uMapFlipV;
 uniform vec3 uColor;
 uniform float uMeridianOffset;
 uniform float uAlbedoScale;
@@ -407,7 +409,7 @@ void main() {
 #ifdef TLS_MOON
   vec3 base = uHasMap > 0.5 ? tlsSurface(uMap, uv).rgb : uColor;
 #else
-  vec3 base = uHasMap > 0.5 ? texture2D(uMap, uv).rgb : uColor;
+  vec3 base = uHasMap > 0.5 ? texture2D(uMap, vec2(uv.x, mix(uv.y, 1.0 - uv.y, uMapFlipV))).rgb : uColor;
 #endif
   // Color medido (data/photometry.ts): la textura conserva su luminancia y toma esa cromaticidad.
   if (uChromaticity.w > 0.0) {
@@ -573,6 +575,7 @@ void main() {
 export interface BodyMaterialUniforms extends ShadingUniforms {
   readonly uMap: Uniform<Texture | null>;
   readonly uHasMap: Uniform<number>;
+  readonly uMapFlipV: Uniform<number>;
   readonly uColor: Uniform<Color>;
   readonly uMeridianOffset: Uniform<number>;
   /** Lleva la textura (o el color) al albedo geométrico del cuerpo (D29). */
@@ -724,6 +727,7 @@ export function createBodyMaterial(options: BodyMaterialOptions) {
     ...shadingUniforms(options.photometry, options.haze, options.hazeColor),
     uMap: new Uniform<Texture | null>(null),
     uHasMap: new Uniform(0),
+    uMapFlipV: new Uniform(0),
     uColor: new Uniform(options.color),
     uMeridianOffset: new Uniform(0),
     uAlbedoScale: new Uniform(1),
