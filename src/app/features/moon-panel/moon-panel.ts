@@ -44,10 +44,12 @@ interface Shown {
       <div class="moon__strip">
         <div class="moon__views scroll-hint" role="group" aria-labelledby="moon-views-title">
           @for (view of views; track view.id; let i = $index) {
+            <!-- Su texto, también antes de elegirla («Luz rasante»: crítica de la 9c). -->
             <button
               type="button"
               class="control moon__view"
               [attr.aria-pressed]="isShown('view', i)"
+              [title]="view.text"
               (click)="chooseView(i)"
             >
               {{ view.title }}

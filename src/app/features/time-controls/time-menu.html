@@ -135,7 +135,12 @@
 
   <div class="field">
     <label class="field__label" for="time-scale">Escala</label>
-    <select id="time-scale" class="control" (change)="changeScale($event)">
+    <select
+      id="time-scale"
+      class="control"
+      aria-describedby="time-scale-hint"
+      (change)="changeScale($event)"
+    >
       @for (option of scales; track option.value) {
         <option [value]="option.value" [selected]="sim.scaleFrame() === option.value">
           {{ option.label }}
@@ -143,6 +148,12 @@
       }
     </select>
   </div>
+
+  <!-- Qué es cada escala, a la vista (crítica de la 9c: «Escala» pedía contexto). -->
+  <p class="menu__wide menu__hint" id="time-scale-hint">
+    Ilustrativa: los cuerpos, agrandados, y las distancias, acortadas, para que todo se vea. Real:
+    los tamaños y las distancias, en la misma proporción.
+  </p>
 
   <!-- El recorrido de la portada, cuando se quiera (fase 9c, 9c.6). -->
   <button type="button" class="control menu__wide" (click)="tour()">

@@ -73,7 +73,15 @@
               <dt>{{ row.label }}</dt>
               <dd>
                 <span class="card__number">{{ row.value.number }}</span>
-                @if (row.value.unit) {
+                @if (row.value.unit === 'UA') {
+                  <!-- Qué es una UA, con el ratón encima (crítica de la 9c); debajo, en km. -->
+                  <span class="card__unit"
+                    >&nbsp;<abbr
+                      title="Unidades astronómicas: 1 UA, unos 150 millones de km, es la distancia media de la Tierra al Sol"
+                      >UA</abbr
+                    ></span
+                  >
+                } @else if (row.value.unit) {
                   <span class="card__unit">&nbsp;{{ row.value.unit }}</span>
                 }
                 @if (row.detail) {
