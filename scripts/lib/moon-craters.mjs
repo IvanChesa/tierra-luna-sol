@@ -13,8 +13,9 @@
 //    su borde claro; una clara, un cráter claro con su halo y, los más claros de los grandes, con rayos
 //    (los «rayos claros» de Oberón y de Titania). Perfiles radiales, sin dirección de luz: se ven como
 //    albedo, como lo real cerca del polo sur, con el Sol alto. Se desenfocan como la resolución de lo real.
-// 3. La calibración (`calibrateCraters`): el contraste a gran escala de lo recreado (la desviación típica
-//    de su L* desenfocado) se lleva al de lo real, con un factor común a todos los cráteres.
+// 3. La calibración (en `addCraters`, scripts/lib/moon-map-build.mjs): el contraste a gran escala de lo
+//    recreado (la desviación típica de su L* desenfocado) se lleva al de lo real, con un factor común a
+//    todos los cráteres.
 // Es ilustrativo: ni las posiciones ni los tamaños son los de esa luna, solo su estadística.
 
 import { mulberry32 } from './moon-recreate.mjs';
@@ -387,19 +388,6 @@ export function craterLayer(
   }
   const blurred = blur > 0 ? gaussianBlur(layer, width, height, blur, true) : layer;
   return { layer: blurred, count: craters.length };
-}
-
-/**
- * El factor común de los cráteres que lleva el contraste a gran escala de lo recreado (`recreated`, con
- * la capa ya sumada con factor 1) al de lo real (`targetContrast` × σ de lo real), sabiendo que el de la
- * base (sin cráteres) es `baseSigma`: σ² ≈ σ_base² + g² σ_capa². Entre 0,3 y 3.
- */
-export function craterGain({ realSigma, baseSigma, layerSigma }, params = {}) {
-  const P = { ...CRATER_PARAMS, ...params };
-  const want = P.targetContrast * realSigma;
-  if (!(layerSigma > 0)) return 1;
-  const g2 = (want * want - baseSigma * baseSigma) / (layerSigma * layerSigma);
-  return Math.min(3, Math.max(0.3, Math.sqrt(Math.max(g2, 0))));
 }
 
 export { lowPassContrast };

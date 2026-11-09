@@ -1,7 +1,9 @@
 // D45 (fase 9b), herramienta de revisión: mide el mapa de 2k de una luna, recrea lo que no se vio con su
 // receta y guarda el mapa antes y después y las seis vistas de la adenda (cuatro longitudes del ecuador
 // y los dos polos) antes y después, más la guía del nivel grueso. No toca las texturas del proyecto.
-// La misma recreación que hace `build-textures.mjs` (scripts/lib/moon-map-build.mjs), para revisarla.
+// La síntesis de D45 (`recreate`, scripts/lib/moon-recreate.mjs) con la receta de la luna, para revisarla:
+// sin lo de D48 (la luz rasante, los cráteres, la mezcla del borde y el grano). La recreación entera del
+// build es `recreateMosaic` (scripts/lib/moon-map-build.mjs).
 // Uso: node scripts/preview-moon-recreation.mjs <luna> [--out=carpeta] [--semilla=1]
 import { mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';

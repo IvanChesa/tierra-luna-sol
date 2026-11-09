@@ -8,6 +8,7 @@
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 import {
+  borderProfile,
   borderSteps,
   boxBlur,
   classShares,
@@ -23,6 +24,7 @@ import {
 import { bandedTerrain, coronaLayer, craterLayer, spotPopulation } from './moon-craters.mjs';
 import {
   GRAZING,
+  GRAZING_PARAMS,
   SEAM,
   TERMINATOR,
   correctGrazing,
@@ -32,29 +34,23 @@ import {
 import { recipeFor } from './moon-recipes.mjs';
 import { recreate } from './moon-recreate.mjs';
 import { classifyMosaic } from '../measure-moon-maps.mjs';
+import { probeAreas } from '../usgs-mosaic.mjs';
 
 const REAL = 0;
 const FAR = 1;
 const NONE = 2;
 
 /**
- * D48: la escala del brillo medio en el borde con lo real (σ, texeles de 2k: 16, unos 2,8°), la de la
- * franja oscura del terminador que había que quitar; y el fundido de la corrección hacia dentro de lo
- * recreado (hasta `BORDER_MEAN.fade` × σ).
+ * D48: las escalas de la mezcla de la franja del terminador con lo real intacto (σ, texeles de 2k, y el
+ * fundido hacia dentro, en σ): la del brillo medio (16, unos 2,8°) y la de la medida del salto fino (4),
+ * para que tampoco quede una línea donde el borde es recto; y sus pasadas (cada escala mueve un poco la
+ * otra).
  */
-export const BORDER_MEAN = { sigma: 16, fade: 4 };
-
-/**
- * Las escalas de la mezcla multibanda del borde (D45, regla 4; D48): la de `BORDER_MEAN` y una fina, la
- * de la medida del salto fino (σ = 4 texeles), para que tampoco quede una línea donde el borde es recto.
- */
-export const BORDER_BANDS = [BORDER_MEAN, { sigma: 4, fade: 3 }];
-
-/**
- * Las pasadas de la mezcla: cada escala corrige lo suyo y mueve un poco la otra (la fina, lo que cubre de
- * la ancha), así que se repiten hasta que las dos quedan iguales a la vez.
- */
-export const BORDER_ROUNDS = 3;
+export const STRIP_BANDS = [
+  { sigma: 16, fade: 4 },
+  { sigma: 4, fade: 3 },
+];
+export const STRIP_ROUNDS = 3;
 
 /**
  * D48: la resolución de origen que se da a la franja del terminador en la síntesis (σ, px de 2k), para que
@@ -79,14 +75,19 @@ export const RECREATION_CRITERIA = {
   // D48: el salto fino (σ = 4 texeles), como mucho 2 L* por encima de lo natural (hace fallar el build).
   fineSigma: 4,
   fineExcess: 2,
-  // D48: el brillo medio a la escala de varios grados (`BORDER_MEAN`, σ = 16 texeles, 2,8°), ΔL* ≤ 2 en
-  // el percentil 95, en el borde con lo que pone la recreación (lo no visto y lo real con luz rasante).
+  // D48: el brillo medio a la escala de varios grados (σ = 16 texeles, 2,8°: la de la franja oscura del
+  // terminador que había que quitar), ΔL* ≤ 2 en el percentil 95, en el borde con lo que pone la
+  // recreación (lo no visto y lo real con luz rasante).
   meanSigma: 16,
   meanDeltaL: 2,
   // D48: el contraste a gran escala de lo no visto (σ de su L* a 8 texeles), del 70 al 130 % del de lo
   // real, en las lunas de Urano.
   contrastSigma: 8,
   contrast: [0.7, 1.3],
+  // D48 (revisión de la 10.a, hallazgo 2): el perfil del brillo de lo que pone la recreación por
+  // distancia al borde con lo real intacto, hasta 5°: ningún surco de más de 2 L* por debajo de lo real.
+  profileMaxDeg: 5,
+  profileTrough: 2,
 };
 
 /** Gris (de 0 a 1, sRGB) de un búfer RGB de 8 bits o de un Float32Array RGB de 0 a 1. */
@@ -98,7 +99,11 @@ function grayOf(rgb, pixels, scale) {
   return gray;
 }
 
-/** Falla si algún píxel real (clase 0) del mapa recreado no es el del mosaico, canal a canal. */
+/**
+ * Falla si algún píxel real (clase 0) del mapa recreado no es el del mosaico, canal a canal. Hoy el mapa
+ * copia el mosaico en lo real, así que guarda contra un cambio de cómo se monta; lo que puede fallar de
+ * verdad es qué es real: `assertGrazingExtent` y las sondas en el mapa recreado (`build-textures.mjs`).
+ */
 export function assertRealUnchanged(id, mosaicData, recreatedData, classes) {
   let changed = 0;
   for (let k = 0; k < classes.length; k++) {
@@ -107,6 +112,67 @@ export function assertRealUnchanged(id, mosaicData, recreatedData, classes) {
   }
   if (changed)
     throw new Error(`La recreación de «${id}» ha cambiado ${changed} canales de lo real`);
+}
+
+/**
+ * Falla si lo real con luz rasante (clase 3) sale de donde D48 lo pone: la franja del terminador, a menos
+ * de `maxWidthDeg` de lo no visto (con el anillo de sus sombras sueltas), y las columnas de la unión de
+ * 180°. Fuera de ahí, lo real tiene que seguir intacto (revisión de la 10.a, hallazgo 8).
+ */
+export function assertGrazingExtent(id, classes, W, H) {
+  const P = GRAZING_PARAMS;
+  const none = Uint8Array.from(classes, (c) => (c === NONE ? 1 : 0));
+  const reach = (P.maxWidthDeg * W) / 360 + P.shadowRing + 1;
+  const distance = distanceTo(none, W, H, Math.ceil(reach) + 2);
+  let outside = 0;
+  for (let k = 0; k < classes.length; k++) {
+    if (classes[k] !== GRAZING) continue;
+    const column = k % W;
+    const seam = column < P.seamColumns || column >= W - P.seamColumns;
+    if (!seam && distance[k] > reach) outside++;
+  }
+  if (outside) {
+    throw new Error(
+      `«${id}»: ${outside} píxeles de lo real con luz rasante lejos de lo no visto y de la unión de 180°`,
+    );
+  }
+}
+
+/** Cuánto de cada accidente de las sondas se protege en la luz rasante (en radios de la sonda). */
+const PROBE_PROTECT = 1.25;
+
+/**
+ * Los píxeles de los accidentes reales con nombre (las sondas del Gazetteer, `probeAreas`), hasta
+ * `PROBE_PROTECT` radios de su centro, sobre la esfera: `correctGrazing` no los cuenta para medir la luz
+ * rasante ni los funde hacia lo recreado por estar junto a lo no visto, salvo sus sombras (revisión de la
+ * 10.a, hallazgo 1). Null si la luna no tiene.
+ */
+function probeMask(id, W, H) {
+  const areas = probeAreas(id);
+  if (!areas.length) return null;
+  const mask = new Uint8Array(W * H);
+  const rad = Math.PI / 180;
+  for (const { lat, lon, radius } of areas) {
+    const c = [
+      Math.cos(lat * rad) * Math.cos(lon * rad),
+      Math.cos(lat * rad) * Math.sin(lon * rad),
+      Math.sin(lat * rad),
+    ];
+    const limit = Math.cos(PROBE_PROTECT * radius * rad);
+    for (let j = 0; j < H; j++) {
+      const phi = (90 - ((j + 0.5) / H) * 180) * rad;
+      if (Math.abs(phi / rad - lat) > PROBE_PROTECT * radius + 1) continue;
+      for (let i = 0; i < W; i++) {
+        const lambda = (((i + 0.5) / W) * 360 - 180) * rad;
+        const dot =
+          Math.cos(phi) * Math.cos(lambda) * c[0] +
+          Math.cos(phi) * Math.sin(lambda) * c[1] +
+          Math.sin(phi) * c[2];
+        if (dot >= limit) mask[j * W + i] = 1;
+      }
+    }
+  }
+  return mask;
 }
 
 /**
@@ -135,7 +201,8 @@ export function recreateMosaic(id, mosaic, { check = true } = {}) {
     rgb,
   });
   const { classes, kind } = grazing;
-  const corrected = correctGrazing(rgb, grazing, W, H);
+  assertGrazingExtent(id, classes, W, H);
+  const corrected = correctGrazing(rgb, grazing, W, H, {}, { protect: probeMask(id, W, H) });
   // Para la síntesis: la franja del terminador, como lo visto de lejos (su brillo a gran escala, el
   // corregido; el detalle, de los parches); la unión de 180°, fija como lo real. Ninguna es origen.
   const synthClasses = Uint8Array.from(classes, (c, k) =>
@@ -180,10 +247,19 @@ export function recreateMosaic(id, mosaic, { check = true } = {}) {
   const noneShare = classShares(classes, W, H)[2];
   const blend = recipe.terminator || recipe.craters || noneShare > 0.02;
   if (blend) {
-    for (let round = 0; round < BORDER_ROUNDS; round++) {
-      for (const band of BORDER_BANDS) matchBorderMean(final, classes, kind, W, H, band);
+    // «La misma media» (regla 4 de D45). Primero, la franja del terminador frente a lo real intacto, a
+    // dos escalas (su brillo, ya corregido, es plano: no oscila). Lo no visto ya no se iguala así: con un
+    // degradado (el casquete de Tritón), igualar medias en toda la zona oscilaba y dejaba un reborde claro
+    // y un surco (revisión de la 10.a, hallazgo 2).
+    const real = Uint8Array.from(classes, (c) => (c === REAL ? 1 : 0));
+    const strip = Uint8Array.from(kind, (v) => (v === TERMINATOR ? 1 : 0));
+    if (strip.some((v) => v)) {
+      for (let round = 0; round < STRIP_ROUNDS; round++) {
+        for (const band of STRIP_BANDS) matchMean(final, real, strip, W, H, band);
+      }
     }
-    // Y, al final, exactamente lo que mide el criterio del brillo medio (σ = 16), en dos pasos.
+    // Y exactamente lo que mide el criterio del brillo medio (σ = 16), clase a clase, como un
+    // desplazamiento monótono desde el borde, en dos pasos.
     for (let step = 0; step < 2; step++) {
       matchBorderExact(final, classes, W, H, { sigma: RECREATION_CRITERIA.meanSigma });
     }
@@ -236,28 +312,35 @@ export function recreateMosaic(id, mosaic, { check = true } = {}) {
       }
     }
   }
-  if (fails.length && check) {
-    throw new Error(`La recreación de «${id}» no cumple: ${fails.join('; ')}`);
-  }
-  // Lo que se mide y se da (no hace fallar el build): el brillo medio a 2,8° y el contraste.
-  const warnings = [];
   if (d48) {
+    // El brillo medio a 2,8°, en absoluto, en el borde con lo que pone la recreación; el perfil junto a
+    // ese borde, sin surcos (en las lunas con la mezcla del borde); y el contraste a gran escala de lo no
+    // visto, en las lunas de Urano. Hacen fallar el build, como el salto fino (revisión de la 10.a,
+    // hallazgo 8).
     for (const name of ['none', 'grazing']) {
       const m = d48.borders[name].mean;
       if (m.tiles && m.p95 > RECREATION_CRITERIA.meanDeltaL) {
-        warnings.push(
+        fails.push(
           `el brillo medio en el borde con ${BORDER_NAMES[name]} salta p95 ${n(m.p95)} (más de ${RECREATION_CRITERIA.meanDeltaL})`,
         );
       }
     }
+    if (blend && d48.profile && d48.profile.trough < -RECREATION_CRITERIA.profileTrough) {
+      fails.push(
+        `lo recreado junto al borde con lo real (hasta ${RECREATION_CRITERIA.profileMaxDeg}°) baja a ${n(-d48.profile.trough)} L* por debajo de lo real (como mucho, ${RECREATION_CRITERIA.profileTrough})`,
+      );
+    }
     if (recipe.craters && recipe.terminator) {
       const [clo, chi] = RECREATION_CRITERIA.contrast;
       if (!(d48.contrast.ratio >= clo && d48.contrast.ratio <= chi)) {
-        warnings.push(
-          `el contraste a gran escala de lo no visto es ${n(d48.contrast.ratio)} del de lo real`,
+        fails.push(
+          `el contraste a gran escala de lo no visto es ${n(d48.contrast.ratio)} del de lo real (del ${clo} al ${chi})`,
         );
       }
     }
+  }
+  if (fails.length && check) {
+    throw new Error(`La recreación de «${id}» no cumple: ${fails.join('; ')}`);
   }
   const side = (s) => (s.tiles ? `p95 ${n(s.p95)} · máx. ${n(s.max)} (${s.tiles} teselas)` : '—');
   const grazingNote = grazed
@@ -273,7 +356,7 @@ export function recreateMosaic(id, mosaic, { check = true } = {}) {
         .join('; ')
     : '';
   const report = synthesized
-    ? `${id}: D45 y D48, real ${pct(real)}, visto de lejos ${pct(far)}, no visto ${pct(none)}${grazingNote}; recreado en ${n(seconds, 0)} s (${result.stats.patches} parches, enfoque ${n(result.stats.sharpen)}, grano ${n(grainAmount)})${recipe.name ? ` con la receta «${recipe.name}»` : ''}${craters ? `; ${craters.count} cráteres (factor ${n(craters.gain)})${craters.coronae ? ` y ${craters.coronae.units.length} coronas` : ''}` : ''}; grano de lo recreado / lo real vecino ${n(after.grain.ratioNear)} (antes ${n(before.grain.ratioNear)}); el borde con lo real (ΔL*, por teselas de 64; fino, σ = ${RECREATION_CRITERIA.fineSigma}; medio, σ = ${RECREATION_CRITERIA.meanSigma}): ${bordersText}; lo natural, fino ${side(d48.natural.fine)} y medio ${side(d48.natural.mean)}; contraste a gran escala de lo no visto / lo real ${d48.contrast.ratio ? n(d48.contrast.ratio) : '—'}; lo real, igual byte a byte${warnings.length ? `. AVISO: ${warnings.join('; ')}` : ''}${fails.length ? `. NO CUMPLE: ${fails.join('; ')}` : ''}`
+    ? `${id}: D45 y D48, real ${pct(real)}, visto de lejos ${pct(far)}, no visto ${pct(none)}${grazingNote}; recreado en ${n(seconds, 0)} s (${result.stats.patches} parches, enfoque ${n(result.stats.sharpen)}, grano ${n(grainAmount)})${recipe.name ? ` con la receta «${recipe.name}»` : ''}${craters ? `; ${craters.count} cráteres (factor ${n(craters.gain)})${craters.coronae ? ` y ${craters.coronae.units.length} coronas` : ''}` : ''}; grano de lo recreado / lo real vecino ${n(after.grain.ratioNear)} (antes ${n(before.grain.ratioNear)}); el borde con lo real (ΔL*, por teselas de 64; fino, σ = ${RECREATION_CRITERIA.fineSigma}; medio, σ = ${RECREATION_CRITERIA.meanSigma}): ${bordersText}; lo natural, fino ${side(d48.natural.fine)} y medio ${side(d48.natural.mean)}; contraste a gran escala de lo no visto / lo real ${d48.contrast.ratio ? n(d48.contrast.ratio) : '—'}${blend && d48.profile ? `; lo recreado junto al borde (hasta ${RECREATION_CRITERIA.profileMaxDeg}°, cada 0,5°), como mucho ${n(-d48.profile.trough)} L* por debajo de lo real` : ''}; lo real, igual byte a byte${fails.length ? `. NO CUMPLE: ${fails.join('; ')}` : ''}`
     : `${id}: D45, real ${pct(real)}: nada que recrear`;
   const pick = (s) => (s?.tiles > 0 ? { p95: s.p95, max: s.max, tiles: s.tiles } : null);
   const summary = {
@@ -299,6 +382,7 @@ export function recreateMosaic(id, mosaic, { check = true } = {}) {
       : null,
     natural: d48 ? { fine: pick(d48.natural.fine), mean: pick(d48.natural.mean) } : null,
     contrast: d48?.contrast ?? null,
+    profile: blend && d48?.profile ? d48.profile : null,
     craters: craters
       ? {
           count: craters.count,
@@ -323,7 +407,6 @@ export function recreateMosaic(id, mosaic, { check = true } = {}) {
       : null,
     sharpen: synthesized ? result.stats.sharpen : null,
     grainAmount,
-    warnings,
     fails,
   };
   return {
@@ -400,7 +483,20 @@ function qualityD48(data, reference, classes, W, H) {
     none: noneC.sigma,
     ratio: noneC.area > 0 && realC.sigma > 0 ? noneC.sigma / realC.sigma : null,
   };
-  return { borders, natural, contrast };
+  // El perfil junto al borde de lo que pone la recreación, clase a clase (lo no visto y lo real con luz
+  // rasante, cada uno frente a lo real que tiene al lado: juntos, el de una clase y el de la otra harían
+  // un surco que no está en ninguna).
+  const byClass = {};
+  for (const name of ['none', 'grazing']) {
+    if (!masks[name].some((v) => v)) continue;
+    const p = borderProfile(L, real, masks[name], W, H, {
+      maxDeg: RECREATION_CRITERIA.profileMaxDeg,
+    });
+    if (!Number.isNaN(p.trough)) byClass[name] = p.trough;
+  }
+  const troughs = Object.values(byClass);
+  const profile = troughs.length ? { trough: Math.min(...troughs), byClass } : null;
+  return { borders, natural, contrast, profile };
 }
 
 const toLinear = (v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
@@ -568,70 +664,57 @@ export function matchMean(final, reference, target, W, H, { sigma, fade }) {
 }
 
 /**
- * D48, «la misma media» junto a lo real: primero la franja del terminador frente a lo real (el borde que
- * se ve: lo real intacto junto a lo corregido) y después lo no visto frente a lo real y la franja. No toca
- * lo real, ni lo visto de lejos (su brillo a gran escala es el real), ni la unión de 180°.
- */
-function matchBorderMean(final, classes, kind, W, H, options) {
-  const real = Uint8Array.from(classes, (c) => (c === REAL ? 1 : 0));
-  const strip = Uint8Array.from(kind, (v) => (v === TERMINATOR ? 1 : 0));
-  matchMean(final, real, strip, W, H, options);
-  const seen = Uint8Array.from(real, (v, k) => (v || strip[k] ? 1 : 0));
-  const none = Uint8Array.from(classes, (c) => (c === NONE ? 1 : 0));
-  matchMean(final, seen, none, W, H, options);
-}
-
-/**
- * D48, la última pasada de «la misma media», a la escala de la medida (`RECREATION_CRITERIA.meanSigma`):
+ * D48, «la misma media» (regla 4 de D45), a la escala de la medida (`RECREATION_CRITERIA.meanSigma`):
  * el salto que mide `borderSteps` en cada píxel del borde de lo real intacto con lo que pone la
  * recreación (lo real con luz rasante y lo no visto), con las mismas medias de cada lado (las de
- * `boxBlur`, cada una con solo su clase), extendido a lo largo del borde (σ doble) y restado de todo lo
- * recreado junto a lo real (lo no visto y la luz rasante), entero hasta `full` × σ de lo real (todo el
- * alcance de la media de la medida) y apagándose hasta `fade` × σ. Un desplazamiento suave y común: no
- * deja otro escalón entre la franja y lo no visto. No toca lo real ni lo visto de lejos.
+ * `boxBlur`, cada una con solo su clase), extendido a lo largo del borde (σ doble) y restado de lo
+ * recreado de esa clase junto a lo real (lo no visto o la luz rasante), entero hasta `full` × σ de lo real
+ * (todo el alcance de la media de la medida) y apagándose hasta `fade` × σ: un desplazamiento suave y
+ * monótono desde el borde. No toca lo real ni lo visto de lejos.
  */
 function matchBorderExact(final, classes, W, H, { sigma, full = 3, fade = 5, minWeight = 0.2 }) {
   const pixels = W * H;
   const L = lightnessMap(final, pixels);
   const real = Uint8Array.from(classes, (c) => (c === REAL ? 1 : 0));
-  const target = Uint8Array.from(classes, (c) => (c === GRAZING || c === NONE ? 1 : 0));
-  const jump = new Float32Array(pixels);
-  const known = new Float32Array(pixels);
+  const wA = boxBlur(Float32Array.from(real), W, H, sigma);
+  const mA = boxBlur(
+    Float32Array.from(L, (v, k) => v * real[k]),
+    W,
+    H,
+    sigma,
+  );
+  const toA = distanceTo(real, W, H, 4);
+  const distance = distanceTo(real, W, H, Math.ceil(fade * sigma) + 2);
+  // Clase a clase: el salto de lo no visto no mueve la luz rasante (la unión de 180° de Deimos), ni al
+  // revés (revisión de la 10.a).
   for (const cls of [GRAZING, NONE]) {
     const side = Uint8Array.from(classes, (c) => (c === cls ? 1 : 0));
     if (!side.some((v) => v)) continue;
-    const wA = boxBlur(Float32Array.from(real), W, H, sigma);
     const wB = boxBlur(Float32Array.from(side), W, H, sigma);
-    const mA = boxBlur(
-      Float32Array.from(L, (v, k) => v * real[k]),
-      W,
-      H,
-      sigma,
-    );
     const mB = boxBlur(
       Float32Array.from(L, (v, k) => v * side[k]),
       W,
       H,
       sigma,
     );
-    const toA = distanceTo(real, W, H, 4);
     const toB = distanceTo(side, W, H, 4);
+    const jump = new Float32Array(pixels);
+    const known = new Float32Array(pixels);
     for (let k = 0; k < pixels; k++) {
       const edge = real[k] ? toB[k] <= 1 : side[k] ? toA[k] <= 1 : false;
       if (!edge || wA[k] < minWeight || wB[k] < minWeight) continue;
-      jump[k] += mB[k] / wB[k] - mA[k] / wA[k];
-      known[k] += 1;
+      jump[k] = mB[k] / wB[k] - mA[k] / wA[k];
+      known[k] = 1;
     }
-  }
-  const spread = boxBlur(jump, W, H, 2 * sigma);
-  const spreadW = boxBlur(known, W, H, 2 * sigma);
-  const distance = distanceTo(real, W, H, Math.ceil(fade * sigma) + 2);
-  for (let k = 0; k < pixels; k++) {
-    if (!target[k] || spreadW[k] < 1e-4) continue;
-    const u = Math.min(1, Math.max(0, (distance[k] - full * sigma) / ((fade - full) * sigma)));
-    const w = 1 - u * u * (3 - 2 * u);
-    if (w <= 0) continue;
-    setLightness(final, k, L[k], L[k] - w * (spread[k] / spreadW[k]));
+    const spread = boxBlur(jump, W, H, 2 * sigma);
+    const spreadW = boxBlur(known, W, H, 2 * sigma);
+    for (let k = 0; k < pixels; k++) {
+      if (!side[k] || spreadW[k] < 1e-4) continue;
+      const u = Math.min(1, Math.max(0, (distance[k] - full * sigma) / ((fade - full) * sigma)));
+      const w = 1 - u * u * (3 - 2 * u);
+      if (w <= 0) continue;
+      setLightness(final, k, L[k], L[k] - w * (spread[k] / spreadW[k]));
+    }
   }
 }
 

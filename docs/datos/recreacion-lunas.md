@@ -25,13 +25,13 @@ Lo que no se vio de cada luna, recreado a partir del terreno real de la misma lu
 | dione | 87,3 % | 0,0 % | 12,7 % | 0,0 % | la de por defecto | 0,98 | de lejos 3,62 · 5,17 (95) | 6,09 · 12,69 (269) | de lejos 5,49 · 8,68 (88) | 3,20 · 8,86 (245) | — | 3,13 (3,16) | ![dione](../informes/img/fase-10/lunas-mascaras/dione.webp) |
 | rhea | 92,6 % | 0,0 % | 7,4 % | 0,0 % | la de por defecto | 0,97 | de lejos 3,20 · 5,19 (74) | 6,02 · 13,48 (208) | de lejos 3,21 · 3,63 (70) | 2,85 · 6,83 (192) | — | 2,69 (2,70) | ![rhea](../informes/img/fase-10/lunas-mascaras/rhea.webp) |
 | iapetus | 69,2 % | 0,0 % | 30,8 % | 0,0 % | la de por defecto | 0,98 | de lejos 4,04 · 11,13 (114) | 5,38 · 23,71 (257) | de lejos 8,22 · 12,53 (113) | 6,27 · 11,27 (242) | — | 2,83 (2,94) | ![iapetus](../informes/img/fase-10/lunas-mascaras/iapetus.webp) |
-| triton | 30,2 % | 0,0 % | 36,3 % | 33,5 % | el casquete de Tritón | 1,00 | no visto 1,85 · 1,94 (14); de lejos 3,63 · 4,76 (70) | 4,53 · 7,51 (78) | no visto 0,06 · 0,18 (14); de lejos 6,79 · 8,10 (67) | 4,54 · 11,27 (72) | 0,62 | 2,94 (3,29) | ![triton](../informes/img/fase-10/lunas-mascaras/triton.webp) |
-| deimos | 55,0 % | 0,5 % | 32,7 % | 11,8 % | la de por defecto | 1,14 | no visto 4,08 · 4,15 (19); luz rasante 3,91 · 4,78 (12); de lejos 2,89 · 4,13 (202) | 3,37 · 7,76 (403) | no visto 0,56 · 0,64 (17); luz rasante 1,86 · 2,56 (12); de lejos 7,07 · 12,98 (201) | 5,92 · 11,24 (367) | 0,67 | 1,29 (1,28) | ![deimos](../informes/img/fase-10/lunas-mascaras/deimos.webp) |
-| miranda | 27,3 % | 6,7 % (7,0°) | 5,3 % | 60,7 % | la de Miranda | 0,99 | luz rasante 2,96 · 4,19 (28); de lejos 7,14 · 10,54 (67) | 4,89 · 21,73 (182) | luz rasante 1,19 · 2,03 (28); de lejos 6,01 · 11,31 (62) | 5,88 · 13,31 (159) | 1,06 | 1,81 (1,85) | ![miranda](../informes/img/fase-10/lunas-mascaras/miranda.webp) |
-| ariel | 21,9 % | 2,4 % (2,5°) | 8,8 % | 66,8 % | la de Ariel | 1,01 | luz rasante 0,61 · 0,95 (22); de lejos 2,82 · 3,21 (53) | 2,07 · 5,63 (113) | luz rasante 0,26 · 0,32 (23); de lejos 2,95 · 3,66 (48) | 1,58 · 2,99 (103) | 0,91 | 1,52 (1,58) | ![ariel](../informes/img/fase-10/lunas-mascaras/ariel.webp) |
-| umbriel | 29,3 % | 6,0 % (6,5°) | 1,0 % | 63,7 % | la de Umbriel | 1,08 | luz rasante 1,73 · 2,44 (37); de lejos 1,63 · 2,48 (16) | 2,51 · 4,34 (78) | luz rasante 0,48 · 0,83 (36); de lejos 2,92 · 3,89 (17) | 2,60 · 4,38 (74) | 0,96 | 1,03 (1,05) | ![umbriel](../informes/img/fase-10/lunas-mascaras/umbriel.webp) |
-| titania | 25,8 % | 5,0 % (5,5°) | 0,3 % | 68,9 % | la de Titania | 0,98 | luz rasante 2,50 · 3,89 (41); de lejos 3,04 · 3,04 (3) | 6,61 · 7,82 (71) | luz rasante 1,16 · 2,47 (41); de lejos 5,64 · 5,64 (3) | 8,38 · 12,88 (68) | 0,94 | 1,78 (1,99) | ![titania](../informes/img/fase-10/lunas-mascaras/titania.webp) |
-| oberon | 29,9 % | 3,5 % (4,0°) | 0,0 % | 66,5 % | la de Oberón | 1,20 | luz rasante 2,72 · 4,46 (40); de lejos 0,78 · 0,78 (4) | 8,08 · 19,61 (74) | luz rasante 0,91 · 2,21 (40) | 14,53 · 24,71 (63) | 0,92 | 1,38 (1,52) | ![oberon](../informes/img/fase-10/lunas-mascaras/oberon.webp) |
+| triton | 30,2 % | 0,0 % | 36,3 % | 33,5 % | el casquete de Tritón | 1,00 | no visto 1,53 · 1,76 (14); de lejos 3,63 · 4,75 (70) | 4,53 · 7,51 (78) | no visto 0,33 · 0,35 (14); de lejos 6,79 · 8,10 (67) | 4,54 · 11,27 (72) | 0,62 | 2,95 (3,29) | ![triton](../informes/img/fase-10/lunas-mascaras/triton.webp) |
+| deimos | 55,0 % | 0,5 % | 32,7 % | 11,8 % | la de por defecto | 1,14 | no visto 4,96 · 5,31 (19); luz rasante 3,90 · 4,78 (12); de lejos 2,89 · 4,13 (202) | 3,37 · 7,76 (403) | no visto 0,96 · 1,22 (17); luz rasante 1,82 · 2,58 (12); de lejos 7,07 · 12,98 (201) | 5,92 · 11,24 (367) | 0,70 | 1,29 (1,28) | ![deimos](../informes/img/fase-10/lunas-mascaras/deimos.webp) |
+| miranda | 27,3 % | 6,7 % (7,0°) | 5,3 % | 60,7 % | la de Miranda | 0,99 | luz rasante 2,83 · 3,38 (28); de lejos 6,77 · 10,53 (67) | 4,89 · 21,73 (182) | luz rasante 1,19 · 1,98 (28); de lejos 6,46 · 11,13 (62) | 5,88 · 13,31 (159) | 0,90 | 1,76 (1,85) | ![miranda](../informes/img/fase-10/lunas-mascaras/miranda.webp) |
+| ariel | 21,9 % | 2,4 % (2,5°) | 8,8 % | 66,8 % | la de Ariel | 1,01 | luz rasante 0,81 · 1,08 (22); de lejos 2,88 · 3,29 (53) | 2,07 · 5,63 (113) | luz rasante 0,25 · 0,31 (23); de lejos 3,05 · 3,79 (48) | 1,58 · 2,99 (103) | 0,90 | 1,50 (1,58) | ![ariel](../informes/img/fase-10/lunas-mascaras/ariel.webp) |
+| umbriel | 29,3 % | 6,0 % (6,5°) | 1,0 % | 63,7 % | la de Umbriel | 1,13 | luz rasante 1,56 · 2,05 (37); de lejos 1,63 · 2,49 (16) | 2,51 · 4,34 (78) | luz rasante 0,48 · 0,73 (36); de lejos 2,88 · 3,89 (17) | 2,60 · 4,38 (74) | 0,90 | 1,02 (1,05) | ![umbriel](../informes/img/fase-10/lunas-mascaras/umbriel.webp) |
+| titania | 25,8 % | 5,0 % (5,5°) | 0,3 % | 68,9 % | la de Titania | 0,99 | luz rasante 2,65 · 3,90 (41); de lejos 3,03 · 3,03 (3) | 6,61 · 7,82 (71) | luz rasante 1,00 · 2,46 (41); de lejos 5,75 · 5,75 (3) | 8,38 · 12,88 (68) | 0,90 | 1,75 (1,99) | ![titania](../informes/img/fase-10/lunas-mascaras/titania.webp) |
+| oberon | 29,9 % | 3,5 % (4,0°) | 0,0 % | 66,5 % | la de Oberón | 1,26 | luz rasante 3,00 · 4,30 (40); de lejos 0,80 · 0,80 (4) | 8,08 · 19,61 (74) | luz rasante 0,91 · 1,39 (40) | 14,53 · 24,71 (63) | 0,89 | 1,40 (1,52) | ![oberon](../informes/img/fase-10/lunas-mascaras/oberon.webp) |
 
 ## Los cráteres y las coronas de lo no visto (D48)
 
@@ -39,11 +39,11 @@ En las lunas de Urano, lo no visto lleva cráteres con la población y el albedo
 
 | Luna | Cráteres | Factor | Coronas | Contraste: real · no visto → cociente |
 |---|---|---|---|---|
-| miranda | 5301 | 1,09 | 2 (bandas de 2,1°, 10,9 L*) | 4,97 · 5,27 → 1,06 |
-| ariel | 8529 | 0,65 | — | 1,08 · 0,99 → 0,91 |
-| umbriel | 4509 | 1,30 | — | 2,40 · 2,31 → 0,96 |
-| titania | 8205 | 1,06 | — | 6,44 · 6,07 → 0,94 |
-| oberon | 4332 | 1,18 | — | 9,44 · 8,64 → 0,92 |
+| miranda | 5301 | 1,18 | 2 (bandas de 2,1°, 10,9 L*) | 4,97 · 4,47 → 0,90 |
+| ariel | 8529 | 0,68 | — | 1,08 · 0,97 → 0,90 |
+| umbriel | 4509 | 1,30 | — | 2,40 · 2,16 → 0,90 |
+| titania | 8205 | 1,06 | — | 6,44 · 5,79 → 0,90 |
+| oberon | 4332 | 1,18 | — | 9,44 · 8,43 → 0,89 |
 
 ## El borde del casquete del norte de Tritón
 

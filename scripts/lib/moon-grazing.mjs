@@ -32,9 +32,13 @@ export const SEAM = 2;
  *   sombras negras sueltas (L* < `shadowL`) con un anillo de `shadowRing` texeles;
  * - la corrección: las medias por rodajas de `sliceDeg` a lo largo del borde (σ = `alongDeg`), frente a la
  *   de lo real de una banda de `refBandDeg` más allá de la franja; la ganancia, hasta `maxGain`;
- * - el fundido hacia lo recreado: lo corregido pesa de 0 (a `fade[0]` de la anchura) a 1 (a `fade[1]`),
- *   y nada en una sombra (lo corregido de `shadowBelowL[0]` a `shadowBelowL[1]` L* por debajo del brillo
- *   a gran escala que se le pide), suavizado con σ = `fadeBlur` texeles;
+ * - el fundido hacia lo recreado (D48: «sus sombras se funden»): en toda la franja, nada en una sombra
+ *   (lo corregido de `shadowBelowL[0]` a `shadowBelowL[1]` L* por debajo del brillo a gran escala que se
+ *   le pide); y, solo junto a lo no visto, el borde de lo real (lo corregido pesa de 0, a `fade[0]` de la
+ *   anchura, a 1, a `fade[1]`); suavizado con σ = `fadeBlur` texeles. Lo demás, lo corregido entero: su
+ *   albedo es el real (revisión de la 10.a, hallazgo 1: Wunda y Belmont Chasma se perdían); los
+ *   accidentes con nombre (`protect`), sin el fundido del borde, con su límite suavizado (σ =
+ *   `protectBlur` texeles);
  * - la unión de 180°: `seamColumns` columnas a cada lado, entre las medias de las `anchorColumns`
  *   columnas de fuera (σ vertical, `seamSigma`).
  */
@@ -51,7 +55,8 @@ export const GRAZING_PARAMS = {
   alongDeg: 3,
   refBandDeg: 3,
   maxGain: 6,
-  fade: [0.15, 0.9],
+  fade: [0.05, 0.3],
+  protectBlur: 4,
   shadowBelowL: [10, 25],
   fadeBlur: 1.5,
   seamColumns: 12,
@@ -150,11 +155,7 @@ export function terminatorProfile(rgb, classes, width, height, params = {}) {
   const shadowLimit = Math.max(P.shadowShare, 2 * plateauShadow);
   // Desde fuera hacia dentro: el primer paso que no cumple marca el final de la franja.
   let widthDeg = 0;
-  for (
-    let s = plateauBins[0] ? Math.round(P.plateauDeg[0] / P.profileStepDeg) - 1 : 0;
-    s >= 0;
-    s--
-  ) {
+  for (let s = Math.round(P.plateauDeg[0] / P.profileStepDeg) - 1; s >= 0; s--) {
     const b = bins[s];
     if (!b.weight) continue;
     if (b.L < plateau - P.toleranceL || b.shadow > shadowLimit) {
@@ -224,11 +225,16 @@ export function grazingClasses(
  *   quitaba, y se le devuelve (en luz lineal, con la ganancia acotada).
  * - La unión de 180°: en cada columna de la franja, su media vertical frente a la recta entre las medias
  *   de lo real de fuera de los dos lados (sin el escalón ni la columna oscura).
+ * Con `protect` (Uint8Array), los accidentes reales con nombre que caen en la franja (las sondas del
+ * Gazetteer, `probeAreas`): no cuentan para medir la luz rasante (su brillo es albedo: Wunda, un anillo
+ * claro de unos 13°, hacía creer que allí la luz era más fuerte) y no se funden por estar junto a lo no
+ * visto (Wunda toca el borde de lo real); sus sombras sí, como las demás. Revisión de la 10.a, hallazgo 1.
  */
-export function correctGrazing(rgb, grazing, width, height, params = {}) {
+export function correctGrazing(rgb, grazing, width, height, params = {}, { protect = null } = {}) {
   const P = { ...GRAZING_PARAMS, ...params };
   const { classes, kind, distance, widthTex } = grazing;
   const pixels = width * height;
+  const free = (k) => !protect || !protect[k];
   const Y = luminanceOf(rgb, pixels);
   const gain = new Float32Array(pixels).fill(1);
   const local = new Float32Array(pixels);
@@ -242,7 +248,9 @@ export function correctGrazing(rgb, grazing, width, height, params = {}) {
     for (let s = 0; s < slices; s++) {
       const mask = new Uint8Array(pixels);
       for (let k = 0; k < pixels; k++) {
-        if (kind[k] === TERMINATOR && Math.floor(distance[k] / sliceTex) === s) mask[k] = 1;
+        if (kind[k] === TERMINATOR && free(k) && Math.floor(distance[k] / sliceTex) === s) {
+          mask[k] = 1;
+        }
       }
       means.push(maskedMean(Y, mask, width, height, along));
     }
@@ -255,14 +263,16 @@ export function correctGrazing(rgb, grazing, width, height, params = {}) {
       Math.ceil(widthTex + bandTex) + 2,
     );
     for (let k = 0; k < pixels; k++) {
-      if (classes[k] === REAL && far[k] >= widthTex && far[k] < widthTex + bandTex) band[k] = 1;
+      if (classes[k] === REAL && free(k) && far[k] >= widthTex && far[k] < widthTex + bandTex) {
+        band[k] = 1;
+      }
     }
     const reference = maskedMean(Y, band, width, height, Math.max(along, 0.75 * widthTex));
     // La media de la zona (lo visto, sin las sombras sueltas), a 1,5°: la referencia de esas sombras.
     const zone = maskedMean(
       Y,
       Uint8Array.from(classes, (c, k) =>
-        c === NONE || (c === GRAZING && distance[k] >= widthTex) ? 0 : 1,
+        c === NONE || (c === GRAZING && distance[k] >= widthTex) || !free(k) ? 0 : 1,
       ),
       width,
       height,
@@ -376,29 +386,69 @@ export function correctGrazing(rgb, grazing, width, height, params = {}) {
     const taper =
       kind[k] === TERMINATOR ? 1 - smoothstep(0.75 * widthTex, widthTex, distance[k]) : 1;
     shift[k] = taper * (lightnessOfY(local[k] * gain[k]) - lightnessOfY(local[k]));
-    const to = Math.min(100, Math.max(0, L[k] + shift[k]));
-    const ratio = yOfLightness(to) / Math.max(Y[k], 1e-6);
-    for (let c = 0; c < 3; c++) out[3 * k + c] = toSrgb(toLinear(rgb[3 * k + c]) * ratio);
   }
-  // El fundido de la franja del terminador hacia lo recreado: por la distancia a lo no visto y sin las
-  // sombras (lo corregido muy por debajo del brillo a gran escala que se le pide: una sombra no se
-  // recupera con un desplazamiento). Suavizado, para que el paso de lo uno a lo otro no deje bordes rotos.
+  // Las sombras de la franja del terminador: lo corregido muy por debajo del brillo a gran escala que se
+  // le pide (una sombra no se recupera con un desplazamiento). Suavizadas, para que el paso de lo uno a lo
+  // otro no deje bordes rotos.
+  let soft = null;
   if (widthTex > 0) {
     const shadow = new Float32Array(pixels);
     for (let k = 0; k < pixels; k++) {
       if (kind[k] !== TERMINATOR || !(local[k] > 0)) continue;
+      // Más allá de la franja, cada isla de luz rasante es una sombra suelta con su penumbra: entera.
+      if (distance[k] >= widthTex) {
+        shadow[k] = 1;
+        continue;
+      }
       const below = lightnessOfY(local[k] * gain[k]) - (L[k] + shift[k]);
       shadow[k] = smoothstep(P.shadowBelowL[0], P.shadowBelowL[1], below);
     }
-    const soft = gaussianBlur(shadow, width, height, P.fadeBlur, true);
+    soft = gaussianBlur(shadow, width, height, P.fadeBlur, true);
+    // Las islas son de pocos texeles: el suavizado no puede diluirlas.
+    for (let k = 0; k < pixels; k++) {
+      if (kind[k] === TERMINATOR && distance[k] >= widthTex) soft[k] = 1;
+    }
+  }
+  // El mapa corregido: el desplazamiento del L*; y las sombras, subidas hacia el brillo que se les pide,
+  // para que la síntesis (que toma de aquí el brillo a gran escala de lo que recrea en la franja) no
+  // oscurezca lo que pone en su sitio (revisión de la 10.a: las sombras sueltas del borde interior de la
+  // franja de Miranda quedaban como manchas oscuras).
+  for (let k = 0; k < pixels; k++) {
+    if (classes[k] !== GRAZING || !(local[k] > 0)) continue;
+    let to = L[k] + shift[k];
+    if (soft && kind[k] === TERMINATOR && soft[k] > 0) {
+      const target = lightnessOfY(local[k] * gain[k]);
+      if (target > to) to += soft[k] * (target - to);
+    }
+    if (to === L[k]) continue;
+    const y = yOfLightness(Math.min(100, Math.max(0, to)));
+    if (Y[k] < 1e-5) {
+      // Un negro no se puede escalar: el gris de ese brillo.
+      for (let c = 0; c < 3; c++) out[3 * k + c] = toSrgb(y);
+      continue;
+    }
+    const ratio = y / Y[k];
+    for (let c = 0; c < 3; c++) out[3 * k + c] = toSrgb(toLinear(rgb[3 * k + c]) * ratio);
+  }
+  // El fundido de la franja del terminador hacia lo recreado: sus sombras, en toda la franja, y su borde
+  // con lo no visto. Lo demás queda corregido y entero (su albedo es el real).
+  if (soft) {
+    // Los accidentes con nombre no se funden por su borde con lo no visto; suavizado, para que no quede
+    // un círculo donde acaba la protección.
+    const keep = protect
+      ? gaussianBlur(Float32Array.from(protect), width, height, P.protectBlur, true)
+      : null;
     const weight = new Float32Array(pixels).fill(1);
     for (let k = 0; k < pixels; k++) {
       if (kind[k] !== TERMINATOR) continue;
       const byDistance = smoothstep(P.fade[0] * widthTex, P.fade[1] * widthTex, distance[k]);
-      weight[k] = byDistance * (1 - soft[k]);
+      const edge = keep ? byDistance + (1 - byDistance) * Math.min(1, keep[k]) : byDistance;
+      weight[k] = edge * (1 - soft[k]);
     }
     const smooth = gaussianBlur(weight, width, height, P.fadeBlur, true);
-    for (let k = 0; k < pixels; k++) if (kind[k] === TERMINATOR) realWeight[k] = smooth[k];
+    for (let k = 0; k < pixels; k++) {
+      if (kind[k] === TERMINATOR) realWeight[k] = distance[k] >= widthTex ? 0 : smooth[k];
+    }
   }
   return { rgb: out, gain, shift, realWeight };
 }

@@ -992,12 +992,15 @@ En las lunas de Urano, lo no visto lleva cráteres con la población y el albedo
 ${craterRows.join('\n')}
 ${capText}`;
   await writeFile(new URL('docs/datos/recreacion-lunas.md', ROOT), text);
-  // Y lo medido de cada luna, para la tabla de /creditos (data/moon-recreation.ts, GENERADO).
+  // Y lo medido de cada luna, para la tabla de /creditos (data/moon-recreation.ts, GENERADO): cada
+  // fracción, ya redondeada como su porcentaje de aquí (con un decimal), para que /creditos, que la
+  // vuelve a redondear, dé lo mismo (revisión de la 10.a, hallazgo 9).
+  const share = (x) => (Number((100 * x).toFixed(1)) / 100).toFixed(3);
   const entries = Object.entries(list)
     .filter(([id]) => MOSAIC_BODY[id])
     .map(
       ([id, r]) =>
-        `  { body: '${MOSAIC_BODY[id]}', real: ${r.real.toFixed(4)}, grazing: ${r.grazing.toFixed(4)}, far: ${r.far.toFixed(4)}, none: ${r.none.toFixed(4)} },`,
+        `  { body: '${MOSAIC_BODY[id]}', real: ${share(r.real)}, grazing: ${share(r.grazing)}, far: ${share(r.far)}, none: ${share(r.none)} },`,
     );
   const ts = `// GENERADO por scripts/build-textures.mjs el ${date}. No se edita a mano.
 // D45 (fase 9b) y D48 (entrega 10.a): de cada luna con mosaico, la fracción de su superficie (por el área
@@ -1214,13 +1217,15 @@ for (const [id, spec] of Object.entries(TEXTURES)) {
     });
     reports.push(recreation.report);
     if (MOSAIC_PROBES_IDS.has(id)) {
-      // Solo sobre lo real (igual byte a byte): una sonda en lo visto de lejos mide el detalle fino que
-      // la recreación sustituye a propósito (ya pasó en el mosaico).
-      const real = Float32Array.from(recreation.classes, (c) => (c === 0 ? 1 : 0));
+      // Sobre lo real (igual byte a byte) y lo real con luz rasante (corregido): una sonda en lo visto
+      // de lejos mide el detalle fino que la recreación sustituye a propósito (ya pasó en el mosaico). Cada
+      // una ha de conservar su signo (D48: se corrige la luz, no el albedo; revisión de la 10.a, hallazgo
+      // 1), con su cociente en el mosaico al lado.
+      const seen = Float32Array.from(recreation.classes, (c) => (c === 0 || c === 3 ? 1 : 0));
       const again = checkMosaicProbes(
         id,
-        { ...mosaic, data: recreation.data, coverage: real },
-        { onlyCovered: true },
+        { ...mosaic, data: recreation.data, coverage: seen },
+        { onlyCovered: true, reference: mosaic, signOnly: true },
       );
       reports.push(
         `${id}: las sondas, en el mapa recreado: ${again.slice(again.indexOf(':') + 2)}`,
@@ -1523,8 +1528,9 @@ execFileSync(
 );
 await writeRecreationDoc(recreations, today);
 console.log('\nComprobaciones:\n' + reports.map((r) => `- ${r}`).join('\n'));
-// D48: lo que se mide y se da sin hacer fallar el build (el brillo medio a 2,8° y el contraste).
-const warnings = Object.entries(recreations).flatMap(([id, r]) =>
-  (r.warnings ?? []).map((w) => `${id}: ${w}`),
+// D45 y D48: con RECREACION_SIN_COMPROBAR=1, lo que no cumple (sin ella, el build ya ha fallado).
+const unmet = Object.entries(recreations).flatMap(([id, r]) =>
+  (r.fails ?? []).map((f) => `${id}: ${f}`),
 );
-if (warnings.length) console.log('\nAvisos de D48:\n' + warnings.map((w) => `- ${w}`).join('\n'));
+if (unmet.length)
+  console.log('\nNo cumplen (D45 y D48):\n' + unmet.map((f) => `- ${f}`).join('\n'));

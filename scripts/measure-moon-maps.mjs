@@ -2,7 +2,11 @@
 // se ve de cerca): qué parte es real con detalle, cuál se vio solo de lejos y cuál no se vio
 // (`scripts/lib/moon-maps.mjs`). Con `--png=<carpeta>`, guarda por luna el mapa con sus clases
 // encima (sin tinte: real; rojo: de lejos; azul: sin datos) y el cociente de bandas, para revisarlo.
-// Uso: node scripts/measure-moon-maps.mjs [--png=carpeta] [--factor=1,5] [luna…]
+// Con `--natural` (D48, entrega 10.a; la tabla de §4 de docs/informes/fase-10-entrega-lunas.md): lo
+// natural del salto en el borde, en lo real intacto (sin la luz rasante), con bordes ficticios (la máscara
+// girada 90°, 180° y 270°): con las medias de cada lado (`naturalSteps`) a σ = 4, 16, 32, 48, 64 y 96
+// texeles y con el estimador que descuenta la pendiente de cada lado (`naturalJumps`) en bandas de 4 a 64.
+// Uso: node scripts/measure-moon-maps.mjs [--png=carpeta] [--factor=1,5] [--natural] [luna…]
 import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -74,6 +78,7 @@ const factor = Number(
     .replace(',', '.') ?? FAR_FACTOR,
 );
 const wanted = args.filter((a) => !a.startsWith('--'));
+const natural = args.includes('--natural');
 
 /** Mide una luna: su mapa en gris a 2048 px, sus clases, sus porcentajes y la calibración. */
 export async function measureMoon(id, spec, farFactor = FAR_FACTOR) {
@@ -170,7 +175,64 @@ async function savePng(dir, result) {
     .toFile(join(dir, `${id}-cociente.png`));
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+/**
+ * `--natural`: lo natural del salto en el borde de una luna (p95 · máximo y teselas, en L*), con las
+ * medias de cada lado y sin la pendiente, en lo real intacto. Importa lo de D48 al usarse (sin ciclos con
+ * `moon-map-build.mjs`, que importa este módulo).
+ */
+async function naturalTable(id, spec) {
+  const { lightness, naturalJumps, naturalSteps, stepSummary } =
+    await import('./lib/moon-maps.mjs');
+  const { grazingClasses, terminatorProfile } = await import('./lib/moon-grazing.mjs');
+  const { recipeFor } = await import('./lib/moon-recipes.mjs');
+  const mosaic = await loadMosaic(new URL(spec.file, SRC), WIDTH, {
+    band: spec.band,
+    plain: spec.plain,
+    maskAtSource: true,
+  });
+  const { classes } = classifyMosaic(mosaic);
+  const rgb = Float32Array.from(mosaic.data, (v) => v / 255);
+  const recipe = recipeFor(TEXTURE_IDS[id] ?? id, { rgb, classes, W: WIDTH, H: HEIGHT });
+  const profile = recipe.terminator ? terminatorProfile(rgb, classes, WIDTH, HEIGHT) : null;
+  const grazing = grazingClasses(classes, WIDTH, HEIGHT, {
+    widthDeg: profile?.widthDeg ?? 0,
+    seam: recipe.seam ?? false,
+    rgb,
+  });
+  const real = Uint8Array.from(grazing.classes, (c) => (c === 0 ? 1 : 0));
+  const L = new Float32Array(WIDTH * HEIGHT);
+  for (let k = 0; k < L.length; k++) {
+    const d = mosaic.data;
+    L[k] = lightness((0.2126 * d[3 * k] + 0.7152 * d[3 * k + 1] + 0.0722 * d[3 * k + 2]) / 255);
+  }
+  const show = (s) => `${s.p95.toFixed(2)} · ${s.max.toFixed(2)} (${s.tiles})`;
+  const steps = [4, 16, 32, 48, 64, 96].map(
+    (sigma) => `σ ${sigma}: ${show(stepSummary(naturalSteps(L, real, WIDTH, HEIGHT, { sigma })))}`,
+  );
+  const jumps = [4, 8, 16, 32, 64].map(
+    (band) => `banda ${band}: ${show(stepSummary(naturalJumps(L, real, WIDTH, HEIGHT, { band })))}`,
+  );
+  console.log(`${id}: con las medias, ${steps.join('; ')}`);
+  console.log(`${' '.repeat(id.length)}  sin la pendiente, ${jumps.join('; ')}`);
+}
+
+/** El id de textura de las lunas cuyo id del catálogo es otro (las recetas van por el de textura). */
+const TEXTURE_IDS = {
+  fobos: 'phobos',
+  ganimedes: 'ganymede',
+  calisto: 'callisto',
+  encelado: 'enceladus',
+  tetis: 'tethys',
+  rea: 'rhea',
+  japeto: 'iapetus',
+};
+
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1] && natural) {
+  for (const [id, spec] of Object.entries(MOON_MOSAICS)) {
+    if (wanted.length && !wanted.includes(id)) continue;
+    await naturalTable(id, spec);
+  }
+} else if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   if (pngDir) await mkdir(pngDir, { recursive: true });
   console.log(
     'luna        real   de lejos  sin datos   (cociente: nítido · ×1,5 [umbral] · ×2; σ: umbral)',

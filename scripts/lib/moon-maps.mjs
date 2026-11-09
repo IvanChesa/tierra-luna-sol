@@ -750,6 +750,63 @@ export function naturalSteps(L, real, width, height, options) {
 }
 
 /**
+ * El perfil del brillo junto al borde de lo real (D48, revisión de la 10.a, hallazgo 2): el L* medio (por
+ * el área) de `target` por distancia a `real`, en pasos de `stepDeg` hasta `maxDeg`, frente al de lo real
+ * a menos de `nearDeg` de `target`. `trough`: lo más que un paso queda por debajo a la vez de lo real y de
+ * lo que viene detrás (el mayor de los pasos siguientes): un surco (negativo) o una franja oscura junto
+ * al borde. Una bajada que no se recupera (lo recreado, más oscuro lejos del borde) no es un surco. Las
+ * distancias, en texeles del mapa (grados de longitud en el ecuador).
+ */
+export function borderProfile(
+  L,
+  real,
+  target,
+  width,
+  height,
+  { stepDeg = 0.5, maxDeg = 5, nearDeg = 1 } = {},
+) {
+  const perDeg = width / 360;
+  const steps = Math.round(maxDeg / stepDeg);
+  const out = distanceTo(real, width, height, Math.ceil(maxDeg * perDeg) + 2);
+  const inside = distanceTo(target, width, height, Math.ceil(nearDeg * perDeg) + 2);
+  const weights = rowWeights(height);
+  const sums = Array.from({ length: steps }, () => [0, 0]);
+  let realSum = 0;
+  let realWeight = 0;
+  for (let j = 0; j < height; j++) {
+    const w = weights[j];
+    for (let i = 0; i < width; i++) {
+      const k = j * width + i;
+      if (real[k]) {
+        if (inside[k] <= nearDeg * perDeg) {
+          realSum += w * L[k];
+          realWeight += w;
+        }
+      } else if (target[k]) {
+        const s = Math.floor(out[k] / perDeg / stepDeg);
+        if (s < steps) {
+          sums[s][0] += w * L[k];
+          sums[s][1] += w;
+        }
+      }
+    }
+  }
+  const realMean = realWeight ? realSum / realWeight : NaN;
+  const profile = sums.map(([s, w]) => (w ? s / w : NaN));
+  // Los pasos con poca área (unas pocas columnas junto a los polos) no cuentan.
+  const minWeight = 0.02 * Math.max(...sums.map(([, w]) => w));
+  const valid = profile.map((v, i) => (sums[i][1] >= minWeight ? v : NaN));
+  let trough = 0;
+  for (let i = 0; i < valid.length; i++) {
+    if (Number.isNaN(valid[i])) continue;
+    const after = valid.slice(i + 1).filter((v) => !Number.isNaN(v));
+    if (!after.length) continue;
+    trough = Math.min(trough, valid[i] - Math.min(realMean, Math.max(...after)));
+  }
+  return { real: realMean, profile, trough: Number.isNaN(realMean) ? NaN : trough };
+}
+
+/**
  * El contraste a gran escala de una región (D48): la desviación típica (por el área) de su L* a la
  * escala σ = `sigma` texeles (la media normalizada, solo con sus píxeles), en los píxeles de la región
  * cuyo entorno es suyo en al menos `minWeight` y entre ±`maxLat` de latitud.
