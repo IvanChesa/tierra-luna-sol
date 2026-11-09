@@ -275,3 +275,38 @@
     margin-bottom: var(--space-2);
   }
 }
+
+/*
+ * En la tableta, la hoja a lo ancho tiene sitio para dos columnas: el resumen (y el radar de Venus) a
+ * la izquierda y los datos a la derecha, también en reposo (crítica de la 9c: la mitad derecha quedaba
+ * vacía; revisión del bloque S, decisión 6). Si los datos no caben, la hoja se desplaza, con su sombra;
+ * «Ver los datos» la sigue subiendo entera.
+ */
+@media (min-width: 48rem) and (max-width: 63.99rem) {
+  .card__body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    column-gap: var(--space-6);
+    align-items: start;
+  }
+
+  .card__summary,
+  .card__radar {
+    grid-column: 1;
+  }
+
+  .card__rest {
+    grid-row: 1 / span 2;
+    grid-column: 2;
+  }
+
+  /* La sombra de «hay más», a lo ancho, al final. */
+  .card__body::after {
+    grid-column: 1 / -1;
+  }
+
+  :host-context(.panel:not(.is-expanded)) .card__rest {
+    display: block;
+  }
+}
