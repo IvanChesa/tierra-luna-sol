@@ -12,8 +12,8 @@ Abre la terminal en la carpeta del proyecto y lanza **`claude`**, sin nada detr�
 | C ✅ | 4, 4b y 5 | `fase-4-staging`, `fase-4b-sistema-solar`, `fase-5-tierra` | `max` | ✅ Primer push autorizado (revisión del bloque R) y secrets de Cloudflare Pages en el repo (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`) |
 | D ✅ | 6–7 | `fase-6-luna`, `fase-7-lunas-escala-real` | `max` | — |
 | E ✅ | 8–9 | `fase-8-cielo-eclipses`, `fase-9-contenido` | `high` | — |
-| S | 9b | `fase-9b-sol-lunas` | `high` | Fusionar los PR de Dependabot (revisión del bloque E, E5) |
-| F | 10 | `fase-10-pulido` | `max` | Un iPhone para probar; decisión sobre `@lhci/cli` |
+| S ✅ | 9b | `fase-9b-sol-lunas` | `high` | ✅ Los PR de Dependabot (revisión del bloque E, E5): el 3 y el 5, fusionados; el 1, sustituido por el 4, que se fusiona al empezar el bloque F |
+| F | 10 | `fase-10-pulido` y, en paralelo, `fase-10a-lunas` (la entrega 10.a, en su worktree) | `max` | ✅ `@lhci/cli`, aprobado (revisión del bloque S, decisión 5); el iPhone, cuando Iván pueda (no bloquea) |
 | — | 11 | `fase-11-lanzamiento` | `high` | El dominio propio en Cloudflare Pages: `tierra-luna-sol.ivanchesa.com`, sobre la zona de ivanchesa.com (el panel crea el registro DNS; D37) |
 
 ## Prompts
@@ -42,6 +42,8 @@ Aplica docs/revisiones/bloque-R.md. Decisiones: <las tuyas, si hay>.
 ```
 Aplica docs/revisiones/bloque-B.md y continúa con el bloque R.
 ```
+
+**Un bloque en dos sesiones en paralelo** (como el F; el reparto de archivos y de puertos, en la revisión del bloque anterior, «Para aplicar esta revisión»): en la carpeta del proyecto, la sesión 1 (`Aplica docs/revisiones/bloque-S.md y continúa con el bloque F.`), y en su worktree, la sesión 2 con su entrega (`Bloque F, entrega 10.a, en paralelo: las lunas recreadas, segunda vuelta (docs/revisiones/bloque-S.md, S1 y D48).`). La sesión 1 junta la entrega de la 2 y cierra la fase.
 
 **Si algo se tuerce:**
 ```
