@@ -18,7 +18,10 @@ import { ExplorerFocus } from '../../core/explorer-focus';
         aria-label="Volver al sistema solar"
         (click)="focus.back()"
       >
-        <span aria-hidden="true">‹</span> Sistema solar
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+          <path d="M19 12H5.5M11 6.5 5.5 12l5.5 5.5" />
+        </svg>
+        Sistema solar
       </button>
       <h1>{{ body.name }}</h1>
       <p>{{ body.kind }}</p>

@@ -15,7 +15,9 @@ import { RouterLink } from '@angular/router';
       routerLink="/"
       queryParamsHandling="preserve"
       aria-label="Volver al sistema solar"
-      ><span aria-hidden="true">‹</span> Sistema solar</a
+      ><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+        <path d="M19 12H5.5M11 6.5 5.5 12l5.5 5.5" /></svg
+      >Sistema solar</a
     >
     <h1>La Tierra</h1>
     <p>Nuestro planeta, orientado según la hora real y con la Luna a su distancia verdadera.</p>
