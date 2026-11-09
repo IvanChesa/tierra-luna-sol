@@ -39,6 +39,8 @@ const MEASURE = () => {
     .map((el) =>
       (el.getAttribute('aria-label') || el.textContent || el.tagName).trim().slice(0, 40),
     );
+  // Lo que se oculta a la vista a propósito, solo para el lector de pantalla (`.visually-hidden`, la
+  // descripción del lienzo y lo que la franja del móvil quita), es una caja de 1 × 1 px: no es un corte.
   const clipped = [...document.querySelectorAll('h1, h2, h3, p, li, dt, dd, label, button')]
     .filter((el) => {
       const style = getComputedStyle(el);
@@ -46,7 +48,8 @@ const MEASURE = () => {
         el.scrollWidth > el.clientWidth + 1 &&
         style.overflowX === 'hidden' &&
         style.textOverflow !== 'ellipsis' &&
-        el.clientWidth > 0
+        el.clientWidth > 1 &&
+        el.clientHeight > 1
       );
     })
     .map((el) => (el.textContent || '').trim().slice(0, 40));
