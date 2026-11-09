@@ -6,6 +6,7 @@ import { ExplorerStore } from '../../state/explorer.store';
 import { SimulationStore } from '../../state/simulation.store';
 import { ExplorerSession } from '../explorer-ui/explorer-session';
 import { Icon } from '../viewer/icon';
+import { RevealFocus } from '../viewer/reveal-focus';
 
 /** Minutos del día de una fecha, en la hora local del navegador o en UTC. */
 export const minutesOfDay = (date: Date, zone: TimeZoneChoice = 'local'): number =>
@@ -67,13 +68,18 @@ export const TOUR_STEP_MS = 9000;
  */
 @Component({
   selector: 'tls-earth-panel',
-  imports: [Icon],
+  imports: [Icon, RevealFocus],
   host: { '[class.is-more]': 'more()' },
   template: `
     <section class="earth" aria-labelledby="earth-tours-title">
       <h2 id="earth-tours-title" class="earth__title">Vistas guiadas</h2>
       <div class="earth__strip">
-        <div class="earth__views scroll-hint" role="group" aria-labelledby="earth-tours-title">
+        <div
+          class="earth__views scroll-hint"
+          tlsRevealFocus
+          role="group"
+          aria-labelledby="earth-tours-title"
+        >
           @for (view of views; track view.id; let i = $index) {
             <button
               type="button"
