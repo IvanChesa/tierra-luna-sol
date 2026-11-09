@@ -32,6 +32,10 @@ describe('quality: niveles y detección', () => {
     expect(lowerLevel('high')).toBe('medium');
     expect(lowerLevel('medium')).toBe('low');
     expect(lowerLevel('low')).toBeNull();
+    // El Sol de cerca, a 20 fotogramas por segundo; en el bajo, a 10 (propuesta de la 9b).
+    expect(QUALITY_PROFILES.high.sunFrameMs).toBe(50);
+    expect(QUALITY_PROFILES.medium.sunFrameMs).toBe(50);
+    expect(QUALITY_PROFILES.low.sunFrameMs).toBe(100);
   });
 
   it('elige alto en escritorio, medio en táctil y bajo en dispositivos justos', () => {

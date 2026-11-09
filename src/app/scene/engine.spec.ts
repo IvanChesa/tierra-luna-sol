@@ -806,6 +806,14 @@ describe('SceneEngine: el Sol realzado, segunda vuelta (fase 9b, D46)', () => {
     expect(world.sun.uniforms.uStructureTime.value).toBeGreaterThan(structure);
     expect(world.haloMaterial.uniforms.uProminenceTime.value).toBeGreaterThan(loops);
     near.engine.dispose();
+    // En el nivel bajo (el del móvil justo), cada 100 ms: de 7 a 10 por segundo (propuesta de la 9b).
+    const low = await createHarness({ focus: 'sol', quality: 'low' });
+    settle(low);
+    const lowRenders = low.renderer.renders;
+    low.frames(1000);
+    expect(low.renderer.renders - lowRenders).toBeGreaterThanOrEqual(7);
+    expect(low.renderer.renders - lowRenders).toBeLessThanOrEqual(11);
+    low.engine.dispose();
     for (const options of [{ reducedMotion: true }, { capture: true }]) {
       const still = await createHarness({ focus: 'sol', ...options });
       settle(still);

@@ -217,10 +217,10 @@ export const SLOW_FRAME_MS = 250;
 /**
  * El Sol realzado de cerca (fase 9b, D46): su superficie fluye y sus bucles de plasma cambian con el
  * reloj de pared, también con el tiempo en pausa o a velocidades lentas. Mientras se ve de cerca (su
- * primer plano, desde `SUN_ANIMATION_CLOSE_UP`), se pinta cada 50 ms aunque nada más se mueva: su
- * movimiento es lento y basta. Con movimiento reducido y en las capturas, quieto y sin estos frames.
+ * primer plano, desde `SUN_ANIMATION_CLOSE_UP`), se pinta cada `sunFrameMs` del nivel (50 ms; en el
+ * bajo, 100) aunque nada más se mueva: su movimiento es lento y basta. Con movimiento reducido y en las
+ * capturas, quieto y sin estos frames.
  */
-export const SUN_FRAME_MS = 50;
 export const SUN_ANIMATION_CLOSE_UP = 0.5;
 
 export interface FrameScheduler {
@@ -1116,15 +1116,15 @@ export class SceneEngine implements SceneEngineApi {
     }
     const sun = this.sunAnimates();
     if (animating || uploading || this.uploads.length > 0) {
-      this.invalidate(slow ? (sun ? SUN_FRAME_MS : SLOW_FRAME_MS) : 0);
+      this.invalidate(slow ? (sun ? this.profile.sunFrameMs : SLOW_FRAME_MS) : 0);
     } else if (sun) {
-      this.invalidate(SUN_FRAME_MS);
+      this.invalidate(this.profile.sunFrameMs);
     } else {
       this.lastFrameMs = null;
     }
   }
 
-  /** ¿Se ve el Sol de cerca, con su superficie y sus bucles en movimiento? (`SUN_FRAME_MS`) */
+  /** ¿Se ve el Sol de cerca, con su superficie y sus bucles en movimiento? (`sunFrameMs`) */
   private sunAnimates(): boolean {
     return (
       !this.instant() &&
