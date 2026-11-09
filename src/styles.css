@@ -245,12 +245,23 @@ tls-root {
   display: none;
 }
 
-/*
- * La franja tiene el alto de la cabecera (3.5rem): si cambiara, todo el explorador saltaría al elegir un
- * cuerpo o al volver, también cuando lo hace el recorrido de la portada solo (CLS de 0,05 en cada cambio;
- * fase 10, Lighthouse).
- */
 @media (max-width: 63.99rem) {
+  /*
+   * En el explorador, la cabecera mide lo mismo sin un cuerpo elegido que con él (la franja): 3rem. Si
+   * cambiara, todo el explorador saltaría al elegir un cuerpo o al volver, también cuando lo hace solo el
+   * recorrido de la portada (CLS de 0,05 en cada cambio; fase 10, Lighthouse).
+   */
+  tls-root:has(tls-viewer-layout) .site-header,
+  .site-header:has(.site-focus) {
+    min-height: 3rem;
+  }
+
+  /* Y el menú del sitio, justo debajo de esa cabecera. */
+  tls-root:has(tls-viewer-layout) .site-nav:popover-open {
+    inset-block-start: 3rem;
+    max-height: calc(100dvh - 3rem - var(--space-2));
+  }
+
   .site-header:has(.site-focus) .site-name,
   tls-root:has(.site-focus)
     :is(tls-view-switcher, .explorer__intro .explorer__back, .explorer__credit),
