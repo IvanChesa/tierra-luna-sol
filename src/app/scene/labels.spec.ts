@@ -36,6 +36,24 @@ describe('labels: colocación sin solapes', () => {
     expect(box?.marker).toBe(false);
   });
 
+  it('con los anillos vistos casi de canto, su nombre va justo por encima, no más allá de ellos (propuesta de la 9b)', () => {
+    // Saturno (índice 3 aquí): 20 px de disco, anillos de 2,27 radios que en vertical solo suben 1,2.
+    const extents = [1, 1, 1, 2.27];
+    const verticalExtents = [1, 1, 1, 1.2];
+    const [box] = layoutLabels([screen(3, 400, 300, 20)], infos, sizes, viewport, 3, -1, {
+      extents,
+      verticalExtents,
+    });
+    expect(box?.x).toBe(400 - 60 / 2);
+    expect(box?.y).toBeCloseTo(300 - (20 * 1.2 + 6) - 16, 9);
+    // Si arriba no cabe (pegado al borde de arriba), a la derecha de los anillos, como antes.
+    const [edge] = layoutLabels([screen(3, 400, 20, 20)], infos, sizes, viewport, 3, -1, {
+      extents,
+      verticalExtents,
+    });
+    expect(edge?.x).toBeCloseTo(400 + 20 * 2.27 + 6, 6);
+  });
+
   it('los anillos cuentan como parte del cuerpo: su nombre va por fuera y nadie se pone encima', () => {
     // Saturno (índice 3 aquí) con anillos de 2,27 radios: 20 px de disco, 45,4 px de anillos.
     const extents = [1, 1, 1, 2.27];

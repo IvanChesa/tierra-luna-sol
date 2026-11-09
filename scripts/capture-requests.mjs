@@ -1,7 +1,8 @@
 // Capturas de las peticiones de Iván del 08-11 (revisión del bloque S), antes y después:
 // - S9, «‹ Sistema solar»: la cabecera del explorador con la Tierra elegida, en escritorio (1280 y 1440;
 //   en reposo, con el ratón encima y con el foco del teclado) y la franja del móvil (390);
-// - S11, la nota bajo «Ver en 3D» de las fichas (la del Sol y la de una luna recreada), a 1280 y a 390.
+// - S11, la nota bajo «Ver en 3D» de las fichas (la del Sol y la de una luna recreada), a 1280 y a 390;
+// - y, de las propuestas de la fase 9b, el rótulo de Saturno en la vista general (a 1440 y a 390).
 // Uso: npm run build && node scripts/capture-requests.mjs <antes|despues> [nombre…]
 import { mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -98,6 +99,27 @@ try {
         await save(await page.locator('.body__head').screenshot(), `nota-${name}-${size}`);
         await page.close();
       }
+    }
+  }
+  // El rótulo de Saturno en la vista general (propuesta de la 9b): junto al planeta, no más allá de
+  // sus anillos. Con el recorte de Saturno, a partir de su posición en pantalla.
+  if (!wanted.size || wanted.has('rotulo')) {
+    for (const size of ['1440', '390']) {
+      const options = SIZES[size];
+      const { page } = await openViewer(browser, '/?captura=1', options);
+      await page.mouse.move(options.width - 5, options.height / 2);
+      await page.waitForTimeout(500);
+      await save(await page.screenshot(), `rotulo-saturno-${size}`);
+      const clip = await page.evaluate(() => {
+        const label = document.querySelector('[data-body="saturno"]');
+        const r = label?.getBoundingClientRect();
+        return r ? { x: r.left + r.width / 2 - 110, y: r.top - 70, width: 220, height: 160 } : null;
+      });
+      if (clip) {
+        const safe = { ...clip, x: Math.max(0, clip.x), y: Math.max(0, clip.y) };
+        await save(await page.screenshot({ clip: safe }), `rotulo-saturno-${size}-detalle`);
+      }
+      await page.close();
     }
   }
 } finally {

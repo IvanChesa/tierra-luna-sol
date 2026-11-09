@@ -428,6 +428,10 @@ export class SceneEngine implements SceneEngineApi {
   private cpuMs = 0;
   private ephemerisMs = 0;
   private screen: ScreenBody[] = [];
+  /** El polo de Saturno de este frame (ECL), para el nombre sobre sus anillos (`ringLabelExtents`). */
+  private saturnPole: Vec3 | null = null;
+  /** Lo que ocupa cada cuerpo en vertical para su nombre, en radios del disco (solo cambia Saturno). */
+  private readonly labelVerticalExtents: number[] = SCENE_BODIES.map(() => 1);
   private screenThree = new Float64Array(3 * SCENE_BODIES.length);
   /** Presencia de cada cuerpo (`moonPresence`): las lunas de un sistema que no se distingue, 0. */
   private readonly presence = new Float64Array(SCENE_BODIES.length).fill(1);
@@ -1140,6 +1144,8 @@ export class SceneEngine implements SceneEngineApi {
     const cpuStart = this.deps.now();
     const state = this.system.at(this.clock.timeMsValue);
     const orientations = this.orientations.at(state);
+    const saturn = orientations[SATURN_INDEX];
+    if (saturn) this.saturnPole = columnOf(saturn, 2);
     this.ephemerisMs = 0.9 * this.ephemerisMs + 0.1 * (this.deps.now() - cpuStart);
     const nowMs = this.deps.now();
     this.frames.update(placementInput(state, orientations, this.overviewScreen), nowMs);
@@ -1468,10 +1474,38 @@ export class SceneEngine implements SceneEngineApi {
         insets: this.insets,
         hidden: this.hiddenLabels(),
         extents: LABEL_EXTENTS,
+        verticalExtents: this.ringLabelExtents(),
         markerRadiusPx: this.markerRadii(),
       },
     );
     this.labels.update(boxes, this.focusIndex ?? -1);
+  }
+
+  /**
+   * Lo que suben los anillos de Saturno en pantalla por encima de su centro, en radios del disco: la
+   * elipse de un anillo de radio R con su polo n, vista con la cámara (derecha, arriba y hacia dentro),
+   * mide R de semieje mayor y R·|n·dentro| de menor, girada lo que gira el polo proyectado; su alto es
+   * R·√(sen²ψ + (n·dentro)²·cos²ψ). Así su nombre va justo por encima de los anillos (propuesta de la
+   * fase 9b): a su derecha quedaba más allá de ellos, lejos del planeta.
+   */
+  private ringLabelExtents(): readonly number[] {
+    const extents = this.labelVerticalExtents;
+    const pole = this.saturnPole;
+    const outer = LABEL_EXTENTS[SATURN_INDEX] ?? 1;
+    if (!pole) return extents;
+    // El polo, de ECL a Three ((x, z, −y)) y a los ejes de la cámara (su `matrixWorldInverse`, ya al
+    // día en este frame: una dirección, sin la traslación).
+    const [px, py, pz] = [pole.x, pole.z, -pole.y];
+    const e = this.world.camera.matrixWorldInverse.elements;
+    const cx = (e[0] as number) * px + (e[4] as number) * py + (e[8] as number) * pz;
+    const cy = (e[1] as number) * px + (e[5] as number) * py + (e[9] as number) * pz;
+    const cz = (e[2] as number) * px + (e[6] as number) * py + (e[10] as number) * pz;
+    const across = Math.hypot(cx, cy);
+    // ψ: lo que se aparta de la vertical el polo proyectado (con el polo hacia la cámara, da igual).
+    const sinPsi = across > 1e-9 ? Math.abs(cx) / across : 0;
+    const cosPsi = across > 1e-9 ? Math.abs(cy) / across : 1;
+    extents[SATURN_INDEX] = outer * Math.sqrt(sinPsi ** 2 + cz ** 2 * cosPsi ** 2);
+    return extents;
   }
 
   /**

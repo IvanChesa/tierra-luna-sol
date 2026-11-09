@@ -74,6 +74,14 @@ export interface LabelLayoutOptions {
    */
   readonly extents?: readonly number[];
   /**
+   * Lo que ocupan en vertical, por encima y por debajo de su centro en pantalla, los cuerpos con
+   * anillos, en radios de su disco (Saturno: la elipse de sus anillos vista desde la cámara, mucho más
+   * baja que ancha si se ven casi de canto). Con ella, su nombre prueba primero arriba, justo por encima
+   * de los anillos: a la derecha quedaba más allá de ellos, lejos del planeta (propuesta de la fase 9b,
+   * fase 10).
+   */
+  readonly verticalExtents?: readonly number[];
+  /**
    * Radio en pantalla (px) por debajo del cual cada cuerpo lleva su marcador; `MARKER_RADIUS_PX` si
    * falta. Los planetas de la vista general, a los que el tamaño mínimo (D35) ya deja en 2 px o más,
    * se ven como discos y no lo necesitan.
@@ -115,6 +123,7 @@ export function layoutLabels(
   const insets = options.insets ?? { top: 0, right: 0, bottom: 0, left: 0 };
   const hidden = options.hidden;
   const extent = (index: number) => options.extents?.[index] ?? 1;
+  const verticalExtent = (index: number) => options.verticalExtents?.[index];
   const markerRadius = (index: number) => options.markerRadiusPx?.[index] ?? MARKER_RADIUS_PX;
   const minX = insets.left;
   const minY = insets.top;
@@ -154,12 +163,21 @@ export function layoutLabels(
     const size = sizes[body.index] ?? { width: 0, height: 0 };
     const gap = Math.min(Math.max(body.radiusPx * extent(body.index), 2), viewport.width) + GAP_PX;
     const { width: w, height: h } = size;
-    const options: readonly (readonly [number, number])[] = [
-      [gap, -h / 2], // derecha
-      [-gap - w, -h / 2], // izquierda
-      [-w / 2, -gap - h], // arriba
-      [-w / 2, gap], // abajo
-    ];
+    const vertical = verticalExtent(body.index);
+    const options: readonly (readonly [number, number])[] =
+      vertical !== undefined && extent(body.index) > 1
+        ? ((up) => [
+            [-w / 2, -up - h], // arriba, justo por encima de los anillos
+            [gap, -h / 2], // derecha
+            [-gap - w, -h / 2], // izquierda
+            [-w / 2, up], // abajo
+          ])(Math.min(Math.max(body.radiusPx * Math.max(vertical, 1), 2), viewport.height) + GAP_PX)
+        : [
+            [gap, -h / 2], // derecha
+            [-gap - w, -h / 2], // izquierda
+            [-w / 2, -gap - h], // arriba
+            [-w / 2, gap], // abajo
+          ];
     const fit = (avoidDiscs: boolean): LabelBox | null => {
       for (const [dx, dy] of options) {
         const box: LabelBox = {
