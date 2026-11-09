@@ -11,7 +11,7 @@
 
 ## Índice
 
-1. [Por cuerpo](#por-cuerpo): los 30, con su resumen y sus tres curiosidades; en 0 lunas, la línea sobre su mapa, y en el Sol, la de su color realzado (140 textos).
+1. [Por cuerpo](#por-cuerpo): los 30, con su resumen y sus tres curiosidades; en 19 lunas, la línea sobre su mapa, y en el Sol, la de su color realzado (140 textos).
 2. [Por vista](#por-vista): el sistema solar, la Tierra y sus vistas guiadas, la Luna, sus vistas y su recorrido, y el cielo.
 3. [Las páginas](#las-paginas): los índices, los eclipses, «Sobre el proyecto», los créditos y la 404; [los textos fijos](#los-textos-fijos) de las fichas, del pie y del menú; y [la interfaz del explorador](#la-interfaz).
 4. [Las descriptions](#las-descriptions): lo que se ve al compartir cada página.
@@ -55,7 +55,7 @@ Fuente: <https://science.nasa.gov/sun/facts/>
 
 Corrección:
 
-**Sobre su mapa**
+**Sobre su color**
 
 > En las fotos, el Sol se ve blanco: emite a la vez todos los colores que vemos. En este explorador se ve en color realzado, como en las imágenes de los observatorios, que lo miran con filtros y pasan lo que ven a colores.
 
@@ -1421,7 +1421,13 @@ Corrección:
 
 **Párrafo 1**
 
-> Los eclipses de Sol y de Luna de los próximos diez años que se ven desde el lugar elegido, con la hora del lugar. Un eclipse de Sol solo se mira con filtros homologados, nunca a simple vista.
+> Los eclipses de Sol y de Luna de los próximos diez años que se ven desde el lugar elegido, con la hora del lugar.
+
+Corrección:
+
+**Párrafo 2**
+
+> Un eclipse de Sol solo se mira con filtros homologados, nunca a simple vista.
 
 Corrección:
 
@@ -2001,7 +2007,43 @@ Corrección:
 
 **Párrafo 1**
 
-> La página que buscas no existe. Volver al inicio.
+> Esta dirección no está en el atlas: quizá se escribió mal o la página ya no existe. Puedes seguir por aquí.
+
+Corrección:
+
+**Párrafo 2**
+
+> Explorar en 3D · El sistema solar, en las posiciones de hoy.
+
+Corrección:
+
+**Párrafo 3**
+
+> Los planetas · Sus fichas, de Mercurio a Neptuno.
+
+Corrección:
+
+**Párrafo 4**
+
+> Las lunas · La nuestra y las otras veinte.
+
+Corrección:
+
+**Párrafo 5**
+
+> El Sol · Su ficha y sus datos.
+
+Corrección:
+
+**Párrafo 6**
+
+> El cielo desde España · Lo que se ve esta noche.
+
+Corrección:
+
+**Párrafo 7**
+
+> Los próximos eclipses · Los que se ven desde España.
 
 Corrección:
 
@@ -2685,6 +2727,12 @@ Corrección:
 
 **Texto**
 
+> Unidades astronómicas: 1 UA, unos 150 millones de km, es la distancia media de la Tierra al Sol
+
+Corrección:
+
+**Texto**
+
 > Ocultar los datos
 
 Corrección:
@@ -2745,6 +2793,12 @@ Corrección:
 
 **Texto**
 
+> UA
+
+Corrección:
+
+**Texto**
+
 > Datos
 
 Corrección:
@@ -2783,7 +2837,7 @@ Corrección:
 
 **Texto**
 
-> Planetas: distancia al Sol. Lunas: a su planeta.
+> Planetas: distancia al Sol, en unidades astronómicas (1 UA, unos 150 millones de km, es la distancia media de la Tierra al Sol). Lunas: a su planeta.
 
 Corrección:
 
@@ -3271,6 +3325,18 @@ Corrección:
 
 **Texto**
 
+> Entre 1900 y 2100.
+
+Corrección:
+
+**Texto**
+
+> Esa fecha no existe o se sale del rango: elige una entre 1900 y 2100.
+
+Corrección:
+
+**Texto**
+
 > Zona
 
 Corrección:
@@ -3284,12 +3350,6 @@ Corrección:
 **Texto**
 
 > Ahora
-
-Corrección:
-
-**Texto**
-
-> Esa fecha no existe o se sale del rango: elige una entre 1900 y 2100.
 
 Corrección:
 
@@ -3350,6 +3410,12 @@ Corrección:
 **Texto**
 
 > Escala
+
+Corrección:
+
+**Texto**
+
+> Ilustrativa: los cuerpos, agrandados, y las distancias, acortadas, para que todo se vea. Real: los tamaños y las distancias, en la misma proporción.
 
 Corrección:
 

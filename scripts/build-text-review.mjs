@@ -35,6 +35,9 @@ if (await stat(OUT).catch(() => null)) {
 const text = (html) =>
   html
     .replace(/<!--[\s\S]*?-->/g, '')
+    // Dos `<span>` seguidos que se ven en líneas aparte (el título y el texto de las salidas del 404):
+    // con un separador, para que no se lean pegados («Explorar en 3DEl sistema solar»).
+    .replace(/<\/span>\s*<span\b/g, '</span> · <span')
     .replace(/<[^>]+>/g, '')
     .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&')
@@ -83,7 +86,19 @@ function entry(label, value, sources = []) {
 }
 
 const today = new Date().toISOString().slice(0, 10);
-const bodies = JSON.parse(await readFile(new URL('scripts/content/body-texts.json', ROOT), 'utf8'));
+const { BODIES: BODY_LIST } = await import('../src/app/data/bodies.ts');
+/**
+ * Los textos de cada cuerpo, con su tipo (estrella, planeta o luna), que `body-texts.json` no lleva: se
+ * toma de los datos (revisión del bloque S, S5: filtrando por un `kind` que no había, el índice decía
+ * «en 0 lunas, la línea sobre su mapa», y la línea del color del Sol salía como «Sobre su mapa»).
+ */
+const bodies = JSON.parse(
+  await readFile(new URL('scripts/content/body-texts.json', ROOT), 'utf8'),
+).map((body) => {
+  const kind = BODY_LIST.find((b) => b.id === body.id)?.kind;
+  if (!kind) throw new Error(`${body.id}: sin cuerpo en los datos`);
+  return { ...body, kind };
+});
 const { GUIDED_VIEWS, MOON_VIEWS, MOON_TOUR } = await import('../src/app/data/tours.ts');
 const constellations = JSON.parse(
   await readFile(new URL('scripts/content/constellations-es.json', ROOT), 'utf8'),
@@ -174,9 +189,12 @@ for (const [route, name] of pages) {
     (b) => b.kind !== 'li' || !/^(Inicio|Planetas|Lunas)$/.test(b.value),
   );
   // En los índices y en los eclipses, solo el texto fijo: el título y la entradilla (no las tarjetas
-  // ni la lista de eclipses).
+  // ni la lista de eclipses) y, en los eclipses, el aviso de no mirar el Sol sin filtro, que desde la
+  // fase 10 va aparte, bajo la entradilla.
   if (route === '/planetas' || route === '/lunas' || route === '/eclipses') {
-    all = all.filter((b) => b.kind === 'h1' || b.kind === 'p').slice(0, 2);
+    all = all
+      .filter((b) => b.kind === 'h1' || b.kind === 'p')
+      .slice(0, route === '/eclipses' ? 3 : 2);
   }
   let n = 0;
   for (const block of all) {
@@ -200,7 +218,7 @@ push(
   'Los que se repiten en las 30 fichas (cambia el cuerpo, no la frase) y los del pie del sitio, del pie del explorador y del menú del móvil. Cada uno sale de su función (`pages/body-detail/`) o de su plantilla.',
   '',
 );
-const { BODIES } = await import('../src/app/data/bodies.ts');
+const BODIES = BODY_LIST;
 const { bodyFacts } = await import('../src/app/pages/body-detail/body-facts.ts');
 const { imageAltOf, kindLineOf } = await import('../src/app/pages/body-detail/body-labels.ts');
 const todayText = await import('../src/app/pages/body-detail/today-text.ts');
