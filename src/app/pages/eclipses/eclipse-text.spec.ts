@@ -57,14 +57,20 @@ describe('eclipse-text: los textos de /eclipses', () => {
 
   it('«Ver en 3D»: la vista Tierra con la sombra o la vista Luna, en el máximo (lo lee el explorador)', () => {
     const solar = view3dLink(entry({}));
+    // Con qué eclipse es (fase 10: el explorador lo dice al llegar) y, si no es el Montsec, el lugar.
     expect(solar).toEqual({
       path: '/explorar/tierra',
-      queryParams: { fecha: '2026-08-12T18:28:36Z', sombra: '1' },
+      queryParams: { fecha: '2026-08-12T18:28:36Z', sombra: '1', eclipse: 'sol-parcial' },
     });
-    const params = parseViewerParams(`?fecha=${solar.queryParams['fecha']}&sombra=1`);
+    const query = new URLSearchParams(solar.queryParams).toString();
+    const params = parseViewerParams(`?${query}`);
     expect(params.time?.toISOString()).toBe('2026-08-12T18:28:36.000Z');
     expect(params.shadow).toBe(true);
-    expect(view3dLink(entry({ kind: 'lunar', type: 'total' })).path).toBe('/explorar/luna');
+    expect(params.eclipse).toEqual({ kind: 'solar', type: 'partial' });
+    expect(view3dLink(entry({}), 'fraga').queryParams['lugar']).toBe('fraga');
+    const lunar = view3dLink(entry({ kind: 'lunar', type: 'total' }));
+    expect(lunar.path).toBe('/explorar/luna');
+    expect(lunar.queryParams['eclipse']).toBe('luna-total');
     expect(view3dLabel(entry({ type: 'total' }), 'Europe/Madrid')).toBe(
       'Ver en 3D el eclipse total de Sol del 12 de agosto de 2026',
     );

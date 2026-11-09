@@ -914,12 +914,12 @@ export class SceneEngine implements SceneEngineApi {
     this.invalidate();
   }
 
-  setLabelsVisible(visible: boolean): void {
+  setLabelsVisible(visible: boolean, places = visible): void {
     if (this.disposed) return;
     this.labelsWanted = visible;
     const sky = this._view === 'sky';
     this.labels.setVisible(visible && !this.isolated && !sky);
-    this.placeLabels.setVisible(visible && !this.isolated && !sky);
+    this.placeLabels.setVisible(places && !this.isolated && !sky);
     this.sky?.setLabelsVisible(visible);
     this.sky?.setActive(sky);
     this.invalidate();

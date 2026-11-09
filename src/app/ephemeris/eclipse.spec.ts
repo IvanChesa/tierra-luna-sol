@@ -11,6 +11,7 @@ import { subsolarPoint, sunApparentGeocentricEcl, sunGeocentricEcl } from './coo
 import {
   SHADOW_VIEW_LOW_SUN_DEG,
   earthShadow,
+  lunarEclipsePhase,
   moonShadowAim,
   moonShadowCenter,
   moonShadowView,
@@ -204,6 +205,21 @@ describe('sombras de las galileanas sobre Júpiter frente al Hubble (fase 7)', (
     // Entre el Sol y el planeta, en su recta: la sombra, en el punto subsolar.
     const point = satelliteShadowPoint({ x: -0.003, y: 0, z: 0 }, sun, JUPITER_EQUATORIAL_KM);
     expect(point?.x).toBeCloseTo(-JUPITER_EQUATORIAL_KM / KM_PER_AU, 12);
+  });
+});
+
+describe('eclipses: la Luna eclipsada, para decirlo en la vista Luna (fase 10)', () => {
+  it('en el máximo de los de la NASA, su tipo; un día antes, ninguno', () => {
+    for (const nasa of NASA_LUNAR_ECLIPSES.eclipses) {
+      const peak = new Date(Date.parse(nasa.greatestEclipseTd) - nasa.deltaTSeconds * 1000);
+      expect(lunarEclipsePhase(peak), nasa.greatestEclipseTd).toBe(
+        nasa.type === 'T' ? 'total' : nasa.type === 'P' ? 'partial' : 'penumbral',
+      );
+      expect(lunarEclipsePhase(new Date(peak.getTime() - 86_400_000))).toBeNull();
+    }
+    // El total del 3-3-2026, a 2 h del máximo: ya solo en la penumbra (la umbral dura 3 h 27 min).
+    const march = new Date(Date.parse('2026-03-03T11:34:52Z') - 75_000);
+    expect(lunarEclipsePhase(new Date(march.getTime() - 2.5 * 3_600_000))).toBe('penumbral');
   });
 });
 

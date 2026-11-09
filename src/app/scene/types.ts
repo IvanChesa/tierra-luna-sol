@@ -235,8 +235,12 @@ export interface SceneEngineApi {
   setVenusRadar(on: boolean): void;
   /** Termina ya el viaje de cámara o la transición de marco en curso («Saltar», `Esc`). */
   skipTransition(): void;
-  /** Muestra u oculta las etiquetas de los cuerpos (la vista limpia las oculta). */
-  setLabelsVisible(visible: boolean): void;
+  /**
+   * Muestra u oculta las etiquetas de los cuerpos (la vista limpia y el recorrido de la primera vez las
+   * ocultan) y, aparte, las de los lugares de la vista «España» (`places`, como las de los cuerpos si
+   * no se dice): en la parada de España del recorrido se ven (crítica de diseño de la fase 10).
+   */
+  setLabelsVisible(visible: boolean, places?: boolean): void;
   /** Pinta un frame y devuelve la imagen del lienzo (PNG). */
   capture(): Promise<Blob>;
   /** Libera la GPU, los listeners y el DOM de las etiquetas. El motor no se puede reutilizar. */

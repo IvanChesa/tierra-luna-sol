@@ -1,10 +1,12 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { MOON_TOUR, MOON_VIEWS, MoonStop } from '../../data/tours';
+import { lunarEclipsePhase } from '../../ephemeris/eclipse';
 import { moonPhase } from '../../ephemeris/ephemeris';
 import { ExplorerStore } from '../../state/explorer.store';
 import { SimulationStore } from '../../state/simulation.store';
 import { ExplorerSession } from '../explorer-ui/explorer-session';
 import { Icon } from '../viewer/icon';
+import { RevealFocus } from '../viewer/reveal-focus';
 
 /** Por debajo de esta fracción iluminada, la Luna está «casi nueva» (la nota del panel). */
 export const NEARLY_NEW = 0.05;
@@ -33,7 +35,7 @@ interface Shown {
  */
 @Component({
   selector: 'tls-moon-panel',
-  imports: [Icon],
+  imports: [Icon, RevealFocus],
   host: { '[class.is-more]': 'more()' },
   template: `
     <section class="moon" aria-labelledby="moon-views-title">
@@ -42,7 +44,12 @@ interface Shown {
         <p class="moon__phase">{{ phaseText() }}</p>
       </div>
       <div class="moon__strip">
-        <div class="moon__views scroll-hint" role="group" aria-labelledby="moon-views-title">
+        <div
+          class="moon__views scroll-hint"
+          tlsRevealFocus
+          role="group"
+          aria-labelledby="moon-views-title"
+        >
           @for (view of views; track view.id; let i = $index) {
             <!-- Su texto, también antes de elegirla («Luz rasante»: crítica de la 9c). -->
             <button
@@ -140,9 +147,18 @@ export class MoonPanel {
   readonly more = signal(false);
   readonly touring = signal(false);
 
-  /** «Gibosa creciente · 87 % iluminada». */
+  /**
+   * «Gibosa creciente · 87 % iluminada». En un eclipse de Luna, lo que se ve (crítica de la fase 10: la
+   * Luna roja del eclipse total decía «Luna llena · 100 % iluminada»).
+   */
   readonly phaseText = computed(() => {
-    const phase = moonPhase(this.sim.time());
+    const time = this.sim.time();
+    const phase = moonPhase(time);
+    const eclipse = lunarEclipsePhase(time);
+    if (eclipse === 'total') return `${phase.name} · eclipse total: en la sombra de la Tierra`;
+    if (eclipse === 'partial')
+      return `${phase.name} · eclipse parcial: entra en la sombra de la Tierra`;
+    if (eclipse === 'penumbral') return `${phase.name} · eclipse penumbral: apenas se oscurece`;
     return `${phase.name} · ${Math.round(phase.illuminatedFraction * 100)} % iluminada`;
   });
   /** Menos del 5 % iluminada: la cara visible, casi a oscuras (con la fase que ya se calcula). */

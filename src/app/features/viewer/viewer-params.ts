@@ -30,6 +30,7 @@
  *   la cámara sobre la sombra de la Luna.
  */
 import { findBody, isBodyId } from '../../data/body-index';
+import { EclipseKind, parseEclipseParam } from '../../data/eclipse-entry';
 import { DEFAULT_PLACE_ID, PlaceId, SKY_PLACES } from '../../data/places';
 import { MAX_DATE, MIN_DATE } from '../../ephemeris/constants';
 import type {
@@ -71,6 +72,11 @@ export interface ViewerParams {
   readonly skyView: Partial<SkyView> | null;
   /** La cámara de la vista Tierra, sobre la sombra de la Luna (`sombra=1`, con fecha). */
   readonly shadow: boolean;
+  /**
+   * Llegada desde «Ver en 3D» de `/eclipses` (`eclipse=sol-total`, con fecha): qué eclipse es, para
+   * decirlo y ofrecer la vuelta a la lista (crítica de la fase 10).
+   */
+  readonly eclipse: EclipseKind | null;
   /** Avisos de los parámetros que se han ignorado, ya redactados para la interfaz. */
   readonly warnings: readonly string[];
 }
@@ -197,6 +203,7 @@ export function parseViewerParams(search: string): ViewerParams {
     place: place as PlaceId | null,
     skyView: capture ? parseSkyView(params) : null,
     shadow: params.get('sombra') === '1' && time !== null,
+    eclipse: time !== null ? parseEclipseParam(params.get('eclipse')) : null,
     warnings,
   };
 }
@@ -230,8 +237,9 @@ export function viewerQueryParams(state: UrlState): Record<string, string | null
     cuerpo: state.body && findBody(state.body) ? state.body : null,
     escala: state.scale === 'illustrative' ? null : SCALE_PARAM[state.scale],
     lugar: state.place && state.place !== DEFAULT_PLACE_ID ? state.place : null,
-    // Solo sirve al llegar: después, la cámara es de quien la mueve.
+    // Solo sirven al llegar: después, la cámara es de quien la mueve y el aviso ya se ha dado.
     sombra: null,
+    eclipse: null,
     calidad: null,
   };
 }

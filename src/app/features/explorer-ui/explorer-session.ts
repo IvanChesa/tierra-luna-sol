@@ -36,6 +36,7 @@ import {
   viewerQueryParams,
 } from '../viewer/viewer-params';
 import { describeBody, moonStopNotice, viewName } from './describe';
+import { EclipseArrival, eclipseArrival } from './eclipse-arrival';
 import { formatLongDateTime } from '../../core/format';
 import { SHEETS_QUERY, mediaQuery } from '../viewer/media';
 
@@ -110,6 +111,12 @@ export class ExplorerSession {
   readonly capture: boolean;
   readonly reducedMotion: boolean;
   private readonly _warnings = signal<readonly string[]>([]);
+  /**
+   * La llegada desde «Ver en 3D» de un eclipse (`?eclipse=`): qué eclipse es y la vuelta a la lista
+   * (crítica de la fase 10), en un aviso que se puede cerrar.
+   */
+  private readonly _eclipseArrival = signal<EclipseArrival | null>(null);
+  readonly eclipseArrival = this._eclipseArrival.asReadonly();
   /** Avisos de los parámetros de la URL que se han ignorado. */
   readonly warnings = this._warnings.asReadonly();
   private readonly _announcement = signal('');
@@ -141,6 +148,7 @@ export class ExplorerSession {
     this.capture = this.params.capture;
     this.reducedMotion = win?.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
     this._warnings.set(this.params.warnings);
+    this._eclipseArrival.set(eclipseArrival(this.params));
     // Arranque en movimiento (D31): sin fecha en la URL, «ahora» y reproduciendo a la velocidad de
     // su contexto (D33: 3 días por segundo en la vista general, 1 hora con un cuerpo); con movimiento
     // reducido, en pausa; con fecha (o en captura), en pausa en ella. `ExplorerUi` conecta la vista
@@ -245,7 +253,7 @@ export class ExplorerSession {
     engine.setSpeed(speed);
     engine.setPlaying(playing);
     engine.setViewInsets(this.insets);
-    engine.setLabelsVisible(this.labelsVisible());
+    engine.setLabelsVisible(this.labelsVisible(), this.placeLabelsVisible());
     engine.setObserver(observerOf(this.explorer.skyPlace()));
     engine.setConstellationsVisible(this.explorer.constellations());
   }
@@ -414,7 +422,7 @@ export class ExplorerSession {
 
   setCleanView(clean: boolean): void {
     this.explorer.cleanView.set(clean);
-    this.engine?.setLabelsVisible(this.labelsVisible());
+    this.engine?.setLabelsVisible(this.labelsVisible(), this.placeLabelsVisible());
   }
 
   /**
@@ -424,11 +432,19 @@ export class ExplorerSession {
    */
   setTouring(touring: boolean): void {
     this.touring = touring;
-    this.engine?.setLabelsVisible(this.labelsVisible());
+    this.engine?.setLabelsVisible(this.labelsVisible(), this.placeLabelsVisible());
   }
 
   private labelsVisible(): boolean {
     return !this.explorer.cleanView() && !this.touring;
+  }
+
+  /**
+   * Los nombres de los lugares de la vista «España»: también durante el recorrido, cuya parada de
+   * España los enseña (crítica de diseño de la fase 10: siete puntos sin nombre); no en la vista limpia.
+   */
+  private placeLabelsVisible(): boolean {
+    return !this.explorer.cleanView();
   }
 
   /** Márgenes del lienzo que tapa la interfaz (los mide `ExplorerUi`). */
@@ -478,6 +494,11 @@ export class ExplorerSession {
   /** Cierra el aviso de los parámetros de la URL (van todos en una caja). */
   dismissWarnings(): void {
     this._warnings.set([]);
+  }
+
+  /** Cierra el aviso de la llegada desde un eclipse. */
+  dismissEclipseArrival(): void {
+    this._eclipseArrival.set(null);
   }
 
   /** Anuncia una frase en la región `aria-live` (también si se repite). */

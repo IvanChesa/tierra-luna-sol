@@ -205,6 +205,18 @@ export function earthShadow(date: Date): EarthShadow {
 // --- Sombras de las lunas sobre su planeta (fase 7) ------------------------------------------------
 
 /**
+ * Si la Luna está eclipsada en un instante, y cómo: `total` (entera en la umbra, la magnitud umbral de
+ * la NASA llega a 1), `partial` (en parte), `penumbral` (solo en la penumbra) o `null`. Para decir lo
+ * que se ve en la vista Luna (crítica de la fase 10: la Luna roja del eclipse decía «100 % iluminada»).
+ */
+export function lunarEclipsePhase(date: Date): 'total' | 'partial' | 'penumbral' | null {
+  const shadow = earthShadow(date);
+  if (shadow.umbralMagnitude >= 1) return 'total';
+  if (shadow.umbralMagnitude > 0) return 'partial';
+  return shadow.penumbralMagnitude > 0 ? 'penumbral' : null;
+}
+
+/**
  * Dónde cae el centro de la sombra de una luna sobre su planeta: donde la recta que va del Sol a la
  * luna, más allá de ella, corta el planeta, tomado como una esfera de su radio ecuatorial (las lunas
  * regulares orbitan cerca de su ecuador). Es la misma geometría que pinta la escena (`TLS_SHADOWS`).

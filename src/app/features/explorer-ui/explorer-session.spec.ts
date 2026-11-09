@@ -57,8 +57,8 @@ class FakeEngine implements ExplorerEngine {
   skipTransition() {
     this.calls.push('skipTransition');
   }
-  setLabelsVisible(visible: boolean) {
-    this.calls.push(`setLabelsVisible ${visible}`);
+  setLabelsVisible(visible: boolean, places = visible) {
+    this.calls.push(`setLabelsVisible ${visible}${places === visible ? '' : ` lugares ${places}`}`);
   }
   lookAtSurface(latDeg: number, lonDeg: number, distanceRadii: number, extentDeg?: number) {
     this.calls.push(`lookAtSurface ${latDeg} ${lonDeg} ${distanceRadii} ${extentDeg}`);
@@ -203,7 +203,8 @@ describe('ExplorerSession: la URL, la selección y el motor', () => {
     const labels = () => engine.calls.filter((call) => call.startsWith('setLabelsVisible')).at(-1);
     expect(labels()).toBe('setLabelsVisible true');
     session.setTouring(true);
-    expect(labels()).toBe('setLabelsVisible false');
+    // Los de los lugares de España, sí (la parada de España; crítica de diseño de la fase 10).
+    expect(labels()).toBe('setLabelsVisible false lugares true');
     session.setCleanView(true);
     session.setTouring(false);
     expect(labels()).toBe('setLabelsVisible false');

@@ -29,6 +29,7 @@ describe('parámetros del explorador', () => {
       place: null,
       skyView: null,
       shadow: false,
+      eclipse: null,
       warnings: [],
     });
     expect(CAPTURE_DATE.toISOString()).toBe('2026-10-24T00:00:00.000Z');
@@ -103,6 +104,7 @@ describe('parámetros del explorador', () => {
       place: null,
       skyView: null,
       shadow: false,
+      eclipse: null,
       warnings: [],
     });
     expect(params.warnings).toEqual([
@@ -127,6 +129,7 @@ describe('parámetros del explorador', () => {
       escala: 'real',
       lugar: null,
       sombra: null,
+      eclipse: null,
       calidad: null,
     });
     expect(viewerQueryParams({ time: null, body: null, scale: 'illustrative' })).toEqual({
@@ -135,6 +138,7 @@ describe('parámetros del explorador', () => {
       escala: null,
       lugar: null,
       sombra: null,
+      eclipse: null,
       calidad: null,
     });
     // Ida y vuelta: lo que se escribe se vuelve a leer igual.

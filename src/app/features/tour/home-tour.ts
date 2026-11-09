@@ -46,9 +46,11 @@ export interface TourPlan {
  */
 export const TOUR_MOON_MIN_LIT = 0.2;
 
-/** El rótulo de España: los lugares del cielo que marcan sus puntos (`data/places.ts`). */
-export const SPAIN_CAPTION =
-  'España y los lugares del cielo: el Montsec, Fabra, Calar Alto, Madrid, Fraga, el Teide y el Roque de los Muchachos';
+/**
+ * El rótulo de España. Los nombres de los lugares del cielo van en el mapa, junto a sus puntos (también
+ * durante el recorrido: crítica de diseño de la fase 10); antes, la lista entera iba en el rótulo.
+ */
+export const SPAIN_CAPTION = 'España y los lugares del cielo';
 
 /**
  * El recorrido de la portada (fase 9c, decisión 3 de Iván, D47): unos 30 s, la primera vez. Saturno
