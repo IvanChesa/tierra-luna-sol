@@ -9,8 +9,9 @@ import { MOON_RECREATION } from '../../data/moon-recreation';
 const percent = (x: number): string => `${formatNumber(100 * x, 1, true)}\u00a0%`;
 
 /**
- * Lo recreado de cada luna con mapa (fase 9b, D45), en el orden del catálogo: lo real con detalle, lo
- * que solo se fotografió de lejos y lo que no se vio, medidos en su mapa (data/moon-recreation.ts).
+ * Lo recreado de cada luna con mapa (fase 9b, D45; entrega 10.a, D48), en el orden del catálogo: lo real
+ * con detalle, lo real con luz rasante (corregida), lo que solo se fotografió de lejos y lo que no se vio,
+ * medidos en su mapa (data/moon-recreation.ts).
  */
 const RECREATION_ROWS = BODY_INDEX.flatMap((entry) => {
   const row = MOON_RECREATION.find((r) => r.body === entry.id);
@@ -20,6 +21,7 @@ const RECREATION_ROWS = BODY_INDEX.flatMap((entry) => {
           id: row.body,
           name: entry.name,
           real: percent(row.real),
+          grazing: percent(row.grazing),
           far: percent(row.far),
           none: percent(row.none),
         },

@@ -906,10 +906,13 @@ async function checkPanorama(file) {
 }
 
 /**
- * docs/datos/recreacion-lunas.md (GENERADO): de cada luna con mosaico, lo real, lo visto de lejos y lo no
- * visto (por el área de la esfera), la receta, el grano de lo recreado frente a lo real vecino, el salto
- * en el borde frente al de bordes ficticios dentro de lo real, lo real en el WebP y su máscara.
+ * docs/datos/recreacion-lunas.md (GENERADO): de cada luna con mosaico, lo real, lo real con luz rasante
+ * (D48), lo visto de lejos y lo no visto (por el área de la esfera), la receta, el grano de lo recreado
+ * frente a lo real vecino, el borde fino y el medio frente a lo natural, el contraste a gran escala, lo
+ * real en el WebP y su máscara; los cráteres y las coronas; y el borde del casquete de Tritón.
  */
+/** El nombre corto de cada clase en el borde con lo real (docs/datos/recreacion-lunas.md). */
+const BORDER_LABELS = { none: 'no visto', grazing: 'luz rasante', far: 'de lejos' };
 /** El cuerpo del catálogo de cada mosaico de luna (para data/moon-recreation.ts). */
 const MOSAIC_BODY = {
   phobos: 'fobos',
@@ -935,49 +938,82 @@ const MOSAIC_BODY = {
 async function writeRecreationDoc(list, date) {
   const pct = (x) => `${(100 * x).toFixed(1).replace('.', ',')} %`;
   const num = (x, d = 2) => (x === null || x === undefined ? '—' : x.toFixed(d).replace('.', ','));
+  const pair = (s) => (s ? `${num(s.p95)} · ${num(s.max)} (${s.tiles})` : '—');
   const rows = Object.entries(list).map(([id, r]) => {
-    const synthesized = r.far + r.none > 0.001;
-    const pair = (s) => (s ? `${num(s.p95)} · ${num(s.max)}` : '—');
-    const none = r.border.none
-      ? `${pair(r.border.none)} (${num(r.border.naturalP95)} · ${num(r.border.naturalMax)})`
-      : '—';
-    const far = r.border.far ? `${pair(r.border.far)} (${pair(r.border.farOriginal)})` : '—';
-    return `| ${id} | ${pct(r.real)} | ${pct(r.far)} | ${pct(r.none)} | ${r.recipe ?? 'la de por defecto'} | ${synthesized ? num(r.grain) : '—'} | ${none} | ${far} | ${num(r.sharpen)} | ${num(r.compression.recreated)} (${num(r.compression.reference)}) | ![${id}](../informes/img/fase-9b/mascaras/${id}.webp) |`;
+    const synthesized = r.far + r.none + r.grazing > 0.001;
+    const b = r.border ?? {};
+    const fine = ['none', 'grazing', 'far']
+      .filter((k) => b[k]?.fine)
+      .map((k) => `${BORDER_LABELS[k]} ${pair(b[k].fine)}`)
+      .join('; ');
+    const mean = ['none', 'grazing', 'far']
+      .filter((k) => b[k]?.mean)
+      .map((k) => `${BORDER_LABELS[k]} ${pair(b[k].mean)}`)
+      .join('; ');
+    const strip = r.grazing
+      ? `${pct(r.grazing)}${r.terminatorDeg ? ` (${num(r.terminatorDeg, 1)}°)` : ''}`
+      : '0,0 %';
+    return `| ${id} | ${pct(r.real)} | ${strip} | ${pct(r.far)} | ${pct(r.none)} | ${r.recipe ?? 'la de por defecto'} | ${synthesized ? num(r.grain) : '—'} | ${fine || '—'} | ${synthesized ? pair(r.natural?.fine) : '—'} | ${mean || '—'} | ${synthesized ? pair(r.natural?.mean) : '—'} | ${r.contrast?.ratio ? num(r.contrast.ratio) : '—'} | ${num(r.compression.recreated)} (${num(r.compression.reference)}) | ![${id}](../informes/img/fase-10/lunas-mascaras/${id}.webp) |`;
   });
+  const craterRows = Object.entries(list)
+    .filter(([, r]) => r.craters)
+    .map(
+      ([id, r]) =>
+        `| ${id} | ${r.craters.count} | ${num(r.craters.gain)} | ${r.craters.coronae ? `${r.craters.coronae.units.length} (bandas de ${num((r.craters.coronae.wavelength * 360) / 2048, 1)}°, ${num(r.craters.coronae.amplitude, 1)} L*)` : '—'} | ${num(r.contrast?.real)} · ${num(r.contrast?.none)} → ${num(r.contrast?.ratio)} |`,
+    );
+  const cap = Object.values(list).find((r) => r.capEdge)?.capEdge;
+  const capText = cap
+    ? `\n## El borde del casquete del norte de Tritón\n\nEl del sur, medido donde lo vio la Voyager 2 (${cap.southColumns} columnas del mapa de 2k; su latitud media, ${num(cap.southLat, 1)}°; la transición de brillo, de un cuarto a tres cuartos del salto, ${num(cap.transitionDeg, 1)}°), y el del norte, generado con su misma estadística en torno a 47°. La función de estructura de cada borde (cuánto cambia su latitud entre dos puntos a esa distancia sobre la esfera):\n\n| Distancia | Sur, real | Norte, recreado |\n|---|---|---|\n${cap.reference.map((s, i) => `| ${num(s.distanceDeg, 1)}° | ${num(s.value)}° | ${num(cap.generated[i].value)}° |`).join('\n')}\n`
+    : '';
   const text = `<!-- GENERADO por scripts/build-textures.mjs el ${date}. No se edita a mano. -->
 
-# Las lunas recreadas (D45, fase 9b)
+# Las lunas recreadas (D45, fase 9b; D48, entrega 10.a)
 
-Lo que no se vio de cada luna, recreado a partir del terreno real de la misma luna, y el detalle que falta en lo visto de lejos (\`scripts/lib/moon-recreate.mjs\`, con la receta de \`scripts/lib/moon-recipes.mjs\`). Es **ilustrativo**. Las clases, medidas en el mapa de 2k (\`scripts/measure-moon-maps.mjs\`): lo real con detalle, lo visto de lejos (una resolución de origen más gruesa que la de la textura) y lo no visto. Los porcentajes, por el área de la esfera.
+Lo que no se vio de cada luna, recreado a partir del terreno real de la misma luna, y el detalle que falta en lo visto de lejos (\`scripts/lib/moon-recreate.mjs\`, con la receta de \`scripts/lib/moon-recipes.mjs\`). Es **ilustrativo**. Las clases, medidas en el mapa de 2k (\`scripts/measure-moon-maps.mjs\`, con la máscara de cobertura umbralizada antes de reducir, D48): lo real con detalle, lo real con luz rasante (D48, \`scripts/lib/moon-grazing.mjs\`), lo visto de lejos (una resolución de origen más gruesa que la de la textura) y lo no visto. Los porcentajes, por el área de la esfera.
 
-- **Grano:** el paso alto de L* de lo recreado junto a lo real frente al de lo real vecino (D45: del ${RECREATION_CRITERIA.grain[0]} al ${RECREATION_CRITERIA.grain[1]}).
-- **Salto en el borde:** la diferencia del brillo medio (L*, σ = 4 texeles) a cada lado del borde con lo real, por teselas de 64 texeles: el percentil 95 y el máximo, por separado en el borde con lo no visto y en el borde con lo visto de lejos. Con lo no visto, cuyo brillo pone solo la recreación, entre paréntesis lo natural: el mismo salto en bordes ficticios dentro de lo real (la máscara girada 90°, 180° y 270°: la variación natural del relieve). Con lo visto de lejos, cuyo brillo a gran escala es el real (D45, regla 1), entre paréntesis el salto que ya tenía el mosaico original en ese borde (imágenes distintas). D45: no más de ${RECREATION_CRITERIA.borderDeltaL} L* por encima de su referencia (con lo visto de lejos, la mayor de lo natural y del original). En las lunas de sombras duras, cualquier borde salta unos 10 L* por los cráteres; un umbral absoluto solo lo pasaría el relieve liso.
-- **Enfoque:** el de lo recreado, calibrado en cada luna para llevar su grano al de lo real.
-- **Lo real en el WebP:** el error medio absoluto (niveles de 0 a 255) de lo real en la textura de 2k frente al mosaico; entre paréntesis, el del mosaico comprimido igual sin recrear. Antes de comprimir, lo real es idéntico byte a byte.
-- **Máscara:** lo real, sin tinte; lo visto de lejos, en rojo; lo no visto (recreado entero), en azul.
+- **Real con luz rasante** (D48): la franja de lo real junto al terminador de las imágenes de la Voyager 2 (en las lunas de Urano; entre paréntesis, su anchura, medida en el perfil del brillo de lo real por distancia a lo no visto) y la unión de 180° de los mapas del JPL (su última columna, más oscura). Su brillo a gran escala se lleva al de lo real vecino y, en la franja del terminador, sus sombras se funden hacia lo recreado. Lo demás de lo real, igual byte a byte.
+- **Grano:** el paso alto de L* de lo recreado junto a lo real frente al de lo real vecino (del ${RECREATION_CRITERIA.grain[0]} al ${RECREATION_CRITERIA.grain[1]}).
+- **Borde fino** (σ = ${RECREATION_CRITERIA.fineSigma} texeles): la diferencia del brillo medio de cada lado del borde de lo real intacto con cada clase, por teselas de 64 texeles: el percentil 95, el máximo y, entre paréntesis, las teselas. D48: como mucho ${RECREATION_CRITERIA.fineExcess} L* por encima de lo natural (bordes ficticios dentro de lo real intacto, con la máscara girada 90°, 180° y 270°; con lo visto de lejos, del mayor de lo natural y del salto del mosaico original).
+- **Borde medio** (σ = ${RECREATION_CRITERIA.meanSigma} texeles, unos 2,8°): lo mismo, a la escala del brillo medio. D48: ΔL* ≤ ${RECREATION_CRITERIA.meanDeltaL} en el percentil 95 en el borde con lo no visto y con lo real con luz rasante (lo que pone la recreación). Lo natural a esa escala no baja de 2 en la mayoría de las lunas (ni a ninguna escala de 0,7° a 17°): su terreno tiene manchas de albedo de ese tamaño.
+- **Contraste:** la desviación típica del L* de lo no visto a gran escala (σ = ${RECREATION_CRITERIA.contrastSigma} texeles, entre ±60°) frente a la de lo real. D48: del ${RECREATION_CRITERIA.contrast[0]} al ${RECREATION_CRITERIA.contrast[1]} en las lunas de Urano.
+- **Lo real en el WebP:** el error medio absoluto (niveles de 0 a 255) de lo real en la textura de 2k frente al mosaico; entre paréntesis, el del mosaico comprimido igual sin recrear.
+- **Máscara:** lo real, sin tinte; lo real con luz rasante, en ámbar; lo visto de lejos, en rojo; lo no visto (recreado entero), en azul.
 
-| Luna | Real | Visto de lejos | No visto | Receta | Grano | Borde con lo no visto, p95 · máx (natural) | Borde con lo visto de lejos, p95 · máx (original) | Enfoque | Lo real en el WebP | Máscara |
-|---|---|---|---|---|---|---|---|---|---|---|
+| Luna | Real | Real con luz rasante | Visto de lejos | No visto | Receta | Grano | Borde fino, p95 · máx. (teselas) | Natural, fino | Borde medio, p95 · máx. (teselas) | Natural, medio | Contraste | Lo real en el WebP | Máscara |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 ${rows.join('\n')}
-`;
+
+## Los cráteres y las coronas de lo no visto (D48)
+
+En las lunas de Urano, lo no visto lleva cráteres con la población y el albedo de su real (\`scripts/lib/moon-craters.mjs\`): las manchas claras y oscuras de lo real, por escala (de unos 0,4° a 5°), con su densidad y su contraste; las oscuras, cráteres de fondo oscuro y borde claro, y las claras, con su halo y, las más claras de las grandes, con rayos; una parte, difusas. El factor común lleva el contraste a gran escala de lo no visto al de lo real. En Miranda, además, dos coronas ilustrativas, con las bandas de su terreno bandeado real.
+
+| Luna | Cráteres | Factor | Coronas | Contraste: real · no visto → cociente |
+|---|---|---|---|---|
+${craterRows.join('\n')}
+${capText}`;
   await writeFile(new URL('docs/datos/recreacion-lunas.md', ROOT), text);
-  // Y lo medido de cada luna, para la tabla de /creditos (data/moon-recreation.ts, GENERADO).
+  // Y lo medido de cada luna, para la tabla de /creditos (data/moon-recreation.ts, GENERADO): cada
+  // fracción, ya redondeada como su porcentaje de aquí (con un decimal), para que /creditos, que la
+  // vuelve a redondear, dé lo mismo (revisión de la 10.a, hallazgo 9).
+  const share = (x) => (Number((100 * x).toFixed(1)) / 100).toFixed(3);
   const entries = Object.entries(list)
     .filter(([id]) => MOSAIC_BODY[id])
     .map(
       ([id, r]) =>
-        `  { body: '${MOSAIC_BODY[id]}', real: ${r.real.toFixed(4)}, far: ${r.far.toFixed(4)}, none: ${r.none.toFixed(4)} },`,
+        `  { body: '${MOSAIC_BODY[id]}', real: ${share(r.real)}, grazing: ${share(r.grazing)}, far: ${share(r.far)}, none: ${share(r.none)} },`,
     );
   const ts = `// GENERADO por scripts/build-textures.mjs el ${date}. No se edita a mano.
-// D45 (fase 9b): de cada luna con mosaico, la fracción de su superficie (por el área de la esfera) que
-// es real con detalle, la que solo se fotografió de lejos (con detalle recreado) y la que no se vio
-// (recreada entera), medidas en su mapa de 2k (scripts/measure-moon-maps.mjs). El método y las demás
-// medidas, en docs/datos/recreacion-lunas.md.
+// D45 (fase 9b) y D48 (entrega 10.a): de cada luna con mosaico, la fracción de su superficie (por el área
+// de la esfera) que es real con detalle, real con luz rasante (corregida), la que solo se fotografió de
+// lejos (con detalle recreado) y la que no se vio (recreada entera), medidas en su mapa de 2k
+// (scripts/measure-moon-maps.mjs y scripts/lib/moon-grazing.mjs). El método y las demás medidas, en
+// docs/datos/recreacion-lunas.md.
 import type { BodyId } from './body.model';
 
 export interface MoonRecreation {
   readonly body: BodyId;
   readonly real: number;
+  readonly grazing: number;
   readonly far: number;
   readonly none: number;
 }
@@ -1058,7 +1094,7 @@ const reports = [];
 let ringStrip = null;
 /** Lo que se recreó de cada luna (D45), para docs/datos/recreacion-lunas.md. */
 const recreations = {};
-const MASKS = new URL('docs/informes/img/fase-9b/mascaras/', ROOT);
+const MASKS = new URL('docs/informes/img/fase-10/lunas-mascaras/', ROOT);
 await mkdir(MASKS, { recursive: true });
 for (const [id, spec] of Object.entries(TEXTURES)) {
   if (OMITTED[id]) {
@@ -1150,6 +1186,8 @@ for (const [id, spec] of Object.entries(TEXTURES)) {
     const mosaic = await loadMosaic(new URL(spec.file, SRC), 2048, {
       band: spec.band,
       plain: spec.plain,
+      // D48: la máscara de cobertura, umbralizada antes de reducir (como la del radar de Venus).
+      maskAtSource: true,
     });
     reports.push(`${id}: ${mosaic.report}`);
     const probes = checkMosaicProbes(id, mosaic);
@@ -1173,16 +1211,21 @@ for (const [id, spec] of Object.entries(TEXTURES)) {
     // sobre lo visto de lejos (scripts/lib/moon-map-build.mjs), sobre el mosaico tal como llega (con el
     // balance de color de Ío, que no cambia su contraste). Lo real queda igual byte a byte; las sondas se
     // miden otra vez en el mapa recreado, solo sobre lo real; y la máscara de cada clase va al informe.
-    const recreation = recreateMosaic(id, mosaic);
+    // Con RECREACION_SIN_COMPROBAR=1, sin fallar por los criterios (para medir todas las lunas de una vez).
+    const recreation = recreateMosaic(id, mosaic, {
+      check: process.env.RECREACION_SIN_COMPROBAR !== '1',
+    });
     reports.push(recreation.report);
     if (MOSAIC_PROBES_IDS.has(id)) {
-      // Solo sobre lo real (igual byte a byte): una sonda en lo visto de lejos mide el detalle fino que
-      // la recreación sustituye a propósito (ya pasó en el mosaico).
-      const real = Float32Array.from(recreation.classes, (c) => (c === 0 ? 1 : 0));
+      // Sobre lo real (igual byte a byte) y lo real con luz rasante (corregido): una sonda en lo visto
+      // de lejos mide el detalle fino que la recreación sustituye a propósito (ya pasó en el mosaico). Cada
+      // una ha de conservar su signo (D48: se corrige la luz, no el albedo; revisión de la 10.a, hallazgo
+      // 1), con su cociente en el mosaico al lado.
+      const seen = Float32Array.from(recreation.classes, (c) => (c === 0 || c === 3 ? 1 : 0));
       const again = checkMosaicProbes(
         id,
-        { ...mosaic, data: recreation.data, coverage: real },
-        { onlyCovered: true },
+        { ...mosaic, data: recreation.data, coverage: seen },
+        { onlyCovered: true, reference: mosaic, signOnly: true },
       );
       reports.push(
         `${id}: las sondas, en el mapa recreado: ${again.slice(again.indexOf(':') + 2)}`,
@@ -1485,3 +1528,9 @@ execFileSync(
 );
 await writeRecreationDoc(recreations, today);
 console.log('\nComprobaciones:\n' + reports.map((r) => `- ${r}`).join('\n'));
+// D45 y D48: con RECREACION_SIN_COMPROBAR=1, lo que no cumple (sin ella, el build ya ha fallado).
+const unmet = Object.entries(recreations).flatMap(([id, r]) =>
+  (r.fails ?? []).map((f) => `${id}: ${f}`),
+);
+if (unmet.length)
+  console.log('\nNo cumplen (D45 y D48):\n' + unmet.map((f) => `- ${f}`).join('\n'));

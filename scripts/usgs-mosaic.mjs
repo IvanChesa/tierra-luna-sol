@@ -33,10 +33,18 @@ import { tiffGeoInfo } from './build-relief.mjs';
  * (desenfocado `blurPx` píxeles del mapa reducido) es más claro que `above` es el fondo de la carta, lo
  * no cartografiado: cuenta como sin datos. Con `zerosAreGaps` (el radar de Magellan, fase 9b), todo 0
  * es un hueco: en un radar no hay sombras de cráteres a 0 que conservar (`restoreShadowSpecks`), y las
- * franjas de las órbitas que faltan son rayas finas a 0. Devuelve el búfer, su cobertura (de 0 a 1 por
- * píxel: las sondas solo miden lo que hay), la fracción del mapa sin datos y un informe.
+ * franjas de las órbitas que faltan son rayas finas a 0. Con `maskAtSource` (las lunas, desde la entrega
+ * 10.a, D48), la máscara de lo que hay se umbraliza en el original y después se reduce, como con
+ * `zerosAreGaps`, pero conservando las sombras a 0 (`restoreShadowSpecks`): un píxel del borde de un hueco
+ * cuenta por lo que tiene de dato, y su color, por el de ese dato (sin oscurecerse con el hueco). Devuelve
+ * el búfer, su cobertura (de 0 a 1 por píxel: las sondas solo miden lo que hay), la fracción del mapa sin
+ * datos y un informe.
  */
-export async function loadMosaic(url, width, { band, plain, zerosAreGaps = false } = {}) {
+export async function loadMosaic(
+  url,
+  width,
+  { band, plain, zerosAreGaps = false, maskAtSource = false } = {},
+) {
   const path = fileURLToPath(url);
   const source = plain
     ? await plainSource(path, plain)
@@ -60,8 +68,9 @@ export async function loadMosaic(url, width, { band, plain, zerosAreGaps = false
     // reducir: así, la máscara sale binaria y un píxel mezclado con un hueco cuenta como dato entero.
     // Con huecos grandes (las lunas) lo tapa el fundido del borde; con las rayas finas del radar (unos
     // 25 px del original, 3 o 5 del mapa reducido), no: se veían como líneas oscuras. Con
-    // `zerosAreGaps`, la máscara se umbraliza en el original y después se reduce, como la imagen.
-    zerosAreGaps
+    // `zerosAreGaps` (y `maskAtSource`), la máscara se umbraliza en el original y después se reduce,
+    // como la imagen.
+    zerosAreGaps || maskAtSource
       ? fullResolutionMask(open(), source).then(reduce)
       : reduce(open().threshold(1).toColourspace('b-w')),
     // El fondo de una carta aerografiada (sharp desenfoca después de reducir).
@@ -574,23 +583,46 @@ function probeRadiusDeg(id, probe) {
 }
 
 /**
+ * Los accidentes de las sondas de un mosaico (nombre, latitud, longitud y radio en grados de arco): los
+ * que D48 no deja borrar en lo real con luz rasante (`correctGrazing`, con `protect`).
+ */
+export function probeAreas(id) {
+  return (MOSAIC_PROBES[id] ?? []).map((probe) => ({
+    name: probe.name,
+    lat: probe.lat,
+    lon: probe.lon,
+    radius: probeRadiusDeg(id, probe),
+  }));
+}
+
+/**
  * Comprueba las sondas de un mosaico (RGB de 8 bits, equirrectangular con la longitud 0 en el centro)
  * y devuelve un informe; falla si alguna no pasa o si el mapa girado 180° o reflejado también las pasa
  * todas (las sondas no distinguirían la orientación). Con `onlyCovered` (el mapa recreado de D45, con
- * `coverage` = lo real): una sonda que cae sobre todo fuera de lo cubierto no se mide (lo recreado
- * sustituye a propósito el detalle fino de lo visto de lejos; ya pasó en el mosaico) y se dice.
+ * `coverage` = lo real y lo real con luz rasante): una sonda que cae sobre todo fuera de lo cubierto no se
+ * mide (lo recreado sustituye a propósito el detalle fino de lo visto de lejos; ya pasó en el mosaico) y
+ * se dice. Con `signOnly` (D48, revisión de la 10.a, hallazgo 1), cada sonda de brillo ha de conservar
+ * su signo (más clara o más oscura que su anillo, sin el margen del 8 %): en lo real con luz rasante, el
+ * contraste del mosaico lleva la luz de la foto (el anillo, oscurecido junto al terminador, o la sombra
+ * de una fosa), que se corrige, pero el albedo no puede borrarse. Con `reference` (el mosaico), se da
+ * también su cociente allí.
  */
 export function checkMosaicProbes(
   id,
   { data, width, height, coverage },
-  { onlyCovered = false } = {},
+  { onlyCovered = false, reference = null, signOnly = false } = {},
 ) {
   const probes = MOSAIC_PROBES[id];
   if (!probes) return null;
-  const luminance = new Float32Array(width * height);
-  for (let i = 0; i < luminance.length; i++) {
-    luminance[i] = 0.2126 * data[3 * i] + 0.7152 * data[3 * i + 1] + 0.0722 * data[3 * i + 2];
-  }
+  const luminanceOf = (rgb) => {
+    const field = new Float32Array(width * height);
+    for (let i = 0; i < field.length; i++) {
+      field[i] = 0.2126 * rgb[3 * i] + 0.7152 * rgb[3 * i + 1] + 0.0722 * rgb[3 * i + 2];
+    }
+    return field;
+  };
+  const luminance = luminanceOf(data);
+  const referenceLuminance = reference ? luminanceOf(reference.data) : null;
   const at = (field, x, y) =>
     field[Math.min(Math.max(y, 0), height - 1) * width + (((x % width) + width) % width)];
   // El gradiente del brillo (Sobel), solo si alguna sonda es de borde: el este–oeste, por cos φ (en la
@@ -671,7 +703,14 @@ export function checkMosaicProbes(
     const ratio =
       annulus(luminance, lat, lon, 0, r, true) /
       Math.max(annulus(luminance, lat, lon, 2 * r, 3 * r, true), 1e-6);
-    return { ratio, ok: probe.sign > 0 ? ratio > 1.08 : ratio < 0.92 };
+    const [low, high] = signOnly && straight ? [1, 1] : [0.92, 1.08];
+    const ok = probe.sign > 0 ? ratio > high : ratio < low;
+    if (!straight || !referenceLuminance) return { ratio, ok };
+    // Su cociente en el mosaico (en su sitio), para el informe.
+    const original =
+      annulus(referenceLuminance, lat, lon, 0, r) /
+      Math.max(annulus(referenceLuminance, lat, lon, 2 * r, 3 * r), 1e-6);
+    return { ratio, ok, original };
   };
   const passes = (transform, straight = false) =>
     probes.map((probe) => ({ probe, ...measure(probe, transform, straight) }));
@@ -680,7 +719,10 @@ export function checkMosaicProbes(
   const mirrored = passes((lat, lon) => [lat, -lon]);
   const show = (results) =>
     results
-      .map((r) => `${r.probe.name} ${r.skipped ? 'en zona recreada' : r.ratio.toFixed(2)}`)
+      .map(
+        (r) =>
+          `${r.probe.name} ${r.skipped ? 'en zona recreada' : r.ratio.toFixed(2)}${r.original ? ` (mosaico ${r.original.toFixed(2)})` : ''}`,
+      )
       .join(', ');
   if (straight.every((r) => r.skipped)) {
     // Solo con `onlyCovered`: todas caen en lo recreado (Deimos, con su única sonda, Swift, en lo visto

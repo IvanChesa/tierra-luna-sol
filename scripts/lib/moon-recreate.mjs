@@ -245,6 +245,13 @@ export const SYNTHESIS = {
    */
   guideSigma: 4,
   /**
+   * D48: sin la guía (`guide: false`, las lunas de Urano), lo no visto sigue el brillo regional (σ =
+   * `regionalSigma`), y los parches ponen el detalle solo por debajo de `noneDetailSigma` px (por defecto,
+   * la escala regional): entre las dos, la estructura la ponen los cráteres (moon-craters.mjs).
+   */
+  guide: true,
+  noneDetailSigma: null,
+  /**
    * Lo visto de lejos: su brillo se conserva por encima de `keep` × su resolución de origen (σ), entre
    * `keepMin` y `keepMax` px: se pone solo el detalle que el original no resolvió. Con 3 (y 2 px como
    * mínimo), en las lunas de sombras duras se perdían los bordes de los cráteres de 5 a 10 px de las zonas
@@ -292,11 +299,23 @@ const COARSE = {
  * - `recipe`: `pool(lat, lon, targetLat, targetLon)` (¿vale un parche real centrado en lat/lon para un
  *   destino en targetLat/targetLon?) y `target(lat, lon, filled)` (el brillo regional de lo no visto:
  *   por defecto, el de lo visto extendido);
- * - `seed`: la semilla (determinista).
+ * - `seed`: la semilla (determinista);
+ * - `exclude`: Uint8Array W × H opcional, lo que no puede ser origen de un parche aunque sea real (D48:
+ *   lo real con luz rasante, que se queda fijo pero no se copia).
  * Devuelve el mapa nuevo (Float32Array W × H × 3), la guía del nivel grueso, lo visto extendido y las
  * estadísticas de la síntesis.
  */
-export function recreate({ rgb, classes, sigmaEff, W, H, recipe = {}, seed = 1, params = {} }) {
+export function recreate({
+  rgb,
+  classes,
+  sigmaEff,
+  W,
+  H,
+  recipe = {},
+  seed = 1,
+  params = {},
+  exclude = null,
+}) {
   const P = { ...SYNTHESIS, ...params };
   const N = Math.round(W / 4);
   const M = P.margin;
@@ -311,8 +330,8 @@ export function recreate({ rgb, classes, sigmaEff, W, H, recipe = {}, seed = 1, 
   //    resolución (sus parches cubren 4 veces más), que guía después lo no visto aquí.
   let guide = null;
   const hasNone = classes.some((c) => c === NONE);
-  if (hasNone && !P.coarsePass) {
-    const coarse = downsample4({ rgb: base, classes, sigmaEff, W, H });
+  if (hasNone && !P.coarsePass && P.guide !== false) {
+    const coarse = downsample4({ rgb: base, classes, sigmaEff, W, H, exclude });
     const result = recreate({
       ...coarse,
       recipe,
@@ -326,6 +345,7 @@ export function recreate({ rgb, classes, sigmaEff, W, H, recipe = {}, seed = 1, 
   const faces = FACES.map((_, f) => {
     const color = new Float32Array(S * S * 3);
     const cls = new Uint8Array(S * S);
+    const noSource = new Uint8Array(S * S);
     const sigma = new Float32Array(S * S);
     const lat = new Float32Array(S * S);
     const lon = new Float32Array(S * S);
@@ -343,16 +363,22 @@ export function recreate({ rgb, classes, sigmaEff, W, H, recipe = {}, seed = 1, 
         const i = Math.min(W - 1, Math.max(0, Math.floor(((lo + 180) / 360) * W)));
         const j = Math.min(H - 1, Math.max(0, Math.floor(((90 - la) / 180) * H)));
         cls[k] = classes[j * W + i];
+        noSource[k] = exclude ? exclude[j * W + i] : 0;
         sigma[k] = keepSigma(sigmaEff[j * W + i], P);
       }
     }
-    return { color, cls, sigma, lat, lon };
+    return { color, cls, noSource, sigma, lat, lon };
   });
 
   // 2. El brillo a gran escala de cada cara (para lo visto de lejos y para comparar parches) y el objetivo
   //    regional de lo no visto: con guía, la estructura de la recreación gruesa; sin ella, el relleno del
   //    mosaico o lo que diga la receta (`target`).
   const regionalSigma = guide ? P.guideSigma : P.regionalSigma;
+  // Sin guía, el brillo regional se desenfoca sobre la esfera (en el equirrectangular, a escala física) y
+  // se muestrea en las caras (D48): desenfocado cara a cara, con el borde repetido y una σ mayor que el
+  // margen (en el nivel grueso, 16 px con 16 de margen), cada cara daba otro brillo junto a sus aristas, y
+  // el casquete del norte de Tritón salía con la forma de la cara del polo (un cuadrado redondeado).
+  const regionalMap = guide ? null : blurEquirect(base, W, H, regionalSigma);
   faces.forEach((face, f) => {
     face.levels = LP_SIGMAS.map((s) => blurCanvas(face.color, S, 3, s));
     if (guide) {
@@ -368,7 +394,13 @@ export function recreate({ rgb, classes, sigmaEff, W, H, recipe = {}, seed = 1, 
       }
       face.regional = blurCanvas(sampled, S, 3, regionalSigma);
     } else {
-      face.regional = blurCanvas(face.color, S, 3, regionalSigma);
+      face.regional = new Float32Array(S * S * 3);
+      for (let k = 0; k < S * S; k++) {
+        sampleEquirect(regionalMap, W, H, 3, face.lat[k], face.lon[k], scratch);
+        face.regional[3 * k] = scratch[0];
+        face.regional[3 * k + 1] = scratch[1];
+        face.regional[3 * k + 2] = scratch[2];
+      }
       if (recipe.target) {
         for (let k = 0; k < S * S; k++) {
           if (face.cls[k] !== NONE) continue;
@@ -389,7 +421,7 @@ export function recreate({ rgb, classes, sigmaEff, W, H, recipe = {}, seed = 1, 
     // El brillo objetivo de cada píxel (`target`) y la escala (`level`, índice en `LP_SIGMAS`) por
     // debajo de la cual el detalle viene de los parches: en lo visto de lejos, su brillo real a la escala
     // conservada; en lo no visto, el regional; en lo real, el suyo a la escala regional (solo para casar).
-    const noneLevel = levelOf(regionalSigma);
+    const noneLevel = levelOf(P.noneDetailSigma ?? regionalSigma);
     face.level = new Float32Array(S * S);
     face.target = new Float32Array(S * S * 3);
     for (let k = 0; k < S * S; k++) {
@@ -407,13 +439,14 @@ export function recreate({ rgb, classes, sigmaEff, W, H, recipe = {}, seed = 1, 
   const B = P.patch;
   const pool = [];
   for (let f = 0; f < 6; f++) {
-    const { cls } = faces[f];
-    // Una tabla de sumas de lo «no real» para saber en O(1) si un parche es todo real.
+    const { cls, noSource } = faces[f];
+    // Una tabla de sumas de lo «no real» para saber en O(1) si un parche es todo real (y si no toca lo
+    // que no puede ser origen, `exclude`: la luz rasante de D48).
     const integral = new Int32Array((S + 1) * (S + 1));
     for (let y = 0; y < S; y++) {
       let row = 0;
       for (let x = 0; x < S; x++) {
-        row += cls[y * S + x] === REAL ? 0 : 1;
+        row += cls[y * S + x] === REAL && !noSource[y * S + x] ? 0 : 1;
         integral[(y + 1) * (S + 1) + x + 1] = integral[y * (S + 1) + x + 1] + row;
       }
     }
@@ -856,6 +889,18 @@ export function fillUnseen(rgb, classes, W, H) {
   return out;
 }
 
+/** Desenfoque gaussiano a escala física de un mapa equirrectangular RGB (canales intercalados). */
+function blurEquirect(rgb, W, H, sigma) {
+  const out = new Float32Array(rgb.length);
+  for (let c = 0; c < 3; c++) {
+    const channel = new Float32Array(W * H);
+    for (let k = 0; k < W * H; k++) channel[k] = rgb[3 * k + c];
+    const blurred = gaussianBlur(channel, W, H, sigma, true);
+    for (let k = 0; k < W * H; k++) out[3 * k + c] = blurred[k];
+  }
+  return out;
+}
+
 /** Muestra bilineal de una cara con margen (x, y en px de la cara sin margen). */
 function sampleFace(canvas, S, M, fx, fy, out) {
   const x = Math.min(Math.max(fx + M, 0), S - 1.001);
@@ -1231,12 +1276,13 @@ function faceDistance(inSet, S, cap) {
  * bloque de 4 × 4; la clase, «no visto» si lo es la mayoría del bloque, «real» si lo es entero y, si no,
  * «visto de lejos»; la σ, la media entre 4 (está en px del nivel fino).
  */
-export function downsample4({ rgb, classes, sigmaEff, W, H }) {
+export function downsample4({ rgb, classes, sigmaEff, W, H, exclude = null }) {
   const w = W / 4;
   const h = H / 4;
   const out = new Float32Array(w * h * 3);
   const cls = new Uint8Array(w * h);
   const sigma = new Float32Array(w * h);
+  const excluded = exclude ? new Uint8Array(w * h) : null;
   for (let j = 0; j < h; j++) {
     for (let i = 0; i < w; i++) {
       let none = 0;
@@ -1249,6 +1295,7 @@ export function downsample4({ rgb, classes, sigmaEff, W, H }) {
           for (let c = 0; c < 3; c++) sum[c] += rgb[3 * k + c];
           if (classes[k] === NONE) none++;
           if (classes[k] === REAL) real++;
+          if (excluded && exclude[k]) excluded[j * w + i] = 1;
           s += sigmaEff[k];
         }
       }
@@ -1258,7 +1305,7 @@ export function downsample4({ rgb, classes, sigmaEff, W, H }) {
       sigma[k] = s / 16 / 4;
     }
   }
-  return { rgb: out, classes: cls, sigmaEff: sigma, W: w, H: h };
+  return { rgb: out, classes: cls, sigmaEff: sigma, W: w, H: h, exclude: excluded };
 }
 
 /** Amplía ×4 un mapa equirrectangular (bilineal, con la vuelta en longitud). */
