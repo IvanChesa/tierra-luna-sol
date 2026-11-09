@@ -1,4 +1,11 @@
-/* Ficha completa (DISENO.md, «Ficha completa»): una columna de lectura; la imagen, al lado en escritorio. */
+/*
+ * Ficha completa (DISENO.md, «Ficha completa»): una columna de lectura, centrada en la página (a 1440 px
+ * sobraban unos 450 px a su derecha: crítica de la 9c); la imagen, al lado en escritorio.
+ */
+:host {
+  max-width: calc(52rem + 2 * var(--space-4));
+}
+
 .body {
   max-width: 52rem;
 }
@@ -191,22 +198,14 @@
   margin-bottom: var(--space-1);
 }
 
+/* Las lunas de su planeta, en tarjetas como las de /lunas (crítica de la 9c). */
 .family {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2) var(--space-6);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: var(--space-3);
+  margin: 0;
   padding: 0;
   list-style: none;
-}
-
-.family a,
-.family span {
-  display: inline-block;
-  padding-block: var(--space-2);
-}
-
-.family [aria-current] {
-  color: var(--color-text-muted);
 }
 
 /* Los números de la lista de fuentes, como anclas: que no queden bajo la cabecera al saltar. */
