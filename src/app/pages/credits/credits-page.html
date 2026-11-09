@@ -99,9 +99,14 @@
       <strong>Lo que no se vio de las lunas, recreado</strong> (ilustrativo): lo que ninguna sonda
       fotografió (el norte de Tritón y de las lunas de Urano) y lo que el mapa de Deimos no cubre se
       recrean enteros, y lo que solo se fotografió de lejos lleva detalle recreado, siempre con
-      parches del terreno real de la misma luna, sobre la esfera y sin tocar lo real. Proteo no
-      tiene mapa: sus cráteres son generados. El método y lo medido (el grano y el borde con lo
-      real), en <a [href]="recreationDoc">recreacion-lunas.md</a>.
+      parches del terreno real de la misma luna, sobre la esfera y sin tocar lo real. En las lunas
+      de Urano, lo no visto lleva además cráteres con el número, el tamaño y el brillo de las
+      manchas de su parte real (en Miranda, también dos coronas). Lo real fotografiado con luz
+      rasante (junto al terminador de las imágenes de la Voyager 2 y en la unión de 180° de los
+      mapas del JPL) no es el color del suelo, sino la luz de la foto: se corrige a la luz de lo
+      real vecino. Proteo no tiene mapa: sus cráteres son generados. El método y lo medido (el
+      grano, el borde con lo real y el contraste), en
+      <a [href]="recreationDoc">recreacion-lunas.md</a>.
       <!--
         En las pantallas estrechas, la tabla no encoge más: se desplaza, y se enfoca con el teclado
         (axe, scrollable-region-focusable, a 320 px; cierre de la fase 9b).
@@ -115,6 +120,7 @@
             <tr>
               <th scope="col">Luna</th>
               <th scope="col">Real</th>
+              <th scope="col">Real con luz rasante (corregida)</th>
               <th scope="col">De lejos (con detalle recreado)</th>
               <th scope="col">No vista (recreada)</th>
             </tr>
@@ -124,6 +130,7 @@
               <tr>
                 <th scope="row">{{ row.name }}</th>
                 <td>{{ row.real }}</td>
+                <td>{{ row.grazing }}</td>
                 <td>{{ row.far }}</td>
                 <td>{{ row.none }}</td>
               </tr>
