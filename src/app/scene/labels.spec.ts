@@ -171,6 +171,16 @@ describe('labels: colocación sin solapes', () => {
   });
 });
 
+/**
+ * Los números del `translate3d` de un elemento. Se comparan los números y no el texto, porque cada
+ * versión de jsdom lo normaliza a su manera: la 30 lo deja como se escribió
+ * (`translate3d(100.0px, 200.0px, 0)`) y la 31, como lo serializa CSSOM (`translate3d(100px, 200px, 0px)`).
+ */
+const translateOf = (el: HTMLElement | null | undefined): number[] | null => {
+  const match = /^translate3d\(([^,]+),([^,]+),([^)]+)\)$/.exec(el?.style.transform ?? '');
+  return match ? match.slice(1).map((part) => Number.parseFloat(part)) : null;
+};
+
 describe('labels: capa DOM', () => {
   it('crea una etiqueta oculta a los lectores de pantalla por cuerpo y avisa del clic', () => {
     const host = document.createElement('div');
@@ -186,7 +196,7 @@ describe('labels: capa DOM', () => {
     layer.update(box ? [box] : [], 1);
     const earth = host.querySelector<HTMLElement>('[data-body="tierra"]');
     expect(earth?.hidden).toBe(false);
-    expect(earth?.style.transform).toBe('translate3d(100.0px, 200.0px, 0)');
+    expect(translateOf(earth)).toEqual([100, 200, 0]);
     expect(earth?.classList.contains('scene-label--selected')).toBe(true);
     expect(host.querySelector<HTMLElement>('[data-body="luna"]')?.hidden).toBe(true);
     earth?.querySelector('span')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
