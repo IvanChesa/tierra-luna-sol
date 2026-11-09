@@ -2,7 +2,7 @@
 
 - **Rama:** `fase-10-pulido` (desde `main` en `0eabe29`), en la carpeta del proyecto. La entrega **10.a** (las lunas recreadas, segunda vuelta, D48) la hace otra sesión en paralelo, en su worktree (`.claude/worktrees/fase-10a-lunas`, rama `fase-10a-lunas`), y esta la junta.
 - **Fecha:** 2026-11-09 (en curso)
-- **Estado:** en curso: hechos el paso previo (el PR 4 de Dependabot, fusionado, y los documentos en `main`), la entrega 10.b (las peticiones de Iván: S8, S9 y S11) y, de la 10.c, D49 y los defectos de la 9c.
+- **Estado:** en curso: hechos el paso previo (el PR 4 de Dependabot, fusionado, y los documentos en `main`), la entrega 10.b (las peticiones de Iván: S8, S9 y S11) y, de la 10.c, D49, los defectos de la 9c y las propuestas de la 9b y de la fase 8; también S2 (de la 10.f, porque es un defecto visible).
 
 ## 0. Plan
 
@@ -47,6 +47,9 @@ Como en la 9b, por archivos (la lista, en la revisión del bloque S): **la 10.a*
 | 10.b · S11, el margen de la nota | hecha | §4.3 |
 | 10.c · S3 y D49, el radar de Venus con el color de las Venera | hecha | §4.4 |
 | 10.c · Los defectos de la crítica de la 9c (decisión 6) | hecha | §4.5 |
+| 10.c · Las propuestas de la 9b: el rótulo de Saturno, los nombres de España y la precarga del recorrido | hecha | §4.6, §4.7 y §4.9 |
+| 10.f · S2, la Tierra sin la bola azul lisa | hecha | §4.8 (adelantada: es un defecto que se ve, no una medida) |
+| 10.c · Las propuestas de la fase 8: el cielo con solo sus texturas, el resplandor de día, el Sol rojo junto al horizonte y el encuadre de la sombra a la puesta | hecha | §4.10, §4.11 y §4.12 |
 
 ## 4. Lo hecho, entrega a entrega
 
@@ -110,9 +113,64 @@ En gris, Venus «Bajo las nubes» se confundía con la Luna. D49: el color de la
 
 Los e2e de las páginas, de accesibilidad (axe en las 40 rutas, en escritorio y en el móvil), del móvil, de la Luna y del recorrido, en verde con estos cambios.
 
+### 4.6 El rótulo de Saturno, justo por encima de sus anillos (`925bcba`)
+
+Propuesta de la 9b (§10 de su informe): el hueco de Saturno para su nombre era el radio del anillo A en todas direcciones (`LABEL_EXTENTS`), así que a su derecha el nombre quedaba más allá de los anillos, lejos del planeta.
+
+- **Lo que suben los anillos en pantalla, frame a frame:** la elipse de un anillo de radio R con su polo n, vista con la cámara, tiene de alto R·√(sen²ψ + (n·dentro)²·cos²ψ) (ψ, lo que se aparta de la vertical el polo proyectado). El motor la calcula con el polo de Saturno del frame (`ringLabelExtents`) y la colocación sin solapes la usa (`verticalExtents`): los cuerpos con anillos prueban **primero arriba**, justo por encima de los anillos, y luego derecha, izquierda y abajo, como los demás. Test (`labels.spec.ts`): con los anillos casi de canto, el nombre va justo encima de ellos (a 1,2 radios del centro y no a 2,27, su radio) y, si arriba no cabe, a su derecha, como antes.
+- **Capturas** (`capture-requests.mjs rotulo`), a 1440 y a 390, la pantalla y el detalle: antes, «Saturno» a la derecha de los anillos; ahora, encima, junto al planeta.
+
+### 4.7 Los nombres de los lugares de la vista «España» (`2498e1d`)
+
+Propuesta de la 9b: los puntos de los lugares del cielo desde España, en la vista guiada «España» de la Tierra, no decían qué eran.
+
+- **Junto a cada punto, su nombre corto** (`placeMapLabel`, test): «Montsec», «Fabra», «Roque de los Muchachos», «Teide», «Calar Alto», «Puerta del Sol» (Madrid) y «Fraga». Usan la colocación sin solapes de los nombres de los cuerpos (una capa propia, `placeLabels`), con el Montsec primero (el lugar por defecto del cielo); sin los de la cara oculta de la Tierra; sin clic (`pointer-events: none`: los puntos no son botones y el cielo de cada lugar se elige en `/cielo`).
+- Solo en la vista «España» (con los marcadores). Test del motor: con los marcadores salen sus nombres (el Montsec y el Teide, siempre), un clic en ellos no elige nada y sin los marcadores no queda ninguno.
+- **Capturas** (`antes-` y `despues-espana-1440` y `-390`).
+
+### 4.8 S2: la Tierra ya no entra como una bola azul (`52fdb23`)
+
+Revisión del bloque S, S2: entrando directo en `/explorar/tierra`, la Tierra era una bola azul lisa durante unos segundos (a los 9 s seguía así; a los 17 s, con su mapa).
+
+- **La causa:** al enfocar la Tierra se pide su 8K. La 1k de la vista general, si aún estaba en camino, se tiraba al llegar (ya no era la pedida) y, entrando directo, ni se pedía. Mientras, la Tierra tiene su color esquemático: azul, con las nubes y el contorno del mapa del océano.
+- **El arreglo** (`world.ts`): una textura menor que la pedida que llega cuando el cuerpo aún no tiene ninguna **se usa de paso** hasta que llega la grande (y entonces se suelta), y entrando directo en una vista se pide también la de la vista general. Vale para cualquier cuerpo. Test del motor.
+- **Medido** con `scripts/capture-earth-entry.mjs --serie --8k-lenta --escritorio` (nuevo): una medida por segundo durante 20 s desde que se va el póster, con la 1k 4 s más lenta y la 8K 12 s (sin depender de la red), en pausa y con una fecha fija; la métrica, la parte de píxeles de tierra en el centro del disco (el rojo por encima del azul). **La Tierra azul, sin su mapa de día: 11–12 s antes y 3 s ahora** (hasta que llega la 1k). Con la red de §5 y sin caché, el 3D tarda unos 20 s y llega ya con su mapa, antes y ahora. Capturas `antes-` y `despues-tierra-entrada-serie-{0,2,5,10}s`.
+
+### 4.9 La precarga del recorrido de la primera vez (`72beade`)
+
+Propuesta de la 9b: el recorrido llega a la Tierra y a la Luna a los pocos segundos y sus texturas grandes empezaban a bajar al enfocarlas.
+
+- Al empezar el recorrido, mientras se ve Saturno, se traen **por la red y sin subirlas** las texturas de primer plano de la Tierra y de la Luna (`SceneEngine.prefetchCloseUps`, `World.prefetchCloseUp` y `TextureSource.prefetch`: `fetch` con prioridad baja y leída entera). Quedan en la caché del navegador (las texturas, con su hash en el nombre, son inmutables un año, `_headers`) y la carga de siempre las encuentra allí al enfocarlas. Sin VRAM de más: no se suben hasta entonces.
+- Con S2 (§4.8), la Tierra ya no llegaba azul (la 1k está en memoria desde la vista general); con esto, nítida antes. Tests del motor, de la sesión y del recorrido. No hay medida de tiempo: depende de la red de cada uno; lo que se comprueba es que se piden al empezar y que no se suben.
+
+### 4.10 El cielo desde España, solo con sus texturas (`3751ebe`)
+
+Propuesta de la fase 8 (sugerencia 13 de su revisión): en el cielo se pedían las texturas de la vista general de los 30 cuerpos, que no se ven.
+
+- `World.setSkyOnly`: en el cielo, solo la Vía Láctea y la Luna (las usa `SkyScene`; la Luna, con el nivel de la vista general); lo demás se suelta. Entrando por `/cielo`, el espacio no pide las suyas; al volver al espacio, se piden otra vez. Test del motor.
+- **Medido** (escritorio, `/cielo?captura=1` el 1-11-2026 a las 22:00): **38,9 MB de VRAM y 12 texturas antes; 14,2 MB y 2 ahora** (la Vía Láctea de 2k y la Luna de 1k). Al pasar al espacio (tecla 1), 38,9 MB, como antes; de vuelta al cielo, 14,9 MB.
+
+### 4.11 La luz del cielo de día y el Sol al ponerse (`b66a581`)
+
+Propuesta de la fase 8 (sugerencia 14 de su revisión): de día, el resplandor bajo un Sol alto saturaba a blanco unos 600 px del horizonte, y el Sol, al ponerse, era un punto blanco. La luz del cielo de la fase 8 es **ilustrativa** (colores de referencia a varias alturas del Sol); los arreglos siguen ese criterio, en `VISUAL_CONFIG.sky`:
+
+- **El resplandor del horizonte del lado del Sol** (`band`), según la altura del Sol (`glow.band`): entero en la puesta (hasta 3°) y poco con el Sol alto (0,25 a 20° y 0,15 desde 40°). Antes, de día, su color crema se sumaba al horizonte blanquecino: en el horizonte justo debajo del Sol, 1,47 en el rojo (blanco). Test: con el Sol a 20°, 33°, 45° y 71°, ese punto queda por debajo de 1 en los tres canales.
+- **El disco del Sol, con un color según su altura** (`sunDisc`): blanco desde 20° y cada vez más naranja hacia el horizonte (pierde antes el azul que el verde; test). Para que se viera, hacía falta otra cosa: la cúpula se suma encima del disco y, junto al Sol, ya está saturada, así que cualquier color salía blanco. Ahora **la cúpula no suma su luz dentro del disco**, salvo donde lo tapa la Luna (el bocado de un eclipse sigue teniendo el color del cielo).
+- **De rebote, los eclipses parciales con el Sol bajo se ven:** el del 12-08-2026 desde Fraga a las 18:20 UTC (el Sol a 6,6°) era blanco sobre blanco; ahora, un Sol creciente. La totalidad, igual.
+- **Capturas** (`capture-requests.mjs cielo`, solo el lienzo a 1600 × 900): `cielo-dia` (el mediodía del 1-11 hacia el sur, la captura de día de la fase 8), `cielo-verano` (el Sol a 71°), `cielo-puesta` (el Sol a 1,4°), `cielo-puesta-cerca` (a 3,1°, con un campo de 8°) y `cielo-eclipse-parcial` y `-total` (Fraga), antes y después.
+
+### 4.12 «Ver en 3D» de un eclipse de Sol a la puesta (`6f26518`)
+
+Propuesta de la fase 8 (sugerencia 15 de su revisión): en el máximo del 12-08-2026 visto desde España, la sombra cae junto al terminador; vista desde encima, en el centro de la imagen, se confundía con la noche.
+
+- `moonShadowView` (`ephemeris/eclipse.ts`, función pura con tests): si en el punto de la sombra el Sol está a menos de 20°, la cámara se va hacia el punto subsolar lo que le falta para tenerlo a 20°. El terminador queda a un lado y la sombra, sobre el lado de día. Desde Fraga (18:29:29 UTC), el Sol está a unos 8° en el centro de la sombra y la cámara se desplaza unos 12°. En el máximo global (el Sol a 26°), como antes: el test de la sesión sigue a menos de 0,2° del punto de la NASA.
+- **Capturas** (`capture-requests.mjs sombra`): `sombra-fraga` antes y después y `sombra-maximo` (el máximo global, que no cambia), como pedía la revisión.
+
 ## 5. Desviaciones del plan y motivo
 
 - **S9, en el teléfono, la flecha sola** (el texto, desde 480 px): ver §4.2.
+- **S2, adelantado de la 10.f a la 10.c:** es un defecto que se ve (la Tierra azul), no una medida de rendimiento; su medida no necesita el equipo libre (las texturas se retrasan a propósito).
+- **La luz del cielo (§4.11):** la revisión de la fase 8 proponía atenuar `band` y enrojecer el disco; para que el color del disco se viera, además, la cúpula deja de sumar su luz sobre él.
 
 ## 6. Salida de los checks
 
