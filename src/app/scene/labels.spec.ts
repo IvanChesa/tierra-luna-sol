@@ -223,6 +223,34 @@ describe('labels: capa DOM', () => {
     expect(earth?.hidden).toBe(true);
     layer.dispose();
     expect(host.querySelector('.scene-labels')).toBeNull();
+  });
+
+  it('mide las etiquetas de una vez: todas destapadas al leer y, después, como estaban', () => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    const layer = new LabelLayer(host, infos, () => undefined);
+    const shownAtRead: boolean[] = [];
+    const read = vi
+      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockImplementation(function (this: HTMLElement) {
+        const label = this.closest<HTMLElement>('.scene-label');
+        shownAtRead.push(
+          [...host.querySelectorAll<HTMLElement>('.scene-label')].every((el) => !el.hidden),
+        );
+        return new DOMRect(0, 0, label?.dataset['body'] === 'sol' ? 30 : 50, 16);
+      });
+    const sizes = layer.measure();
+    expect(read).toHaveBeenCalledTimes(infos.length);
+    expect(shownAtRead.every(Boolean)).toBe(true);
+    expect(sizes.map((s) => s.width)).toEqual(infos.map((i) => (i.id === 'sol' ? 30 : 50)));
+    expect([...host.querySelectorAll<HTMLElement>('.scene-label')].every((el) => el.hidden)).toBe(
+      true,
+    );
+    // Ya medidas, no se vuelven a leer.
+    layer.measure();
+    expect(read).toHaveBeenCalledTimes(infos.length);
+    read.mockRestore();
+    layer.dispose();
     host.remove();
   });
 });

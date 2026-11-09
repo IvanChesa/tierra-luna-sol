@@ -44,7 +44,7 @@ import {
   detectQuality,
 } from './quality';
 import { OrientationModel } from './orientations';
-import type { RendererFactory, RendererPort, ResolvedDepthMode } from './renderer';
+import type { RendererFactory, RendererOptions, RendererPort, ResolvedDepthMode } from './renderer';
 import { StarField } from './stars';
 import {
   MOON_SYSTEMS,
@@ -525,12 +525,7 @@ export class SceneEngine implements SceneEngineApi {
       ...DEFAULT_SKY_POSE,
       ...(this.captureMode ? options.skyView : undefined),
     });
-    this.renderer = deps.createRenderer(options.canvas, {
-      depth: resolveDepth(options.depth ?? 'auto'),
-      antialias: true,
-      clearColor: BACKGROUND_COLOR,
-      toneMapping: options.toneMapping ?? VISUAL_CONFIG.toneMapping,
-    });
+    this.renderer = deps.createRenderer(options.canvas, engineRendererOptions(options));
     const caps = this.renderer.capabilities;
     this.qualitySetting = options.quality;
     this.level =
@@ -1032,18 +1027,27 @@ export class SceneEngine implements SceneEngineApi {
       this.starCatalog = catalog;
       stars.setPixelRatio(this.pixelRatio());
       this.world.setStars(stars);
+      // Cada paso en su tarea, y la compilación, por partes (fase 10: con la CPU a ×4, ninguna tarea
+      // larga del arranque que se pueda trocear).
+      const pause = () => this.deps.yieldToMain();
+      await pause();
+      if (this.disposed) return;
       this.emit('progress', { loaded: 2, total, step: 'Compilando sombreados' });
-      await this.renderer.compile(this.world.scene, this.world.camera);
+      await this.renderer.compile(this.world.scene, this.world.camera, pause);
       // Si se entra por la vista del cielo, su escena también, antes del primer frame.
       if (this._view === 'sky') {
         const sky = this.ensureSky();
-        if (sky) await this.renderer.compile(sky.scene, sky.camera);
+        if (sky) await this.renderer.compile(sky.scene, sky.camera, pause);
         if (this.disposed) return;
         this.skyCompiled = sky !== null;
       }
       if (this.disposed) return;
       this.emit('progress', { loaded: 3, total, step: 'Primer fotograma' });
       this.renderFrame(this.deps.now());
+      // El primer fotograma (sube las geometrías), en su tarea; lo que despierta, en la siguiente: la
+      // interfaz y el recorrido, y las peticiones de texturas.
+      await pause();
+      if (this.disposed) return;
       this.ready = true;
       this.emit('progress', { loaded: total, total, step: 'Listo' });
       this.emit('ready', { startupMs: this.deps.now() - this.startMs });
@@ -2134,6 +2138,16 @@ export class SceneEngine implements SceneEngineApi {
 
 function resolveDepth(mode: DepthMode): ResolvedDepthMode {
   return mode === 'auto' ? DEFAULT_DEPTH : mode;
+}
+
+/** Cómo se crea el renderer del motor (también desde fuera, para crearlo en su propia tarea). */
+export function engineRendererOptions(options: SceneEngineOptions): RendererOptions {
+  return {
+    depth: resolveDepth(options.depth ?? 'auto'),
+    antialias: true,
+    clearColor: BACKGROUND_COLOR,
+    toneMapping: options.toneMapping ?? VISUAL_CONFIG.toneMapping,
+  };
 }
 
 /**

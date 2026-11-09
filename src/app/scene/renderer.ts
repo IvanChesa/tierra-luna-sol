@@ -8,6 +8,7 @@ import {
   ACESFilmicToneMapping,
   AgXToneMapping,
   Camera,
+  Material,
   NeutralToneMapping,
   SRGBColorSpace,
   Scene,
@@ -25,6 +26,18 @@ const TONE_MAPPING: Readonly<Record<ToneMappingMode, ToneMapping>> = {
 };
 
 export type ResolvedDepthMode = Exclude<DepthMode, 'auto'>;
+
+/**
+ * Lo más que trabaja seguido la compilación por partes antes de ceder el hilo (ms). Con la CPU a ×4,
+ * por debajo de los 50 ms de una tarea larga (fase 10, Lighthouse).
+ */
+const SLICE_MS = 10;
+
+/** Lo que three hace la primera vez que usa un programa (`WebGLProgram`, interno). */
+interface FirstUse {
+  getUniforms(): unknown;
+  getAttributes(): unknown;
+}
 
 export interface RendererCapabilities {
   readonly maxTextureSize: number;
@@ -50,8 +63,11 @@ export interface RendererPort {
   /** Exposición del tone mapping (D21: por vista). */
   setExposure(exposure: number): void;
   render(scene: Scene, camera: Camera): void;
-  /** Compila los shaders sin bloquear el hilo principal (KHR_parallel_shader_compile). */
-  compile(scene: Scene, camera: Camera): Promise<void>;
+  /**
+   * Compila los shaders sin bloquear el hilo principal (KHR_parallel_shader_compile). Con `pause`, por
+   * partes (los hijos de la escena), cediendo el hilo entre una y otra.
+   */
+  compile(scene: Scene, camera: Camera, pause?: () => Promise<void>): Promise<void>;
   /** Sube una textura a la GPU ya (para repartir las subidas entre frames). */
   initTexture(texture: Texture): void;
   info(): RendererInfo;
@@ -126,8 +142,41 @@ export const createWebGLRenderer: RendererFactory = (canvas, options) => {
       renderer.info.reset();
       renderer.render(scene, camera);
     },
-    compile(scene, camera) {
-      return renderer.compileAsync(scene, camera).then(() => undefined);
+    async compile(scene, camera, pause) {
+      if (!pause) {
+        await renderer.compileAsync(scene, camera);
+        return;
+      }
+      // Por partes, con el hilo libre cada `SLICE_MS` (fase 10, Lighthouse): preparar de una vez los
+      // programas de toda la escena era una tarea larga. Se enlazan en paralelo y se esperan todos.
+      const linked: Promise<unknown>[] = [];
+      const materials = new Set<Material>();
+      let deadline = performance.now() + SLICE_MS;
+      const slice = async () => {
+        if (performance.now() < deadline) return;
+        await pause();
+        deadline = performance.now() + SLICE_MS;
+      };
+      for (const part of [...scene.children]) {
+        linked.push(renderer.compileAsync(part, camera, scene));
+        part.traverse((object) => {
+          const material = (object as { material?: Material | Material[] }).material;
+          for (const m of Array.isArray(material) ? material : material ? [material] : []) {
+            materials.add(m);
+          }
+        });
+        await slice();
+      }
+      await Promise.all(linked);
+      // Lo que three hace la primera vez que usa un programa (leer sus uniformes y sus atributos y
+      // comprobar que compiló), también por partes: si no, iba entero en el primer fotograma.
+      for (const material of materials) {
+        const program = (renderer.properties.get(material) as { currentProgram?: FirstUse })
+          .currentProgram;
+        program?.getUniforms();
+        program?.getAttributes();
+        await slice();
+      }
     },
     initTexture(texture) {
       renderer.initTexture(texture);

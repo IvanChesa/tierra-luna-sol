@@ -163,6 +163,13 @@ describe('fotometría: brillo de la parte iluminada', () => {
     expect(between).toBeCloseTo(((table[4] as number) + (table[5] as number)) / 2, 12);
     expect(interpolateLitBrightness(table, 4)).toBe(table[18]);
   });
+
+  it('la tabla, con la fase llena integrada una sola vez, da lo mismo que fila a fila', () => {
+    const rows = Array.from({ length: 19 }, (_, k) =>
+      litDiscBrightness(k * 10 * DEG, LOMMEL_SEELIGER),
+    );
+    expect(Array.from(litBrightnessTable(LOMMEL_SEELIGER))).toEqual(rows);
+  });
 });
 
 describe('fotometría: albedo y color', () => {

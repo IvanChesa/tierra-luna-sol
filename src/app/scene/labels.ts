@@ -267,13 +267,18 @@ export class LabelLayer {
    * texto no cambia); antes, una estimación por número de letras.
    */
   measure(): readonly { width: number; height: number }[] {
-    this.elements.forEach((el, k) => {
-      const size = this.sizes[k] as { width: number; height: number };
-      if (size.width > 0) return;
-      const wasHidden = el.hidden;
-      el.hidden = false;
-      const rect = (el.lastElementChild ?? el).getBoundingClientRect();
+    // Primero se destapan todas las que faltan y después se leen: una sola maquetación. Una a una, eran
+    // una maquetación por etiqueta (37 seguidas al arrancar: unos 100 ms con la CPU a ×4; fase 10).
+    const pending = this.elements.flatMap((el, k) =>
+      (this.sizes[k]?.width ?? 0) > 0 ? [] : [{ el, k, wasHidden: el.hidden }],
+    );
+    if (pending.length === 0) return this.sizes;
+    for (const { el } of pending) el.hidden = false;
+    const rects = pending.map(({ el }) => (el.lastElementChild ?? el).getBoundingClientRect());
+    pending.forEach(({ el, k, wasHidden }, i) => {
       el.hidden = wasHidden;
+      const size = this.sizes[k] as { width: number; height: number };
+      const rect = rects[i] as DOMRect;
       const name = this.infos[k]?.name ?? '';
       size.width = rect.width || 7.5 * name.length + 14;
       size.height = rect.height || 18;
