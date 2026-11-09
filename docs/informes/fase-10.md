@@ -30,11 +30,25 @@ Como en la 9b, por archivos (la lista, en la revisión del bloque S): **la 10.a*
 
 ## 1. Resumen
 
-(En curso.)
+**La fase 10, hecha**, con la 10.a junta. Lo que trae:
+
+- **Las peticiones de Iván del 08-11** (10.b): el Sol sin girar (S8), «‹ Sistema solar» como botón reconocible (S9) y el margen de la nota bajo «Ver en 3D» (S11).
+- **Diseño** (10.c): el radar de Venus con el color de las Venera (S3, D49); los defectos de la crítica de la 9c; las propuestas de la 9b y de la fase 8; la revisión final con impeccable y las Web Interface Guidelines (`docs/revisiones/fase-10-critica.md`), con capturas antes y después.
+- **Accesibilidad y resiliencia** (10.d): axe en las 40 rutas en escritorio y en el móvil, sin WebGL, el contexto perdido y el movimiento reducido, en los e2e; el zum al 200 %, bien en las 22 comprobaciones.
+- **Contenido** (10.e): los decimales de las fuentes, S5, el subtítulo de Shackleton, el terminador de Titán con otra foto de Cassini y **la comprobación de los 551 textos** por un subagente: 8 correcciones y 10 dudas para Iván.
+- **Rendimiento** (10.f): la Tierra sin la bola azul (S2), el bloom fuera, el Sol del móvil a 10 frames por segundo en bajo con hashes enteros, el ritmo de pintado según el movimiento, la 8K más barata y el arranque del 3D troceado. **Las medidas de §5, con el equipo libre: todas dentro** (§4.26).
+- **Lighthouse en el CI** (10.g): `@lhci/cli` con sus tres condiciones. En local, las páginas de contenido, de 0,96 a 1,00. En el CI, la causa de las notas bajas era SwiftShader en páginas que no lo usan; sin él, siete de nueve fichas a 0,99–1,00, pero no todas de forma estable, así que el rendimiento va como aviso allí (§4.24). El explorador, 0,76, como aviso, con la decisión para Iván.
+- **La 10.a** (las lunas recreadas, segunda vuelta, D48), junta con `--no-ff` (§4.25).
+- **La regresión visual** (10.h): seis vistas clave en escritorio y en el móvil, con las referencias del CI (Linux) (§4.29).
 
 ## 2. Criterios de aceptación
 
-(En curso.)
+| Criterio | Estado | Evidencia |
+|---|---|---|
+| Tabla con **todos** los presupuestos de §5 medidos y cumplidos | ✅ (con dos avisos) | §4.26 (FPS, VRAM, peso por vista, arranque, reposo, efemérides, store y URL, contexto, memoria, la 8K y el ritmo de pintado), §4.22 y §4.24 (Lighthouse), §6 (JS inicial y código propio: 13,98 kB de 15). **Los avisos:** el explorador en Lighthouse, 0,76 (§5 pide 0,90; como aviso, para Iván, `PENDIENTES.md`); y Fobos en alto a 1 día/s, que mide el ritmo lento del aliasing y no lo que da la GPU (a 1 h/s, 60 FPS) |
+| axe sin violaciones graves; e2e y regresión visual en verde en el CI | ✅ | `accesibilidad.spec.ts`: axe en las 40 rutas, en escritorio y en el móvil. Los e2e y la regresión visual, en verde en el CI (§4.29 y §6) |
+| Lo de la revisión del bloque S hecho y demostrado: la 10.a con los criterios de D48 (sus capturas, vistas por la sesión de revisión antes de juntarla), y S2, S3, S8, S9 y S11 con sus capturas antes y después | ✅ | La 10.a, §4.25 y su nota (las capturas, vistas por la sesión de revisión). S8, §4.1; S9, §4.2; S11, §4.3; S3, §4.4; S2, §4.8; con sus capturas en §7 |
+| Iván da el visto bueno en su móvil (y en un iPhone) | ⏳ (no bloquea) | `PENDIENTES.md`: las pruebas en el móvil se recogen cuando Iván pueda (decisión de Iván) |
 
 ## 3. Tareas del plan
 
@@ -426,6 +440,8 @@ Un subagente sin el contexto de la sesión (`docs/revisiones/textos.md`) compar�
 - **La 8K de la Tierra (§4.19), volteada en el sombreado** y no guardada ya volteada: el mismo ahorro, sin regenerar las texturas.
 - **La precarga de la fuente del H1** ya estaba hecha (fase 9): Newsreader 500, el peso de los títulos, va precargada en `index.html` con las dos de Public Sans.
 - **El rendimiento del explorador en Lighthouse, como aviso** (§5 del plan pide ≥ 90): da 0,76 con el arranque troceado. Lo que falta es crear el contexto WebGL, una tarea que no se puede partir (§4.22). La propuesta, en §10.
+- **La hidratación incremental de las fichas no se ha hecho** (tarea 12, primer punto): era el primer camino para el código propio inicial (14,88 kB de 15 en la fase 9) y para la tarea larga de la hidratación. El código propio ya está en **13,98 kB** y las fichas dan de 0,96 a 1,00 en Lighthouse en local, así que se queda para cuando haga falta (propuesta en §10). Hacerla al final, después de las medidas, obligaba a repetirlas.
+- **Lighthouse en el CI, el rendimiento como aviso** (§4.24): por la decisión de la sesión de revisión para el caso de que las fichas no cumplieran de forma estable en el CI.
 - **La cabecera del explorador en el móvil y la tableta, a 3rem** (antes 3.5rem), el alto de la franja fina de la decisión de Iván del 08-11: así el explorador no salta al elegir un cuerpo (§4.22). Las páginas de contenido siguen con 3.5rem.
 
 ## 6. Salida de los checks
@@ -449,11 +465,17 @@ En `docs/informes/img/fase-10/` (las de la 10.a, `lunas-*`, son de la otra sesi�
 
 ## 9. Pendientes y `TODO(ivan)`
 
-(Al cerrar.)
+Ningún `TODO(ivan)` nuevo en el código. En `PENDIENTES.md`, para Iván (no bloquean):
+- el visto bueno en su móvil y en un iPhone (tarea 5), con el Sol de cerca en el nivel bajo (S9 en el teléfono y los 10 frames por segundo);
+- la lista corta de los textos (`docs/revisiones/textos.md`: 10 dudas y una frase sin fuente); con su OK, todos los textos pasan a `reviewed: true`;
+- la nota de rendimiento del explorador en Lighthouse (0,76; las opciones, en §10);
+- saber que en el CI el rendimiento de Lighthouse va como aviso, y que la cifra definitiva es la de producción (fase 11);
+- la prueba con un lector de pantalla de verdad (NVDA o Narrador): desde aquí, axe en las 40 rutas, el teclado en los e2e y el árbol de accesibilidad; la prueba de oído no se puede hacer en esta sesión.
 
 ## 10. Propuestas de cambio al plan
 
-(Las demás, al cerrar.)
+- **La hidratación incremental de las fichas, al backlog** (§5): `@defer (hydrate on viewport)` en las secciones bajo el pliegue. Es lo que más bajaría la tarea del arranque de Angular, la que deja `/lunas/titan` y `/planetas/marte` en 0,94–0,95 en el CI (§4.24). Con ella, el rendimiento de las fichas podría volver a ser error en el CI.
+- **`measure-views.mjs`, a la velocidad de D33 con un cuerpo enfocado** (1 h/s) o con el ritmo de pintado apagado: a 1 día/s, Fobos mide el ritmo lento del aliasing y no lo que da la GPU (§4.26).
 
 - **El rendimiento del explorador en Lighthouse** (§4.22; para Iván, en `PENDIENTES.md`). Con el arranque troceado, el explorador da **0,76** (antes, 0,66): el LCP baja a 2,5 s, el SI a 2,8 s y el CLS a 0,006, pero el TBT se queda en unos 875 ms. Casi todo es crear el contexto WebGL en el Chrome recién abierto de cada carga, una tarea de unos 210 ms que no se puede partir: para 0,90 haría falta bajar el TBT de unos 300 ms. Las opciones:
   1. **(Recomendada) Dejarlo como aviso**, como está. Las fichas y las demás páginas siguen como error (≥ 0,95), y la accesibilidad y las buenas prácticas del explorador también. El aviso deja ver la nota en cada CI sin pararlo.
@@ -462,4 +484,8 @@ En `docs/informes/img/fase-10/` (las de la 10.a, `lunas-*`, son de la otra sesi�
 
 ## 11. Cómo probarlo
 
-(Al cerrar.)
+- `npm run check` y `npm run e2e` (la regresión visual solo se compara en Linux; en Windows se salta).
+- `npm run build && npm run lighthouse` (con el equipo libre): las páginas de contenido, ≥ 0,95 como error; el explorador, como aviso. En el CI, el trabajo «Lighthouse (móvil)» deja los informes como artefacto.
+- Las medidas: `node scripts/measure-views.mjs` y `node scripts/measure.mjs` tras `npm run build`.
+- Las referencias de la regresión visual, otra vez (tras un cambio visual buscado): un push con «[referencias]» en el mensaje del último commit; el trabajo «Referencias de la regresión visual» deja el artefacto `referencias`, que se copia a `e2e/regresion.spec.ts-snapshots/` y se guarda con un commit normal.
+- A la vista: el Sol quieto a 3 días/s (S8), «‹ Sistema solar» (S9), Venus «Bajo las nubes» (S3), la Tierra al entrar con la red lenta (S2) y las lunas de Urano de cerca (la 10.a).
