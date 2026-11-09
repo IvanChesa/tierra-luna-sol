@@ -46,26 +46,9 @@
  * Si la lista no cabe, una sombra en su borde de abajo dice que hay más mientras quede algo por ver:
  * las barras de desplazamiento superpuestas (macOS, pantallas táctiles) no se ven en reposo. Es un
  * pseudoelemento pegado al borde, no una máscara: se ve aunque el corte caiga justo entre dos filas.
- * La enciende una animación ligada al desplazamiento, sin JS: sin desbordamiento, su línea de tiempo
- * no está activa y no hay sombra; donde no se admite, queda la barra.
+ * La enciende una animación ligada al desplazamiento, sin JS (`more-below`, en styles.css): sin
+ * desbordamiento, su línea de tiempo no está activa y no hay sombra; donde no se admite, queda la barra.
  */
-@property --more-below {
-  syntax: '<number>';
-  inherits: true;
-  initial-value: 0;
-}
-
-@keyframes more-below {
-  0%,
-  94% {
-    --more-below: 1;
-  }
-
-  100% {
-    --more-below: 0;
-  }
-}
-
 .tree::after {
   position: sticky;
   bottom: 0;

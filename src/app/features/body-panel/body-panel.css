@@ -68,25 +68,9 @@
 /*
  * Si los datos no caben (portátil, tarjeta baja), una sombra en el borde de abajo dice que hay más
  * mientras quede algo por ver, aunque el corte caiga entre dos filas (como en el índice:
- * body-picker.css). La enciende una animación ligada al desplazamiento; sin desbordamiento, no hay.
+ * body-picker.css). La enciende una animación ligada al desplazamiento (`more-below`, en styles.css);
+ * sin desbordamiento, no hay.
  */
-@property --more-below {
-  syntax: '<number>';
-  inherits: true;
-  initial-value: 0;
-}
-
-@keyframes more-below {
-  0%,
-  94% {
-    --more-below: 1;
-  }
-
-  100% {
-    --more-below: 0;
-  }
-}
-
 .card__body::after {
   position: sticky;
   bottom: calc(-1 * var(--card-pad));
@@ -135,12 +119,6 @@
 /* La línea del Sol en color realzado (fase 9b, D46), antes de sus datos. */
 .card__note {
   margin-bottom: var(--space-6);
-}
-
-@media (pointer: coarse) {
-  .card__radar-toggle {
-    min-height: var(--tap-target);
-  }
 }
 
 .card__section {
@@ -206,6 +184,16 @@
   border-top: var(--border-width) solid var(--color-line);
 }
 
+/* Al abrir la ficha con «ⓘ» en el móvil, el foco llega al resumen: el anillo, por dentro. */
+.card__body:focus-visible {
+  outline-offset: calc(-1 * var(--focus-ring-width));
+}
+
+/* «Ver los datos»: solo en el móvil (en escritorio, la tarjeta lo enseña todo). */
+.card__more {
+  display: none;
+}
+
 .card__link {
   display: inline-flex;
   align-items: center;
@@ -217,6 +205,10 @@
   .card__close {
     width: var(--tap-target);
     height: var(--tap-target);
+  }
+
+  .card__radar-toggle {
+    min-height: var(--tap-target);
   }
 }
 
@@ -236,19 +228,7 @@
   .card__foot {
     padding: 0 var(--space-4);
   }
-}
 
-/* Al abrir la ficha con «ⓘ» en el móvil, el foco llega al resumen: el anillo, por dentro. */
-.card__body:focus-visible {
-  outline-offset: calc(-1 * var(--focus-ring-width));
-}
-
-/* «Ver los datos»: solo en el móvil (en escritorio, la tarjeta lo enseña todo). */
-.card__more {
-  display: none;
-}
-
-@media (max-width: 63.99rem) {
   .card__more {
     display: inline-flex;
     align-items: center;
@@ -263,15 +243,12 @@
   }
 
   /* En reposo, la hoja no pasa del 45 % de la pantalla: el nombre, el resumen y «Ficha completa». */
-  :host-context(.panel:not(.is-expanded)) .card__rest {
+  :host(.is-resting) .card__rest {
     display: none;
   }
 
-  :host-context(.panel:not(.is-expanded)) .card__summary {
-    margin-bottom: var(--space-2);
-  }
-
-  :host-context(.panel:not(.is-expanded)) .card__radar {
+  :host(.is-resting) .card__summary,
+  :host(.is-resting) .card__radar {
     margin-bottom: var(--space-2);
   }
 }
@@ -306,7 +283,7 @@
     grid-column: 1 / -1;
   }
 
-  :host-context(.panel:not(.is-expanded)) .card__rest {
+  :host(.is-resting) .card__rest {
     display: block;
   }
 }

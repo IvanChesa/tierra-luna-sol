@@ -50,6 +50,9 @@ const NEAR_KM = 5e6;
   imports: [RouterLink, Icon],
   templateUrl: './body-panel.html',
   styleUrl: './body-panel.css',
+  // En reposo (la hoja del móvil y de la tableta sin subir), para su CSS: una clase en el propio
+  // elemento, más corta que preguntar por el panel con `:host-context`.
+  host: { '[class.is-resting]': '!expanded()' },
 })
 export class BodyPanel {
   readonly bodyId = input.required<BodyId>();
