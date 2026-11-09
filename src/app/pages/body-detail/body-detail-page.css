@@ -65,6 +65,15 @@
   font-size: var(--text-sm);
 }
 
+/*
+ * La línea del color realzado o del mapa (el Sol y las lunas recreadas), justo después de «Ver en
+ * 3D»: con el mismo aire que hay entre el resumen y el botón (revisión del bloque S, S11; Iván, 08-11:
+ * «Corrige márgenes»). Sin él, iba pegada al botón.
+ */
+.body__view + .body__note {
+  margin-top: var(--space-4);
+}
+
 /* Las direcciones de las fuentes («svs.gsfc.nasa.gov/vis/a010000/…», la del Sol realzado, D46) no
    tienen espacios: sin esto, a 320 px de ancho ensanchaban la página (WCAG 1.4.10). */
 .body__note a {
