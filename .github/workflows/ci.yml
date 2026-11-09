@@ -130,7 +130,9 @@ jobs:
   # Lighthouse (fase 10, tarea 7; `@lhci/cli`, aprobado en la revisión del bloque S): los presupuestos
   # de §5 en el móvil de Lighthouse, con el build verificado y el Chromium de Playwright
   # (`lighthouserc.js`). Los informes, en el disco del CI (y como artefacto del CI, 7 días); nunca en
-  # `temporary-public-storage`. No frena la vista previa: si una nota baja, el trabajo sale en rojo.
+  # `temporary-public-storage`. No frena la vista previa. El rendimiento, como aviso (los ejecutores
+  # gratuitos no dan cifras estables; las que cuentan, las de local y las de producción); la
+  # accesibilidad y las buenas prácticas, como error: si bajan, el trabajo sale en rojo.
   lighthouse:
     name: Lighthouse (móvil)
     needs: check
