@@ -2,7 +2,7 @@
 
 - **Rama:** `fase-10-pulido` (desde `main` en `0eabe29`), en la carpeta del proyecto. La entrega **10.a** (las lunas recreadas, segunda vuelta, D48) la hace otra sesión en paralelo, en su worktree (`.claude/worktrees/fase-10a-lunas`, rama `fase-10a-lunas`), y esta la junta.
 - **Fecha:** 2026-11-09 (en curso)
-- **Estado:** en curso: hecha la entrega 10.b (las peticiones de Iván: S8, S9 y S11).
+- **Estado:** en curso: hechos el paso previo (el PR 4 de Dependabot, fusionado, y los documentos en `main`), la entrega 10.b (las peticiones de Iván: S8, S9 y S11) y, de la 10.c, D49 y los defectos de la 9c.
 
 ## 0. Plan
 
@@ -39,11 +39,14 @@ Como en la 9b, por archivos (la lista, en la revisión del bloque S): **la 10.a*
 
 | Tarea | Estado | Notas |
 |---|---|---|
-| Paso previo: el PR 4 de Dependabot | en curso | El test de las etiquetas, en `main` (`0eabe29`): compara los números del `translate3d`, no el texto (jsdom 31 lo serializa como CSSOM, `translate3d(100px, 200px, 0px)`); comprobado con jsdom 30 (en el proyecto) y con jsdom 31 (en una carpeta aparte). `@dependabot rebase` pedido a las 10:40 UTC |
+| Paso previo: el PR 4 de Dependabot | hecha | El test de las etiquetas, en `main` (`0eabe29`): compara los números del `translate3d`, no el texto (jsdom 31 lo serializa como CSSOM, `translate3d(100px, 200px, 0px)`); comprobado con jsdom 30 (en el proyecto) y con jsdom 31 (en una carpeta aparte). `@dependabot rebase` (10:40 UTC) no se atendió en 45 minutos: la rama del PR se rebasó desde GitHub (`gh pr update-branch --rebase`). Con su CI en verde (lint, tests, build y e2e), fusionado (`3ac86d7`), y `npm ci` (jsdom 31.0.0, Playwright 1.65.0, Vitest 5.1.0; el Chromium de Playwright 1.65, instalado). Junto a la rama (`27a40b7`): 817 tests en verde |
+| Paso previo: un e2e intermitente en `main` | hecha | El CI de `main` del 09-11 (`0eabe29`) falló dos veces seguidas en `fallos.spec.ts:38` («Reintentar»: el tiempo, 0 en 1,5 s). La causa, en la traza: tras «Reintentar», el motor nuevo estaba listo y reproduciendo, pero la página no pintó ningún fotograma en los 2 s siguientes (SwiftShader, con el motor nuevo compilando y subiendo texturas); a las velocidades rápidas el reloj del motor avanza con los fotogramas (a propósito). Se espera con `expect.poll` a que avance (`cfce0e5`, en `main`); su CI, en verde. `camara.spec.ts:34` no ha vuelto a fallar |
 | Paso previo: los documentos | hecha | En `main` (`fa445ce`): D48 y D49 en §1; `@lhci/cli` en la lista cerrada y en `CLAUDE.md`; el bloque S ✅; la fase 10 con la 10.a, S2, S3, S8, S9, S11, las decisiones 4 y 6 y las propuestas de la 9b; el backlog 15 y 17; la fase 11 con S6 y el panel de rendimiento; `PROMPTS.md` y `PENDIENTES.md` |
 | 10.b · S8, el Sol sin girar | hecha | §4.1 |
 | 10.b · S9, «‹ Sistema solar» | hecha | §4.2 |
 | 10.b · S11, el margen de la nota | hecha | §4.3 |
+| 10.c · S3 y D49, el radar de Venus con el color de las Venera | hecha | §4.4 |
+| 10.c · Los defectos de la crítica de la 9c (decisión 6) | hecha | §4.5 |
 
 ## 4. Lo hecho, entrega a entrega
 
@@ -78,6 +81,34 @@ Iván, el 08-11, con una captura de escritorio con la Tierra elegida: «Haz más
 ### 4.3 S11: la nota bajo «Ver en 3D», con aire (`a2b6bf8`)
 
 Iván, el 08-11, con una captura de `/sol`: «Corrige márgenes». La línea del color realzado (el Sol) o del mapa (las lunas recreadas) iba pegada al botón: `.body__note` no tenía margen y esta nota, a diferencia de las demás, va justo después del botón. Ahora, `.body__view + .body__note` lleva `margin-top: var(--space-4)` (16 px), el mismo aire que hay entre el resumen y el botón (el margen de los párrafos). Solo esa nota: las de «Hoy» no cambian. Capturas `antes-` y `despues-nota-sol-*` y `nota-oberon-*`, a 1280 y a 390.
+
+### 4.4 S3 y D49: el radar de Venus, con el color de las Venera 13 y 14 (`965695c`)
+
+En gris, Venus «Bajo las nubes» se confundía con la Luna. D49: el color de las fotos de las Venera 13 y 14, como el globo de Magellan de la NASA (PIA00104, cuyo pie dice «The simulated hues are based on color images recorded by the Soviet Venera 13 and 14 spacecraft»).
+- **Medido, no inventado:** `scripts/measure-venera-tint.mjs` baja PIA00104 a una carpeta temporal del sistema (no entra en el repo; solo se mide) y mide su cromaticidad lineal (RGB / luminancia Rec. 709) en los percentiles 5, 50 y 95 de la luminancia del disco (el 60 % central): pardo rojizo en lo oscuro (2,934; 0,521; 0,049), naranja en el medio (2,184; 0,743; 0,056) y naranja amarillento en lo claro (1,571; 0,915; 0,158). Y los mismos percentiles de nuestro mosaico (el de 2k: 0,1384, 0,2195 y 0,3663; el de 1k y el de 4k, a menos de 0,006).
+- **En el shader de Venus** (`TLS_RADAR`, solo en su material): cada valor del mosaico toma el tono de PIA00104 en su mismo percentil, **sin cambiar su brillo** (cada color de la rampa tiene luminancia 1; test). `VISUAL_CONFIG.venus.radar.venera`, con su fuente.
+- **El aviso:** «Imagen de radar de la sonda Magellan, con el color de las fotos de las Venera 13 y 14: no es lo que verían tus ojos». Lo mismo en `/creditos` (con el enlace a PIA00104), «Lo que es ilustrativo» y `FUENTES.md`.
+- **Capturas** antes y después, en escritorio y en el móvil (`antes-` y `despues-venus-*-radar.webp`): el tono de PIA00104; el nuestro, más claro, porque conserva el brillo de Venus calibrado.
+
+### 4.5 Los defectos que dejó la crítica de la 9c (decisión 6 de la revisión del bloque S)
+
+| Defecto | Arreglo | Commit |
+|---|---|---|
+| Al volver de «Ficha completa», la fecha vuelve a hoy | `ExplorerMemory` (en `core/`, sin dependencias; solo la usa la sesión diferida): al salir del explorador se guarda la fecha, si se reproducía y el sentido; al volver sin fecha en la URL, se sigue ahí (una sola vez). Un enlace con su fecha manda. Test | `0b3ee34` |
+| El campo de la fecha acepta 2150 y avisa lejos del campo | El rango, «Entre 1900 y 2100.», siempre a la vista y en la descripción del campo; el aviso, justo debajo de la fecha y la hora (antes, al final de «Controles»). Sigue sin avisar a medio escribir (su test lo fija) | `f722580` |
+| En la vista Tierra del móvil, «España» queda cortada | Las cinco vistas y «Más», sin desplazar: en dos filas a 390 px (tres por debajo de unos 380). El panel plegado pasa de una fila (60 px) a dos (108 px) | `fbdd0c1` |
+| En la tableta, la ficha deja vacía la mitad derecha y la fila de lunas no se alinea | La hoja, en dos columnas (el resumen y, a su derecha, los datos, también en reposo); las pastillas de las lunas, algo más apretadas: con Saturno, la fila va de 170 a 718 px y la de planetas, de 170 a 715 (antes, de 128 a 760) | `99dbcd2` |
+| «Cara visible» cambia la fecha y pausa sin avisar | Las vistas y las paradas de la Luna dicen lo que hacen con el tiempo: «La fecha pasa a la luna llena más cercana (24 de noviembre de 2026, 15:54) y el tiempo se pausa», a la vista en el panel (también plegado) y al lector. Tests y e2e | `7edb7dd` |
+| El Índice del móvil tapa la barra | El Índice sube como la ficha, encima de la barra de tiempo, que queda a la vista y a mano. e2e | `a87ffd9` |
+| En el móvil, la presentación muestra «Saturno» cuatro veces y se pliega al primer Tab | Durante el recorrido de la primera vez, sin los nombres del 3D (los dice su texto; vuelven al acabar). Tab ya no pliega la presentación: es una tecla pasiva desde la 9c (comprobado en escritorio y en el móvil, pulsando Tab hasta el lienzo); el plegado a los 8 s deja el texto en el árbol accesible | `f92fde1` |
+| Falta contexto en «Escala», «Luz rasante» y «UA» | Una línea con las dos escalas en «Controles»; qué es una UA en la nota del Índice («1 UA, unos 150 millones de km, es la distancia media de la Tierra al Sol») y en la ficha (`<abbr>`); las vistas de la Luna, con su texto en el `title` | `d1b6a6f` |
+| `/eclipses`: el aviso de no mirar el Sol sin filtro no destaca; la fecha, apretada en el título | El aviso, aparte, con su icono y el borde de acento; la fecha, con aire | `ccc00d8` |
+| `/lunas`: el cuadrado oscuro de las miniaturas y los decimales dispares | Las miniaturas, redondas (como las fichas del explorador); el radio de las listas, con los mismos decimales (entero desde 100 km, uno por debajo; el exacto, en la ficha) | `ccc00d8` |
+| `/planetas/marte`: las lunas, enlaces de texto; a 1440 px, un hueco a la derecha | Las lunas de su planeta, en tarjetas con miniatura (la de la página, marcada); la columna de la ficha, centrada | `ccc00d8` |
+| El 404, seco | Lo que pasa («Esta dirección no está en el atlas…») y las secciones del sitio a mano | `ccc00d8` |
+| (S9) La pestaña «Sistema solar» no hace nada con un cuerpo elegido | §4.2 | `e7d52de` |
+
+Los e2e de las páginas, de accesibilidad (axe en las 40 rutas, en escritorio y en el móvil), del móvil, de la Luna y del recorrido, en verde con estos cambios.
 
 ## 5. Desviaciones del plan y motivo
 
