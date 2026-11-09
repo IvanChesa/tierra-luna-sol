@@ -69,6 +69,15 @@ describe('format: las cifras de las fichas, con los decimales de su fuente (fase
     expect(formatExact((27.3217 * 24) / 24)).toBe('27,3217');
   });
 
+  it('con los ceros finales de la fuente (`digits`, fase 10): «5.0» es «5,0», no «5»', () => {
+    expect(formatExact(5, 6, 1)).toBe('5,0');
+    expect(formatExact(0.01, 6, 3)).toBe('0,010');
+    expect(formatExact(0, 6, 4)).toBe('0,0000');
+    // Nunca quita decimales de la cifra, y el tope sigue mandando.
+    expect(formatExact(1407.6, 6, 0)).toBe('1407,6');
+    expect(formatExact(4.5175, 3, 6)).toBe('4,518');
+  });
+
   it('notación científica: mantisa con los decimales de la fuente y su lectura', () => {
     expect(formatScientific(6.4171e23)).toEqual({
       mantissa: '6,4171',

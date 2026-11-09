@@ -26,6 +26,11 @@ export interface Sourced<T> {
   readonly source: SourceId;
   /** Aclaración del dato (qué mide exactamente, de dónde sale si se ha derivado…). */
   readonly note?: string;
+  /**
+   * Los decimales con los que la fuente escribe la cifra, solo si acaba en ceros que el número pierde
+   * («5.0» km/s de la NASA → 1; fase 10, tarea 12): las fichas la escriben con ellos («5,0 km/s»).
+   */
+  readonly digits?: number;
 }
 
 export interface PhysicalData {

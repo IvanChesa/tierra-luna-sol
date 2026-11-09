@@ -47,6 +47,29 @@ describe('body-facts: las tablas de datos de las fichas (fase 9)', () => {
     expect(rowOf(titan, 'synchronousRotation')?.value.number).toBe('Síncrona');
   });
 
+  it('con los ceros finales que escribe la fuente (fase 10, tarea 12): «5,0 km/s», no «5 km/s»', () => {
+    const nbsp = String.fromCharCode(0xa0);
+    const mars = bodyFacts(getBody('marte'));
+    expect(rowOf(mars, 'escapeVelocityKmS')?.value).toEqual({ number: '5,0', unit: 'km/s' });
+    expect(rowOf(mars, 'geometricAlbedo')?.value.number).toBe('0,170');
+    expect(rowOf(bodyFacts(getBody('saturno')), 'surfaceGravityMS2')?.value).toEqual({
+      number: '9,0',
+      unit: 'm/s²',
+    });
+    expect(rowOf(bodyFacts(getBody('neptuno')), 'eccentricity')?.value.number).toBe('0,010');
+    expect(rowOf(bodyFacts(getBody('mercurio')), 'inclinationDeg')?.value.number).toBe('7,0°');
+    expect(rowOf(bodyFacts(getBody('tierra')), 'inclinationDeg')?.value.number).toBe('0,0°');
+    const venus = bodyFacts(getBody('venus'));
+    expect(rowOf(venus, 'meanOrbitalVelocityKmS')?.value.number).toBe('35,0');
+    expect(rowOf(venus, 'flatteningRatio')?.value.number).toBe('0,000');
+    // El día de Venus, convertido a días: al lado, la cifra de la fuente con su cero.
+    expect(rowOf(venus, 'lengthOfDayH')?.detail).toBe(`2802,0${nbsp}h`);
+    // Como la escribe el JPL: el radio de Proteo, «208.00».
+    expect(rowOf(bodyFacts(getBody('proteo')), 'radiusKm')?.value.number).toBe('208,00');
+    // Sin ceros que perder, sin `digits`: el radio de Titán sigue igual.
+    expect(getBody('titan').physical.radiusKm.digits).toBeUndefined();
+  });
+
   it('las distancias de los planetas, en millones de km con las UA al lado', () => {
     const neptune = bodyFacts(getBody('neptuno'));
     const distance = rowOf(neptune, 'semiMajorAxisKm');
