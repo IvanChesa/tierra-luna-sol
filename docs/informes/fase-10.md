@@ -2,7 +2,7 @@
 
 - **Rama:** `fase-10-pulido` (desde `main` en `0eabe29`), en la carpeta del proyecto. La entrega **10.a** (las lunas recreadas, segunda vuelta, D48) la hace otra sesión en paralelo, en su worktree (`.claude/worktrees/fase-10a-lunas`, rama `fase-10a-lunas`), y esta la junta.
 - **Fecha:** 2026-11-09 (en curso)
-- **Estado:** en curso: hechos el paso previo (el PR 4 de Dependabot, fusionado, y los documentos en `main`), la entrega 10.b (las peticiones de Iván: S8, S9 y S11) y, de la 10.c, D49, los defectos de la 9c y las propuestas de la 9b y de la fase 8; también S2 (de la 10.f, porque es un defecto visible).
+- **Estado:** en curso (sesión cortada por el límite de uso el 09-11 hacia las 15:40). Hecho: el paso previo, la 10.b, la 10.c entera (con la revisión final de diseño, `docs/revisiones/fase-10-critica.md`), de la 10.e los decimales, S5, Shackleton y Titán, y de la 10.f el código (S2, el bloom fuera, el Sol en el móvil, el ritmo de pintado y la 8K). Sin commit, a la espera: Lighthouse en el CI (`@lhci/cli` 0.16, `lighthouserc.js`; el explorador da 0,66 y las fichas, ≥ 0,96) y la regresión visual (`e2e/regresion.spec.ts`, sin referencias). Falta: los e2e completos, las capturas de la crítica, las medidas de §5 con el equipo libre, juntar la 10.a, la 10.h, la comprobación de los textos y el cierre.
 
 ## 0. Plan
 
@@ -166,11 +166,91 @@ Propuesta de la fase 8 (sugerencia 15 de su revisión): en el máximo del 12-08-
 - `moonShadowView` (`ephemeris/eclipse.ts`, función pura con tests): si en el punto de la sombra el Sol está a menos de 20°, la cámara se va hacia el punto subsolar lo que le falta para tenerlo a 20°. El terminador queda a un lado y la sombra, sobre el lado de día. Desde Fraga (18:29:29 UTC), el Sol está a unos 8° en el centro de la sombra y la cámara se desplaza unos 12°. En el máximo global (el Sol a 26°), como antes: el test de la sesión sigue a menos de 0,2° del punto de la NASA.
 - **Capturas** (`capture-requests.mjs sombra`): `sombra-fraga` antes y después y `sombra-maximo` (el máximo global, que no cambia), como pedía la revisión.
 
+### 4.13 La revisión final de diseño (tarea 8): impeccable y las Web Interface Guidelines
+
+En `docs/revisiones/fase-10-critica.md`. Como en la 9c, la crítica de impeccable con dos agentes independientes. A hizo la revisión de diseño y las heurísticas: **31/40**. B pasó el detector y midió en el navegador: axe sin violaciones en 57 estados, el foco visible en las 1272 paradas y nada desbordado ni tapado. Esta sesión repasó el código con las reglas de las Web Interface Guidelines. Lo arreglado:
+
+- **Las Web Interface Guidelines** (`2e7fc84`, `e541841`):
+  - `<meta name="theme-color">`: la barra del navegador del móvil salía clara sobre un sitio oscuro;
+  - `touch-action: manipulation` en los controles: en iOS, dos toques rápidos en «+» o en los pasos del año ampliaban la página;
+  - el resaltado del toque, en latón;
+  - el nombre del sitio y el del autor, con `translate="no"`.
+- **[P1] El cielo de día** se abría vacío en el móvil, con una línea que nombraba cuerpos que no se ven. El cielo va en tiempo real (D33), así que no se abre solo en la noche. Pero ahora la línea dice «Ahora es de día · noche cerrada desde las 19:12». Y el panel lleva el botón «Ver el cielo de esta noche», que lleva al final del crepúsculo astronómico, en pausa. Tests y e2e.
+- **[P1] La llegada desde «Ver en 3D» de un eclipse** no decía qué se veía y no tenía vuelta.
+  - El enlace lleva el tipo de eclipse y el lugar. Al llegar, un aviso dice «Eclipse total de Sol del 12 de agosto de 2026, en su máximo visto desde Fraga», con «Volver a los eclipses»; se anuncia y se puede cerrar.
+  - La Luna eclipsada ya no dice «100 % iluminada», sino «eclipse total: en la sombra de la Tierra» (`lunarEclipsePhase`, probada con los tres eclipses de Luna de la NASA del fixture).
+- **[P2] La parada de España del recorrido:** los nombres de los lugares se ven también durante el recorrido (los de los cuerpos, no, como decidió la 9c). Su rótulo, sin la lista: «España y los lugares del cielo».
+- **El favicon era el escudo de Angular.** Ahora es una marca propia: el Sol en latón, su órbita y la Tierra con su Luna, sobre la tinta del sitio (`public/favicon.svg`). Lleva el ICO de 16, 32 y 48 px y el `apple-touch-icon` (`scripts/build-icons.mjs`).
+- **Menores de A:**
+  - «Hacia atrás» se ve en escritorio, junto a la zona («UTC · hacia atrás»; test);
+  - el pie de las páginas ya no se corta a 1440;
+  - la entradilla de la portada ya no repite la línea de autoría.
+- **[B] El fallo de foco:** en la vista Luna del móvil, «Luz rasante» se enfocaba casi oculto, bajo el fundido de la fila (WCAG 2.4.7). `revealInRow` y la directiva `RevealFocus` desplazan la fila hasta verlo entero, fuera del fundido; la fila de fichas usa lo mismo, que arregla otro menor de B. Tests.
+- **Menores de B:**
+  - la entradilla de `/creditos`, con la medida de lectura (iba a 91 caracteres por línea);
+  - `text-wrap: pretty` en los párrafos, contra las palabras sueltas en la última línea.
+- **Propuestas** (§10): la portada del teléfono con la cámara más cenital, la fila de fichas fuera del cielo también en escritorio, el panel del cielo en los márgenes y las 25 reglas `:hover` dentro de `@media (hover: hover)`.
+
+### 4.14 Los ceros finales de las fuentes (tarea 12; `4a94142`)
+
+«5,0 km/s» de la NASA salía «5 km/s». `build-body-data.mjs` guarda los decimales con los que la fuente escribe cada cifra que copia tal cual (`digits`), solo si acaba en ceros que el número pierde: 31 cifras, sin cambiar ninguna. `formatExact` los usa. También los periodos, para decidir si la cifra de la fuente va al lado. Así:
+
+- Marte escapa a 5,0 km/s y Saturno tiene 9,0 m/s²;
+- la excentricidad de Neptuno es 0,010 y el día de Venus, 2802,0 h;
+- el radio de Proteo es 208,00 km, como lo escribe el JPL («208.00 ± 8.00»).
+
+Tests de `formatExact` y de las fichas.
+
+### 4.15 Los textos: S5 y Shackleton (`de9365c`, `7389119`)
+
+- **S5:** `body-texts.json` no lleva el tipo de cada cuerpo. El índice de `docs/revision-textos.md` filtraba por un `kind` que no había y decía «en 0 lunas»; ahora dice 19. Además, la línea del color del Sol salía como «Sobre su mapa». El tipo se toma ya de los datos.
+- **La lista, regenerada** con lo nuevo de la fase: el 404, la nota de la UA, el rango de la fecha y la línea de las escalas. También el aviso de los eclipses, que ahora va aparte y se había caído de la lista. 551 textos.
+- **El subtítulo de Shackleton** dice ahora por qué se ve iluminada la pared interior que mira al Sol: el explorador no dibuja las sombras del relieve (`PENDIENTES.md`).
+
+### 4.16 El bloom del Sol, fuera (tareas 4 y 9; `044ce86`)
+
+Llevaba apagado desde la segunda vuelta de la 9b.f, pero su código y sus pasadas seguían en el chunk del visor. Fuera:
+
+- `sun-bloom.ts`, sus capas y su puerto en el renderer;
+- su paso en el motor (compilarlo, pintarlo, soltarlo y su VRAM) y `sunOccluders`;
+- `sunBloom` de los niveles y `VISUAL_CONFIG.sun.bloom`, con sus tests.
+
+Queda en git. **El chunk de three, de 814,7 kB a 805,7 kB** en bruto (de 222,2 a 220,6 kB en gzip; build de `main` frente al de la fase): es el neto de toda la fase, con lo añadido.
+
+### 4.17 El Sol de cerca en el móvil (tarea 4; `ddf345e`)
+
+- **A 10 fotogramas por segundo en el nivel bajo.** Cada nivel lleva `sunFrameMs`: 50 ms en alto y medio y 100 en el bajo.
+- **Hashes enteros de WebGL2** en lugar de fract(sin(x)·43758): PCG3D en la red del ruido de la superficie y PCG de un número en los rayos y los bucles (Jarzynski y Olano, 2020). Los rayos y los bucles hashean los bits del valor, que distinguen también los no enteros.
+
+### 4.18 Pintar a la frecuencia que pide el movimiento (tarea 4; `cc05833`)
+
+Por encima de 60 s/s se pintaba cada frame aunque casi nada se moviera (informe de la fase 3c, §10.1). Ahora, con el tiempo en marcha y nada más moviéndose, se pinta lo justo para que lo que más corre en pantalla avance medio píxel por frame, entre cada frame y 4 Hz (`frame-pacing.ts`). «Lo que más corre» es el movimiento de los cuerpos que se ven y el de la superficie de los que giran. Los FPS solo se miden a ritmo completo. Test del motor: la Luna de cerca a 1 h/s se pinta de 3 a 15 veces por segundo; la Tierra, cada frame.
+
+### 4.19 La 8K de la Tierra, más barata (propuesta 2 de la fase 5, tarea 4; `af3a634`)
+
+- **Sin el volteo en el decodificador:** la de día se decodifica sin `imageOrientation: 'flipY'` y el sombreado invierte v (`flipInShader`). El volteo de la 8K era una tarea de unos 105 ms en el hilo principal (informe de la fase 5, §6.1). El plan decía guardarla ya volteada: así se consigue lo mismo sin regenerar las texturas ni tocar `build-textures.mjs`, que comparte la 10.a.
+- **Sin su `ImageBitmap` tras subirla:** las de 8K de la Tierra y de la Luna (128 MiB cada una) lo sueltan al subirse. Si se pierde el contexto, el mundo las vuelve a pedir. Test.
+
+### 4.20 El terminador de Titán, con otra foto de Cassini (tarea 14; `4499f4a`)
+
+La 9b ajustó el oscurecimiento hacia el terminador, min(1, μ₀/μ)^e con e = 1,15, con PIA06230 (fase de 56°). Ahora se comprueba con **PIA06183** («Hazy Days on Titan», 15-02-2005), en color natural y con el disco entero. Su pie dice: «Sun-Titan-spacecraft, or phase, angle of 20 degrees». La buscó un subagente entre los pies de las fotos de Titán del Photojournal. `measure-titan-terminator.mjs --foto=PIA06183` la baja a `assets-src/referencias/`, que no entra en el repo, con el disco medido en la foto.
+
+| | PIA06230 (56°) | PIA06183 (20°) |
+|---|---|---|
+| Sin el oscurecimiento (e = 0) | 9,2 % | 10,7 % |
+| Con el de la escena (e = 1,15) | **2,4 %** | **7,4 %** |
+| El mejor para cada foto | e = 1,15: 2,4 % | e = 2,05: 6,8 % |
+| La captura de la escena frente a la foto | 8,4 % | 13,4 % |
+
+El modelo mejora también con otra fase y queda a 0,6 puntos del mejor exponente de esa foto: no se toca. Un exponente por fase sería ajustar de más con dos fotos. Lo que separa la captura de la foto a 20° no es el terminador: es la exposición del primer plano, el halo de la neblina y el tone mapping.
+
 ## 5. Desviaciones del plan y motivo
 
 - **S9, en el teléfono, la flecha sola** (el texto, desde 480 px): ver §4.2.
 - **S2, adelantado de la 10.f a la 10.c:** es un defecto que se ve (la Tierra azul), no una medida de rendimiento; su medida no necesita el equipo libre (las texturas se retrasan a propósito).
 - **La luz del cielo (§4.11):** la revisión de la fase 8 proponía atenuar `band` y enrojecer el disco; para que el color del disco se viera, además, la cúpula deja de sumar su luz sobre él.
+- **La 8K de la Tierra (§4.19), volteada en el sombreado** y no guardada ya volteada: el mismo ahorro, sin regenerar las texturas.
+- **La precarga de la fuente del H1** ya estaba hecha (fase 9): Newsreader 500, el peso de los títulos, va precargada en `index.html` con las dos de Public Sans.
 
 ## 6. Salida de los checks
 

@@ -8,7 +8,10 @@
 //   y total) y «Ver en 3D» del eclipse del 12-08-2026 (en el máximo desde Fraga, a la puesta, y en el
 //   máximo global).
 // Uso: npm run build && node scripts/capture-requests.mjs <antes|despues> [nombre…]
-// (nombres: volver, nota, rotulo, cielo y sombra; sin ninguno, todos)
+// (nombres: volver, nota, rotulo, cielo, sombra y critica; sin ninguno, todos)
+// - critica: los arreglos de la revisión final de diseño (docs/revisiones/fase-10-critica.md): el cielo
+//   de día, la llegada desde «Ver en 3D» de los eclipses, el foco de «Luz rasante» en el móvil, la
+//   entradilla de /creditos y la de la portada.
 import { mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
@@ -175,6 +178,53 @@ try {
     for (const [name, path] of shots) {
       const { page } = await openViewer(browser, path, { width: 1600, height: 900, scale: 1 });
       await save(await canvasPng(page), name);
+      await page.close();
+    }
+  }
+  // La revisión final de diseño (fase 10): la página entera, con la interfaz.
+  if (!wanted.size || wanted.has('critica')) {
+    for (const [name, path, size] of [
+      // El cielo de día, a las 14:20 del 9-11-2026 (sin abrir la hoja en el móvil).
+      ['critica-cielo-dia-390', '/cielo?captura=1&fecha=2026-11-09T13:20Z', '390'],
+      ['critica-cielo-dia-1440', '/cielo?captura=1&fecha=2026-11-09T13:20Z', '1440'],
+      // «Ver en 3D» del eclipse total de Sol desde Fraga y del total de Luna del 20-12-2029.
+      [
+        'critica-eclipse-sol-1440',
+        '/explorar/tierra?captura=1&fecha=2026-08-12T18:29:29Z&sombra=1&eclipse=sol-total&lugar=fraga',
+        '1440',
+      ],
+      [
+        'critica-eclipse-luna-1440',
+        '/explorar/luna?captura=1&fecha=2029-12-20T22:41:55Z&eclipse=luna-total',
+        '1440',
+      ],
+      ['critica-portada-1440', '/?captura=1', '1440'],
+    ]) {
+      const options = SIZES[size];
+      const { page } = await openViewer(browser, path, options);
+      await page.mouse.move(options.width - 5, options.height / 2);
+      await page.waitForTimeout(500);
+      await save(await page.screenshot(), name);
+      await page.close();
+    }
+    // «Luz rasante» con el foco del teclado, en la fila de vistas de la Luna del móvil.
+    {
+      const { page } = await openViewer(browser, '/explorar/luna?captura=1', SIZES['390']);
+      await page.keyboard.press('Shift');
+      await page
+        .getByRole('button', { name: /Luz rasante/ })
+        .first()
+        .focus();
+      await page.waitForTimeout(400);
+      await save(await page.locator('.moon__strip').first().screenshot(), 'critica-luna-foco-390');
+      await page.close();
+    }
+    // La entradilla de /creditos, a 1440.
+    {
+      const page = await browser.newPage(pageOptions(SIZES['1440']));
+      await page.goto(BASE + '/creditos');
+      await page.waitForTimeout(500);
+      await save(await page.screenshot(), 'critica-creditos-1440');
       await page.close();
     }
   }
