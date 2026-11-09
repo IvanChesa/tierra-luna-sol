@@ -1,5 +1,6 @@
 import { DOCUMENT, DestroyRef, Service, effect, inject, signal, untracked } from '@angular/core';
 import { Router } from '@angular/router';
+import { ExplorerMemory } from '../../core/explorer-memory';
 import { findBody } from '../../data/body-index';
 import type {
   BodyId,
@@ -98,6 +99,7 @@ export class ExplorerSession {
   private readonly positions = inject(SystemPositions);
   private readonly router = inject(Router);
   private readonly doc = inject(DOCUMENT);
+  private readonly memory = inject(ExplorerMemory);
   /** El móvil y la tableta: elegir un cuerpo en el sistema solar no abre su ficha (decisión del 08-11). */
   private readonly sheets = mediaQuery(SHEETS_QUERY);
   private readonly storage = safeLocalStorage(this.doc.defaultView);
@@ -139,10 +141,17 @@ export class ExplorerSession {
     // `applyView`.
     const fixedTime = this.params.time !== null || this.capture;
     this.speedContextNow = speedContext(this.explorer.view(), this.params.body);
+    // Al volver de una ficha o de otra página sin fecha en la URL: donde se dejó (la fecha, si se
+    // reproducía y el sentido; crítica de la fase 9c: «al volver de "Ficha completa", la fecha vuelve a
+    // hoy»). La velocidad, la de su contexto (D33). Con fecha en la URL, o en captura, manda la URL.
+    const saved = this.memory.take();
+    const resumed = fixedTime ? null : saved;
     this.sim.init({
-      time: this.params.time ?? (this.capture ? CAPTURE_DATE : new Date()),
-      playing: !fixedTime && !this.reducedMotion,
-      speed: CONTEXT_SPEED[this.speedContextNow],
+      time:
+        this.params.time ??
+        (this.capture ? CAPTURE_DATE : resumed ? new Date(resumed.timeMs) : new Date()),
+      playing: (resumed ? resumed.playing : !fixedTime) && !this.reducedMotion,
+      speed: CONTEXT_SPEED[this.speedContextNow] * (resumed?.reverse ? -1 : 1),
       selected: this.params.body,
       scale: this.params.scale ?? 'illustrative',
       quality: this.params.quality ?? (this.capture ? 'high' : readQualityPreference(this.storage)),
@@ -172,7 +181,17 @@ export class ExplorerSession {
     // La URL refleja el estado compartible, nunca durante la reproducción (§4.5). En captura no se
     // toca: los scripts abren URL exactas.
     if (!this.capture) effect(() => this.syncUrl());
-    inject(DestroyRef).onDestroy(() => this.detachEngine());
+    inject(DestroyRef).onDestroy(() => {
+      this.detachEngine();
+      // Lo que se deja al salir del explorador, para volver donde estaba (arriba).
+      if (!this.capture) {
+        this.memory.save({
+          timeMs: this.sim.time().getTime(),
+          playing: this.sim.playing(),
+          reverse: this.sim.reverse(),
+        });
+      }
+    });
   }
 
   // --- Motor ----------------------------------------------------------------------------------

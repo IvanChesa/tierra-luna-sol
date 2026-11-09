@@ -7,6 +7,7 @@ import { SystemPositions } from '../../state/positions';
 import { SimulationStore } from '../../state/simulation.store';
 import { GUIDED_VIEWS, localDay } from '../../data/tours';
 import { CONTEXT_SPEED } from '../../state/speeds';
+import { ExplorerMemory, ExplorerMoment } from '../../core/explorer-memory';
 import { ExplorerEngine, ExplorerSession } from './explorer-session';
 
 /**
@@ -92,7 +93,12 @@ class FakeEngine implements ExplorerEngine {
  * Monta la sesión. Con `sessionFirst`, como en `ExplorerUi`: la sesión se crea (con la vista por
  * defecto) y después se conecta la vista de la ruta, que llega con el primer `applyView`.
  */
-async function setup(search: string, view: ExplorerView = 'system', sessionFirst = false) {
+async function setup(
+  search: string,
+  view: ExplorerView = 'system',
+  sessionFirst = false,
+  moment: ExplorerMoment | null = null,
+) {
   window.history.replaceState({}, '', `/${search}`);
   TestBed.configureTestingModule({
     providers: [
@@ -103,6 +109,8 @@ async function setup(search: string, view: ExplorerView = 'system', sessionFirst
       ExplorerSession,
     ],
   });
+  // Lo que dejó el explorador al salir antes (una ficha y vuelta).
+  if (moment) TestBed.inject(ExplorerMemory).save(moment);
   const router = TestBed.inject(Router);
   await router.navigateByUrl(`/${search}`);
   const explorer = TestBed.inject(ExplorerStore);
@@ -153,6 +161,36 @@ describe('ExplorerSession: la URL, la selección y el motor', () => {
     session.attachEngine(engine);
     expect(engine.calls.slice(0, 2)).toEqual([`setSpeed ${CONTEXT_SPEED.body}`, 'setPlaying true']);
     expect(sim.playing()).toBe(true);
+  });
+
+  it('al volver de una ficha, sin fecha en la URL, sigue donde se dejó (crítica de la 9c); con fecha, manda la URL', async () => {
+    // Al salir (la interfaz se destruye), guarda la fecha, si se reproducía y el sentido.
+    const first = await setup('?fecha=2031-05-06T07:08Z');
+    first.sim.setSpeed(-CONTEXT_SPEED.overview);
+    first.sim.play();
+    const memory = TestBed.inject(ExplorerMemory);
+    TestBed.resetTestingModule();
+    const saved = memory.take();
+    expect(saved).toEqual({ timeMs: Date.UTC(2031, 4, 6, 7, 8), playing: true, reverse: true });
+
+    // Al volver sin fecha: en ella, reproduciendo, hacia atrás y a la velocidad de su contexto (D33).
+    const back = await setup('?cuerpo=marte', 'system', false, saved);
+    expect(back.sim.time().toISOString()).toBe('2031-05-06T07:08:00.000Z');
+    expect(back.sim.playing()).toBe(true);
+    expect(back.sim.speed()).toBe(-CONTEXT_SPEED.body);
+    // Una sola vez: lo guardado se ha usado.
+    expect(TestBed.inject(ExplorerMemory).take()).toBeNull();
+    TestBed.resetTestingModule();
+
+    // Un enlace con su fecha manda (y lo guardado se descarta).
+    const link = await setup('?fecha=2040-01-01T00:00Z', 'system', false, {
+      timeMs: Date.UTC(2031, 4, 6),
+      playing: true,
+      reverse: false,
+    });
+    expect(link.sim.time().toISOString()).toBe('2040-01-01T00:00:00.000Z');
+    expect(link.sim.playing()).toBe(false);
+    expect(TestBed.inject(ExplorerMemory).take()).toBeNull();
   });
 
   it('con movimiento reducido arranca en pausa, a la misma velocidad (D31)', async () => {
