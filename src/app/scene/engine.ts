@@ -39,6 +39,7 @@ import {
   DeviceInfo,
   QUALITY_PROFILES,
   QualityProfile,
+  type TextureLevel,
   detectQuality,
 } from './quality';
 import { OrientationModel } from './orientations';
@@ -888,6 +889,11 @@ export class SceneEngine implements SceneEngineApi {
     this.invalidate();
   }
 
+  prefetchCloseUps(ids: readonly BodyId[]): void {
+    if (this.disposed) return;
+    for (const id of ids) this.world.prefetchCloseUp(id);
+  }
+
   zoomBy(factor: number): void {
     if (this.disposed || !(factor > 0)) return;
     if (this._view === 'sky') {
@@ -972,6 +978,10 @@ export class SceneEngine implements SceneEngineApi {
           this.texturesLoading--;
         });
       },
+      // Por la red y sin subir nada: no cuenta como textura en camino.
+      ...(source.prefetch
+        ? { prefetch: (id: TextureId, level: TextureLevel) => source.prefetch?.(id, level) }
+        : {}),
     };
   }
 

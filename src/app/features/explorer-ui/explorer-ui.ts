@@ -489,6 +489,7 @@ export class ExplorerUi implements OnInit {
             play: () => this.sim.setPlaying(true),
             announce: (text) => this.session.announce(text),
             caption: (text) => this.tourCaption.set(text),
+            prefetch: (ids) => this.session.prefetchCloseUps(ids),
           },
           homeTourSteps(spain, {
             moon: moonPhase(this.sim.time()).illuminatedFraction >= TOUR_MOON_MIN_LIT,

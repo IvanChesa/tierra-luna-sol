@@ -21,6 +21,11 @@ export interface TourHost {
   announce(text: string): void;
   /** El rótulo de la parada, a la vista: dónde se está y cuántas paradas hay (crítica de la 9c). */
   caption(text: string): void;
+  /**
+   * Trae por la red, sin subirlas, las texturas de primer plano de los cuerpos de las paradas que
+   * vienen (propuesta de la fase 9b): al llegar a ellas, ya están en la caché.
+   */
+  prefetch(ids: readonly BodyId[]): void;
 }
 
 /** Un paso: cuándo (ms desde el principio) y qué hace. */
@@ -61,10 +66,13 @@ export function homeTourSteps(spain: GuidedView, { moon = true } = {}): TourPlan
   const steps: TourStep[] = [
     {
       at: 0,
-      run: (host) =>
+      run: (host) => {
         host.announce(
           `Recorrido de unos ${seconds} segundos: ${bodies}. Pulsa «Saltar» o cualquier tecla para pararlo.`,
-        ),
+        );
+        // Las texturas grandes de la Tierra (y de la Luna), mientras se ve Saturno.
+        host.prefetch(moon ? ['tierra', 'luna'] : ['tierra']);
+      },
     },
     {
       at: 1500,

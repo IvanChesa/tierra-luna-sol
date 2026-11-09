@@ -738,6 +738,26 @@ export class World {
   }
 
   /**
+   * Trae por la red (sin subirla) la textura de primer plano de un cuerpo, la que pediría al enfocarlo:
+   * para el recorrido de la primera vez, que llega a la Tierra y a la Luna a los pocos segundos
+   * (propuesta de la fase 9b). Sin VRAM de más: la sube la carga de siempre, al enfocarlo.
+   */
+  prefetchCloseUp(id: string): void {
+    const visual = this.visuals.find((v) => v.body.id === id);
+    const source = this.options.textures;
+    if (!visual?.textureId || !source?.prefetch) return;
+    const level =
+      visual.textureId === 'earth-day'
+        ? this.profile.earthDayTexture
+        : visual.moon
+          ? this.profile.moonTexture
+          : visual.body.kind === 'moon'
+            ? this.profile.satelliteTexture
+            : this.profile.focusTexture;
+    source.prefetch(visual.textureId, level);
+  }
+
+  /**
    * Pide las texturas que tocan: el nivel de la vista general para todos y el del foco para el
    * cuerpo enfocado (y su planeta, si es una luna). Lo que se sustituye se libera.
    */

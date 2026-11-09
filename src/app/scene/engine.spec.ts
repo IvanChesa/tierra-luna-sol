@@ -1814,6 +1814,36 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     return { requests, released, textures };
   };
 
+  it('el recorrido trae por la red las texturas grandes de la Tierra y de la Luna, sin subirlas (propuesta de la 9b)', async () => {
+    const fake = realisticTextures();
+    const prefetched: string[] = [];
+    const textures: EngineDeps['textures'] = (context) => {
+      const real = fake.textures(context);
+      if (!real) return null;
+      return {
+        ...real,
+        source: {
+          load: (id: TextureId, level: TextureLevel) => real.source.load(id, level),
+          prefetch: (id: TextureId, level: TextureLevel) => prefetched.push(`${id}@${level}`),
+        },
+      };
+    };
+    const h = await createHarness({ reducedMotion: true }, { textures });
+    settle(h);
+    for (let k = 0; k < 5; k++) await flush();
+    const loadedBefore = [...fake.requests];
+    h.engine.prefetchCloseUps(['tierra', 'luna']);
+    // Las del nivel de su primer plano (en el nivel alto, la 8K de la Tierra y el mapa de la Luna)…
+    expect(prefetched).toEqual([
+      `earth-day@${QUALITY_PROFILES.high.earthDayTexture}`,
+      `moon@${QUALITY_PROFILES.high.moonTexture}`,
+    ]);
+    // …sin cargar ni subir nada más.
+    for (let k = 0; k < 5; k++) await flush();
+    expect(fake.requests).toEqual(loadedBefore);
+    h.engine.dispose();
+  });
+
   it('S2: entrando directo en la vista Tierra, mientras llega la 8K, la de la vista general (de paso) y no el color esquemático', async () => {
     // La 8K tarda: se queda pendiente hasta que se suelta a mano; las demás llegan ya.
     const fake = realisticTextures();

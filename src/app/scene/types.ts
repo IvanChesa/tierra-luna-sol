@@ -213,6 +213,11 @@ export interface SceneEngineApi {
   lookAtSurface(latDeg: number, lonDeg: number, distanceRadii: number, extentDeg?: number): void;
   /** Muestra u oculta los marcadores de los lugares del cielo desde España sobre la Tierra. */
   setSurfaceMarkers(visible: boolean): void;
+  /**
+   * Trae por la red, sin subirlas, las texturas de primer plano de unos cuerpos que se van a enfocar
+   * pronto (el recorrido de la primera vez): al llegar, ya están en la caché del navegador.
+   */
+  prefetchCloseUps(ids: readonly BodyId[]): void;
   /** El lugar desde el que se ve el cielo (fase 8). */
   setObserver(observer: SkyObserver): void;
   /**

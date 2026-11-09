@@ -51,6 +51,7 @@ export type ExplorerEngine = SimulationEngine &
     | 'setLabelsVisible'
     | 'lookAtSurface'
     | 'setSurfaceMarkers'
+    | 'prefetchCloseUps'
     | 'setObserver'
     | 'lookAtSky'
     | 'setConstellationsVisible'
@@ -398,6 +399,11 @@ export class ExplorerSession {
   /** Gira la cámara alrededor del foco (radianes). */
   orbit(deltaAzimuth: number, deltaElevation: number): void {
     this.engine?.orbitBy(deltaAzimuth, deltaElevation);
+  }
+
+  /** Las texturas de primer plano de unos cuerpos, por la red y sin subirlas (`prefetchCloseUps`). */
+  prefetchCloseUps(ids: readonly BodyId[]): void {
+    this.engine?.prefetchCloseUps(ids);
   }
 
   /** «Saltar»: termina ya el viaje de cámara. */

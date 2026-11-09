@@ -151,6 +151,12 @@ export const textureVramBytes = (width: number, height: number, mipmaps = true):
 export interface TextureSource {
   /** Carga, decodifica y sube a la GPU (cuando el motor dé paso) la mejor versión disponible. */
   load(id: TextureId, level: TextureLevel): Promise<LoadedTexture | null>;
+  /**
+   * Trae el fichero por la red, sin decodificarlo ni subirlo: la caché del navegador lo guarda (las
+   * texturas, con su hash en el nombre, son inmutables un año, `_headers`) y la carga de después lo
+   * encuentra allí. Para el recorrido de la primera vez (propuesta de la fase 9b): sin VRAM de más.
+   */
+  prefetch?(id: TextureId, level: TextureLevel): void;
 }
 
 export interface LoadedTexture {
@@ -202,6 +208,17 @@ export class ManifestTextureSource implements TextureSource {
     texture.needsUpdate = true;
     await this.options.upload(texture);
     return { texture, file, vramBytes: textureVramBytes(file.width, file.height, mipmaps) };
+  }
+
+  prefetch(id: TextureId, level: TextureLevel): void {
+    const { files, baseUrl, maxTextureSize } = this.options;
+    const file = chooseTextureFile(files[id], level, maxTextureSize);
+    if (!file) return;
+    // Con prioridad baja (no compite con lo que se ve) y leída entera, para que quede en la caché.
+    const init: RequestInit & { priority?: 'low' } = { priority: 'low' };
+    void fetch(new URL(file.path, baseUrl).href, init)
+      .then((response) => (response.ok ? response.arrayBuffer() : null))
+      .catch(() => null);
   }
 }
 

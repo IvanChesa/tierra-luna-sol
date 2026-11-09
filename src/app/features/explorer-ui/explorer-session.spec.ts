@@ -66,6 +66,9 @@ class FakeEngine implements ExplorerEngine {
   setSurfaceMarkers(visible: boolean) {
     this.calls.push(`setSurfaceMarkers ${visible}`);
   }
+  prefetchCloseUps(ids: readonly string[]) {
+    this.calls.push(`prefetchCloseUps ${ids.join(' ')}`);
+  }
   setObserver(observer: { latDeg: number; lonDeg: number }) {
     this.calls.push(`setObserver ${observer.latDeg.toFixed(3)} ${observer.lonDeg.toFixed(3)}`);
   }
