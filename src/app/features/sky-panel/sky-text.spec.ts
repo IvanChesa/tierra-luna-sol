@@ -6,6 +6,8 @@ import {
   clockAt,
   compassName,
   constellationName,
+  darkStart,
+  daySummary,
   degreesText,
   lookLabel,
   moonNightText,
@@ -123,6 +125,25 @@ describe('sky-text: los rumbos y las frases', () => {
     expect(constellationName('Vir')).toBe('Virgo');
     // Un símbolo que no existe, tal cual (no rompe el texto).
     expect(constellationName('Xyz')).toBe('Xyz');
+  });
+});
+
+describe('daySummary: de día, que es de día y cuándo empieza la noche (crítica de la fase 10)', () => {
+  it('la noche cerrada: el final del crepúsculo astronómico, a la hora del lugar', () => {
+    const place = skyPlaceOf('montsec');
+    const night = nightSky(new Date('2026-11-01T12:00:00Z'), place);
+    if (night.kind !== 'night') throw new Error('sin noche');
+    expect(darkStart(night)).toEqual(night.dusk.astronomical);
+    const at = clockAt(night.dusk.astronomical as Date, place);
+    expect(daySummary(night, place)).toEqual({
+      text: `Ahora es de día · noche cerrada desde las ${at}`,
+      spoken: `Ahora es de día. La noche cerrada empieza a las ${at}.`,
+    });
+    // Sin noche astronómica (el Sol no baja tanto), el final del náutico o del civil.
+    const short = { ...night, dusk: { ...night.dusk, astronomical: null } };
+    expect(darkStart(short)).toEqual(night.dusk.nautical);
+    const shorter = { ...short, dusk: { ...short.dusk, nautical: null } };
+    expect(darkStart(shorter)).toEqual(night.dark.start);
   });
 });
 

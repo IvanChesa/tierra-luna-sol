@@ -101,6 +101,13 @@
   line-height: 1.4;
 }
 
+/* De día: el aviso y el botón que lleva a la noche (crítica de la fase 10). */
+.sky__day {
+  display: grid;
+  gap: var(--space-1);
+  justify-items: start;
+}
+
 .sky__clock {
   font-variant-numeric: tabular-nums;
   font-size: var(--text-sm);

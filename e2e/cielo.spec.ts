@@ -91,10 +91,20 @@ test.describe('El cielo desde España (fase 8)', () => {
     await expect(slider).toHaveValue('0');
     await expect(daytime).toHaveCount(0);
     await expect(dusk).toHaveText(duskText);
-    // De día, antes de la noche del deslizador, se dice (también en el móvil, hallazgo 3).
+    // De día, antes de la noche del deslizador, se dice (también en el móvil, hallazgo 3), con un
+    // botón que lleva a la noche cerrada (crítica de la fase 10), en pausa.
     await openExplorer(page, '/cielo?fecha=2026-11-01T12:00Z');
     await expect(daytime).toBeVisible();
-    await expect(daytime).toHaveText('Ahora es de día: arrastra para ver la noche.');
+    await expect(daytime.locator('.sky__hint')).toHaveText('Ahora es de día: arrastra la hora o');
+    await expect(page.locator('.sky__summary-line [aria-hidden="true"]')).toHaveText(
+      /^Ahora es de día · noche cerrada desde las \d\d:\d\d$/,
+    );
+    const tonight = daytime.getByRole('button', { name: 'Ver el cielo de esta noche' });
+    await tonight.click();
+    await expect(daytime).toHaveCount(0);
+    // El 1-11-2026 en el Montsec, la noche cerrada empieza hacia las 19:10 (UTC+1).
+    await expect(slider).toHaveAttribute('aria-valuetext', /^19:\d\d, hora del lugar/);
+    await expect(page.getByRole('button', { name: 'Reproducir' }).first()).toBeVisible();
   });
 
   test('«Mirar» lleva la cámara y lo anuncia; bajo el horizonte, lo dice', async ({ page }) => {
