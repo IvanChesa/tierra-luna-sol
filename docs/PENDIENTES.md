@@ -181,6 +181,7 @@ Iván dejó en la sesión de revisión lo que tenía pendiente de decidir: «dec
 ## Fase 10
 - [ ] Conseguir un iPhone para probar (aunque sea prestado). No bloquea.
 - [x] Decidir si se aprueba `@lhci/cli` (Lighthouse en el CI): **aprobado** el 08-11, con sus condiciones (arriba, «Decisiones del 08-11»; delegado por Iván en la sesión de revisión).
+- [ ] **Decidir qué hacer con la nota de rendimiento del explorador en Lighthouse** (informe de la fase 10, §4.22 y §10; no bloquea). Con el arranque troceado da **0,76** (antes, 0,66; el plan pide 0,90), y las fichas y las demás páginas, de 0,96 a 1,00. Lo que falta es crear el contexto WebGL, unos 210 ms de una sola tarea que no se puede partir. Por ahora va **como aviso** en el CI. Las opciones: (1, la recomendada) dejarlo como aviso; (2) un suelo como error, por ejemplo 0,65, que en el CI, con WebGL por software, podría saltar sin una regresión de verdad; (3) pintar en un worker con `OffscreenCanvas`, un cambio de arquitectura grande, al backlog.
 
 ## Fase 11 (manual; era la fase 10 del plan v1)
 - [ ] El dominio propio (D37): en Cloudflare Pages → `tierra-luna-sol` → «Custom domains», `tierra-luna-sol.ivanchesa.com`. La zona de ivanchesa.com está en la misma cuenta de Cloudflare: el propio panel crea el registro DNS. Los secrets de Cloudflare ya sirven (fase 4).

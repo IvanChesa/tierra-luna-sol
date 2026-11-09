@@ -2,8 +2,8 @@
 
 - **Rama:** `fase-10-pulido` (desde `main` en `0eabe29`), en la carpeta del proyecto. La entrega **10.a** (las lunas recreadas, segunda vuelta, D48) la hace otra sesión en paralelo, en su worktree (`.claude/worktrees/fase-10a-lunas`, rama `fase-10a-lunas`), y esta la junta.
 - **Fecha:** 2026-11-09 (en curso)
-- **Estado:** en curso (sesión cortada por el límite de uso el 09-11 hacia las 15:40). Hecho: el paso previo, la 10.b, la 10.c entera (con la revisión final de diseño, `docs/revisiones/fase-10-critica.md`), de la 10.e los decimales, S5, Shackleton y Titán, y de la 10.f el código (S2, el bloom fuera, el Sol en el móvil, el ritmo de pintado y la 8K). Sin commit, a la espera: Lighthouse en el CI (`@lhci/cli` 0.16, `lighthouserc.js`; el explorador da 0,66 y las fichas, ≥ 0,96) y la regresión visual (`e2e/regresion.spec.ts`, sin referencias). Falta: los e2e completos, las capturas de la crítica, las medidas de §5 con el equipo libre, juntar la 10.a, la 10.h, la comprobación de los textos y el cierre.
-- **e2e completos (build de las 15:2x, antes de los últimos commits):** 134 bien, 1 saltado y **4 fallos por arreglar**, lo primero al retomar: `[escritorio] › e2e\camara.spec.ts:34:3 › Cámara, vista limpia y atajos › vista limpia: V oculta la interfaz y las etiquetas; Esc y el botón la recuperan`; `[escritorio] › e2e\cielo.spec.ts:279:3 › Próximos eclipses (fase 8) › se recalcula en el navegador, cambia de lugar y «Ver en 3D» lleva a la sombra`; `[escritorio] › e2e\recorrido.spec.ts:125:3 › El recorrido de la portada (fase 9c) › llega hasta el final: la Tierra con España, la Luna si se ve y la vista general en marcha`; `[escritorio] › e2e\tiempo.spec.ts:101:3 › Tiempo y URL › al escribir una fecha a mano no pasa por fechas intermedias ni avisa a medio escribir`. Lighthouse (`@lhci/cli` 0.16 y `lighthouserc.js`) y la regresión visual (`e2e/regresion.spec.ts`) siguen sin commit: ver la nota de traspaso y §0.
+- **Estado:** en curso. Hecho: el paso previo, la 10.b, la 10.c entera (con la revisión final de diseño, `docs/revisiones/fase-10-critica.md`, y sus capturas antes y después), de la 10.d el zum al 200 %, de la 10.e los decimales, S5, Shackleton y Titán, de la 10.f el código (S2, el bloom fuera, el Sol en el móvil, el ritmo de pintado, la 8K y el arranque del 3D troceado) y la 10.g (Lighthouse en el CI: las fichas y las demás páginas, de 0,96 a 1,00; el explorador, 0,76, como aviso; §4.22). Los e2e, en verde (§4.21). Falta: las medidas de §5 con el equipo libre, juntar la 10.a, la comprobación de los textos, la 10.h y el cierre.
+- **La regresión visual (10.h)**, sin referencias todavía: guardada aparte, en la rama local `fase-10h-regresion` (un commit sobre `3cb1b72` con `e2e/regresion.spec.ts` y el proyecto móvil de `playwright.config.ts`). Se junta en la 10.h, después de la 10.a.
 
 ## 0. Plan
 
@@ -51,6 +51,12 @@ Como en la 9b, por archivos (la lista, en la revisión del bloque S): **la 10.a*
 | 10.c · Las propuestas de la 9b: el rótulo de Saturno, los nombres de España y la precarga del recorrido | hecha | §4.6, §4.7 y §4.9 |
 | 10.f · S2, la Tierra sin la bola azul lisa | hecha | §4.8 (adelantada: es un defecto que se ve, no una medida) |
 | 10.c · Las propuestas de la fase 8: el cielo con solo sus texturas, el resplandor de día, el Sol rojo junto al horizonte y el encuadre de la sombra a la puesta | hecha | §4.10, §4.11 y §4.12 |
+| 10.c · La revisión final de diseño (impeccable y las Web Interface Guidelines), con sus capturas | hecha | §4.13 y §7 |
+| 10.e · Los decimales, S5, Shackleton y el terminador de Titán | hecha | §4.14, §4.15 y §4.20; la comprobación de los textos, después de la 10.a |
+| 10.f · El bloom fuera, el Sol en el móvil, el ritmo de pintado y la 8K | hecha (el código) | §4.16–§4.19; las medidas de §5, con el equipo libre |
+| Los e2e completos | hecha | §4.21: los tres que fallaban eran pruebas desfasadas |
+| 10.g · Lighthouse en el CI, con el arranque del 3D troceado y el CLS de la entrada del recorrido | hecha | §4.22: el explorador, como aviso (0,76); propuesta en §10 |
+| 10.d · El zum al 200 % | hecha | §4.23 |
 
 ## 4. Lo hecho, entrega a entrega
 
@@ -245,6 +251,70 @@ La 9b ajustó el oscurecimiento hacia el terminador, min(1, μ₀/μ)^e con e = 
 
 El modelo mejora también con otra fase y queda a 0,6 puntos del mejor exponente de esa foto: no se toca. Un exponente por fase sería ajustar de más con dos fotos. Lo que separa la captura de la foto a 20° no es el terminador: es la exposición del primer plano, el halo de la neblina y el tone mapping.
 
+### 4.21 Los e2e completos (`6cc1f2a`, `ff3d5ca`)
+
+Con el build de `3cb1b72`: 135 bien, 1 saltado y 3 fallos. `tiempo.spec.ts:101`, que falló en la tanda anterior, pasó. Los tres fallos eran **pruebas desfasadas**, no fallos del explorador:
+
+- `camara.spec.ts:34`: desde los nombres de los lugares de España (§4.7) hay dos capas `.scene-labels`, y el modo estricto de Playwright fallaba con dos. La prueba mira la de los cuerpos.
+- `cielo.spec.ts:279`: «Ver en 3D» lleva también el tipo de eclipse y el lugar (§4.13). La prueba lo espera y, además, comprueba el aviso de la llegada (qué eclipse es y desde dónde) y «Volver a los eclipses» con el mismo lugar, que no tenían e2e.
+- `recorrido.spec.ts:125`: el rótulo de España ya no lleva la lista de lugares (§4.13). La prueba mira el rótulo nuevo y que los nombres se ven en el mapa.
+
+Con los cambios del arranque del 3D (§4.22), la tanda completa otra vez: 137 bien, 1 saltado y 2 fallos.
+
+- `movil.spec.ts:341` pide la franja fina del móvil (≤ 49 px), y el primer arreglo del CLS la había subido a 3.5rem. Se rehízo al revés (§4.22).
+- `tiempo.spec.ts:101` volvió a fallar: es el intermitente. La causa, en la traza: el panel «Controles» se lleva el foco al abrirse, en su evento `toggle`, que llega en otra tarea. Si la prueba enfocaba la fecha antes, el panel se lo quitaba y las cifras tecleadas iban a los atajos («3», la vista Luna; «2», la Tierra). Esos atajos cerraban el panel y la fecha no cambiaba. `openControls` espera ahora a ese foco.
+
+### 4.22 Lighthouse en el CI (10.g; `706b662`, `f702663` y `63dab9b`, `c641696`, `21797d1`)
+
+**Lo de partida** (la tanda anterior, en local): las 9 páginas de contenido, ≥ 0,96; el explorador, **0,66**. Su LCP simulado era de 3,8 s, el SI de 5,1, el TBT de 860 ms y el CLS de 0,051. La sesión de revisión decidió trocear antes el arranque del 3D y mirar el CLS de la entrada del recorrido.
+
+**Dónde se iba el tiempo.** Una traza con la CPU a ×4 (CDP), atribuida con los source maps del build (`ng build --source-map`, solo para medir), lista las tareas de 50 ms o más al cargar `/` sin nada guardado (con el recorrido):
+
+| Tarea (×4) | Antes | Después |
+|---|---|---|
+| Crear el renderer y el mundo | 282 ms | 187 (el contexto WebGL) + 73 (el mundo) |
+| El fotograma de preparación (posiciones y etiquetas) | 210 ms | 99 ms |
+| Las estrellas y la compilación de los sombreados | 88 ms | ya no es larga |
+| El primer fotograma, con lo que despierta | 103 ms | 60 ms |
+| La primera parada del recorrido (Saturno) | 183 ms | 125 ms |
+| **Suma de lo que pasa de 50 ms** | **1049 ms** | **692 ms** |
+
+**Lo hecho:**
+
+- **El contexto WebGL, en su propia tarea** (`createSceneEngine` cede el hilo antes de crear el mundo). `getContext` no se puede trocear: es el 82 % de esa tarea.
+- **La compilación, por partes:** los hijos de la escena, con el hilo libre cada 10 ms, y lo que three hace la primera vez que usa un programa (leer sus uniformes y sus atributos), también. Además, el motor cede el hilo entre las estrellas y la compilación y entre el primer fotograma y lo que despierta: la interfaz, el recorrido y las peticiones de texturas.
+- **Las etiquetas, medidas de una vez:** `LabelLayer.measure` destapaba, medía y tapaba cada etiqueta, 37 maquetaciones seguidas. Ahora es una sola. Test.
+- **La tabla del brillo de la parte iluminada** (se calcula al enfocar un cuerpo, en un frame) integraba la fase llena en cada fila. Ahora lo hace una vez: la mitad de trabajo y el mismo resultado (test).
+- **El CLS:** no era el recorrido. La franja del móvil (un cuerpo elegido o el cielo) medía 3rem y la cabecera, 3.5rem, así que todo el explorador saltaba 8 px al elegir un cuerpo o al volver. Lo hace también el recorrido, solo: 0,051 al entrar en Saturno y otro tanto al entrar en la Tierra. Ahora, en el explorador del móvil y la tableta, la cabecera mide también 3rem: la franja fina de la decisión de Iván se queda y las páginas de contenido no cambian. Primero se probó al revés, con la franja a 3.5rem, pero un e2e pide la franja fina. Queda **0,006**: el rótulo del recorrido al crecer.
+- **El servidor local comprime como Cloudflare Pages** (Brotli o gzip; e2e en `publicacion.spec.ts`). Sin eso, Lighthouse simulaba la red con los tamaños sin comprimir: three, 806 kB en vez de 203. Era la mayor parte del SI de 5,1 s.
+- **`lighthouserc.js`, con sus tres condiciones:** los informes, en el disco (`.lighthouseci/informes`; en el CI, también como artefacto del propio CI, 7 días); el build local, servido como en Pages; y el Chromium de Playwright. En el CI va con WebGL por software, como los e2e: sin GPU, el explorador no tendría 3D. `npm run lighthouse` tras `npm run build`.
+
+**El resultado** (en local, con el equipo libre, sin ningún build ni captura de la 10.a en marcha; el móvil de Lighthouse 13.6 con su simulación; 3 cargas por página, en negrita la mediana):
+
+| Página | Rendimiento (3 cargas) | Accesibilidad | Buenas prácticas | FCP | LCP | SI | TBT | CLS |
+|---|---|---|---|---|---|---|---|---|
+| `/` | **0,76** (0,72 · 0,76 · 0,77) | 1,00 | 1,00 | 0,7 s | 2,5 s | 2,8 s | 875 ms | 0,006 |
+| `/planetas/marte` | **0,99** (0,99 · 0,99 · 0,99) | 1,00 | 1,00 | 0,7 s | 0,7 s | 1,3 s | 147 ms | 0,000 |
+| `/planetas/saturno` | **0,98** (0,96 · 0,98 · 0,99) | 1,00 | 1,00 | 0,7 s | 0,7 s | 1,2 s | 153 ms | 0,000 |
+| `/lunas/titan` | **0,98** (0,93 · 0,98 · 0,99) | 1,00 | 1,00 | 0,7 s | 0,7 s | 1,3 s | 154 ms | 0,000 |
+| `/sol` | **0,96** (0,94 · 0,96 · 0,98) | 1,00 | 1,00 | 0,7 s | 0,7 s | 1,3 s | 235 ms | 0,000 |
+| `/luna` | **0,99** (0,96 · 0,99 · 0,99) | 1,00 | 1,00 | 0,7 s | 0,7 s | 1,3 s | 142 ms | 0,000 |
+| `/planetas` | **0,98** (0,97 · 0,98 · 1,00) | 1,00 | 1,00 | 0,7 s | 0,7 s | 1,3 s | 179 ms | 0,000 |
+| `/lunas` | **1,00** (0,99 · 1,00 · 1,00) | 1,00 | 1,00 | 0,7 s | 0,7 s | 1,7 s | 88 ms | 0,000 |
+| `/sobre-el-proyecto` | **0,99** (0,99 · 0,99 · 1,00) | 1,00 | 1,00 | 0,7 s | 0,7 s | 1,2 s | 125 ms | 0,000 |
+| `/creditos` | **0,98** (0,97 · 0,98 · 1,00) | 1,00 | 1,00 | 0,7 s | 0,7 s | 1,0 s | 168 ms | 0,000 |
+
+**El explorador no llega a 0,90**, así que su rendimiento va **como aviso** (`warn`) y su accesibilidad y sus buenas prácticas, como error, igual que las fichas. Con el LCP, el SI y el CLS ya en verde, lo que falta es el TBT: para 0,90 tendría que bajar de unos 300 ms. Casi todo es una sola tarea. En el Chrome recién abierto de cada carga de Lighthouse, crear el primer contexto WebGL tarda unos 210 ms observados (la traza de una carga con `--save-assets`), unos 850 ms con la CPU a ×4 de la simulación. En el arranque troceado de arriba, con un Chrome ya en marcha, son 187 ms a ×4. No se puede partir. Con WebGL por software, como en el CI, sale peor: 0,69, con un TBT de 1566 ms en una carga. La propuesta para Iván, en §10 y en `PENDIENTES.md`.
+
+**Riesgos:**
+
+- **Las páginas de contenido en el CI:** sus ejecutores son más lentos y el TBT simulado crece con ellos. `/sol` y `/lunas/titan` tuvieron una carga por debajo de 0,95 (0,94 y 0,93), aunque cuenta la mediana. Si el CI las deja por debajo, el trabajo sale en rojo, sin frenar la vista previa.
+- **El LCP del explorador baila** de una carga a otra (2,5–5,0 s en las pruebas). Es el póster. En la carga real (local, sin limitar) se pinta a los 220–330 ms, y three termina de bajar unas veces antes y otras después. Cuando termina antes, la simulación lo cuenta como necesario para el LCP.
+
+### 4.23 El zum al 200 % (10.d; `e027e30`)
+
+`node scripts/check-zoom.mjs`: 1440 × 900 y 1280 × 800 al 200 % (720 × 450 y 640 × 400 px CSS, a densidad 2), en 11 rutas (las vistas del explorador, el cielo y las páginas de contenido). **Las 22, bien:** sin desborde horizontal, sin controles fuera de alcance y sin textos cortados. La primera pasada marcaba como cortados los textos de 1 × 1 px, ocultos a la vista a propósito para el lector: `.visually-hidden` (la descripción del lienzo), y las entradillas y los títulos que la franja del móvil deja solo para el lector. Ya no los cuenta.
+
 ## 5. Desviaciones del plan y motivo
 
 - **S9, en el teléfono, la flecha sola** (el texto, desde 480 px): ver §4.2.
@@ -252,18 +322,27 @@ El modelo mejora también con otra fase y queda a 0,6 puntos del mejor exponente
 - **La luz del cielo (§4.11):** la revisión de la fase 8 proponía atenuar `band` y enrojecer el disco; para que el color del disco se viera, además, la cúpula deja de sumar su luz sobre él.
 - **La 8K de la Tierra (§4.19), volteada en el sombreado** y no guardada ya volteada: el mismo ahorro, sin regenerar las texturas.
 - **La precarga de la fuente del H1** ya estaba hecha (fase 9): Newsreader 500, el peso de los títulos, va precargada en `index.html` con las dos de Public Sans.
+- **El rendimiento del explorador en Lighthouse, como aviso** (§5 del plan pide ≥ 90): da 0,76 con el arranque troceado. Lo que falta es crear el contexto WebGL, una tarea que no se puede partir (§4.22). La propuesta, en §10.
+- **La cabecera del explorador en el móvil y la tableta, a 3rem** (antes 3.5rem), el alto de la franja fina de la decisión de Iván del 08-11: así el explorador no salta al elegir un cuerpo (§4.22). Las páginas de contenido siguen con 3.5rem.
 
 ## 6. Salida de los checks
 
-(Al cerrar.)
+(Los del cierre, al cerrar.) Los de la tanda del 09-11 por la tarde, con el build de `ff3d5ca`:
+
+- **`npm run check`:** lint y Prettier, bien; **835 tests** en verde (85 ficheros); el build; el JS inicial de las 40 páginas, sin three, astronomy-engine, los stores ni los controles del visor, con **13,98 kB** de código propio de 15; y 1243 enlaces internos bien.
+- **e2e completos:** **139 bien**, 1 saltado (`accesibilidad.spec.ts:106`, la de 320 px, que en escritorio se salta a propósito) y ningún fallo (7,0 min).
+- **Lighthouse** (`npm run lighthouse`, con el equipo libre): las 9 páginas de contenido, de 0,96 a 1,00, y la accesibilidad y las buenas prácticas, 1,00 en todas; el explorador, 0,76, como aviso (§4.22). El CLS de la entrada, medido otra vez con la cabecera de 3rem: sin saltos de la cabecera ni del explorador.
+- **El zum al 200 %:** las 22 comprobaciones, bien (§4.23).
 
 ## 7. Capturas
 
 En `docs/informes/img/fase-10/` (las de la 10.a, `lunas-*`, son de la otra sesión).
 
+- **La revisión final de diseño** (§4.13), `antes-critica-*` (build de `main`) y `despues-critica-*`: el cielo de día (390 y 1440); la llegada desde «Ver en 3D» de un eclipse de Sol (el aviso con «Volver a los eclipses») y de uno de Luna; el foco de «Luz rasante» en la fila del móvil (antes, casi oculto bajo el fundido); la entradilla de `/creditos`; y la portada (1440). `node scripts/capture-requests.mjs <antes|despues> critica`.
+
 ## 8. Dependencias añadidas
 
-(Al cerrar: `@lhci/cli`, aprobado.)
+- **`@lhci/cli` 0.16.0**, de desarrollo (`21797d1`): aprobada en la revisión del bloque S (decisión 5, delegada por Iván), con sus tres condiciones (§4.22). `npm audit` da 9 avisos altos de su árbol, todos de desarrollo; la 0.15.1 tenía 13.
 
 ## 9. Pendientes y `TODO(ivan)`
 
@@ -271,7 +350,12 @@ En `docs/informes/img/fase-10/` (las de la 10.a, `lunas-*`, son de la otra sesi�
 
 ## 10. Propuestas de cambio al plan
 
-(Al cerrar.)
+(Las demás, al cerrar.)
+
+- **El rendimiento del explorador en Lighthouse** (§4.22; para Iván, en `PENDIENTES.md`). Con el arranque troceado, el explorador da **0,76** (antes, 0,66): el LCP baja a 2,5 s, el SI a 2,8 s y el CLS a 0,006, pero el TBT se queda en unos 875 ms. Casi todo es crear el contexto WebGL en el Chrome recién abierto de cada carga, una tarea de unos 210 ms que no se puede partir: para 0,90 haría falta bajar el TBT de unos 300 ms. Las opciones:
+  1. **(Recomendada) Dejarlo como aviso**, como está. Las fichas y las demás páginas siguen como error (≥ 0,95), y la accesibilidad y las buenas prácticas del explorador también. El aviso deja ver la nota en cada CI sin pararlo.
+  2. **Un suelo como error** (por ejemplo, 0,65): pararía una regresión grande. Pero en el CI va con WebGL por software, que da menos (0,69 en una carga local), y sus ejecutores varían: podría saltar sin una regresión de verdad.
+  3. **Pintar en un worker con `OffscreenCanvas`:** el contexto y el pintado, fuera del hilo principal. Es un cambio de arquitectura grande (las etiquetas en el DOM, los eventos y el modo de captura): al backlog, no para esta fase.
 
 ## 11. Cómo probarlo
 
