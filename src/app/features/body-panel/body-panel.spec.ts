@@ -111,7 +111,9 @@ describe('BodyPanel: ficha resumida', () => {
     expect(note()).toBe('Cargando la imagen de radar…');
     fixture.componentRef.setInput('radar', 'on');
     fixture.detectChanges();
-    expect(note()).toBe('Imagen de radar de la sonda Magellan, con el color de las fotos de las Venera 13 y 14: no es lo que verían tus ojos.');
+    expect(note()).toBe(
+      'Imagen de radar de la sonda Magellan, con el color de las fotos de las Venera 13 y 14: no es lo que verían tus ojos.',
+    );
     button()?.click();
     expect(asked).toEqual([true, false]);
     // Si no llega, se dice y el botón vuelve a no estar pulsado.

@@ -12,7 +12,8 @@ async function seriousViolations(page: Page): Promise<string[]> {
     .map((violation) => `${violation.id} (${violation.impact}): ${violation.help}`);
 }
 
-const NOTICE = 'Imagen de radar de la sonda Magellan, con el color de las fotos de las Venera 13 y 14: no es lo que verían tus ojos.';
+const NOTICE =
+  'Imagen de radar de la sonda Magellan, con el color de las fotos de las Venera 13 y 14: no es lo que verían tus ojos.';
 
 test.describe('Venus «Bajo las nubes» (fase 9b, D44)', () => {
   test('el botón de la ficha de Venus, con el teclado: aria-pressed, el aviso y el radar pedido solo al pulsarlo', async ({
