@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Tierra Luna Sol: el Sol en latón, la órbita y la Tierra con su Luna, sobre la tinta del sitio. -->
+  <rect width="32" height="32" rx="7" fill="#0d1321"/>
+  <circle cx="16" cy="16" r="10.5" fill="none" stroke="#d9b76e" stroke-opacity="0.55" stroke-width="1.5"/>
+  <circle cx="16" cy="16" r="5" fill="#d9b76e"/>
+  <circle cx="23.4" cy="8.6" r="2.6" fill="#ece5d3"/>
+  <circle cx="26.9" cy="6.3" r="1" fill="#aba593"/>
+</svg>

@@ -63,10 +63,10 @@ const all = await files();
 if (!all.includes('404.html')) throw new Error('Falta 404.html (la ruta /404 prerenderizada)');
 if (!all.includes('_redirects')) throw new Error('Falta _redirects (public/_redirects)');
 
-// --- 4: rutas absolutas para los ficheros con hash y el icono ------------------------------------
+// --- 4: rutas absolutas para los ficheros con hash y los iconos ----------------------------------
 const pages = all.filter((file) => file.endsWith('.html'));
 const ASSET =
-  /(\s(?:href|src)=")((?:main|chunk|styles|polyfills)-[\w-]+\.(?:js|css)|favicon\.ico)"/g;
+  /(\s(?:href|src)=")((?:main|chunk|styles|polyfills)-[\w-]+\.(?:js|css)|favicon\.(?:ico|svg)|apple-touch-icon\.png)"/g;
 let absolute = 0;
 for (const page of pages) {
   const html = await readFile(join(BROWSER, page), 'utf8');
