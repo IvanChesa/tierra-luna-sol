@@ -183,6 +183,10 @@ export function recreateMosaic(id, mosaic, { check = true } = {}) {
     for (let round = 0; round < BORDER_ROUNDS; round++) {
       for (const band of BORDER_BANDS) matchBorderMean(final, classes, kind, W, H, band);
     }
+    // Y, al final, exactamente lo que mide el criterio del brillo medio (σ = 16), en dos pasos.
+    for (let step = 0; step < 2; step++) {
+      matchBorderExact(final, classes, W, H, { sigma: RECREATION_CRITERIA.meanSigma });
+    }
   }
   // El grano de lo recreado junto a lo real, al de lo real (D45), después de todo lo de D48.
   const grainAmount = blend ? calibrateGrain(final, classes, kind, W, H) : 0;
@@ -575,6 +579,60 @@ function matchBorderMean(final, classes, kind, W, H, options) {
   const seen = Uint8Array.from(real, (v, k) => (v || strip[k] ? 1 : 0));
   const none = Uint8Array.from(classes, (c) => (c === NONE ? 1 : 0));
   matchMean(final, seen, none, W, H, options);
+}
+
+/**
+ * D48, la última pasada de «la misma media», a la escala de la medida (`RECREATION_CRITERIA.meanSigma`):
+ * el salto que mide `borderSteps` en cada píxel del borde de lo real intacto con lo que pone la
+ * recreación (lo real con luz rasante y lo no visto), con las mismas medias de cada lado (las de
+ * `boxBlur`, cada una con solo su clase), extendido a lo largo del borde (σ doble) y restado de todo lo
+ * recreado junto a lo real (lo no visto y la luz rasante), entero hasta `full` × σ de lo real (todo el
+ * alcance de la media de la medida) y apagándose hasta `fade` × σ. Un desplazamiento suave y común: no
+ * deja otro escalón entre la franja y lo no visto. No toca lo real ni lo visto de lejos.
+ */
+function matchBorderExact(final, classes, W, H, { sigma, full = 3, fade = 5, minWeight = 0.2 }) {
+  const pixels = W * H;
+  const L = lightnessMap(final, pixels);
+  const real = Uint8Array.from(classes, (c) => (c === REAL ? 1 : 0));
+  const target = Uint8Array.from(classes, (c) => (c === GRAZING || c === NONE ? 1 : 0));
+  const jump = new Float32Array(pixels);
+  const known = new Float32Array(pixels);
+  for (const cls of [GRAZING, NONE]) {
+    const side = Uint8Array.from(classes, (c) => (c === cls ? 1 : 0));
+    if (!side.some((v) => v)) continue;
+    const wA = boxBlur(Float32Array.from(real), W, H, sigma);
+    const wB = boxBlur(Float32Array.from(side), W, H, sigma);
+    const mA = boxBlur(
+      Float32Array.from(L, (v, k) => v * real[k]),
+      W,
+      H,
+      sigma,
+    );
+    const mB = boxBlur(
+      Float32Array.from(L, (v, k) => v * side[k]),
+      W,
+      H,
+      sigma,
+    );
+    const toA = distanceTo(real, W, H, 4);
+    const toB = distanceTo(side, W, H, 4);
+    for (let k = 0; k < pixels; k++) {
+      const edge = real[k] ? toB[k] <= 1 : side[k] ? toA[k] <= 1 : false;
+      if (!edge || wA[k] < minWeight || wB[k] < minWeight) continue;
+      jump[k] += mB[k] / wB[k] - mA[k] / wA[k];
+      known[k] += 1;
+    }
+  }
+  const spread = boxBlur(jump, W, H, 2 * sigma);
+  const spreadW = boxBlur(known, W, H, 2 * sigma);
+  const distance = distanceTo(real, W, H, Math.ceil(fade * sigma) + 2);
+  for (let k = 0; k < pixels; k++) {
+    if (!target[k] || spreadW[k] < 1e-4) continue;
+    const u = Math.min(1, Math.max(0, (distance[k] - full * sigma) / ((fade - full) * sigma)));
+    const w = 1 - u * u * (3 - 2 * u);
+    if (w <= 0) continue;
+    setLightness(final, k, L[k], L[k] - w * (spread[k] / spreadW[k]));
+  }
 }
 
 /**

@@ -108,7 +108,8 @@ export function detectSpots(L, region, width, height, params = {}) {
         area += weights[j] * pixelArea;
       }
     }
-    thresholds.push(P.threshold * Math.sqrt(n ? s2 / n : 0));
+    // Con `thresholds`, los de otra región (para contar igual lo real y lo recreado).
+    thresholds.push(P.thresholds?.[i] ?? P.threshold * Math.sqrt(n ? s2 / n : 0));
     areas.push(area);
   });
   const spots = [];
