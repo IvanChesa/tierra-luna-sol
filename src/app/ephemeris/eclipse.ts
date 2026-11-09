@@ -11,7 +11,12 @@
  * la Luna y el Sol en su sistema propio.
  */
 import { KM_PER_AU, MOON_RADIUS_KM, SUN_RADIUS_KM } from './constants';
-import { ECL_TO_EQJ, eclToEarthFixed, sunApparentGeocentricEcl } from './coordinates';
+import {
+  ECL_TO_EQJ,
+  eclToEarthFixed,
+  subsolarPoint,
+  sunApparentGeocentricEcl,
+} from './coordinates';
 import { moonGeocentric } from './ephemeris';
 import {
   Vec3,
@@ -82,6 +87,52 @@ export function moonShadowAim(date: Date): { latDeg: number; lonDeg: number } {
   let lonDeg = Math.atan2(closest.y, closest.x) / DEG;
   if (lonDeg <= -180) lonDeg += 360;
   return { latDeg, lonDeg };
+}
+
+/**
+ * Por debajo de esta altura del Sol (grados) en el punto de la sombra, «Ver en 3D» de un eclipse de
+ * Sol encuadra con el terminador a un lado (`moonShadowView`).
+ */
+export const SHADOW_VIEW_LOW_SUN_DEG = 20;
+
+/** Un punto de la Tierra (latitud y longitud, grados) como vector unitario del sistema propio. */
+const geoToVector = (latDeg: number, lonDeg: number): Vec3 =>
+  vec3(
+    Math.cos(latDeg * DEG) * Math.cos(lonDeg * DEG),
+    Math.cos(latDeg * DEG) * Math.sin(lonDeg * DEG),
+    Math.sin(latDeg * DEG),
+  );
+
+/**
+ * Dónde poner la cámara de «Ver en 3D» de un eclipse de Sol (fase 10; sugerencia 15 de la revisión de
+ * la fase 8): sobre la sombra (`moonShadowAim`) o, si allí el Sol está a menos de `lowSunDeg` grados
+ * de altura, desplazada hacia el punto subsolar lo que le falta para llegar a ella (`shiftDeg`). Con el
+ * Sol bajo, la sombra cae junto al terminador y, vista desde encima, se confunde con la noche (el
+ * máximo del 12-08-2026 visto desde España, a la puesta); así, el terminador queda a un lado y la
+ * sombra, sobre el lado de día. La altura del Sol es la geométrica sobre la esfera (basta para
+ * encuadrar).
+ */
+export function moonShadowView(
+  date: Date,
+  lowSunDeg = SHADOW_VIEW_LOW_SUN_DEG,
+): { latDeg: number; lonDeg: number; sunAltitudeDeg: number; shiftDeg: number } {
+  const shadow = moonShadowAim(date);
+  const sunPoint = subsolarPoint(date);
+  const s = geoToVector(shadow.latDeg, shadow.lonDeg);
+  const u = geoToVector(sunPoint.latDeg, sunPoint.lonDeg);
+  const sunAltitudeDeg = 90 - angleBetweenDeg(s, u);
+  const shiftDeg = Math.min(Math.max(lowSunDeg - sunAltitudeDeg, 0), lowSunDeg);
+  // Hacia el punto subsolar por el círculo máximo (sin dirección si el Sol está en el cénit).
+  const along = sub(u, scale(s, dot(s, u)));
+  if (shiftDeg === 0 || length(along) < 1e-9) {
+    return { latDeg: shadow.latDeg, lonDeg: shadow.lonDeg, sunAltitudeDeg, shiftDeg: 0 };
+  }
+  const toward = normalize(along);
+  const p = add(scale(s, Math.cos(shiftDeg * DEG)), scale(toward, Math.sin(shiftDeg * DEG)));
+  const latDeg = Math.atan2(p.z, Math.hypot(p.x, p.y)) / DEG;
+  let lonDeg = Math.atan2(p.y, p.x) / DEG;
+  if (lonDeg <= -180) lonDeg += 360;
+  return { latDeg, lonDeg, sunAltitudeDeg, shiftDeg };
 }
 
 // --- Eclipses de Luna (fase 6) ---------------------------------------------------------------------

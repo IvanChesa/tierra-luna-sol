@@ -15,7 +15,7 @@ import { SystemPositions } from '../../state/positions';
 import { SimulationEngine, SimulationStore } from '../../state/simulation.store';
 import { GuidedView, MoonStop, atSolarHour, localDay, utcDay } from '../../data/tours';
 import { nearestMoonPhase, nearestMoonSunElevation } from '../../ephemeris/moon-light';
-import { moonShadowAim } from '../../ephemeris/eclipse';
+import { moonShadowView } from '../../ephemeris/eclipse';
 import { SKY_BODY_IDS, SkyBodyId, horizontalOf } from '../../ephemeris/sky';
 import { SkyPlace, browserTimeZone, skyPlaceOf, userSkyPlace } from '../../data/sky-place';
 import { DEFAULT_PLACE_ID } from '../../data/places';
@@ -348,12 +348,13 @@ export class ExplorerSession {
 
   /**
    * La cámara de la vista Tierra sobre la sombra de la Luna en la fecha de la URL (`?sombra=1`): su
-   * centro o, en un eclipse parcial, el punto donde es mayor. Una vez, al llegar.
+   * centro o, en un eclipse parcial, el punto donde es mayor; con el Sol bajo allí, con el terminador
+   * a un lado (`moonShadowView`). Una vez, al llegar.
    */
   private aimAtShadow(): void {
     if (!this.params.shadow || this.shadowAimed || this.explorer.view() !== 'earth') return;
     this.shadowAimed = true;
-    const aim = moonShadowAim(this.sim.time());
+    const aim = moonShadowView(this.sim.time());
     this.engine?.lookAtSurface(aim.latDeg, aim.lonDeg, SHADOW_VIEW_RADII, SHADOW_VIEW_EXTENT_DEG);
   }
 

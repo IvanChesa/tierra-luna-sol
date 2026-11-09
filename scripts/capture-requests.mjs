@@ -3,10 +3,12 @@
 //   en reposo, con el ratón encima y con el foco del teclado) y la franja del móvil (390);
 // - S11, la nota bajo «Ver en 3D» de las fichas (la del Sol y la de una luna recreada), a 1280 y a 390;
 // - de las propuestas de la fase 9b, el rótulo de Saturno en la vista general (a 1440 y a 390);
-// - y, de las de la fase 8 (sugerencia 14 de su revisión), la luz del cielo desde España: de día, la
-//   franja del horizonte del lado del Sol; el disco del Sol al ponerse; y un eclipse, parcial y total.
+// - y, de las de la fase 8 (sugerencias 14 y 15 de su revisión), la luz del cielo desde España (de
+//   día, la franja del horizonte del lado del Sol; el disco del Sol al ponerse; y un eclipse, parcial
+//   y total) y «Ver en 3D» del eclipse del 12-08-2026 (en el máximo desde Fraga, a la puesta, y en el
+//   máximo global).
 // Uso: npm run build && node scripts/capture-requests.mjs <antes|despues> [nombre…]
-// (nombres: volver, nota, rotulo y cielo; sin ninguno, todos)
+// (nombres: volver, nota, rotulo, cielo y sombra; sin ninguno, todos)
 import { mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
@@ -93,6 +95,12 @@ const SKY_SHOTS = [
   ],
 ];
 
+/** [nombre, ruta] de «Ver en 3D» del eclipse del 12-08-2026 (solo el lienzo, a 1600 × 900). */
+const SHADOW_SHOTS = [
+  ['sombra-fraga', '/explorar/tierra?captura=1&fecha=2026-08-12T18:29:29Z&sombra=1'],
+  ['sombra-maximo', '/explorar/tierra?captura=1&fecha=2026-08-12T17:45:51Z&sombra=1'],
+];
+
 const { browser, close } = await openBrowser(process.argv);
 try {
   // S9: la Tierra elegida, como en la captura de Iván.
@@ -158,9 +166,13 @@ try {
       await page.close();
     }
   }
-  // La luz del cielo (propuestas de la fase 8).
-  if (!wanted.size || wanted.has('cielo')) {
-    for (const [name, path] of SKY_SHOTS) {
+  // La luz del cielo y «Ver en 3D» de un eclipse de Sol (propuestas de la fase 8).
+  for (const [group, shots] of [
+    ['cielo', SKY_SHOTS],
+    ['sombra', SHADOW_SHOTS],
+  ]) {
+    if (wanted.size && !wanted.has(group)) continue;
+    for (const [name, path] of shots) {
       const { page } = await openViewer(browser, path, { width: 1600, height: 900, scale: 1 });
       await save(await canvasPng(page), name);
       await page.close();

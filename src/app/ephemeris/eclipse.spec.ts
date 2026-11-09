@@ -7,8 +7,15 @@ import {
   SearchMoonPhase,
 } from 'astronomy-engine';
 import { KM_PER_AU } from './constants';
-import { sunApparentGeocentricEcl, sunGeocentricEcl } from './coordinates';
-import { earthShadow, moonShadowAim, moonShadowCenter, satelliteShadowPoint } from './eclipse';
+import { subsolarPoint, sunApparentGeocentricEcl, sunGeocentricEcl } from './coordinates';
+import {
+  SHADOW_VIEW_LOW_SUN_DEG,
+  earthShadow,
+  moonShadowAim,
+  moonShadowCenter,
+  moonShadowView,
+  satelliteShadowPoint,
+} from './eclipse';
 import { planetHeliocentric } from './ephemeris';
 import { GalileanId } from './ids';
 import { galileanMoons } from './moons';
@@ -206,6 +213,47 @@ describe('eclipses: hacia dónde mirar la sombra de la Luna (fase 8, «Ver en 3D
     const aim = moonShadowAim(greatest);
     expect(aim).toEqual(moonShadowCenter(greatest));
     expect(Math.abs(aim.latDeg - NASA_ECLIPSE_2026_08_12.latitudeDeg)).toBeLessThan(0.1);
+  });
+
+  it('el encuadre: sobre la sombra con el Sol alto (el máximo, a 26°); con el Sol bajo, hacia el día', () => {
+    const greatest = new Date(NASA_ECLIPSE_2026_08_12.greatestEclipseUt);
+    const high = moonShadowView(greatest);
+    expect(high.shiftDeg).toBe(0);
+    expect(high.latDeg).toBe(moonShadowAim(greatest).latDeg);
+    expect(high.lonDeg).toBe(moonShadowAim(greatest).lonDeg);
+    // La altura geométrica sobre la esfera: a menos de 0,5° de la de la NASA (26°, con refracción).
+    expect(Math.abs(high.sunAltitudeDeg - NASA_ECLIPSE_2026_08_12.sunAltitudeDeg)).toBeLessThan(
+      0.5,
+    );
+    // El máximo desde Fraga (18:29:29 UTC, sugerencia 15 de la revisión de la fase 8): en el centro de
+    // la sombra, el Sol a unos 8°; la cámara se va hacia el día lo que le falta para tenerlo a 20°, y
+    // la sombra queda a un lado, a esa distancia del centro.
+    const sunset = new Date('2026-08-12T18:29:29Z');
+    const low = moonShadowView(sunset);
+    expect(low.sunAltitudeDeg).toBeGreaterThan(6);
+    expect(low.sunAltitudeDeg).toBeLessThan(10);
+    expect(low.shiftDeg).toBeCloseTo(SHADOW_VIEW_LOW_SUN_DEG - low.sunAltitudeDeg, 9);
+    const shadow = moonShadowAim(sunset);
+    const toVector = (latDeg: number, lonDeg: number) => {
+      const lat = (latDeg * Math.PI) / 180;
+      const lon = (lonDeg * Math.PI) / 180;
+      return {
+        x: Math.cos(lat) * Math.cos(lon),
+        y: Math.cos(lat) * Math.sin(lon),
+        z: Math.sin(lat),
+      };
+    };
+    const apart = angleBetweenDeg(
+      toVector(low.latDeg, low.lonDeg),
+      toVector(shadow.latDeg, shadow.lonDeg),
+    );
+    expect(apart).toBeCloseTo(low.shiftDeg, 6);
+    // Desde el punto del encuadre, el Sol a 20° justos: se ha ido hacia el punto subsolar (al oeste).
+    expect(low.lonDeg).toBeLessThan(shadow.lonDeg);
+    const sun = subsolarPoint(sunset);
+    const sunHere =
+      90 - angleBetweenDeg(toVector(low.latDeg, low.lonDeg), toVector(sun.latDeg, sun.lonDeg));
+    expect(sunHere).toBeCloseTo(SHADOW_VIEW_LOW_SUN_DEG, 6);
   });
 
   it('en uno parcial, el punto de la Tierra más cercano al eje: allí el Sol, casi en el horizonte', () => {
