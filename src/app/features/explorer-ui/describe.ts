@@ -6,6 +6,7 @@ import { formatAu, formatDistanceKm, formatNumber } from '../../core/format';
 import { findBody } from '../../data/body-index';
 import type { BodyId } from '../../data/body.model';
 import type { BodyDistances } from '../../data/solar-system';
+import type { MoonLight } from '../../data/tours';
 import type { ExplorerView } from '../../scene';
 
 /** «Estrella», «Planeta», «Satélite de la Tierra» o «Luna de Saturno». */
@@ -94,3 +95,29 @@ const VIEW_NAMES: Readonly<Record<ExplorerView, string>> = {
 };
 
 export const viewName = (view: ExplorerView): string => VIEW_NAMES[view];
+
+/**
+ * Lo que una vista o una parada de la Luna hace con el tiempo, dicho (crítica de la fase 9c: «Cara
+ * visible» llevaba la fecha a la luna llena y pausaba sin avisar; revisión del bloque S, decisión 6):
+ * a qué fecha la lleva, por qué (su luz) y, si el tiempo corría, que se pausa. `null` si no cambia
+ * nada. `date`, la fecha nueva (`null` si se queda); `when`, esa fecha ya escrita en su zona.
+ */
+export function moonStopNotice(
+  light: MoonLight,
+  date: Date | null,
+  wasPlaying: boolean,
+  when: string,
+): string | null {
+  if (date === null || light === null) return wasPlaying ? 'El tiempo se pausa.' : null;
+  const to =
+    light.kind === 'sun'
+      ? light.elevationDeg < 10
+        ? 'a la salida del Sol más cercana en ese lugar, con su luz rasante'
+        : 'a la mañana más cercana en ese lugar, con el Sol aún bajo'
+      : light.phaseDeg === 180
+        ? 'a la luna llena más cercana'
+        : light.phaseDeg === 0
+          ? 'a la luna nueva más cercana'
+          : 'a la fase más cercana con esa luz';
+  return `La fecha pasa ${to} (${when})${wasPlaying ? ' y el tiempo se pausa' : ''}.`;
+}

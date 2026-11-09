@@ -68,6 +68,10 @@ interface Shown {
       </div>
       @if (viewCaption(); as text) {
         <p class="moon__caption">{{ text }}</p>
+        <!-- Lo que la vista ha hecho con el tiempo, a la vista (crítica de la 9c). -->
+        @if (session.moonNotice(); as notice) {
+          <p class="moon__notice">{{ notice }}</p>
+        }
       }
       <!-- Con la Luna casi nueva, por qué casi no se ve (fase 9c, 9c.7); también con el panel plegado. -->
       @if (nearlyNew()) {
@@ -109,6 +113,9 @@ interface Shown {
           <strong>{{ current.position }} de {{ stops.length }} · {{ current.stop.title }}.</strong>
           {{ current.stop.text }}
         </p>
+        @if (session.moonNotice(); as notice) {
+          <p class="moon__notice">{{ notice }}</p>
+        }
       }
       @if (stepByStep) {
         <p class="moon__hint">Con movimiento reducido, el recorrido va paso a paso.</p>
@@ -119,7 +126,7 @@ interface Shown {
 })
 export class MoonPanel {
   private readonly sim = inject(SimulationStore);
-  private readonly session = inject(ExplorerSession);
+  protected readonly session = inject(ExplorerSession);
   private readonly explorer = inject(ExplorerStore);
 
   readonly views = MOON_VIEWS;

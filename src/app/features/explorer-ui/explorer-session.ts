@@ -35,7 +35,8 @@ import {
   parseViewerParams,
   viewerQueryParams,
 } from '../viewer/viewer-params';
-import { describeBody, viewName } from './describe';
+import { describeBody, moonStopNotice, viewName } from './describe';
+import { formatLongDateTime } from '../../core/format';
 import { SHEETS_QUERY, mediaQuery } from '../viewer/media';
 
 /** Lo que la sesión necesita del motor (un subconjunto de su API: en los tests, un doble). */
@@ -116,6 +117,9 @@ export class ExplorerSession {
   private readonly _radar = signal<VenusRadarState>('off');
   /** Venus «Bajo las nubes» (fase 9b, D44): el estado del radar de Magellan, el que dice el motor. */
   readonly radar = this._radar.asReadonly();
+  private readonly _moonNotice = signal<string | null>(null);
+  /** Lo que la última vista o parada de la Luna hizo con el tiempo (`moonStopNotice`), o `null`. */
+  readonly moonNotice = this._moonNotice.asReadonly();
 
   private engine: ExplorerEngine | null = null;
   private engineOffs: (() => void)[] = [];
@@ -482,6 +486,7 @@ export class ExplorerSession {
    * medio mes; `MoonStop.light`), mueve la cámara sobre el lugar y anuncia su subtítulo.
    */
   showMoonStop(stop: MoonStop): void {
+    const wasPlaying = this.sim.playing();
     this.sim.setPlaying(false);
     const now = this.sim.time();
     const light = stop.light;
@@ -491,9 +496,18 @@ export class ExplorerSession {
         : light.kind === 'phase'
           ? nearestMoonPhase(now, light.phaseDeg)
           : (nearestMoonSunElevation(stop.latDeg, stop.lonDeg, light.elevationDeg, now) ?? now);
-    if (date.getTime() !== now.getTime()) this.sim.setTime(date);
+    const moved = date.getTime() !== now.getTime();
+    if (moved) this.sim.setTime(date);
     this.engine?.lookAtSurface(stop.latDeg, stop.lonDeg, stop.distanceRadii, stop.extentDeg);
-    this.announce(`${stop.title}. ${stop.text}`);
+    // Lo que ha hecho con el tiempo, dicho a la vista (en el panel) y al lector (crítica de la 9c).
+    const notice = moonStopNotice(
+      light,
+      moved ? date : null,
+      wasPlaying,
+      formatLongDateTime(date, this.explorer.timeZone()),
+    );
+    this._moonNotice.set(notice);
+    this.announce([`${stop.title}.`, notice, stop.text].filter(Boolean).join(' '));
   }
 
   private applyView(view: ExplorerView): void {

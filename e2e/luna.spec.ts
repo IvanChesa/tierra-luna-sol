@@ -20,8 +20,13 @@ test.describe('La vista Luna (fase 6)', () => {
       'aria-pressed',
       'true',
     );
-    await expect(page.locator('p.visually-hidden[aria-live="polite"]')).toContainText(
-      'Cara visible. La cara que la Luna enseña siempre a la Tierra',
+    // Lo que hace con el tiempo, dicho a la vista y al lector (crítica de la 9c): la fecha nueva, con
+    // su luz, antes del subtítulo.
+    const live = page.locator('p.visually-hidden[aria-live="polite"]');
+    await expect(live).toContainText('Cara visible. La fecha pasa a la luna llena más cercana (');
+    await expect(live).toContainText('La cara que la Luna enseña siempre a la Tierra');
+    await expect(page.locator('.moon__notice')).toHaveText(
+      /^La fecha pasa a la luna llena más cercana \(24 de noviembre de 2026/,
     );
     // La luna llena más cercana al 20-11-2026: el 24 a las 14:54 UT (astronomy-engine; el USNO,
     // 14:53).

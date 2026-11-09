@@ -141,6 +141,17 @@
 }
 
 /*
+ * Lo que una vista o una parada ha hecho con el tiempo (la fecha nueva y la pausa; crítica de la 9c):
+ * más claro que el subtítulo, y a la vista también con el panel plegado en el móvil.
+ */
+.moon__notice {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  line-height: 1.45;
+}
+
+/*
  * En móvil, compacto, para que la Luna se vea por encima: sin la nota, los rótulos solo para los
  * lectores de pantalla (los botones ya dicen qué son) y las vistas en una sola fila que se desplaza.
  */
@@ -177,7 +188,8 @@
     flex: none;
   }
 
-  .moon__caption {
+  .moon__caption,
+  .moon__notice {
     font-size: var(--text-xs, 0.75rem);
   }
 
