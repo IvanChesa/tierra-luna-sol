@@ -139,6 +139,8 @@ h3 {
 p {
   margin: 0 0 var(--space-4);
   max-width: var(--measure);
+  /* Sin una palabra sola en la última línea (crítica de la fase 10: 25 en las páginas de lectura). */
+  text-wrap: pretty;
 }
 
 a {
@@ -571,6 +573,8 @@ main:focus {
 }
 
 .site-footer p {
+  /* Sin la medida de lectura de los párrafos: a 1440 cortaba el pie en dos líneas (crítica de la fase 10). */
+  max-width: none;
   margin: 0;
 }
 
