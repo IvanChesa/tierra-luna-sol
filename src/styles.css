@@ -10,6 +10,8 @@
  */
 :root {
   color-scheme: dark;
+  /* El resaltado del toque en el móvil, en latón tenue (el acento, al 18 %), no el azul del sistema. */
+  -webkit-tap-highlight-color: rgb(217 183 110 / 18%);
 
   /* Color */
   --color-bg: #0d1321;
@@ -147,6 +149,15 @@ a {
 
 a:hover {
   text-decoration-thickness: 2px;
+}
+
+/*
+ * En la pantalla táctil, dos toques rápidos en un control son dos pulsaciones y no un zum (en iOS,
+ * «+», «−» y los pasos del año ampliaban la página). El zum con dos dedos sigue. Los deslizadores,
+ * con lo suyo.
+ */
+:is(a, button, select, summary, label, input:not([type='range'])) {
+  touch-action: manipulation;
 }
 
 :focus-visible {
