@@ -77,6 +77,36 @@ export function skyColorsAt(sunAltitudeDeg: number): SkyColors {
   };
 }
 
+/**
+ * Cuánto se ve el resplandor del lado del Sol pegado al horizonte (0–1) con el Sol a esa altura
+ * (grados): entero en la puesta y poco con el Sol alto (`VISUAL_CONFIG.sky.glow.band`).
+ */
+export const glowBandAt = (sunAltitudeDeg: number): number =>
+  interpolateTable(VISUAL_CONFIG.sky.glow.band, sunAltitudeDeg);
+
+const SUN_DISC = VISUAL_CONFIG.sky.sunDisc.map(
+  ([altitude, color]) => [altitude, srgbHexToLinear(color)] as const,
+);
+
+/**
+ * El color del disco del Sol (lineal, que multiplica su blanco cálido) con el Sol a esa altura
+ * (grados): blanco desde unos 20° y cada vez más naranja hacia el horizonte (`VISUAL_CONFIG.sky.sunDisc`).
+ */
+export function sunDiscTintAt(sunAltitudeDeg: number): Rgb {
+  const first = SUN_DISC[0] as (typeof SUN_DISC)[number];
+  const last = SUN_DISC[SUN_DISC.length - 1] as (typeof SUN_DISC)[number];
+  if (sunAltitudeDeg <= first[0]) return first[1];
+  if (sunAltitudeDeg >= last[0]) return last[1];
+  for (let k = 1; k < SUN_DISC.length; k++) {
+    const b = SUN_DISC[k] as (typeof SUN_DISC)[number];
+    if (sunAltitudeDeg <= b[0]) {
+      const a = SUN_DISC[k - 1] as (typeof SUN_DISC)[number];
+      return mixRgb(a[1], b[1], (sunAltitudeDeg - a[0]) / (b[0] - a[0]));
+    }
+  }
+  return last[1];
+}
+
 /** Luminancia relativa (lineal) de un color: para comprobar que el cielo se oscurece en orden. */
 export const luminance = (c: Rgb): number => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
 

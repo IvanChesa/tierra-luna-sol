@@ -506,8 +506,16 @@ export const VISUAL_CONFIG = {
    * hacia el Sol; el crepúsculo civil, azul con la franja roja; el náutico, azul profundo; y la noche,
    * casi negra (un azul muy oscuro, no negro: el resplandor natural del cielo).
    * - `keyframes`: [altura del Sol (°), cénit, horizonte, resplandor hacia el Sol].
-   * - `glow`: lo concentrado que está el resplandor alrededor del Sol (exponente del coseno) y lo
-   *   que sube sobre el horizonte (exponente de la altura).
+   * - `glow`: lo concentrado que está el resplandor alrededor del Sol (exponente del coseno), lo
+   *   que sube sobre el horizonte (exponente de la altura) y cuánto se ve según la altura del Sol
+   *   (`band`, [altura del Sol (°), ganancia]): entero con el Sol bajo, en la puesta, y poco con el
+   *   Sol alto. Sin ella, de día el color crema del resplandor se sumaba al horizonte blanquecino y
+   *   saturaba a blanco unos 600 px del horizonte (sugerencia 14 de la revisión de la fase 8; fase 10,
+   *   tarea 11).
+   * - `sunDisc`: el color del disco del Sol según su altura ([altura (°), sRGB], que multiplica su
+   *   blanco cálido): blanco con el Sol alto y cada vez más naranja junto al horizonte, donde su luz
+   *   atraviesa mucho más aire y pierde antes el azul (era blanco también en la puesta; la misma
+   *   sugerencia).
    * - `ground`: el suelo, de noche y de día (una silueta, sin paisaje), con un degradado (`glow`):
    *   junto al horizonte toma algo de su color (`strength`, la fracción) y se apaga hacia abajo en
    *   `depthDeg` grados. Liso y casi negro, bajo el azul marino del horizonte de noche se leía como un
@@ -553,7 +561,22 @@ export const VISUAL_CONFIG = {
       [6, '#3b67b4', '#a7b6cb', '#f0c088'],
       [20, '#3a72c9', '#b6cbe3', '#fff0d2'],
     ] as readonly (readonly [number, string, string, string])[],
-    glow: { power: 6, rise: 3 },
+    glow: {
+      power: 6,
+      rise: 3,
+      band: [
+        [3, 1],
+        [10, 0.5],
+        [20, 0.25],
+        [40, 0.15],
+      ] as readonly (readonly [number, number])[],
+    },
+    sunDisc: [
+      [0, '#ff6a1f'],
+      [3, '#ff8a3d'],
+      [8, '#ffc07a'],
+      [20, '#ffffff'],
+    ] as readonly (readonly [number, string])[],
     ground: { night: '#020203', day: '#38372f', glow: { strength: 0.6, depthDeg: 14 } },
     starLimit: [
       [-18, 6.5],

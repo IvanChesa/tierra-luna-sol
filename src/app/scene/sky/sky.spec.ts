@@ -3,12 +3,14 @@ import { VISUAL_CONFIG } from '../visual-config';
 import {
   discOverlapFraction,
   eclipseSkyAltitude,
+  glowBandAt,
   interpolateTable,
   luminance,
   milkyWayGainAt,
   skyColorsAt,
   srgbHexToLinear,
   starLimitAt,
+  sunDiscTintAt,
   totalityOf,
 } from './sky-colors';
 import {
@@ -127,6 +129,49 @@ describe('sky-colors: la luz del cielo según la altura del Sol', () => {
     expect(milkyWayGainAt(-30)).toBe(1);
     expect(milkyWayGainAt(-16)).toBeGreaterThan(0);
     expect(interpolateTable([], 3)).toBe(0);
+  });
+
+  it('de día, el horizonte del lado del Sol ya no satura a blanco; en la puesta, el resplandor entero', () => {
+    // Sugerencia 14 de la revisión de la fase 8: el resplandor, poco con el Sol alto.
+    expect(glowBandAt(0)).toBe(1);
+    expect(glowBandAt(3)).toBe(1);
+    expect(glowBandAt(60)).toBeLessThan(0.3);
+    const altitudes = [0, 3, 6, 12, 20, 30, 60];
+    for (let k = 1; k < altitudes.length; k++) {
+      expect(glowBandAt(altitudes[k] as number)).toBeLessThanOrEqual(
+        glowBandAt(altitudes[k - 1] as number),
+      );
+    }
+    // El horizonte justo debajo del Sol (el resplandor entero, `band` = 1 en el sombreado): con el
+    // Sol alto, por debajo de 1 en los tres canales (antes, blanco: 1,47 en el rojo).
+    for (const altitude of [20, 33, 45, 71]) {
+      const { horizon, glow } = skyColorsAt(altitude);
+      const band = glowBandAt(altitude);
+      for (let c = 0; c < 3; c++) {
+        expect((horizon[c] as number) + band * (glow[c] as number), `a ${altitude}°`).toBeLessThan(
+          1,
+        );
+      }
+    }
+  });
+
+  it('el disco del Sol enrojece junto al horizonte y es blanco con el Sol alto', () => {
+    expect(sunDiscTintAt(20)).toEqual([1, 1, 1]);
+    expect(sunDiscTintAt(70)).toEqual([1, 1, 1]);
+    const [r, g, b] = sunDiscTintAt(0);
+    expect(r).toBe(1);
+    expect(g).toBeLessThan(0.3);
+    expect(b).toBeLessThan(g);
+    expect(sunDiscTintAt(-1)).toEqual(sunDiscTintAt(0));
+    // Pierde antes el azul que el verde, y menos cuanto más alto (el aire que atraviesa).
+    const altitudes = [0, 1, 3, 5, 8, 12, 20];
+    for (let k = 1; k < altitudes.length; k++) {
+      const low = sunDiscTintAt(altitudes[k - 1] as number);
+      const high = sunDiscTintAt(altitudes[k] as number);
+      expect(high[1]).toBeGreaterThan(low[1]);
+      expect(high[2]).toBeGreaterThan(low[2]);
+      expect(high[2] / high[1]).toBeGreaterThanOrEqual(low[2] / low[1]);
+    }
   });
 
   it('el disco del Sol tapado por la Luna', () => {

@@ -2,8 +2,11 @@
 // - S9, «‹ Sistema solar»: la cabecera del explorador con la Tierra elegida, en escritorio (1280 y 1440;
 //   en reposo, con el ratón encima y con el foco del teclado) y la franja del móvil (390);
 // - S11, la nota bajo «Ver en 3D» de las fichas (la del Sol y la de una luna recreada), a 1280 y a 390;
-// - y, de las propuestas de la fase 9b, el rótulo de Saturno en la vista general (a 1440 y a 390).
+// - de las propuestas de la fase 9b, el rótulo de Saturno en la vista general (a 1440 y a 390);
+// - y, de las de la fase 8 (sugerencia 14 de su revisión), la luz del cielo desde España: de día, la
+//   franja del horizonte del lado del Sol; el disco del Sol al ponerse; y un eclipse, parcial y total.
 // Uso: npm run build && node scripts/capture-requests.mjs <antes|despues> [nombre…]
+// (nombres: volver, nota, rotulo y cielo; sin ninguno, todos)
 import { mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
@@ -56,6 +59,39 @@ async function headerClip(page, mobile) {
     height: Math.min(viewport.height, box.bottom + AROUND) - y,
   };
 }
+
+/** Los píxeles del lienzo (`engine.capture()`), sin la interfaz. */
+async function canvasPng(page) {
+  const base64 = await page.evaluate(async () => {
+    const blob = await window.__tlsViewer.engine.capture();
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    let binary = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    }
+    return btoa(binary);
+  });
+  return Buffer.from(base64, 'base64');
+}
+
+/** [nombre, ruta] de las capturas del cielo (solo el lienzo, a 1600 × 900). */
+const SKY_SHOTS = [
+  // El mediodía del 1-11-2026 hacia el sur (la captura de día de la fase 8) y el del 21-06, el Sol a 71°.
+  ['cielo-dia', '/cielo?captura=1&fecha=2026-11-01T11:30Z&rumbo=180&altura=25&campo=70'],
+  ['cielo-verano', '/cielo?captura=1&fecha=2026-06-21T11:50Z&rumbo=173.6&altura=35&campo=70'],
+  // La puesta del 1-11-2026: el Sol a 1,4° (de lejos) y a 3,1° (de cerca, con el campo de 8°).
+  ['cielo-puesta', '/cielo?captura=1&fecha=2026-11-01T16:40Z&rumbo=240&altura=8&campo=40'],
+  ['cielo-puesta-cerca', '/cielo?captura=1&fecha=2026-11-01T16:30Z&rumbo=247.4&altura=3&campo=8'],
+  // El eclipse del 12-08-2026 desde Fraga: parcial a las 18:20 UTC y total en el máximo.
+  [
+    'cielo-eclipse-parcial',
+    '/cielo?captura=1&lugar=fraga&fecha=2026-08-12T18:20Z&rumbo=284&altura=6.6&campo=3',
+  ],
+  [
+    'cielo-eclipse-total',
+    '/cielo?captura=1&lugar=fraga&fecha=2026-08-12T18:29:29Z&rumbo=285.33&altura=5.19&campo=3',
+  ],
+];
 
 const { browser, close } = await openBrowser(process.argv);
 try {
@@ -119,6 +155,14 @@ try {
         const safe = { ...clip, x: Math.max(0, clip.x), y: Math.max(0, clip.y) };
         await save(await page.screenshot({ clip: safe }), `rotulo-saturno-${size}-detalle`);
       }
+      await page.close();
+    }
+  }
+  // La luz del cielo (propuestas de la fase 8).
+  if (!wanted.size || wanted.has('cielo')) {
+    for (const [name, path] of SKY_SHOTS) {
+      const { page } = await openViewer(browser, path, { width: 1600, height: 900, scale: 1 });
+      await save(await canvasPng(page), name);
       await page.close();
     }
   }
