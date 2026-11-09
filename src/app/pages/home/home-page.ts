@@ -27,9 +27,10 @@ import { ExplorerFocus } from '../../core/explorer-focus';
       <p>{{ body.kind }}</p>
     } @else {
       <h1>El sistema solar</h1>
+      <!-- Sin repetir lo de la línea de autoría, justo debajo (crítica de la fase 10). -->
       <p>
-        El Sol, los ocho planetas y veintiuna lunas en las posiciones de hoy, calculadas en tu
-        navegador para cualquier fecha entre 1900 y 2100.
+        El Sol, los ocho planetas y veintiuna lunas en sus posiciones de hoy y de cualquier fecha
+        entre 1900 y 2100.
       </p>
     }
   `,
