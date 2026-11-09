@@ -14,7 +14,14 @@
   <p class="time__readout">
     <span class="time__label">Fecha</span>
     <time [attr.datetime]="sim.time().toISOString()">{{ readout() }}</time>
-    <span class="time__zone">{{ zoneText() }}</span>
+    <!-- En escritorio, el selector dice la velocidad, pero no el sentido: va aquí, junto a la zona,
+      sin añadir una línea a la barra (crítica de la fase 10). -->
+    <span class="time__zone"
+      >{{ zoneText() }}
+      @if (sim.reverse()) {
+        <span class="time__direction">· hacia atrás</span>
+      }
+    </span>
     <span class="time__speedtext">{{ speedText() }}</span>
   </p>
 
