@@ -20,8 +20,7 @@
  *   blanca.
  * - El halo es un cuadrado orientado a la cámara, aditivo, con un tamaño mínimo en píxeles para que el
  *   Sol se vea aunque mida menos de un píxel (escala real, desde Neptuno). En primer plano se recoge y
- *   lleva una corona tenue con serpentinas (ilustrativa: la real solo se ve en un eclipse). En los
- *   niveles alto y medio, el resplandor lo pone sobre todo el bloom (`scene/sun-bloom.ts`).
+ *   lleva una corona tenue con serpentinas (ilustrativa: la real solo se ve en un eclipse).
  * - **El Sol realzado** (fase 9b, D46, decisión de Iván del 06-11; ilustrativo), el del explorador
  *   (`uEnhance` = 1). Segunda vuelta (08-11, «las manchas estas que sobresalen parecen tumores…
  *   intentemos basarnos en el sol del proyecto ejemplo»): un naranja saturado en todo el disco, con el

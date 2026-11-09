@@ -49,8 +49,9 @@ export const VISUAL_CONFIG = {
   /**
    * El Sol (fase 3b, tarea 6; fase 9b, D41: «real y luminoso», el de la luz visible del HMI del SDO; y
    * D46: en el explorador, realzado). Todo lo que no es la ley del limbo (`ephemeris/sun.ts`) es
-   * **ilustrativo**: la intensidad, el halo, la granulación, las manchas, las fáculas, la corona, el
-   * bloom, todo el realzado y que no gire.
+   * **ilustrativo**: la intensidad, el halo, la granulación, las manchas, las fáculas, la corona, todo
+   * el realzado y que no gire. El bloom de la 9b, apagado con el Sol realzado, se quitó en la fase 10
+   * (revisión del bloque S): queda en git, por si algún día vuelve, con su medida.
    */
   sun: {
     /**
@@ -79,13 +80,11 @@ export const VISUAL_CONFIG = {
      * segunda vuelta), solo en la vista general y muy tenue (como la referencia, que tiene una luz
      * débil hasta unos 3 radios): el resplandor de verdad es el borde fino y los rayos
      * (`enhanced.rim` y `enhanced.rays`). De cerca, sin él (la referencia es negra a 1,2 radios). Antes,
-     * 1,3 en la vista general: una mancha grande y pálida que lavaba el disco. `withBloom`, lo que se
-     * atenúa si hay bloom (el factor).
+     * 1,3 en la vista general: una mancha grande y pálida que lavaba el disco.
      */
     halo: {
       overview: { radii: 2.4, intensity: 0.035 },
       closeUp: { radii: 1.8, intensity: 0 },
-      withBloom: 0.55,
     },
     /**
      * Granulación en primer plano (ilustrativa): amplitud, ritmo (unidades de ruido por segundo) y
@@ -127,29 +126,6 @@ export const VISUAL_CONFIG = {
      * corona era un velo pálido hasta 3 radios). La de la totalidad de `/cielo` es otra (`sky/`).
      */
     corona: { closeUp: 0, roundness: 0.35 },
-    /**
-     * El bloom, solo del Sol (fase 9b, D41; antes, opcional en la fase 10), en los niveles alto y medio, sobre
-     * un render del Sol con los cuerpos que lo tapan en negro (`scene/sun-bloom.ts`), en la vista general
-     * y en primer plano (se interpola con el primer plano del Sol): si está encendido (`enabled`), su
-     * fuerza y el peso de cada capa de su desenfoque, de la más estrecha a la más ancha (sigmas de unos
-     * 8, 28, 80, 210 y 515 px CSS).
-     * - **Apagado con el Sol realzado** (D46, segunda vuelta, 08-11): Iván quiere «un halo fino naranja
-     *   rojizo pegado al borde, con rayos cortos y finos, no una mancha grande y pálida». El bloom
-     *   desenfoca el disco entero: su resplandor caía también sobre el disco (lo aclaraba hacia el
-     *   amarillo y lo lavaba en la vista general) y, ancho y del color del disco, era la mancha pálida.
-     *   El borde fino y los rayos los pinta el halo (`enhanced.rim` y `enhanced.rays`), igual en los
-     *   tres niveles y sin sus 15 pasadas. Se queda aquí, apagado, por si se vuelve al Sol de D41.
-     * - En la vista general, un núcleo fuerte junto al disco y unas alas débiles: el Sol deslumbra sin
-     *   velar la pantalla.
-     * - En primer plano, mucho menos y solo las capas estrechas: el resplandor de un disco crece con su
-     *   área (con 400 px de diámetro, unas 20 veces el de la vista general) y, con la misma forma, las
-     *   alas velaban todo el lienzo y el resplandor sobre el disco borraba su limbo.
-     */
-    bloom: {
-      enabled: false as boolean,
-      overview: { strength: 0.8, factors: [1, 0.5, 0.2, 0.05, 0.012] },
-      closeUp: { strength: 0.1, factors: [1, 0.35, 0.04, 0, 0] },
-    },
     /**
      * **El Sol realzado del explorador** (fase 9b, D46, decisión de Iván del 06-11: «quiero uno más como
      * el de la imagen»), ilustrativo y avisado: con luz visible normal el Sol es blanco (D41: el de

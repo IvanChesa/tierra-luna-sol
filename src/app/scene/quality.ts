@@ -71,12 +71,6 @@ export interface QualityProfile {
   readonly milkyWayTexture: TextureLevel | null;
   /** Puntos por vuelta de las órbitas de los planetas (las lunas usan la mitad). */
   readonly orbitSegments: number;
-  /**
-   * El bloom del Sol (fase 9b, D41): en los niveles alto y medio; en el bajo, solo su halo. Cuesta unos
-   * render targets a media resolución (su VRAM va en las estadísticas) y unas pasadas por frame, solo
-   * con el Sol en pantalla.
-   */
-  readonly sunBloom: boolean;
   /** Presupuesto de memoria de vídeo (§5), en MB. */
   readonly vramBudgetMB: number;
   /** FPS mínimos (media de la ventana) para mantenerse en este nivel. */
@@ -103,7 +97,6 @@ export const QUALITY_PROFILES: Readonly<Record<QualityLevel, QualityProfile>> = 
     moonSegments: 128,
     milkyWayTexture: '2k',
     orbitSegments: 360,
-    sunBloom: true,
     vramBudgetMB: 300,
     // §5 pide ≥ 55 FPS en escritorio (alto): con 50 de media en 5 s de animación, ya no llega.
     minFps: 50,
@@ -127,7 +120,6 @@ export const QUALITY_PROFILES: Readonly<Record<QualityLevel, QualityProfile>> = 
     moonSegments: 72,
     milkyWayTexture: '2k',
     orbitSegments: 256,
-    sunBloom: true,
     vramBudgetMB: 200,
     // §5 pide ≥ 30 FPS en móvil: por debajo, mejor el nivel bajo.
     minFps: 30,
@@ -151,7 +143,6 @@ export const QUALITY_PROFILES: Readonly<Record<QualityLevel, QualityProfile>> = 
     moonSegments: 48,
     milkyWayTexture: '2k',
     orbitSegments: 180,
-    sunBloom: false,
     vramBudgetMB: 120,
     minFps: 0,
   },

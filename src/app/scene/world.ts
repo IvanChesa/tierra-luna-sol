@@ -61,7 +61,6 @@ import {
 import { createCubeSphere } from './cube-sphere';
 import { SHAPE_FILES } from './shape-files';
 import { ShapeGrid, decodeShape, shapeGeometry } from './shapes';
-import { OCCLUDER_LAYER, SUN_LAYER } from './layers';
 import { createMarkerMaterial } from './materials/marker-material';
 import { createMilkyWayMaterial } from './materials/milky-way-material';
 import { createRingMaterial } from './materials/ring-material';
@@ -553,9 +552,6 @@ export class World {
       );
       mesh.name = body.id;
       mesh.matrixAutoUpdate = true;
-      // El bloom del Sol (fase 9b): el Sol, en su capa. Los que lo tapan, en la suya, frame a frame
-      // (`setSunOccluders`).
-      if (body.kind === 'star') mesh.layers.enable(SUN_LAYER);
       this.scene.add(mesh);
       return {
         body,
@@ -1335,10 +1331,10 @@ export class World {
    * El aspecto del Sol en este frame: su primer plano (`closeUp`, 0–1: recoge el halo y apaga su
    * resplandor ancho, enciende la granulación, la corona si tiene brillo y los bucles de plasma; el
    * borde fino y los rayos van siempre), el reloj de pared de su granulación, de su estructura y de
-   * los rayos y los bucles (s; 0 con movimiento reducido y en las capturas) y si lleva bloom (si está
-   * encendido: el halo, más tenue). Se llama después de `update`, con la escala del Sol de este frame.
+   * los rayos y los bucles (s; 0 con movimiento reducido y en las capturas). Se llama después de
+   * `update`, con la escala del Sol de este frame.
    */
-  setSunAppearance(closeUp: number, timeSeconds: number, bloom: boolean): void {
+  setSunAppearance(closeUp: number, timeSeconds: number): void {
     const measure = this.sunMeasure;
     const sun = this.sun.uniforms;
     sun.uGranulation.value = measure ? 0 : GRANULATION.amplitude * closeUp;
@@ -1354,8 +1350,7 @@ export class World {
       scale * (HALO.overview.radii + (HALO.closeUp.radii - HALO.overview.radii) * closeUp);
     halo.uSunRadius.value = scale;
     halo.uIntensity.value =
-      (HALO.overview.intensity + (HALO.closeUp.intensity - HALO.overview.intensity) * closeUp) *
-      (bloom ? HALO.withBloom : 1);
+      HALO.overview.intensity + (HALO.closeUp.intensity - HALO.overview.intensity) * closeUp;
     halo.uCorona.value = CORONA.closeUp * closeUp;
     halo.uProminences.value = closeUp;
     halo.uProminenceTime.value = timeSeconds * ENHANCED_SUN.prominences.rate;
@@ -1369,15 +1364,6 @@ export class World {
     this.sun.uniforms.uStructure.value = measure ? 0 : ENHANCED_SUN.structure.amplitude;
     this.spotsTimeMs = Number.NaN;
     this.updateHaloVisibility();
-  }
-
-  /**
-   * Los cuerpos que tapan el Sol en este frame (`sunOccluders`), en la capa del bloom: los demás, no
-   * (así el render del bloom solo dibuja los que hacen falta).
-   */
-  setSunOccluders(indices: readonly number[]): void {
-    for (const visual of this.visuals) visual.mesh.layers.disable(OCCLUDER_LAYER);
-    for (const index of indices) this.visuals[index]?.mesh.layers.enable(OCCLUDER_LAYER);
   }
 
   /** El halo se ve con el Sol (también aislado, en su miniatura), salvo al medir su limbo. */

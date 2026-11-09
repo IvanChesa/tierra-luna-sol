@@ -1,11 +1,11 @@
 // El Sol de la fase 9b (D41), medido en el lienzo (`engine.capture()`, sin la interfaz):
-// - `limbo`: el oscurecimiento del limbo por canal con `?medida=limbo` (el Sol sin halo, corona, bloom,
+// - `limbo`: el oscurecimiento del limbo por canal con `?medida=limbo` (el Sol sin halo, corona,
 //   granulación ni manchas, con todo su disco por debajo de la compresión del tone mapping neutro).
 //   I(μ)/I(1) de R, G y B por intervalos de μ (el lineal de cada píxel: el sRGB decodificado más el
 //   0,04 que resta el tone mapping neutro por debajo de su compresión) y el exponente α de cada canal
 //   (pendiente de ln I frente a ln μ, de μ = 0,1 a 1), frente a la ley de Hestroffer y Magnan (1998):
 //   0,426, 0,508 y 0,626 (`ephemeris/sun.ts`).
-// - `disco`: el Sol de cerca tal como se ve (con su bloom): el centro y el borde en CIELAB (L*, C*, h),
+// - `disco`: el Sol de cerca tal como se ve: el centro y el borde en CIELAB (L*, C*, h),
 //   el centro casi blanco y el borde dorado.
 // - `totalidad`: el eclipse total del 12-08-2026 desde Fraga (la captura de cerca de la fase 8): el
 //   disco de la Luna frente al cielo de alrededor (de 2 a 3 radios, con la corona) y frente al cielo
@@ -249,7 +249,7 @@ async function measureDisc(browser) {
   await page.waitForTimeout(500);
   const { image, disc: fitted } = await canvas(page, 'sol');
   await page.close();
-  console.log('\nEl Sol de cerca, como se ve (con su bloom):');
+  console.log('\nEl Sol de cerca, como se ve:');
   const zones = [
     ['centro (r < 0,1)', 0, 0.1],
     ['μ ≈ 0,7 (r 0,70–0,73)', 0.7, 0.73],

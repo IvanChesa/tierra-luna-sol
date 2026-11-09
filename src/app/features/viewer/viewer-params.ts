@@ -21,7 +21,7 @@
  * - Solo en captura, Venus «Bajo las nubes» (fase 9b, D44): `radar=1`, con `cuerpo=venus`, el radar de
  *   Magellan en lugar de las nubes, ya cargado y sin fundido.
  * - Solo en captura, para medir el limbo del Sol (fase 9b): `medida=limbo`, el Sol sin halo, corona,
- *   bloom, granulación ni manchas, y con su fotosfera por debajo de la compresión del tone mapping.
+ *   granulación ni manchas, y con su fotosfera por debajo de la compresión del tone mapping.
  * - `lugar=teide` (fase 8): el lugar del cielo desde España (los del selector; por defecto, el
  *   Montsec, que no se escribe). «Mi ubicación» nunca va a la URL: no sale del navegador.
  * - Solo en captura, la cámara del cielo (fase 8): `rumbo=180` (desde el norte, hacia el este),

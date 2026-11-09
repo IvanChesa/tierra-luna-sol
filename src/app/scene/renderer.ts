@@ -13,14 +13,10 @@ import {
   Scene,
   Texture,
   ToneMapping,
-  Vector2,
   WebGLRenderer,
 } from 'three';
-import { SunBloom, SunBloomOptions } from './sun-bloom';
 import type { DepthMode } from './types';
 import type { ToneMappingMode } from './visual-config';
-
-export type { SunBloomOptions } from './sun-bloom';
 
 const TONE_MAPPING: Readonly<Record<ToneMappingMode, ToneMapping>> = {
   neutral: NeutralToneMapping,
@@ -40,35 +36,15 @@ export interface RendererCapabilities {
 }
 
 export interface RendererInfo {
-  /** Llamadas de dibujo y triángulos del último frame, con todas sus pasadas (también el bloom). */
+  /** Llamadas de dibujo y triángulos del último frame. */
   readonly calls: number;
   readonly triangles: number;
   readonly geometries: number;
   readonly textures: number;
 }
 
-/**
- * El bloom del Sol (fase 9b, D41; `sun-bloom.ts`): se crea al primer uso y sigue el tamaño del lienzo.
- * Donde no se usa (el nivel bajo y las vistas Tierra, Luna y cielo) se suelta su memoria de vídeo.
- */
-export interface SunBloomPort {
-  /** Compila sus sombreados sin bloquear (antes del primer frame con el Sol). */
-  compile(scene: Scene, camera: Camera): Promise<void>;
-  /** Pinta el resplandor del Sol sobre el frame recién pintado (después de `render`). */
-  render(scene: Scene, camera: Camera, options: SunBloomOptions): void;
-  /** Memoria de vídeo de sus render targets (0 si no la tienen reservada). */
-  vramBytes(): number;
-  /**
-   * Suelta la memoria de vídeo de sus render targets; sus materiales se quedan compilados, y si vuelve
-   * a pintarse, la reserva otra vez.
-   */
-  release(): void;
-}
-
 export interface RendererPort {
   readonly capabilities: RendererCapabilities;
-  /** El bloom del Sol, si este renderer lo tiene (el falso de los tests puede no tenerlo). */
-  readonly sunBloom?: SunBloomPort;
   /** Tamaño en píxeles CSS y densidad de píxeles (ya limitada por la calidad). */
   setSize(width: number, height: number, pixelRatio: number): void;
   /** Exposición del tone mapping (D21: por vista). */
@@ -113,8 +89,7 @@ export const createWebGLRenderer: RendererFactory = (canvas, options) => {
   renderer.toneMapping = TONE_MAPPING[options.toneMapping];
   renderer.toneMappingExposure = 1;
   renderer.setClearColor(options.clearColor, 1);
-  // Las cifras de un frame suman todas sus pasadas (la escena y, si lo hay, el bloom del Sol): three
-  // las pondría a cero en cada `render`, y quedarían solo las de la última.
+  // Las cifras de un frame se ponen a cero al empezar a pintarlo (`render`).
   renderer.info.autoReset = false;
 
   const reversedDepthSupported = renderer.extensions.has('EXT_clip_control');
@@ -138,39 +113,11 @@ export const createWebGLRenderer: RendererFactory = (canvas, options) => {
   const restoreClearColor = () => renderer.setClearColor(options.clearColor, 1);
   canvas.addEventListener('webglcontextrestored', restoreClearColor);
 
-  // El bloom del Sol: se crea al primer uso, con el tamaño del lienzo (en píxeles reales y CSS).
-  let bloom: SunBloom | null = null;
-  const drawingSize = new Vector2();
-  const cssSize = new Vector2();
-  const sizeBloom = (target: SunBloom) => {
-    renderer.getDrawingBufferSize(drawingSize);
-    renderer.getSize(cssSize);
-    target.setSize(drawingSize.x, drawingSize.y, cssSize.x, cssSize.y);
-  };
-  const ensureBloom = (): SunBloom => {
-    if (!bloom) {
-      bloom = new SunBloom();
-      sizeBloom(bloom);
-    }
-    return bloom;
-  };
-  const sunBloom: SunBloomPort = {
-    compile: (scene, camera) => ensureBloom().compile(renderer, scene, camera),
-    render: (scene, camera, bloomOptions) =>
-      ensureBloom().render(renderer, scene, camera, bloomOptions),
-    vramBytes: () => bloom?.vramBytes() ?? 0,
-    release() {
-      bloom?.releaseBuffers();
-    },
-  };
-
   return {
     capabilities,
-    sunBloom,
     setSize(width, height, pixelRatio) {
       renderer.setPixelRatio(pixelRatio);
       renderer.setSize(width, height, false);
-      if (bloom) sizeBloom(bloom);
     },
     setExposure(exposure) {
       renderer.toneMappingExposure = exposure;
@@ -206,8 +153,6 @@ export const createWebGLRenderer: RendererFactory = (canvas, options) => {
     onContextRestored: (listener) => listen('webglcontextrestored', listener),
     dispose() {
       canvas.removeEventListener('webglcontextrestored', restoreClearColor);
-      bloom?.dispose();
-      bloom = null;
       renderer.dispose();
       // Libera el contexto ya: los navegadores limitan los contextos WebGL vivos (~16). Quien
       // escucha la pérdida de contexto tiene que darse de baja antes.

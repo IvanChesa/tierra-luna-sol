@@ -29,10 +29,6 @@ describe('quality: niveles y detección', () => {
     expect(QUALITY_PROFILES.low.vramBudgetMB).toBe(120);
     expect(QUALITY_PROFILES.high.starMagnitudeLimit).toBe(6.5);
     expect(QUALITY_PROFILES.low.maxPixelRatio).toBeLessThan(QUALITY_PROFILES.high.maxPixelRatio);
-    // El bloom del Sol (fase 9b, D41): en los niveles alto y medio; en el bajo, solo su halo.
-    expect(QUALITY_PROFILES.high.sunBloom).toBe(true);
-    expect(QUALITY_PROFILES.medium.sunBloom).toBe(true);
-    expect(QUALITY_PROFILES.low.sunBloom).toBe(false);
     expect(lowerLevel('high')).toBe('medium');
     expect(lowerLevel('medium')).toBe('low');
     expect(lowerLevel('low')).toBeNull();

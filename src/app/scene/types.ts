@@ -97,7 +97,7 @@ export interface SceneEngineOptions {
    */
   readonly illustrativeFocus?: boolean;
   /**
-   * Solo en captura: el Sol para medir su limbo (`?medida=limbo`, fase 9b): sin halo, corona, bloom,
+   * Solo en captura: el Sol para medir su limbo (`?medida=limbo`, fase 9b): sin halo, corona,
    * granulación ni manchas, y con su fotosfera por debajo de la compresión del tone mapping.
    */
   readonly sunMeasure?: boolean;
