@@ -1392,12 +1392,17 @@ export class World {
     radar.uRadarMap.value = texture;
     radar.uRadarMix.value = texture ? Math.min(Math.max(mix, 0), 1) : 0;
     const luminance = TEXTURE_MEAN_LUMINANCE['venus-radar'];
-    const { brightness, haze } = VISUAL_CONFIG.venus.radar;
+    const { brightness, haze, venera } = VISUAL_CONFIG.venus.radar;
     const scale =
       visual.photometry && luminance !== undefined
         ? bodyAlbedoScale(visual.body.id, visual.photometry, luminance)
         : 1;
     radar.uRadar.value.set(scale * brightness, haze);
+    // El color de las Venera 13 y 14 (D49), con el brillo del mosaico.
+    radar.uRadarLevels.value.set(...venera.levels);
+    radar.uRadarDark.value.set(...venera.ramp.dark);
+    radar.uRadarMid.value.set(...venera.ramp.mid);
+    radar.uRadarLight.value.set(...venera.ramp.light);
     this.options.invalidate();
   }
 

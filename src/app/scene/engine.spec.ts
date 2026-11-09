@@ -1848,6 +1848,10 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
         uRadarMap: { value: Texture | null };
         uRadarMix: { value: number };
         uRadar: { value: { x: number; y: number } };
+        uRadarLevels: { value: Vector3 };
+        uRadarDark: { value: Vector3 };
+        uRadarMid: { value: Vector3 };
+        uRadarLight: { value: Vector3 };
       } | null;
     }
     const { world } = h.engine as unknown as { world: { visuals: RadarVisual[] } };
@@ -1876,6 +1880,12 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     // Su brillo, el de una textura de Venus; la neblina del limbo, atenuada.
     expect(radar.uRadar.value.x).toBeGreaterThan(0);
     expect(radar.uRadar.value.y).toBe(VISUAL_CONFIG.venus.radar.haze);
+    // Su color, el de las fotos de las Venera 13 y 14 (D49): la rampa de PIA00104 en sus percentiles.
+    const { levels, ramp } = VISUAL_CONFIG.venus.radar.venera;
+    expect(radar.uRadarLevels.value.toArray()).toEqual([...levels]);
+    expect(radar.uRadarDark.value.toArray()).toEqual([...ramp.dark]);
+    expect(radar.uRadarMid.value.toArray()).toEqual([...ramp.mid]);
+    expect(radar.uRadarLight.value.toArray()).toEqual([...ramp.light]);
     // El fundido, frame a frame (el motor sigue pidiendo frames mientras dura).
     h.frames(VISUAL_CONFIG.venus.radar.fadeMs / 2);
     expect(radar.uRadarMix.value).toBeGreaterThan(0.3);

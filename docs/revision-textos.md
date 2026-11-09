@@ -1679,7 +1679,7 @@ Corrección:
 
 **Párrafo 39**
 
-> Venus «Bajo las nubes»: la imagen del radar de Magellan, que mide el eco de cada punto y no la luz que se ve, pintada en gris con la luz del Sol y el brillo de sus nubes. Lo que el radar no cubrió, en un gris liso.
+> Venus «Bajo las nubes»: la imagen del radar de Magellan, que mide el eco de cada punto y no la luz que se ve, pintada con el color de las fotos de las Venera 13 y 14 (las únicas hechas bajo las nubes, como en las imágenes de Magellan de la NASA), con la luz del Sol y el brillo de sus nubes. Lo que el radar no cubrió, en un gris liso.
 
 Corrección:
 
@@ -1777,7 +1777,7 @@ Corrección:
 
 **Párrafo 7**
 
-> Venus bajo las nubes: el mosaico global del radar de la sonda Magellan (C3-MIDR, 2 km por píxel), del USGS Astrogeology y el PDS Geosciences Node (NASA/JPL), de dominio público. Reducido y en WebP; lo que el radar no cubrió, en un gris liso. Es una imagen de radar, en gris: no lo que verían los ojos.
+> Venus bajo las nubes: el mosaico global del radar de la sonda Magellan (C3-MIDR, 2 km por píxel), del USGS Astrogeology y el PDS Geosciences Node (NASA/JPL), de dominio público. Reducido y en WebP; lo que el radar no cubrió, en un gris liso. Es una imagen de radar, con el color de las fotos de las Venera 13 y 14, como el globo de Magellan de la NASA (PIA00104, NASA/JPL): no lo que verían los ojos.
 
 Corrección:
 
@@ -2709,7 +2709,7 @@ Corrección:
 
 **Texto**
 
-> Imagen de radar de la sonda Magellan, no lo que verían tus ojos.
+> Imagen de radar de la sonda Magellan, con el color de las fotos de las Venera 13 y 14: no es lo que verían tus ojos.
 
 Corrección:
 

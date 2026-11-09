@@ -44,7 +44,8 @@
  * - Venus «Bajo las nubes» (fase 9b, D44; `radar: true`, `#define TLS_RADAR`): el mosaico del radar de
  *   Magellan en lugar de las nubes, con un fundido (`uRadarMix`) y con la misma luz y la misma
  *   fotometría de Venus; su brillo, calibrado como el de una textura de Venus, y la neblina del limbo,
- *   atenuada (`VISUAL_CONFIG.venus.radar`). Lo lleva `scene/venus-radar.ts`.
+ *   atenuada (`VISUAL_CONFIG.venus.radar`), con el color de las fotos de las Venera 13 y 14 (D49,
+ *   como PIA00104 de la NASA). Lo lleva `scene/venus-radar.ts`.
  *
  * La geometría es la esfera unidad (Y = polo, meridiano 0 en +X, longitud este hacia −Z, como
  * `SphereGeometry`); el elipsoide sale de la escala de la malla (radio ecuatorial, polar, ecuatorial).
@@ -330,12 +331,27 @@ uniform float uUmbraAxis;
 #endif
 
 #ifdef TLS_RADAR
-// Venus bajo las nubes (fase 9b, D44): el mosaico del radar de Magellan (en gris) y su fundido con las
-// nubes (0: las nubes; 1: el radar); uRadar = (lo que lleva la textura del radar al albedo de Venus, la
-// parte de la neblina del limbo que queda con el radar).
+// Venus bajo las nubes (fase 9b, D44): el mosaico del radar de Magellan (en gris, con el color de las
+// Venera: abajo) y su fundido con las nubes (0: las nubes; 1: el radar); uRadar = (lo que lleva la
+// textura del radar al albedo de Venus, la parte de la neblina del limbo que queda con el radar).
 uniform sampler2D uRadarMap;
 uniform float uRadarMix;
 uniform vec2 uRadar;
+// El color de las fotos de las Venera 13 y 14, como el globo de Magellan de la NASA (PIA00104; D49):
+// los percentiles 5, 50 y 95 de la luminancia del mosaico y la cromaticidad (RGB / luminancia) de
+// PIA00104 en los mismos percentiles. Cambia el tono, no el brillo (la cromaticidad tiene luminancia 1).
+uniform vec3 uRadarLevels;
+uniform vec3 uRadarDark;
+uniform vec3 uRadarMid;
+uniform vec3 uRadarLight;
+
+vec3 tlsVenera(vec3 radar) {
+  float l = dot(radar, vec3(0.2126, 0.7152, 0.0722));
+  float low = clamp((l - uRadarLevels.x) / (uRadarLevels.y - uRadarLevels.x), 0.0, 1.0);
+  float high = clamp((l - uRadarLevels.y) / (uRadarLevels.z - uRadarLevels.y), 0.0, 1.0);
+  vec3 tint = l < uRadarLevels.y ? mix(uRadarDark, uRadarMid, low) : mix(uRadarMid, uRadarLight, high);
+  return l * tint;
+}
 #endif
 
 float ringShadow() {
@@ -406,8 +422,10 @@ void main() {
   vec3 albedo = base * uAlbedoScale;
 #ifdef TLS_RADAR
   // El radar, sin el contraste ni el color de las nubes (los de Venus): su mosaico, centrado en el
-  // meridiano 0 del modelo, como el de las nubes (sin desplazamiento).
-  if (uRadarMix > 0.0) albedo = mix(albedo, texture2D(uRadarMap, vUv).rgb * uRadar.x, uRadarMix);
+  // meridiano 0 del modelo, como el de las nubes (sin desplazamiento), con el color de las Venera.
+  if (uRadarMix > 0.0) {
+    albedo = mix(albedo, tlsVenera(texture2D(uRadarMap, vUv).rgb) * uRadar.x, uRadarMix);
+  }
 #endif
 #ifdef TLS_EARTH
   // Las tierras áridas de la textura, casi tan claras como las nubes (en EPIC, un tercio): su brillo,
@@ -661,6 +679,12 @@ export interface RadarUniforms {
   readonly uRadarMix: Uniform<number>;
   /** (Lo que lleva la textura del radar al albedo de Venus, la parte de la neblina que queda.) */
   readonly uRadar: Uniform<Vector2>;
+  /** El color de las Venera (D49): los percentiles 5, 50 y 95 de la luminancia del mosaico… */
+  readonly uRadarLevels: Uniform<Vector3>;
+  /** …y la cromaticidad (RGB / luminancia) de PIA00104 en esos percentiles. */
+  readonly uRadarDark: Uniform<Vector3>;
+  readonly uRadarMid: Uniform<Vector3>;
+  readonly uRadarLight: Uniform<Vector3>;
 }
 
 /** Cuántas sombras de otros cuerpos recibe un cuerpo como mucho (`TLS_SHADOWS`, fase 7). */
@@ -777,6 +801,11 @@ export function createBodyMaterial(options: BodyMaterialOptions) {
         uRadarMap: new Uniform<Texture | null>(null),
         uRadarMix: new Uniform(0),
         uRadar: new Uniform(new Vector2(1, 1)),
+        // Neutro hasta que la escena ponga el de las Venera (`World.setVenusRadar`).
+        uRadarLevels: new Uniform(new Vector3(0, 0.5, 1)),
+        uRadarDark: new Uniform(new Vector3(1, 1, 1)),
+        uRadarMid: new Uniform(new Vector3(1, 1, 1)),
+        uRadarLight: new Uniform(new Vector3(1, 1, 1)),
       }
     : null;
   const defines = {

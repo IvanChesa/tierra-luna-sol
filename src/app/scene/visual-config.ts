@@ -382,14 +382,37 @@ export const VISUAL_CONFIG = {
    * Venus «Bajo las nubes» (fase 9b, D44): el mosaico del radar de Magellan en lugar de las nubes,
    * con la misma luz del Sol y la misma fotometría de Venus (la tarea 3: su sombreado sigue con su
    * luz). El radar no mide la luz visible: lo que da es el eco de cada punto (lo rugoso y las cumbres,
-   * claros), y se pinta en gris, sin color inventado. Su brillo, **ilustrativo**: el de una textura de
-   * Venus, calibrado igual que la de las nubes (`brightness` × el albedo geométrico de Venus en el
-   * disco lleno), para que se vea con la misma exposición. `haze`: la parte de la neblina del limbo
-   * que queda con el radar (la de las nubes taparía su borde). `fadeMs`: el fundido entre las nubes y
-   * el radar (un corte con movimiento reducido o en las capturas).
+   * claros). Su brillo, **ilustrativo**: el de una textura de Venus, calibrado igual que la de las
+   * nubes (`brightness` × el albedo geométrico de Venus en el disco lleno), para que se vea con la
+   * misma exposición. `haze`: la parte de la neblina del limbo que queda con el radar (la de las nubes
+   * taparía su borde). `fadeMs`: el fundido entre las nubes y el radar (un corte con movimiento
+   * reducido o en las capturas).
+   *
+   * `venera`: **el color de las fotos de las Venera 13 y 14** (D49; revisión del bloque S, decisión 2,
+   * delegada por Iván: en gris se confundía con la Luna, S3), como el globo de Magellan de la NASA,
+   * PIA00104 («The simulated hues are based on color images recorded by the Soviet Venera 13 and 14
+   * spacecraft»: https://science.nasa.gov/photojournal/venus-computer-simulated-global-view-centered-at-180-degrees-east-longitude/).
+   * Las Venera son las únicas fotos hechas bajo las nubes. En PIA00104 el tono cambia con el brillo
+   * (pardo rojizo en lo oscuro, naranja amarillento en lo claro): `ramp`, su cromaticidad lineal (RGB /
+   * luminancia Rec. 709) en los percentiles 5, 50 y 95 de la luminancia del disco, y `levels`, esos
+   * percentiles de la luminancia lineal de nuestro mosaico (el de 2k; el de 1k y el de 4k, a menos de
+   * 0,006). Cada valor del mosaico toma el tono de PIA00104 en su mismo percentil y conserva su brillo.
+   * Lo mide `scripts/measure-venera-tint.mjs`. Ilustrativo y dicho en el aviso del botón.
    */
   venus: {
-    radar: { brightness: 1, haze: 0.3, fadeMs: 800 },
+    radar: {
+      brightness: 1,
+      haze: 0.3,
+      fadeMs: 800,
+      venera: {
+        levels: [0.1384, 0.2195, 0.3663] as readonly [number, number, number],
+        ramp: {
+          dark: [2.934, 0.521, 0.049] as readonly [number, number, number],
+          mid: [2.184, 0.743, 0.056] as readonly [number, number, number],
+          light: [1.571, 0.915, 0.158] as readonly [number, number, number],
+        },
+      },
+    },
   },
   /**
    * Los anillos de Saturno (fase 7, D36; decisión de Iván del 30-10): un realce **ilustrativo** del

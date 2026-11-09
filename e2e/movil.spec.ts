@@ -83,7 +83,7 @@ test.describe('Móvil', () => {
     await expect(button).toHaveAttribute('aria-pressed', 'true');
     const note = panel.locator('#card-radar-note');
     await expect(note).toHaveText(
-      'Imagen de radar de la sonda Magellan, no lo que verían tus ojos.',
+      'Imagen de radar de la sonda Magellan, con el color de las fotos de las Venera 13 y 14: no es lo que verían tus ojos.',
     );
     await expect(note).toBeInViewport();
     // Al cerrar la ficha (y con ella el aviso), vuelven las nubes.
