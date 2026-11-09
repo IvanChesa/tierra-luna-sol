@@ -57,6 +57,11 @@ Como en la 9b, por archivos (la lista, en la revisión del bloque S): **la 10.a*
 | Los e2e completos | hecha | §4.21: los tres que fallaban eran pruebas desfasadas |
 | 10.g · Lighthouse en el CI, con el arranque del 3D troceado y el CLS de la entrada del recorrido | hecha | §4.22: el explorador, como aviso (0,76); propuesta en §10 |
 | 10.d · El zum al 200 % | hecha | §4.23 |
+| 10.g · Lighthouse en el CI: la causa y la decisión | hecha | §4.24: la causa, SwiftShader en las páginas de contenido; sin él, siete fichas de nueve a 0,99–1,00, pero Titán (0,94) y Marte (0,95) no cumplen de forma estable: el rendimiento, como aviso en el CI |
+| Juntar la 10.a | hecha | §4.25 (`49676a2`) |
+| 10.f · Las medidas de §5, con el equipo libre | hecha | §4.26: todo dentro de §5; Fobos en alto, el ritmo lento con su giro congelado por el aliasing, no falta de GPU |
+| El aviso de presupuesto de `body-panel.css` | hecha | §4.27 |
+| 10.e · La comprobación de los textos (decisión 4) | hecha | §4.28: 551 textos, 8 correcciones y 10 dudas para Iván (`docs/revisiones/textos.md`) |
 
 ## 4. Lo hecho, entrega a entrega
 
@@ -314,6 +319,104 @@ Con los cambios del arranque del 3D (§4.22), la tanda completa otra vez: 137 bi
 ### 4.23 El zum al 200 % (10.d; `e027e30`)
 
 `node scripts/check-zoom.mjs`: 1440 × 900 y 1280 × 800 al 200 % (720 × 450 y 640 × 400 px CSS, a densidad 2), en 11 rutas (las vistas del explorador, el cielo y las páginas de contenido). **Las 22, bien:** sin desborde horizontal, sin controles fuera de alcance y sin textos cortados. La primera pasada marcaba como cortados los textos de 1 × 1 px, ocultos a la vista a propósito para el lector: `.visually-hidden` (la descripción del lienzo), y las entradillas y los títulos que la franja del móvil deja solo para el lector. Ya no los cuenta.
+
+### 4.24 Lighthouse en el CI: la causa y la decisión (10.g; `6adb2d4` y el commit del cierre)
+
+El primer CI con el trabajo `lighthouse` (`a742e37`) salió en rojo: siete de las nueve páginas de contenido, por debajo de 0,95 de rendimiento (medianas de 0,90 a 0,93), aunque en local daban de 0,96 a 1,00. Lo pedido por la sesión de revisión, en orden:
+
+- **El estrangulamiento de la CPU, calibrado con el `benchmarkIndex`** (la guía `docs/throttling.md` de Lighthouse): el ejecutor da **unas 2400** y el PC, **unas 2600**, las dos por encima de la franja de «sobremesa de gama alta» (de 1500 a 2000), para la que vale el ×4 de serie; y la guía pide un multiplicador más alto cuanto más arriba de su franja. Calibrar subiría el multiplicador en los dos, no lo bajaría en el CI: no es la causa. Con un índice casi igual, el hilo principal tardaba en el CI de un 25 a un 50 % más (en `/sol`, «other» 513–586 ms frente a 277–430; la evaluación de scripts, de 506 a 530 frente a 411–434).
+- **La causa: SwiftShader en las páginas que no lo usan.** En el CI, Chrome iba con `--use-angle=swiftshader` en todas las páginas, para que el explorador tenga WebGL. Con él, la composición también va por software y le quita CPU al hilo principal en un ejecutor de 4 núcleos compartidos. Las páginas de contenido no usan WebGL: ahora van en su propia tanda, sin él (`LHCI_PAGES`), y el explorador, en la suya, con él.
+- **La mediana de 5 cargas** en vez de 3 (la guía `docs/variability.md` de Lighthouse: la de 5 es el doble de estable que una sola; y los CI gratuitos son «bastante volátiles»).
+
+| Página | CI de `a742e37` (con SwiftShader; mediana de 3) | CI de `6adb2d4` (sin él; mediana de 5 y las 5) | TBT (mediana) | Local (§4.22) |
+|---|---|---|---|---|
+| `/planetas/marte` | 0,92 | **0,95** (0,95 · 0,99 · 0,95 · 0,95 · 0,98) | 343 → 264 ms | 0,99 |
+| `/planetas/saturno` | 0,92 | **0,99** (las 5, 0,99) | 348 → 141 ms | 0,98 |
+| `/lunas/titan` | 0,90 | **0,94** (0,94 · 0,94 · 0,91 · 0,94 · 0,94) | 407 → 282 ms | 0,98 |
+| `/sol` | 0,93 | **0,99** (las 5, 0,99) | 313 → 138 ms | 0,96 |
+| `/luna` | 0,93 | **0,99** (las 5, 0,99) | 314 → 136 ms | 0,99 |
+| `/planetas` | 0,92 | **0,99** | 341 → 149 ms | 0,98 |
+| `/lunas` | 0,96 | **0,99** | 229 → 147 ms | 1,00 |
+| `/sobre-el-proyecto` | 0,96 | **1,00** | 217 → 63 ms | 0,99 |
+| `/creditos` | 0,95 | **0,99** | 255 → 127 ms | 0,98 |
+| `/` (con SwiftShader en los dos) | 0,66 | 0,67 (aviso) | 2718 → 2608 ms | 0,76 |
+
+La accesibilidad y las buenas prácticas, 1,00 en las 80 cargas.
+
+**La decisión** (la de la sesión de revisión para este caso): sin SwiftShader, siete de las nueve fichas quedan en 0,99–1,00, pero **no cumplen §5 de forma estable en el CI**. `/lunas/titan` se queda en 0,94 de mediana y `/planetas/marte`, justo en 0,95, con tres de sus cinco cargas en el límite. En las dos, la tarea del arranque de Angular mide unos 280 ms simulados, frente a unos 150 en las demás fichas y en las mismas páginas en local; en Marte, una carga sí y otra no. Así que, **en el CI, el rendimiento va como aviso** en todas las páginas, y la accesibilidad y las buenas prácticas, como error. **En local** (`npm run lighthouse`, sin `CI`), el de las páginas de contenido sigue como error. Las cifras de rendimiento que cuentan son las de local con el equipo libre (§4.22), y la definitiva, la de producción (fase 11; `PENDIENTES.md`). Las páginas de contenido siguen sin SwiftShader: así dan cifras útiles también en el CI.
+
+### 4.25 La 10.a, juntada (`49676a2`)
+
+La rama `fase-10a-lunas` (hasta `8190911`, con su CI en verde), con `--no-ff`, después de que la sesión de revisión mirara sus capturas «después» rehechas y le diera el visto bueno. Sin conflictos: las texturas que no son de lunas salen iguales byte a byte, así que `texture-files.ts` solo cambia en las filas de las lunas. Tras juntarla, `npm run check` en verde (835 tests en 85 ficheros; el aviso de presupuesto de `body-panel.css` era de esta rama y se corrige en §4.27).
+
+**La nota de entrega** (la entera, con sus criterios y sus cifras, en `docs/informes/fase-10-entrega-lunas.md`; su revisión por subagente, en `docs/revisiones/fase-10-entrega-lunas.md`, «cambios necesarios» sin Bloqueantes, corregida):
+
+- **Lo real con luz rasante, una clase propia de la máscara** (del 0,5 % al 6,7 % de cada luna): la franja del terminador de la Voyager en las cinco de Urano (de 2,5° a 7,0°) y la unión de 180° de los mapas del JPL (las cinco de Urano y Deimos). Su brillo a gran escala, el de lo real vecino; sus sombras, fundidas hacia lo recreado; lo demás de lo real, igual byte a byte (`assertRealUnchanged` hace fallar el build).
+- **Lo no visto de las lunas de Urano, con forma de terreno:** de 4332 a 8529 cráteres por luna con la población y el albedo de su real, y dos coronas ilustrativas en Miranda; su contraste a gran escala, del 89 al 90 % del de lo real (D48 pide del 70 al 130 %).
+- **El casquete del norte de Tritón**, con el borde irregular, con la estadística del sur real.
+- **Los bordes cumplen los dos criterios de D48:** el fino, relativo a lo natural, y el brillo medio, ΔL\* ≤ 2 en el p95 a 2,8° (de 0,25 a 1,82). La escala no se puede justificar como pide D48: lo natural no baja de 2 a ninguna escala (su §4).
+- **Límites conocidos** (backlog, 16b): las costuras del mosaico original de Tritón, Deimos, Europa y Calisto; la línea fina del borde exterior de la luz rasante (Oberón, casi quitada; Umbriel), que de cerca no se ve; lo recreado de Ariel, casi liso; y las coronas de Miranda, ilustrativas.
+- **Además:** la máscara de cobertura, umbralizada antes de reducir, y las miniaturas y las imágenes de las fichas de las 18 lunas, rehechas. Capturas: `docs/informes/img/fase-10/lunas-*` (las seis vistas de las 19 lunas con mapa, de cerca en el explorador en escritorio y en el móvil, la rejilla y las máscaras).
+
+### 4.26 Las medidas de §5, con el equipo libre (10.f)
+
+Con la 10.a ya junta y su build, sin ninguna otra sesión ni ningún build en marcha (comprobado con los procesos: lo que queda gasta menos del 17 % de un núcleo), en el Chromium de Playwright con la GPU del equipo (RTX 3060, ANGLE sobre D3D11).
+
+**FPS, VRAM y peso por vista y nivel** (`node scripts/measure-views.mjs`; FPS mínimo / medio a 1 día/s, VRAM estimada y lo descargado en ese paso):
+
+| Vista | Alta | Media | Baja |
+|---|---|---|---|
+| Sistema solar | 60/60 · 38 MB · 513 kB | 60/60 · 38 MB · 513 kB | 60/60 · 38 MB · 510 kB |
+| Marte (primer plano) | 59/60 · 126 MB · 1854 kB | 60/60 · 62 MB · 664 kB | 60/60 · 62 MB · 664 kB |
+| Saturno (primer plano) | 60/60 · 94 MB · 952 kB | 60/60 · 62 MB · 898 kB | 60/60 · 62 MB · 898 kB |
+| Dione | 60/60 · 102 MB | 59/60 · 70 MB | 60/60 · 62 MB |
+| Júpiter y sus lunas | 60/60 · 89 MB | 60/60 · 57 MB | 60/60 · 56 MB |
+| Europa | 60/60 · 97 MB | 60/60 · 65 MB | 60/60 · 56 MB |
+| Tritón | 60/60 · 52 MB | 59/60 · 51 MB | 60/60 · 43 MB |
+| Fobos | **5–6/8–9** (el ritmo lento; abajo) · 52 MB | 60/60 · 51 MB | 59/60 · 43 MB |
+| Urano y sus lunas | 60/60 · 60 MB | 60/60 · 59 MB | 60/60 · 59 MB |
+| Miranda | 60/60 · 68 MB | 60/60 · 67 MB | 60/60 · 59 MB |
+| Deimos | 60/60 · 52 MB | 59/60 · 51 MB | 60/60 · 43 MB |
+| Sol (primer plano) | 60/60 · 38 MB | 60/60 · 38 MB | 60/60 · 38 MB |
+| Vista Tierra | 59/60 · **278 MB** · 3235 kB | 60/60 · 86 MB · 727 kB | 59/60 · **86 MB** · 727 kB |
+| Vista Luna | 59/60 · 266 MB · 5222 kB | 60/60 · 103 MB · 2005 kB | 60/60 · 62 MB · 1223 kB |
+| Cielo | 59/60 · 15 MB | 60/60 · 15 MB | 60/60 · 14 MB |
+
+Todo dentro de §5: ≥ 55 FPS en alto (salvo Fobos, que no es falta de GPU), la VRAM más alta, 278 MB de 300 en alto y 86 de 120 en bajo; las texturas de la vista Tierra, 3,2 MB de 6 adicionales en alto y 0,7 de 2 en bajo; las de la vista Luna, 5,2 de 10 y 1,2 de 3. El coste de CPU por frame, de 0,7 a 1,8 ms.
+
+**Fobos en alto, a 5–9 FPS en las dos pasadas:** no es falta de GPU (0,96 ms de CPU por frame, y 60 FPS en medio y en bajo). A 1 día/s, Fobos gira 18,8° por frame a 60 Hz, justo bajo el umbral del aliasing (§4.5 del plan: entra a 20° y sale a 15°). Un frame lento al llegar (la subida de su textura de 2k) congela su giro, y la histéresis lo deja congelado, como está pensado. Con el giro quieto y casi nada moviéndose, el ritmo de pintado (§4.18) pinta lo justo. Comprobado en la página: a 1 día/s, el giro de Fobos congelado, 15 frames pintados por segundo y 60 llamadas a `requestAnimationFrame`. A 1 h/s, la velocidad con un cuerpo enfocado (D33), 60 FPS. Y al volver a 1 día/s desde ahí, también 60, con el giro en marcha. `measure-views.mjs` mide los FPS a 1 día/s en todas las vistas: en Fobos mide el ritmo lento, no lo que da la GPU.
+
+**El resto** (`node scripts/measure.mjs`):
+- **Arranque**, la primera vista: en alto, dos tareas largas de 144 y 137 ms (ninguna de más de 200) y el LCP, el póster, a 464 ms; en bajo, ninguna tarea larga.
+- **Reposo:** 0 frames y 0 llamadas a `requestAnimationFrame` en 3 s.
+- **Reproducción** a 1 día/s: 59,6 / 60 / 60 FPS (alto, medio y bajo), con 1,46 / 1,26 / 1,17 ms de CPU por frame y las efemérides en 0,17–0,19 ms (§5: ≤ 2).
+- **El estado:** 4,8 actualizaciones del store por segundo y 0 cambios de la URL durante la reproducción.
+- **El contexto WebGL**, perdido y recuperado: sin frames mientras falta y con la fecha intacta.
+- **Memoria:** tras 10 idas y vueltas a una ficha, 7 geometrías, 12 texturas y 11 MB de heap; tras 10 cambios de vista, 14 (las 7 del cielo, que se crea una vez y se conserva, como en la fase 8); igual tras 6 cambios de calidad. Tras 10 vueltas por los sistemas de lunas, 16: las dos formas de Fobos y Deimos de la 9b, que se crean una vez y se guardan (`world.ts`, `shape.detailed ??=`), no una por vuelta. Un solo contexto WebGL y un lienzo.
+
+**La tarea de la 8K** (§4.19): al entrar en `/explorar/tierra` en alto, sin el modo de captura (con la 8K de día), las tareas largas de 3 pasadas: **181 y 74 ms** (la primera, con la caché del navegador vacía), **113** y **98**. Ninguna de más de 200 (§5). En la fase 5, la decodificación con el volteo era una tarea de 105–109 ms, y la subida, otra de 61–69.
+
+**El ritmo de pintado** (§4.18), en frames pintados por segundo a las velocidades de D33 (en alto): la vista general a 3 días/s, **60**; Saturno enfocado a 1 h/s, **60** (gira en 10,7 h); la vista Tierra a 1 h/s, **60**; Venus enfocado a 1 h/s, **4** (gira en 243 días); la vista Luna a 1 h/s, **5**. Lo que apenas se mueve se pinta a 4–5 Hz y lo demás, cada frame.
+
+**El Sol con los hashes enteros** (§4.17): 60/60 FPS de cerca en los tres niveles, con 1,0–1,26 ms de CPU por frame. Lo que importa de ese cambio es el móvil (10 frames por segundo en el nivel bajo y la precisión de los hashes en las GPU de gama media), y eso queda para las pruebas de Iván en su móvil (`PENDIENTES.md`).
+
+### 4.27 El aviso de presupuesto de `body-panel.css`
+
+`npm run check` avisaba: el CSS de la ficha del explorador, 4,26 kB, 262 bytes por encima del aviso de 4 kB (lo había hecho crecer la hoja en dos columnas de la tableta, `99dbcd2`, decisión 6). Los cuatro `:host-context(.panel:not(.is-expanded))` se convertían cada uno en dos selectores largos. Ahora la ficha lleva su propia clase en reposo (`host: { '[class.is-resting]': '!expanded()' }`, el mismo estado que `.is-expanded` del panel, que le llega con `[(expanded)]`), y el CSS usa `:host(.is-resting)`. Además, las dos media queries de `(max-width: 63.99rem)` y las dos de `(pointer: coarse)`, en una. Lo que se ve no cambia (los e2e del móvil y de la tableta lo cubren).
+
+### 4.28 La comprobación de los textos (decisión 4)
+
+Un subagente sin el contexto de la sesión (`docs/revisiones/textos.md`) comparó los **551 textos** publicados (sin los nombres de las constelaciones, que ya revisó la sesión de revisión del bloque E) con sus fuentes y con `docs/ESTILO.md`: los 140 de los cuerpos frente a sus citas y a su página en caché, y los de las vistas, los recorridos, las páginas, las fichas, la interfaz y las descriptions frente a sus fuentes y a los datos del proyecto.
+
+- **Corregido en su origen (8):**
+  - tres textos de los cuerpos que decían algo distinto de su cita (Ío, las mareas; Titania, los valles; Oberón, el hielo y la roca);
+  - «del división de Cassini» en la ficha de Saturno;
+  - los textos alternativos de las imágenes de Deimos y de las cinco grandes lunas de Urano, que decían que no había mapa (lo hay desde la 9b);
+  - la privacidad en «Sobre el proyecto»: lo que guarda el navegador (desde la 9c, también las pistas y el recorrido vistos);
+  - las Venera 13 y 14: «las únicas en color» (las 9 y 10 también fotografiaron la superficie, en blanco y negro). Esta frase no tenía fuente, y sigue sin ella: apuntado en el §4 de `textos.md`, para Iván;
+  - «pósters» → «pósteres» en los créditos.
+  `scripts/build-body-texts.mjs`, sin errores (las citas, en sus páginas). `docs/revision-textos.md`, regenerado con el build nuevo.
+- **La lista corta para Iván (10 dudas, no bloquea):** en `docs/revisiones/textos.md`, cada una con su propuesta (el día de Venus frente al de su tabla, los albedos de Umbriel y Proteo, el radio de los anillos de Saturno, «su superficie real» en las lunas con mucho recreado, y otras seis menores). Con el OK de Iván, todos los textos pasan a `reviewed: true` (`PENDIENTES.md`).
 
 ## 5. Desviaciones del plan y motivo
 

@@ -162,7 +162,7 @@ Iván dejó en la sesión de revisión lo que tenía pendiente de decidir: «dec
 
 **Sigue siendo de Iván:**
 - [ ] (Sin decidir; lo está pensando desde el 08-11) **¿El explorador arranca en tiempo real** en lugar de a 3 días/s en la vista general y 1 h/s con un cuerpo? Mientras, **D33 sigue y no se toca** (S10 de la revisión del bloque S, retirado).
-- [ ] **La lista corta de textos dudosos** (`docs/revisiones/textos.md`), cuando exista (fase 10): con tu OK, todos los textos pasan a `reviewed: true`.
+- [ ] **La lista corta de textos dudosos** (`docs/revisiones/textos.md`, fase 10): **10 dudas**, cada una con su propuesta (el día de Venus frente al de su tabla, los albedos de Umbriel y Proteo, el radio de los anillos de Saturno, «su superficie real» en las lunas de Urano, y seis menores), y una frase sin fuente («las únicas en color» de las Venera, su §4). Las 8 correcciones claras ya están hechas. Con tu OK, todos los textos pasan a `reviewed: true`.
 - [ ] **Tus pruebas en el móvil** (abajo, «Revisiones y pruebas de Iván»), el **zip de Proteo** (opcional, arriba) y **«Sobre el proyecto»** (opcional: si cuenta que se ha hecho con Claude Code; arriba, en «Bloque E»).
 
 ## Decisiones
@@ -182,6 +182,7 @@ Iván dejó en la sesión de revisión lo que tenía pendiente de decidir: «dec
 - [ ] Conseguir un iPhone para probar (aunque sea prestado). No bloquea.
 - [x] Decidir si se aprueba `@lhci/cli` (Lighthouse en el CI): **aprobado** el 08-11, con sus condiciones (arriba, «Decisiones del 08-11»; delegado por Iván en la sesión de revisión).
 - [ ] **Decidir qué hacer con la nota de rendimiento del explorador en Lighthouse** (informe de la fase 10, §4.22 y §10; no bloquea). Con el arranque troceado da **0,76** (antes, 0,66; el plan pide 0,90), y las fichas y las demás páginas, de 0,96 a 1,00. Lo que falta es crear el contexto WebGL, unos 210 ms de una sola tarea que no se puede partir. Por ahora va **como aviso** en el CI. Las opciones: (1, la recomendada) dejarlo como aviso; (2) un suelo como error, por ejemplo 0,65, que en el CI, con WebGL por software, podría saltar sin una regresión de verdad; (3) pintar en un worker con `OffscreenCanvas`, un cambio de arquitectura grande, al backlog.
+- [ ] **Saber** (no hace falta decidir nada): en el CI, el rendimiento de Lighthouse va **como aviso** en todas las páginas (fase 10, §4.24 del informe; decisión de la sesión de revisión). Los ejecutores gratuitos de GitHub no dan cifras estables: sin WebGL por software, siete de las nueve fichas dan 0,99–1,00, pero `/lunas/titan` se queda en 0,94 y `/planetas/marte` en 0,95 justos, frente a 0,98 y 0,99 en local. La accesibilidad y las buenas prácticas siguen como error. Las cifras de rendimiento que cuentan son las de `npm run lighthouse` en local, con el equipo libre (ahí, como error), y la definitiva, la de producción: **en la fase 11, Lighthouse contra `tierra-luna-sol.ivanchesa.com`**.
 
 ## Fase 11 (manual; era la fase 10 del plan v1)
 - [ ] El dominio propio (D37): en Cloudflare Pages → `tierra-luna-sol` → «Custom domains», `tierra-luna-sol.ivanchesa.com`. La zona de ivanchesa.com está en la misma cuenta de Cloudflare: el propio panel crea el registro DNS. Los secrets de Cloudflare ya sirven (fase 4).
