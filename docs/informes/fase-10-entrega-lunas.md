@@ -38,7 +38,7 @@
   - lo recreado de Ariel, casi liso;
   - y las coronas de Miranda, ilustrativas.
 - **Además:** la máscara de cobertura, umbralizada antes de reducir; y las miniaturas y las imágenes de las fichas de las 18 lunas, rehechas.
-- **`npm run check`, en verde** (09-11, 20:45, con las correcciones de la revisión): lint y Prettier; 808 tests en 81 ficheros, con una cobertura de `ephemeris/` del 98,93 %; build con 40 rutas prerenderizadas, sin avisos de presupuesto; el código propio inicial, 13,72 kB de 15; y 1238 enlaces internos, bien.
+- **`npm run check`, en verde** (09-11, 20:42, con las correcciones de la revisión): lint y Prettier; 808 tests en 81 ficheros, con una cobertura de `ephemeris/` del 98,93 %; build con 40 rutas prerenderizadas, sin avisos de presupuesto; el código propio inicial, 13,72 kB de 15; y 1238 enlaces internos, bien.
 
 ## 2. Criterios de aceptación
 
@@ -247,7 +247,7 @@ Veredicto de la revisión: cambios necesarios, sin Bloqueantes. Corregidos los t
   - las miniaturas y las imágenes de las fichas de las 18 lunas (las de las siete, rehechas tras la revisión);
   - `FUENTES.md`, `/creditos` y «Lo que es ilustrativo»;
   - esta nota, con los límites conocidos (y el punto 16b del backlog);
-  - `npm run check`, en verde (09-11, 20:45; las cifras, en §1).
+  - `npm run check`, en verde (09-11, 20:42; las cifras, en §1).
 - **Falta, fuera de esta sesión:**
   - que la sesión de revisión mire las capturas «después» rehechas (las seis vistas de las siete lunas, `lunas-<luna>-explorador-{escritorio,movil}-despues.webp` y la rejilla);
   - después, que la sesión 1 junte la rama (§6).
