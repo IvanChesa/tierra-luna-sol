@@ -1,6 +1,8 @@
-// El terminador de Titán (fase 9b, D42; venía de la fase 10) frente a la foto en color natural de
-// Cassini PIA06230 (NASA/JPL/Space Science Institute, 16-04-2005, fase de 56°; la de su color y su halo
-// en la fase 7). La foto se baja a assets-src/referencias/ (no entra en el repo).
+// El terminador de Titán (fase 9b, D42; venía de la fase 10) frente a fotos en color natural de Cassini
+// (NASA/JPL/Space Science Institute), que se bajan a assets-src/referencias/ (no entran en el repo):
+// - PIA06230 (16-04-2005, fase de 56°; la de su color y su halo en la fase 7), con la que se ajustó;
+// - PIA06183 («Hazy Days on Titan», 15-02-2005, fase de 20°, «Sun-Titan-spacecraft, or phase, angle of
+//   20 degrees» en su pie), la comprobación con otra fase (fase 10, tarea 14): `--foto=PIA06183`.
 // - Dos perfiles del brillo lineal a través del disco: a lo largo de la dirección del Sol (de lo
 //   iluminado al terminador) y en perpendicular por el centro; con la fase, μ₀ y μ de cada punto.
 // - Su ajuste a la fotometría de la escena: Minnaert (k = 0,9, la de la fase 7) por el oscurecimiento
@@ -8,21 +10,39 @@
 //   data/photometry.ts) y el error con e = 0 (sin él, el «escalón» de la fase 7).
 // - Con `--captura`, los mismos perfiles en la escena (Titán solo, con esa fase y visto desde su
 //   ecuador, como measure-titan-halo.mjs) y su error frente a la foto.
-// Uso: node scripts/measure-titan-terminator.mjs [--captura] (con --captura, antes npm run build)
+// Uso: node scripts/measure-titan-terminator.mjs [--foto=PIA06230|PIA06183] [--captura]
+//   (con --captura, antes npm run build)
 import { mkdir, stat, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 import { BODY_PHOTOMETRY } from '../src/app/data/photometry.ts';
 import { reflectance } from '../src/app/ephemeris/photometry.ts';
 
-const PHOTO = {
-  url: 'https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia06/pia06230/PIA06230.jpg',
-  file: new URL('../assets-src/referencias/PIA06230.jpg', import.meta.url),
-  /** El disco (measure-reference-colors.mjs): centro y radio (px). */
-  center: [380, 385],
-  radius: 272,
+const PHOTOS = {
+  PIA06230: {
+    url: 'https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia06/pia06230/PIA06230.jpg',
+    file: new URL('../assets-src/referencias/PIA06230.jpg', import.meta.url),
+    /** El disco (measure-reference-colors.mjs): centro y radio (px). */
+    center: [380, 385],
+    radius: 272,
+    phaseDeg: 56,
+  },
+  PIA06183: {
+    url: 'https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia06/pia06183/PIA06183.tif',
+    file: new URL('../assets-src/referencias/PIA06183.tif', import.meta.url),
+    /**
+     * El disco: el radio, del ancho en horizontal (perpendicular al Sol, que llega por abajo) con el
+     * brillo por encima del 5–10 % del máximo, 206–200 px; el centro, a un radio del limbo iluminado.
+     */
+    center: [355, 348],
+    radius: 203,
+    phaseDeg: 20,
+  },
 };
-const PHASE_DEG = 56;
+const PHOTO_ID = process.argv.find((arg) => arg.startsWith('--foto='))?.slice(7) ?? 'PIA06230';
+const PHOTO = PHOTOS[PHOTO_ID];
+if (!PHOTO) throw new Error(`No hay foto «${PHOTO_ID}»: ${Object.keys(PHOTOS).join(', ')}`);
+const PHASE_DEG = PHOTO.phaseDeg;
 /** La captura: el lienzo cuadrado y la fracción de su lado que ocupa el disco (`FRAMING_FILL.body`). */
 const SHOT = { width: 640, height: 640 };
 const BODY_FILL = 0.46;
@@ -125,7 +145,7 @@ for (let e = 0.05; e <= 3.0001; e += 0.05) {
 const used = BODY_PHOTOMETRY.titan.photometry.terminatorExponent ?? 0;
 const pct = (x) => `${(100 * x).toFixed(1).replace('.', ',')} %`;
 console.log(
-  `PIA06230 (fase de ${PHASE_DEG}°), dos perfiles a través del disco, ${photo.length} puntos:`,
+  `${PHOTO_ID} (fase de ${PHASE_DEG}°), dos perfiles a través del disco, ${photo.length} puntos:`,
 );
 console.log(
   `- la fotometría sin oscurecimiento hacia el terminador (e = 0): error ${pct(fitError(photo, withExponent(0)))}`,
