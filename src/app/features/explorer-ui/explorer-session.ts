@@ -131,6 +131,8 @@ export class ExplorerSession {
   private speedContextNow: SpeedContext = 'overview';
   /** La cámara ya se llevó a la sombra del eclipse de la URL (solo al llegar). */
   private shadowAimed = false;
+  /** El recorrido de la primera vez, en marcha (`setTouring`): sin los nombres del 3D. */
+  private touring = false;
 
   constructor() {
     const win = this.doc.defaultView;
@@ -242,7 +244,7 @@ export class ExplorerSession {
     engine.setSpeed(speed);
     engine.setPlaying(playing);
     engine.setViewInsets(this.insets);
-    engine.setLabelsVisible(!this.explorer.cleanView());
+    engine.setLabelsVisible(this.labelsVisible());
     engine.setObserver(observerOf(this.explorer.skyPlace()));
     engine.setConstellationsVisible(this.explorer.constellations());
   }
@@ -405,7 +407,21 @@ export class ExplorerSession {
 
   setCleanView(clean: boolean): void {
     this.explorer.cleanView.set(clean);
-    this.engine?.setLabelsVisible(!clean);
+    this.engine?.setLabelsVisible(this.labelsVisible());
+  }
+
+  /**
+   * El recorrido de la primera vez, en marcha: sin los nombres del 3D, que dice su texto (crítica de la
+   * 9c: en el móvil, «Saturno» se veía cuatro veces a la vez: el título, el texto del recorrido, la
+   * fila y el rótulo; revisión del bloque S, decisión 6). Al acabar o saltarlo, vuelven.
+   */
+  setTouring(touring: boolean): void {
+    this.touring = touring;
+    this.engine?.setLabelsVisible(this.labelsVisible());
+  }
+
+  private labelsVisible(): boolean {
+    return !this.explorer.cleanView() && !this.touring;
   }
 
   /** Márgenes del lienzo que tapa la interfaz (los mide `ExplorerUi`). */

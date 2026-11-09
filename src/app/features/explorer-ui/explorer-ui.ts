@@ -500,6 +500,7 @@ export class ExplorerUi implements OnInit {
             this.tourEnd = null;
             if (!this.alive) return;
             this.touring.set(false);
+            this.session.setTouring(false);
             this.tourCaption.set(null);
             if (end?.how === 'skip') this.toOverviewInMotion();
             else if (end) {
@@ -522,6 +523,7 @@ export class ExplorerUi implements OnInit {
         listen(true);
         if (this.view() !== 'system') void this.goTo('system', true);
         this.touring.set(true);
+        this.session.setTouring(true);
         afterNextRender(() => this.tourSkip()?.nativeElement.focus(), { injector: this.injector });
       })
       .catch(() => {

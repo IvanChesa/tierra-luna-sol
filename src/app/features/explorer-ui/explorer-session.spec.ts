@@ -193,6 +193,21 @@ describe('ExplorerSession: la URL, la selección y el motor', () => {
     expect(TestBed.inject(ExplorerMemory).take()).toBeNull();
   });
 
+  it('el recorrido de la primera vez, sin los nombres del 3D; al acabar, vuelven (salvo en la vista limpia)', async () => {
+    const { session } = await setup('');
+    const engine = new FakeEngine();
+    session.attachEngine(engine);
+    const labels = () => engine.calls.filter((call) => call.startsWith('setLabelsVisible')).at(-1);
+    expect(labels()).toBe('setLabelsVisible true');
+    session.setTouring(true);
+    expect(labels()).toBe('setLabelsVisible false');
+    session.setCleanView(true);
+    session.setTouring(false);
+    expect(labels()).toBe('setLabelsVisible false');
+    session.setCleanView(false);
+    expect(labels()).toBe('setLabelsVisible true');
+  });
+
   it('con movimiento reducido arranca en pausa, a la misma velocidad (D31)', async () => {
     const original = window.matchMedia;
     window.matchMedia = ((query: string) =>
