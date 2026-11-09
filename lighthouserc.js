@@ -9,7 +9,12 @@
 // simulado, los de serie): las fichas y las demás páginas de contenido, ≥ 95 en rendimiento,
 // accesibilidad y buenas prácticas; el explorador, rendimiento ≥ 90 y lo demás ≥ 95. El SEO no es
 // criterio. La muestra, la de `scripts/measure-pages.mjs` (fase 9) más la portada del explorador; la
-// mediana de 3 cargas por página.
+// mediana de 5 cargas por página (la guía de variabilidad de Lighthouse: la de 5 es el doble de estable
+// que una sola).
+//
+// `LHCI_PAGES` elige el grupo: `contenido`, `explorador` o, sin la variable, todas. El CI los mide por
+// separado (`.github/workflows/ci.yml`): las páginas de contenido, sin WebGL por software, que no
+// usan; el explorador, con él.
 //
 // El rendimiento del explorador va como aviso, no como error (fase 10, §10 del informe y PENDIENTES):
 // con su arranque ya troceado, crear el contexto WebGL es una sola tarea que no se puede partir, y en
@@ -21,7 +26,7 @@ const { chromium } = require('playwright-core');
 
 const PORT = 4398;
 const BASE = `http://127.0.0.1:${PORT}`;
-const PAGES = [
+const CONTENT_PAGES = [
   '/planetas/marte',
   '/planetas/saturno',
   '/lunas/titan',
@@ -32,6 +37,10 @@ const PAGES = [
   '/sobre-el-proyecto',
   '/creditos',
 ];
+
+const GROUP = process.env.LHCI_PAGES;
+const PATHS =
+  GROUP === 'contenido' ? CONTENT_PAGES : GROUP === 'explorador' ? ['/'] : ['/', ...CONTENT_PAGES];
 
 /** Las notas mínimas (0–1) de cada categoría; la de rendimiento, como error o como aviso. */
 const scores = (performance, level = 'error') => ({
@@ -45,17 +54,21 @@ module.exports = {
     collect: {
       startServerCommand: `node scripts/serve-dist.mjs ${PORT}`,
       startServerReadyPattern: 'Sirviendo dist',
-      url: ['/', ...PAGES].map((path) => BASE + path),
-      numberOfRuns: 3,
+      url: PATHS.map((path) => BASE + path),
+      numberOfRuns: 5,
       chromePath: chromium.executablePath(),
       settings: {
         onlyCategories: ['performance', 'accessibility', 'best-practices'],
         // En los ejecutores de Ubuntu del CI, sin el sandbox de Chrome (como Playwright) y, sin GPU,
-        // con WebGL por software (SwiftShader, como los e2e): si no, el explorador no tendría 3D.
+        // con WebGL por software (SwiftShader, como los e2e) para el explorador: si no, no tendría 3D.
+        // Las páginas de contenido no usan WebGL y van sin él: con SwiftShader, la composición pasa a
+        // la CPU del ejecutor y le quita tiempo al hilo principal (fase 10, §4.24 del informe).
         chromeFlags: [
           '--headless=new',
           '--no-sandbox',
-          ...(process.env.CI ? ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] : []),
+          ...(process.env.CI && GROUP !== 'contenido'
+            ? ['--use-angle=swiftshader', '--enable-unsafe-swiftshader']
+            : []),
         ].join(' '),
       },
     },
