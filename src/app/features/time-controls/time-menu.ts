@@ -170,7 +170,7 @@ export class TimeMenu {
   /**
    * Salta al instante de los inputs si existe y está entre 1900 y 2100 (en UTC: en la hora local,
    * el intervalo empieza el 31-12-1899 y acaba el 01-01-2101 en Madrid). Si no, solo lo explica con
-   * `report` (al confirmar, nunca a medio escribir).
+   * `report` (al confirmar, nunca a medio escribir), junto al campo, con el rango siempre a la vista.
    */
   private commit(date: HTMLInputElement, time: HTMLInputElement, report: boolean): void {
     this.cancelPending();

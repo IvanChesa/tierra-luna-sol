@@ -70,6 +70,19 @@
   grid-column: 1 / -1;
 }
 
+/* El rango de fechas y el aviso, en una fila bajo la fecha y la hora (crítica de la 9c). */
+.menu__range {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: calc(-1 * var(--space-1));
+}
+
+.menu__hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
 .menu__error {
   margin: 0;
   padding: var(--space-2) var(--space-3);
