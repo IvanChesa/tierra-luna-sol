@@ -272,7 +272,7 @@ test.describe('Fichas de los cuerpos (fase 9)', () => {
 });
 
 test.describe('Compartir, legal y privacidad (fase 9)', () => {
-  test('cada página, en su HTML, con su título, su description y Open Graph; noindex en todas', async ({
+  test('cada página, en su HTML, con su título, su description y Open Graph; noindex solo en la 404', async ({
     request,
   }) => {
     const tag = (html: string, attribute: string) =>
@@ -291,8 +291,8 @@ test.describe('Compartir, legal y privacidad (fase 9)', () => {
       );
       expect(tag(html, 'property="og:image:alt"'), route).toBeTruthy();
       expect(tag(html, 'name="twitter:card"'), route).toBe('summary_large_image');
-      // Mientras el sitio no sea indexable (fase 11), noindex en todas; la 404, siempre.
-      expect(tag(html, 'name="robots"'), route).toBe('noindex');
+      // El sitio es indexable desde el lanzamiento (fase 11): noindex, solo en la 404.
+      expect(tag(html, 'name="robots"'), route).toBe(route === '/404' ? 'noindex' : null);
       if (route === '/404') {
         expect(html, route).not.toMatch(/rel="canonical"|property="og:url"/);
       } else {
@@ -318,13 +318,26 @@ test.describe('Compartir, legal y privacidad (fase 9)', () => {
     expect(await meta(page, 'name="description"')).toMatch(/^Deimos/);
   });
 
-  test('robots.txt no bloquea el rastreo (si no, no se vería el noindex)', async ({ request }) => {
+  test('robots.txt no bloquea el rastreo y cita el sitemap (fase 11)', async ({ request }) => {
     const response = await request.get('/robots.txt');
     expect(response.status()).toBe(200);
     const text = await response.text();
     expect(text).toMatch(/^User-agent: \*$/m);
     expect(text).toMatch(/^Allow: \/$/m);
     expect(text).not.toMatch(/^Disallow: \/\s*$/m);
+    expect(text).toMatch(/^Sitemap: https:\/\/tierra-luna-sol\.ivanchesa\.com\/sitemap\.xml$/m);
+  });
+
+  test('sitemap.xml: cada página prerenderizada menos la 404, con su URL canónica', async ({
+    request,
+  }) => {
+    const response = await request.get('/sitemap.xml');
+    expect(response.status()).toBe(200);
+    const urls = [...(await response.text()).matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+    const expected = ROUTES.filter((route) => route !== '/404').map(
+      (route) => `https://tierra-luna-sol.ivanchesa.com${route}`,
+    );
+    expect(urls.sort()).toEqual(expected.sort());
   });
 
   test('el pie: la nota de privacidad, que lleva a su sección, y los enlaces legales', async ({
@@ -345,10 +358,11 @@ test.describe('Compartir, legal y privacidad (fase 9)', () => {
     await expect(page).toHaveURL(/\/sobre-el-proyecto#privacidad$/);
     const heading = page.getByRole('heading', { name: 'Privacidad', level: 2 });
     await expect(heading).toBeInViewport();
-    // La frase del NEL de Cloudflare (revisión del bloque C, C8).
-    await expect(page.locator('section[aria-labelledby="privacidad"]')).toContainText(
-      'Network Error Logging',
-    );
+    // La frase del NEL de Cloudflare (revisión del bloque C, C8): desde la fase 11, en el dominio
+    // propio no se envía (lo quita una regla de la zona); solo en las direcciones de pages.dev.
+    const privacy = page.locator('section[aria-labelledby="privacidad"]');
+    await expect(privacy).toContainText('Network Error Logging');
+    await expect(privacy).toContainText('En tierra-luna-sol.ivanchesa.com no');
   });
 
   test('en escritorio, la cabecera de las páginas de lectura, en una fila y sin lo legal (hallazgo 4)', async ({

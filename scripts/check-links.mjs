@@ -3,15 +3,13 @@
 // - Internos (`/ruta`, `/ruta#ancla`, `#ancla`, `/img/…`): que la ruta sea una página o un fichero del
 //   build y que el ancla exista en esa página. Es lo que hace `npm run check`.
 // - Externos (con --externos): una petición a cada dirección distinta (HEAD y, si no la admite, GET),
-//   con un tiempo máximo; los DOI, con que doi.org los resuelva. Los de ivanchesa.com se dan como
-//   pendientes mientras el dominio no responda (fase 11; PENDIENTES.md), no como rotos.
+//   con un tiempo máximo; los DOI, con que doi.org los resuelva. Los de ivanchesa.com, como todos
+//   desde que el dominio responde (fase 11).
 // Uso: npm run build && node scripts/check-links.mjs [--externos]
 import { readFile, readdir, stat } from 'node:fs/promises';
 
 const BROWSER = new URL('../dist/tierra-luna-sol/browser/', import.meta.url);
 const external = process.argv.includes('--externos');
-/** Los enlaces que dependen de un paso de Iván (el dominio ivanchesa.com, que aún no resuelve). */
-const PENDING = /^https:\/\/(www\.)?ivanchesa\.com(\/|$)/;
 
 const files = (await readdir(BROWSER, { recursive: true })).map((f) => f.replaceAll('\\', '/'));
 const pages = files.filter((f) => f.endsWith('.html'));
@@ -73,7 +71,6 @@ for (const [route, source] of html) {
   }
 }
 
-let pending = [];
 if (external) {
   const broken = [];
   const check = async (url) => {
@@ -115,8 +112,7 @@ if (external) {
     batch.forEach((url, i) => {
       if (!results[i]) return;
       const where = [...outside.get(url)].slice(0, 3).join(', ');
-      if (PENDING.test(url)) pending.push(`${url} (${results[i]})`);
-      else broken.push(`${url}: ${results[i]} (en ${where})`);
+      broken.push(`${url}: ${results[i]} (en ${where})`);
     });
   }
   for (const b of broken) failures.push(`externo roto: ${b}`);
@@ -129,4 +125,3 @@ if (failures.length) {
 console.log(
   `✔ Enlaces de las ${pages.length} páginas: ${internal} internos bien (rutas, ficheros y anclas)${external ? `; ${outside.size} externos distintos comprobados` : `; ${outside.size} externos sin comprobar (--externos)`}.`,
 );
-if (pending.length) console.log(`  Pendientes del dominio (fase 11): ${pending.join(', ')}`);

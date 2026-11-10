@@ -56,13 +56,14 @@ const TYPES = {
   '.ico': 'image/x-icon',
   '.bin': 'application/octet-stream',
   '.txt': 'text/plain; charset=utf-8',
+  '.xml': 'application/xml',
   '.woff2': 'font/woff2',
   '.wasm': 'application/wasm',
   '.ktx2': 'image/ktx2',
 };
 
 /** Los tipos de texto, los que Pages comprime (las imágenes y los binarios van tal cual). */
-const COMPRESSIBLE = new Set(['.html', '.js', '.css', '.json', '.svg', '.txt']);
+const COMPRESSIBLE = new Set(['.html', '.js', '.css', '.json', '.svg', '.txt', '.xml']);
 const brotli = promisify(brotliCompress);
 const gzipped = promisify(gzip);
 /** Lo ya comprimido, por codificación, fichero y fecha (se comprime una vez por servidor). */

@@ -7,8 +7,9 @@
 # línea. Los estilos en línea son los de los componentes de Angular y el CSS crítico de la página.
 # La geolocalización, solo para «usar mi ubicación» de El cielo desde España (fase 8). Se intentan
 # quitar las cabeceras de Network Error Logging de Cloudflare (harían que el navegador enviara informes
-# de errores a un dominio de Cloudflare, D24), pero las añade la red de Cloudflare después de Pages y
-# siguen saliendo (comprobado en la vista previa): lo decide Iván (PENDIENTES.md).
+# de errores a un dominio de Cloudflare, D24), pero las añade la red de Cloudflare después de Pages:
+# en el dominio propio las quita una regla de la zona de ivanchesa.com (fase 11) y solo salen en las
+# direcciones de pages.dev (la de producción y las vistas previas), que no pasan por ella.
 /*
   Content-Security-Policy: default-src 'self'; script-src 'self' {{INLINE_SCRIPTS}}; style-src 'self' 'unsafe-inline'; img-src 'self'; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
   X-Content-Type-Options: nosniff
@@ -20,8 +21,9 @@
   ! Report-To
   ! NEL
 
-# La dirección de Pages y las vistas previas, fuera de los buscadores: el dominio propio llega en la
-# fase 11 (las vistas previas ya llevan `noindex` de Pages; aquí, también la de producción).
+# La dirección de Pages y las vistas previas, fuera de los buscadores: desde la fase 11, el sitio se
+# indexa solo en el dominio propio, que no lleva esta cabecera (las vistas previas ya llevan `noindex`
+# de Pages; aquí, también la dirección de producción en pages.dev). No quitarlas.
 https://:project.pages.dev/*
   X-Robots-Tag: noindex
 
