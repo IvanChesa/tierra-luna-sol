@@ -22,6 +22,7 @@ Una línea por cada fase cerrada en modo autónomo por bloques y, al terminar ca
 | Revisión del bloque E aplicada (en `main`) | 2026-11-04 | Bloque E **APROBADO** (`docs/revisiones/bloque-E.md`): 2 importantes y 3 menores. E1 (la totalidad del cielo: la Luna del color del cielo, el cielo malva plano y la corona lisa) y E2 (las cinco mejoras que pidió Iván del 01-11 al 03-11 y Venus «Bajo las nubes» del 04-11), a la **fase 9b** (bloque S, `docs/decisiones/FASE-9b-SOL-LUNAS.md`, D39–D44, en §1 del plan: la revisión dice «§2», pero la tabla de decisiones es la §1); E3, en `CLAUDE.md` (las licencias aceptadas con la del JPL, D43; `check-links.mjs` en «Comandos»; los mensajes del chat, en español); E4 (`/luna` con «Inicio › Lunas › Luna»), aprobado por Iván, al principio de la 9b; E5 (los PR 1 y 3 de Dependabot), **sin hacer**: siguen abiertos y la 9b sale del `main` de hoy (PENDIENTES). Las 88 constelaciones, revisadas: correctas. A la fase 10, las propuestas de las fases 8 y 9; a la 9b, los puntos 3, 7 y 12 del backlog, el bloom (solo el Sol) y las lunas de su tarea 10 | Sin cambios de código: 715 tests y 105 e2e (el CI de la fase 9) · JS inicial de 314,23 kB (código propio 14,88 de 15) |
 | 9c · La interfaz, más limpia (D47) | 2026-11-08 | En paralelo con el bloque S y en modo normal. **Código:** CAMBIOS NECESARIOS (`docs/revisiones/fase-9c.md`): 0 bloqueantes, 7 importantes, 9 menores y 4 sugerencias, atendidos, con la decisión de Iván del 07-11 (≤ 32 controles con un cuerpo elegido; los planetas y las lunas, en dos filas). **Diseño:** la crítica de impeccable, de 27/40 al empezar a 31/40 en la repetida (`docs/revisiones/fase-9c-critica.md`), con sus problemas 1 a 6 arreglados, y **33/40 en el repaso de la sesión de revisión** (objetivo ≥ 32), con dos decisiones de Iván del 08-11 sobre el móvil (la ficha a demanda con «ⓘ» y la fila del sistema al elegir un planeta; el cielo con su barra y su panel a demanda). Fusionada con `--no-ff` (`3ce0905`) con el OK de Iván | 743 tests · 133 e2e · JS inicial de 315,18 kB (314,23 antes) · código propio inicial de 13,81 kB de 15 (14,88 antes) · zona útil del 3D a 390: `/` 83,5 % (46,7), Tierra 86,0 % (25,2) y el Cielo en reposo 95,7 % (27,7) · controles a 1440: 23 en `/` (37) y 32 con Saturno (46) · 0 controles tapados (antes, hasta 26 con «Controles» abierto) · el velo de abajo, del 7,0 al 9,6 % (19–23 %) · axe sin violaciones |
 | Revisión del bloque S aplicada (en `main`) | 2026-11-09 | Bloque S, CAMBIOS NECESARIOS sin Bloqueantes (`docs/revisiones/bloque-S.md`): S1 (las lunas recreadas de Urano), a la entrega 10.a, en su propia sesión (D48); S2, S3 (D49), S4, S5, S8, S9 y S11, a la fase 10 (S8, S9 y S11, de las primeras); S6, antes de la fase 11; S7, hecho: el plan (D48, D49, `@lhci/cli` en la lista cerrada, el bloque S ✅ y la fase 10), `PROMPTS.md`, `PENDIENTES.md` (lo decidido por delegación de Iván) y `CLAUDE.md` (`fa445ce`). El PR 4 de Dependabot (seis herramientas, con jsdom 31): el test de las etiquetas que comparaba el `transform` como texto, arreglado en `main` (`0eabe29`); `@dependabot rebase` no se atendió en 45 minutos y la rama se rebasó desde GitHub; con su CI en verde, fusionado (`3ac86d7`). Un e2e intermitente nuevo en el CI de `main` (`fallos.spec.ts:38`, «Reintentar»: ningún fotograma en 1,5 s con SwiftShader), arreglado en su causa (`cfce0e5`) | Sin cambios de la aplicación: 808 tests · el CI de `cfce0e5`, en verde (lint, tests, build, 138 e2e y staging) · el del PR 4, también (con Playwright 1.65 y jsdom 31) |
+| 10 · Pulido y calidad, con la 10.a (D48) | 2026-11-10 | CAMBIOS NECESARIOS (`docs/revisiones/fase-10.md`): 0 bloqueantes, 3 importantes, 12 menores y 3 sugerencias. Corregidos los 3 importantes (el aviso del radar de Venus, entero en el móvil; el cielo de día, con su hora en la barra; el criterio de §5, marcado ⚠️ por el explorador en Lighthouse) y 8 menores; los demás, al backlog o para la sesión de revisión. Fusionada con `--no-ff` (`1109f05`) | 835 tests (`ephemeris/` 98,9 %); e2e 139 en local y 151 en el CI, con la regresión visual; código propio inicial 13,98 kB de 15; FPS 59–60 en los tres niveles (Fobos en alto a 1 día/s, el ritmo lento del aliasing); VRAM 278/86 MB; Lighthouse local, fichas 0,96–1,00 y explorador 0,76 (aviso); 551 textos comprobados |
 ---
 
 ## Resumen del bloque «fases 1 a 1» (2026-10-24)
@@ -648,3 +649,51 @@ No se activó ninguna:
 8. **La fase 10:** `@lhci/cli` y las propuestas de la 9b (§10 de su informe).
 
 El bloque S termina aquí, con la fase 9b fusionada en `main`. No se ha empezado el bloque F (fase 10): antes, la revisión del bloque S.
+
+## Resumen del bloque F, fase 10 (2026-11-10)
+
+### Sesiones
+- **La fase 10**, en la carpeta del proyecto (rama `fase-10-pulido`), en varias sesiones del 09 y el 10-11. **La 10.a** (las lunas recreadas, segunda vuelta, D48), en paralelo, en su worktree (`fase-10a-lunas`); junta con `--no-ff` después de que la sesión de revisión diera el visto bueno a sus capturas.
+- La última sesión se cortó una vez a mitad del cierre (se cerró la ventana). Se retomó desde git y el informe, sin pérdidas: se repitieron el check y los e2e locales.
+
+### Qué se ha hecho (detalle en el informe de la fase 10)
+- **Las peticiones de Iván del 08-11:** el Sol sin girar (S8), «‹ Sistema solar» como botón reconocible (S9) y el margen de la nota bajo «Ver en 3D» (S11).
+- **Diseño:** el radar de Venus con el color de las Venera (S3, D49), los defectos de la crítica de la 9c, las propuestas de la 9b y de la fase 8, y la revisión final con impeccable y las Web Interface Guidelines, con capturas antes y después.
+- **Accesibilidad y resiliencia:** axe en las 40 rutas, sin WebGL, el contexto perdido y el movimiento reducido, en los e2e; el zum al 200 %, bien.
+- **Contenido:** los decimales de las fuentes, S5, Shackleton, el terminador de Titán y **la comprobación de los 551 textos** por un subagente (8 correcciones; 10 dudas para Iván en `docs/revisiones/textos.md`).
+- **Rendimiento:** la Tierra sin la bola azul (S2), el bloom fuera, el Sol del móvil (10 frames por segundo en bajo, hashes enteros), el ritmo de pintado según el movimiento, la 8K más barata y el arranque del 3D troceado. **Las medidas de §5, con el equipo libre.**
+- **Lighthouse en el CI** con `@lhci/cli` (sus tres condiciones) y **la regresión visual** (seis vistas en escritorio y en el móvil) con las referencias generadas en el CI.
+- **La 10.a:** lo real con luz rasante como clase propia, lo no visto de las lunas de Urano con cráteres de su población y el casquete de Tritón con el borde irregular.
+
+### Métricas al cerrar el bloque
+- **Tests:** 835 (la cobertura de `ephemeris/`, 98,9 %). **e2e:** 139 bien en local (13 saltados: la regresión visual, que solo se compara en Linux, y la de 320 px); 151 en el CI, con la regresión visual.
+- **Bundle:** código propio inicial, 13,98 kB de 15; JS inicial, 317,81 kB (aviso a 320).
+- **FPS:** 59–60 de mínimo en las 15 vistas y los tres niveles, salvo Fobos en alto a 1 día/s (el ritmo lento con su giro congelado por el aliasing; a 1 h/s, 60).
+- **VRAM:** 278 MB de 300 (la vista Tierra en alto) y 86 de 120 (en bajo). **Arranque:** tareas largas de 144 y 137 ms; la 8K de la Tierra, de 98 a 181 ms. Efemérides, 0,17–0,19 ms por frame.
+- **Lighthouse en local:** las páginas de contenido, de 0,96 a 1,00; el explorador, 0,76 (aviso). En el CI, la accesibilidad y las buenas prácticas, 1,00; el rendimiento, como aviso.
+
+### Desviaciones importantes (detalle en el informe, §5)
+- **El explorador en Lighthouse, 0,76 frente a 0,90:** el criterio 1 de la fase queda ⚠️. Crear el contexto WebGL es una tarea que no se puede partir; arreglarlo pide pintar en un worker. Va como aviso por la decisión de la sesión de revisión del 09-11, con la decisión para Iván.
+- **Lighthouse en el CI, el rendimiento como aviso:** la causa de las notas bajas era SwiftShader en las páginas de contenido (ya no lo llevan). Sin él, las fichas siguen variando hasta 0,08 de una ejecución a otra (Titán, de 0,91 a 0,94), así que no cumplen §5 de forma estable allí. Cuentan las cifras de local y, la definitiva, la de producción (fase 11).
+- **La hidratación incremental de las fichas, sin hacer:** el código propio inicial ya está en 13,98 kB. Para decidir (Iván o la sesión de revisión).
+
+### Incidencias
+- La sesión se cortó a mitad del cierre (la ventana se cerró); se retomó sin pérdidas.
+- Una orden de shell con comillas invertidas estropeó texto del informe y de `PENDIENTES.md` antes del commit; se rehízo con el editor.
+
+### Condiciones de parada
+- Ninguna nueva. El explorador en Lighthouse (un criterio de rendimiento que no se cumple sin cambiar la arquitectura) ya lo había decidido la sesión de revisión: aviso, con la decisión para Iván.
+
+### Pendiente para Iván (`PENDIENTES.md`)
+1. **Probar en tu móvil y en un iPhone:** la interfaz, «‹ Sistema solar» y el Sol de cerca en el nivel bajo (FPS y batería).
+2. **La lista corta de los textos** (`docs/revisiones/textos.md`): 10 dudas y una frase sin fuente. Con tu OK, todos pasan a `reviewed: true`.
+3. **El explorador en Lighthouse** (0,76): las opciones, en §10 del informe (la recomendada, dejarlo como aviso).
+4. **La hidratación incremental de las fichas:** al backlog o a la fase 11.
+5. **La prueba con un lector de pantalla de verdad** (NVDA o Narrador).
+6. **Saber:** en el CI, el rendimiento de Lighthouse va como aviso; la cifra definitiva, en producción (fase 11).
+
+### Para la sesión de revisión
+- El artefacto de Lighthouse en el CI (hallazgo 10 de la revisión de la fase 10): ¿vale como «solo en el disco del CI»?
+- Un suelo de rendimiento como error en el CI (hallazgo 18) y lo que va al backlog (§10 del informe de la fase 10).
+
+El bloque F termina aquí, con la fase 10 fusionada en `main`. La fase 11 (el lanzamiento, con Iván) espera a la revisión del bloque F.
