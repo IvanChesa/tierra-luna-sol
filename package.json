@@ -1,11 +1,11 @@
 {
   "name": "tierra-luna-sol",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "license": "MIT",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "ng build && node scripts/prepare-pages.mjs",
+    "build": "ng build && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/prepare-pages.mjs",
     "watch": "ng build --watch --configuration development",
     "test": "ng test --watch=false",
     "lint": "ng lint && prettier --check .",

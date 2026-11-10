@@ -1,5 +1,0 @@
-# Tierra Luna Sol (fase 9, D25): sin sitemap. Mientras el sitio no sea indexable, cada página lleva
-# «noindex» (y las vistas previas de Cloudflare Pages, también la cabecera X-Robots-Tag): para que
-# los buscadores la vean, no se bloquea el rastreo.
-User-agent: *
-Allow: /

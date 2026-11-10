@@ -1,6 +1,6 @@
 # Revisión de los textos
 
-> GENERADO por `scripts/build-text-review.mjs` el 2026-11-09, desde los datos y el HTML del build: es lo que se publica. Decisión de Iván al lanzar el bloque E (fase 9, tarea 7).
+> GENERADO por `scripts/build-text-review.mjs` el 2026-11-10, desde los datos y el HTML del build: es lo que se publica. Decisión de Iván al lanzar el bloque E (fase 9, tarea 7).
 
 ## Cómo se usa
 
@@ -1685,7 +1685,7 @@ Corrección:
 
 **Párrafo 39**
 
-> Venus «Bajo las nubes»: la imagen del radar de Magellan, que mide el eco de cada punto y no la luz que se ve, pintada con el color de las fotos de las Venera 13 y 14 (las únicas en color hechas bajo las nubes, como en las imágenes de Magellan de la NASA), con la luz del Sol y el brillo de sus nubes. Lo que el radar no cubrió, en un gris liso.
+> Venus «Bajo las nubes»: la imagen del radar de Magellan, que mide el eco de cada punto y no la luz que se ve, pintada con el color de las fotos de las Venera 13 y 14 (hechas bajo las nubes, como en las imágenes de Magellan de la NASA), con la luz del Sol y el brillo de sus nubes. Lo que el radar no cubrió, en un gris liso.
 
 Corrección:
 
@@ -1717,7 +1717,7 @@ Corrección:
 
 **Párrafo 44**
 
-> El alojamiento, Cloudflare Pages, pide a algunos navegadores (Chrome y Edge) que le envíen un informe cuando una petición a este sitio falla (Network Error Logging). Lo recibe el propio alojamiento, que ya sirve cada página, y solo informa de los fallos.
+> En tierra-luna-sol.ivanchesa.com, el alojamiento no recibe informes de errores (Network Error Logging): están desactivados. En sus propias direcciones, las que acaban en pages.dev (como las vistas previas), Cloudflare Pages pide a algunos navegadores (Chrome y Edge) que le envíen un informe cuando falla una petición.
 
 Corrección:
 
@@ -2491,7 +2491,7 @@ Corrección:
 
 **Deimos**
 
-> Deimos, con la luz del Sol de lado y su superficie real: imagen del propio explorador.
+> Deimos, con la luz del Sol de lado y su superficie, en parte recreada: imagen del propio explorador.
 
 Corrección:
 
@@ -2563,37 +2563,37 @@ Corrección:
 
 **Miranda**
 
-> Miranda, con la luz del Sol de lado y su superficie real: imagen del propio explorador.
+> Miranda, con la luz del Sol de lado y su superficie, en parte recreada: imagen del propio explorador.
 
 Corrección:
 
 **Ariel**
 
-> Ariel, con la luz del Sol de lado y su superficie real: imagen del propio explorador.
+> Ariel, con la luz del Sol de lado y su superficie, en parte recreada: imagen del propio explorador.
 
 Corrección:
 
 **Umbriel**
 
-> Umbriel, con la luz del Sol de lado y su superficie real: imagen del propio explorador.
+> Umbriel, con la luz del Sol de lado y su superficie, en parte recreada: imagen del propio explorador.
 
 Corrección:
 
 **Titania**
 
-> Titania, con la luz del Sol de lado y su superficie real: imagen del propio explorador.
+> Titania, con la luz del Sol de lado y su superficie, en parte recreada: imagen del propio explorador.
 
 Corrección:
 
 **Oberón**
 
-> Oberón, con la luz del Sol de lado y su superficie real: imagen del propio explorador.
+> Oberón, con la luz del Sol de lado y su superficie, en parte recreada: imagen del propio explorador.
 
 Corrección:
 
 **Tritón**
 
-> Tritón, con la luz del Sol de lado y su superficie real: imagen del propio explorador.
+> Tritón, con la luz del Sol de lado y su superficie, en parte recreada: imagen del propio explorador.
 
 Corrección:
 

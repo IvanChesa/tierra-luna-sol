@@ -410,9 +410,10 @@
       navegador: no va a la dirección de la página ni se guarda.
     </li>
     <li>
-      El alojamiento, Cloudflare Pages, pide a algunos navegadores (Chrome y Edge) que le envíen un
-      informe cuando una petición a este sitio falla (Network Error Logging). Lo recibe el propio
-      alojamiento, que ya sirve cada página, y solo informa de los fallos.
+      En {{ host }}, el alojamiento no recibe informes de errores (Network Error Logging): están
+      desactivados. En sus propias direcciones, las que acaban en pages.dev (como las vistas
+      previas), Cloudflare Pages pide a algunos navegadores (Chrome y Edge) que le envíen un informe
+      cuando falla una petición.
     </li>
   </ul>
   <p>

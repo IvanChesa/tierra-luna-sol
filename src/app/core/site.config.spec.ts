@@ -8,8 +8,9 @@ describe('SITE_CONFIG', () => {
     expect(SITE_CONFIG.baseUrl.endsWith('/')).toBe(false);
   });
 
-  it('no es indexable hasta el lanzamiento', () => {
-    expect(SITE_CONFIG.indexable).toBe(false);
+  // Desde el lanzamiento (fase 11), con el OK de Iván.
+  it('es indexable', () => {
+    expect(SITE_CONFIG.indexable).toBe(true);
   });
 
   it('está en español y enlaza con la web del autor', () => {

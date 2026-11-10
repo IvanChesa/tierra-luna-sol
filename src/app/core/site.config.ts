@@ -28,14 +28,18 @@ export interface SiteConfig {
     readonly height: number;
     readonly alt: string;
   };
-  /** Mientras sea `false`, todas las páginas llevan `noindex` (fase 9); `/404`, siempre. */
+  /**
+   * Con `false`, todas las páginas llevan `noindex` (fase 9); `/404`, siempre. Con `true` (desde el
+   * lanzamiento, fase 11, con el OK de Iván), el build publica también `sitemap.xml` y lo cita en
+   * `robots.txt` (`scripts/prepare-pages.mjs`).
+   */
   readonly indexable: boolean;
 }
 
 export const SITE_CONFIG: SiteConfig = {
   name: 'Tierra Luna Sol',
   // El dominio pasa de ivanchesa.es a ivanchesa.com (decisión de Iván del 31-10; revisión del bloque D,
-  // D5): el subdominio definitivo, en la zona de ivanchesa.com de Cloudflare (fase 11).
+  // D5): el subdominio definitivo, en la zona de ivanchesa.com de Cloudflare, publicado en la fase 11.
   baseUrl: 'https://tierra-luna-sol.ivanchesa.com',
   lang: 'es',
   locale: 'es-ES',
@@ -45,8 +49,7 @@ export const SITE_CONFIG: SiteConfig = {
     name: 'Iván Chesa Lapena',
     url: 'https://ivanchesa.com',
   },
-  // TODO(ivan): ivanchesa.com aún no resuelve (03-11); en ivanchesa.es, las dos páginas están en
-  // /aviso-legal/ y /privacidad/. Cuando el dominio responda, comprobarlas (PENDIENTES.md).
+  // Con la barra final, que es como las sirve ivanchesa.com (sin ella, redirige; 200 el 10-11).
   legal: {
     notice: 'https://ivanchesa.com/aviso-legal/',
     privacy: 'https://ivanchesa.com/privacidad/',
@@ -58,5 +61,5 @@ export const SITE_CONFIG: SiteConfig = {
     height: 630,
     alt: 'El Sol, la Tierra y la Luna, con el aspecto que tienen en el explorador.',
   },
-  indexable: false,
+  indexable: true,
 };

@@ -18,13 +18,18 @@
 //    arranque y el que activa la hoja de estilos diferida. `security.autoCsp` no admite el
 //    prerenderizado («Cannot set both SSR and auto-CSP»). Si alguna página tuviera un manejador en
 //    línea (`onload="…"`), la CSP lo bloquearía: el script falla.
-// 6. Los límites de Pages (plan gratuito): ningún fichero de más de 25 MiB y menos de 20 000 ficheros.
+// 6. `robots.txt` y, si el sitio es indexable (`SITE_CONFIG.indexable`, fase 11), `sitemap.xml`, con
+//    la URL canónica de cada página que la declara y no lleva `noindex` (todas menos la 404). Salen de
+//    `site.config.ts`, para que el dominio esté en un solo sitio.
+// 7. Los límites de Pages (plan gratuito): ningún fichero de más de 25 MiB y menos de 20 000 ficheros.
 //
-// Uso: ng build && node scripts/prepare-pages.mjs   (es idempotente)
+// Uso: ng build && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/prepare-pages.mjs
+// (es idempotente)
 import { createHash } from 'node:crypto';
 import { readFile, readdir, rename, rm, rmdir, stat, writeFile } from 'node:fs/promises';
 import { dirname, join, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { SITE_CONFIG } from '../src/app/core/site.config.ts';
 
 const ROOT = new URL('../', import.meta.url);
 const BROWSER = fileURLToPath(new URL('dist/tierra-luna-sol/browser/', ROOT));
@@ -97,18 +102,54 @@ if (template.split(PLACEHOLDER).length !== 2) {
 }
 await writeFile(join(BROWSER, '_headers'), template.replace(PLACEHOLDER, [...hashes].join(' ')));
 
-// --- 6: los límites de Pages --------------------------------------------------------------------
+// --- 6: robots.txt y sitemap.xml ------------------------------------------------------------------
+const indexed = [];
+for (const page of pages) {
+  const html = await readFile(join(BROWSER, page), 'utf8');
+  const canonical = /<link rel="canonical" href="([^"]+)">/.exec(html)?.[1];
+  if (!canonical || /<meta name="robots" content="[^"]*noindex/.test(html)) continue;
+  if (!canonical.startsWith(`${SITE_CONFIG.baseUrl}/`)) {
+    throw new Error(`${page}: su canonical (${canonical}) no está en ${SITE_CONFIG.baseUrl}`);
+  }
+  indexed.push(canonical);
+}
+indexed.sort();
+const robots = [
+  '# GENERADO por scripts/prepare-pages.mjs con src/app/core/site.config.ts (fase 11).',
+  'User-agent: *',
+  'Allow: /',
+];
+if (SITE_CONFIG.indexable) {
+  if (!indexed.length) throw new Error('Ninguna página indexable para sitemap.xml');
+  const escape = (text) => text.replaceAll('&', '&amp;').replaceAll('<', '&lt;');
+  const sitemap = [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    ...indexed.map((url) => `  <url><loc>${escape(url)}</loc></url>`),
+    '</urlset>',
+    '',
+  ];
+  await writeFile(join(BROWSER, 'sitemap.xml'), sitemap.join('\n'));
+  robots.push('', `Sitemap: ${SITE_CONFIG.baseUrl}/sitemap.xml`);
+} else {
+  // Sin indexar, cada página lleva «noindex»: el rastreo no se bloquea, para que se vea.
+  await rm(join(BROWSER, 'sitemap.xml'), { force: true });
+}
+await writeFile(join(BROWSER, 'robots.txt'), `${robots.join('\n')}\n`);
+
+// --- 7: los límites de Pages --------------------------------------------------------------------
+const final = await files();
 let largest = { file: '', bytes: 0 };
-for (const file of all) {
+for (const file of final) {
   const { size } = await stat(join(BROWSER, file));
   if (size > largest.bytes) largest = { file, bytes: size };
   if (size > MAX_FILE_BYTES) {
     throw new Error(`${file} pesa ${(size / 2 ** 20).toFixed(1)} MiB: Pages no admite más de 25`);
   }
 }
-if (all.length >= MAX_FILES)
-  throw new Error(`${all.length} ficheros: Pages admite menos de 20 000`);
+if (final.length >= MAX_FILES)
+  throw new Error(`${final.length} ficheros: Pages admite menos de 20 000`);
 
 console.log(
-  `Pages: ${moved.length} rutas como ruta.html, ${pages.length} páginas, ${absolute} rutas de recursos absolutas, ${hashes.size} scripts en línea en la CSP, ${all.length} ficheros (${hidden.length} ocultos quitados; el mayor, ${largest.file}: ${(largest.bytes / 2 ** 20).toFixed(2)} MiB de 25)`,
+  `Pages: ${moved.length} rutas como ruta.html, ${pages.length} páginas, ${absolute} rutas de recursos absolutas, ${hashes.size} scripts en línea en la CSP, ${SITE_CONFIG.indexable ? `${indexed.length} URLs en sitemap.xml` : 'sin sitemap.xml (no indexable)'}, ${final.length} ficheros (${hidden.length} ocultos quitados; el mayor, ${largest.file}: ${(largest.bytes / 2 ** 20).toFixed(2)} MiB de 25)`,
 );
