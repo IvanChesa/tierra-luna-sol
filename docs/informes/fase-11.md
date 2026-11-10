@@ -2,7 +2,7 @@
 
 - **Rama:** `fase-11-lanzamiento`
 - **Fecha:** 2026-11-10
-- **Estado:** en curso: hecho lo de la rama; falta la revisión, la publicación con `v1.0.0` y la verificación en producción
+- **Estado:** terminada: `v1.0.0` en producción (10-11), con un criterio ⚠️ (el rendimiento del explorador en Lighthouse, decisión de Iván)
 
 ## 0. Plan
 
@@ -28,18 +28,18 @@ El sitio pasa a indexable, con `robots.txt` y `sitemap.xml` generados desde `sit
 
 | Criterio | ✅/❌ | Evidencia |
 |---|---|---|
-| `v1.0.0` publicada en producción con HTTPS, desplegada por etiqueta | pendiente | §12 |
-| Las comprobaciones con `curl` y Lighthouse en producción cumplen §5 | pendiente; el rendimiento del explorador en Lighthouse no llegará a 0,90 (decisión de Iván, `PENDIENTES.md`) | §12 |
+| `v1.0.0` publicada en producción con HTTPS, desplegada por etiqueta | ✅ | La etiqueta `v1.0.0` (sobre `d271e40`) lanzó Producción (ejecución 42893254214): esperó al CI de ese commit (42893248484, en verde), publicó su artefacto con `--branch=main` y lo comprobó en tres direcciones. HTTPS en el dominio; `http://`, 301 a https (§12) |
+| Las comprobaciones con `curl` y Lighthouse en producción cumplen §5 | ✅ `curl`; ⚠️ Lighthouse | `curl` y `verify-pages.mjs`, todo bien (39 de 39 en el workflow). Lighthouse: las 9 páginas de contenido, de 0,99 a 1,00 en rendimiento y 1,00 en accesibilidad y buenas prácticas; **el explorador, 0,84 de rendimiento** (§5 pide 0,90; 1,00 en lo demás, LCP 1,81 s y CLS 0,006): no se cumple, como se sabía; la decisión es de Iván (`PENDIENTES.md`, opción 1 recomendada) (§12) |
 
 ## 3. Tareas del plan
 
 | Tarea | Estado | Notas |
 |---|---|---|
 | 11.1 `deploy-production.yml` | hecha (sin estrenar) | `.github/workflows/deploy-production.yml` |
-| 11.2 Verificación en producción | pendiente | §12 |
-| 11.3 README, CHANGELOG y `v1.0.0` | README y CHANGELOG hechos; la etiqueta, al publicar | |
+| 11.2 Verificación en producción | hecha | §12 |
+| 11.3 README, CHANGELOG y `v1.0.0` | hecha | La etiqueta `v1.0.0`, anotada, en GitHub |
 | 11.4 `indexable: true` | hecha | `robots.txt` y `sitemap.xml` (39 URLs) generados; `noindex` solo en la 404 |
-| 11.5 Lista para Iván | pendiente | `PENDIENTES.md` |
+| 11.5 Lista para Iván | hecha | `PENDIENTES.md`, «Fase 11» |
 
 ## 4. Desviaciones del plan y motivo
 
@@ -93,6 +93,30 @@ Se quita el `TODO(ivan)` de los enlaces legales (`site.config.ts`): ivanchesa.co
 - `node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-pages.mjs https://tierra-luna-sol.ivanchesa.com`
 - `node scripts/verify-browser.mjs https://tierra-luna-sol.ivanchesa.com`
 - `LHCI_BASE=https://tierra-luna-sol.ivanchesa.com npm run lighthouse`
+
+## 12. Verificación en producción (10-11, `v1.0.0`)
+
+- **El workflow de Producción** (ejecución 42893254214, desde la etiqueta): «CI de d271e40 en verde: ejecución 42893248484 (main)»; `verify-pages.mjs` con el build del CI: la dirección del despliegue (`e67b4988.tierra-luna-sol.pages.dev`) y `tierra-luna-sol.pages.dev`, **38 de 39 y 1 aviso** cada una (el NEL, que en pages.dev se espera; las dos con su `noindex`); **`tierra-luna-sol.ivanchesa.com`, 39 de 39**, con el HTML servido idéntico al del build.
+- **`curl -sI` en el dominio** (20:44 UTC): `/`, `/explorar/tierra`, `/explorar/luna`, `/cielo`, `/planetas`, `/planetas/marte`, `/lunas`, `/lunas/titan`, `/sol`, `/luna`, `/eclipses`, `/creditos` y `/sobre-el-proyecto`, 200 `text/html`; `/robots.txt`, 200 `text/plain`; `/sitemap.xml`, 200 `application/xml`; `/img/og.jpg`, 200 `image/jpeg`; `/no-existe`, **404**. En las 17 respuestas: **0 `Set-Cookie`, 0 `NEL`, 0 `Report-To` y 0 `X-Robots-Tag`** (también con GET en la portada). `http://` → 301 a `https://tierra-luna-sol.ivanchesa.com/`. `https://tierra-luna-sol.pages.dev/`: 200 con `x-robots-tag: noindex` (y su NEL).
+- **`verify-pages.mjs` desde el PC**, en el dominio: 38 de 38 (sin `--build`); el NEL, en ninguna respuesta; og:image, 200 `image/jpeg`; `robots.txt` con el sitemap; `sitemap.xml` con 39 URLs.
+- **`verify-browser.mjs`** (Chromium con la GPU): las cinco vistas del explorador y cinco páginas, **sin el panel de rendimiento**; **372 peticiones, todas al dominio, 0 a otros dominios**; 0 cookies; sin errores en la consola.
+- **Lighthouse en producción** (`LHCI_BASE`, móvil de Lighthouse, la mediana de 5 cargas por URL; los informes, solo en el disco):
+
+| URL | Rendimiento | Accesibilidad | Buenas prácticas | LCP | CLS | TBT |
+|---|---|---|---|---|---|---|
+| `/` (explorador) | **0,84** ⚠️ (§5: ≥ 0,90) | 1,00 | 1,00 | 1,81 s | 0,006 | 611 ms |
+| `/planetas/marte` | 1,00 | 1,00 | 1,00 | 0,84 s | 0 | 79 ms |
+| `/planetas/saturno` | 1,00 | 1,00 | 1,00 | 0,85 s | 0 | 82 ms |
+| `/lunas/titan` | 0,99 | 1,00 | 1,00 | 0,84 s | 0 | 81 ms |
+| `/sol` | 1,00 | 1,00 | 1,00 | 0,83 s | 0 | 73 ms |
+| `/luna` | 1,00 | 1,00 | 1,00 | 0,83 s | 0 | 79 ms |
+| `/planetas` | 0,99 | 1,00 | 1,00 | 0,83 s | 0 | 93 ms |
+| `/lunas` | 1,00 | 1,00 | 1,00 | 0,84 s | 0 | 86 ms |
+| `/sobre-el-proyecto` | 1,00 | 1,00 | 1,00 | 0,85 s | 0 | 77 ms |
+| `/creditos` | 1,00 | 1,00 | 1,00 | 0,86 s | 0 | 80 ms |
+
+  Frente a §5: las fichas y las demás páginas cumplen (≥ 0,95 en las tres categorías, LCP ≤ 2,5 s, CLS ≤ 0,05). El explorador cumple la accesibilidad, las buenas prácticas, el LCP y el CLS, pero **no el rendimiento (0,84 frente a 0,90)**: el TBT de crear el contexto WebGL (fase 10, §4.22). Mejor que en local (0,76), y pendiente de la decisión de Iván. `lhci assert` sale con error por esa URL: el explorador casa también con el patrón de las páginas de contenido (≥ 0,95) contra producción, y no se ha investigado por qué (en local no pasa); va a `PENDIENTES.md`. Medido con otras sesiones de Claude abiertas en el PC (procesos con CPU acumulada): las fichas, en el techo, no lo notan; la cifra del explorador puede variar algo.
+- **Sin `v1.0.1`:** nada del sitio ha fallado; lo único que no llega es el rendimiento del explorador, que no es un arreglo de esta fase.
 
 ---
 
