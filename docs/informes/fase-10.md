@@ -1,9 +1,8 @@
 # Informe: Fase 10 (pulido y calidad; bloque F)
 
 - **Rama:** `fase-10-pulido` (desde `main` en `0eabe29`), en la carpeta del proyecto. La entrega **10.a** (las lunas recreadas, segunda vuelta, D48) la hace otra sesión en paralelo, en su worktree (`.claude/worktrees/fase-10a-lunas`, rama `fase-10a-lunas`), y esta la junta.
-- **Fecha:** 2026-11-09 (en curso)
-- **Estado:** en curso. Hecho: el paso previo, la 10.b, la 10.c entera (con la revisión final de diseño, `docs/revisiones/fase-10-critica.md`, y sus capturas antes y después), de la 10.d el zum al 200 %, de la 10.e los decimales, S5, Shackleton y Titán, de la 10.f el código (S2, el bloom fuera, el Sol en el móvil, el ritmo de pintado, la 8K y el arranque del 3D troceado) y la 10.g (Lighthouse en el CI: las fichas y las demás páginas, de 0,96 a 1,00; el explorador, 0,76, como aviso; §4.22). Los e2e, en verde (§4.21). Falta: las medidas de §5 con el equipo libre, juntar la 10.a, la comprobación de los textos, la 10.h y el cierre.
-- **La regresión visual (10.h)**, sin referencias todavía: guardada aparte, en la rama local `fase-10h-regresion` (un commit sobre `3cb1b72` con `e2e/regresion.spec.ts` y el proyecto móvil de `playwright.config.ts`). Se junta en la 10.h, después de la 10.a.
+- **Fecha:** 2026-11-09 y 2026-11-10
+- **Estado:** terminada, a falta de la revisión por subagente (`docs/revisiones/fase-10.md`), sus correcciones y la fusión. Hecho: todas las entregas (la 10.a, junta), las medidas de §5 con el equipo libre, la comprobación de los textos, la regresión visual con sus referencias del CI y Lighthouse en el CI (el rendimiento, como aviso allí; §4.24). El CI de `c00618f`, en verde: 151 e2e con la regresión visual.
 
 ## 0. Plan
 
@@ -359,6 +358,8 @@ La accesibilidad y las buenas prácticas, 1,00 en las 80 cargas.
 
 **La decisión** (la de la sesión de revisión para este caso): sin SwiftShader, siete de las nueve fichas quedan en 0,99–1,00, pero **no cumplen §5 de forma estable en el CI**. `/lunas/titan` se queda en 0,94 de mediana y `/planetas/marte`, justo en 0,95, con tres de sus cinco cargas en el límite. En las dos, la tarea del arranque de Angular mide unos 280 ms simulados, frente a unos 150 en las demás fichas y en las mismas páginas en local; en Marte, una carga sí y otra no. Así que, **en el CI, el rendimiento va como aviso** en todas las páginas, y la accesibilidad y las buenas prácticas, como error. **En local** (`npm run lighthouse`, sin `CI`), el de las páginas de contenido sigue como error. Las cifras de rendimiento que cuentan son las de local con el equipo libre (§4.22), y la definitiva, la de producción (fase 11; `PENDIENTES.md`). Las páginas de contenido siguen sin SwiftShader: así dan cifras útiles también en el CI.
 
+**Confirmado en el CI siguiente** (`c00618f`, con el mismo código de las fichas; medianas de 5): `/planetas/saturno` baja de 0,99 a **0,91**, `/planetas/marte` a 0,92 y `/lunas/titan` a 0,91; `/sol`, `/luna` y `/lunas`, 0,97; `/planetas`, 0,95; `/creditos`, 0,98; `/sobre-el-proyecto`, 0,99; el explorador, 0,64. La accesibilidad y las buenas prácticas, 1,00 en todas. De una ejecución a otra, la misma página cambia hasta 0,08: con el rendimiento como error, el CI fallaría sin una regresión de verdad.
+
 ### 4.25 La 10.a, juntada (`49676a2`)
 
 La rama `fase-10a-lunas` (hasta `8190911`, con su CI en verde), con `--no-ff`, después de que la sesión de revisión mirara sus capturas «después» rehechas y le diera el visto bueno. Sin conflictos: las texturas que no son de lunas salen iguales byte a byte, así que `texture-files.ts` solo cambia en las filas de las lunas. Tras juntarla, `npm run check` en verde (835 tests en 85 ficheros; el aviso de presupuesto de `body-panel.css` era de esta rama y se corrige en §4.27).
@@ -432,6 +433,12 @@ Un subagente sin el contexto de la sesión (`docs/revisiones/textos.md`) compar�
   `scripts/build-body-texts.mjs`, sin errores (las citas, en sus páginas). `docs/revision-textos.md`, regenerado con el build nuevo.
 - **La lista corta para Iván (10 dudas, no bloquea):** en `docs/revisiones/textos.md`, cada una con su propuesta (el día de Venus frente al de su tabla, los albedos de Umbriel y Proteo, el radio de los anillos de Saturno, «su superficie real» en las lunas con mucho recreado, y otras seis menores). Con el OK de Iván, todos los textos pasan a `reviewed: true` (`PENDIENTES.md`).
 
+### 4.29 La regresión visual (10.h; `365910e`, `177c1f2` y `c00618f`)
+
+- **La prueba** (`e2e/regresion.spec.ts`, guardada aparte hasta juntar la 10.a): las seis vistas clave en el modo de captura (`?captura=1`: fecha fija, sin animación y con las texturas ya subidas), la portada, Saturno, el Sol, la Tierra, la Luna y el cielo, en escritorio (1280 × 800) y en el móvil (Pixel 7), con `toHaveScreenshot` y un margen del 1 % de los píxeles para el suavizado de los bordes. Solo en Linux: el WebGL por software y las fuentes cambian de un sistema a otro. Con el Playwright del PR 4 (1.65).
+- **Las referencias, del CI:** el trabajo «Referencias de la regresión visual» las genera en un push cuyo último commit lleva «[referencias]» (`--update-snapshots=all`, solo `@regresion`) y las deja como artefacto. El CI no escribe en el repositorio: se copian a `e2e/regresion.spec.ts-snapshots/` y se guardan con un commit normal. En ese push, el trabajo e2e salta la regresión, que aún no tiene con qué comparar. Las 12 (`run 42698687243`), miradas antes de guardarlas: completas, con sus texturas y sin estados de carga.
+- **En verde en el CI** con las referencias guardadas (§6), en un ejecutor distinto del que las generó.
+
 ## 5. Desviaciones del plan y motivo
 
 - **S9, en el teléfono, la flecha sola** (el texto, desde 480 px): ver §4.2.
@@ -446,12 +453,13 @@ Un subagente sin el contexto de la sesión (`docs/revisiones/textos.md`) compar�
 
 ## 6. Salida de los checks
 
-(Los del cierre, al cerrar.) Los de la tanda del 09-11 por la tarde, con el build de `ff3d5ca`:
+Los del cierre (10-11), con el build de `c00618f` y el informe al día:
 
-- **`npm run check`:** lint y Prettier, bien; **835 tests** en verde (85 ficheros); el build; el JS inicial de las 40 páginas, sin three, astronomy-engine, los stores ni los controles del visor, con **13,98 kB** de código propio de 15; y 1243 enlaces internos bien.
-- **e2e completos:** **139 bien**, 1 saltado (`accesibilidad.spec.ts:106`, la de 320 px, que en escritorio se salta a propósito) y ningún fallo (7,0 min).
-- **Lighthouse** (`npm run lighthouse`, con el equipo libre): las 9 páginas de contenido, de 0,96 a 1,00, y la accesibilidad y las buenas prácticas, 1,00 en todas; el explorador, 0,76, como aviso (§4.22). El CLS de la entrada, medido otra vez con la cabecera de 3rem: sin saltos de la cabecera ni del explorador.
-- **El zum al 200 %:** las 22 comprobaciones, bien (§4.23).
+- **`npm run check`:** lint y Prettier, bien; **835 tests** en verde (85 ficheros), con la cobertura de `ephemeris/` por encima del 90 %; el build, **sin avisos de presupuesto** (el de `body-panel.css`, corregido: §4.27); el JS inicial de las 40 páginas, sin three, astronomy-engine, los stores ni los controles del visor, con **13,98 kB** de código propio de 15; y 1243 enlaces internos, bien.
+- **e2e en local** (Windows, con el equipo libre): **139 bien**, 13 saltados (las 12 de la regresión visual, que solo se comparan en Linux, y `accesibilidad.spec.ts:106`, la de 320 px, que en escritorio se salta a propósito) y ningún fallo (8,0 min).
+- **El CI de `c00618f`** (`42699701902`), en verde: lint, tests y build; **e2e, 151 bien** (con las 12 de la regresión visual frente a sus referencias, en otro ejecutor) y 1 saltado (24,1 min); Lighthouse, con la accesibilidad y las buenas prácticas en 1,00 en las 50 cargas y el rendimiento como aviso (§4.24); y la vista previa en Cloudflare Pages.
+- **Lighthouse en local** (§4.22): las 9 páginas de contenido, de 0,96 a 1,00; el explorador, 0,76, como aviso.
+- **Las medidas de §5** (§4.26) y **el zum al 200 %** (§4.23), bien.
 
 ## 7. Capturas
 
