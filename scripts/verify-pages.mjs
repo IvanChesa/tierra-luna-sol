@@ -1,10 +1,12 @@
 // Comprueba una publicación de Cloudflare Pages (fase 4; en la fase 11, la de producción), como con
 // `curl`: las rutas sin barra final (D9), las redirecciones, el 404, las cabeceras de `_headers`, los
 // tipos MIME, la caché, las cabeceras `Link` de los Early Hints y que no se cuela nada de terceros
-// (D24): ni Cloudflare Web Analytics ni, si se puede, Network Error Logging.
+// (D24): ni cookies, ni Cloudflare Web Analytics ni Network Error Logging. En el dominio propio (fase
+// 11), además: sin X-Robots-Tag ni NEL (los quita la zona; en *.pages.dev, el NEL es un aviso),
+// `robots.txt` con el sitemap y `noindex` solo en la 404.
 //
 // Uso: node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-pages.mjs <url> [--build <carpeta>]
-//   <url>: https://<rama>.tierra-luna-sol.pages.dev (o la de producción)
+//   <url>: https://<rama>.tierra-luna-sol.pages.dev, la de producción o el dominio propio
 //   --build: el build publicado (dist/tierra-luna-sol/browser); compara el HTML servido de cada
 //            página con el suyo, byte a byte (Cloudflare no debe inyectar nada). Tiene que ser el
 //            mismo build que se desplegó (el artefacto del CI): dos builds distintos pueden numerar
@@ -31,7 +33,13 @@ const site = SITE_CONFIG.baseUrl;
 const results = [];
 const check = (name, ok, detail) => results.push({ name, state: ok ? 'ok' : 'error', detail });
 const warn = (name, ok, detail) => results.push({ name, state: ok ? 'ok' : 'warning', detail });
-const get = (path, init = {}) => fetch(`${base}${path}`, { redirect: 'manual', ...init });
+/** Las respuestas con `Set-Cookie` (0 cookies, D24): todas las peticiones pasan por `get`. */
+const cookies = [];
+const get = async (path, init = {}) => {
+  const response = await fetch(`${base}${path}`, { redirect: 'manual', ...init });
+  if (response.headers.getSetCookie().length) cookies.push(path);
+  return response;
+};
 
 // --- La página principal: estado, cabeceras y que no hay scripts de terceros ---------------------
 const home = await get('/');
@@ -77,16 +85,33 @@ check(
   h('strict-transport-security'),
 );
 if (pagesDev) check('noindex en *.pages.dev', /noindex/.test(h('x-robots-tag')), h('x-robots-tag'));
+else
+  check(
+    'Sin X-Robots-Tag en el dominio propio',
+    !h('x-robots-tag'),
+    h('x-robots-tag') || 'sin ella',
+  );
 check(
   'Sin Cloudflare Web Analytics',
   !/cloudflareinsights|beacon\.min\.js|data-cf-beacon/.test(html),
   'ningún script de cloudflareinsights.com',
 );
 // Network Error Logging: con estas cabeceras, Chrome y Edge envían a un dominio de Cloudflare un
-// informe de cada petición que falla. `_headers` intenta quitarlas; si las pone la red de Cloudflare
-// después, es un aviso para Iván (PENDIENTES.md), no un error de la publicación.
+// informe de cada petición que falla. `_headers` intenta quitarlas, pero las pone la red de Cloudflare
+// después de Pages: en el dominio propio las quita una regla de la zona (fase 11), y es un error si
+// salen; en *.pages.dev, que no pasa por ella, un aviso.
 const nel = [h('report-to'), h('nel')].filter(Boolean).join(' · ');
-warn('Sin Network Error Logging (Report-To, NEL)', !nel, nel || 'sin esas cabeceras');
+(pagesDev ? warn : check)(
+  'Sin Network Error Logging (Report-To, NEL)',
+  !nel,
+  nel || 'sin esas cabeceras',
+);
+const robotsMeta = /<meta name="robots" content="([^"]*)"/;
+check(
+  SITE_CONFIG.indexable ? 'Sin noindex en el HTML (indexable)' : 'noindex en el HTML',
+  SITE_CONFIG.indexable ? !robotsMeta.test(html) : robotsMeta.exec(html)?.[1] === 'noindex',
+  robotsMeta.exec(html)?.[1] ?? 'sin la etiqueta robots',
+);
 check('Canonical de la raíz', html.includes(`<link rel="canonical" href="${site}/">`), `${site}/`);
 
 // --- Rutas sin barra final y redirecciones ------------------------------------------------------
@@ -154,6 +179,33 @@ check(
   missing.status,
 );
 check('404 sin canonical', !missingHtml.includes('rel="canonical"'), '');
+check('404 con noindex', robotsMeta.exec(missingHtml)?.[1] === 'noindex', '');
+
+// --- robots.txt y sitemap.xml (fase 11) ------------------------------------------------------------
+const robots = await get('/robots.txt');
+const robotsText = await robots.text();
+const sitemapLine = `Sitemap: ${site}/sitemap.xml`;
+check(
+  'robots.txt sin bloquear el rastreo',
+  robots.status === 200 &&
+    /^Allow: \/$/m.test(robotsText) &&
+    !/^Disallow: \/\s*$/m.test(robotsText),
+  robots.status,
+);
+if (SITE_CONFIG.indexable) {
+  check('robots.txt con el sitemap', robotsText.split('\n').includes(sitemapLine), sitemapLine);
+  const sitemap = await get('/sitemap.xml');
+  const locs = [...(await sitemap.text()).matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+  check(
+    'sitemap.xml con las URLs canónicas',
+    sitemap.status === 200 &&
+      /xml/.test(sitemap.headers.get('content-type') ?? '') &&
+      locs.includes(`${site}/`) &&
+      locs.includes(`${site}/planetas/marte`) &&
+      locs.every((loc) => loc.startsWith(`${site}/`)),
+    `${sitemap.status} · ${sitemap.headers.get('content-type')} · ${locs.length} URLs`,
+  );
+}
 
 // --- Recursos: tipos MIME y caché -----------------------------------------------------------------
 const main = /src="\/?(main-[^"]+\.js)"/.exec(html)?.[1];
@@ -209,6 +261,12 @@ if (build) {
     different.length ? `distintas: ${different.join(', ')}` : 'idénticas byte a byte',
   );
 }
+
+check(
+  'Sin Set-Cookie',
+  cookies.length === 0,
+  cookies.length ? cookies.join(', ') : 'en ninguna respuesta',
+);
 
 // --- Informe ---------------------------------------------------------------------------------------
 const MARK = { ok: '✔', error: '✖', warning: '⚠' };

@@ -188,8 +188,9 @@ jobs:
     permissions:
       contents: read
     env:
-      # `main` se publica como «staging»: la producción (la rama `main` del proyecto) llega con la
-      # etiqueta de la fase 11. Cada rama de fase, con su nombre.
+      # `main` se publica como «staging»: la producción (la rama `main` del proyecto, en el dominio
+      # propio) la publica deploy-production.yml con una etiqueta `v*` y este mismo build (fase 11).
+      # Cada rama de fase, con su nombre.
       PAGES_BRANCH: ${{ github.ref_name == 'main' && 'staging' || github.ref_name }}
       WRANGLER_VERSION: '4.149.0'
     steps:
