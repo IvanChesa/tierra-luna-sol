@@ -48,7 +48,7 @@ describe('MoonPanel: vistas y recorrido de la Luna (fase 6)', () => {
     const { root, sim } = render();
     const phase = moonPhase(sim.time());
     expect(root.querySelector('.moon__phase')?.textContent?.trim()).toBe(
-      `${phase.name} · ${Math.round(phase.illuminatedFraction * 100)} % iluminada`,
+      `${phase.name} · ${Math.round(phase.illuminatedFraction * 100)}\u00a0% iluminada`,
     );
   });
 

@@ -159,7 +159,8 @@ export class MoonPanel {
     if (eclipse === 'partial')
       return `${phase.name} · eclipse parcial: entra en la sombra de la Tierra`;
     if (eclipse === 'penumbral') return `${phase.name} · eclipse penumbral: apenas se oscurece`;
-    return `${phase.name} · ${Math.round(phase.illuminatedFraction * 100)} % iluminada`;
+    // Con el espacio duro antes del % (ESTILO §3), como en el cielo y en «Hoy».
+    return `${phase.name} · ${Math.round(phase.illuminatedFraction * 100)}\u00a0% iluminada`;
   });
   /** Menos del 5 % iluminada: la cara visible, casi a oscuras (con la fase que ya se calcula). */
   readonly nearlyNew = computed(() => moonPhase(this.sim.time()).illuminatedFraction < NEARLY_NEW);

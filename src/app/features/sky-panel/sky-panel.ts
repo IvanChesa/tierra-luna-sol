@@ -222,7 +222,6 @@ export class SkyPanel {
     });
   });
 
-  /** La línea de resumen del panel (fase 9c): lo que está ahora sobre el horizonte. */
   /** De día, que es de día y cuándo empieza la noche cerrada; de noche, lo que está arriba. */
   protected readonly summary = computed(() => {
     const night = this.night();

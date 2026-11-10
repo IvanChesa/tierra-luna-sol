@@ -205,12 +205,6 @@ export interface SkySummaryBody {
 const SUMMARY_MAX = 3;
 
 /**
- * La línea de resumen del panel del cielo (fase 9c, 9c.3): la Luna y los planetas que están ahora sobre
- * el horizonte, los más altos primero («Saturno, 37° SE · Luna, 12° E»), y su lectura para el lector de
- * pantalla, con los rumbos en palabras. El Sol no: de día ya se dice aparte. La tabla entera, en «Esta
- * noche».
- */
-/**
  * Cuándo empieza la noche cerrada: el final del crepúsculo astronómico o, si el Sol no baja tanto
  * (el verano), el del náutico o el del civil.
  */
@@ -219,7 +213,8 @@ export const darkStart = (night: Extract<NightSky, { kind: 'night' }>): Date =>
 
 /**
  * El resumen de día (crítica de la fase 10): en lugar de nombrar lo que está sobre el horizonte y no
- * se ve, que es de día y cuándo empieza la noche cerrada.
+ * se ve, que es de día y cuándo empieza la noche cerrada. Corto, para que la hora quepa en la barra del
+ * móvil a 360 px (revisión de la fase 10, hallazgo 3).
  */
 export function daySummary(
   night: Extract<NightSky, { kind: 'night' }>,
@@ -227,11 +222,17 @@ export function daySummary(
 ): { readonly text: string; readonly spoken: string } {
   const at = clockAt(darkStart(night), place);
   return {
-    text: `Ahora es de día · noche cerrada desde las ${at}`,
+    text: `De día · noche cerrada a las ${at}`,
     spoken: `Ahora es de día. La noche cerrada empieza a las ${at}.`,
   };
 }
 
+/**
+ * La línea de resumen del panel del cielo (fase 9c, 9c.3): la Luna y los planetas que están ahora sobre
+ * el horizonte, los más altos primero («Saturno, 37° SE · Luna, 12° E»), y su lectura para el lector de
+ * pantalla, con los rumbos en palabras. El Sol no: de día ya se dice aparte. La tabla entera, en «Esta
+ * noche».
+ */
 export function skySummary(bodies: readonly SkySummaryBody[]): {
   readonly text: string;
   readonly spoken: string;

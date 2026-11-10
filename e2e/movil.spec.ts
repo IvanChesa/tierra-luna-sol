@@ -96,7 +96,8 @@ test.describe('Móvil', () => {
     await expect(note).toHaveText(
       'Imagen de radar de la sonda Magellan, con el color de las fotos de las Venera 13 y 14: no es lo que verían tus ojos.',
     );
-    await expect(note).toBeInViewport();
+    // Entero a la vista, no solo un píxel (revisión de la fase 10, hallazgo 2).
+    await expect(note).toBeInViewport({ ratio: 1 });
     // Al cerrar la ficha (y con ella el aviso), vuelven las nubes.
     await page.getByRole('button', { name: 'Cerrar la ficha' }).tap();
     await page.getByRole('button', { name: 'Ver la ficha de Venus' }).tap();

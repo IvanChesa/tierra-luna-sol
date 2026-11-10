@@ -136,7 +136,7 @@ describe('daySummary: de día, que es de día y cuándo empieza la noche (críti
     expect(darkStart(night)).toEqual(night.dusk.astronomical);
     const at = clockAt(night.dusk.astronomical as Date, place);
     expect(daySummary(night, place)).toEqual({
-      text: `Ahora es de día · noche cerrada desde las ${at}`,
+      text: `De día · noche cerrada a las ${at}`,
       spoken: `Ahora es de día. La noche cerrada empieza a las ${at}.`,
     });
     // Sin noche astronómica (el Sol no baja tanto), el final del náutico o del civil.

@@ -32,6 +32,9 @@ describe('body-labels: los textos fijos de la ficha (fase 9)', () => {
     expect(imageAltOf(entry('titan'))).toMatch(/y su neblina:/);
     expect(imageAltOf(entry('tierra'))).toMatch(/^La Tierra, /);
     expect(imageAltOf(entry('luna'))).toMatch(/^La Luna, .*su superficie real/);
+    // Las lunas con mucho recreado lo dicen (revisión de la fase 10, hallazgo 12).
+    expect(imageAltOf(entry('miranda'))).toMatch(/su superficie, en parte recreada/);
+    expect(imageAltOf(entry('europa'))).toMatch(/su superficie real/);
     expect(imageAltOf(entry('proteo'))).toMatch(/color esquemático/);
     // Ninguno en masculino o femenino («iluminado»): la frase no tiene género.
     for (const body of BODY_INDEX) expect(imageAltOf(body)).not.toMatch(/iluminad/);

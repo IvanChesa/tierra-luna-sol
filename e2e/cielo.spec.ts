@@ -97,7 +97,7 @@ test.describe('El cielo desde España (fase 8)', () => {
     await expect(daytime).toBeVisible();
     await expect(daytime.locator('.sky__hint')).toHaveText('Ahora es de día: arrastra la hora o');
     await expect(page.locator('.sky__summary-line [aria-hidden="true"]')).toHaveText(
-      /^Ahora es de día · noche cerrada desde las \d\d:\d\d$/,
+      /^De día · noche cerrada a las \d\d:\d\d$/,
     );
     const tonight = daytime.getByRole('button', { name: 'Ver el cielo de esta noche' });
     await tonight.click();

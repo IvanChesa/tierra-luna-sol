@@ -28,7 +28,7 @@
 // CPU a ×4 de la simulación). Su accesibilidad y sus buenas prácticas, como error.
 //
 // Uso: npm run build && npm run lighthouse
-const { chromium } = require('playwright-core');
+const { chromium } = require('@playwright/test');
 
 const PORT = 4398;
 const BASE = `http://127.0.0.1:${PORT}`;

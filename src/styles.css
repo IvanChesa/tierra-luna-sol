@@ -690,10 +690,6 @@ tls-root:has(tls-explorer-ui.is-clean) .site-header {
 }
 
 /*
- * «‹ Sistema solar» (fase 9c): la vuelta a la vista general, encima del título de las vistas Tierra y
- * Luna y del cuerpo elegido. Discreta, en el color secundario, con su zona táctil.
- */
-/*
  * «‹ Sistema solar» (revisión del bloque S, S9; Iván, 08-11: «Haz más reconocible el botón de volver
  * al sistema solar; recuerda, queremos una interfaz limpia y sencilla»): un botón de verdad, con el
  * lenguaje de «Índice» y «Controles» (`.control`): fondo elevado, la flecha y el texto, y la zona

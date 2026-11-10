@@ -7,6 +7,7 @@ import { formatLongDate } from '../../core/format';
 import { bodyPagePath } from '../../data/body-links';
 import { findBody } from '../../data/body-index';
 import type { BodyId, BodyIndexEntry } from '../../data/body.model';
+import { MOON_RECREATION } from '../../data/moon-recreation';
 
 /** El tipo, encima del H1: «Planeta», «Estrella», «Luna de Saturno» o «Satélite de la Tierra». */
 export interface KindLine {
@@ -33,6 +34,15 @@ export function kindLineOf(body: BodyIndexEntry): KindLine {
  */
 const SCHEMATIC = new Set<BodyId>(['proteo']);
 
+/**
+ * Las lunas con una parte que nadie ha visto y que el mapa recrea (D45 y D48): al menos el 10 % de su
+ * superficie (`none` en `moon-recreation.ts`), Tritón, Deimos y las cinco grandes de Urano. Su imagen
+ * lo dice (revisión de la fase 10, hallazgo 12; duda 4 de la revisión de los textos).
+ */
+const PARTLY_RECREATED = new Set<BodyId>(
+  MOON_RECREATION.filter((moon) => moon.none >= 0.1).map((moon) => moon.body),
+);
+
 /** Lo que muestra la imagen de cada cuerpo (ESTILO §6: qué se ve, no «imagen de»), sin género. */
 function seen(id: BodyId): string {
   if (SCHEMATIC.has(id)) return 'su color esquemático (no hay un mapa de su superficie)';
@@ -49,7 +59,7 @@ function seen(id: BodyId): string {
     case 'titan':
       return 'su neblina';
     default:
-      return 'su superficie real';
+      return PARTLY_RECREATED.has(id) ? 'su superficie, en parte recreada' : 'su superficie real';
   }
 }
 
