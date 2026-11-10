@@ -33,13 +33,25 @@ const site = SITE_CONFIG.baseUrl;
 const results = [];
 const check = (name, ok, detail) => results.push({ name, state: ok ? 'ok' : 'error', detail });
 const warn = (name, ok, detail) => results.push({ name, state: ok ? 'ok' : 'warning', detail });
-/** Las respuestas con `Set-Cookie` (0 cookies, D24): todas las peticiones pasan por `get`. */
+/**
+ * Las respuestas con `Set-Cookie` (0 cookies, D24) y con las cabeceras de Network Error Logging
+ * (`NEL`, `Report-To`): todas las peticiones pasan por `record` (la política la fija cualquier
+ * respuesta, también un 404 o un JS).
+ */
 const cookies = [];
-const get = async (path, init = {}) => {
-  const response = await fetch(`${base}${path}`, { redirect: 'manual', ...init });
-  if (response.headers.getSetCookie().length) cookies.push(path);
+const nelPaths = [];
+let nelSample = '';
+const record = (where, response) => {
+  if (response.headers.getSetCookie().length) cookies.push(where);
+  const nel = [response.headers.get('report-to'), response.headers.get('nel')].filter(Boolean);
+  if (nel.length) {
+    nelPaths.push(where);
+    nelSample ||= nel.join(' · ');
+  }
   return response;
 };
+const get = async (path, init = {}) =>
+  record(path, await fetch(`${base}${path}`, { redirect: 'manual', ...init }));
 
 // --- La página principal: estado, cabeceras y que no hay scripts de terceros ---------------------
 const home = await get('/');
@@ -96,16 +108,6 @@ check(
   !/cloudflareinsights|beacon\.min\.js|data-cf-beacon/.test(html),
   'ningún script de cloudflareinsights.com',
 );
-// Network Error Logging: con estas cabeceras, Chrome y Edge envían a un dominio de Cloudflare un
-// informe de cada petición que falla. `_headers` intenta quitarlas, pero las pone la red de Cloudflare
-// después de Pages: en el dominio propio las quita una regla de la zona (fase 11), y es un error si
-// salen; en *.pages.dev, que no pasa por ella, un aviso.
-const nel = [h('report-to'), h('nel')].filter(Boolean).join(' · ');
-(pagesDev ? warn : check)(
-  'Sin Network Error Logging (Report-To, NEL)',
-  !nel,
-  nel || 'sin esas cabeceras',
-);
 const robotsMeta = /<meta name="robots" content="([^"]*)"/;
 check(
   SITE_CONFIG.indexable ? 'Sin noindex en el HTML (indexable)' : 'noindex en el HTML',
@@ -155,7 +157,7 @@ for (const path of ['/planetas/marte', '/explorar/tierra']) {
   );
   const broken = [];
   for (const url of targets) {
-    const response = await fetch(url, { redirect: 'manual' });
+    const response = record(url.pathname, await fetch(url, { redirect: 'manual' }));
     if (response.status !== 200 || !/javascript/.test(response.headers.get('content-type') ?? '')) {
       broken.push(`${url.pathname} (${response.status})`);
     }
@@ -171,6 +173,16 @@ for (const path of ['/planetas/marte', '/explorar/tierra']) {
 }
 
 // --- 404 -----------------------------------------------------------------------------------------
+// La imagen para compartir (fase 9): una URL absoluta del dominio, que ahora ya se puede pedir.
+const ogImage = /<meta property="og:image" content="([^"]+)"/.exec(html)?.[1] ?? '';
+const og = ogImage.startsWith(`${site}/`) ? await get(ogImage.slice(site.length)) : null;
+check(
+  'og:image, una imagen que existe',
+  og?.status === 200 && /^image\//.test(og.headers.get('content-type') ?? ''),
+  og ? `${ogImage.slice(site.length)} · ${og.status} · ${og.headers.get('content-type')}` : ogImage,
+);
+await og?.body?.cancel();
+
 const missing = await get('/no-existe/de-verdad');
 const missingHtml = await missing.text();
 check(
@@ -229,9 +241,9 @@ for (const [path, type, cache] of assets) {
 }
 
 // --- HTTP → HTTPS ---------------------------------------------------------------------------------
-const http = await fetch(base.replace(/^https:/, 'http:'), { redirect: 'manual' }).catch(
-  () => null,
-);
+const http = await fetch(base.replace(/^https:/, 'http:'), { redirect: 'manual' })
+  .then((response) => record('http://', response))
+  .catch(() => null);
 check(
   'http:// → https://',
   http &&
@@ -266,6 +278,17 @@ check(
   'Sin Set-Cookie',
   cookies.length === 0,
   cookies.length ? cookies.join(', ') : 'en ninguna respuesta',
+);
+// Network Error Logging: con estas cabeceras, Chrome y Edge envían a un dominio de Cloudflare un
+// informe de cada petición que falla. `_headers` intenta quitarlas, pero las pone la red de Cloudflare
+// después de Pages: en el dominio propio las quita una regla de la zona (fase 11), y es un error si
+// salen en alguna respuesta; en *.pages.dev, que no pasa por ella, un aviso.
+(pagesDev ? warn : check)(
+  'Sin Network Error Logging (Report-To, NEL)',
+  nelPaths.length === 0,
+  nelPaths.length
+    ? `en ${nelPaths.length} respuestas: ${nelSample.slice(0, 80)}…`
+    : 'en ninguna respuesta',
 );
 
 // --- Informe ---------------------------------------------------------------------------------------

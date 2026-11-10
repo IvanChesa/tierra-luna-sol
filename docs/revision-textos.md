@@ -1717,7 +1717,7 @@ Corrección:
 
 **Párrafo 44**
 
-> En tierra-luna-sol.ivanchesa.com no se envían informes de errores al alojamiento (Network Error Logging): están desactivados. Solo los pide Cloudflare Pages, el alojamiento, en sus propias direcciones (las que acaban en pages.dev, como las vistas previas), a Chrome y Edge y cuando una petición falla.
+> En tierra-luna-sol.ivanchesa.com, el alojamiento no recibe informes de errores (Network Error Logging): están desactivados. En sus propias direcciones, las que acaban en pages.dev (como las vistas previas), Cloudflare Pages pide a algunos navegadores (Chrome y Edge) que le envíen un informe cuando falla una petición.
 
 Corrección:
 

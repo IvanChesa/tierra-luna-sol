@@ -22,10 +22,10 @@ La primera versión pública, con todas las funcionalidades del plan (`docs/PLAN
 - Una imagen para compartir, títulos y descripciones por página, `robots.txt`, `sitemap.xml` y canónicos en el dominio definitivo (fases 9 y 11).
 
 ### Calidad
-- Accesibilidad WCAG 2.1 AA: todo con teclado y con su equivalente sin 3D, axe sin violaciones en las 40 rutas, movimiento reducido en todas las animaciones y un modo sin WebGL (fases 3 y 10).
+- Accesibilidad WCAG 2.1 AA: todo con teclado y con su equivalente sin 3D, axe sin violaciones graves ni críticas en las 40 rutas, movimiento reducido en todas las animaciones y un modo sin WebGL (fases 3 y 10).
 - Rendimiento: pintado bajo demanda y al ritmo del movimiento, texturas por niveles de calidad, nada pesado en el JS inicial y presupuestos medidos de FPS, VRAM y arranque (fases 2 a 10).
 - Privacidad: sin cookies, sin analítica y sin peticiones a terceros; Network Error Logging desactivado en el dominio propio (fases 4, 9 y 11).
-- 835 tests unitarios, 152 e2e con regresión visual y Lighthouse en el CI (fase 10).
+- 835 tests unitarios, 153 e2e con la regresión visual y Lighthouse en el CI (fases 10 y 11).
 
 ### Despliegue
 - Cloudflare Pages desde GitHub Actions: vista previa por rama y producción por etiqueta `v*`, con el build verificado por el CI y comprobado tras publicar (fases 4 y 11).

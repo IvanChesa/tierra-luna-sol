@@ -5,8 +5,10 @@ name: Producción
 # commit (D26): no se vuelve a construir, se baja el artefacto `build` de su ejecución. Con una etiqueta
 # `v*` (`git tag -a v1.0.0 -m … && git push origin v1.0.0`) o a mano (Actions → Producción → Run
 # workflow, eligiendo la etiqueta). El CI tiene que haber pasado entero en ese commit con un push a una
-# rama (el de `main`, normalmente); si aún está en marcha, se espera a que termine. Su artefacto dura 7
-# días: para volver a una versión más antigua, «Rollback» en el panel de Pages, o relanzar su CI.
+# rama (el de `main`, normalmente); si aún está en marcha, se espera a que termine. Solo desde una
+# etiqueta `v*` (a mano, también: el formulario trae `main` por defecto y eso no se publica). Su
+# artefacto dura 7 días: para volver a una versión más antigua, «Rollback» en el panel de Pages (relanzar
+# su CI también vuelve a publicar ese build en su vista previa, en `staging` si es de `main`).
 on:
   push:
     tags: ['v*']
@@ -23,6 +25,8 @@ concurrency:
 jobs:
   deploy:
     name: Producción en Cloudflare Pages
+    # Solo una etiqueta de versión llega a producción (también a mano: hay que elegir la etiqueta).
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     timeout-minutes: 60
     # Leer el repositorio y las ejecuciones del CI (para bajar su artefacto); los secrets de Cloudflare,
@@ -32,7 +36,6 @@ jobs:
       actions: read
     env:
       WRANGLER_VERSION: '4.149.0'
-      SITE_URL: https://tierra-luna-sol.ivanchesa.com
     steps:
       # Acciones fijadas por SHA de commit (la versión va en el comentario), las mismas que en ci.yml.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -42,6 +45,14 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
+
+      # El dominio, de su único sitio (`site.config.ts`).
+      - name: El dominio
+        id: site
+        run: |
+          url=$(node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --input-type=module -e \
+            "const { SITE_CONFIG } = await import('./src/app/core/site.config.ts'); console.log(SITE_CONFIG.baseUrl)")
+          echo "url=$url" >> "$GITHUB_OUTPUT"
 
       # El commit de la etiqueta (con una etiqueta anotada, el commit al que apunta, no la etiqueta) y la
       # ejecución del CI de ese commit, que tiene que acabar en verde.
@@ -53,8 +64,10 @@ jobs:
           sha=$(git rev-parse HEAD)
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
           for attempt in $(seq 1 90); do
+            # Un fallo pasajero de la API no corta la espera: se vuelve a mirar a los 30 s.
             run=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow ci.yml --commit "$sha" --event push \
-              --limit 1 --json databaseId,status,conclusion,headBranch --jq '.[0] // empty')
+              --limit 1 --json databaseId,status,conclusion,headBranch --jq '.[0] // empty') ||
+              { echo "::warning::gh run list ha fallado; otra mirada en 30 s"; run=''; }
             if [[ -n "$run" ]]; then
               id=$(jq -r .databaseId <<< "$run")
               status=$(jq -r .status <<< "$run")
@@ -74,7 +87,7 @@ jobs:
             fi
             sleep 30
           done
-          echo "::error::El CI de $sha no ha terminado en 45 min"
+          echo "::error::El CI de $sha no ha terminado en 45 min: cuando acabe en verde, relanza Producción desde la etiqueta"
           exit 1
 
       # El build verificado: el mismo que probaron los e2e del CI.
@@ -102,6 +115,7 @@ jobs:
           ENVIRONMENT: ${{ steps.deploy.outputs.pages-environment }}
           REF: ${{ github.ref_name }}
           RUN_ID: ${{ steps.ci.outputs.run-id }}
+          SITE_URL: ${{ steps.site.outputs.url }}
         run: |
           {
             echo "### Cloudflare Pages ($ENVIRONMENT)"
@@ -110,14 +124,16 @@ jobs:
             echo "- El sitio: $SITE_URL"
           } >> "$GITHUB_STEP_SUMMARY"
 
-      # La publicación, comprobada en las dos direcciones (scripts/verify-pages.mjs): la del despliegue
-      # (pages.dev, con su noindex) y el dominio propio (sin X-Robots-Tag ni NEL, con el sitemap), con el
-      # HTML servido idéntico al del build. Con reintentos: el dominio tarda unos segundos en cambiar.
+      # La publicación, comprobada en sus tres direcciones (scripts/verify-pages.mjs): la del despliegue y
+      # la de producción en pages.dev (cada una con su regla de noindex en `_headers`) y el dominio propio
+      # (sin X-Robots-Tag ni NEL, con el sitemap), con el HTML servido idéntico al del build. Con
+      # reintentos: las direcciones tardan unos segundos en cambiar.
       - name: Comprueba la publicación
         env:
           URL: ${{ steps.deploy.outputs.deployment-url }}
+          SITE_URL: ${{ steps.site.outputs.url }}
         run: |
-          for target in "$URL" "$SITE_URL"; do
+          for target in "$URL" https://tierra-luna-sol.pages.dev "$SITE_URL"; do
             ok=0
             for attempt in 1 2 3 4 5; do
               if node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-pages.mjs "$target" --build build/browser; then

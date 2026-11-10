@@ -17,7 +17,7 @@ Explorador 3D del Sol, los ocho planetas y veintiuna lunas, en español, con sus
 
 | | |
 |---|---|
-| ![La vista general del sistema solar](docs/img/readme/portada.webp) | ![La Tierra con su relieve, sus nubes y las luces de la noche](docs/img/readme/tierra.webp) |
+| ![La vista general del sistema solar](docs/img/readme/portada.webp) | ![La Tierra con Sudamérica de día y África al anochecer, con su relieve y sus nubes](docs/img/readme/tierra.webp) |
 | ![La Luna con el relieve de LOLA](docs/img/readme/luna.webp) | ![Saturno, sus anillos y sus lunas](docs/img/readme/saturno.webp) |
 | ![El cielo desde el Montsec](docs/img/readme/cielo.webp) | ![La ficha de Marte](docs/img/readme/ficha.webp) |
 
@@ -29,7 +29,7 @@ Las capturas son del propio explorador en el modo de captura determinista (`?cap
 - **Three.js 0.186**, directo y sin envoltorios, con shaders GLSL propios: sombreado por tipo de cuerpo, atmósferas, sombras de eclipses y de anillos analíticas y profundidad logarítmica.
 - **astronomy-engine** para el Sol, los planetas, la Luna, las lunas de Júpiter, las orientaciones, las salidas y puestas y los eclipses; las otras dieciséis lunas, con elementos orbitales ajustados a JPL Horizons.
 - **TypeScript estricto** (sin `any`) y **CSS propio** con custom properties, sin bibliotecas de interfaz.
-- **Pruebas:** Vitest (835 tests; cobertura de las efemérides, 98,9 %), Playwright (151 e2e con regresión visual), axe en todas las rutas y Lighthouse CI.
+- **Pruebas:** Vitest (835 tests; cobertura de las efemérides, 98,9 %), Playwright (153 e2e, con la regresión visual), axe en todas las rutas y Lighthouse CI.
 - **Despliegue:** Cloudflare Pages desde GitHub Actions, con el build verificado por el CI y sin builds en Cloudflare.
 
 ## Arquitectura
@@ -73,12 +73,12 @@ En un PC de escritorio con una RTX 3060 (detalle y método en el [informe de la 
 
 | Qué | Medido | Presupuesto |
 |---|---|---|
-| Imágenes por segundo, en todas las vistas y niveles de calidad | 59–60 | ≥ 55 |
+| Imágenes por segundo, en todas las vistas y niveles de calidad | 59–60 (salvo Fobos en alto a 1 día/s, que pinta a 5–9 a propósito) | ≥ 55 |
 | Memoria de vídeo de la vista Tierra (nivel alto y bajo) | 278 y 86 MB | 300 y 120 MB |
 | Las posiciones y orientaciones de los 30 cuerpos, por imagen | 0,17–0,19 ms | 2 ms |
-| JS inicial en bruto (y código propio en él) | 319,7 kB (14,0 kB) | 400 kB (15 kB) |
+| JS inicial en bruto (y código propio en él) | 319,7 kB (14,0 kB) | 320 kB de aviso y 400 de error (15 kB) |
 | Tarea más larga del arranque | 144 ms | 200 ms |
-| Desplazamiento al cargar (CLS) | 0 | 0,05 |
+| Desplazamiento al cargar (CLS) | ≤ 0,006 | 0,05 |
 | Imágenes pintadas en reposo | 0 | — |
 
 ## Privacidad
@@ -98,8 +98,8 @@ Sin cookies, sin analítica y sin peticiones a otros dominios: las fuentes, las 
 
 En Cloudflare Pages, desde GitHub Actions:
 
-- **Vistas previas** (`.github/workflows/ci.yml`): cada push con el CI en verde (lint, tests, build, e2e y Lighthouse) publica el build verificado en `<rama>.tierra-luna-sol.pages.dev`; el de `main`, en `staging.tierra-luna-sol.pages.dev`.
-- **Producción** (`.github/workflows/deploy-production.yml`): una etiqueta `v*` publica en [tierra-luna-sol.ivanchesa.com](https://tierra-luna-sol.ivanchesa.com) el mismo build que verificó el CI para ese commit, y `scripts/verify-pages.mjs` comprueba la publicación (rutas, 404, cabeceras, sin cookies ni NEL, el sitemap y el HTML servido idéntico al del build).
+- **Vistas previas** (`.github/workflows/ci.yml`): cada push con lint, tests, build y e2e en verde publica el build verificado en `<rama>.tierra-luna-sol.pages.dev`; el de `main`, en `staging.tierra-luna-sol.pages.dev`.
+- **Producción** (`.github/workflows/deploy-production.yml`): una etiqueta `v*` publica en [tierra-luna-sol.ivanchesa.com](https://tierra-luna-sol.ivanchesa.com) el mismo build que verificó el CI para ese commit (con todo el CI en verde, Lighthouse incluido), y `scripts/verify-pages.mjs` comprueba la publicación (rutas, 404, cabeceras, sin cookies ni NEL, el sitemap y el HTML servido idéntico al del build).
 
 ## Licencia
 

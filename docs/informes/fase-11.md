@@ -15,26 +15,28 @@ Instrucciones de Iván y de la sesión de revisión (10-11): se lanza ya, antes 
    - La nota del NEL en «Sobre el proyecto»: en el dominio propio no se envía. Los enlaces legales del pie, comprobados.
 2. `npm run check`, los e2e, este informe, la revisión por subagente y sus correcciones.
 3. Fusión `--no-ff` en `main`, push, etiqueta `v1.0.0` y su push; esperar al despliegue de producción en verde.
-4. **Tarea 2, verificación en producción**, con cifras: `curl` de las rutas, del 404 y de las cabeceras (sin Set-Cookie, sin NEL ni Report-To, X-Robots-Tag solo en pages.dev); Lighthouse frente a §5; el panel de rendimiento, ausente; ninguna petición a terceros. Si algo falla, corregir y publicar `v1.0.1`.
+4. **Tarea 2, verificación en producción**, con cifras: `curl` de las rutas, del 404 y de las cabeceras (sin Set-Cookie, sin NEL ni Report-To, X-Robots-Tag solo en pages.dev); Lighthouse frente a §5; el panel de rendimiento, ausente; ninguna petición a terceros; `og:image`, una imagen del dominio que responde. Si algo falla, corregir y publicar `v1.0.1`.
+   - **Cómo se juzga Lighthouse** (revisión, hallazgo 1): con el equipo libre, la mediana de 5 cargas de cada URL de la muestra (rendimiento, accesibilidad, buenas prácticas, LCP, CLS y TBT), comparada con §5 una a una, con ⚠️ o ❌ donde no llegue; no basta con `lhci assert` en verde, porque el rendimiento del explorador va como aviso. **Se sabe ya que el explorador no llega a 0,90** (0,76 en local en la fase 10): ese criterio no se cumple salvo que Iván elija la opción 1 de `PENDIENTES.md` (dejarlo como aviso).
+   - **Si algo falla en el dominio y no en pages.dev** (revisión, sugerencia 15), la causa estará en la zona: el `robots.txt` gestionado de Cloudflare, Bot Fight Mode y su cookie `__cf_bm`, Rocket Loader, Zaraz o Web Analytics automático. El arreglo sería de Iván, en la zona.
 5. **Tarea 5**, la lista para Iván en `PENDIENTES.md`, y el DIARIO.
 
 ## 1. Resumen
 
-El sitio pasa a indexable, con `robots.txt` y `sitemap.xml` generados desde `site.config.ts`, y la producción se publica por etiqueta con `deploy-production.yml`, que reutiliza el build que verificó el CI. «Sobre el proyecto» dice ya que en el dominio propio no se envía Network Error Logging. El README es ya de portfolio, con capturas y una animación, y hay CHANGELOG. La verificación en producción (`verify-pages.mjs`, `verify-browser.mjs` y Lighthouse con `LHCI_BASE`) se completa al publicar `v1.0.0` (§4).
+El sitio pasa a indexable, con `robots.txt` y `sitemap.xml` generados desde `site.config.ts`, y la producción se publica por etiqueta con `deploy-production.yml`, que reutiliza el build que verificó el CI. «Sobre el proyecto» dice ya que en el dominio propio no se envía Network Error Logging. El README es ya de portfolio, con capturas y una animación, y hay CHANGELOG. La verificación en producción (`verify-pages.mjs`, `verify-browser.mjs` y Lighthouse con `LHCI_BASE`) se completa al publicar `v1.0.0` (§12).
 
 ## 2. Criterios de aceptación
 
 | Criterio | ✅/❌ | Evidencia |
 |---|---|---|
-| `v1.0.0` publicada en producción con HTTPS, desplegada por etiqueta | pendiente | §4 |
-| Las comprobaciones con `curl` y Lighthouse en producción cumplen §5 | pendiente | §4 |
+| `v1.0.0` publicada en producción con HTTPS, desplegada por etiqueta | pendiente | §12 |
+| Las comprobaciones con `curl` y Lighthouse en producción cumplen §5 | pendiente; el rendimiento del explorador en Lighthouse no llegará a 0,90 (decisión de Iván, `PENDIENTES.md`) | §12 |
 
 ## 3. Tareas del plan
 
 | Tarea | Estado | Notas |
 |---|---|---|
 | 11.1 `deploy-production.yml` | hecha (sin estrenar) | `.github/workflows/deploy-production.yml` |
-| 11.2 Verificación en producción | pendiente | §4 |
+| 11.2 Verificación en producción | pendiente | §12 |
 | 11.3 README, CHANGELOG y `v1.0.0` | README y CHANGELOG hechos; la etiqueta, al publicar | |
 | 11.4 `indexable: true` | hecha | `robots.txt` y `sitemap.xml` (39 URLs) generados; `noindex` solo en la 404 |
 | 11.5 Lista para Iván | pendiente | `PENDIENTES.md` |
@@ -57,7 +59,8 @@ El sitio pasa a indexable, con `robots.txt` y `sitemap.xml` generados desde `sit
 ```
 npm run check (10-11, rama fase-11-lanzamiento)
 - ng lint: All files pass linting; Prettier, bien.
-- Tests: 835 passed (85 ficheros); cobertura de ephemeris/: 98,87 % de líneas (umbral, 90 %).
+- Tests: 835 passed (85 ficheros); cobertura de ephemeris/: 98,87 % de sentencias y 99,69 % de
+  líneas (umbral, 90 %).
 - Build: sin avisos de presupuesto. Initial total 319,67 kB en bruto (90,23 kB transferidos).
 - Pages: 39 rutas como ruta.html, 40 páginas, 386 rutas de recursos absolutas, 4 scripts en línea en
   la CSP, 39 URLs en sitemap.xml, 295 ficheros.
@@ -90,3 +93,29 @@ Se quita el `TODO(ivan)` de los enlaces legales (`site.config.ts`): ivanchesa.co
 - `node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-pages.mjs https://tierra-luna-sol.ivanchesa.com`
 - `node scripts/verify-browser.mjs https://tierra-luna-sol.ivanchesa.com`
 - `LHCI_BASE=https://tierra-luna-sol.ivanchesa.com npm run lighthouse`
+
+---
+
+## Respuesta a la revisión
+
+Revisión del subagente: **APROBADA CON CAMBIOS MENORES** (`docs/revisiones/fase-11.md`): 0 Bloqueantes, 1 Importante, 13 Menores y 2 Sugerencias. Corregidos todos menos lo que va a producción (la verificación se hace tras publicar, §12).
+
+| Hallazgo | Acción | Commit |
+|---|---|---|
+| 1 (Importante) Cómo se juzga Lighthouse frente a §5 | §0, paso 4, y §2: la mediana de 5 cargas por URL, comparada con §5 una a una (rendimiento, accesibilidad, buenas prácticas, LCP, CLS y TBT); el explorador, ya sabido que no llega a 0,90 (decisión de Iván) | este |
+| 2 `workflow_dispatch` con cualquier ref | `if: startsWith(github.ref, 'refs/tags/v')` en el trabajo | este |
+| 3 Un fallo pasajero de `gh run list` cortaba la espera | Si falla, un aviso y `run=''`: se vuelve a mirar a los 30 s | este |
+| 4 El dominio repetido en el workflow | Se lee de `site.config.ts` en un paso («El dominio») | este |
+| 5 Sin comprobar `tierra-luna-sol.pages.dev` | Añadida a la verificación del workflow (tres direcciones) | este |
+| 6 El NEL solo en `/` y peticiones fuera del registro | `record()`: `Set-Cookie`, `NEL` y `Report-To` en todas las respuestas, también las de los `Link` y la de `http://` | este |
+| 7 La nota del NEL, con cuatro complementos e inexacta | Reescrita como propone la revisión; e2e ajustado y `docs/revision-textos.md` regenerado | este |
+| 8 e2e 151/152 y Lighthouse en las vistas previas | «153 e2e» en el README y el CHANGELOG; las vistas previas, «lint, tests, build y e2e»; la producción, con todo el CI | este |
+| 9 Cifras más redondas que su fuente | Fobos en alto a 1 día/s (5–9 FPS, a propósito), CLS ≤ 0,006, el JS inicial con aviso y error, axe «sin violaciones graves ni críticas» | este |
+| 10 «98,87 % de líneas» | 98,87 % de sentencias y 99,69 % de líneas | este |
+| 11 `PENDIENTES.md` desfasado | El NEL, los enlaces legales, el dominio, `indexable` e ivanchesa.com, cerrados; Search Console, opcional | este |
+| 12 `og:image` con el dominio real | `verify-pages.mjs` comprueba que responde 200 y es una imagen; la vista previa en una app real, para Iván (`PENDIENTES.md`) | este |
+| 13 La captura de la Tierra, casi solo el Pacífico | Rehecha a las 17:00 UTC (Sudamérica de día y África al anochecer), con su texto alternativo | este |
+| 14 (Sugerencia) La espera de 45 min | El `::error::` dice que se relance Producción desde la etiqueta; el comentario, que relanzar el CI vuelve a publicar la vista previa | este |
+| 15 (Sugerencia) Diagnóstico si falla solo el dominio | Apuntado en §0, paso 4 | este |
+
+Tras las correcciones: `npm run check` en verde (835 tests; build sin avisos de presupuesto), las imágenes del README rehechas y `e2e/contenido.spec.ts`, 18 en verde.

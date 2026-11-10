@@ -13,7 +13,8 @@ const STILL = { width: 960, quality: 78 };
 const FRAME = { width: 800, quality: 70, delayMs: 160 };
 const VIEWS = [
   ['portada', '/?captura=1'],
-  ['tierra', '/explorar/tierra?captura=1'],
+  // A las 17:00 UTC del 24-10: Sudamérica de día y África al anochecer, con el terminador.
+  ['tierra', '/explorar/tierra?captura=1&fecha=2026-10-24T17:00Z'],
   ['luna', '/explorar/luna?captura=1'],
   ['saturno', '/?cuerpo=saturno&captura=1'],
   ['cielo', '/cielo?captura=1'],

@@ -362,7 +362,9 @@ test.describe('Compartir, legal y privacidad (fase 9)', () => {
     // propio no se envía (lo quita una regla de la zona); solo en las direcciones de pages.dev.
     const privacy = page.locator('section[aria-labelledby="privacidad"]');
     await expect(privacy).toContainText('Network Error Logging');
-    await expect(privacy).toContainText('En tierra-luna-sol.ivanchesa.com no');
+    await expect(privacy).toContainText(
+      'En tierra-luna-sol.ivanchesa.com, el alojamiento no recibe',
+    );
   });
 
   test('en escritorio, la cabecera de las páginas de lectura, en una fila y sin lo legal (hallazgo 4)', async ({
