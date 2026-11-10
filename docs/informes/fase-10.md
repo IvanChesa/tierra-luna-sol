@@ -2,7 +2,7 @@
 
 - **Rama:** `fase-10-pulido` (desde `main` en `0eabe29`), en la carpeta del proyecto. La entrega **10.a** (las lunas recreadas, segunda vuelta, D48) la hace otra sesión en paralelo, en su worktree (`.claude/worktrees/fase-10a-lunas`, rama `fase-10a-lunas`), y esta la junta.
 - **Fecha:** 2026-11-09 y 2026-11-10
-- **Estado:** terminada, a falta de la revisión por subagente (`docs/revisiones/fase-10.md`), sus correcciones y la fusión. Hecho: todas las entregas (la 10.a, junta), las medidas de §5 con el equipo libre, la comprobación de los textos, la regresión visual con sus referencias del CI y Lighthouse en el CI (el rendimiento, como aviso allí; §4.24). El CI de `c00618f`, en verde: 151 e2e con la regresión visual.
+- **Estado:** terminada y fusionada en `main` con `--no-ff`, con la revisión por subagente (`docs/revisiones/fase-10.md`: cambios necesarios, sin Bloqueantes) corregida: su respuesta, al final. Todas las entregas hechas (la 10.a, junta). El CI de la rama, en verde con la regresión visual.
 
 ## 0. Plan
 
