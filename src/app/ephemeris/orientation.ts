@@ -70,6 +70,21 @@ export function bodyFixedToEcl(body: IauBodyId, date: Date): Mat3 {
   );
 }
 
+/** J2000 (2000-01-01 12:00 UT): el instante en el que se fija el meridiano de un cuerpo que no gira. */
+const J2000 = new Date(Date.UTC(2000, 0, 1, 12));
+
+/**
+ * Como `bodyFixedToEcl`, con el polo del instante pero **sin el giro sobre él**: el meridiano 0, quieto
+ * en su ángulo W de J2000 (en el Sol, 84,176°). Para el Sol del explorador, que no gira (revisión del
+ * bloque S, S8; Iván, 08-11: «El sol está rotando, no debe rotar»): una elección de presentación,
+ * como dicen «Lo que es ilustrativo» y `/creditos`.
+ */
+export function bodyFixedToEclWithoutSpin(body: IauBodyId, date: Date): Mat3 {
+  const axis = RotationAxis(IAU_BODIES[body], toAstroTime(date));
+  const spin = RotationAxis(IAU_BODIES[body], toAstroTime(J2000)).spin;
+  return mulMat3(EQJ_TO_ECL, mulMat3(referencePlaneToEqj(axis.ra * 15, axis.dec), rotationZ(spin)));
+}
+
 /** Polo norte (unitario, ECL) de un cuerpo con modelo IAU. */
 export const northPoleEcl = (body: IauBodyId, date: Date): Vec3 =>
   columnOf(bodyFixedToEcl(body, date), 2);

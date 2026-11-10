@@ -1,6 +1,6 @@
 # Revisión de los textos
 
-> GENERADO por `scripts/build-text-review.mjs` el 2026-11-08, desde los datos y el HTML del build: es lo que se publica. Decisión de Iván al lanzar el bloque E (fase 9, tarea 7).
+> GENERADO por `scripts/build-text-review.mjs` el 2026-11-09, desde los datos y el HTML del build: es lo que se publica. Decisión de Iván al lanzar el bloque E (fase 9, tarea 7).
 
 ## Cómo se usa
 
@@ -11,7 +11,7 @@
 
 ## Índice
 
-1. [Por cuerpo](#por-cuerpo): los 30, con su resumen y sus tres curiosidades; en 0 lunas, la línea sobre su mapa, y en el Sol, la de su color realzado (140 textos).
+1. [Por cuerpo](#por-cuerpo): los 30, con su resumen y sus tres curiosidades; en 19 lunas, la línea sobre su mapa, y en el Sol, la de su color realzado (140 textos).
 2. [Por vista](#por-vista): el sistema solar, la Tierra y sus vistas guiadas, la Luna, sus vistas y su recorrido, y el cielo.
 3. [Las páginas](#las-paginas): los índices, los eclipses, «Sobre el proyecto», los créditos y la 404; [los textos fijos](#los-textos-fijos) de las fichas, del pie y del menú; y [la interfaz del explorador](#la-interfaz).
 4. [Las descriptions](#las-descriptions): lo que se ve al compartir cada página.
@@ -55,7 +55,7 @@ Fuente: <https://science.nasa.gov/sun/facts/>
 
 Corrección:
 
-**Sobre su mapa**
+**Sobre su color**
 
 > En las fotos, el Sol se ve blanco: emite a la vez todos los colores que vemos. En este explorador se ve en color realzado, como en las imágenes de los observatorios, que lo miran con filtros y pasan lo que ven a colores.
 
@@ -473,7 +473,7 @@ Corrección:
 
 **Curiosidad 2**
 
-> Las mareas de Júpiter hacen subir y bajar la superficie sólida de Ío hasta 100 m. En la Tierra, donde las mareas son más altas, la diferencia entre bajamar y pleamar es de solo 18 m, y en agua, no en suelo firme.
+> Las mareas de Júpiter hacen subir y bajar la superficie sólida de Ío hasta 100 m. En el lugar de la Tierra con las mareas más altas, la diferencia entre bajamar y pleamar es de solo 18 m, y en agua, no en suelo firme.
 
 Fuente: <https://science.nasa.gov/jupiter/jupiter-moons/io/facts/>
 
@@ -1045,7 +1045,7 @@ Corrección:
 
 **Curiosidad 1**
 
-> Sus rasgos más llamativos son valles de falla de hasta 1500 km de largo y 75 km de ancho. Las paredes que miran al Sol brillan mucho por el ángulo de la luz, pero también por un material claro, quizá escarcha reciente.
+> Sus rasgos más llamativos son valles de falla de hasta 1500 km de largo y 75 km de ancho. En algunos, las paredes que miran al Sol brillan mucho por el ángulo de la luz, pero también por un material claro, quizá escarcha reciente.
 
 Fuente: <https://science.nasa.gov/photojournal/titania-highest-resolution-voyager-picture/>
 
@@ -1079,7 +1079,7 @@ Corrección:
 
 **Resumen**
 
-> Oberón es la segunda luna más grande de Urano, y apenas se sabía nada de ella hasta que la Voyager 2 pasó a su lado en enero de 1986. Su superficie está plagada de cráteres, como la de Umbriel, y, como todas las grandes lunas de Urano, está formada aproximadamente por mitad de hielo y mitad de roca.
+> Oberón es la segunda luna más grande de Urano, y apenas se sabía nada de ella hasta que la Voyager 2 pasó a su lado en enero de 1986. Su superficie está plagada de cráteres, como la de Umbriel. Como todas las grandes lunas de Urano, Oberón está formada aproximadamente por mitad de hielo y mitad de roca.
 
 Fuente: <https://science.nasa.gov/uranus/moons/oberon/>
 
@@ -1215,7 +1215,7 @@ Corrección:
 
 **Entradilla**
 
-> El Sol, los ocho planetas y veintiuna lunas en las posiciones de hoy, calculadas en tu navegador para cualquier fecha entre 1900 y 2100.
+> El Sol, los ocho planetas y veintiuna lunas en sus posiciones de hoy y de cualquier fecha entre 1900 y 2100.
 
 Corrección:
 
@@ -1359,7 +1359,7 @@ Corrección:
 
 **5. Shackleton**
 
-> Shackleton, un cráter de 21 km en el polo sur: su borde recibe la luz del Sol, y su interior está siempre en sombra.
+> Shackleton, un cráter de 21 km en el polo sur: su borde recibe la luz del Sol, y su interior está siempre en sombra. El explorador no dibuja las sombras del relieve: por eso aquí se ve iluminada la pared interior que mira al Sol.
 
 Fuente: <https://planetarynames.wr.usgs.gov/Feature/5450> · <https://science.nasa.gov/resource/shackleton-craters-illuminated-rim-shadowed-interior/>
 
@@ -1421,7 +1421,13 @@ Corrección:
 
 **Párrafo 1**
 
-> Los eclipses de Sol y de Luna de los próximos diez años que se ven desde el lugar elegido, con la hora del lugar. Un eclipse de Sol solo se mira con filtros homologados, nunca a simple vista.
+> Los eclipses de Sol y de Luna de los próximos diez años que se ven desde el lugar elegido, con la hora del lugar.
+
+Corrección:
+
+**Párrafo 2**
+
+> Un eclipse de Sol solo se mira con filtros homologados, nunca a simple vista.
 
 Corrección:
 
@@ -1631,7 +1637,7 @@ Corrección:
 
 **Párrafo 31**
 
-> El Sol del explorador, en color realzado, como en las imágenes de los observatorios: naranja, cuando con luz visible normal es blanco (así se ve en el cielo desde España), con zonas claras y oscuras que cambian despacio, rayos en su resplandor y, de cerca, protuberancias en su borde. Su granulación, mucho más gruesa que la real para que se vea; sus manchas, que no son las de ese día (ni en su sitio ni en su número), aunque giran como las reales, más despacio lejos del ecuador; y sus fáculas. El oscurecimiento de su borde sigue la ley medida, pero más suave; en el cielo desde España, el Sol lleva el medido.
+> El Sol del explorador, en color realzado, como en las imágenes de los observatorios: naranja, cuando con luz visible normal es blanco (así se ve en el cielo desde España), con zonas claras y oscuras que cambian despacio, rayos en su resplandor y, de cerca, protuberancias en su borde. Su granulación, mucho más gruesa que la real para que se vea; sus manchas, que no son las de ese día (ni en su sitio ni en su número); y sus fáculas. No gira sobre su eje, para que se vea quieto (el de verdad da una vuelta en unos 25 días, como dice su ficha). El oscurecimiento de su borde sigue la ley medida, pero más suave; en el cielo desde España, el Sol lleva el medido.
 
 Corrección:
 
@@ -1667,7 +1673,7 @@ Corrección:
 
 **Párrafo 37**
 
-> Lo que no se vio de las lunas: el norte de Tritón y de las cinco lunas grandes de Urano, que ninguna sonda fotografió, lo que el mapa de Deimos no cubre y el detalle de lo que solo se fotografió de lejos, recreados con el terreno real de cada luna (cuánto, en los créditos). Proteo no tiene mapa: sus cráteres son generados, y su forma, una esfera.
+> Lo que no se vio de las lunas: el norte de Tritón y de las cinco lunas grandes de Urano, que ninguna sonda fotografió, lo que el mapa de Deimos no cubre y el detalle de lo que solo se fotografió de lejos, recreados con el terreno real de cada luna (cuánto, en los créditos). En las lunas de Urano, los cráteres de lo recreado siguen el número, el tamaño y el brillo de las manchas de su parte real, y las dos coronas del norte de Miranda llevan las bandas de las suyas reales; el borde del casquete del norte de Tritón tiene la irregularidad del borde del casquete del sur. Lo real que se fotografió con el Sol muy bajo se corrige a la luz de lo vecino. Proteo no tiene mapa: sus cráteres son generados, y su forma, una esfera.
 
 Corrección:
 
@@ -1679,7 +1685,7 @@ Corrección:
 
 **Párrafo 39**
 
-> Venus «Bajo las nubes»: la imagen del radar de Magellan, que mide el eco de cada punto y no la luz que se ve, pintada en gris con la luz del Sol y el brillo de sus nubes. Lo que el radar no cubrió, en un gris liso.
+> Venus «Bajo las nubes»: la imagen del radar de Magellan, que mide el eco de cada punto y no la luz que se ve, pintada con el color de las fotos de las Venera 13 y 14 (las únicas en color hechas bajo las nubes, como en las imágenes de Magellan de la NASA), con la luz del Sol y el brillo de sus nubes. Lo que el radar no cubrió, en un gris liso.
 
 Corrección:
 
@@ -1699,7 +1705,7 @@ Corrección:
 
 **Párrafo 42**
 
-> Tu navegador guarda solo dos preferencias, en su almacenamiento local: el nivel de calidad del 3D y si quieres los atajos de una sola tecla.
+> Tu navegador guarda solo dos preferencias, en su almacenamiento local: el nivel de calidad del 3D y si quieres los atajos de una sola tecla. Y, para no repetirlos, si ya has visto las pistas de uso y el recorrido de la portada.
 
 Corrección:
 
@@ -1777,7 +1783,7 @@ Corrección:
 
 **Párrafo 7**
 
-> Venus bajo las nubes: el mosaico global del radar de la sonda Magellan (C3-MIDR, 2 km por píxel), del USGS Astrogeology y el PDS Geosciences Node (NASA/JPL), de dominio público. Reducido y en WebP; lo que el radar no cubrió, en un gris liso. Es una imagen de radar, en gris: no lo que verían los ojos.
+> Venus bajo las nubes: el mosaico global del radar de la sonda Magellan (C3-MIDR, 2 km por píxel), del USGS Astrogeology y el PDS Geosciences Node (NASA/JPL), de dominio público. Reducido y en WebP; lo que el radar no cubrió, en un gris liso. Es una imagen de radar, con el color de las fotos de las Venera 13 y 14, como el globo de Magellan de la NASA (PIA00104, NASA/JPL): no lo que verían los ojos.
 
 Corrección:
 
@@ -1795,7 +1801,7 @@ Corrección:
 
 **Párrafo 10**
 
-> Lo que no se vio de las lunas, recreado (ilustrativo): lo que ninguna sonda fotografió (el norte de Tritón y de las lunas de Urano) y lo que el mapa de Deimos no cubre se recrean enteros, y lo que solo se fotografió de lejos lleva detalle recreado, siempre con parches del terreno real de la misma luna, sobre la esfera y sin tocar lo real. Proteo no tiene mapa: sus cráteres son generados. El método y lo medido (el grano y el borde con lo real), en recreacion-lunas.md. La superficie de cada luna, medida en su mapa LunaRealDe lejos (con detalle recreado)No vista (recreada)Fobos91,7 %8,3 %0,0 %Deimos55,5 %32,7 %11,8 %Ío82,9 %17,1 %0,0 %Europa80,0 %19,5 %0,5 %Ganímedes97,9 %1,6 %0,5 %Calisto87,5 %11,5 %1,0 %Mimas80,0 %20,0 %0,0 %Encélado74,1 %25,9 %0,0 %Tetis79,8 %20,2 %0,0 %Dione87,3 %12,7 %0,0 %Rea92,6 %7,4 %0,0 %Jápeto69,2 %30,8 %0,0 %Miranda30,5 %8,9 %60,6 %Ariel24,5 %8,8 %66,7 %Umbriel35,3 %1,1 %63,6 %Titania30,9 %0,4 %68,6 %Oberón33,5 %0,0 %66,5 %Tritón30,6 %36,1 %33,4 %
+> Lo que no se vio de las lunas, recreado (ilustrativo): lo que ninguna sonda fotografió (el norte de Tritón y de las lunas de Urano) y lo que el mapa de Deimos no cubre se recrean enteros, y lo que solo se fotografió de lejos lleva detalle recreado, siempre con parches del terreno real de la misma luna, sobre la esfera y sin tocar lo real. En las lunas de Urano, lo no visto lleva además cráteres con el número, el tamaño y el brillo de las manchas de su parte real (en Miranda, también dos coronas). Lo real fotografiado con luz rasante, junto al terminador de las imágenes de la Voyager 2, sale más oscuro por la luz de la foto, no por el color del suelo: su brillo se corrige al de lo real vecino y sus sombras se funden con lo recreado. Lo mismo, la columna más oscura de la unión de 180° de los mapas del JPL. Proteo no tiene mapa: sus cráteres son generados. El método y lo medido (el grano, el borde con lo real y el contraste), en recreacion-lunas.md. La superficie de cada luna, medida en su mapa LunaRealReal con luz rasante (corregida)De lejos (con detalle recreado)No vista (recreada)Fobos91,8 %0,0 %8,2 %0,0 %Deimos55,0 %0,5 %32,7 %11,8 %Ío82,9 %0,0 %17,1 %0,0 %Europa80,0 %0,0 %19,4 %0,6 %Ganímedes97,9 %0,0 %1,6 %0,5 %Calisto87,5 %0,0 %11,5 %1,0 %Mimas80,0 %0,0 %20,0 %0,0 %Encélado74,2 %0,0 %25,8 %0,0 %Tetis79,9 %0,0 %20,1 %0,0 %Dione87,3 %0,0 %12,7 %0,0 %Rea92,6 %0,0 %7,4 %0,0 %Jápeto69,2 %0,0 %30,8 %0,0 %Miranda27,3 %6,7 %5,3 %60,7 %Ariel21,9 %2,4 %8,8 %66,8 %Umbriel29,3 %6,0 %1,0 %63,7 %Titania25,8 %5,0 %0,3 %68,9 %Oberón29,9 %3,5 %0,0 %66,5 %Tritón30,2 %0,0 %36,3 %33,5 %
 
 Corrección:
 
@@ -1859,7 +1865,7 @@ Corrección:
 
 **Párrafo 20**
 
-> El Sol: el oscurecimiento del borde en cada color, con la ley de Hestroffer y Magnan (1998), y la rotación de las manchas, más lenta lejos del ecuador, con la medida por el SDO de Lößnitz et al. (2025). Las manchas, la granulación, la corona y el resplandor son ilustrativos. En el explorador se ve en color realzado, como en las imágenes de los observatorios (con luz visible normal es blanco, como en el cielo): su color, sus zonas claras y oscuras, el oscurecimiento de su borde (más suave que el de la ley), sus rayos y sus protuberancias, también ilustrativos.
+> El Sol: el oscurecimiento del borde en cada color, con la ley de Hestroffer y Magnan (1998). Las manchas, la granulación, la corona y el resplandor son ilustrativos. En el explorador se ve en color realzado, como en las imágenes de los observatorios (con luz visible normal es blanco, como en el cielo): su color, sus zonas claras y oscuras, el oscurecimiento de su borde (más suave que el de la ley), sus rayos y sus protuberancias, también ilustrativos.
 
 Corrección:
 
@@ -1881,7 +1887,7 @@ Corrección:
 
 **Párrafo 23**
 
-> Los pósters del explorador, las miniaturas y las imágenes de las fichas, y la imagen para compartir, son capturas del propio motor con estas texturas: mantienen sus licencias y sus atribuciones.
+> Los pósteres del explorador, las miniaturas y las imágenes de las fichas, y la imagen para compartir, son capturas del propio motor con estas texturas: mantienen sus licencias y sus atribuciones.
 
 Corrección:
 
@@ -2001,7 +2007,43 @@ Corrección:
 
 **Párrafo 1**
 
-> La página que buscas no existe. Volver al inicio.
+> Esta dirección no está en el atlas: quizá se escribió mal o la página ya no existe. Puedes seguir por aquí.
+
+Corrección:
+
+**Párrafo 2**
+
+> Explorar en 3D · El sistema solar, en las posiciones de hoy.
+
+Corrección:
+
+**Párrafo 3**
+
+> Los planetas · Sus fichas, de Mercurio a Neptuno.
+
+Corrección:
+
+**Párrafo 4**
+
+> Las lunas · La nuestra y las otras veinte.
+
+Corrección:
+
+**Párrafo 5**
+
+> El Sol · Su ficha y sus datos.
+
+Corrección:
+
+**Párrafo 6**
+
+> El cielo desde España · Lo que se ve esta noche.
+
+Corrección:
+
+**Párrafo 7**
+
+> Los próximos eclipses · Los que se ven desde España.
 
 Corrección:
 
@@ -2287,15 +2329,15 @@ Corrección:
 
 Corrección:
 
-**Profundidad óptica normal del división de Cassini**
+**Profundidad óptica normal de la división de Cassini**
 
-> Profundidad óptica normal del división de Cassini. Aclaraciones: «Profundidad óptica normal de la división de Cassini.»
+> Profundidad óptica normal de la división de Cassini
 
 Corrección:
 
-**Albedo del división de Cassini**
+**Albedo de la división de Cassini**
 
-> Albedo del división de Cassini. Aclaraciones: «Albedo de la división de Cassini.»
+> Albedo de la división de Cassini
 
 Corrección:
 
@@ -2449,7 +2491,7 @@ Corrección:
 
 **Deimos**
 
-> Deimos, con la luz del Sol de lado y su color esquemático (no hay un mapa de su superficie): imagen del propio explorador.
+> Deimos, con la luz del Sol de lado y su superficie real: imagen del propio explorador.
 
 Corrección:
 
@@ -2521,31 +2563,31 @@ Corrección:
 
 **Miranda**
 
-> Miranda, con la luz del Sol de lado y su color esquemático (no hay un mapa de su superficie): imagen del propio explorador.
+> Miranda, con la luz del Sol de lado y su superficie real: imagen del propio explorador.
 
 Corrección:
 
 **Ariel**
 
-> Ariel, con la luz del Sol de lado y su color esquemático (no hay un mapa de su superficie): imagen del propio explorador.
+> Ariel, con la luz del Sol de lado y su superficie real: imagen del propio explorador.
 
 Corrección:
 
 **Umbriel**
 
-> Umbriel, con la luz del Sol de lado y su color esquemático (no hay un mapa de su superficie): imagen del propio explorador.
+> Umbriel, con la luz del Sol de lado y su superficie real: imagen del propio explorador.
 
 Corrección:
 
 **Titania**
 
-> Titania, con la luz del Sol de lado y su color esquemático (no hay un mapa de su superficie): imagen del propio explorador.
+> Titania, con la luz del Sol de lado y su superficie real: imagen del propio explorador.
 
 Corrección:
 
 **Oberón**
 
-> Oberón, con la luz del Sol de lado y su color esquemático (no hay un mapa de su superficie): imagen del propio explorador.
+> Oberón, con la luz del Sol de lado y su superficie real: imagen del propio explorador.
 
 Corrección:
 
@@ -2623,7 +2665,7 @@ Corrección:
 
 **El recorrido de la portada**
 
-> 2 de 4 · España y los lugares del cielo: el Montsec, Fabra, Calar Alto, Madrid, Fraga, el Teide y el Roque de los Muchachos
+> 2 de 4 · España y los lugares del cielo
 
 Corrección:
 
@@ -2659,7 +2701,7 @@ Corrección:
 
 **El recorrido de la portada**
 
-> 2 de 3 · España y los lugares del cielo: el Montsec, Fabra, Calar Alto, Madrid, Fraga, el Teide y el Roque de los Muchachos
+> 2 de 3 · España y los lugares del cielo
 
 Corrección:
 
@@ -2680,6 +2722,12 @@ Corrección:
 **Texto**
 
 > Cerrar la ficha (Esc)
+
+Corrección:
+
+**Texto**
+
+> Unidades astronómicas: 1 UA, unos 150 millones de km, es la distancia media de la Tierra al Sol
 
 Corrección:
 
@@ -2709,7 +2757,7 @@ Corrección:
 
 **Texto**
 
-> Imagen de radar de la sonda Magellan, no lo que verían tus ojos.
+> Imagen de radar de la sonda Magellan, con el color de las fotos de las Venera 13 y 14: no es lo que verían tus ojos.
 
 Corrección:
 
@@ -2740,6 +2788,12 @@ Corrección:
 **Texto**
 
 > Distancia
+
+Corrección:
+
+**Texto**
+
+> UA
 
 Corrección:
 
@@ -2783,7 +2837,7 @@ Corrección:
 
 **Texto**
 
-> Planetas: distancia al Sol. Lunas: a su planeta.
+> Planetas: distancia al Sol, en unidades astronómicas (1 UA, unos 150 millones de km, es la distancia media de la Tierra al Sol). Lunas: a su planeta.
 
 Corrección:
 
@@ -2959,6 +3013,12 @@ Corrección:
 
 Corrección:
 
+**Texto**
+
+> Volver a los eclipses
+
+Corrección:
+
 #### `moon-panel/moon-panel.ts`
 
 **Texto**
@@ -3093,7 +3153,13 @@ Corrección:
 
 **Texto**
 
-> Ahora es de día: arrastra para ver la noche.
+> Ahora es de día: arrastra la hora o
+
+Corrección:
+
+**Texto**
+
+> Ver el cielo de esta noche
 
 Corrección:
 
@@ -3185,6 +3251,12 @@ Corrección:
 
 **Texto**
 
+> · hacia atrás
+
+Corrección:
+
+**Texto**
+
 > Velocidad
 
 Corrección:
@@ -3271,6 +3343,18 @@ Corrección:
 
 **Texto**
 
+> Entre 1900 y 2100.
+
+Corrección:
+
+**Texto**
+
+> Esa fecha no existe o se sale del rango: elige una entre 1900 y 2100.
+
+Corrección:
+
+**Texto**
+
 > Zona
 
 Corrección:
@@ -3284,12 +3368,6 @@ Corrección:
 **Texto**
 
 > Ahora
-
-Corrección:
-
-**Texto**
-
-> Esa fecha no existe o se sale del rango: elige una entre 1900 y 2100.
 
 Corrección:
 
@@ -3350,6 +3428,12 @@ Corrección:
 **Texto**
 
 > Escala
+
+Corrección:
+
+**Texto**
+
+> Ilustrativa: los cuerpos, agrandados, y las distancias, acortadas, para que todo se vea. Real: los tamaños y las distancias, en la misma proporción.
 
 Corrección:
 

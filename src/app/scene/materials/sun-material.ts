@@ -20,8 +20,7 @@
  *   blanca.
  * - El halo es un cuadrado orientado a la cámara, aditivo, con un tamaño mínimo en píxeles para que el
  *   Sol se vea aunque mida menos de un píxel (escala real, desde Neptuno). En primer plano se recoge y
- *   lleva una corona tenue con serpentinas (ilustrativa: la real solo se ve en un eclipse). En los
- *   niveles alto y medio, el resplandor lo pone sobre todo el bloom (`scene/sun-bloom.ts`).
+ *   lleva una corona tenue con serpentinas (ilustrativa: la real solo se ve en un eclipse).
  * - **El Sol realzado** (fase 9b, D46, decisión de Iván del 06-11; ilustrativo), el del explorador
  *   (`uEnhance` = 1). Segunda vuelta (08-11, «las manchas estas que sobresalen parecen tumores…
  *   intentemos basarnos en el sol del proyecto ejemplo»): un naranja saturado en todo el disco, con el
@@ -115,18 +114,29 @@ varying vec3 vNormal;
 varying vec3 vViewPosition;
 varying vec3 vLocal;
 
+// El hash de los vértices de la red, entero (WebGL2; propuesta de la 9b, fase 10): PCG3D, de Jarzynski
+// y Olano (2020, «Hash Functions for GPU Rendering», JCGT 9(3)). Más barato y uniforme que
+// fract(sin(x)·43758), que en las GPU de los móviles pierde precisión y se repite. \`p\`, un vértice
+// de la red (enteros); cada componente, de 0 a 1.
+uvec3 tlsPcg3d(uvec3 v) {
+  v = v * 1664525u + 1013904223u;
+  v.x += v.y * v.z;
+  v.y += v.z * v.x;
+  v.z += v.x * v.y;
+  v ^= v >> 16u;
+  v.x += v.y * v.z;
+  v.y += v.z * v.x;
+  v.z += v.x * v.y;
+  return v;
+}
+
 vec3 tlsHash3(vec3 p) {
-  p = vec3(
-    dot(p, vec3(127.1, 311.7, 74.7)),
-    dot(p, vec3(269.5, 183.3, 246.1)),
-    dot(p, vec3(113.5, 271.9, 124.6))
-  );
-  return fract(sin(p) * 43758.5453123);
+  return vec3(tlsPcg3d(uvec3(ivec3(p))) >> 8u) * (1.0 / 16777216.0);
 }
 
 // Ruido de valor barato (para el borde irregular de las manchas).
 float tlsHash1(vec3 p) {
-  return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453123);
+  return float(tlsPcg3d(uvec3(ivec3(p))).x >> 8u) * (1.0 / 16777216.0);
 }
 
 float tlsValueNoise(vec3 x) {
@@ -417,8 +427,12 @@ varying float vDisc;
 varying float vPixel;
 ${CORONA_GLSL}
 
+// El hash de los rayos y de los bucles, entero (como el de la superficie): PCG de un número (Jarzynski
+// y Olano, 2020) sobre los bits del valor, que distinguen también los no enteros (\`fk + 3.1\`).
 float tlsHaloHash(float n) {
-  return fract(sin(n * 127.1) * 43758.5453123);
+  uint state = floatBitsToUint(n) * 747796405u + 2891336453u;
+  uint word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
+  return float(((word >> 22u) ^ word) >> 8u) * (1.0 / 16777216.0);
 }
 
 // Ruido de valor en una dimensión, periódico en el ángulo (n celdas por vuelta).

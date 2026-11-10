@@ -279,10 +279,11 @@ kbd {
 
   /*
    * Las hojas tapan lo de debajo: mientras están abiertas, sale del orden del foco y del árbol
-   * accesible (el foco pasa a la hoja, explorer-ui.ts). La ficha deja a la vista la barra de tiempo.
+   * accesible (el foco pasa a la hoja, explorer-ui.ts). La ficha y el Índice dejan a la vista la barra
+   * de tiempo (el Índice la tapaba: crítica de la 9c, revisión del bloque S, decisión 6).
    */
   :host(.has-panel) :is(.index-toggle, .chips, .view-panel),
-  :host(.has-index) :is(.index-toggle, .chips, .dock, .panel) {
+  :host(.has-index) :is(.index-toggle, .chips, .panel) {
     visibility: hidden;
   }
 

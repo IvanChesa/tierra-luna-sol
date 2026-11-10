@@ -1,4 +1,4 @@
-// GENERADO por scripts/build-body-data.mjs el 2026-11-03. No se edita a mano.
+// GENERADO por scripts/build-body-data.mjs el 2026-11-09. No se edita a mano.
 // Datos físicos y orbitales copiados de las fichas de la NASA (NSSDCA) y del JPL; cada dato lleva
 // el id de su fuente (data/sources.ts). Solo hay cambios de unidad exactos y, en los planetas,
 // radio = diámetro / 2.
@@ -22,6 +22,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       },
       surfaceGravityMS2: {
         value: 274,
+        digits: 1,
         source: 'nssdc-sun',
         note: 'En el ecuador.',
       },
@@ -130,6 +131,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       },
       periodDays: {
         value: 88,
+        digits: 1,
         source: 'nssdc-planets',
       },
       meanOrbitalVelocityKmS: {
@@ -138,6 +140,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       },
       inclinationDeg: {
         value: 7,
+        digits: 1,
         source: 'nssdc-planets',
         note: 'Respecto a la eclíptica.',
       },
@@ -176,6 +179,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       },
       lengthOfDayH: {
         value: 2802,
+        digits: 1,
         source: 'nssdc-planets',
       },
       axialTiltDeg: {
@@ -200,6 +204,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       },
       flatteningRatio: {
         value: 0,
+        digits: 3,
         source: 'nssdc-venus',
         note: 'Achatamiento f = (a − c) / a (radios ecuatorial y polar).',
       },
@@ -228,6 +233,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       },
       meanOrbitalVelocityKmS: {
         value: 35,
+        digits: 1,
         source: 'nssdc-planets',
       },
       inclinationDeg: {
@@ -270,6 +276,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       },
       lengthOfDayH: {
         value: 24,
+        digits: 1,
         source: 'nssdc-planets',
       },
       axialTiltDeg: {
@@ -326,6 +333,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       },
       inclinationDeg: {
         value: 0,
+        digits: 1,
         source: 'nssdc-planets',
         note: 'Respecto a la eclíptica.',
       },
@@ -356,6 +364,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       },
       escapeVelocityKmS: {
         value: 5,
+        digits: 1,
         source: 'nssdc-planets',
       },
       rotationPeriodH: {
@@ -393,6 +402,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       },
       geometricAlbedo: {
         value: 0.17,
+        digits: 3,
         source: 'nssdc-mars',
         note: 'Albedo geométrico (visual).',
       },
@@ -412,6 +422,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       },
       periodDays: {
         value: 687,
+        digits: 1,
         source: 'nssdc-planets',
       },
       meanOrbitalVelocityKmS: {
@@ -536,6 +547,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       },
       surfaceGravityMS2: {
         value: 9,
+        digits: 1,
         source: 'nssdc-planets',
       },
       escapeVelocityKmS: {
@@ -793,6 +805,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       },
       surfaceGravityMS2: {
         value: 11,
+        digits: 1,
         source: 'nssdc-planets',
       },
       escapeVelocityKmS: {
@@ -862,6 +875,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       },
       eccentricity: {
         value: 0.01,
+        digits: 3,
         source: 'nssdc-planets',
       },
     },
@@ -1096,6 +1110,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
     physical: {
       radiusKm: {
         value: 1560.8,
+        digits: 2,
         source: 'jpl-satellite-physical-parameters',
         note: 'Radio medio.',
       },
@@ -1141,6 +1156,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
     physical: {
       radiusKm: {
         value: 2631.2,
+        digits: 2,
         source: 'jpl-satellite-physical-parameters',
         note: 'Radio medio.',
       },
@@ -1186,6 +1202,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
     physical: {
       radiusKm: {
         value: 2410.3,
+        digits: 2,
         source: 'jpl-satellite-physical-parameters',
         note: 'Radio medio.',
       },
@@ -1231,6 +1248,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
     physical: {
       radiusKm: {
         value: 198.2,
+        digits: 2,
         source: 'jpl-satellite-physical-parameters',
         note: 'Radio medio.',
       },
@@ -1276,6 +1294,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
     physical: {
       radiusKm: {
         value: 252.1,
+        digits: 2,
         source: 'jpl-satellite-physical-parameters',
         note: 'Radio medio.',
       },
@@ -1289,6 +1308,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       },
       geometricAlbedo: {
         value: 1,
+        digits: 1,
         source: 'nssdc-saturnian-satellites',
       },
       synchronousRotation: {
@@ -1308,6 +1328,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       },
       inclinationDeg: {
         value: 0,
+        digits: 2,
         source: 'nssdc-saturnian-satellites',
         note: 'Respecto al ecuador del planeta.',
       },
@@ -1321,6 +1342,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
     physical: {
       radiusKm: {
         value: 531.1,
+        digits: 2,
         source: 'jpl-satellite-physical-parameters',
         note: 'Radio medio.',
       },
@@ -1358,6 +1380,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       },
       eccentricity: {
         value: 0,
+        digits: 4,
         source: 'nssdc-saturnian-satellites',
       },
     },
@@ -1366,6 +1389,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
     physical: {
       radiusKm: {
         value: 561.4,
+        digits: 2,
         source: 'jpl-satellite-physical-parameters',
         note: 'Radio medio.',
       },
@@ -1411,6 +1435,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
     physical: {
       radiusKm: {
         value: 763.5,
+        digits: 2,
         source: 'jpl-satellite-physical-parameters',
         note: 'Radio medio.',
       },
@@ -1439,6 +1464,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       },
       periodDays: {
         value: 4.5175,
+        digits: 6,
         source: 'nssdc-saturnian-satellites',
       },
       inclinationDeg: {
@@ -1448,6 +1474,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       },
       eccentricity: {
         value: 0.001,
+        digits: 4,
         source: 'nssdc-saturnian-satellites',
       },
     },
@@ -1501,6 +1528,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
     physical: {
       radiusKm: {
         value: 734.3,
+        digits: 2,
         source: 'jpl-satellite-physical-parameters',
         note: 'Radio medio.',
       },
@@ -1772,6 +1800,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
     physical: {
       radiusKm: {
         value: 1352.6,
+        digits: 2,
         source: 'jpl-satellite-physical-parameters',
         note: 'Radio medio.',
       },
@@ -1822,6 +1851,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
     physical: {
       radiusKm: {
         value: 208,
+        digits: 2,
         source: 'jpl-satellite-physical-parameters',
         note: 'Radio medio.',
       },
@@ -1835,6 +1865,7 @@ export const BODY_DATA: Record<BodyId, BodyData> = {
       },
       geometricAlbedo: {
         value: 0.1,
+        digits: 2,
         source: 'nssdc-neptunian-satellites',
       },
     },

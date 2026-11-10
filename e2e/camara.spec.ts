@@ -36,16 +36,18 @@ test.describe('Cámara, vista limpia y atajos', () => {
   }) => {
     await openExplorer(page, '/?captura=1');
     const index = indexToggle(page);
+    // Los nombres de los cuerpos (la otra capa, la de los lugares de España, solo sale en esa vista).
+    const labels = page.locator('.scene-labels').filter({ hasText: 'Saturno' });
     await expect(index).toBeVisible();
     await page.keyboard.press('v');
     await expect(index).toBeHidden();
     await expect(page.locator('tls-time-controls')).toBeHidden();
-    await expect(page.locator('.scene-labels')).toBeHidden();
+    await expect(labels).toBeHidden();
     const restore = page.getByRole('button', { name: /Mostrar la interfaz/ });
     await expect(restore).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(index).toBeVisible();
-    await expect(page.locator('.scene-labels')).toBeVisible();
+    await expect(labels).toBeVisible();
 
     // «Vista limpia», en «Controles» (fase 9c).
     await openControls(page);

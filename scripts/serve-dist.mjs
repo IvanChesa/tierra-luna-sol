@@ -7,7 +7,9 @@
 //   otros dominios, como los de `*.pages.dev`, no cuentan aquí). Si dos reglas dan la misma
 //   cabecera, se unen con una coma, como en Pages; una línea `! Nombre` la quita;
 // - copia los `<link rel="modulepreload">` del HTML a una cabecera `Link`, tal cual, como hace Pages
-//   para los Early Hints (el navegador la resuelve contra la URL de la página, no contra `<base>`).
+//   para los Early Hints (el navegador la resuelve contra la URL de la página, no contra `<base>`);
+// - comprime los ficheros de texto con Brotli (o gzip) si el navegador lo acepta, como Pages: sin eso,
+//   Lighthouse simulaba la red con los tamaños sin comprimir (three, 806 kB en vez de unos 200; fase 10).
 // Lo que `_headers` no dice, sin caché (`no-store`). Solo para uso local.
 // Uso: node scripts/serve-dist.mjs [puerto]   (por defecto, `CAPTURE_PORT` o 4340; el 4321 es el
 // de Astro)
@@ -16,6 +18,8 @@ import { readFile, stat } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
+import { brotliCompress, constants as zlib, gzip } from 'node:zlib';
 
 const ROOT = fileURLToPath(new URL('../dist/tierra-luna-sol/browser/', import.meta.url));
 export const HOST = '127.0.0.1';
@@ -56,6 +60,46 @@ const TYPES = {
   '.wasm': 'application/wasm',
   '.ktx2': 'image/ktx2',
 };
+
+/** Los tipos de texto, los que Pages comprime (las imágenes y los binarios van tal cual). */
+const COMPRESSIBLE = new Set(['.html', '.js', '.css', '.json', '.svg', '.txt']);
+const brotli = promisify(brotliCompress);
+const gzipped = promisify(gzip);
+/** Lo ya comprimido, por codificación, fichero y fecha (se comprime una vez por servidor). */
+const compressedCache = new Map();
+
+/** `br` o `gzip` según `Accept-Encoding` (Brotli antes, como Pages), o `null`. */
+export function negotiateEncoding(acceptEncoding = '') {
+  const accepted = acceptEncoding
+    .split(',')
+    .map((part) => part.trim().split(';'))
+    .filter(([, q]) => !/^\s*q=0(\.0*)?\s*$/.test(q ?? ''))
+    .map(([name]) => name.trim().toLowerCase());
+  if (accepted.includes('br')) return 'br';
+  if (accepted.includes('gzip')) return 'gzip';
+  return null;
+}
+
+async function compressed(file, encoding) {
+  const key = `${encoding}:${file}:${(await stat(file)).mtimeMs}`;
+  if (!compressedCache.has(key)) {
+    const data = readFile(file);
+    compressedCache.set(
+      key,
+      data.then((buffer) =>
+        encoding === 'br'
+          ? brotli(buffer, {
+              params: {
+                [zlib.BROTLI_PARAM_QUALITY]: 5,
+                [zlib.BROTLI_PARAM_SIZE_HINT]: buffer.length,
+              },
+            })
+          : gzipped(buffer, { level: 6 }),
+      ),
+    );
+  }
+  return compressedCache.get(key);
+}
 
 async function isFile(path) {
   try {
@@ -184,6 +228,22 @@ export async function startServer(port = CAPTURE_PORT) {
       'cache-control': 'no-store',
       ...hints,
     };
+    const encoding = COMPRESSIBLE.has(extname(file))
+      ? negotiateEncoding(request.headers['accept-encoding'])
+      : null;
+    if (encoding) {
+      const body = await compressed(file, encoding);
+      response.writeHead(
+        status,
+        applyHeaders(headerRules, path, {
+          ...base,
+          'content-encoding': encoding,
+          'content-length': body.length,
+          vary: 'Accept-Encoding',
+        }),
+      );
+      return response.end(body);
+    }
     response.writeHead(status, applyHeaders(headerRules, path, base));
     createReadStream(file).pipe(response);
   });

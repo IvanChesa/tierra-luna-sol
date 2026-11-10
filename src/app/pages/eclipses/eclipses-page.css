@@ -4,6 +4,28 @@
   color: var(--color-text-muted);
 }
 
+/* No mirar el Sol sin filtro: aparte y con el borde de acento, que destaque (crítica de la 9c). */
+.eclipses__warning {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  max-width: var(--measure);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border-left: 3px solid var(--color-accent);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+
+.eclipses__warning svg {
+  flex: none;
+  margin-top: 2px;
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 /* La pista no crece con la opción más larga del selector: en el móvil se salía (revisión de la fase 8,
    hallazgo 2, WCAG 1.4.10). */
 .eclipses__controls {
@@ -64,10 +86,13 @@
   margin: 0;
 }
 
+/* La fecha, encima del título y con aire (antes, apretada contra él: crítica de la 9c). */
 .eclipse__title {
   display: grid;
-  margin: 0;
+  gap: var(--space-1);
+  margin: 0 0 var(--space-1);
   font-size: 1.125rem;
+  line-height: 1.25;
 }
 
 .eclipse__date {

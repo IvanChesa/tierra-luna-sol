@@ -48,7 +48,7 @@ describe('MoonPanel: vistas y recorrido de la Luna (fase 6)', () => {
     const { root, sim } = render();
     const phase = moonPhase(sim.time());
     expect(root.querySelector('.moon__phase')?.textContent?.trim()).toBe(
-      `${phase.name} · ${Math.round(phase.illuminatedFraction * 100)} % iluminada`,
+      `${phase.name} · ${Math.round(phase.illuminatedFraction * 100)}\u00a0% iluminada`,
     );
   });
 
@@ -65,6 +65,11 @@ describe('MoonPanel: vistas y recorrido de la Luna (fase 6)', () => {
     expect(sim.playing()).toBe(false);
     expect(button('Cara visible')?.getAttribute('aria-pressed')).toBe('true');
     expect(root.querySelector('.moon__caption')?.textContent?.trim()).toBe(MOON_VIEWS[0]?.text);
+    // Lo que ha hecho con el tiempo, a la vista y en el anuncio (crítica de la 9c): la fecha nueva y,
+    // si corría, la pausa.
+    const notice = root.querySelector('.moon__notice')?.textContent?.trim() ?? '';
+    expect(notice).toMatch(/^La fecha pasa a la luna llena más cercana \(.+\)/);
+    expect(session.announcement()).toContain(notice);
     button('Cara oculta')?.click();
     fixture.detectChanges();
     expect(moonPhase(sim.time()).name).toBe('Luna nueva');

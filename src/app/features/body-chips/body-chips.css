@@ -175,3 +175,20 @@
     min-height: var(--tap-target);
   }
 }
+
+/*
+ * En la tableta, la fila de lunas cabe en el ancho de la de planetas y las dos quedan una sobre otra,
+ * centradas en el mismo eje (crítica de la 9c: con Saturno, la de lunas iba de la esquina del Índice
+ * al borde derecho; revisión del bloque S, decisión 6): pastillas algo más apretadas.
+ */
+@media (min-width: 48rem) and (max-width: 63.99rem) {
+  .moon {
+    gap: var(--space-1);
+    padding: 0 var(--space-2) 0 var(--space-1);
+  }
+
+  .moon__thumb {
+    width: 20px;
+    height: 20px;
+  }
+}

@@ -45,12 +45,15 @@ export function decimalsOf(value: number): number {
   return Math.max(0, decimals - Number(exponent));
 }
 
-/** La cifra con los decimales con los que está escrita (como mucho, `maxDigits`). */
-export function formatExact(value: number, maxDigits = 6): string {
+/**
+ * La cifra con los decimales con los que está escrita (como mucho, `maxDigits`), o con los de su
+ * fuente si son más (`digits`: «5.0» → «5,0», con sus ceros finales; fase 10, tarea 12).
+ */
+export function formatExact(value: number, maxDigits = 6, digits = 0): string {
   // Sin el ruido de la coma flotante: 27,3217 días pasados a horas y vueltos a días dan
   // 27,321700000000003, y saldría «27,321700». Ninguna fuente da más de 12 cifras significativas.
   const clean = Number(value.toPrecision(12));
-  return formatNumber(clean, Math.min(decimalsOf(clean), maxDigits), true);
+  return formatNumber(clean, Math.min(Math.max(decimalsOf(clean), digits), maxDigits), true);
 }
 
 /** Una cifra en notación científica, por partes: «6,4171 × 10²³» (ESTILO §3). */

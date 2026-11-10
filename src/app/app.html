@@ -13,9 +13,13 @@
         type="button"
         class="explorer__back"
         aria-label="Volver al sistema solar"
+        title="Volver al sistema solar"
         (click)="focus.back()"
       >
-        <span aria-hidden="true">‹</span> Sistema solar
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+          <path d="M19 12H5.5M11 6.5 5.5 12l5.5 5.5" />
+        </svg>
+        <span class="explorer__back-label">Sistema solar</span>
       </button>
       <span class="site-focus__name" aria-hidden="true">{{ body.name }}</span>
       <!-- «ⓘ»: la ficha del cuerpo, a media pantalla (decisión de Iván del 08-11: no al elegirlo). -->
@@ -43,18 +47,20 @@
     <div class="site-focus">
       <button
         type="button"
-        class="explorer__back"
+        class="explorer__back explorer__back--icon"
         aria-label="Volver al sistema solar"
         title="Volver al sistema solar"
         (click)="focus.back()"
       >
-        <span aria-hidden="true">‹</span>
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+          <path d="M19 12H5.5M11 6.5 5.5 12l5.5 5.5" />
+        </svg>
       </button>
       <span class="site-focus__name" aria-hidden="true">El cielo</span>
       <span class="site-focus__place" aria-hidden="true">{{ sky.place }}</span>
     </div>
   }
-  <a class="site-name" routerLink="/">{{ site.name }}</a>
+  <a class="site-name" routerLink="/" translate="no">{{ site.name }}</a>
   <!--
     En el móvil, y en el explorador en todos los tamaños, la navegación va en un menú (Popover API:
     funciona sin JavaScript; styles.css).
@@ -86,7 +92,7 @@
       <li><a [href]="site.legal.privacy">Política de privacidad</a></li>
     </ul>
     <p class="site-nav__extra site-nav__author">
-      Un proyecto de <a [href]="site.author.url">{{ site.author.name }}</a>
+      Un proyecto de <a [href]="site.author.url" translate="no">{{ site.author.name }}</a>
     </p>
     <!-- El explorador no tiene pie del sitio: la nota de privacidad va aquí (fase 9, D24). -->
     <p class="site-nav__extra site-nav__privacy">
@@ -107,7 +113,7 @@
     <a routerLink="/sobre-el-proyecto" fragment="privacidad">tu privacidad, en detalle</a>.
   </p>
   <p>
-    Un proyecto de <a [href]="site.author.url">{{ site.author.name }}</a> ·
+    Un proyecto de <a [href]="site.author.url" translate="no">{{ site.author.name }}</a> ·
     <a [href]="site.legal.notice">Aviso legal</a> ·
     <a [href]="site.legal.privacy">Política de privacidad</a> ·
     <a routerLink="/creditos">Créditos</a>

@@ -8,7 +8,8 @@ import type { ScreenBody } from './picking';
 import type { ViewInsets } from './types';
 import { VISUAL_CONFIG } from './visual-config';
 
-export type LabelKind = 'star' | 'planet' | 'moon';
+/** `place`: los lugares de la vista «España» de la Tierra (sus nombres: propuesta de la fase 9b). */
+export type LabelKind = 'star' | 'planet' | 'moon' | 'place';
 
 export interface LabelInfo {
   readonly id: string;
@@ -56,6 +57,8 @@ const SUN_HALO_VISIBLE = 0.65;
 function priority(info: LabelInfo, index: number, selected: number, focusSystem: number): number {
   if (index === selected) return 1000;
   if (info.kind === 'star') return 900;
+  // Los lugares, en su orden (el Montsec, el lugar por defecto, el primero).
+  if (info.kind === 'place') return 700 - index;
   // La Tierra es la referencia de quien mira: su nombre va antes que el de los demás planetas.
   if (info.id === 'tierra') return 850;
   if (info.kind === 'planet') return 800;
@@ -73,6 +76,14 @@ export interface LabelLayoutOptions {
    * Saturno. Su nombre va por fuera y los demás no se colocan encima (fase 3b, tarea 8).
    */
   readonly extents?: readonly number[];
+  /**
+   * Lo que ocupan en vertical, por encima y por debajo de su centro en pantalla, los cuerpos con
+   * anillos, en radios de su disco (Saturno: la elipse de sus anillos vista desde la cámara, mucho más
+   * baja que ancha si se ven casi de canto). Con ella, su nombre prueba primero arriba, justo por encima
+   * de los anillos: a la derecha quedaba más allá de ellos, lejos del planeta (propuesta de la fase 9b,
+   * fase 10).
+   */
+  readonly verticalExtents?: readonly number[];
   /**
    * Radio en pantalla (px) por debajo del cual cada cuerpo lleva su marcador; `MARKER_RADIUS_PX` si
    * falta. Los planetas de la vista general, a los que el tamaño mínimo (D35) ya deja en 2 px o más,
@@ -115,6 +126,7 @@ export function layoutLabels(
   const insets = options.insets ?? { top: 0, right: 0, bottom: 0, left: 0 };
   const hidden = options.hidden;
   const extent = (index: number) => options.extents?.[index] ?? 1;
+  const verticalExtent = (index: number) => options.verticalExtents?.[index];
   const markerRadius = (index: number) => options.markerRadiusPx?.[index] ?? MARKER_RADIUS_PX;
   const minX = insets.left;
   const minY = insets.top;
@@ -154,12 +166,21 @@ export function layoutLabels(
     const size = sizes[body.index] ?? { width: 0, height: 0 };
     const gap = Math.min(Math.max(body.radiusPx * extent(body.index), 2), viewport.width) + GAP_PX;
     const { width: w, height: h } = size;
-    const options: readonly (readonly [number, number])[] = [
-      [gap, -h / 2], // derecha
-      [-gap - w, -h / 2], // izquierda
-      [-w / 2, -gap - h], // arriba
-      [-w / 2, gap], // abajo
-    ];
+    const vertical = verticalExtent(body.index);
+    const options: readonly (readonly [number, number])[] =
+      vertical !== undefined && extent(body.index) > 1
+        ? ((up) => [
+            [-w / 2, -up - h], // arriba, justo por encima de los anillos
+            [gap, -h / 2], // derecha
+            [-gap - w, -h / 2], // izquierda
+            [-w / 2, up], // abajo
+          ])(Math.min(Math.max(body.radiusPx * Math.max(vertical, 1), 2), viewport.height) + GAP_PX)
+        : [
+            [gap, -h / 2], // derecha
+            [-gap - w, -h / 2], // izquierda
+            [-w / 2, -gap - h], // arriba
+            [-w / 2, gap], // abajo
+          ];
     const fit = (avoidDiscs: boolean): LabelBox | null => {
       for (const [dx, dy] of options) {
         const box: LabelBox = {
@@ -246,13 +267,18 @@ export class LabelLayer {
    * texto no cambia); antes, una estimación por número de letras.
    */
   measure(): readonly { width: number; height: number }[] {
-    this.elements.forEach((el, k) => {
-      const size = this.sizes[k] as { width: number; height: number };
-      if (size.width > 0) return;
-      const wasHidden = el.hidden;
-      el.hidden = false;
-      const rect = (el.lastElementChild ?? el).getBoundingClientRect();
+    // Primero se destapan todas las que faltan y después se leen: una sola maquetación. Una a una, eran
+    // una maquetación por etiqueta (37 seguidas al arrancar: unos 100 ms con la CPU a ×4; fase 10).
+    const pending = this.elements.flatMap((el, k) =>
+      (this.sizes[k]?.width ?? 0) > 0 ? [] : [{ el, k, wasHidden: el.hidden }],
+    );
+    if (pending.length === 0) return this.sizes;
+    for (const { el } of pending) el.hidden = false;
+    const rects = pending.map(({ el }) => (el.lastElementChild ?? el).getBoundingClientRect());
+    pending.forEach(({ el, k, wasHidden }, i) => {
       el.hidden = wasHidden;
+      const size = this.sizes[k] as { width: number; height: number };
+      const rect = rects[i] as DOMRect;
       const name = this.infos[k]?.name ?? '';
       size.width = rect.width || 7.5 * name.length + 14;
       size.height = rect.height || 18;

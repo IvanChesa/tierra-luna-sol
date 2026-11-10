@@ -1,4 +1,14 @@
-import { Component, computed, inject, input, model, output } from '@angular/core';
+import {
+  Component,
+  type ElementRef,
+  afterRenderEffect,
+  computed,
+  inject,
+  input,
+  model,
+  output,
+  viewChild,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { formatAu, formatDistanceKm, formatPeriodHours } from '../../core/format';
 import { getBody } from '../../data/bodies';
@@ -50,6 +60,9 @@ const NEAR_KM = 5e6;
   imports: [RouterLink, Icon],
   templateUrl: './body-panel.html',
   styleUrl: './body-panel.css',
+  // En reposo (la hoja del móvil y de la tableta sin subir), para su CSS: una clase en el propio
+  // elemento, más corta que preguntar por el panel con `:host-context`.
+  host: { '[class.is-resting]': '!expanded()' },
 })
 export class BodyPanel {
   readonly bodyId = input.required<BodyId>();
@@ -67,6 +80,28 @@ export class BodyPanel {
   readonly radarChange = output<boolean>();
 
   private readonly positions = inject(SystemPositions);
+  private readonly radarNote = viewChild<ElementRef<HTMLElement>>('radarNote');
+
+  constructor() {
+    // Con el radar puesto, su aviso («no es lo que verían tus ojos», D44 y D49), entero a la vista: en
+    // la hoja del móvil en reposo, con tres líneas, la última quedaba bajo el borde o bajo la sombra de
+    // «hay más» (revisión de la fase 10, hallazgo 2). Si algo queda tapado, el cuerpo de la ficha baja
+    // lo justo, sin animación. En escritorio, la tarjeta lo enseña todo y no se mueve.
+    afterRenderEffect({
+      earlyRead: () => {
+        const note = this.radar() === 'on' ? this.radarNote()?.nativeElement : undefined;
+        const body = note?.closest<HTMLElement>('.card__body');
+        if (!note || !body) return 0;
+        const shadowPx = 24; // la sombra de «hay más», 1.5rem (body-panel.css)
+        const visibleBottom = body.getBoundingClientRect().bottom - shadowPx;
+        return Math.max(0, note.getBoundingClientRect().bottom - visibleBottom);
+      },
+      write: (hidden) => {
+        if (hidden() <= 0) return;
+        this.radarNote()?.nativeElement.closest('.card__body')?.scrollBy({ top: hidden() });
+      },
+    });
+  }
   protected readonly body = computed(() => getBody(this.bodyId()));
   protected readonly kind = computed(() => bodyKindLabel(this.bodyId()));
   protected readonly link = computed(() => bodyPagePath(this.bodyId()));

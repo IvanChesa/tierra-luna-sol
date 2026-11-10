@@ -7,6 +7,7 @@ import {
   IauBodyId,
   bodyCentricLatLon,
   bodyFixedToEcl,
+  bodyFixedToEclWithoutSpin,
   equatorialElevationDeg,
   galileanOrbitNormals,
   isRotation,
@@ -46,6 +47,32 @@ describe('orientation: modelo IAU (RotationAxis)', () => {
   it('el polo del Sol es el de la IAU (α₀ = 286,13°, δ₀ = 63,87°)', () => {
     const iau = eqjToEcl(equatorialToVector(286.13, 63.87));
     expect(angleBetweenDeg(northPoleEcl('sol', date), iau)).toBeLessThan(0.01);
+  });
+
+  it('sin el giro (el Sol del explorador, S8): el polo de la IAU y el meridiano quieto en el de J2000', () => {
+    const later = new Date(date.getTime() + 10 * 86_400_000);
+    const still = bodyFixedToEclWithoutSpin('sol', date);
+    expect(isRotation(still)).toBe(true);
+    // El mismo polo que con el giro…
+    expect(angleBetweenDeg(columnOf(still, 2), northPoleEcl('sol', date))).toBeLessThan(1e-9);
+    // …pero el meridiano 0 no se mueve en 10 días (con el giro, 10 · 14,1844° = 141,8°)…
+    const x0 = columnOf(still, 0);
+    expect(angleBetweenDeg(columnOf(bodyFixedToEclWithoutSpin('sol', later), 0), x0)).toBeLessThan(
+      1e-6,
+    );
+    const turned = angleBetweenDeg(
+      columnOf(bodyFixedToEcl('sol', later), 0),
+      columnOf(bodyFixedToEcl('sol', date), 0),
+    );
+    expect(turned).toBeCloseTo(141.844, 1);
+    // …y es el de J2000: W₀ = 84,176°.
+    const j2000 = new Date(Date.UTC(2000, 0, 1, 12));
+    expect(
+      angleBetweenDeg(
+        columnOf(bodyFixedToEcl('sol', j2000), 0),
+        columnOf(bodyFixedToEclWithoutSpin('sol', j2000), 0),
+      ),
+    ).toBeLessThan(1e-9);
   });
 
   it('Urano gira en sentido retrógrado alrededor de su polo norte IAU', () => {

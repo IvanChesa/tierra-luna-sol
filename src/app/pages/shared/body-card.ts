@@ -1,7 +1,7 @@
 import { IMAGE_LOADER, NgOptimizedImage } from '@angular/common';
 import { Component, booleanAttribute, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { formatExact } from '../../core/format';
+import { formatNumber } from '../../core/format';
 import { firstSentence } from '../../data/body-description';
 import type { Body } from '../../data/body.model';
 import { bodyPagePath } from '../../data/body-links';
@@ -23,7 +23,7 @@ const NBSP = ' ';
   imports: [RouterLink, NgOptimizedImage],
   providers: [{ provide: IMAGE_LOADER, useValue: cardImageLoader }],
   template: `
-    <article class="card" [class.card--featured]="featured()">
+    <article class="card" [class.card--featured]="featured()" [class.card--current]="current()">
       @if (featured()) {
         <img [ngSrc]="body().id" width="112" height="112" alt="" [loaderParams]="ficha" priority />
       } @else {
@@ -39,7 +39,12 @@ const NBSP = ' ';
           </h2>
         } @else {
           <h3 class="card__name">
-            <a [routerLink]="link()">{{ body().name }}</a>
+            <!-- La de la propia página (en la ficha de una luna, entre las de su planeta), sin enlace. -->
+            @if (current()) {
+              <span aria-current="page">{{ body().name }}</span>
+            } @else {
+              <a [routerLink]="link()">{{ body().name }}</a>
+            }
           </h3>
         }
         @if (featured()) {
@@ -74,11 +79,25 @@ const NBSP = ' ';
       border-color: var(--color-control);
     }
 
+    /* La de la propia página: el borde de acento, sin enlace (en la ficha de una luna). */
+    .card--current,
+    .card--current:hover {
+      border-color: var(--color-accent);
+    }
+
     /* La destacada: más grande, con el borde de los controles y la imagen a su columna. */
     .card--featured {
       grid-template-columns: clamp(4.5rem, 22vw, 7rem) minmax(0, 1fr);
       padding: var(--space-4) var(--space-6);
       border-color: var(--color-control);
+    }
+
+    /*
+     * Redonda, como las fichas del explorador: la miniatura es una captura del motor con el fondo de la
+     * escena, y en cuadrado se veía su esquina oscura sobre la tarjeta (crítica de la 9c).
+     */
+    img {
+      border-radius: 50%;
     }
 
     .card--featured img {
@@ -166,6 +185,8 @@ export class BodyCard {
   readonly level = input<2 | 3>(3);
   /** La tarjeta destacada, con su tipo, su primera frase y la imagen de su ficha. */
   readonly featured = input(false, { transform: booleanAttribute });
+  /** La del cuerpo de la propia página: sin enlace y marcada (`aria-current`). */
+  readonly current = input(false, { transform: booleanAttribute });
 
   protected readonly ficha = { ficha: true };
   protected readonly link = computed(() => bodyPagePath(this.body().id));
@@ -177,8 +198,12 @@ export class BodyCard {
   protected readonly summary = computed(() => firstSentence(this.body().summary.text));
   protected readonly facts = computed(() => {
     const body = this.body();
+    // En las listas, el radio con los mismos decimales en todas (entero desde 100 km; uno por debajo):
+    // con los de cada fuente salían dispares, de 6,2 a 1821,49 (crítica de la 9c). El exacto, con su
+    // fuente, en la ficha.
+    const radius = body.physical.radiusKm.value;
     const facts = [
-      { label: 'Radio', value: `${formatExact(body.physical.radiusKm.value)}${NBSP}km` },
+      { label: 'Radio', value: `${formatNumber(radius, radius < 100 ? 1 : 0, true)}${NBSP}km` },
     ];
     if (body.orbit) {
       facts.push({

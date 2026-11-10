@@ -42,6 +42,17 @@ test.describe('Móvil', () => {
     await indexToggle(page).tap();
     const sheet = page.getByRole('region', { name: 'Índice' });
     await expect(sheet).toBeVisible();
+    // La barra de tiempo, a la vista y a mano, por debajo de la hoja (crítica de la 9c: la tapaba).
+    // La hoja sube con una animación: se espera a que llegue.
+    const play = page.locator('.time__play');
+    await expect(play).toBeVisible();
+    await expect
+      .poll(async () => {
+        const sheetBox = await sheet.boundingBox();
+        const playBox = await play.boundingBox();
+        return (playBox?.y ?? 0) - ((sheetBox?.y ?? 0) + (sheetBox?.height ?? 0));
+      })
+      .toBeGreaterThanOrEqual(0);
     // Con una hoja abierta, el texto de la vista se recoge a la vista (el H1 sigue para el lector).
     const intro = page.locator('.explorer__intro');
     await expect.poll(async () => (await intro.boundingBox())?.height ?? 0).toBeLessThanOrEqual(1);
@@ -83,9 +94,10 @@ test.describe('Móvil', () => {
     await expect(button).toHaveAttribute('aria-pressed', 'true');
     const note = panel.locator('#card-radar-note');
     await expect(note).toHaveText(
-      'Imagen de radar de la sonda Magellan, no lo que verían tus ojos.',
+      'Imagen de radar de la sonda Magellan, con el color de las fotos de las Venera 13 y 14: no es lo que verían tus ojos.',
     );
-    await expect(note).toBeInViewport();
+    // Entero a la vista, no solo un píxel (revisión de la fase 10, hallazgo 2).
+    await expect(note).toBeInViewport({ ratio: 1 });
     // Al cerrar la ficha (y con ella el aviso), vuelven las nubes.
     await page.getByRole('button', { name: 'Cerrar la ficha' }).tap();
     await page.getByRole('button', { name: 'Ver la ficha de Venus' }).tap();

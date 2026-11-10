@@ -1,5 +1,6 @@
 import { DOCUMENT, DestroyRef, Service, effect, inject, signal, untracked } from '@angular/core';
 import { Router } from '@angular/router';
+import { ExplorerMemory } from '../../core/explorer-memory';
 import { findBody } from '../../data/body-index';
 import type {
   BodyId,
@@ -14,7 +15,7 @@ import { SystemPositions } from '../../state/positions';
 import { SimulationEngine, SimulationStore } from '../../state/simulation.store';
 import { GuidedView, MoonStop, atSolarHour, localDay, utcDay } from '../../data/tours';
 import { nearestMoonPhase, nearestMoonSunElevation } from '../../ephemeris/moon-light';
-import { moonShadowAim } from '../../ephemeris/eclipse';
+import { moonShadowView } from '../../ephemeris/eclipse';
 import { SKY_BODY_IDS, SkyBodyId, horizontalOf } from '../../ephemeris/sky';
 import { SkyPlace, browserTimeZone, skyPlaceOf, userSkyPlace } from '../../data/sky-place';
 import { DEFAULT_PLACE_ID } from '../../data/places';
@@ -34,7 +35,9 @@ import {
   parseViewerParams,
   viewerQueryParams,
 } from '../viewer/viewer-params';
-import { describeBody, viewName } from './describe';
+import { describeBody, moonStopNotice, viewName } from './describe';
+import { EclipseArrival, eclipseArrival } from './eclipse-arrival';
+import { formatLongDateTime } from '../../core/format';
 import { SHEETS_QUERY, mediaQuery } from '../viewer/media';
 
 /** Lo que la sesión necesita del motor (un subconjunto de su API: en los tests, un doble). */
@@ -49,6 +52,7 @@ export type ExplorerEngine = SimulationEngine &
     | 'setLabelsVisible'
     | 'lookAtSurface'
     | 'setSurfaceMarkers'
+    | 'prefetchCloseUps'
     | 'setObserver'
     | 'lookAtSky'
     | 'setConstellationsVisible'
@@ -98,6 +102,7 @@ export class ExplorerSession {
   private readonly positions = inject(SystemPositions);
   private readonly router = inject(Router);
   private readonly doc = inject(DOCUMENT);
+  private readonly memory = inject(ExplorerMemory);
   /** El móvil y la tableta: elegir un cuerpo en el sistema solar no abre su ficha (decisión del 08-11). */
   private readonly sheets = mediaQuery(SHEETS_QUERY);
   private readonly storage = safeLocalStorage(this.doc.defaultView);
@@ -106,6 +111,12 @@ export class ExplorerSession {
   readonly capture: boolean;
   readonly reducedMotion: boolean;
   private readonly _warnings = signal<readonly string[]>([]);
+  /**
+   * La llegada desde «Ver en 3D» de un eclipse (`?eclipse=`): qué eclipse es y la vuelta a la lista
+   * (crítica de la fase 10), en un aviso que se puede cerrar.
+   */
+  private readonly _eclipseArrival = signal<EclipseArrival | null>(null);
+  readonly eclipseArrival = this._eclipseArrival.asReadonly();
   /** Avisos de los parámetros de la URL que se han ignorado. */
   readonly warnings = this._warnings.asReadonly();
   private readonly _announcement = signal('');
@@ -114,6 +125,9 @@ export class ExplorerSession {
   private readonly _radar = signal<VenusRadarState>('off');
   /** Venus «Bajo las nubes» (fase 9b, D44): el estado del radar de Magellan, el que dice el motor. */
   readonly radar = this._radar.asReadonly();
+  private readonly _moonNotice = signal<string | null>(null);
+  /** Lo que la última vista o parada de la Luna hizo con el tiempo (`moonStopNotice`), o `null`. */
+  readonly moonNotice = this._moonNotice.asReadonly();
 
   private engine: ExplorerEngine | null = null;
   private engineOffs: (() => void)[] = [];
@@ -125,6 +139,8 @@ export class ExplorerSession {
   private speedContextNow: SpeedContext = 'overview';
   /** La cámara ya se llevó a la sombra del eclipse de la URL (solo al llegar). */
   private shadowAimed = false;
+  /** El recorrido de la primera vez, en marcha (`setTouring`): sin los nombres del 3D. */
+  private touring = false;
 
   constructor() {
     const win = this.doc.defaultView;
@@ -132,6 +148,7 @@ export class ExplorerSession {
     this.capture = this.params.capture;
     this.reducedMotion = win?.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
     this._warnings.set(this.params.warnings);
+    this._eclipseArrival.set(eclipseArrival(this.params));
     // Arranque en movimiento (D31): sin fecha en la URL, «ahora» y reproduciendo a la velocidad de
     // su contexto (D33: 3 días por segundo en la vista general, 1 hora con un cuerpo); con movimiento
     // reducido, en pausa; con fecha (o en captura), en pausa en ella. `ExplorerUi` conecta la vista
@@ -139,10 +156,17 @@ export class ExplorerSession {
     // `applyView`.
     const fixedTime = this.params.time !== null || this.capture;
     this.speedContextNow = speedContext(this.explorer.view(), this.params.body);
+    // Al volver de una ficha o de otra página sin fecha en la URL: donde se dejó (la fecha, si se
+    // reproducía y el sentido; crítica de la fase 9c: «al volver de "Ficha completa", la fecha vuelve a
+    // hoy»). La velocidad, la de su contexto (D33). Con fecha en la URL, o en captura, manda la URL.
+    const saved = this.memory.take();
+    const resumed = fixedTime ? null : saved;
     this.sim.init({
-      time: this.params.time ?? (this.capture ? CAPTURE_DATE : new Date()),
-      playing: !fixedTime && !this.reducedMotion,
-      speed: CONTEXT_SPEED[this.speedContextNow],
+      time:
+        this.params.time ??
+        (this.capture ? CAPTURE_DATE : resumed ? new Date(resumed.timeMs) : new Date()),
+      playing: (resumed ? resumed.playing : !fixedTime) && !this.reducedMotion,
+      speed: CONTEXT_SPEED[this.speedContextNow] * (resumed?.reverse ? -1 : 1),
       selected: this.params.body,
       scale: this.params.scale ?? 'illustrative',
       quality: this.params.quality ?? (this.capture ? 'high' : readQualityPreference(this.storage)),
@@ -172,7 +196,17 @@ export class ExplorerSession {
     // La URL refleja el estado compartible, nunca durante la reproducción (§4.5). En captura no se
     // toca: los scripts abren URL exactas.
     if (!this.capture) effect(() => this.syncUrl());
-    inject(DestroyRef).onDestroy(() => this.detachEngine());
+    inject(DestroyRef).onDestroy(() => {
+      this.detachEngine();
+      // Lo que se deja al salir del explorador, para volver donde estaba (arriba).
+      if (!this.capture) {
+        this.memory.save({
+          timeMs: this.sim.time().getTime(),
+          playing: this.sim.playing(),
+          reverse: this.sim.reverse(),
+        });
+      }
+    });
   }
 
   // --- Motor ----------------------------------------------------------------------------------
@@ -219,7 +253,7 @@ export class ExplorerSession {
     engine.setSpeed(speed);
     engine.setPlaying(playing);
     engine.setViewInsets(this.insets);
-    engine.setLabelsVisible(!this.explorer.cleanView());
+    engine.setLabelsVisible(this.labelsVisible(), this.placeLabelsVisible());
     engine.setObserver(observerOf(this.explorer.skyPlace()));
     engine.setConstellationsVisible(this.explorer.constellations());
   }
@@ -322,12 +356,13 @@ export class ExplorerSession {
 
   /**
    * La cámara de la vista Tierra sobre la sombra de la Luna en la fecha de la URL (`?sombra=1`): su
-   * centro o, en un eclipse parcial, el punto donde es mayor. Una vez, al llegar.
+   * centro o, en un eclipse parcial, el punto donde es mayor; con el Sol bajo allí, con el terminador
+   * a un lado (`moonShadowView`). Una vez, al llegar.
    */
   private aimAtShadow(): void {
     if (!this.params.shadow || this.shadowAimed || this.explorer.view() !== 'earth') return;
     this.shadowAimed = true;
-    const aim = moonShadowAim(this.sim.time());
+    const aim = moonShadowView(this.sim.time());
     this.engine?.lookAtSurface(aim.latDeg, aim.lonDeg, SHADOW_VIEW_RADII, SHADOW_VIEW_EXTENT_DEG);
   }
 
@@ -375,6 +410,11 @@ export class ExplorerSession {
     this.engine?.orbitBy(deltaAzimuth, deltaElevation);
   }
 
+  /** Las texturas de primer plano de unos cuerpos, por la red y sin subirlas (`prefetchCloseUps`). */
+  prefetchCloseUps(ids: readonly BodyId[]): void {
+    this.engine?.prefetchCloseUps(ids);
+  }
+
   /** «Saltar»: termina ya el viaje de cámara. */
   skipTravel(): void {
     this.engine?.skipTransition();
@@ -382,7 +422,29 @@ export class ExplorerSession {
 
   setCleanView(clean: boolean): void {
     this.explorer.cleanView.set(clean);
-    this.engine?.setLabelsVisible(!clean);
+    this.engine?.setLabelsVisible(this.labelsVisible(), this.placeLabelsVisible());
+  }
+
+  /**
+   * El recorrido de la primera vez, en marcha: sin los nombres del 3D, que dice su texto (crítica de la
+   * 9c: en el móvil, «Saturno» se veía cuatro veces a la vez: el título, el texto del recorrido, la
+   * fila y el rótulo; revisión del bloque S, decisión 6). Al acabar o saltarlo, vuelven.
+   */
+  setTouring(touring: boolean): void {
+    this.touring = touring;
+    this.engine?.setLabelsVisible(this.labelsVisible(), this.placeLabelsVisible());
+  }
+
+  private labelsVisible(): boolean {
+    return !this.explorer.cleanView() && !this.touring;
+  }
+
+  /**
+   * Los nombres de los lugares de la vista «España»: también durante el recorrido, cuya parada de
+   * España los enseña (crítica de diseño de la fase 10: siete puntos sin nombre); no en la vista limpia.
+   */
+  private placeLabelsVisible(): boolean {
+    return !this.explorer.cleanView();
   }
 
   /** Márgenes del lienzo que tapa la interfaz (los mide `ExplorerUi`). */
@@ -434,6 +496,11 @@ export class ExplorerSession {
     this._warnings.set([]);
   }
 
+  /** Cierra el aviso de la llegada desde un eclipse. */
+  dismissEclipseArrival(): void {
+    this._eclipseArrival.set(null);
+  }
+
   /** Anuncia una frase en la región `aria-live` (también si se repite). */
   announce(text: string): void {
     // Una región viva no repite el mismo texto: se alterna un espacio duro al final.
@@ -463,6 +530,7 @@ export class ExplorerSession {
    * medio mes; `MoonStop.light`), mueve la cámara sobre el lugar y anuncia su subtítulo.
    */
   showMoonStop(stop: MoonStop): void {
+    const wasPlaying = this.sim.playing();
     this.sim.setPlaying(false);
     const now = this.sim.time();
     const light = stop.light;
@@ -472,9 +540,18 @@ export class ExplorerSession {
         : light.kind === 'phase'
           ? nearestMoonPhase(now, light.phaseDeg)
           : (nearestMoonSunElevation(stop.latDeg, stop.lonDeg, light.elevationDeg, now) ?? now);
-    if (date.getTime() !== now.getTime()) this.sim.setTime(date);
+    const moved = date.getTime() !== now.getTime();
+    if (moved) this.sim.setTime(date);
     this.engine?.lookAtSurface(stop.latDeg, stop.lonDeg, stop.distanceRadii, stop.extentDeg);
-    this.announce(`${stop.title}. ${stop.text}`);
+    // Lo que ha hecho con el tiempo, dicho a la vista (en el panel) y al lector (crítica de la 9c).
+    const notice = moonStopNotice(
+      light,
+      moved ? date : null,
+      wasPlaying,
+      formatLongDateTime(date, this.explorer.timeZone()),
+    );
+    this._moonNotice.set(notice);
+    this.announce([`${stop.title}.`, notice, stop.text].filter(Boolean).join(' '));
   }
 
   private applyView(view: ExplorerView): void {

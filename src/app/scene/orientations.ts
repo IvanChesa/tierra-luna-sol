@@ -1,11 +1,13 @@
 /**
  * Orientación de los 30 cuerpos en un instante (D19), a partir de `ephemeris/orientation.ts`:
- * el modelo IAU para el Sol, los planetas y la Luna, y la rotación síncrona para las demás lunas.
+ * el modelo IAU para el Sol, los planetas y la Luna (el Sol, sin el giro sobre su eje: S8), y la
+ * rotación síncrona para las demás lunas.
  * Con caché del último instante (varias partes del frame la piden).
  */
 import { SystemState } from '../ephemeris/system-state';
 import {
   bodyFixedToEcl,
+  bodyFixedToEclWithoutSpin,
   galileanOrbitNormals,
   meanElementsOrbitNormal,
   synchronousBodyFixedToEcl,
@@ -28,7 +30,9 @@ export class OrientationModel {
       const rotation = body.rotation;
       switch (rotation.kind) {
         case 'iau':
-          return bodyFixedToEcl(rotation.body, date);
+          return rotation.spins
+            ? bodyFixedToEcl(rotation.body, date)
+            : bodyFixedToEclWithoutSpin(rotation.body, date);
         case 'galilean':
           galilean ??= galileanOrbitNormals(date);
           return synchronousBodyFixedToEcl(state.parentOffsetOf(body.id), galilean[rotation.moon]);

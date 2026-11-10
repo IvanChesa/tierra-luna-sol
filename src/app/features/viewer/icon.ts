@@ -18,7 +18,8 @@ export type IconName =
   | 'sliders'
   | 'alert'
   | 'locate'
-  | 'target';
+  | 'target'
+  | 'moon';
 
 /**
  * Iconos propios (ESTILO §6; `craft-floor`: un solo trazo, nada de emojis ni glifos). SVG de 24×24
@@ -110,6 +111,10 @@ export type IconName =
           <!-- Mirar a un cuerpo: el visor de un telescopio. -->
           <circle cx="12" cy="12" r="8" />
           <path d="M12 4v4.5M12 15.5V20M4 12h4.5M15.5 12H20" />
+        }
+        @case ('moon') {
+          <!-- La noche (el cielo de esta noche): una Luna creciente. -->
+          <path d="M19.5 14.6A7.75 7.75 0 1 1 9.4 4.5a6.25 6.25 0 0 0 10.1 10.1Z" />
         }
         @case ('alert') {
           <path

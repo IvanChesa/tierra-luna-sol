@@ -65,7 +65,14 @@
     Hora del lugar ({{ zone() }}), de la puesta a la salida del Sol.
   </p>
   @if (daytime()) {
-    <p class="sky__hint sky__day">Ahora es de día: arrastra para ver la noche.</p>
+    <!-- De día, el cielo es un azul vacío: un botón lleva a la noche (crítica de la fase 10). -->
+    <div class="sky__day">
+      <p class="sky__hint">Ahora es de día: arrastra la hora o</p>
+      <button type="button" class="control sky__night" (click)="showTonight()">
+        <tls-icon name="moon" />
+        Ver el cielo de esta noche
+      </button>
+    </div>
   }
 
   <!-- El resumen: lo que está sobre el horizonte ahora (la tabla entera, en «Esta noche»). -->

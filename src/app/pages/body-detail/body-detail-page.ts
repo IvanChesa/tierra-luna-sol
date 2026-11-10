@@ -7,6 +7,7 @@ import { findBody } from '../../data/body-index';
 import { bodyPagePath, explorerLinkOf } from '../../data/body-links';
 import type { BodyId } from '../../data/body.model';
 import { bodyImageLoader } from '../shared/body-images';
+import { BodyCard } from '../shared/body-card';
 import { Breadcrumbs, Crumb } from '../shared/breadcrumbs';
 import { moonsByDistance } from '../shared/moons';
 import { atlasNeighbors } from './atlas';
@@ -24,7 +25,7 @@ import { PENDING_NOTE, pendingRows, positionNote } from './today-text';
 @Component({
   selector: 'tls-body-detail-page',
   host: { class: 'page body-page' },
-  imports: [RouterLink, NgOptimizedImage, Breadcrumbs],
+  imports: [RouterLink, NgOptimizedImage, Breadcrumbs, BodyCard],
   providers: [{ provide: IMAGE_LOADER, useValue: bodyImageLoader }],
   templateUrl: './body-detail-page.html',
   styleUrl: './body-detail-page.css',
@@ -76,11 +77,14 @@ export class BodyDetailPage {
       if (!moons.length) return null;
       return {
         title: body.id === 'tierra' ? 'Su satélite' : `Las lunas ${ofName(body.id)}`,
-        moons,
+        moons: moons.map((moon) => getBody(moon.id)),
       };
     }
     if (body.kind === 'moon' && body.parent && body.id !== 'luna') {
-      return { title: `Las lunas ${ofName(body.parent)}`, moons: moonsByDistance(body.parent) };
+      return {
+        title: `Las lunas ${ofName(body.parent)}`,
+        moons: moonsByDistance(body.parent).map((moon) => getBody(moon.id)),
+      };
     }
     return null;
   });

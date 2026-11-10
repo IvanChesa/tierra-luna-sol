@@ -120,7 +120,11 @@ const essentialFirst = (rows: readonly FactRow[]): FactRow[] => [
   ...rows.filter((r) => r.technical),
 ];
 
-const exact = (value: number, unit: string): FactValue => ({ number: formatExact(value), unit });
+/** La cifra de la fuente, con sus decimales (también los ceros finales que escribe: `digits`). */
+const exact = (data: Sourced<number>, unit: string): FactValue => ({
+  number: formatExact(data.value, 6, data.digits),
+  unit,
+});
 
 function scientific(value: number, unit: string, unitSpoken: string): FactValue {
   const s = formatScientific(value);
@@ -146,6 +150,7 @@ const range = ([min, max]: Range): FactValue => ({
 export function periodCells(
   hours: number,
   sourceUnit: 'h' | 'días',
+  digits = 0,
 ): {
   value: FactValue;
   source?: string;
@@ -155,12 +160,14 @@ export function periodCells(
   const [shown, unit]: [number, string] =
     h < 48 ? [h, 'h'] : days < 1000 ? [days, 'días'] : [days / 365.25, 'años'];
   const original = sourceUnit === 'h' ? h : days;
-  // Sin el ruido de la coma flotante del paso a horas y vuelta (como `formatExact`).
-  const same = unit === sourceUnit && decimalsOf(Number(original.toPrecision(12))) <= 1;
+  // Sin el ruido de la coma flotante del paso a horas y vuelta (como `formatExact`), y con los
+  // decimales que escribe la fuente (`digits`: «1.00» no es «1,0»).
+  const written = Math.max(decimalsOf(Number(original.toPrecision(12))), digits);
+  const same = unit === sourceUnit && written <= 1;
   return {
     value: split(`${formatNumber(shown, 1, true)}${NBSP}${unit}`),
     // Mimas: 0,9424218 días, siete decimales (el tope de `formatExact` es seis).
-    source: same ? undefined : `${formatExact(original, 12)}${NBSP}${sourceUnit}`,
+    source: same ? undefined : `${formatExact(original, 12, digits)}${NBSP}${sourceUnit}`,
   };
 }
 
@@ -177,9 +184,9 @@ function radiusLabel(body: Body): string {
 function physicalRows(body: Body): FactRow[] {
   const p = body.physical;
   const rows: FactRow[] = [
-    row('radiusKm', radiusLabel(body), p.radiusKm, exact(p.radiusKm.value, 'km')),
+    row('radiusKm', radiusLabel(body), p.radiusKm, exact(p.radiusKm, 'km')),
     row('massKg', 'Masa', p.massKg, scientific(p.massKg.value, 'kg', 'kilogramos')),
-    row('densityKgM3', 'Densidad media', p.densityKgM3, exact(p.densityKgM3.value, 'kg/m³')),
+    row('densityKgM3', 'Densidad media', p.densityKgM3, exact(p.densityKgM3, 'kg/m³')),
   ];
   if (p.surfaceGravityMS2) {
     rows.push(
@@ -187,7 +194,7 @@ function physicalRows(body: Body): FactRow[] {
         'surfaceGravityMS2',
         'Gravedad en la superficie',
         p.surfaceGravityMS2,
-        exact(p.surfaceGravityMS2.value, 'm/s²'),
+        exact(p.surfaceGravityMS2, 'm/s²'),
       ),
     );
   }
@@ -197,13 +204,13 @@ function physicalRows(body: Body): FactRow[] {
         'escapeVelocityKmS',
         'Velocidad de escape',
         p.escapeVelocityKmS,
-        exact(p.escapeVelocityKmS.value, 'km/s'),
+        exact(p.escapeVelocityKmS, 'km/s'),
       ),
     );
   }
   if (p.rotationPeriodH) {
     const hours = p.rotationPeriodH.value;
-    const cells = periodCells(hours, 'h');
+    const cells = periodCells(hours, 'h', p.rotationPeriodH.digits);
     rows.push(
       row(
         'rotationPeriodH',
@@ -223,20 +230,20 @@ function physicalRows(body: Body): FactRow[] {
     );
   }
   if (p.lengthOfDayH) {
-    const cells = periodCells(p.lengthOfDayH.value, 'h');
+    const cells = periodCells(p.lengthOfDayH.value, 'h', p.lengthOfDayH.digits);
     rows.push(row('lengthOfDayH', 'Día solar', p.lengthOfDayH, cells.value, cells.source));
   }
   if (p.axialTiltDeg) {
     rows.push(
       row('axialTiltDeg', 'Inclinación del eje', p.axialTiltDeg, {
-        number: `${formatExact(p.axialTiltDeg.value)}°`,
+        number: `${formatExact(p.axialTiltDeg.value, 6, p.axialTiltDeg.digits)}°`,
         unit: '',
       }),
     );
   }
   if (p.flatteningRatio) {
     rows.push(
-      row('flatteningRatio', 'Achatamiento', p.flatteningRatio, exact(p.flatteningRatio.value, '')),
+      row('flatteningRatio', 'Achatamiento', p.flatteningRatio, exact(p.flatteningRatio, '')),
     );
   }
   if (p.meanTemperatureC) {
@@ -245,7 +252,7 @@ function physicalRows(body: Body): FactRow[] {
         'meanTemperatureC',
         'Temperatura media',
         p.meanTemperatureC,
-        exact(p.meanTemperatureC.value, '°C'),
+        exact(p.meanTemperatureC, '°C'),
       ),
     );
   }
@@ -255,7 +262,7 @@ function physicalRows(body: Body): FactRow[] {
         'effectiveTemperatureK',
         'Temperatura efectiva',
         p.effectiveTemperatureK,
-        exact(p.effectiveTemperatureK.value, 'K'),
+        exact(p.effectiveTemperatureK, 'K'),
       ),
     );
   }
@@ -268,7 +275,7 @@ function physicalRows(body: Body): FactRow[] {
         // La de la Luna, 3 × 10⁻¹⁵ bar: en notación científica, como las masas.
         p.surfacePressureBar.value > 0 && p.surfacePressureBar.value < 1e-3
           ? scientific(p.surfacePressureBar.value, 'bar', 'bares')
-          : exact(p.surfacePressureBar.value, 'bar'),
+          : exact(p.surfacePressureBar, 'bar'),
       ),
     );
   }
@@ -292,12 +299,7 @@ function physicalRows(body: Body): FactRow[] {
   }
   if (p.geometricAlbedo) {
     rows.push(
-      row(
-        'geometricAlbedo',
-        'Albedo geométrico',
-        p.geometricAlbedo,
-        exact(p.geometricAlbedo.value, ''),
-      ),
+      row('geometricAlbedo', 'Albedo geométrico', p.geometricAlbedo, exact(p.geometricAlbedo, '')),
     );
   }
   if (p.globalMagneticField) {
@@ -338,7 +340,7 @@ function orbitRows(body: Body): FactRow[] {
   const rows: FactRow[] = [distance('semiMajorAxisKm', 'Distancia media', o.semiMajorAxisKm)];
   if (o.periapsisKm) rows.push(distance('periapsisKm', near, o.periapsisKm));
   if (o.apoapsisKm) rows.push(distance('apoapsisKm', far, o.apoapsisKm));
-  const period = periodCells(o.periodDays.value * 24, 'días');
+  const period = periodCells(o.periodDays.value * 24, 'días', o.periodDays.digits);
   rows.push(
     row(
       'periodDays',
@@ -354,16 +356,16 @@ function orbitRows(body: Body): FactRow[] {
         'meanOrbitalVelocityKmS',
         'Velocidad orbital media',
         o.meanOrbitalVelocityKmS,
-        exact(o.meanOrbitalVelocityKmS.value, 'km/s'),
+        exact(o.meanOrbitalVelocityKmS, 'km/s'),
       ),
     );
   }
   rows.push(
     row('inclinationDeg', 'Inclinación de la órbita', o.inclinationDeg, {
-      number: `${formatExact(o.inclinationDeg.value)}°`,
+      number: `${formatExact(o.inclinationDeg.value, 6, o.inclinationDeg.digits)}°`,
       unit: '',
     }),
-    row('eccentricity', 'Excentricidad', o.eccentricity, exact(o.eccentricity.value, '')),
+    row('eccentricity', 'Excentricidad', o.eccentricity, exact(o.eccentricity, '')),
   );
   if (o.retrograde?.value) {
     rows.push(
@@ -379,22 +381,23 @@ function ringRows(body: Body): FactRow[] {
   if (!r) return [];
   const edge = (key: string, label: string, data: Sourced<number>): FactRow =>
     row(key, label, data, { number: formatNumber(data.value, 0), unit: 'km' });
+  // Cada región con su preposición y su artículo: «del anillo C», «de la división de Cassini».
   const regions: [keyof typeof r.regions, string][] = [
-    ['c', 'anillo C'],
-    ['b', 'anillo B'],
-    ['cassini', 'división de Cassini'],
-    ['a', 'anillo A'],
+    ['c', 'del anillo C'],
+    ['b', 'del anillo B'],
+    ['cassini', 'de la división de Cassini'],
+    ['a', 'del anillo A'],
   ];
-  const regionRows = regions.flatMap(([key, name]) => {
+  const regionRows = regions.flatMap(([key, ofName]) => {
     const region: RingRegion = r.regions[key];
     return [
       row(
         `${key}.opticalDepth`,
-        `Profundidad óptica normal del ${name}`,
+        `Profundidad óptica normal ${ofName}`,
         region.opticalDepth,
         range(region.opticalDepth.value),
       ),
-      row(`${key}.albedo`, `Albedo del ${name}`, region.albedo, range(region.albedo.value)),
+      row(`${key}.albedo`, `Albedo ${ofName}`, region.albedo, range(region.albedo.value)),
     ];
   });
   return [

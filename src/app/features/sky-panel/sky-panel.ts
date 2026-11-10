@@ -27,6 +27,8 @@ import { sliderNight, sliderNightHolds, sliderRange } from './night-slider';
 import {
   BODY_NAMES,
   clockAt,
+  darkStart,
+  daySummary,
   lookLabel,
   moonNightText,
   moonPhaseText,
@@ -220,8 +222,13 @@ export class SkyPanel {
     });
   });
 
-  /** La línea de resumen del panel (fase 9c): lo que está ahora sobre el horizonte. */
-  protected readonly summary = computed(() => skySummary(this.rows()));
+  /** De día, que es de día y cuándo empieza la noche cerrada; de noche, lo que está arriba. */
+  protected readonly summary = computed(() => {
+    const night = this.night();
+    return this.daytime() && night.kind === 'night'
+      ? daySummary(night, this.place())
+      : skySummary(this.rows());
+  });
 
   protected readonly tableCaption = computed(
     () => `El cielo desde ${this.placeLabel()} a las ${this.clock()} (${this.zone()})`,
@@ -243,6 +250,17 @@ export class SkyPanel {
     const result = await this.session.useMyLocation();
     this.locating.set(false);
     this.locationMessage.set(this.locationText(result));
+  }
+
+  /**
+   * «Ver el cielo de esta noche», de día (crítica de la fase 10: en el móvil, el cielo de día era un
+   * azul vacío): la hora, al comienzo de la noche cerrada, en pausa, como al mover el deslizador.
+   */
+  protected showTonight(): void {
+    const night = this.night();
+    if (night.kind !== 'night') return;
+    this.sim.setPlaying(false);
+    this.sim.setTime(darkStart(night));
   }
 
   protected setHour(event: Event): void {

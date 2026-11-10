@@ -48,11 +48,20 @@ export const VISUAL_CONFIG = {
   },
   /**
    * El Sol (fase 3b, tarea 6; fase 9b, D41: «real y luminoso», el de la luz visible del HMI del SDO; y
-   * D46: en el explorador, realzado). Todo lo que no es la ley del limbo ni la rotación de las manchas
-   * (`ephemeris/sun.ts`) es **ilustrativo**: la intensidad, el halo, la granulación, las manchas, las
-   * fáculas, la corona, el bloom y todo el realzado.
+   * D46: en el explorador, realzado). Todo lo que no es la ley del limbo (`ephemeris/sun.ts`) es
+   * **ilustrativo**: la intensidad, el halo, la granulación, las manchas, las fáculas, la corona, todo
+   * el realzado y que no gire. El bloom de la 9b, apagado con el Sol realzado, se quitó en la fase 10
+   * (revisión del bloque S): queda en git, por si algún día vuelve, con su medida.
    */
   sun: {
+    /**
+     * Si gira sobre su eje. **No** (revisión del bloque S, S8; Iván, 08-11: «El sol está rotando, no
+     * debe rotar»): con la rotación de la IAU (unos 14° al día), a 3 días/s el disco giraba unos 42° por
+     * segundo, y a 1 h/s daba una vuelta en unos 10 minutos. Conserva su eje (el polo de la IAU) con el
+     * meridiano quieto en el de J2000 (`bodyFixedToEclWithoutSpin`), y sus manchas no derivan; lo que
+     * se mueve es el fluir lento de su superficie (`enhanced.structure`), con el reloj de pared.
+     */
+    spins: false as boolean,
     /**
      * Intensidad de la fotosfera. Con el Sol realzado (D46, segunda vuelta, 08-11), 1 en la vista
      * general y en primer plano: así el disco no pasa de la compresión del tone mapping neutro, que lo
@@ -71,13 +80,11 @@ export const VISUAL_CONFIG = {
      * segunda vuelta), solo en la vista general y muy tenue (como la referencia, que tiene una luz
      * débil hasta unos 3 radios): el resplandor de verdad es el borde fino y los rayos
      * (`enhanced.rim` y `enhanced.rays`). De cerca, sin él (la referencia es negra a 1,2 radios). Antes,
-     * 1,3 en la vista general: una mancha grande y pálida que lavaba el disco. `withBloom`, lo que se
-     * atenúa si hay bloom (el factor).
+     * 1,3 en la vista general: una mancha grande y pálida que lavaba el disco.
      */
     halo: {
       overview: { radii: 2.4, intensity: 0.035 },
       closeUp: { radii: 1.8, intensity: 0 },
-      withBloom: 0.55,
     },
     /**
      * Granulación en primer plano (ilustrativa): amplitud, ritmo (unidades de ruido por segundo) y
@@ -87,9 +94,10 @@ export const VISUAL_CONFIG = {
      */
     granulation: { amplitude: 1.7, rate: 0.04, scale: 80 },
     /**
-     * Las manchas (ilustrativas, `sunspotsAt`): cuántas a la vez, su banda de latitud (grados), su vida
-     * (días), el radio de su umbra (grados heliográficos) y lo que tardan en aparecer y en apagarse
-     * (fracción de su vida); el brillo de la umbra y de la penumbra (en fracción de la fotosfera) y el
+     * Las manchas (ilustrativas, `sunspotsAt`; quietas en su sitio, como el Sol, que no gira: S8):
+     * cuántas a la vez, su banda de latitud (grados), su vida (días), el radio de su umbra (grados
+     * heliográficos) y lo que tardan en aparecer y en apagarse (fracción de su vida); el brillo de la
+     * umbra y de la penumbra (en fracción de la fotosfera) y el
      * radio de la penumbra (en radios de la umbra). Sin una fuente del ciclo solar con licencia
      * compatible (las de SILSO son CC BY-NC), su número es fijo y moderado. Con el Sol realzado, la umbra
      * y la penumbra algo más oscuras (0,1 y 0,6; antes, 0,18 y 0,68), de bordes suaves y pardas
@@ -118,29 +126,6 @@ export const VISUAL_CONFIG = {
      * corona era un velo pálido hasta 3 radios). La de la totalidad de `/cielo` es otra (`sky/`).
      */
     corona: { closeUp: 0, roundness: 0.35 },
-    /**
-     * El bloom, solo del Sol (fase 9b, D41; antes, opcional en la fase 10), en los niveles alto y medio, sobre
-     * un render del Sol con los cuerpos que lo tapan en negro (`scene/sun-bloom.ts`), en la vista general
-     * y en primer plano (se interpola con el primer plano del Sol): si está encendido (`enabled`), su
-     * fuerza y el peso de cada capa de su desenfoque, de la más estrecha a la más ancha (sigmas de unos
-     * 8, 28, 80, 210 y 515 px CSS).
-     * - **Apagado con el Sol realzado** (D46, segunda vuelta, 08-11): Iván quiere «un halo fino naranja
-     *   rojizo pegado al borde, con rayos cortos y finos, no una mancha grande y pálida». El bloom
-     *   desenfoca el disco entero: su resplandor caía también sobre el disco (lo aclaraba hacia el
-     *   amarillo y lo lavaba en la vista general) y, ancho y del color del disco, era la mancha pálida.
-     *   El borde fino y los rayos los pinta el halo (`enhanced.rim` y `enhanced.rays`), igual en los
-     *   tres niveles y sin sus 15 pasadas. Se queda aquí, apagado, por si se vuelve al Sol de D41.
-     * - En la vista general, un núcleo fuerte junto al disco y unas alas débiles: el Sol deslumbra sin
-     *   velar la pantalla.
-     * - En primer plano, mucho menos y solo las capas estrechas: el resplandor de un disco crece con su
-     *   área (con 400 px de diámetro, unas 20 veces el de la vista general) y, con la misma forma, las
-     *   alas velaban todo el lienzo y el resplandor sobre el disco borraba su limbo.
-     */
-    bloom: {
-      enabled: false as boolean,
-      overview: { strength: 0.8, factors: [1, 0.5, 0.2, 0.05, 0.012] },
-      closeUp: { strength: 0.1, factors: [1, 0.35, 0.04, 0, 0] },
-    },
     /**
      * **El Sol realzado del explorador** (fase 9b, D46, decisión de Iván del 06-11: «quiero uno más como
      * el de la imagen»), ilustrativo y avisado: con luz visible normal el Sol es blanco (D41: el de
@@ -373,14 +358,37 @@ export const VISUAL_CONFIG = {
    * Venus «Bajo las nubes» (fase 9b, D44): el mosaico del radar de Magellan en lugar de las nubes,
    * con la misma luz del Sol y la misma fotometría de Venus (la tarea 3: su sombreado sigue con su
    * luz). El radar no mide la luz visible: lo que da es el eco de cada punto (lo rugoso y las cumbres,
-   * claros), y se pinta en gris, sin color inventado. Su brillo, **ilustrativo**: el de una textura de
-   * Venus, calibrado igual que la de las nubes (`brightness` × el albedo geométrico de Venus en el
-   * disco lleno), para que se vea con la misma exposición. `haze`: la parte de la neblina del limbo
-   * que queda con el radar (la de las nubes taparía su borde). `fadeMs`: el fundido entre las nubes y
-   * el radar (un corte con movimiento reducido o en las capturas).
+   * claros). Su brillo, **ilustrativo**: el de una textura de Venus, calibrado igual que la de las
+   * nubes (`brightness` × el albedo geométrico de Venus en el disco lleno), para que se vea con la
+   * misma exposición. `haze`: la parte de la neblina del limbo que queda con el radar (la de las nubes
+   * taparía su borde). `fadeMs`: el fundido entre las nubes y el radar (un corte con movimiento
+   * reducido o en las capturas).
+   *
+   * `venera`: **el color de las fotos de las Venera 13 y 14** (D49; revisión del bloque S, decisión 2,
+   * delegada por Iván: en gris se confundía con la Luna, S3), como el globo de Magellan de la NASA,
+   * PIA00104 («The simulated hues are based on color images recorded by the Soviet Venera 13 and 14
+   * spacecraft»: https://science.nasa.gov/photojournal/venus-computer-simulated-global-view-centered-at-180-degrees-east-longitude/).
+   * Las Venera son las únicas fotos hechas bajo las nubes. En PIA00104 el tono cambia con el brillo
+   * (pardo rojizo en lo oscuro, naranja amarillento en lo claro): `ramp`, su cromaticidad lineal (RGB /
+   * luminancia Rec. 709) en los percentiles 5, 50 y 95 de la luminancia del disco, y `levels`, esos
+   * percentiles de la luminancia lineal de nuestro mosaico (el de 2k; el de 1k y el de 4k, a menos de
+   * 0,006). Cada valor del mosaico toma el tono de PIA00104 en su mismo percentil y conserva su brillo.
+   * Lo mide `scripts/measure-venera-tint.mjs`. Ilustrativo y dicho en el aviso del botón.
    */
   venus: {
-    radar: { brightness: 1, haze: 0.3, fadeMs: 800 },
+    radar: {
+      brightness: 1,
+      haze: 0.3,
+      fadeMs: 800,
+      venera: {
+        levels: [0.1384, 0.2195, 0.3663] as readonly [number, number, number],
+        ramp: {
+          dark: [2.934, 0.521, 0.049] as readonly [number, number, number],
+          mid: [2.184, 0.743, 0.056] as readonly [number, number, number],
+          light: [1.571, 0.915, 0.158] as readonly [number, number, number],
+        },
+      },
+    },
   },
   /**
    * Los anillos de Saturno (fase 7, D36; decisión de Iván del 30-10): un realce **ilustrativo** del
@@ -474,8 +482,16 @@ export const VISUAL_CONFIG = {
    * hacia el Sol; el crepúsculo civil, azul con la franja roja; el náutico, azul profundo; y la noche,
    * casi negra (un azul muy oscuro, no negro: el resplandor natural del cielo).
    * - `keyframes`: [altura del Sol (°), cénit, horizonte, resplandor hacia el Sol].
-   * - `glow`: lo concentrado que está el resplandor alrededor del Sol (exponente del coseno) y lo
-   *   que sube sobre el horizonte (exponente de la altura).
+   * - `glow`: lo concentrado que está el resplandor alrededor del Sol (exponente del coseno), lo
+   *   que sube sobre el horizonte (exponente de la altura) y cuánto se ve según la altura del Sol
+   *   (`band`, [altura del Sol (°), ganancia]): entero con el Sol bajo, en la puesta, y poco con el
+   *   Sol alto. Sin ella, de día el color crema del resplandor se sumaba al horizonte blanquecino y
+   *   saturaba a blanco unos 600 px del horizonte (sugerencia 14 de la revisión de la fase 8; fase 10,
+   *   tarea 11).
+   * - `sunDisc`: el color del disco del Sol según su altura ([altura (°), sRGB], que multiplica su
+   *   blanco cálido): blanco con el Sol alto y cada vez más naranja junto al horizonte, donde su luz
+   *   atraviesa mucho más aire y pierde antes el azul (era blanco también en la puesta; la misma
+   *   sugerencia).
    * - `ground`: el suelo, de noche y de día (una silueta, sin paisaje), con un degradado (`glow`):
    *   junto al horizonte toma algo de su color (`strength`, la fracción) y se apaga hacia abajo en
    *   `depthDeg` grados. Liso y casi negro, bajo el azul marino del horizonte de noche se leía como un
@@ -521,7 +537,22 @@ export const VISUAL_CONFIG = {
       [6, '#3b67b4', '#a7b6cb', '#f0c088'],
       [20, '#3a72c9', '#b6cbe3', '#fff0d2'],
     ] as readonly (readonly [number, string, string, string])[],
-    glow: { power: 6, rise: 3 },
+    glow: {
+      power: 6,
+      rise: 3,
+      band: [
+        [3, 1],
+        [10, 0.5],
+        [20, 0.25],
+        [40, 0.15],
+      ] as readonly (readonly [number, number])[],
+    },
+    sunDisc: [
+      [0, '#ff6a1f'],
+      [3, '#ff8a3d'],
+      [8, '#ffc07a'],
+      [20, '#ffffff'],
+    ] as readonly (readonly [number, string])[],
     ground: { night: '#020203', day: '#38372f', glow: { strength: 0.6, depthDeg: 14 } },
     starLimit: [
       [-18, 6.5],

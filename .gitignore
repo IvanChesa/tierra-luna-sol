@@ -32,6 +32,9 @@ yarn-error.log
 # Originales descargados por los scripts (se regeneran; no van al repo)
 /assets-src/
 
+# Los informes de Lighthouse (fase 10): solo en el disco, nunca en el repo ni en un tercero
+/.lighthouseci/
+
 # Miscellaneous
 /.angular/
 .sass-cache/

@@ -97,7 +97,7 @@ export interface SceneEngineOptions {
    */
   readonly illustrativeFocus?: boolean;
   /**
-   * Solo en captura: el Sol para medir su limbo (`?medida=limbo`, fase 9b): sin halo, corona, bloom,
+   * Solo en captura: el Sol para medir su limbo (`?medida=limbo`, fase 9b): sin halo, corona,
    * granulación ni manchas, y con su fotosfera por debajo de la compresión del tone mapping.
    */
   readonly sunMeasure?: boolean;
@@ -213,6 +213,11 @@ export interface SceneEngineApi {
   lookAtSurface(latDeg: number, lonDeg: number, distanceRadii: number, extentDeg?: number): void;
   /** Muestra u oculta los marcadores de los lugares del cielo desde España sobre la Tierra. */
   setSurfaceMarkers(visible: boolean): void;
+  /**
+   * Trae por la red, sin subirlas, las texturas de primer plano de unos cuerpos que se van a enfocar
+   * pronto (el recorrido de la primera vez): al llegar, ya están en la caché del navegador.
+   */
+  prefetchCloseUps(ids: readonly BodyId[]): void;
   /** El lugar desde el que se ve el cielo (fase 8). */
   setObserver(observer: SkyObserver): void;
   /**
@@ -230,8 +235,12 @@ export interface SceneEngineApi {
   setVenusRadar(on: boolean): void;
   /** Termina ya el viaje de cámara o la transición de marco en curso («Saltar», `Esc`). */
   skipTransition(): void;
-  /** Muestra u oculta las etiquetas de los cuerpos (la vista limpia las oculta). */
-  setLabelsVisible(visible: boolean): void;
+  /**
+   * Muestra u oculta las etiquetas de los cuerpos (la vista limpia y el recorrido de la primera vez las
+   * ocultan) y, aparte, las de los lugares de la vista «España» (`places`, como las de los cuerpos si
+   * no se dice): en la parada de España del recorrido se ven (crítica de diseño de la fase 10).
+   */
+  setLabelsVisible(visible: boolean, places?: boolean): void;
   /** Pinta un frame y devuelve la imagen del lienzo (PNG). */
   capture(): Promise<Blob>;
   /** Libera la GPU, los listeners y el DOM de las etiquetas. El motor no se puede reutilizar. */

@@ -109,8 +109,7 @@ try {
         await page.evaluate(() => window.__tlsViewer.engine.skipTransition());
       }
       await waitForIdle(page);
-      // La VRAM y las llamadas de dibujo del último frame (desde la fase 9b, con todas sus pasadas:
-      // también las del bloom del Sol).
+      // La VRAM y las llamadas de dibujo del último frame.
       const { vramMB, llamadas } = await page.evaluate(() => {
         const stats = window.__tlsViewer.engine.stats();
         return { vramMB: Math.round(stats.vramMB), llamadas: stats.drawCalls };

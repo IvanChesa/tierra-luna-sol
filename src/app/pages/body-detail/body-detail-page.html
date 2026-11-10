@@ -141,15 +141,10 @@
   @if (family(); as list) {
     <section aria-labelledby="family-title">
       <h2 id="family-title">{{ list.title }}</h2>
+      <!-- Tarjetas con su miniatura, como en /lunas (antes, enlaces de texto: crítica de la 9c). -->
       <ul class="family">
         @for (moon of list.moons; track moon.id) {
-          <li>
-            @if (moon.id === bodyId()) {
-              <span aria-current="page">{{ moon.name }}</span>
-            } @else {
-              <a [routerLink]="pagePath(moon.id)">{{ moon.name }}</a>
-            }
-          </li>
+          <li><tls-body-card [body]="moon" [current]="moon.id === bodyId()" /></li>
         }
       </ul>
     </section>

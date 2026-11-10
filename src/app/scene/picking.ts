@@ -105,29 +105,6 @@ function isOccluded(
 }
 
 /**
- * Los cuerpos que pueden tapar el Sol en pantalla (el bloom del Sol, fase 9b): los que se ven y cuyo
- * disco toca el suyo, con `marginPx` de holgura (el bloom trabaja a media resolución). Los que quedan
- * detrás no estorban: en el render del bloom, el Sol pasa la prueba de profundidad por delante de
- * ellos. Sin el Sol en pantalla, ninguno.
- */
-export function sunOccluders(
-  bodies: readonly ScreenBody[],
-  sunIndex: number,
-  marginPx = 2,
-): number[] {
-  const sun = bodies[sunIndex];
-  if (!sun?.onScreen || !(sun.radiusPx > 0)) return [];
-  const occluders: number[] = [];
-  for (const body of bodies) {
-    if (body.index === sunIndex || !body.onScreen || !(body.radiusPx > 0)) continue;
-    if (Math.hypot(body.x - sun.x, body.y - sun.y) < body.radiusPx + sun.radiusPx + marginPx) {
-      occluders.push(body.index);
-    }
-  }
-  return occluders;
-}
-
-/**
  * Cuerpo bajo el puntero. Si cae dentro del disco de algún cuerpo, el más cercano a la cámara de
  * ellos: un clic en el disco de Saturno elige Saturno aunque una luna tenga el centro más cerca
  * (fase 4b). Si no, el de menor distancia al centro relativa a su zona sensible (su disco o, si es

@@ -61,7 +61,6 @@ import {
 import { createCubeSphere } from './cube-sphere';
 import { SHAPE_FILES } from './shape-files';
 import { ShapeGrid, decodeShape, shapeGeometry } from './shapes';
-import { OCCLUDER_LAYER, SUN_LAYER } from './layers';
 import { createMarkerMaterial } from './materials/marker-material';
 import { createMilkyWayMaterial } from './materials/milky-way-material';
 import { createRingMaterial } from './materials/ring-material';
@@ -82,8 +81,10 @@ import {
   TextureId,
   TextureMeta,
   TextureSource,
+  levelRank,
   meridianOffset,
   releaseTexture,
+  sourceClosed,
 } from './textures';
 import type { ViewProjection } from './view-insets';
 
@@ -310,6 +311,7 @@ const tmpMatrix = new Matrix4();
 const orbitViewMatrix = new Matrix4();
 const tmpQuaternion = new Quaternion();
 const tmpVector = new Vector3();
+const tmpCenter = new Vector3();
 const {
   halo: HALO,
   granulation: GRANULATION,
@@ -437,6 +439,10 @@ export class World {
   /** Marcadores de los lugares del cielo desde España, en la Tierra (fase 5). */
   private readonly markerMaterial = createMarkerMaterial(VISUAL_CONFIG.earth.markers);
   private markers: Points | null = null;
+  private readonly placeBuffer = new Float64Array(3 * SKY_PLACES.length);
+  /** En la vista del cielo: solo la Vía Láctea y la Luna (`setSkyOnly`). */
+  private skyOnly = false;
+  private readonly placeFacing = new Uint8Array(SKY_PLACES.length);
   /** El Sol aparente (geocéntrico, ECL) del último instante, para la sombra de la Luna (fase 5). */
   private apparentSun: { readonly timeMs: number; readonly ecl: Vec3 } | null = null;
   private milkyWayTexture: LoadedTexture | null = null;
@@ -547,9 +553,6 @@ export class World {
       );
       mesh.name = body.id;
       mesh.matrixAutoUpdate = true;
-      // El bloom del Sol (fase 9b): el Sol, en su capa. Los que lo tapan, en la suya, frame a frame
-      // (`setSunOccluders`).
-      if (body.kind === 'star') mesh.layers.enable(SUN_LAYER);
       this.scene.add(mesh);
       return {
         body,
@@ -734,6 +737,37 @@ export class World {
   }
 
   /**
+   * La vista del cielo (fase 8): solo pide lo que pinta, la Vía Láctea y el mapa de color de la Luna
+   * (los usa `SkyScene`), y suelta lo demás; al volver al espacio, lo pide otra vez (propuesta de la
+   * fase 8: pedía las texturas de la vista general de los 30 cuerpos).
+   */
+  setSkyOnly(on: boolean): void {
+    if (this.skyOnly === on) return;
+    this.skyOnly = on;
+    this.requestTextures(this.focusIndex);
+  }
+
+  /**
+   * Trae por la red (sin subirla) la textura de primer plano de un cuerpo, la que pediría al enfocarlo:
+   * para el recorrido de la primera vez, que llega a la Tierra y a la Luna a los pocos segundos
+   * (propuesta de la fase 9b). Sin VRAM de más: la sube la carga de siempre, al enfocarlo.
+   */
+  prefetchCloseUp(id: string): void {
+    const visual = this.visuals.find((v) => v.body.id === id);
+    const source = this.options.textures;
+    if (!visual?.textureId || !source?.prefetch) return;
+    const level =
+      visual.textureId === 'earth-day'
+        ? this.profile.earthDayTexture
+        : visual.moon
+          ? this.profile.moonTexture
+          : visual.body.kind === 'moon'
+            ? this.profile.satelliteTexture
+            : this.profile.focusTexture;
+    source.prefetch(visual.textureId, level);
+  }
+
+  /**
    * Pide las texturas que tocan: el nivel de la vista general para todos y el del foco para el
    * cuerpo enfocado (y su planeta, si es una luna). Lo que se sustituye se libera.
    */
@@ -754,6 +788,13 @@ export class World {
     const focusSystem = focusIndex === null ? null : this.systemOf(focusIndex);
     for (const visual of this.visuals) {
       if (!visual.textureId) continue;
+      // En el cielo, solo la Luna, con el nivel de la vista general; lo demás, suelto.
+      if (this.skyOnly && !visual.moon) {
+        this.releaseTexture(visual);
+        if (visual.relief) this.requestRelief(visual, null);
+        for (const map of visual.maps) this.requestMap(visual, map, null);
+        continue;
+      }
       // Las del primer plano, solo el cuerpo enfocado y los que se ven grandes (C4): el planeta de una
       // luna enfocada, solo si se ve grande.
       const index = visual.body.index;
@@ -769,11 +810,12 @@ export class World {
               : this.profile.focusTexture;
       // Las demás lunas (fase 7), con su sistema enfocado o si se ven grandes (fase 9b); si no, su
       // color esquemático.
-      const level = near
-        ? focusLevel
-        : satellite && focusSystem !== this.systemOf(index) && this.seen[index] !== 1
-          ? null
-          : this.profile.overviewTexture;
+      const level =
+        near && !this.skyOnly
+          ? focusLevel
+          : satellite && focusSystem !== this.systemOf(index) && this.seen[index] !== 1
+            ? null
+            : this.profile.overviewTexture;
       if (level === null) {
         this.releaseTexture(visual);
         continue;
@@ -806,6 +848,7 @@ export class World {
           });
       }
       if (visual.requested === level) continue;
+      const before = visual.requested;
       visual.requested = level;
       const id = visual.textureId;
       // Si falla (red, 404), el cuerpo se queda con su color esquemático y se vuelve a pedir en el
@@ -817,6 +860,15 @@ export class World {
           if (visual.requested === level) visual.requested = null;
           textureFailed(id, error);
         });
+      // Sin ninguna textura puesta ni la de la vista general en camino, también esa, de paso, que
+      // llega mucho antes que la grande (S2; `assignTexture`).
+      const overview = this.profile.overviewTexture;
+      if (visual.loaded === null && before !== overview && levelRank(level) > levelRank(overview)) {
+        source
+          .load(id, overview)
+          .then((loaded) => this.assignTexture(visual, overview, loaded))
+          .catch(() => undefined);
+      }
     }
   }
 
@@ -1089,6 +1141,33 @@ export class World {
     if (this.markers) this.markers.visible = visible;
   }
 
+  /**
+   * Dónde están los lugares de la vista «España» en la escena (ejes de Three), para sus nombres
+   * (`SceneEngine`), y si miran a la cámara (los de la cara oculta, sin nombre); `null` si sus
+   * marcadores no se ven.
+   */
+  placePositions(): { positions: Float64Array; facing: Uint8Array } | null {
+    const markers = this.markers;
+    if (!markers?.visible || !markers.parent?.visible) return null;
+    markers.updateWorldMatrix(true, false);
+    const attribute = markers.geometry.getAttribute('position');
+    const center = tmpCenter.setFromMatrixPosition(markers.matrixWorld);
+    const camera = this.camera.position;
+    for (let k = 0; k < attribute.count; k++) {
+      const point = tmpVector.fromBufferAttribute(attribute, k).applyMatrix4(markers.matrixWorld);
+      this.placeBuffer[3 * k] = point.x;
+      this.placeBuffer[3 * k + 1] = point.y;
+      this.placeBuffer[3 * k + 2] = point.z;
+      // La normal del suelo (desde el centro de la Tierra) frente a la dirección de la cámara.
+      const facing =
+        (point.x - center.x) * (camera.x - point.x) +
+        (point.y - center.y) * (camera.y - point.y) +
+        (point.z - center.z) * (camera.z - point.z);
+      this.placeFacing[k] = facing > 0 ? 1 : 0;
+    }
+    return { positions: this.placeBuffer, facing: this.placeFacing };
+  }
+
   /** Deriva de las nubes de la Tierra (fracción de vuelta; 0 con movimiento reducido o en captura). */
   setCloudDrift(turns: number): void {
     for (const visual of this.visuals) {
@@ -1253,10 +1332,10 @@ export class World {
    * El aspecto del Sol en este frame: su primer plano (`closeUp`, 0–1: recoge el halo y apaga su
    * resplandor ancho, enciende la granulación, la corona si tiene brillo y los bucles de plasma; el
    * borde fino y los rayos van siempre), el reloj de pared de su granulación, de su estructura y de
-   * los rayos y los bucles (s; 0 con movimiento reducido y en las capturas) y si lleva bloom (si está
-   * encendido: el halo, más tenue). Se llama después de `update`, con la escala del Sol de este frame.
+   * los rayos y los bucles (s; 0 con movimiento reducido y en las capturas). Se llama después de
+   * `update`, con la escala del Sol de este frame.
    */
-  setSunAppearance(closeUp: number, timeSeconds: number, bloom: boolean): void {
+  setSunAppearance(closeUp: number, timeSeconds: number): void {
     const measure = this.sunMeasure;
     const sun = this.sun.uniforms;
     sun.uGranulation.value = measure ? 0 : GRANULATION.amplitude * closeUp;
@@ -1272,8 +1351,7 @@ export class World {
       scale * (HALO.overview.radii + (HALO.closeUp.radii - HALO.overview.radii) * closeUp);
     halo.uSunRadius.value = scale;
     halo.uIntensity.value =
-      (HALO.overview.intensity + (HALO.closeUp.intensity - HALO.overview.intensity) * closeUp) *
-      (bloom ? HALO.withBloom : 1);
+      HALO.overview.intensity + (HALO.closeUp.intensity - HALO.overview.intensity) * closeUp;
     halo.uCorona.value = CORONA.closeUp * closeUp;
     halo.uProminences.value = closeUp;
     halo.uProminenceTime.value = timeSeconds * ENHANCED_SUN.prominences.rate;
@@ -1287,15 +1365,6 @@ export class World {
     this.sun.uniforms.uStructure.value = measure ? 0 : ENHANCED_SUN.structure.amplitude;
     this.spotsTimeMs = Number.NaN;
     this.updateHaloVisibility();
-  }
-
-  /**
-   * Los cuerpos que tapan el Sol en este frame (`sunOccluders`), en la capa del bloom: los demás, no
-   * (así el render del bloom solo dibuja los que hacen falta).
-   */
-  setSunOccluders(indices: readonly number[]): void {
-    for (const visual of this.visuals) visual.mesh.layers.disable(OCCLUDER_LAYER);
-    for (const index of indices) this.visuals[index]?.mesh.layers.enable(OCCLUDER_LAYER);
   }
 
   /** El halo se ve con el Sol (también aislado, en su miniatura), salvo al medir su limbo. */
@@ -1392,12 +1461,17 @@ export class World {
     radar.uRadarMap.value = texture;
     radar.uRadarMix.value = texture ? Math.min(Math.max(mix, 0), 1) : 0;
     const luminance = TEXTURE_MEAN_LUMINANCE['venus-radar'];
-    const { brightness, haze } = VISUAL_CONFIG.venus.radar;
+    const { brightness, haze, venera } = VISUAL_CONFIG.venus.radar;
     const scale =
       visual.photometry && luminance !== undefined
         ? bodyAlbedoScale(visual.body.id, visual.photometry, luminance)
         : 1;
     radar.uRadar.value.set(scale * brightness, haze);
+    // El color de las Venera 13 y 14 (D49), con el brillo del mosaico.
+    radar.uRadarLevels.value.set(...venera.levels);
+    radar.uRadarDark.value.set(...venera.ramp.dark);
+    radar.uRadarMid.value.set(...venera.ramp.mid);
+    radar.uRadarLight.value.set(...venera.ramp.light);
     this.options.invalidate();
   }
 
@@ -1529,7 +1603,16 @@ export class World {
     loaded: LoadedTexture | null,
   ): void {
     if (!loaded) return;
-    if (this.disposed || visual.requested !== level) {
+    // Una textura menor que llega mientras se espera la grande, sin ninguna puesta todavía (al enfocar
+    // un cuerpo antes de que llegue la de la vista general, o al entrar directo en la vista Tierra), se
+    // usa mientras tanto (S2 de la revisión del bloque S): si no, se veía su color esquemático hasta que
+    // llegaba la grande (la Tierra, una bola azul lisa de 9 a 17 s con la red móvil).
+    const interim =
+      visual.requested !== null &&
+      visual.requested !== level &&
+      visual.loaded === null &&
+      levelRank(level) < levelRank(visual.requested);
+    if (this.disposed || (visual.requested !== level && !interim)) {
       releaseTexture(loaded.texture);
       return;
     }
@@ -1539,6 +1622,7 @@ export class World {
     if (visual.uniforms) {
       visual.uniforms.uMap.value = loaded.texture;
       visual.uniforms.uHasMap.value = 1;
+      visual.uniforms.uMapFlipV.value = loaded.flipV ? 1 : 0;
       visual.uniforms.uMeridianOffset.value = meta ? meridianOffset(meta) : 0;
       const luminance = visual.textureId ? TEXTURE_MEAN_LUMINANCE[visual.textureId] : undefined;
       if (luminance !== undefined) visual.uniforms.uMeanLuminance.value = luminance;
@@ -1565,6 +1649,22 @@ export class World {
   }
 
   /**
+   * Tras recuperar el contexto de WebGL: las texturas que soltaron su `ImageBitmap` al subirse (las de
+   * 8K, `CLOSE_SOURCE_PIXELS`) ya no se pueden volver a subir desde él. Se sueltan y se piden otra vez
+   * (llegan de la caché del navegador); mientras, el cuerpo tiene su color esquemático.
+   */
+  reloadClosedTextures(): void {
+    let reload = false;
+    for (const visual of this.visuals) {
+      if (visual.loaded && sourceClosed(visual.loaded.texture)) {
+        this.releaseTexture(visual);
+        reload = true;
+      }
+    }
+    if (reload) this.requestTextures(this.focusIndex);
+  }
+
+  /**
    * Suelta la textura de un cuerpo (fase 7: una luna cuyo sistema ya no está enfocado): vuelve a su
    * color esquemático, con su albedo.
    */
@@ -1576,6 +1676,7 @@ export class World {
     if (visual.uniforms) {
       visual.uniforms.uMap.value = null;
       visual.uniforms.uHasMap.value = 0;
+      visual.uniforms.uMapFlipV.value = 0;
       // El contraste es el de la textura (Titán): con su color esquemático, el suyo.
       visual.uniforms.uContrast.value = 1;
       if (!visual.photometry?.chromaticity) visual.uniforms.uChromaticity.value.setW(0);

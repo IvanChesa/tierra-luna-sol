@@ -2,17 +2,19 @@ import { Component, afterNextRender, computed, inject, signal } from '@angular/c
 import { formatLongDateTime, localZoneName, utcOffsetLabel } from '../../core/format';
 import { MAX_DATE, MIN_DATE } from '../../ephemeris/constants';
 import { SimulationStore } from '../../state/simulation.store';
+import { RouterLink } from '@angular/router';
 import { Icon } from '../viewer/icon';
 import { ExplorerSession } from './explorer-session';
 
 /**
  * Avisos discretos del explorador: los parámetros de la URL que se han ignorado (PLAN 3.d.9), todos
- * en una caja, y la llegada a 1900 o a 2100 (3.b.4). Dicen qué ha pasado, qué ha hecho el explorador
+ * en una caja; la llegada desde «Ver en 3D» de un eclipse (crítica de la fase 10), con la vuelta a la
+ * lista; y la llegada a 1900 o a 2100 (3.b.4). Dicen qué ha pasado, qué ha hecho el explorador
  * y qué puedes hacer (ESTILO §2); se pueden cerrar.
  */
 @Component({
   selector: 'tls-notices',
-  imports: [Icon],
+  imports: [Icon, RouterLink],
   template: `
     <div class="notices" role="status">
       @if (mounted() && session.warnings().length > 0) {
@@ -27,6 +29,24 @@ import { ExplorerSession } from './explorer-session';
             class="notice__close"
             title="Cerrar el aviso"
             (click)="session.dismissWarnings()"
+          >
+            <tls-icon name="close" />
+            <span class="visually-hidden">Cerrar el aviso</span>
+          </button>
+        </div>
+      }
+      @if (session.eclipseArrival(); as arrival) {
+        <!-- La llegada desde «Ver en 3D» de /eclipses: qué eclipse es y la vuelta a la lista. -->
+        <div class="notice notice--eclipse">
+          <p class="notice__text">
+            {{ arrival.text }}
+            <a routerLink="/eclipses" [queryParams]="arrival.queryParams">Volver a los eclipses</a>
+          </p>
+          <button
+            type="button"
+            class="notice__close"
+            title="Cerrar el aviso"
+            (click)="session.dismissEclipseArrival()"
           >
             <tls-icon name="close" />
             <span class="visually-hidden">Cerrar el aviso</span>

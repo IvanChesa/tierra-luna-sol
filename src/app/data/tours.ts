@@ -327,7 +327,7 @@ export const MOON_TOUR: readonly MoonStop[] = [
   {
     id: 'shackleton',
     title: 'Shackleton',
-    text: 'Shackleton, un cráter de 21 km en el polo sur: su borde recibe la luz del Sol, y su interior está siempre en sombra.',
+    text: 'Shackleton, un cráter de 21 km en el polo sur: su borde recibe la luz del Sol, y su interior está siempre en sombra. El explorador no dibuja las sombras del relieve: por eso aquí se ve iluminada la pared interior que mira al Sol.',
     sources: [
       GAZETTEER(5450),
       'https://science.nasa.gov/resource/shackleton-craters-illuminated-rim-shadowed-interior/',

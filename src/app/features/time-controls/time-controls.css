@@ -63,9 +63,13 @@
   white-space: nowrap;
 }
 
-/* En escritorio, la velocidad la dice su selector. */
+/* En escritorio, la velocidad la dice su selector; el sentido, si es hacia atrás, esta línea. */
 .time__speedtext {
   display: none;
+}
+
+.time__direction {
+  color: var(--color-accent);
 }
 
 .time__line {
@@ -132,6 +136,11 @@
 
   .time__speedtext {
     display: block;
+  }
+
+  /* En el móvil, el sentido ya va en la línea de la velocidad. */
+  .time__direction {
+    display: none;
   }
 
   .time__line {

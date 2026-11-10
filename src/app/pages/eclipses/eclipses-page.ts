@@ -84,7 +84,7 @@ export class EclipsesPage {
       peak: peakText(entry, zone),
       amount: amountText(entry),
       visibility: visibilityText(entry, zone),
-      link: view3dLink(entry),
+      link: view3dLink(entry, this.placeId()),
       label: view3dLabel(entry, zone),
     }));
   });

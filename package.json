@@ -11,6 +11,7 @@
     "lint": "ng lint && prettier --check .",
     "format": "prettier --write .",
     "e2e": "tsc -p tsconfig.e2e.json && npm run build && playwright test",
+    "lighthouse": "lhci autorun",
     "check": "npm run lint && npm test && npm run build && node scripts/check-initial-bundle.mjs && node scripts/check-links.mjs"
   },
   "private": true,
@@ -37,6 +38,7 @@
     "@angular/compiler-cli": "^22.2.4",
     "@axe-core/playwright": "^4.14.0",
     "@eslint/js": "^10.0.1",
+    "@lhci/cli": "^0.16.0",
     "@playwright/test": "^1.65.0",
     "@types/node": "^24.19.2",
     "@types/three": "^0.186.0",

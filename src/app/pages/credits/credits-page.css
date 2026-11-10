@@ -4,6 +4,9 @@
 }
 
 .lead {
+  /* Con la medida de lectura, no con la de la columna (52 rem): a 1440 llegaba a 91 caracteres por
+     línea (crítica de la fase 10). */
+  max-width: var(--measure);
   color: var(--color-text-muted);
   font-size: var(--text-lg);
 }

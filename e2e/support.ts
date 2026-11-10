@@ -170,6 +170,9 @@ export async function openControls(page: Page): Promise<void> {
   const menu = page.locator('#time-menu');
   if (!(await menu.evaluate((element) => element.matches(':popover-open')))) {
     await page.getByRole('button', { name: 'Controles', exact: true }).click();
+    // Al abrirse, el panel se lleva el foco en su evento `toggle`, que llega en otra tarea: lo que se
+    // enfoque dentro antes lo pierde, y lo que se teclee va a los atajos (con «3», la vista Luna).
+    await expect(menu).toBeFocused();
   }
   await expect(page.locator('#time-date')).toBeVisible();
 }

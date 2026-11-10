@@ -115,12 +115,16 @@ import { Icon } from '../viewer/icon';
       }
     }
 
-    /* Móvil: una hoja inferior sobre el lienzo y la franja de abajo (como la ficha). */
+    /*
+     * Móvil: una hoja inferior sobre el lienzo y la fila de las fichas, como la ficha: encima de la
+     * barra de tiempo, que no tapa (crítica de la 9c: la tapaba; revisión del bloque S, decisión 6).
+     */
     @media (max-width: 63.99rem) {
       :host {
         --chrome-edge: bottom;
         z-index: 3;
-        grid-area: view / 1 / -1 / -1;
+        grid-row: view-start / bar-start;
+        grid-column: 1 / -1;
         align-self: end;
         max-height: 80%;
         margin: 0;

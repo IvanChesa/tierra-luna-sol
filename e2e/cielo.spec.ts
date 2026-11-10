@@ -91,10 +91,20 @@ test.describe('El cielo desde España (fase 8)', () => {
     await expect(slider).toHaveValue('0');
     await expect(daytime).toHaveCount(0);
     await expect(dusk).toHaveText(duskText);
-    // De día, antes de la noche del deslizador, se dice (también en el móvil, hallazgo 3).
+    // De día, antes de la noche del deslizador, se dice (también en el móvil, hallazgo 3), con un
+    // botón que lleva a la noche cerrada (crítica de la fase 10), en pausa.
     await openExplorer(page, '/cielo?fecha=2026-11-01T12:00Z');
     await expect(daytime).toBeVisible();
-    await expect(daytime).toHaveText('Ahora es de día: arrastra para ver la noche.');
+    await expect(daytime.locator('.sky__hint')).toHaveText('Ahora es de día: arrastra la hora o');
+    await expect(page.locator('.sky__summary-line [aria-hidden="true"]')).toHaveText(
+      /^De día · noche cerrada a las \d\d:\d\d$/,
+    );
+    const tonight = daytime.getByRole('button', { name: 'Ver el cielo de esta noche' });
+    await tonight.click();
+    await expect(daytime).toHaveCount(0);
+    // El 1-11-2026 en el Montsec, la noche cerrada empieza hacia las 19:10 (UTC+1).
+    await expect(slider).toHaveAttribute('aria-valuetext', /^19:\d\d, hora del lugar/);
+    await expect(page.getByRole('button', { name: 'Reproducir' }).first()).toBeVisible();
   });
 
   test('«Mirar» lleva la cámara y lo anuncia; bajo el horizonte, lo dice', async ({ page }) => {
@@ -281,11 +291,24 @@ test.describe('Próximos eclipses (fase 8)', () => {
     const link = solar.getByRole('link', { name: /^Ver en 3D el eclipse/ });
     // El enlace lleva la sombra; el explorador la quita de la URL en cuanto apunta a ella (es de un
     // solo uso), así que se mira en el enlace y no en la URL de llegada, que depende de la velocidad.
-    await expect(link).toHaveAttribute('href', /^\/explorar\/tierra\?fecha=[^&]+&sombra=1$/);
+    // También el tipo de eclipse y el lugar, para el aviso de la llegada (crítica de diseño de la fase 10).
+    await expect(link).toHaveAttribute(
+      'href',
+      /^\/explorar\/tierra\?fecha=[^&]+&sombra=1&eclipse=sol-[a-z]+&lugar=teide$/,
+    );
     await link.click();
     await expect(page).toHaveURL(/\/explorar\/tierra\?fecha=/);
     await expect(page.locator('tls-viewer-canvas')).toHaveClass(/is-ready/, { timeout: 90_000 });
     await expect(page.locator('canvas')).toHaveAccessibleName(/Vista 3D de la Tierra/);
+    // Al llegar, qué eclipse es y desde dónde, y la vuelta a la lista del mismo lugar.
+    const notice = page.locator('.notice--eclipse');
+    await expect(notice).toContainText(
+      /Eclipse \S+ de Sol del .+, en su máximo visto desde el Observatorio del Teide\./,
+    );
+    await expect(notice.getByRole('link', { name: 'Volver a los eclipses' })).toHaveAttribute(
+      'href',
+      '/eclipses?lugar=teide',
+    );
     expect(problems).toEqual([]);
   });
 });

@@ -32,17 +32,19 @@ import { attachPointerControls } from './camera/pointer';
 import { SimClock } from './clock';
 import { FRAME_TRANSITION_MS, FrameController, frameFor } from './frames';
 import { LabelInfo, LabelLayer, MARKER_RADIUS_PX, layoutLabels } from './labels';
-import { ScreenBody, pickBody, projectBodies, sunOccluders } from './picking';
+import { fastestScreenSpeed, paceDelayMs } from './frame-pacing';
+import { ScreenBody, pickBody, projectBodies } from './picking';
 import {
   AdaptiveQuality,
   DEFAULT_ADAPTIVE_OPTIONS,
   DeviceInfo,
   QUALITY_PROFILES,
   QualityProfile,
+  type TextureLevel,
   detectQuality,
 } from './quality';
 import { OrientationModel } from './orientations';
-import type { RendererFactory, RendererPort, ResolvedDepthMode, SunBloomOptions } from './renderer';
+import type { RendererFactory, RendererOptions, RendererPort, ResolvedDepthMode } from './renderer';
 import { StarField } from './stars';
 import {
   MOON_SYSTEMS,
@@ -94,7 +96,7 @@ import {
 import { illustrativeDistance } from '../ephemeris/scale';
 import { BODY_DATA } from '../data/body-data';
 import { BODY_PHOTOMETRY } from '../data/photometry';
-import { DEFAULT_PLACE_ID, findPlace } from '../data/places';
+import { DEFAULT_PLACE_ID, SKY_PLACES, findPlace, placeMapLabel } from '../data/places';
 import { discFactor, interpolateLitBrightness, litBrightnessTable } from '../ephemeris/photometry';
 import type { StarCatalog } from '../ephemeris/stars';
 import {
@@ -210,16 +212,17 @@ const INSETS_SMOOTHING_MS = 180;
 /**
  * Render bajo demanda también al reproducir: hasta esta velocidad (s simulados por s real) nada se
  * mueve un píxel en un frame (a tiempo real, la Tierra gira 0,004° por segundo) y se pinta a 4 Hz.
+ * Por encima, a la frecuencia que pide lo que se mueve en pantalla (`frame-pacing.ts`, fase 10).
  */
 export const SLOW_SPEED = 60;
 export const SLOW_FRAME_MS = 250;
 /**
  * El Sol realzado de cerca (fase 9b, D46): su superficie fluye y sus bucles de plasma cambian con el
  * reloj de pared, también con el tiempo en pausa o a velocidades lentas. Mientras se ve de cerca (su
- * primer plano, desde `SUN_ANIMATION_CLOSE_UP`), se pinta cada 50 ms aunque nada más se mueva: su
- * movimiento es lento y basta. Con movimiento reducido y en las capturas, quieto y sin estos frames.
+ * primer plano, desde `SUN_ANIMATION_CLOSE_UP`), se pinta cada `sunFrameMs` del nivel (50 ms; en el
+ * bajo, 100) aunque nada más se mueva: su movimiento es lento y basta. Con movimiento reducido y en las
+ * capturas, quieto y sin estos frames.
  */
-export const SUN_FRAME_MS = 50;
 export const SUN_ANIMATION_CLOSE_UP = 0.5;
 
 export interface FrameScheduler {
@@ -342,6 +345,19 @@ const FOCUS_ALBEDO: readonly (number | null)[] = SCENE_BODIES.map((body) => {
   return luminance ? luminance * discFactor(photometry.photometry) : null;
 });
 
+/** Los lugares de la vista «España», con sus nombres cortos (propuesta de la fase 9b). */
+const PLACE_INFOS: readonly LabelInfo[] = SKY_PLACES.map((place) => ({
+  id: place.id,
+  name: placeMapLabel(place),
+  kind: 'place',
+  parentIndex: -1,
+}));
+/** Para proyectarlos: sin radio (son puntos), y en pantalla, lo que mide su marcador. */
+const PLACE_RADII = new Float64Array(SKY_PLACES.length);
+const PLACE_DOT_PX = 3;
+/** Sus puntos ya los pinta la escena: sin el marcador de las etiquetas. */
+const PLACE_NO_MARKER = SKY_PLACES.map(() => 0);
+
 /**
  * Radio que ocupa cada cuerpo para las etiquetas, en radios de su disco: con anillos (Saturno), el
  * borde exterior del anillo A de la ficha de la NASA. Así su nombre no los tapa (fase 3b, tarea 8).
@@ -356,13 +372,17 @@ export const MOTION_BODIES: readonly MotionBody[] = SCENE_BODIES.map((body) => {
   const data = BODY_DATA[body.id];
   const orbitDays = data.orbit ? Math.abs(data.orbit.periodDays.value) : null;
   const rotationH = data.physical.rotationPeriodH?.value;
+  // Lo que no gira en la escena (el Sol del explorador, S8) no tiene giro que se pueda «aliasar».
+  const still = body.rotation.kind === 'iau' && !body.rotation.spins;
   return {
     orbitDays,
-    spinDays: data.physical.synchronousRotation?.value
-      ? orbitDays
-      : rotationH !== undefined
-        ? Math.abs(rotationH) / 24
-        : null,
+    spinDays: still
+      ? null
+      : data.physical.synchronousRotation?.value
+        ? orbitDays
+        : rotationH !== undefined
+          ? Math.abs(rotationH) / 24
+          : null,
     parentIndex: body.parent ? sceneBody(body.parent).index : -1,
     isMoon: body.kind === 'moon',
   };
@@ -377,6 +397,7 @@ export class SceneEngine implements SceneEngineApi {
   private readonly renderer: RendererPort;
   private readonly world: World;
   private readonly labels: LabelLayer;
+  private readonly placeLabels: LabelLayer;
   private readonly adaptive = new AdaptiveQuality(DEFAULT_ADAPTIVE_OPTIONS);
   private readonly aliasing = new AliasingState(MOTION_BODIES);
   private readonly listeners = new Map<SceneEngineEventName, Set<Listener<SceneEngineEventName>>>();
@@ -424,6 +445,10 @@ export class SceneEngine implements SceneEngineApi {
   private cpuMs = 0;
   private ephemerisMs = 0;
   private screen: ScreenBody[] = [];
+  /** El polo de Saturno de este frame (ECL), para el nombre sobre sus anillos (`ringLabelExtents`). */
+  private saturnPole: Vec3 | null = null;
+  /** Lo que ocupa cada cuerpo en vertical para su nombre, en radios del disco (solo cambia Saturno). */
+  private readonly labelVerticalExtents: number[] = SCENE_BODIES.map(() => 1);
   private screenThree = new Float64Array(3 * SCENE_BODIES.length);
   /** Presencia de cada cuerpo (`moonPresence`): las lunas de un sistema que no se distingue, 0. */
   private readonly presence = new Float64Array(SCENE_BODIES.length).fill(1);
@@ -449,18 +474,13 @@ export class SceneEngine implements SceneEngineApi {
   private readonly isolated: boolean;
   /** Solo en captura: el foco, en el marco de la vista general (`illustrativeFocus`). */
   private readonly illustrativeFocus: boolean;
-  /** Solo en captura: el Sol para medir su limbo (`sunMeasure`), sin bloom. */
+  /** Solo en captura: el Sol para medir su limbo (`sunMeasure`). */
   private readonly sunMeasure: boolean;
   /** Solo en captura: Venus enfocada con el radar de Magellan (`venusRadar`, `?radar=1`). */
   private readonly radarCapture: boolean;
   /** Venus «Bajo las nubes» (fase 9b, D44): la capa del radar de Magellan. */
   private readonly venusRadar: VenusRadarLayer;
-  /** ¿Lleva bloom el Sol en este frame? (`applyLighting`, con la pantalla de este frame). */
-  private sunBloomOn = false;
-  /** Los sombreados del bloom ya están compilados (hasta entonces, solo el halo: nunca de golpe). */
-  private sunBloomCompiled = false;
-  private sunBloomCompiling = false;
-  /** El primer plano del Sol en este frame (0–1): la fuerza de su bloom. */
+  /** El primer plano del Sol en este frame (0–1). */
   private sunCloseUp = 0;
   /** Exposición que tiene ahora el renderer (configuración visual; −1: aún ninguna). */
   private exposure = -1;
@@ -505,12 +525,7 @@ export class SceneEngine implements SceneEngineApi {
       ...DEFAULT_SKY_POSE,
       ...(this.captureMode ? options.skyView : undefined),
     });
-    this.renderer = deps.createRenderer(options.canvas, {
-      depth: resolveDepth(options.depth ?? 'auto'),
-      antialias: true,
-      clearColor: BACKGROUND_COLOR,
-      toneMapping: options.toneMapping ?? VISUAL_CONFIG.toneMapping,
-    });
+    this.renderer = deps.createRenderer(options.canvas, engineRendererOptions(options));
     const caps = this.renderer.capabilities;
     this.qualitySetting = options.quality;
     this.level =
@@ -539,6 +554,8 @@ export class SceneEngine implements SceneEngineApi {
       loadShape: this.deps.loadShape ?? null,
       invalidate: () => this.invalidate(),
     });
+    // Entrando por el cielo, el espacio no pide sus texturas (las pedirá al volver a él).
+    if (options.view === 'sky') this.world.setSkyOnly(true);
     this.venusRadar = new VenusRadarLayer({
       textures: source,
       apply: (texture, mix) => this.world.setVenusRadar(texture, mix),
@@ -587,7 +604,12 @@ export class SceneEngine implements SceneEngineApi {
     this.labels = new LabelLayer(options.labelLayer, infos, (id) =>
       this.emit('bodyPicked', { id: id as BodyId }),
     );
-    if (this.isolated) this.labels.setVisible(false);
+    // Los nombres de los lugares de la vista «España» (propuesta de la fase 9b): solo para mirar.
+    this.placeLabels = new LabelLayer(options.labelLayer, PLACE_INFOS, () => undefined);
+    if (this.isolated) {
+      this.labels.setVisible(false);
+      this.placeLabels.setVisible(false);
+    }
 
     this.unsubscribe.push(
       attachPointerControls(options.canvas, {
@@ -735,8 +757,6 @@ export class SceneEngine implements SceneEngineApi {
     if (this.disposed || view === this._view) return;
     const fromSky = this._view === 'sky';
     this._view = view;
-    // El bloom del Sol solo va en la vista del sistema solar: fuera de ella, su memoria se suelta.
-    if (view !== 'system') this.renderer.sunBloom?.release();
     if (view !== 'system') this.venusRadar.release();
     if (view === 'sky') {
       this.enterSky();
@@ -861,6 +881,11 @@ export class SceneEngine implements SceneEngineApi {
     this.invalidate();
   }
 
+  prefetchCloseUps(ids: readonly BodyId[]): void {
+    if (this.disposed) return;
+    for (const id of ids) this.world.prefetchCloseUp(id);
+  }
+
   zoomBy(factor: number): void {
     if (this.disposed || !(factor > 0)) return;
     if (this._view === 'sky') {
@@ -884,11 +909,12 @@ export class SceneEngine implements SceneEngineApi {
     this.invalidate();
   }
 
-  setLabelsVisible(visible: boolean): void {
+  setLabelsVisible(visible: boolean, places = visible): void {
     if (this.disposed) return;
     this.labelsWanted = visible;
     const sky = this._view === 'sky';
     this.labels.setVisible(visible && !this.isolated && !sky);
+    this.placeLabels.setVisible(places && !this.isolated && !sky);
     this.sky?.setLabelsVisible(visible);
     this.sky?.setActive(sky);
     this.invalidate();
@@ -915,10 +941,7 @@ export class SceneEngine implements SceneEngineApi {
       geometries: info.geometries,
       textures: info.textures,
       vramMB:
-        (this.world.vramBytes() +
-          this.venusRadar.vramBytes +
-          (this.sky?.vramBytes() ?? 0) +
-          (this.renderer.sunBloom?.vramBytes() ?? 0)) /
+        (this.world.vramBytes() + this.venusRadar.vramBytes + (this.sky?.vramBytes() ?? 0)) /
         1_048_576,
       renderedFrames: this.renderedFrames,
       texturesLoading: this.texturesLoading,
@@ -944,6 +967,10 @@ export class SceneEngine implements SceneEngineApi {
           this.texturesLoading--;
         });
       },
+      // Por la red y sin subir nada: no cuenta como textura en camino.
+      ...(source.prefetch
+        ? { prefetch: (id: TextureId, level: TextureLevel) => source.prefetch?.(id, level) }
+        : {}),
     };
   }
 
@@ -962,6 +989,7 @@ export class SceneEngine implements SceneEngineApi {
     for (const off of this.unsubscribe.splice(0)) off();
     for (const upload of this.uploads.splice(0)) upload.resolve();
     this.labels.dispose();
+    this.placeLabels.dispose();
     this.sky?.dispose();
     this.sky = null;
     this.venusRadar.release();
@@ -999,20 +1027,27 @@ export class SceneEngine implements SceneEngineApi {
       this.starCatalog = catalog;
       stars.setPixelRatio(this.pixelRatio());
       this.world.setStars(stars);
+      // Cada paso en su tarea, y la compilación, por partes (fase 10: con la CPU a ×4, ninguna tarea
+      // larga del arranque que se pueda trocear).
+      const pause = () => this.deps.yieldToMain();
+      await pause();
+      if (this.disposed) return;
       this.emit('progress', { loaded: 2, total, step: 'Compilando sombreados' });
-      await this.renderer.compile(this.world.scene, this.world.camera);
-      // El bloom del Sol, también antes del primer frame (en la vista general, el Sol se ve).
-      await this.compileSunBloom();
+      await this.renderer.compile(this.world.scene, this.world.camera, pause);
       // Si se entra por la vista del cielo, su escena también, antes del primer frame.
       if (this._view === 'sky') {
         const sky = this.ensureSky();
-        if (sky) await this.renderer.compile(sky.scene, sky.camera);
+        if (sky) await this.renderer.compile(sky.scene, sky.camera, pause);
         if (this.disposed) return;
         this.skyCompiled = sky !== null;
       }
       if (this.disposed) return;
       this.emit('progress', { loaded: 3, total, step: 'Primer fotograma' });
       this.renderFrame(this.deps.now());
+      // El primer fotograma (sube las geometrías), en su tarea; lo que despierta, en la siguiente: la
+      // interfaz y el recorrido, y las peticiones de texturas.
+      await pause();
+      if (this.disposed) return;
       this.ready = true;
       this.emit('progress', { loaded: total, total, step: 'Listo' });
       this.emit('ready', { startupMs: this.deps.now() - this.startMs });
@@ -1070,32 +1105,55 @@ export class SceneEngine implements SceneEngineApi {
       this.emitTime(false);
     }
     const fading = this.venusRadar.step(dt, this.instant());
+    const before = this.screen;
     const moving = this.renderFrame(timeMs, true, dt);
     const uploading = this.processUpload();
     const animating = this.clock.playing || moving || fading || this.frames.animating;
-    // Reproducción lenta y nada más en marcha: 4 frames por segundo bastan (y no se miden FPS).
-    const slow =
+    // Con el tiempo en marcha y nada más moviéndose, no hace falta pintar cada frame (y no se miden
+    // FPS): a las velocidades lentas, a 4 Hz; a las demás, a la frecuencia que pide lo que más corre
+    // en pantalla (fase 10, tarea 4), salvo en el cielo, que no proyecta los cuerpos.
+    const calm =
       this.clock.playing &&
       !moving &&
+      !fading &&
       !this.frames.animating &&
       !uploading &&
-      this.uploads.length === 0 &&
-      Math.abs(this.clock.speed) <= SLOW_SPEED;
+      this.uploads.length === 0;
+    const delay = !calm
+      ? 0
+      : Math.abs(this.clock.speed) <= SLOW_SPEED
+        ? SLOW_FRAME_MS
+        : this._view === 'sky'
+          ? 0
+          : paceDelayMs(this.screenSpeed(before, dt), SLOW_FRAME_MS);
     if (this.qualitySetting === 'auto' && !this.captureMode) {
-      const lower = this.adaptive.sample(this.deps.now(), animating && !slow, this.level);
+      const lower = this.adaptive.sample(this.deps.now(), animating && delay === 0, this.level);
       if (lower) this.applyQuality(lower, 'auto');
     }
     const sun = this.sunAnimates();
     if (animating || uploading || this.uploads.length > 0) {
-      this.invalidate(slow ? (sun ? SUN_FRAME_MS : SLOW_FRAME_MS) : 0);
+      this.invalidate(delay > 0 ? (sun ? Math.min(delay, this.profile.sunFrameMs) : delay) : 0);
     } else if (sun) {
-      this.invalidate(SUN_FRAME_MS);
+      this.invalidate(this.profile.sunFrameMs);
     } else {
       this.lastFrameMs = null;
     }
   }
 
-  /** ¿Se ve el Sol de cerca, con su superficie y sus bucles en movimiento? (`SUN_FRAME_MS`) */
+  /**
+   * Lo que más corre en pantalla desde el frame anterior (px/s, `fastestScreenSpeed`): los cuerpos que
+   * se ven y la superficie de los que giran (los de giro congelado por el aliasing, no).
+   */
+  private screenSpeed(before: readonly ScreenBody[], dtMs: number): number {
+    const daysPerSecond = this.clock.speed / 86_400;
+    return fastestScreenSpeed(before, this.screen, dtMs, (index) => {
+      const spinDays = MOTION_BODIES[index]?.spinDays;
+      if (!spinDays || this.aliasing.spin[index] === 1) return 0;
+      return (2 * Math.PI * daysPerSecond) / spinDays;
+    });
+  }
+
+  /** ¿Se ve el Sol de cerca, con su superficie y sus bucles en movimiento? (`sunFrameMs`) */
   private sunAnimates(): boolean {
     return (
       !this.instant() &&
@@ -1136,6 +1194,8 @@ export class SceneEngine implements SceneEngineApi {
     const cpuStart = this.deps.now();
     const state = this.system.at(this.clock.timeMsValue);
     const orientations = this.orientations.at(state);
+    const saturn = orientations[SATURN_INDEX];
+    if (saturn) this.saturnPole = columnOf(saturn, 2);
     this.ephemerisMs = 0.9 * this.ephemerisMs + 0.1 * (this.deps.now() - cpuStart);
     const nowMs = this.deps.now();
     this.frames.update(placementInput(state, orientations, this.overviewScreen), nowMs);
@@ -1179,8 +1239,6 @@ export class SceneEngine implements SceneEngineApi {
     this.applyLighting();
     if (!paint) return moving;
     this.renderer.render(this.world.scene, camera);
-    if (this.sunBloomOn)
-      this.renderer.sunBloom?.render(this.world.scene, camera, this.sunBloomOptions());
     this.renderedFrames++;
     this.frameTimes.push(timeMs);
     if (this.frameTimes.length > 240) this.frameTimes.splice(0, this.frameTimes.length - 240);
@@ -1190,63 +1248,6 @@ export class SceneEngine implements SceneEngineApi {
       this.emit('frameStats', this.stats());
     }
     return moving;
-  }
-
-  /** El bloom del Sol para su primer plano de este frame (`VISUAL_CONFIG.sun.bloom`, interpolado). */
-  private sunBloomOptions(): SunBloomOptions {
-    const { overview, closeUp } = VISUAL_CONFIG.sun.bloom;
-    const t = this.sunCloseUp;
-    const mix = (a: number, b: number) => a + (b - a) * t;
-    const f = (k: number) => mix(overview.factors[k] as number, closeUp.factors[k] as number);
-    return {
-      strength: mix(overview.strength, closeUp.strength),
-      factors: [f(0), f(1), f(2), f(3), f(4)],
-    };
-  }
-
-  /**
-   * Compila los sombreados del bloom sin bloquear (si está encendido, el nivel lo lleva y aún no lo
-   * están): al arrancar y al subir a mano desde el nivel bajo. La compilación reserva su render target:
-   * si la vista no lo usa, se suelta.
-   */
-  private async compileSunBloom(): Promise<void> {
-    const bloom = this.renderer.sunBloom;
-    if (!bloom || !VISUAL_CONFIG.sun.bloom.enabled || !this.profile.sunBloom || this.sunMeasure) {
-      return;
-    }
-    if (this.sunBloomCompiled || this.sunBloomCompiling) return;
-    this.sunBloomCompiling = true;
-    try {
-      await bloom.compile(this.world.scene, this.world.camera);
-      this.sunBloomCompiled = true;
-    } catch {
-      // Sin compilar no se pinta: queda el halo.
-    } finally {
-      this.sunBloomCompiling = false;
-    }
-    if (this.disposed) return;
-    if (!this.sunBloomWanted()) bloom.release();
-    this.invalidate();
-  }
-
-  /**
-   * ¿Puede llevar bloom el Sol? Si está encendido (`VISUAL_CONFIG.sun.bloom.enabled`; con el Sol
-   * realzado de D46, apagado: su resplandor lo pinta el halo), en los niveles alto y medio, si el
-   * renderer lo tiene, en la vista del sistema solar, salvo al medir su limbo o en la miniatura aislada
-   * de otro cuerpo. En las vistas Tierra
-   * y Luna, no: el Sol casi nunca está en pantalla (y, si lo está, es pequeño y basta su halo), y sus
-   * texturas de primer plano llenan la VRAM (en alto, la vista Tierra llega a unos 277 MB de 300: con el
-   * bloom y una pantalla de densidad 2, pasaría).
-   */
-  private sunBloomWanted(): boolean {
-    return (
-      VISUAL_CONFIG.sun.bloom.enabled &&
-      this.profile.sunBloom &&
-      this._view === 'system' &&
-      !this.sunMeasure &&
-      this.renderer.sunBloom !== undefined &&
-      (!this.isolated || this.focusIndex === SUN_INDEX)
-    );
   }
 
   /**
@@ -1464,10 +1465,73 @@ export class SceneEngine implements SceneEngineApi {
         insets: this.insets,
         hidden: this.hiddenLabels(),
         extents: LABEL_EXTENTS,
+        verticalExtents: this.ringLabelExtents(),
         markerRadiusPx: this.markerRadii(),
       },
     );
     this.labels.update(boxes, this.focusIndex ?? -1);
+    this.updatePlaceLabels(width, height);
+  }
+
+  /**
+   * Los nombres de los lugares de la vista «España» (propuesta de la fase 9b: eran puntos sin nombre),
+   * con la misma colocación sin solapes que los de los cuerpos: junto a su punto, los de la cara oculta
+   * no, y en un grupo apretado (el Montsec, Fraga y el Fabra), los que quepan, el Montsec el primero.
+   */
+  private updatePlaceLabels(width: number, height: number): void {
+    const places = this._view === 'earth' ? this.world.placePositions() : null;
+    if (!places || !this.placeLabels.visibleLayer) {
+      this.placeLabels.update([], -1);
+      return;
+    }
+    const screen = projectBodies(
+      this.world.camera,
+      places.positions,
+      PLACE_RADII,
+      width,
+      height,
+    ).map((place) => ({
+      ...place,
+      radiusPx: PLACE_DOT_PX,
+      occluded: places.facing[place.index] !== 1,
+    }));
+    const boxes = layoutLabels(
+      screen,
+      PLACE_INFOS,
+      this.placeLabels.measure(),
+      { width, height },
+      -1,
+      -1,
+      { insets: this.insets, markerRadiusPx: PLACE_NO_MARKER },
+    );
+    this.placeLabels.update(boxes, -1);
+  }
+
+  /**
+   * Lo que suben los anillos de Saturno en pantalla por encima de su centro, en radios del disco: la
+   * elipse de un anillo de radio R con su polo n, vista con la cámara (derecha, arriba y hacia dentro),
+   * mide R de semieje mayor y R·|n·dentro| de menor, girada lo que gira el polo proyectado; su alto es
+   * R·√(sen²ψ + (n·dentro)²·cos²ψ). Así su nombre va justo por encima de los anillos (propuesta de la
+   * fase 9b): a su derecha quedaba más allá de ellos, lejos del planeta.
+   */
+  private ringLabelExtents(): readonly number[] {
+    const extents = this.labelVerticalExtents;
+    const pole = this.saturnPole;
+    const outer = LABEL_EXTENTS[SATURN_INDEX] ?? 1;
+    if (!pole) return extents;
+    // El polo, de ECL a Three ((x, z, −y)) y a los ejes de la cámara (su `matrixWorldInverse`, ya al
+    // día en este frame: una dirección, sin la traslación).
+    const [px, py, pz] = [pole.x, pole.z, -pole.y];
+    const e = this.world.camera.matrixWorldInverse.elements;
+    const cx = (e[0] as number) * px + (e[4] as number) * py + (e[8] as number) * pz;
+    const cy = (e[1] as number) * px + (e[5] as number) * py + (e[9] as number) * pz;
+    const cz = (e[2] as number) * px + (e[6] as number) * py + (e[10] as number) * pz;
+    const across = Math.hypot(cx, cy);
+    // ψ: lo que se aparta de la vertical el polo proyectado (con el polo hacia la cámara, da igual).
+    const sinPsi = across > 1e-9 ? Math.abs(cx) / across : 0;
+    const cosPsi = across > 1e-9 ? Math.abs(cy) / across : 1;
+    extents[SATURN_INDEX] = outer * Math.sqrt(sinPsi ** 2 + cz ** 2 * cosPsi ** 2);
+    return extents;
   }
 
   /**
@@ -1487,18 +1551,9 @@ export class SceneEngine implements SceneEngineApi {
         : this.litBrightness(focus, this.world.phaseAngleOf(focus));
     const exposure = exposureFor(closeUp, albedo, lit);
     // El Sol: halo, granulación y corona según su primer plano; la granulación cambia con el reloj de
-    // pared (quieta con movimiento reducido y en las capturas). Su bloom, si se ve en pantalla, con los
-    // cuerpos que lo tapan.
-    const occluders =
-      this.sunBloomWanted() && this.sunBloomCompiled ? sunOccluders(this.screen, SUN_INDEX) : null;
-    this.sunBloomOn = occluders !== null && (this.screen[SUN_INDEX]?.onScreen ?? false);
+    // pared (quieta con movimiento reducido y en las capturas).
     this.sunCloseUp = focus === SUN_INDEX ? closeUp : 0;
-    if (this.sunBloomOn && occluders) this.world.setSunOccluders(occluders);
-    this.world.setSunAppearance(
-      this.sunCloseUp,
-      this.instant() ? 0 : this.deps.now() / 1000,
-      this.sunBloomOn,
-    );
+    this.world.setSunAppearance(this.sunCloseUp, this.instant() ? 0 : this.deps.now() / 1000);
     // Las nubes de la Tierra derivan con el tiempo real de los frames pintados (quietas con
     // movimiento reducido y en las capturas), no con el simulado: a 3 días por segundo darían vueltas
     // a toda velocidad.
@@ -1832,9 +1887,11 @@ export class SceneEngine implements SceneEngineApi {
     if (this.flight) this.endFlight();
     this.frames.finish();
     this.labels.setVisible(false);
+    this.placeLabels.setVisible(false);
     sky.setLabelsVisible(this.labelsWanted);
     sky.setActive(true);
     this.world.releaseCloseUps();
+    this.world.setSkyOnly(true);
     this.skyKey = '';
     this.exposure = -1;
     this.lastFrameMs = null;
@@ -1863,7 +1920,9 @@ export class SceneEngine implements SceneEngineApi {
 
   private leaveSky(): void {
     this.sky?.setActive(false);
+    this.world.setSkyOnly(false);
     this.labels.setVisible(this.labelsWanted && !this.isolated);
+    this.placeLabels.setVisible(this.labelsWanted && !this.isolated);
     this.exposure = -1;
     this.lastFrameMs = null;
   }
@@ -1976,10 +2035,6 @@ export class SceneEngine implements SceneEngineApi {
       this.profile = QUALITY_PROFILES[level];
       this.world.setQuality(this.profile);
       this.venusRadar.setLevel(this.profile.focusTexture);
-      // El nivel bajo no lleva bloom: sus render targets se sueltan. Al subir a mano desde él, sus
-      // sombreados se compilan sin bloquear (hasta entonces, el halo).
-      if (!this.profile.sunBloom) this.renderer.sunBloom?.release();
-      else void this.compileSunBloom();
       this.applySize();
       this.invalidate();
     }
@@ -2055,6 +2110,8 @@ export class SceneEngine implements SceneEngineApi {
   private onContextRestored(): void {
     this.contextLost = false;
     this.lastFrameMs = null;
+    // Las de 8K soltaron su `ImageBitmap` al subirse: se vuelven a pedir (`textures.ts`).
+    this.world.reloadClosedTextures();
     this.applySize();
     this.emit('contextRestored', {});
     this.invalidate();
@@ -2081,6 +2138,16 @@ export class SceneEngine implements SceneEngineApi {
 
 function resolveDepth(mode: DepthMode): ResolvedDepthMode {
   return mode === 'auto' ? DEFAULT_DEPTH : mode;
+}
+
+/** Cómo se crea el renderer del motor (también desde fuera, para crearlo en su propia tarea). */
+export function engineRendererOptions(options: SceneEngineOptions): RendererOptions {
+  return {
+    depth: resolveDepth(options.depth ?? 'auto'),
+    antialias: true,
+    clearColor: BACKGROUND_COLOR,
+    toneMapping: options.toneMapping ?? VISUAL_CONFIG.toneMapping,
+  };
 }
 
 /**

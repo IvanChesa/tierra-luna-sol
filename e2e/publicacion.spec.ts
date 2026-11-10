@@ -93,6 +93,24 @@ test.describe('Publicación (Cloudflare Pages)', () => {
     expect(thumbnail.headers()['cache-control']).toBe('public, max-age=86400');
   });
 
+  test('comprime el texto como Pages (Brotli o gzip) y deja tal cual las imágenes y los binarios', async ({
+    request,
+  }) => {
+    const encoding = async (path: string, accept: string) =>
+      (await request.get(path, { headers: { 'accept-encoding': accept } })).headers()[
+        'content-encoding'
+      ];
+    const home = await request.get('/', { headers: { 'accept-encoding': 'gzip, deflate, br' } });
+    expect(home.headers()['content-encoding']).toBe('br');
+    expect(home.headers()['vary']).toBe('Accept-Encoding');
+    expect(await home.text()).toContain('<h1');
+    expect(await encoding('/', 'gzip, deflate')).toBe('gzip');
+    expect(await encoding('/', 'br;q=0, gzip')).toBe('gzip');
+    expect(await encoding('/', 'identity')).toBeUndefined();
+    expect(await encoding('/img/cuerpos/saturno.webp', 'br')).toBeUndefined();
+    expect(await encoding('/data/stars.bin', 'br')).toBeUndefined();
+  });
+
   test('la CSP no bloquea nada: el explorador y una ficha, sin violaciones', async ({ page }) => {
     await page.addInitScript(() => {
       const list: string[] = [];

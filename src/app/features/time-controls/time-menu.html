@@ -26,7 +26,7 @@
       required
       [value]="dateValue()"
       [attr.aria-invalid]="invalid()"
-      [attr.aria-describedby]="invalid() ? 'time-error' : null"
+      [attr.aria-describedby]="invalid() ? 'time-range time-error' : 'time-range'"
       (focus)="startEditing(date, clock)"
       (blur)="stopEditing(date, clock)"
       (change)="changed(date, clock)"
@@ -50,6 +50,19 @@
     />
   </div>
 
+  <!--
+    El rango, siempre a la vista, y el aviso, justo debajo de la fecha (crítica de la fase 9c: el campo
+    aceptaba 2150 y avisaba lejos, al final del panel; revisión del bloque S, decisión 6).
+  -->
+  <div class="menu__wide menu__range">
+    <p class="menu__hint" id="time-range">Entre 1900 y 2100.</p>
+    @if (invalid()) {
+      <p class="menu__error" id="time-error" role="alert">
+        Esa fecha no existe o se sale del rango: elige una entre 1900 y 2100.
+      </p>
+    }
+  </div>
+
   <div class="field">
     <label class="field__label" for="time-zone">Zona</label>
     <select id="time-zone" class="control" (change)="changeZone($event)">
@@ -61,12 +74,6 @@
   <button type="button" class="control" title="Volver a ahora, en tiempo real (N)" (click)="now()">
     Ahora
   </button>
-
-  @if (invalid()) {
-    <p class="menu__wide menu__error" id="time-error" role="alert">
-      Esa fecha no existe o se sale del rango: elige una entre 1900 y 2100.
-    </p>
-  }
 
   <!-- En el móvil, la velocidad (en escritorio está en la barra). -->
   <div class="field menu__speed">
@@ -128,7 +135,12 @@
 
   <div class="field">
     <label class="field__label" for="time-scale">Escala</label>
-    <select id="time-scale" class="control" (change)="changeScale($event)">
+    <select
+      id="time-scale"
+      class="control"
+      aria-describedby="time-scale-hint"
+      (change)="changeScale($event)"
+    >
       @for (option of scales; track option.value) {
         <option [value]="option.value" [selected]="sim.scaleFrame() === option.value">
           {{ option.label }}
@@ -136,6 +148,12 @@
       }
     </select>
   </div>
+
+  <!-- Qué es cada escala, a la vista (crítica de la 9c: «Escala» pedía contexto). -->
+  <p class="menu__wide menu__hint" id="time-scale-hint">
+    Ilustrativa: los cuerpos, agrandados, y las distancias, acortadas, para que todo se vea. Real:
+    los tamaños y las distancias, en la misma proporción.
+  </p>
 
   <!-- El recorrido de la portada, cuando se quiera (fase 9c, 9c.6). -->
   <button type="button" class="control menu__wide" (click)="tour()">

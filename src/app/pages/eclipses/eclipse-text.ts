@@ -8,20 +8,13 @@ import {
   formatNumber,
   utcOffsetLabelInZone,
 } from '../../core/format';
+import { eclipseParam, eclipseTitle } from '../../data/eclipse-entry';
 import type { EclipseEntry } from '../../data/eclipse-entry';
+import { DEFAULT_PLACE_ID } from '../../data/places';
+
+export { eclipseTitle } from '../../data/eclipse-entry';
 
 const NBSP = String.fromCharCode(0xa0);
-
-/** «Eclipse total de Sol», «Eclipse penumbral de Luna»… */
-export function eclipseTitle(entry: EclipseEntry): string {
-  const type = {
-    total: 'total',
-    partial: 'parcial',
-    annular: 'anular',
-    penumbral: 'penumbral',
-  }[entry.type];
-  return `Eclipse ${type} de ${entry.kind === 'solar' ? 'Sol' : 'Luna'}`;
-}
 
 /** «12 de agosto de 2026», el día del máximo en el lugar. */
 export const eclipseDate = (entry: EclipseEntry, timeZone: string): string =>
@@ -76,15 +69,21 @@ export function visibilityText(entry: EclipseEntry, timeZone: string): string {
 }
 
 /** La URL de «Ver en 3D»: la vista Tierra con la sombra de la Luna o la vista Luna, en el máximo. */
-export function view3dLink(entry: EclipseEntry): {
+export function view3dLink(
+  entry: EclipseEntry,
+  placeId: string = DEFAULT_PLACE_ID,
+): {
   readonly path: string;
   readonly queryParams: Readonly<Record<string, string>>;
 } {
-  // El instante del máximo, al segundo, como lo lee el explorador (`?fecha=2026-08-12T18:29:29Z`).
+  // El instante del máximo, al segundo, como lo lee el explorador (`?fecha=2026-08-12T18:29:29Z`); qué
+  // eclipse es y desde dónde, para decirlo al llegar y volver a la lista (crítica de la fase 10).
   const fecha = entry.peak;
+  const eclipse = eclipseParam(entry);
+  const lugar: Record<string, string> = placeId === DEFAULT_PLACE_ID ? {} : { lugar: placeId };
   return entry.kind === 'solar'
-    ? { path: '/explorar/tierra', queryParams: { fecha, sombra: '1' } }
-    : { path: '/explorar/luna', queryParams: { fecha } };
+    ? { path: '/explorar/tierra', queryParams: { fecha, sombra: '1', eclipse, ...lugar } }
+    : { path: '/explorar/luna', queryParams: { fecha, eclipse, ...lugar } };
 }
 
 /** «Ver en 3D el eclipse total de Sol del 12 de agosto de 2026» (el nombre accesible del enlace). */

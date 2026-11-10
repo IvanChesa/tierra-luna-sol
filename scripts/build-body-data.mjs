@@ -70,7 +70,34 @@ function num(text) {
   return value;
 }
 const exact = (value) => Number(value.toPrecision(12));
-const q = (value, source, note) => (note ? { value, source, note } : { value, source });
+/** Los decimales con los que está escrito un número (`decimalsOf` de `core/format.ts`). */
+function decimalsOf(value) {
+  const [mantissa = '', exponent = '0'] = String(Math.abs(value)).split('e');
+  return Math.max(0, (mantissa.split('.')[1]?.length ?? 0) - Number(exponent));
+}
+/**
+ * Una cifra copiada tal cual de la fuente, con los decimales con los que la escribe: «5.0» es 5 con un
+ * decimal (fase 10, tarea 12: «5,0 km/s» salía «5 km/s»). Solo para las que no se convierten.
+ */
+function w(text) {
+  const written = text
+    .replace(/,/g, '')
+    .replace(/[*R]+$/, '')
+    .trim();
+  return { written: true, value: num(text), digits: written.split('.')[1]?.length ?? 0 };
+}
+/**
+ * Un dato con su fuente. Con una cifra de `w`, guarda sus decimales (`digits`) solo si la fuente
+ * escribe ceros finales que el número pierde.
+ */
+function q(value, source, note) {
+  const tail = note ? { source, note } : { source };
+  if (value && typeof value === 'object' && value.written) {
+    const extra = value.digits > decimalsOf(value.value) ? { digits: value.digits } : {};
+    return { value: value.value, ...extra, ...tail };
+  }
+  return { value, ...tail };
+}
 
 await mkdir(CACHE, { recursive: true });
 const data = {};
@@ -111,14 +138,14 @@ const data = {};
           'La mitad del diámetro ecuatorial que da la NASA.',
         ),
         massKg: q(exact(num(cell('Mass', name)) * 1e24), S),
-        densityKgM3: q(num(cell('Density', name)), S),
-        surfaceGravityMS2: q(num(cell('Gravity', name)), S),
-        escapeVelocityKmS: q(num(cell('Escape Velocity', name)), S),
-        rotationPeriodH: q(num(cell('Rotation Period', name)), S),
-        lengthOfDayH: q(num(cell('Length of Day', name)), S),
-        axialTiltDeg: q(num(cell('Obliquity to Orbit', name)), S),
-        meanTemperatureC: q(num(cell('Mean Temperature', name)), S),
-        ...(pressure.startsWith('Unknown') ? {} : { surfacePressureBar: q(num(pressure), S) }),
+        densityKgM3: q(w(cell('Density', name)), S),
+        surfaceGravityMS2: q(w(cell('Gravity', name)), S),
+        escapeVelocityKmS: q(w(cell('Escape Velocity', name)), S),
+        rotationPeriodH: q(w(cell('Rotation Period', name)), S),
+        lengthOfDayH: q(w(cell('Length of Day', name)), S),
+        axialTiltDeg: q(w(cell('Obliquity to Orbit', name)), S),
+        meanTemperatureC: q(w(cell('Mean Temperature', name)), S),
+        ...(pressure.startsWith('Unknown') ? {} : { surfacePressureBar: q(w(pressure), S) }),
         globalMagneticField: q(yes(cell('Global Magnetic Field', name)), S),
         ringSystem: q(yes(cell('Ring System', name)), S),
       },
@@ -126,10 +153,10 @@ const data = {};
         semiMajorAxisKm: q(exact(num(cell('Distance from Sun', name)) * 1e6), S),
         periapsisKm: q(exact(num(cell('Perihelion', name)) * 1e6), S),
         apoapsisKm: q(exact(num(cell('Aphelion', name)) * 1e6), S),
-        periodDays: q(num(cell('Orbital Period', name)), S),
-        meanOrbitalVelocityKmS: q(num(cell('Orbital Velocity', name)), S),
-        inclinationDeg: q(num(cell('Orbital Inclination', name)), S, 'Respecto a la eclíptica.'),
-        eccentricity: q(num(cell('Orbital Eccentricity', name)), S),
+        periodDays: q(w(cell('Orbital Period', name)), S),
+        meanOrbitalVelocityKmS: q(w(cell('Orbital Velocity', name)), S),
+        inclinationDeg: q(w(cell('Orbital Inclination', name)), S, 'Respecto a la eclíptica.'),
+        eccentricity: q(w(cell('Orbital Eccentricity', name)), S),
       },
     };
   }
@@ -140,23 +167,24 @@ const data = {};
   const M = 'nssdc-moon';
   const moonSheet = await page(M);
   const moonTable = rows(moonSheet);
-  const moon = (label) => {
+  const moonCell = (label) => {
     const r = moonTable.find((cells) => cells[0]?.startsWith(label));
     if (!r) throw new Error(`Falta la fila ${label} de la Luna`);
-    return num(r[1]);
+    return r[1];
   };
+  const moon = (label) => num(moonCell(label));
   const night = /Surface pressure \(night\): ([\d.]+) x 10 (-?\d+) bar/.exec(clean(moonSheet));
   if (!night) throw new Error('Falta la presión de la Luna en su ficha');
   data.luna = {
     physical: {
       massKg: q(exact(num(cell('Mass', 'MOON')) * 1e24), S),
-      densityKgM3: q(num(cell('Density', 'MOON')), S),
-      surfaceGravityMS2: q(num(cell('Gravity', 'MOON')), S),
-      escapeVelocityKmS: q(num(cell('Escape Velocity', 'MOON')), S),
-      rotationPeriodH: q(num(cell('Rotation Period', 'MOON')), S),
-      lengthOfDayH: q(num(cell('Length of Day', 'MOON')), S),
-      axialTiltDeg: q(num(cell('Obliquity to Orbit', 'MOON')), S),
-      meanTemperatureC: q(num(cell('Mean Temperature', 'MOON')), S),
+      densityKgM3: q(w(cell('Density', 'MOON')), S),
+      surfaceGravityMS2: q(w(cell('Gravity', 'MOON')), S),
+      escapeVelocityKmS: q(w(cell('Escape Velocity', 'MOON')), S),
+      rotationPeriodH: q(w(cell('Rotation Period', 'MOON')), S),
+      lengthOfDayH: q(w(cell('Length of Day', 'MOON')), S),
+      axialTiltDeg: q(w(cell('Obliquity to Orbit', 'MOON')), S),
+      meanTemperatureC: q(w(cell('Mean Temperature', 'MOON')), S),
       surfacePressureBar: q(exact(num(night[1]) * 10 ** num(night[2])), M, 'De noche.'),
       globalMagneticField: q(yes(cell('Global Magnetic Field', 'MOON')), S),
     },
@@ -169,10 +197,10 @@ const data = {};
         'El medio: a lo largo del año, la distancia a la Tierra va de unos 357.000 a 407.000 km.',
       ),
       apoapsisKm: q(exact(moon('Apogee') * 1e6), M, 'El medio.'),
-      periodDays: q(moon('Revolution period'), M, moonNote),
-      meanOrbitalVelocityKmS: q(moon('Mean orbital velocity'), M, moonNote),
-      inclinationDeg: q(moon('Inclination to ecliptic'), M, 'Respecto a la eclíptica.'),
-      eccentricity: q(moon('Orbit eccentricity'), M),
+      periodDays: q(w(moonCell('Revolution period')), M, moonNote),
+      meanOrbitalVelocityKmS: q(w(moonCell('Mean orbital velocity')), M, moonNote),
+      inclinationDeg: q(w(moonCell('Inclination to ecliptic')), M, 'Respecto a la eclíptica.'),
+      eccentricity: q(w(moonCell('Orbit eccentricity')), M),
     },
   };
 }
@@ -182,29 +210,30 @@ const data = {};
   const html = await page('nssdc-sun');
   const table = rows(html);
   const S = 'nssdc-sun';
-  const sun = (label) => {
+  const sunCell = (label) => {
     const r = table.find((cells) => cells[0]?.startsWith(label));
     if (!r) throw new Error(`Falta la fila ${label} del Sol`);
-    return num(r[1].replace(/\.$/, ''));
+    return r[1].replace(/\.$/, '');
   };
+  const sun = (label) => num(sunCell(label));
   const text = clean(html);
   const effective = /Effective temperature: ([\d,]+) K/.exec(text);
   const spectral = table.find((cells) => cells[0] === 'Spectral type');
   if (!effective || !spectral) throw new Error('Falta la temperatura efectiva o el tipo espectral');
   data.sol = {
     physical: {
-      radiusKm: q(sun('Volumetric mean radius'), S, 'Radio medio volumétrico.'),
+      radiusKm: q(w(sunCell('Volumetric mean radius')), S, 'Radio medio volumétrico.'),
       massKg: q(exact(sun('Mass') * 1e24), S),
-      densityKgM3: q(sun('Mean density'), S),
-      surfaceGravityMS2: q(sun('Surface gravity'), S, 'En el ecuador.'),
-      escapeVelocityKmS: q(sun('Escape velocity'), S),
+      densityKgM3: q(w(sunCell('Mean density')), S),
+      surfaceGravityMS2: q(w(sunCell('Surface gravity')), S, 'En el ecuador.'),
+      escapeVelocityKmS: q(w(sunCell('Escape velocity')), S),
       rotationPeriodH: q(
-        sun('Sidereal rotation period'),
+        w(sunCell('Sidereal rotation period')),
         S,
         'A 16° de latitud: el Sol no gira como un sólido.',
       ),
-      axialTiltDeg: q(sun('Obliquity to ecliptic'), S, 'Respecto a la eclíptica.'),
-      effectiveTemperatureK: q(num(effective[1]), S),
+      axialTiltDeg: q(w(sunCell('Obliquity to ecliptic')), S, 'Respecto a la eclíptica.'),
+      effectiveTemperatureK: q(w(effective[1]), S),
       luminosityW: q(exact(sun('Luminosity') * 1e24), S),
       spectralType: q(spectral[1], S),
     },
@@ -245,7 +274,7 @@ const MOON_NAMES = {
     const [radius] = r[4].split(' ');
     const [density] = r[5].split(' ');
     data[id] ??= { physical: {} };
-    data[id].physical.radiusKm = q(num(radius), S, 'Radio medio.');
+    data[id].physical.radiusKm = q(w(radius), S, 'Radio medio.');
     if (id !== 'luna') data[id].physical.densityKgM3 = q(exact(num(density) * 1000), S);
   }
 }
@@ -270,14 +299,15 @@ const MOON_NAMES = {
       physical.massKg = q(exact(num(bulk[1]) * 1e20), S);
       const albedo = bulk[4];
       if (albedo.includes('/')) {
-        const [dark, bright] = albedo.split('/').map((v) => num(v));
+        const [dark, brightText] = albedo.split('/');
+        const bright = num(brightText);
         physical.geometricAlbedo = q(
-          dark,
+          w(dark),
           S,
           `Cara oscura; la clara llega a ${String(bright).replace('.', ',')} (la NASA da «${albedo}»).`,
         );
       } else if (albedo) {
-        physical.geometricAlbedo = q(num(albedo), S);
+        physical.geometricAlbedo = q(w(albedo), S);
       }
       // Órbita: semieje (10³ km) | [radios del planeta] | periodo (días) | rotación | inclinación | excentricidad
       const hasRadii = orbital.length === 7;
@@ -288,9 +318,9 @@ const MOON_NAMES = {
       const eccentricityCell = orbital[hasRadii ? 6 : 5];
       const orbit = {
         semiMajorAxisKm: q(exact(num(aCell) * 1000), S),
-        periodDays: q(num(periodCell), S),
-        inclinationDeg: q(num(inclinationCell), S, 'Respecto al ecuador del planeta.'),
-        eccentricity: q(num(eccentricityCell), S),
+        periodDays: q(w(periodCell), S),
+        inclinationDeg: q(w(inclinationCell), S, 'Respecto al ecuador del planeta.'),
+        eccentricity: q(w(eccentricityCell), S),
       };
       if (periodCell.endsWith('R'))
         orbit.retrograde = q(true, S, 'La NASA lo marca como retrógrado («R»).');
@@ -314,21 +344,18 @@ const MOON_NAMES = {
   for (const [id, k] of Object.entries(columns)) {
     const physical = data[id].physical;
     physical.massKg = q(exact(num(row('Mass (10 15 kg)')[k]) * 1e15), S);
-    physical.geometricAlbedo = q(num(row('Geometric albedo')[k]), S);
-    const period = num(row('Sidereal orbit period (days)')[k]);
+    physical.geometricAlbedo = q(w(row('Geometric albedo')[k]), S);
+    const periodText = row('Sidereal orbit period (days)')[k];
+    const period = num(periodText);
     const rotation = num(row('Sidereal rotation period (days)')[k]);
     if (period === rotation) {
       physical.synchronousRotation = q(true, S, 'Periodo de rotación igual al orbital.');
     }
     data[id].orbit = {
       semiMajorAxisKm: q(num(row('Semimajor axis*')[k]), S),
-      periodDays: q(period, S),
-      inclinationDeg: q(
-        num(row('Orbital inclination (deg)')[k]),
-        S,
-        'Respecto al ecuador de Marte.',
-      ),
-      eccentricity: q(num(row('Orbital eccentricity')[k]), S),
+      periodDays: q(w(periodText), S),
+      inclinationDeg: q(w(row('Orbital inclination (deg)')[k]), S, 'Respecto al ecuador de Marte.'),
+      eccentricity: q(w(row('Orbital eccentricity')[k]), S),
     };
   }
 }
@@ -352,7 +379,7 @@ const MOON_NAMES = {
     const match = /Ellipticity(?: \(Flattening\))? ([\d.]+)/.exec(clean(await page(S)));
     if (!match) throw new Error(`Falta el achatamiento en ${S}`);
     data[id].physical.flatteningRatio = q(
-      num(match[1]),
+      w(match[1]),
       S,
       'Achatamiento f = (a − c) / a (radios ecuatorial y polar).',
     );
@@ -377,7 +404,7 @@ const MOON_NAMES = {
   for (const [id, S] of Object.entries(sheets)) {
     const match = /Geometric albedo ([\d.]+)/.exec(clean(await page(S)));
     if (!match) throw new Error(`Falta el albedo geométrico en ${S}`);
-    data[id].physical.geometricAlbedo = q(num(match[1]), S, 'Albedo geométrico (visual).');
+    data[id].physical.geometricAlbedo = q(w(match[1]), S, 'Albedo geométrico (visual).');
   }
 }
 

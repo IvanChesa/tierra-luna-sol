@@ -45,10 +45,12 @@ import {
   constellationOpacityAt,
   daylightAt,
   eclipseSkyAltitude,
+  glowBandAt,
   milkyWayGainAt,
   skyColorsAt,
   srgbHexToLinear,
   starLimitAt,
+  sunDiscTintAt,
   totalityOf,
 } from './sky-colors';
 import { SkyLabelPlacement, SkyLabelSpec, SkyLabels } from './sky-labels';
@@ -449,8 +451,12 @@ export class SkyScene {
     this.dome.uniforms.uZenith.value.setRGB(...colors.zenith);
     this.dome.uniforms.uHorizon.value.setRGB(...colors.horizon);
     this.dome.uniforms.uGlow.value.setRGB(...colors.glow);
-    if (sun)
+    if (sun) {
       this.dome.uniforms.uSunDirection.value.set(sun.direction.x, sun.direction.y, sun.direction.z);
+      // Con la altura real del Sol, no la del eclipse: la forma de su luz va con su altura.
+      this.dome.uniforms.uBand.value = glowBandAt(sun.altitudeDeg);
+      this.sunMaterial.uniforms.uTint.value.set(...sunDiscTintAt(sun.altitudeDeg));
+    }
     const daylight = daylightAt(effective);
     const night = srgbHexToLinear(VISUAL_CONFIG.sky.ground.night);
     const day = srgbHexToLinear(VISUAL_CONFIG.sky.ground.day);
@@ -495,6 +501,7 @@ export class SkyScene {
       this.sun.quaternion.copy(this.camera.quaternion);
       this.sun.scale.setScalar(SKY_DISTANCE * Math.tan(radius));
       this.sun.visible = sun.altitudeDeg > -2;
+      this.dome.uniforms.uSunRadius.value = this.sun.visible ? radius : 0;
       // La totalidad (con el Sol tapado del todo): la corona, con sus serpentinas en el ecuador del Sol
       // (el ángulo en pantalla de su polo norte), y la luz del cielo de la totalidad en la cúpula.
       const totality = this.sun.visible ? totalityOf(frame.obscuration) : 0;

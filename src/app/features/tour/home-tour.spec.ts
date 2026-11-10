@@ -18,6 +18,7 @@ function fakeHost() {
       said.push(text);
     },
     caption: (text) => captions.push(text),
+    prefetch: (ids) => calls.push(`prefetch:${ids.join(',')}`),
   };
   return { host, calls, captions, said };
 }
@@ -35,6 +36,8 @@ describe('El recorrido de la portada (fase 9c)', () => {
     vi.advanceTimersByTime(HOME_TOUR_MS - 1);
     expect(calls).toEqual([
       'announce',
+      // Las texturas grandes de las paradas que vienen, por la red, mientras se ve Saturno (9b).
+      'prefetch:tierra,luna',
       'select:saturno',
       'closePanel',
       'goTo:earth',
@@ -81,7 +84,13 @@ describe('El recorrido de la portada (fase 9c)', () => {
     tour.stop();
     tour.stop();
     vi.advanceTimersByTime(HOME_TOUR_MS);
-    expect(calls).toEqual(['announce', 'select:saturno', 'closePanel', 'goTo:earth']);
+    expect(calls).toEqual([
+      'announce',
+      'prefetch:tierra,luna',
+      'select:saturno',
+      'closePanel',
+      'goTo:earth',
+    ]);
     expect(done).toHaveBeenCalledExactlyOnceWith(false);
   });
 });

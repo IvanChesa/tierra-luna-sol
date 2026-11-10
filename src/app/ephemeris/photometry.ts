@@ -177,11 +177,18 @@ export function litDiscBrightness(alpha: number, p: Photometry, steps = 32): num
   return discBrightness(alpha, p, steps, 2 * steps) / full / fraction;
 }
 
-/** Tabla de {@link litDiscBrightness} cada 10° (de 0° a 180°), para consultarla en cada frame. */
-export function litBrightnessTable(p: Photometry): Float64Array {
-  return Float64Array.from({ length: 19 }, (_, k) =>
-    litDiscBrightness((k * 10 * Math.PI) / 180, p),
-  );
+/**
+ * Tabla de {@link litDiscBrightness} cada 10° (de 0° a 180°), para consultarla en cada frame. La fase
+ * llena se integra una sola vez (antes, una por fila: se calcula al enfocar un cuerpo, en un frame).
+ */
+export function litBrightnessTable(p: Photometry, steps = 32): Float64Array {
+  const full = discBrightness(0, p, steps, 2 * steps);
+  return Float64Array.from({ length: 19 }, (_, k) => {
+    const alpha = (k * 10 * Math.PI) / 180;
+    const fraction = (1 + Math.cos(alpha)) / 2;
+    if (fraction < 1e-4) return 0;
+    return discBrightness(alpha, p, steps, 2 * steps) / full / fraction;
+  });
 }
 
 /** Interpola la tabla de {@link litBrightnessTable} a la fase α (rad). */

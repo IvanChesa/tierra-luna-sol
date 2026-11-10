@@ -165,7 +165,16 @@ export class ViewerCanvas {
       const { createSceneEngine } = await import('../../scene');
       // Mientras bajaba el chunk se ha podido salir del explorador o pulsar «Reintentar».
       if (!alive()) return;
-      const engine = createSceneEngine({ ...this.session.engineOptions(), canvas, labelLayer });
+      const engine = await createSceneEngine({
+        ...this.session.engineOptions(),
+        canvas,
+        labelLayer,
+      });
+      // Entre el contexto WebGL y el mundo, el motor cede el hilo: también se ha podido salir.
+      if (!alive()) {
+        engine.dispose();
+        return;
+      }
       this.engine = engine;
       if (handle) handle.engine = engine;
       engine.on('progress', ({ loaded, total }) => {

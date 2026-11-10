@@ -65,7 +65,11 @@
         >USGS Astrogeology</a
       >
       y el PDS Geosciences Node (NASA/JPL), de dominio público. Reducido y en WebP; lo que el radar
-      no cubrió, en un gris liso. Es una imagen de radar, en gris: no lo que verían los ojos.
+      no cubrió, en un gris liso. Es una imagen de radar, con el color de las fotos de las Venera 13
+      y 14, como el globo de Magellan de la NASA (<a
+        href="https://science.nasa.gov/photojournal/venus-computer-simulated-global-view-centered-at-180-degrees-east-longitude/"
+        >PIA00104</a
+      >, NASA/JPL): no lo que verían los ojos.
     </li>
     <li>
       <strong>Las lunas</strong>: los mosaicos globales del
@@ -99,9 +103,14 @@
       <strong>Lo que no se vio de las lunas, recreado</strong> (ilustrativo): lo que ninguna sonda
       fotografió (el norte de Tritón y de las lunas de Urano) y lo que el mapa de Deimos no cubre se
       recrean enteros, y lo que solo se fotografió de lejos lleva detalle recreado, siempre con
-      parches del terreno real de la misma luna, sobre la esfera y sin tocar lo real. Proteo no
-      tiene mapa: sus cráteres son generados. El método y lo medido (el grano y el borde con lo
-      real), en <a [href]="recreationDoc">recreacion-lunas.md</a>.
+      parches del terreno real de la misma luna, sobre la esfera y sin tocar lo real. En las lunas
+      de Urano, lo no visto lleva además cráteres con el número, el tamaño y el brillo de las
+      manchas de su parte real (en Miranda, también dos coronas). Lo real fotografiado con luz
+      rasante, junto al terminador de las imágenes de la Voyager 2, sale más oscuro por la luz de la
+      foto, no por el color del suelo: su brillo se corrige al de lo real vecino y sus sombras se
+      funden con lo recreado. Lo mismo, la columna más oscura de la unión de 180° de los mapas del
+      JPL. Proteo no tiene mapa: sus cráteres son generados. El método y lo medido (el grano, el
+      borde con lo real y el contraste), en <a [href]="recreationDoc">recreacion-lunas.md</a>.
       <!--
         En las pantallas estrechas, la tabla no encoge más: se desplaza, y se enfoca con el teclado
         (axe, scrollable-region-focusable, a 320 px; cierre de la fase 9b).
@@ -115,6 +124,7 @@
             <tr>
               <th scope="col">Luna</th>
               <th scope="col">Real</th>
+              <th scope="col">Real con luz rasante (corregida)</th>
               <th scope="col">De lejos (con detalle recreado)</th>
               <th scope="col">No vista (recreada)</th>
             </tr>
@@ -124,6 +134,7 @@
               <tr>
                 <th scope="row">{{ row.name }}</th>
                 <td>{{ row.real }}</td>
+                <td>{{ row.grazing }}</td>
                 <td>{{ row.far }}</td>
                 <td>{{ row.none }}</td>
               </tr>
@@ -214,12 +225,10 @@
       <strong>El Sol</strong>: el oscurecimiento del borde en cada color, con la ley de
       <a href="https://ui.adsabs.harvard.edu/abs/1998A%26A...333..338H/abstract"
         >Hestroffer y Magnan (1998)</a
-      >, y la rotación de las manchas, más lenta lejos del ecuador, con la medida por el SDO de
-      <a href="https://arxiv.org/abs/2508.08196">Lößnitz et al. (2025)</a>. Las manchas, la
-      granulación, la corona y el resplandor son ilustrativos. En el explorador se ve en color
-      realzado, como en las imágenes de los observatorios (con luz visible normal es blanco, como en
-      el cielo): su color, sus zonas claras y oscuras, el oscurecimiento de su borde (más suave que
-      el de la ley), sus rayos y sus protuberancias, también ilustrativos.
+      >. Las manchas, la granulación, la corona y el resplandor son ilustrativos. En el explorador
+      se ve en color realzado, como en las imágenes de los observatorios (con luz visible normal es
+      blanco, como en el cielo): su color, sus zonas claras y oscuras, el oscurecimiento de su borde
+      (más suave que el de la ley), sus rayos y sus protuberancias, también ilustrativos.
     </li>
     <li>
       <strong>Las comprobaciones</strong>: las posiciones, con
@@ -243,7 +252,7 @@
 <section aria-labelledby="imagenes">
   <h2 id="imagenes">Las imágenes del propio explorador</h2>
   <p>
-    Los pósters del explorador, las miniaturas y las imágenes de las fichas, y la imagen para
+    Los pósteres del explorador, las miniaturas y las imágenes de las fichas, y la imagen para
     compartir, son capturas del propio motor con estas texturas: mantienen sus licencias y sus
     atribuciones.
   </p>

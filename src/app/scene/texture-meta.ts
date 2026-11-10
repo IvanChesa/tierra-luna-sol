@@ -44,7 +44,10 @@ export const TEXTURE_META: Readonly<Record<TextureId, TextureMeta>> = {
   'venus-radar': surface(
     'Mosaico C3-MIDR del radar de Magellan, con su georreferencia (de −180° a 180°, longitud este; usgs-mosaic.mjs). Sondas: Maat Mons (0,5° N, 194,6° E), Sapas Mons (8,5° N, 188,3° E) y Maxwell Montes (65,2° N, 3,3° E), más claros en el radar que lo que los rodea; girado 180° o reflejado, no pasan.',
   ),
-  'earth-day': surface('Sondas: el Sáhara (23° N, 10° E) claro frente al Pacífico (0°, 150° O).'),
+  'earth-day': {
+    ...surface('Sondas: el Sáhara (23° N, 10° E) claro frente al Pacífico (0°, 150° O).'),
+    flipInShader: true,
+  },
   'earth-night': earthData('srgb'),
   'earth-clouds': earthData('data'),
   'earth-normal': earthData('data'),

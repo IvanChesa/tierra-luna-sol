@@ -10,6 +10,8 @@
  */
 :root {
   color-scheme: dark;
+  /* El resaltado del toque en el móvil, en latón tenue (el acento, al 18 %), no el azul del sistema. */
+  -webkit-tap-highlight-color: rgb(217 183 110 / 18%);
 
   /* Color */
   --color-bg: #0d1321;
@@ -137,6 +139,8 @@ h3 {
 p {
   margin: 0 0 var(--space-4);
   max-width: var(--measure);
+  /* Sin una palabra sola en la última línea (crítica de la fase 10: 25 en las páginas de lectura). */
+  text-wrap: pretty;
 }
 
 a {
@@ -147,6 +151,15 @@ a {
 
 a:hover {
   text-decoration-thickness: 2px;
+}
+
+/*
+ * En la pantalla táctil, dos toques rápidos en un control son dos pulsaciones y no un zum (en iOS,
+ * «+», «−» y los pasos del año ampliaban la página). El zum con dos dedos sigue. Los deslizadores,
+ * con lo suyo.
+ */
+:is(a, button, select, summary, label, input:not([type='range'])) {
+  touch-action: manipulation;
 }
 
 :focus-visible {
@@ -233,8 +246,20 @@ tls-root {
 }
 
 @media (max-width: 63.99rem) {
+  /*
+   * En el explorador, la cabecera mide lo mismo sin un cuerpo elegido que con él (la franja): 3rem. Si
+   * cambiara, todo el explorador saltaría al elegir un cuerpo o al volver, también cuando lo hace solo el
+   * recorrido de la portada (CLS de 0,05 en cada cambio; fase 10, Lighthouse).
+   */
+  tls-root:has(tls-viewer-layout) .site-header,
   .site-header:has(.site-focus) {
     min-height: 3rem;
+  }
+
+  /* Y el menú del sitio, justo debajo de esa cabecera. */
+  tls-root:has(tls-viewer-layout) .site-nav:popover-open {
+    inset-block-start: 3rem;
+    max-height: calc(100dvh - 3rem - var(--space-2));
   }
 
   .site-header:has(.site-focus) .site-name,
@@ -252,12 +277,16 @@ tls-root {
     min-width: 0;
   }
 
-  /* Con su zona táctil también cuando es solo «‹» (la franja del cielo). */
+  /* Con su zona táctil también cuando es solo la flecha (la franja del cielo). */
   .site-focus .explorer__back {
     flex: none;
     justify-content: center;
     min-width: var(--tap-target);
     margin: 0;
+  }
+
+  .site-focus .explorer__back--icon {
+    padding: 0;
   }
 
   .site-focus__name {
@@ -309,6 +338,21 @@ tls-root {
     overflow: hidden;
     clip-path: inset(50%);
     white-space: nowrap;
+  }
+}
+
+/*
+ * En el teléfono, en la franja, la flecha sola (como la del cielo), con su nombre accesible («Volver
+ * al sistema solar»): con el texto, el nombre del cuerpo no cabía («Ti…» a 390 px). Desde 30rem
+ * (480 px), la flecha y el texto (revisión del bloque S, S9).
+ */
+@media (max-width: 29.99rem) {
+  .site-focus .explorer__back {
+    padding: 0;
+  }
+
+  .site-focus .explorer__back-label {
+    display: none;
   }
 }
 
@@ -541,6 +585,8 @@ main:focus {
 }
 
 .site-footer p {
+  /* Sin la medida de lectura de los párrafos: a 1440 cortaba el pie en dos líneas (crítica de la fase 10). */
+  max-width: none;
   margin: 0;
 }
 
@@ -644,35 +690,42 @@ tls-root:has(tls-explorer-ui.is-clean) .site-header {
 }
 
 /*
- * «‹ Sistema solar» (fase 9c): la vuelta a la vista general, encima del título de las vistas Tierra y
- * Luna y del cuerpo elegido. Discreta, en el color secundario, con su zona táctil.
+ * «‹ Sistema solar» (revisión del bloque S, S9; Iván, 08-11: «Haz más reconocible el botón de volver
+ * al sistema solar; recuerda, queremos una interfaz limpia y sencilla»): un botón de verdad, con el
+ * lenguaje de «Índice» y «Controles» (`.control`): fondo elevado, la flecha y el texto, y la zona
+ * táctil de 44 px también en escritorio. Antes, un texto pequeño y gris sobre el título, que se leía
+ * como una miga o un subtítulo.
  */
 .explorer__back {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
-  min-height: 1.5rem;
-  margin: 0 0 var(--space-1);
-  padding: 0;
-  background: none;
-  color: var(--color-text-muted);
-  border: 0;
+  gap: var(--space-2);
+  min-height: var(--tap-target);
+  margin: 0 0 var(--space-2);
+  padding: 0 var(--space-4) 0 var(--space-3);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-md);
   font: inherit;
   font-size: var(--text-sm);
-  cursor: pointer;
   font-weight: var(--font-weight-strong);
   text-decoration: none;
+  cursor: pointer;
 }
 
 .explorer__back:hover {
-  color: var(--color-text);
+  background: var(--color-line);
 }
 
-@media (pointer: coarse) {
-  .explorer__back {
-    min-height: var(--tap-target);
-    margin-block: calc((1.5rem - var(--tap-target)) / 2) 0;
-  }
+/* La flecha, con los trazos de los iconos (ESTILO §6: un solo trazo de 1,75, extremos redondeados). */
+.explorer__back svg {
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 /*
@@ -772,6 +825,28 @@ tls-explorer-ui
     tls-sky-panel > :is(section, details)
   ) {
   pointer-events: auto;
+}
+
+/*
+ * «Hay más» abajo (la ficha del explorador y el índice de cuerpos: body-panel.css y body-picker.css):
+ * una sombra en el borde de abajo de una lista que se desplaza, mientras quede algo por ver. La
+ * enciende esta animación, ligada al desplazamiento de cada lista.
+ */
+@property --more-below {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+@keyframes more-below {
+  0%,
+  94% {
+    --more-below: 1;
+  }
+
+  100% {
+    --more-below: 0;
+  }
 }
 
 /*
@@ -926,6 +1001,13 @@ select.control {
 
 .scene-label--selected {
   color: var(--color-accent);
+}
+
+/* Los lugares de la vista «España» (propuesta de la fase 9b): solo para mirar, sin clic. */
+.scene-label--place {
+  color: var(--color-text);
+  pointer-events: none;
+  cursor: default;
 }
 
 /*

@@ -89,6 +89,10 @@ describe('texturas: manifiesto y alineación del meridiano 0', () => {
     expect(ids.filter((id) => TEXTURE_META[id].alpha)).toEqual(['saturn-rings']);
   });
 
+  it('solo la de día de la Tierra se decodifica sin voltear (la voltea el sombreado; fase 10)', () => {
+    expect(ids.filter((id) => TEXTURE_META[id].flipInShader)).toEqual(['earth-day']);
+  });
+
   it('en la esfera de three, u = 0,5 es el meridiano 0 (+X) y u = 0,75 los 90° E', () => {
     expect(vertexAt(0.5).distanceTo(new Vector3(1, 0, 0))).toBeLessThan(1e-9);
     // 90° E en el sistema propio (Y) es −Z en los ejes de three (x, z, −y).

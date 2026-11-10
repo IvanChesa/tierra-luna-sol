@@ -46,6 +46,8 @@ describe('TimeControls: barra de tiempo', () => {
     expect(zone().replaceAll('\u00a0', ' ')).toMatch(/^Hora local, UTC(\S*)?$/);
     expect(zone()).toMatch(/^Hora\u00a0local,\u00a0UTC\S*$/);
     expect(speed()).toBe('3 días por segundo');
+    // Hacia delante, sin marca de sentido junto a la zona.
+    expect($<HTMLElement>('.time__direction')).toBeNull();
     // La barra compacta da la hora sin segundos (los tiene el campo de «Controles +»).
     expect($<HTMLElement>('.time__readout time').textContent).toMatch(
       /^\d{1,2}\u00a0\S+\u00a0\d{4}, \d{2}:\d{2}$/,
@@ -56,7 +58,8 @@ describe('TimeControls: barra de tiempo', () => {
     $<HTMLSelectElement>('#time-zone').value = 'utc';
     $<HTMLSelectElement>('#time-zone').dispatchEvent(new Event('change'));
     fixture.detectChanges();
-    expect(zone()).toBe('UTC');
+    // En escritorio, el sentido va junto a la zona (el selector solo dice la velocidad; fase 10).
+    expect(zone()).toBe('UTC · hacia atrás');
   });
 
   it('reproducir y pausar cambian el texto del botón (no solo el icono)', () => {
@@ -146,6 +149,12 @@ describe('TimeControls: barra de tiempo', () => {
     expect(sim.time().toISOString()).toBe('2030-01-01T12:00:00.000Z');
     expect(date.getAttribute('aria-invalid')).toBe('true');
     expect(root.querySelector('[role="alert"]')?.textContent).toContain('entre 1900 y 2100');
+    // El aviso, junto al campo (en la fila de debajo de la fecha y la hora, antes de la zona), y el
+    // rango, siempre a la vista y en la descripción del campo (crítica de la 9c).
+    const fields = [...root.querySelectorAll('#time-clock, #time-error, #time-zone')];
+    expect(fields.map((el) => el.id)).toEqual(['time-clock', 'time-error', 'time-zone']);
+    expect(date.getAttribute('aria-describedby')).toBe('time-range time-error');
+    expect(root.querySelector('#time-range')?.textContent?.trim()).toBe('Entre 1900 y 2100.');
   });
 
   it('mientras se escribe, la fecha se aplica al dejar de teclear y el error solo sale al confirmar', () => {

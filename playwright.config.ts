@@ -61,7 +61,7 @@ export default defineConfig({
     },
     {
       name: 'movil',
-      testMatch: ['movil.spec.ts', 'accesibilidad.spec.ts'],
+      testMatch: ['movil.spec.ts', 'accesibilidad.spec.ts', 'regresion.spec.ts'],
       use: { ...devices['Pixel 7'], launchOptions: { args: SWIFTSHADER } },
     },
     {

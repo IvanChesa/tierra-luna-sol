@@ -18,6 +18,7 @@ import { ROOT_NODES, TreeNode, systemOf, treeNode } from '../body-picker/body-tr
 import { distanceText, ofBody } from '../explorer-ui/describe';
 import { ExplorerSession } from '../explorer-ui/explorer-session';
 import { PHONE_QUERY, mediaQuery } from '../viewer/media';
+import { revealInRow } from '../viewer/reveal-focus';
 
 /** Teclas que mueven el foco dentro de una fila (barra de herramientas de WAI-ARIA, horizontal). */
 const ROW_KEYS: ReadonlySet<string> = new Set(['ArrowRight', 'ArrowLeft', 'Home', 'End']);
@@ -200,19 +201,11 @@ export class BodyChips {
   }
 
   /**
-   * Desplaza solo su fila (horizontal) hasta la ficha: con `scrollIntoView` se moverían también los
-   * contenedores de fuera, y en las pantallas bajas, donde se desplaza la página, la página entera.
+   * Desplaza solo su fila (horizontal) hasta la ficha, entera y fuera del fundido del borde derecho
+   * (`revealInRow`; crítica de la fase 10: la del borde quedaba bajo el fundido).
    */
   private reveal(chip: HTMLElement | null): void {
     const row = chip?.closest<HTMLElement>('.row');
-    if (!chip || !row) return;
-    const box = row.getBoundingClientRect();
-    const target = chip.getBoundingClientRect();
-    const left = box.left + row.clientLeft;
-    const right = left + row.clientWidth;
-    let dx = 0;
-    if (target.left < left) dx = target.left - left;
-    else if (target.right > right) dx = target.right - right;
-    if (dx !== 0) row.scrollBy?.({ left: dx });
+    if (chip && row) revealInRow(row, chip);
   }
 }

@@ -81,6 +81,29 @@ describe('configuración visual', () => {
   });
 });
 
+describe('el radar de Venus, con el color de las Venera 13 y 14 (D49)', () => {
+  const { levels, ramp } = VISUAL_CONFIG.venus.radar.venera;
+  const luminance = ([r, g, b]: readonly number[]) =>
+    0.2126 * (r as number) + 0.7152 * (g as number) + 0.0722 * (b as number);
+
+  it('cambia el tono y no el brillo: cada color de la rampa tiene luminancia 1', () => {
+    for (const color of [ramp.dark, ramp.mid, ramp.light]) {
+      expect(luminance(color)).toBeCloseTo(1, 2);
+    }
+  });
+
+  it('de pardo rojizo en lo oscuro a naranja amarillento en lo claro, como PIA00104', () => {
+    // Los percentiles del mosaico, en orden; el rojo baja y el verde y el azul suben con el brillo.
+    expect(levels[0]).toBeLessThan(levels[1]);
+    expect(levels[1]).toBeLessThan(levels[2]);
+    expect(ramp.dark[0]).toBeGreaterThan(ramp.mid[0]);
+    expect(ramp.mid[0]).toBeGreaterThan(ramp.light[0]);
+    expect(ramp.dark[1]).toBeLessThan(ramp.mid[1]);
+    expect(ramp.mid[1]).toBeLessThan(ramp.light[1]);
+    expect(ramp.light[2]).toBeGreaterThan(ramp.dark[2]);
+  });
+});
+
 describe('presencia de las lunas (fase 4b)', () => {
   const { from, to } = VISUAL_CONFIG.moonResolutionPx;
   // Un planeta de radio 2 (unidades) que mide 10 px en pantalla: cada unidad, 5 px.

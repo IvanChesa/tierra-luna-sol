@@ -86,6 +86,8 @@ export function createSkyDomeMaterial() {
     uSunDirection: new Uniform(new Vector3(0, -1, 0)),
     uGlowPower: new Uniform(6),
     uGlowRise: new Uniform(3),
+    /** Cuánto se ve el resplandor del horizonte del lado del Sol (`glowBandAt`): poco con el Sol alto. */
+    uBand: new Uniform(1),
     /** El brillo del cielo (1, o menos en un eclipse). */
     uBrightness: new Uniform(1),
     /**
@@ -105,6 +107,11 @@ export function createSkyDomeMaterial() {
     uMoonDirection: new Uniform(new Vector3(0, -1, 0)),
     uMoonRadius: new Uniform(0.0045),
     uMoonVeil: new Uniform(0),
+    /**
+     * El radio del disco del Sol tal como se dibuja (rad; 0, sin Sol): dentro de él (y fuera de la
+     * Luna), la cúpula no suma su luz, para que se vea el color del disco (`uTint`).
+     */
+    uSunRadius: new Uniform(0),
   };
   const material = sceneShaderMaterial({
     name: 'tls-sky-dome',
@@ -127,6 +134,7 @@ export function createSkyDomeMaterial() {
       uniform vec3 uSunDirection;
       uniform float uGlowPower;
       uniform float uGlowRise;
+      uniform float uBand;
       uniform float uBrightness;
       uniform float uTotality;
       uniform vec3 uRingInner;
@@ -136,6 +144,7 @@ export function createSkyDomeMaterial() {
       uniform vec3 uMoonDirection;
       uniform float uMoonRadius;
       uniform float uMoonVeil;
+      uniform float uSunRadius;
       varying vec3 vDirection;
       void main() {
         ${DEPTH_FRAGMENT}
@@ -147,7 +156,7 @@ export function createSkyDomeMaterial() {
         // totalidad no hay luz directa del Sol: ninguno de los dos.
         vec3 sun = normalize(uSunDirection);
         float toward = max(dot(normalize(vec3(d.x, 0.0, d.z) + 1e-6), normalize(vec3(sun.x, 0.0, sun.z) + 1e-6)), 0.0);
-        float band = pow(toward, uGlowPower) * pow(1.0 - h, uGlowRise);
+        float band = uBand * pow(toward, uGlowPower) * pow(1.0 - h, uGlowRise);
         float halo = pow(max(dot(d, sun), 0.0), 64.0) * 0.6 + pow(max(dot(d, sun), 0.0), 8.0) * 0.15;
         color += uGlow * (band + halo * smoothstep(-0.2, 0.05, sun.y)) * (1.0 - uTotality);
         // La totalidad: el anillo de todo el horizonte (el aire iluminado fuera de la sombra de la Luna)
@@ -160,6 +169,17 @@ export function createSkyDomeMaterial() {
           vec3 moon = normalize(uMoonDirection);
           float apart = atan(length(cross(d, moon)), dot(d, moon));
           color *= 1.0 - uMoonVeil * (1.0 - smoothstep(uMoonRadius * 0.97, uMoonRadius, apart));
+        }
+        // Sobre el disco del Sol, que va antes, sin la luz del cielo: sumada, junto al Sol saturaba a
+        // blanco y el disco no enrojecía al ponerse (sugerencia 14 de la revisión de la fase 8). Donde
+        // lo tapa la Luna (un eclipse), sí: el bocado tiene el color del cielo.
+        if (uSunRadius > 0.0) {
+          float fromSun = atan(length(cross(d, sun)), dot(d, sun));
+          vec3 moonCenter = normalize(uMoonDirection);
+          float fromMoon = atan(length(cross(d, moonCenter)), dot(d, moonCenter));
+          float onSun = 1.0 - smoothstep(uSunRadius * 0.95, uSunRadius * 0.99, fromSun);
+          float onMoon = 1.0 - smoothstep(uMoonRadius * 0.97, uMoonRadius, fromMoon);
+          color *= 1.0 - onSun * (1.0 - onMoon);
         }
         gl_FragColor = vec4(color * uBrightness, 1.0);
         ${OUTPUT_FRAGMENT}
@@ -345,14 +365,17 @@ export function createConstellationMaterial() {
 
 /**
  * El disco del Sol (un cuadrado de cara a la cámara, con su radio aparente) con el oscurecimiento del
- * limbo por canal de Hestroffer y Magnan (1998; `ephemeris/sun.ts`, fase 9b), en blanco: la luz que lo
- * rodea la pone la cúpula. Se pinta opaco: la Luna, que va después, lo tapa en un eclipse.
+ * limbo por canal de Hestroffer y Magnan (1998; `ephemeris/sun.ts`, fase 9b), en blanco cálido, que
+ * enrojece junto al horizonte (`uTint`, `sunDiscTintAt`): la luz que lo rodea la pone la cúpula. Se
+ * pinta opaco: la Luna, que va después, lo tapa en un eclipse.
  */
 export function createSunDiscMaterial() {
   const [red, green, blue] = SOLAR_LIMB_EXPONENTS;
   const uniforms = {
     uIntensity: new Uniform(1.6),
     uLimbExponent: new Uniform(new Vector3(red, green, blue)),
+    /** El color según su altura (`sunDiscTintAt`): blanco con el Sol alto, naranja al ponerse. */
+    uTint: new Uniform(new Vector3(1, 1, 1)),
   };
   const material = sceneShaderMaterial({
     name: 'tls-sky-sun',
@@ -370,6 +393,7 @@ export function createSunDiscMaterial() {
       ${DEPTH_FRAGMENT_PARS}
       uniform float uIntensity;
       uniform vec3 uLimbExponent;
+      uniform vec3 uTint;
       varying vec2 vUv;
       void main() {
         ${DEPTH_FRAGMENT}
@@ -378,7 +402,7 @@ export function createSunDiscMaterial() {
         // Oscurecimiento del limbo por canal: I(μ)/I(1) = μ^α.
         float mu = sqrt(max(1.0 - r * r, 0.0));
         vec3 limb = pow(vec3(max(mu, 1e-4)), uLimbExponent);
-        gl_FragColor = vec4(vec3(1.0, 0.97, 0.9) * uIntensity * limb, 1.0);
+        gl_FragColor = vec4(vec3(1.0, 0.97, 0.9) * uTint * uIntensity * limb, 1.0);
         ${OUTPUT_FRAGMENT}
       }
     `,

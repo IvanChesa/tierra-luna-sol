@@ -5,6 +5,7 @@ import {
   Place,
   SKY_PLACES,
   findPlace,
+  placeMapLabel,
   placeOptionLabel,
 } from './places';
 
@@ -138,5 +139,19 @@ describe('places', () => {
     );
     expect(km).toBeGreaterThan(20);
     expect(km).toBeLessThan(30);
+  });
+});
+
+describe('places: los nombres sobre el mapa de la vista «España» (propuesta de la 9b)', () => {
+  it('cortos, sin «Observatorio de…» ni «Parque Astronómico del…»', () => {
+    expect(SKY_PLACES.map(placeMapLabel)).toEqual([
+      'Montsec',
+      'Fabra',
+      'Roque de los Muchachos',
+      'Teide',
+      'Calar Alto',
+      'Puerta del Sol',
+      'Fraga',
+    ]);
   });
 });

@@ -80,7 +80,8 @@ jobs:
           path: dist/tierra-luna-sol
 
       - run: npx tsc -p tsconfig.e2e.json
-      - run: npx playwright test
+      # En el push que pide referencias nuevas, la regresión visual va en su trabajo, «referencias».
+      - run: npx playwright test ${{ contains(github.event.head_commit.message, '[referencias]') && '--grep-invert @regresion' || '' }}
 
       - if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -88,6 +89,92 @@ jobs:
           name: e2e-trazas
           path: test-results
           retention-days: 7
+
+  # La regresión visual (fase 10, 10.h): sus referencias, de Linux (el Chromium de Playwright con
+  # SwiftShader, como el trabajo e2e), en un push cuyo mensaje lleva «[referencias]». Salen como artefacto
+  # del CI y se guardan en el repositorio con un commit normal (`e2e/regresion.spec.ts-snapshots/`): el
+  # CI no escribe en el repositorio.
+  referencias:
+    name: Referencias de la regresión visual
+    needs: check
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[referencias]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: build
+          path: dist/tierra-luna-sol
+
+      - run: npx playwright test --grep @regresion --update-snapshots=all
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: referencias
+          path: e2e/regresion.spec.ts-snapshots
+          retention-days: 7
+          if-no-files-found: error
+
+  # Lighthouse (fase 10, tarea 7; `@lhci/cli`, aprobado en la revisión del bloque S): los presupuestos
+  # de §5 en el móvil de Lighthouse, con el build verificado y el Chromium de Playwright
+  # (`lighthouserc.js`). Los informes, en el disco del CI (y como artefacto del CI, 7 días); nunca en
+  # `temporary-public-storage`. No frena la vista previa. El rendimiento, como aviso (los ejecutores
+  # gratuitos no dan cifras estables; las que cuentan, las de local y las de producción); la
+  # accesibilidad y las buenas prácticas, como error: si bajan, el trabajo sale en rojo.
+  lighthouse:
+    name: Lighthouse (móvil)
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: build
+          path: dist/tierra-luna-sol
+
+      # Dos tandas (`LHCI_PAGES` en `lighthouserc.js`): las páginas de contenido, sin WebGL por
+      # software, que no usan; y el explorador, con él. Después, las notas y los informes de las dos.
+      - run: npx lhci collect
+        env:
+          LHCI_PAGES: contenido
+      - run: npx lhci collect --additive
+        env:
+          LHCI_PAGES: explorador
+      - run: npx lhci assert
+      - if: always()
+        run: npx lhci upload
+
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: lighthouse
+          path: .lighthouseci/informes
+          retention-days: 7
+          if-no-files-found: ignore
 
   deploy:
     name: Vista previa en Cloudflare Pages

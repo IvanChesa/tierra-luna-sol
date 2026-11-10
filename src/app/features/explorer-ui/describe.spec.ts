@@ -4,6 +4,7 @@ import {
   describeBody,
   distanceText,
   distanceValue,
+  moonStopNotice,
   ofBody,
   toBodyLabel,
   viewName,
@@ -80,5 +81,30 @@ describe('describe: textos de la interfaz sobre los cuerpos y las vistas', () =>
     expect(viewName('system')).toBe('Vista del sistema solar');
     expect(viewName('earth')).toBe('Vista de la Tierra');
     expect(viewName('moon')).toBe('Vista de la Luna');
+  });
+});
+
+describe('moonStopNotice: lo que una vista de la Luna hace con el tiempo (crítica de la 9c)', () => {
+  const when = '26 de octubre de 2026, 3:12';
+  const date = new Date('2026-10-26T02:12:00Z');
+
+  it('dice a qué fecha la lleva, por su luz, y que se pausa si corría', () => {
+    expect(moonStopNotice({ kind: 'phase', phaseDeg: 180 }, date, true, when)).toBe(
+      `La fecha pasa a la luna llena más cercana (${when}) y el tiempo se pausa.`,
+    );
+    expect(moonStopNotice({ kind: 'phase', phaseDeg: 0 }, date, false, when)).toBe(
+      `La fecha pasa a la luna nueva más cercana (${when}).`,
+    );
+    expect(moonStopNotice({ kind: 'sun', elevationDeg: 4 }, date, false, when)).toBe(
+      `La fecha pasa a la salida del Sol más cercana en ese lugar, con su luz rasante (${when}).`,
+    );
+    expect(moonStopNotice({ kind: 'sun', elevationDeg: 20 }, date, false, when)).toBe(
+      `La fecha pasa a la mañana más cercana en ese lugar, con el Sol aún bajo (${when}).`,
+    );
+  });
+
+  it('sin cambiar la fecha, solo la pausa (o nada)', () => {
+    expect(moonStopNotice(null, null, true, when)).toBe('El tiempo se pausa.');
+    expect(moonStopNotice({ kind: 'phase', phaseDeg: 180 }, null, false, when)).toBeNull();
   });
 });

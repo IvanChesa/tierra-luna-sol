@@ -14,8 +14,13 @@
  *   adelante (para versiones anteriores, el GLTFLoader de three usa otro cargador). Se comprueba en
  *   el iPhone de la fase 10.
  * - Una textura que se desecha se libera entera con `releaseTexture`: la GPU y su `ImageBitmap` (three
- *   no cierra los bitmaps). Mientras está en uso, el bitmap se conserva: si se pierde el contexto,
- *   three lo vuelve a subir desde él.
+ *   no cierra los bitmaps). Mientras está en uso, el bitmap se conserva (si se pierde el contexto,
+ *   three lo vuelve a subir desde él), salvo en las de 8K de la Tierra y de la Luna (128 MiB cada uno):
+ *   se sueltan nada más subirse y, si se pierde el contexto, el mundo las vuelve a pedir
+ *   (`CLOSE_SOURCE_PIXELS` y `sourceClosed`; fase 10, tarea 4).
+ * - La de día de la Tierra se decodifica sin voltear (`flipInShader`): el sombreado invierte v. El
+ *   volteo de la 8K en el decodificador era una tarea de unos 105 ms en el hilo principal al llegar,
+ *   a mitad del viaje de cámara (informe de la fase 5, §6.1).
  */
 import {
   ImageBitmapLoader,
@@ -101,6 +106,12 @@ export interface TextureMeta {
    */
   readonly mipmaps?: boolean;
   /**
+   * Se decodifica sin voltear (sin `imageOrientation: 'flipY'`) y el sombreado invierte v al leerla
+   * (`LoadedTexture.flipV`): la de día de la Tierra (fase 10, tarea 4), cuya 8K costaba unos 105 ms de
+   * volteo en el hilo principal. Solo para los mapas de color de los cuerpos (`uMap`).
+   */
+  readonly flipInShader?: boolean;
+  /**
    * Mosaico en gris (las lunas del USGS, fase 7): la escena le pone el color medido del cuerpo si su
    * fotometría lo da (Ío, `data/photometry.ts`) y, si no, el tono de su color esquemático
    * (`body-colors.ts`), un tinte de presentación, no una medida; el brillo y el detalle son los del
@@ -121,6 +132,9 @@ export interface TextureFile {
 export type TextureFiles = Readonly<Partial<Record<TextureId, readonly TextureFile[]>>>;
 
 const LEVEL_ORDER: readonly TextureLevel[] = ['1k', '2k', '4k', '8k'];
+
+/** El orden de un nivel (el 1k, el menor). */
+export const levelRank = (level: TextureLevel): number => LEVEL_ORDER.indexOf(level);
 
 /**
  * El fichero que se carga: el nivel pedido o, si no existe o no cabe en `maxTextureSize`, el mayor
@@ -148,13 +162,32 @@ export const textureVramBytes = (width: number, height: number, mipmaps = true):
 export interface TextureSource {
   /** Carga, decodifica y sube a la GPU (cuando el motor dé paso) la mejor versión disponible. */
   load(id: TextureId, level: TextureLevel): Promise<LoadedTexture | null>;
+  /**
+   * Trae el fichero por la red, sin decodificarlo ni subirlo: la caché del navegador lo guarda (las
+   * texturas, con su hash en el nombre, son inmutables un año, `_headers`) y la carga de después lo
+   * encuentra allí. Para el recorrido de la primera vez (propuesta de la fase 9b): sin VRAM de más.
+   */
+  prefetch?(id: TextureId, level: TextureLevel): void;
 }
 
 export interface LoadedTexture {
   readonly texture: Texture;
   readonly file: TextureFile;
   readonly vramBytes: number;
+  /** Decodificada sin voltear: quien la lea invierte v (`TextureMeta.flipInShader`). */
+  readonly flipV?: boolean;
 }
+
+/**
+ * Desde estos píxeles, el `ImageBitmap` de una textura se suelta nada más subirla a la GPU: las de 8K de
+ * la Tierra y de la Luna (128 MiB de memoria cada uno, que three ya no usa salvo si se pierde el
+ * contexto; fase 10, tarea 4).
+ */
+export const CLOSE_SOURCE_PIXELS = 4096 * 4096;
+
+/** ¿Soltó esta textura su `ImageBitmap` al subirse? Entonces no se puede volver a subir desde él. */
+export const sourceClosed = (texture: Texture): boolean =>
+  texture.userData['sourceClosed'] === true;
 
 export interface TextureLoaderOptions {
   readonly files: TextureFiles;
@@ -175,18 +208,19 @@ export class ManifestTextureSource implements TextureSource {
     const file = chooseTextureFile(files[id], level, maxTextureSize);
     if (!file) return null;
     const info = meta[id];
+    const upright = info.flipInShader === true;
     const loader = new ImageBitmapLoader();
     // Los mapas de datos, sin gestión de color: sus bytes se leen tal cual (la elevación de la Luna,
-    // byte a byte).
+    // byte a byte). Volteada en el decodificador, salvo la que voltea el sombreado.
     loader.setOptions({
-      imageOrientation: 'flipY',
+      ...(upright ? {} : { imageOrientation: 'flipY' }),
       premultiplyAlpha: 'none',
       ...(info.colorSpace === 'data' ? { colorSpaceConversion: 'none' } : {}),
     });
     const bitmap = await loader.loadAsync(new URL(file.path, baseUrl).href);
     const texture = new Texture(bitmap);
     texture.name = `${id}@${file.level}`;
-    texture.flipY = false; // ya viene girada del decodificador
+    texture.flipY = false; // ya viene girada del decodificador (o la gira el sombreado)
     texture.colorSpace = info.colorSpace === 'srgb' ? SRGBColorSpace : NoColorSpace;
     // Los mapas de superficie dan la vuelta en longitud: un desplazamiento de u (el meridiano 0, la
     // deriva de las nubes) sigue por el otro lado, no estira el borde (`ClampToEdge`, el de three).
@@ -198,7 +232,27 @@ export class ManifestTextureSource implements TextureSource {
     texture.anisotropy = this.options.anisotropy();
     texture.needsUpdate = true;
     await this.options.upload(texture);
-    return { texture, file, vramBytes: textureVramBytes(file.width, file.height, mipmaps) };
+    if (file.width * file.height >= CLOSE_SOURCE_PIXELS) {
+      bitmap.close();
+      texture.userData['sourceClosed'] = true;
+    }
+    return {
+      texture,
+      file,
+      vramBytes: textureVramBytes(file.width, file.height, mipmaps),
+      flipV: upright,
+    };
+  }
+
+  prefetch(id: TextureId, level: TextureLevel): void {
+    const { files, baseUrl, maxTextureSize } = this.options;
+    const file = chooseTextureFile(files[id], level, maxTextureSize);
+    if (!file) return;
+    // Con prioridad baja (no compite con lo que se ve) y leída entera, para que quede en la caché.
+    const init: RequestInit & { priority?: 'low' } = { priority: 'low' };
+    void fetch(new URL(file.path, baseUrl).href, init)
+      .then((response) => (response.ok ? response.arrayBuffer() : null))
+      .catch(() => null);
   }
 }
 
