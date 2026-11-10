@@ -27,11 +27,16 @@
 // el Chrome recién abierto de cada carga de Lighthouse tarda unos 200 ms (unos 850 ms de bloqueo con la
 // CPU a ×4 de la simulación). Su accesibilidad y sus buenas prácticas, como error.
 //
+// En producción (fase 11), con `LHCI_BASE`: la misma muestra y los mismos presupuestos contra el sitio
+// publicado, sin servidor local, y los informes, igual, solo en el disco.
+//
 // Uso: npm run build && npm run lighthouse
+//      LHCI_BASE=https://tierra-luna-sol.ivanchesa.com npm run lighthouse
 const { chromium } = require('@playwright/test');
 
 const PORT = 4398;
-const BASE = `http://127.0.0.1:${PORT}`;
+const PRODUCTION = process.env.LHCI_BASE?.replace(/\/$/, '');
+const BASE = PRODUCTION || `http://127.0.0.1:${PORT}`;
 const CONTENT_PAGES = [
   '/planetas/marte',
   '/planetas/saturno',
@@ -48,6 +53,9 @@ const GROUP = process.env.LHCI_PAGES;
 const PATHS =
   GROUP === 'contenido' ? CONTENT_PAGES : GROUP === 'explorador' ? ['/'] : ['/', ...CONTENT_PAGES];
 
+/** La URL base, como expresión regular (los puntos del dominio, literales). */
+const escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 /** El nivel de la aserción de rendimiento de las páginas de contenido: aviso en el CI, error en local. */
 const CONTENT_PERFORMANCE = process.env.CI ? 'warn' : 'error';
 
@@ -61,8 +69,12 @@ const scores = (performance, level = 'error') => ({
 module.exports = {
   ci: {
     collect: {
-      startServerCommand: `node scripts/serve-dist.mjs ${PORT}`,
-      startServerReadyPattern: 'Sirviendo dist',
+      ...(PRODUCTION
+        ? {}
+        : {
+            startServerCommand: `node scripts/serve-dist.mjs ${PORT}`,
+            startServerReadyPattern: 'Sirviendo dist',
+          }),
       url: PATHS.map((path) => BASE + path),
       numberOfRuns: 5,
       chromePath: chromium.executablePath(),
@@ -83,8 +95,11 @@ module.exports = {
     },
     assert: {
       assertMatrix: [
-        { matchingUrlPattern: `^${BASE}/$`, assertions: scores(0.9, 'warn') },
-        { matchingUrlPattern: `^${BASE}/.+`, assertions: scores(0.95, CONTENT_PERFORMANCE) },
+        { matchingUrlPattern: `^${escape(BASE)}/$`, assertions: scores(0.9, 'warn') },
+        {
+          matchingUrlPattern: `^${escape(BASE)}/.+`,
+          assertions: scores(0.95, CONTENT_PERFORMANCE),
+        },
       ],
     },
     upload: {
