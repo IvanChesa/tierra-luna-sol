@@ -44,7 +44,7 @@ Como en la 9b, por archivos (la lista, en la revisión del bloque S): **la 10.a*
 
 | Criterio | Estado | Evidencia |
 |---|---|---|
-| Tabla con **todos** los presupuestos de §5 medidos y cumplidos | ✅ (con dos avisos) | §4.26 (FPS, VRAM, peso por vista, arranque, reposo, efemérides, store y URL, contexto, memoria, la 8K y el ritmo de pintado), §4.22 y §4.24 (Lighthouse), §6 (JS inicial y código propio: 13,98 kB de 15). **Los avisos:** el explorador en Lighthouse, 0,76 (§5 pide 0,90; como aviso, para Iván, `PENDIENTES.md`); y Fobos en alto a 1 día/s, que mide el ritmo lento del aliasing y no lo que da la GPU (a 1 h/s, 60 FPS) |
+| Tabla con **todos** los presupuestos de §5 medidos y cumplidos | ⚠️ **no cumplido en un punto:** el explorador en Lighthouse (revisión, hallazgo 1) | §4.26 (FPS, VRAM, peso por vista, arranque, reposo, efemérides, store y URL, contexto, memoria, la 8K y el ritmo de pintado), §4.22 y §4.24 (Lighthouse), §6 (JS inicial y código propio: 13,98 kB de 15). **Lo que no se cumple:** el explorador en Lighthouse, 0,76 en local (0,64–0,67 en el CI) frente a 0,90, con el LCP simulado de 2,5 a 5,0 s según la carga. Lo que falta es crear el contexto WebGL, una tarea que no se puede partir: arreglarlo pide pintar en un worker, un cambio de arquitectura. La sesión de revisión decidió el 09-11 que siga como aviso, con la decisión para Iván en `PENDIENTES.md` (las opciones, en §10). **Y una medida que no es de la GPU:** Fobos en alto a 1 día/s mide el ritmo lento del aliasing (a 1 h/s, 60 FPS). El JS inicial total, 317,81 kB (aviso a 320; medido por la revisión) |
 | axe sin violaciones graves; e2e y regresión visual en verde en el CI | ✅ | `accesibilidad.spec.ts`: axe en las 40 rutas, en escritorio y en el móvil. Los e2e y la regresión visual, en verde en el CI (§4.29 y §6) |
 | Lo de la revisión del bloque S hecho y demostrado: la 10.a con los criterios de D48 (sus capturas, vistas por la sesión de revisión antes de juntarla), y S2, S3, S8, S9 y S11 con sus capturas antes y después | ✅ | La 10.a, §4.25 y su nota (las capturas, vistas por la sesión de revisión). S8, §4.1; S9, §4.2; S11, §4.3; S3, §4.4; S2, §4.8; con sus capturas en §7 |
 | Iván da el visto bueno en su móvil (y en un iPhone) | ⏳ (no bloquea) | `PENDIENTES.md`: las pruebas en el móvil se recogen cuando Iván pueda (decisión de Iván) |
@@ -448,6 +448,8 @@ Un subagente sin el contexto de la sesión (`docs/revisiones/textos.md`) compar�
 - **La precarga de la fuente del H1** ya estaba hecha (fase 9): Newsreader 500, el peso de los títulos, va precargada en `index.html` con las dos de Public Sans.
 - **El rendimiento del explorador en Lighthouse, como aviso** (§5 del plan pide ≥ 90): da 0,76 con el arranque troceado. Lo que falta es crear el contexto WebGL, una tarea que no se puede partir (§4.22). La propuesta, en §10.
 - **La hidratación incremental de las fichas no se ha hecho** (tarea 12, primer punto): era el primer camino para el código propio inicial (14,88 kB de 15 en la fase 9) y para la tarea larga de la hidratación. El código propio ya está en **13,98 kB** y las fichas dan de 0,96 a 1,00 en Lighthouse en local, así que se queda para cuando haga falta (propuesta en §10). Hacerla al final, después de las medidas, obligaba a repetirlas.
+- **S2 se midió con retrasos simulados en escritorio** (§4.8), no con la red móvil de §5: lo que importa es el orden de llegada (la de 1k ya está en memoria al entrar), que la red no cambia.
+- **Los arreglos de la decisión 6** (§4.5) están cubiertos por los e2e y por las capturas «después» de la revisión final de diseño (§4.13), pero no tienen cada uno su pareja de capturas antes y después.
 - **Lighthouse en el CI, el rendimiento como aviso** (§4.24): por la decisión de la sesión de revisión para el caso de que las fichas no cumplieran de forma estable en el CI.
 - **La cabecera del explorador en el móvil y la tableta, a 3rem** (antes 3.5rem), el alto de la franja fina de la decisión de Iván del 08-11: así el explorador no salta al elegir un cuerpo (§4.22). Las páginas de contenido siguen con 3.5rem.
 
@@ -478,12 +480,14 @@ Ningún `TODO(ivan)` nuevo en el código. En `PENDIENTES.md`, para Iván (no blo
 - la lista corta de los textos (`docs/revisiones/textos.md`: 10 dudas y una frase sin fuente); con su OK, todos los textos pasan a `reviewed: true`;
 - la nota de rendimiento del explorador en Lighthouse (0,76; las opciones, en §10);
 - saber que en el CI el rendimiento de Lighthouse va como aviso, y que la cifra definitiva es la de producción (fase 11);
-- la prueba con un lector de pantalla de verdad (NVDA o Narrador): desde aquí, axe en las 40 rutas, el teclado en los e2e y el árbol de accesibilidad; la prueba de oído no se puede hacer en esta sesión.
+- la prueba con un lector de pantalla de verdad (NVDA o Narrador): desde aquí, axe en las 40 rutas y el teclado en los e2e; la prueba de oído no se puede hacer en esta sesión;
+- la decisión sobre la hidratación incremental de las fichas (§5 y §10).
 
 ## 10. Propuestas de cambio al plan
 
 - **La hidratación incremental de las fichas, al backlog** (§5): `@defer (hydrate on viewport)` en las secciones bajo el pliegue. Es lo que más bajaría la tarea del arranque de Angular, la que deja `/lunas/titan` y `/planetas/marte` en 0,94–0,95 en el CI (§4.24). Con ella, el rendimiento de las fichas podría volver a ser error en el CI.
 - **`measure-views.mjs`, a la velocidad de D33 con un cuerpo enfocado** (1 h/s) o con el ritmo de pintado apagado: a 1 día/s, Fobos mide el ritmo lento del aliasing y no lo que da la GPU (§4.26).
+- **Al backlog, de la revisión de la fase 10** (`docs/revisiones/fase-10.md`): el aliasing, con el intervalo de la pantalla y no con el de pintado (hallazgo 4); el margen de la regresión visual, medido entre ejecutores y bajado a `maxDiffPixels` (5); la precarga del recorrido, cancelada al saltarlo y medida en red (9); el aviso de la llegada desde un eclipse, que caduque (11); el botón «Ver el cielo de esta noche» en la barra del móvil, si Iván lo quiere (3); y un suelo de rendimiento como error en el CI, por ejemplo 0,85 en las fichas (18).
 
 - **El rendimiento del explorador en Lighthouse** (§4.22; para Iván, en `PENDIENTES.md`). Con el arranque troceado, el explorador da **0,76** (antes, 0,66): el LCP baja a 2,5 s, el SI a 2,8 s y el CLS a 0,006, pero el TBT se queda en unos 875 ms. Casi todo es crear el contexto WebGL en el Chrome recién abierto de cada carga, una tarea de unos 210 ms que no se puede partir: para 0,90 haría falta bajar el TBT de unos 300 ms. Las opciones:
   1. **(Recomendada) Dejarlo como aviso**, como está. Las fichas y las demás páginas siguen como error (≥ 0,95), y la accesibilidad y las buenas prácticas del explorador también. El aviso deja ver la nota en cada CI sin pararlo.
@@ -497,3 +501,28 @@ Ningún `TODO(ivan)` nuevo en el código. En `PENDIENTES.md`, para Iván (no blo
 - Las medidas: `node scripts/measure-views.mjs` y `node scripts/measure.mjs` tras `npm run build`.
 - Las referencias de la regresión visual, otra vez (tras un cambio visual buscado): un push con «[referencias]» en el mensaje del último commit; el trabajo «Referencias de la regresión visual» deja el artefacto `referencias`, que se copia a `e2e/regresion.spec.ts-snapshots/` y se guarda con un commit normal.
 - A la vista: el Sol quieto a 3 días/s (S8), «‹ Sistema solar» (S9), Venus «Bajo las nubes» (S3), la Tierra al entrar con la red lenta (S2) y las lunas de Urano de cerca (la 10.a).
+
+## Respuesta a la revisión (`docs/revisiones/fase-10.md`)
+
+Veredicto: **cambios necesarios, sin Bloqueantes** (3 Importantes, 12 Menores y 3 Sugerencias). Corregidos los tres Importantes y los Menores rápidos en el commit «fix: lo de la revisión de la fase 10»; lo demás, con su motivo.
+
+| # | Gravedad | Respuesta |
+|---|---|---|
+| 1 | Importante | **Aceptado:** el criterio 1 pasa a ⚠️, no cumplido en un punto (el explorador en Lighthouse: 0,76 y el LCP simulado de 2,5 a 5,0 s). No es una parada nueva: la sesión de revisión decidió el 09-11 que el explorador siga como aviso, con la decisión para Iván en `PENDIENTES.md`. Dicho en el `DIARIO` y en el chat |
+| 2 | Importante | **Corregido:** con el radar puesto, si el aviso queda bajo el borde de la hoja o bajo la sombra de «hay más», el cuerpo de la ficha baja lo justo, sin animación (`afterRenderEffect` en `body-panel.ts`). El e2e pide el aviso entero (`toBeInViewport({ ratio: 1 })`). Captura nueva: `despues-venus-movil-radar.webp` |
+| 3 | Importante | **Corregido en lo principal:** el resumen de día, más corto («De día · noche cerrada a las 19:17» el 09-11 en el Montsec), cabe con la hora en la barra a 390 px (captura nueva: `despues-critica-cielo-dia-390.webp`). El botón «Ver el cielo de esta noche» sigue en el panel, que se abre tocando la barra: llevarlo a la barra añadiría un control a la franja fina (Iván: «una interfaz limpia y sencilla»). Al backlog, si Iván lo quiere |
+| 4 | Menor | **Al backlog** (§10): el ritmo de pintado no debería alimentar el intervalo con el que decide el aliasing. Arreglarlo pide medir el intervalo de la pantalla aparte del de pintado, con su test; a la vista, solo cambia si un giro en el umbral se ve congelado o no |
+| 5 | Menor | **Se queda el 1 % por ahora** (propuesta en §10): medir la diferencia real entre ejecutores en una ejecución aparte, con margen 0, y bajar a `maxDiffPixels` con holgura |
+| 6 | Menor | **Aceptado como desviación** (§5): S2, medido con retrasos simulados; los arreglos de la decisión 6, sin su pareja de capturas cada uno |
+| 7 | Menor | **Corregido:** en `PENDIENTES.md`, la prueba con un lector de pantalla y el Sol de cerca en el móvil de Iván (FPS y batería); en el informe, fuera lo del árbol de accesibilidad |
+| 8 | Menor | **Corregido:** la decisión sobre la hidratación incremental, en `PENDIENTES.md`, para Iván o la sesión de revisión (propuesta en §10) |
+| 9 | Menor | **Al backlog:** cancelar la precarga del recorrido al saltarlo (`AbortController`) y medir la red de la primera visita con él. Se carga a los presupuestos de las vistas Tierra y Luna, que el recorrido visita |
+| 10 | Menor | **Para la sesión de revisión:** el artefacto es el almacenamiento del propio CI (como el del build y los `test-results`), no un tercero; se queda mientras no diga otra cosa |
+| 11 | Menor | **Al backlog:** que el aviso de la llegada desde un eclipse caduque al cambiar de vista o al alejarse del máximo, con su test |
+| 12 | Menor | **Corregido:** (a) las lunas con al menos un 10 % sin ver (Tritón, Deimos y las cinco de Urano) dicen «su superficie, en parte recreada», con test; (b) la frase de las Venera, sin la afirmación sin fuente («hechas bajo las nubes») |
+| 13 | Menor | **Corregido:** «94 % iluminada», con el espacio duro; las referencias de la Luna, rehechas en el CI |
+| 14 | Menor | **Corregido:** «Rendimiento medido», con las cifras de la fase 10 (59–60 FPS, 278 y 86 MB, 0,17–0,19 ms), enlazando su informe |
+| 15 | Menor | **Corregido:** los JSDoc de `skySummary` y `summary`, el comentario viejo de «‹ Sistema solar» y la respuesta a la crítica |
+| 16 | Sugerencia | **Hecho:** `require('@playwright/test').chromium` |
+| 17 | Sugerencia | No: es una línea de jsdom en la salida, sin fallo |
+| 18 | Sugerencia | **El JS inicial total**, 317,81 kB, en §2. **Un suelo como error en el CI** (por ejemplo, 0,85 en las fichas): propuesta para la sesión de revisión |
