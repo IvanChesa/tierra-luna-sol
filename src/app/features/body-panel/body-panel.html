@@ -58,8 +58,7 @@
         <p class="card__note">
           {{ note.text }}
           @if (note.source; as source) {
-            Fuente: <a [href]="source" hreflang="en">{{ sourceName(source) }}</a
-            >.
+            Fuente: <a [href]="source" hreflang="en">{{ sourceName(source) }}</a>.
           }
           <a routerLink="/sobre-el-proyecto" fragment="ilustrativo">Lo que es ilustrativo</a>.
         </p>
@@ -114,12 +113,11 @@
       @let cited = citations();
       <p class="card__source">
         @if (cited.length === 1 && cited[0]; as only) {
-          Datos de <a [href]="only.source.url">{{ only.source.publisher }}</a
-          >.
+          Datos de <a [href]="only.source.url">{{ only.source.publisher }}</a>.
         } @else {
           @for (citation of cited; track citation.source.url) {
-            {{ citation.what }}: <a [href]="citation.source.url">{{ citation.source.publisher }}</a
-            >.
+            {{ citation.what }}:
+            <a [href]="citation.source.url">{{ citation.source.publisher }}</a>.
           }
         }
         {{ calculation() }}
