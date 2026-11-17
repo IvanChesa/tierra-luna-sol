@@ -20,8 +20,7 @@
         <p class="body__note">
           {{ note.text }}
           @if (note.source; as source) {
-            Fuente: <a [href]="source" hreflang="en">{{ textSourceName(source) }}</a
-            >.
+            Fuente: <a [href]="source" hreflang="en">{{ textSourceName(source) }}</a>.
           }
           @if (body().kind === 'star') {
             <a routerLink="/sobre-el-proyecto" fragment="ilustrativo">Lo que es ilustrativo</a>.
@@ -164,8 +163,7 @@
     <p class="body__note">
       Los textos, de
       @for (url of textSources(); track url; let last = $last) {
-        <a [href]="url" hreflang="en">{{ urlText(url) }}</a
-        >{{ last ? '' : ', ' }}
+        <a [href]="url" hreflang="en">{{ urlText(url) }}</a>{{ last ? '' : ', ' }}
       }
       (traducidos y resumidos). La NASA no respalda este proyecto.
     </p>
