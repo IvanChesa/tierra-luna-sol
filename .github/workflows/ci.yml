@@ -12,9 +12,11 @@ on:
 permissions:
   contents: read
 
+# En `main`, sin cancelar: dos pushes seguidos dejarían el CI del primero en «cancelled», y una
+# etiqueta sobre ese commit no se podría publicar (fase 11b, F4). En las demás ramas, el último manda.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   check:

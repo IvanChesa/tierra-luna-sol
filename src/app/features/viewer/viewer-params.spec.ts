@@ -159,7 +159,7 @@ describe('parámetros del explorador', () => {
   it('el lugar del cielo (fase 8): los del selector; el Montsec, por defecto, no se escribe', () => {
     expect(parseViewerParams('?lugar=teide').place).toBe('teide');
     expect(parseViewerParams('?lugar=roque-de-los-muchachos').place).toBe('roque-de-los-muchachos');
-    // Lleida está en los datos, pero no en el selector; un lugar que no existe, tampoco.
+    // Un lugar que no está en el selector (Lleida salió de los datos en la fase 11b) se ignora.
     const lleida = parseViewerParams('?lugar=lleida');
     expect(lleida.place).toBeNull();
     expect(lleida.warnings).toEqual([

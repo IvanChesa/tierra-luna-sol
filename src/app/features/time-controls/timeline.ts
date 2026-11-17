@@ -4,7 +4,7 @@
  * de la línea es un día del año (0 = 1 de enero). Al moverse se conserva la hora del día, y en los
  * extremos se pasa al año anterior o al siguiente. El rango total (1900–2100) lo pone el store.
  *
- * Teclado (PLAN, fase 3c): las flechas, un día; RePág y AvPág, un mes; Inicio y Fin, el principio y
+ * Teclado (PLAN, fase 3c): las flechas, un día; Re Pág y Av Pág, un mes; Inicio y Fin, el principio y
  * el final del año.
  */
 import type { TimeZoneChoice } from '../../core/format';
@@ -108,7 +108,7 @@ export function reachableDays(
 
 /**
  * El mismo día y hora `years` años antes o después (el 29 de febrero pasa al 28): el año de la barra
- * (crítica de la 9c), con ‹ y › o Mayús + RePág y AvPág.
+ * (crítica de la 9c), con ‹ y › o Mayús + Re Pág y Av Pág.
  */
 export function shiftYears(date: Date, years: number, zone: TimeZoneChoice): Date {
   const p = partsOf(date, zone);
@@ -134,7 +134,7 @@ export const isTimelineKey = (key: string): key is TimelineKey => TIMELINE_KEYS.
 
 /**
  * El instante al que lleva una tecla desde `date`, a la misma hora del día: un día con las flechas
- * (al pasar del 31 de diciembre, al año siguiente), un mes con RePág y AvPág (el 31 de enero más un
+ * (al pasar del 31 de diciembre, al año siguiente), un mes con Re Pág y Av Pág (el 31 de enero más un
  * mes es el último día de febrero) y el 1 de enero o el 31 de diciembre de su año con Inicio y Fin.
  */
 export function stepDate(date: Date, key: TimelineKey, zone: TimeZoneChoice): Date {

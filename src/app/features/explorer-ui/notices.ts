@@ -35,8 +35,11 @@ import { ExplorerSession } from './explorer-session';
           </button>
         </div>
       }
-      @if (session.eclipseArrival(); as arrival) {
-        <!-- La llegada desde «Ver en 3D» de /eclipses: qué eclipse es y la vuelta a la lista. -->
+      @if (mounted() && session.eclipseArrival(); as arrival) {
+        <!--
+          La llegada desde «Ver en 3D» de /eclipses: qué eclipse es y la vuelta a la lista. Un render
+          después de la región viva, como los avisos de la URL: si no, no se anuncia (fase 11b, F5).
+        -->
         <div class="notice notice--eclipse">
           <p class="notice__text">
             {{ arrival.text }}

@@ -142,11 +142,11 @@ describe('MoonPanel: vistas y recorrido de la Luna (fase 6)', () => {
     expect(shown).toEqual(MOON_TOUR.slice(0, 2).map((stop) => stop.id));
   });
 
-  it('los textos llevan sus fuentes y están por revisar (Iván, fase 9)', () => {
+  it('los textos llevan sus fuentes y están revisados (decisión 5 de Iván, 17-11)', () => {
     for (const stop of [...MOON_VIEWS, ...MOON_TOUR]) {
       expect(stop.sources.length, stop.id).toBeGreaterThan(0);
       for (const source of stop.sources) expect(source, stop.id).toMatch(/^https:\/\//);
-      expect(stop.reviewed).toBe(false);
+      expect(stop.reviewed).toBe(true);
       expect(Math.abs(stop.latDeg)).toBeLessThanOrEqual(90);
       expect(Math.abs(stop.lonDeg)).toBeLessThanOrEqual(180);
     }

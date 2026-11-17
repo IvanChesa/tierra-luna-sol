@@ -5,8 +5,8 @@
  * Cada vista mira un punto de la superficie desde una distancia (en radios terrestres) y lleva la hora
  * del día, sin cambiar la fecha, a la que ese punto se ve como se quiere: de día (hora solar media 12)
  * o, las luces, de noche (0). En una pantalla pequeña, la cámara se aleja lo justo para que se vea su
- * región (`extentDeg`). Los textos son subtítulos breves, con sus fuentes y `reviewed: false` (Iván
- * los revisa en la fase 9).
+ * región (`extentDeg`). Los textos son subtítulos breves, con sus fuentes; revisados (`reviewed: true`)
+ * desde la revisión del bloque F (decisión 5 de Iván, 17-11), tras la comprobación de la fase 10.
  */
 import { MAX_DATE, MIN_DATE } from '../ephemeris/constants';
 import { SKY_PLACES } from './places';
@@ -54,7 +54,7 @@ export const GUIDED_VIEWS: readonly GuidedView[] = [
     // Fase 9b (D46): en color realzado; ya no es como la fotografía la cámara EPIC.
     text: 'La Tierra entera, de día y en color realzado: el océano, que cubre cerca del 71 % de su superficie, los continentes y las nubes.',
     sources: ['https://science.nasa.gov/earth/facts/'],
-    reviewed: false,
+    reviewed: true,
     latDeg: 15,
     lonDeg: 10,
     distanceRadii: 4.2,
@@ -67,7 +67,7 @@ export const GUIDED_VIEWS: readonly GuidedView[] = [
     title: 'El Pacífico',
     text: 'El océano Pacífico, el mayor y más profundo de la Tierra: guarda más de la mitad de su agua libre.',
     sources: ['https://oceanservice.noaa.gov/facts/biggestocean.html'],
-    reviewed: false,
+    reviewed: true,
     latDeg: 0,
     lonDeg: -160,
     distanceRadii: 3.6,
@@ -82,7 +82,7 @@ export const GUIDED_VIEWS: readonly GuidedView[] = [
     sources: [
       'https://science.nasa.gov/earth/earth-observatory/the-worlds-tallest-mountain-82578/',
     ],
-    reviewed: false,
+    reviewed: true,
     latDeg: 28,
     lonDeg: 86,
     distanceRadii: 1.9,
@@ -95,7 +95,7 @@ export const GUIDED_VIEWS: readonly GuidedView[] = [
     title: 'Las luces de la noche',
     text: 'De noche, las luces de las ciudades y los pueblos dibujan dónde vive la gente.',
     sources: ['https://www.nasa.gov/image-article/black-marble/'],
-    reviewed: false,
+    reviewed: true,
     latDeg: 45,
     lonDeg: 10,
     distanceRadii: 2.4,
@@ -109,7 +109,7 @@ export const GUIDED_VIEWS: readonly GuidedView[] = [
     text: 'España y los lugares del cielo desde España: el Montsec, el Observatori Fabra, Calar Alto, la Puerta del Sol y Fraga, en la Península, y el Teide y el Roque de los Muchachos, en Canarias.',
     // Cada lugar y dónde está: las fuentes oficiales de `data/places.ts`.
     sources: SKY_PLACES.map((place) => place.source),
-    reviewed: false,
+    reviewed: true,
     ...SPAIN,
     distanceRadii: 2,
     // Los siete lugares, con 2° de aire.
@@ -213,7 +213,7 @@ export const MOON_VIEWS: readonly MoonStop[] = [
     title: 'Cara visible',
     text: 'La cara que la Luna enseña siempre a la Tierra, porque gira sobre sí misma al mismo ritmo al que da la vuelta a la Tierra: los mares, oscuros, son cuencas de impacto rellenas de lava, y las tierras altas, más claras.',
     sources: [NASA_MOON_FACTS],
-    reviewed: false,
+    reviewed: true,
     latDeg: 0,
     lonDeg: 0,
     distanceRadii: 3.4,
@@ -225,7 +225,7 @@ export const MOON_VIEWS: readonly MoonStop[] = [
     title: 'Cara oculta',
     text: 'La cara que nunca se ve desde la Tierra. No es una «cara oscura»: en luna nueva, el Sol la ilumina de lleno.',
     sources: [NASA_MOON_FACTS],
-    reviewed: false,
+    reviewed: true,
     latDeg: 0,
     lonDeg: 180,
     distanceRadii: 3.4,
@@ -239,7 +239,7 @@ export const MOON_VIEWS: readonly MoonStop[] = [
     sources: [
       'https://science.nasa.gov/solar-system/moon/phenomena-nasa-astronauts-will-encounter-at-moons-south-pole/',
     ],
-    reviewed: false,
+    reviewed: true,
     latDeg: -90,
     lonDeg: 0,
     distanceRadii: 1.7,
@@ -253,7 +253,7 @@ export const MOON_VIEWS: readonly MoonStop[] = [
     sources: [
       'https://science.nasa.gov/image-article/apod-2018-may-22-craters-and-shadows-at-the-lunar-terminator/',
     ],
-    reviewed: false,
+    reviewed: true,
     latDeg: -25,
     lonDeg: 0,
     distanceRadii: 1.6,
@@ -272,7 +272,7 @@ export const MOON_TOUR: readonly MoonStop[] = [
     title: 'Base Tranquilidad',
     text: 'Aquí, en el Mar de la Tranquilidad, se posó el Apolo 11 el 20 de julio de 1969: la Base Tranquilidad.',
     sources: [GAZETTEER(5684), GAZETTEER(3691), 'https://www.nasa.gov/mission/apollo-11/'],
-    reviewed: false,
+    reviewed: true,
     latDeg: 0.674,
     lonDeg: 23.473,
     distanceRadii: 1.3,
@@ -287,7 +287,7 @@ export const MOON_TOUR: readonly MoonStop[] = [
       GAZETTEER(1296),
       'https://science.nasa.gov/image-article/apod-2005-march-5-tycho-and-copernicus-lunar-ray-craters/',
     ],
-    reviewed: false,
+    reviewed: true,
     latDeg: 9.621,
     lonDeg: -20.079,
     distanceRadii: 1.6,
@@ -302,7 +302,7 @@ export const MOON_TOUR: readonly MoonStop[] = [
       GAZETTEER(6163),
       'https://science.nasa.gov/image-article/apod-2005-march-5-tycho-and-copernicus-lunar-ray-craters/',
     ],
-    reviewed: false,
+    reviewed: true,
     latDeg: -43.296,
     lonDeg: -11.215,
     distanceRadii: 1.6,
@@ -312,12 +312,12 @@ export const MOON_TOUR: readonly MoonStop[] = [
   {
     id: 'mare-orientale',
     title: 'Mare Orientale',
-    text: 'Mare Orientale, una diana de unos 950 km en el borde oeste de la Luna: sus anillos son las ondas que dejó en la corteza un impacto de hace más de 3000 millones de años.',
+    text: 'Mare Orientale, en el centro de una diana de unos 950 km en el borde oeste de la Luna: sus anillos son las ondas que dejó en la corteza un impacto de hace más de 3000 millones de años.',
     sources: [
       GAZETTEER(3685),
       'https://science.nasa.gov/image-article/apod-2011-march-12-mare-orientale/',
     ],
-    reviewed: false,
+    reviewed: true,
     latDeg: -19.866,
     lonDeg: -94.67,
     distanceRadii: 1.8,
@@ -332,7 +332,7 @@ export const MOON_TOUR: readonly MoonStop[] = [
       GAZETTEER(5450),
       'https://science.nasa.gov/resource/shackleton-craters-illuminated-rim-shadowed-interior/',
     ],
-    reviewed: false,
+    reviewed: true,
     latDeg: -89.67,
     lonDeg: 129.78,
     distanceRadii: 1.15,

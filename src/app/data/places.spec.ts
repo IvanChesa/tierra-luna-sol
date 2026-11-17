@@ -25,7 +25,7 @@ const place = (id: string) => {
 };
 
 describe('places', () => {
-  it('los siete lugares del cielo desde España (decisión del 26-10) y Lleida, fuera del selector', () => {
+  it('los siete lugares del cielo desde España (decisión del 26-10), todos en el selector', () => {
     expect(SKY_PLACES.map((p) => p.id)).toEqual([
       'montsec',
       'observatori-fabra',
@@ -35,7 +35,9 @@ describe('places', () => {
       'madrid',
       'fraga',
     ]);
-    expect(place('lleida').sky).toBe(false);
+    expect(SKY_PLACES).toHaveLength(PLACES.length);
+    // Lleida no era un lugar del cielo ni se usaba: fuera (fase 11b, decisión 4 de Iván).
+    expect(findPlace('lleida')).toBeUndefined();
     // El Montsec, por defecto (decisión de Iván del 26-10).
     expect(DEFAULT_PLACE_ID).toBe('montsec');
     expect(findPlace(DEFAULT_PLACE_ID)?.name).toBe('Parque Astronómico del Montsec');
@@ -94,7 +96,7 @@ describe('places', () => {
 
   it('están donde se espera: en la Península, en La Palma y en Tenerife', () => {
     // Península e islas Baleares fuera: latitud 36–44° N y longitud 9° O a 3,5° E.
-    for (const id of ['montsec', 'observatori-fabra', 'calar-alto', 'madrid', 'fraga', 'lleida']) {
+    for (const id of ['montsec', 'observatori-fabra', 'calar-alto', 'madrid', 'fraga']) {
       const p = place(id);
       expect(p.latitudeDeg, id).toBeGreaterThan(36);
       expect(p.latitudeDeg, id).toBeLessThan(44);
@@ -112,7 +114,7 @@ describe('places', () => {
     );
     expect(km).toBeGreaterThan(120);
     expect(km).toBeLessThan(160);
-    // Los observatorios, en lo alto; Fraga y Lleida, en el valle.
+    // Los observatorios, en lo alto; Fraga, en el valle.
     expect(roque.altitudeM).toBe(2396);
     expect(teide.altitudeM).toBe(2390);
     expect(place('calar-alto').altitudeM).toBe(2168);
@@ -126,19 +128,6 @@ describe('places', () => {
     );
     expect(placeOptionLabel(place('montsec'))).toBe('Parque Astronómico del Montsec, Lleida');
     expect(placeOptionLabel(place('madrid'))).toBe('Puerta del Sol, Madrid');
-  });
-
-  it('Fraga y Lleida están a unos 25 km en línea recta', () => {
-    const fraga = place('fraga');
-    const lleida = place('lleida');
-    const km = haversineKm(
-      fraga.latitudeDeg,
-      fraga.longitudeDeg,
-      lleida.latitudeDeg,
-      lleida.longitudeDeg,
-    );
-    expect(km).toBeGreaterThan(20);
-    expect(km).toBeLessThan(30);
   });
 });
 

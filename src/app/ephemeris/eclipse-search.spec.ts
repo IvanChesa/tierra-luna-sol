@@ -4,6 +4,7 @@ import {
   aboveHorizon,
   eclipsesBetween,
   globalEclipsesBetween,
+  isEclipsePeak,
   nextLunarEclipse,
   nextSolarEclipse,
 } from './eclipse-search';
@@ -181,5 +182,31 @@ describe('eclipse-search: los que se ven desde un lugar', () => {
     const later = aboveHorizon('sol', { from: early, to }, MONTSEC);
     expect(Math.abs((later?.visible.from.getTime() ?? 0) - rise.date.getTime())).toBeLessThan(1000);
     expect(later?.complete).toBe(false);
+  });
+});
+
+describe('eclipse-search: el máximo de un eclipse, para «Ver en 3D» (fase 11b, F7)', () => {
+  it('vale en el máximo (±1 min) del tipo que se ve desde el lugar, y en nada más', () => {
+    const solar = nextSolarEclipse(
+      new Date('2026-08-01T00:00:00Z'),
+      new Date('2026-09-01T00:00:00Z'),
+      MONTSEC,
+    );
+    if (!solar) throw new Error('No se encuentra el eclipse');
+    const peak = solar.peak.getTime();
+    expect(isEclipsePeak('solar', solar.type, solar.peak, MONTSEC)).toBe(true);
+    expect(isEclipsePeak('solar', solar.type, new Date(peak + 50_000), MONTSEC)).toBe(true);
+    expect(isEclipsePeak('solar', solar.type, new Date(peak + 120_000), MONTSEC)).toBe(false);
+    expect(isEclipsePeak('solar', 'annular', solar.peak, MONTSEC)).toBe(false);
+    expect(isEclipsePeak('lunar', 'total', solar.peak, MONTSEC)).toBe(false);
+    expect(isEclipsePeak('solar', 'total', new Date('2030-01-01T00:00:00Z'), MONTSEC)).toBe(false);
+    const lunar = nextLunarEclipse(
+      new Date('2029-12-01T00:00:00Z'),
+      new Date('2030-01-01T00:00:00Z'),
+      MONTSEC,
+    );
+    if (!lunar) throw new Error('No se encuentra el eclipse');
+    expect(isEclipsePeak('lunar', lunar.type, lunar.peak, MONTSEC)).toBe(true);
+    expect(isEclipsePeak('lunar', 'penumbral', lunar.peak, MONTSEC)).toBe(false);
   });
 });

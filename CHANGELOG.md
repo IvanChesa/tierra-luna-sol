@@ -2,6 +2,23 @@
 
 Los cambios de cada versión publicada en [tierra-luna-sol.ivanchesa.com](https://tierra-luna-sol.ivanchesa.com). El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y las versiones, [SemVer](https://semver.org/lang/es/). El detalle de cada fase está en su informe (`docs/informes/fase-N.md`) y su revisión (`docs/revisiones/fase-N.md`).
 
+## [1.0.1] - 2026-11-17
+
+La versión de cierre: lo que salió en la revisión del bloque F (`docs/revisiones/bloque-F.md`) y las decisiones de Iván del 17-11 (fase 11b, `docs/informes/fase-11b.md`).
+
+### Corregido
+- `/creditos` ya no se recoloca al cargar: el CSS crítico descartaba la regla de la página por un `;` de más tras los `@property` (CLS de 0,32 en 2 de 5 cargas en producción). El build lo comprueba en todas las páginas.
+- La llegada desde «Ver en 3D» de un eclipse se anuncia con el lector de pantalla, y solo se acepta si la fecha es de verdad el máximo de ese eclipse; si no, se ignora y se avisa.
+- En el recorrido lanzado desde el cielo, la parada de España vuelve con los nombres de los lugares.
+- Al saltar o acabar el recorrido de la portada, la descarga anticipada de las texturas grandes se corta.
+- La compilación por partes de los sombreados ya no deja rechazos sin recoger.
+
+### Cambiado
+- Los textos dudosos de la comprobación de la fase 10, con la redacción que eligió Iván (Venus, Umbriel, Proteo, Saturno, Mare Orientale, el recorrido, los créditos y los nombres de las teclas); Lleida, fuera de los datos; y todos los textos, revisados.
+- El criterio de rendimiento del explorador en Lighthouse, ≥ 0,80 (página 3D); el CLS, como error en cada carga, en el CI y en local.
+- Producción, solo desde etiquetas `vX.Y.Z` de commits de `main`; el CI de `main` ya no se cancela con un push seguido.
+- Angular 22.2.6, `@lhci/cli` 0.16.1, Prettier 3.10.1 y `typescript-eslint` 8.72.2.
+
 ## [1.0.0] - 2026-11-10
 
 La primera versión pública, con todas las funcionalidades del plan (`docs/PLAN.md`), construida por fases entre el 23 de octubre y el 10 de noviembre de 2026.
@@ -30,4 +47,5 @@ La primera versión pública, con todas las funcionalidades del plan (`docs/PLAN
 ### Despliegue
 - Cloudflare Pages desde GitHub Actions: vista previa por rama y producción por etiqueta `v*`, con el build verificado por el CI y comprobado tras publicar (fases 4 y 11).
 
+[1.0.1]: https://github.com/IvanChesa/tierra-luna-sol/releases/tag/v1.0.1
 [1.0.0]: https://github.com/IvanChesa/tierra-luna-sol/releases/tag/v1.0.0

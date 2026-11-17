@@ -54,7 +54,7 @@ describe('timeline: la línea de tiempo del año de la fecha mostrada', () => {
     );
   });
 
-  it('RePág y AvPág: un mes, hasta el último día si el mes es más corto', () => {
+  it('Re Pág y Av Pág: un mes, hasta el último día si el mes es más corto', () => {
     expect(iso(stepDate(utc('2026-03-17T10:00:00Z'), 'PageUp', 'utc'))).toBe(
       '2026-04-17T10:00:00.000Z',
     );

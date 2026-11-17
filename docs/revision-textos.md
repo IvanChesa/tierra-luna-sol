@@ -1,6 +1,6 @@
 # Revisión de los textos
 
-> GENERADO por `scripts/build-text-review.mjs` el 2026-11-10, desde los datos y el HTML del build: es lo que se publica. Decisión de Iván al lanzar el bloque E (fase 9, tarea 7).
+> GENERADO por `scripts/build-text-review.mjs` el 2026-11-17, desde los datos y el HTML del build: es lo que se publica. Decisión de Iván al lanzar el bloque E (fase 9, tarea 7).
 
 ## Cómo se usa
 
@@ -8,6 +8,7 @@
 - Cada texto lleva su fuente. Los de los cuerpos, además, sus citas literales en inglés, en `docs/datos/textos-cuerpos.md`.
 - El script no reescribe este fichero si ya tiene alguna corrección escrita: las correcciones se pasan a su origen (`scripts/content/body-texts.json`, `src/app/data/tours.ts` o la plantilla de la página), se regenera lo que corresponda y se marca el texto como revisado (`reviewed: true`).
 - Los nombres de las constelaciones (al final) los revisa la sesión de revisión del bloque E (decisión de Iván del 03-11).
+- **Estado:** 155 de 155 textos con `reviewed` revisados (los de los cuerpos, las vistas guiadas, los recorridos y la línea de autoría). El 17-11, Iván los dio todos por revisados (decisión 5 de la revisión del bloque F), después de la comprobación de los 551 textos de la fase 10 (`docs/revisiones/textos.md`) y de sus correcciones.
 
 ## Índice
 
@@ -101,7 +102,7 @@ Corrección:
 
 **Resumen**
 
-> Venus es el segundo planeta desde el Sol y el vecino planetario más cercano a la Tierra, a la que se parece en estructura y tamaño. Su espesa atmósfera atrapa el calor en un efecto invernadero desbocado: es el planeta más caliente del sistema solar, con unos 467 °C en la superficie, suficientes para fundir el plomo.
+> Venus es el segundo planeta desde el Sol y el vecino planetario más cercano a la Tierra, a la que se parece en estructura y tamaño. Su espesa atmósfera atrapa el calor en un efecto invernadero desbocado: es el planeta más caliente del sistema solar, con más de 460 °C en la superficie, suficientes para fundir el plomo.
 
 Fuente: <https://science.nasa.gov/venus/venus-facts/>
 
@@ -109,7 +110,7 @@ Corrección:
 
 **Curiosidad 1**
 
-> Un día en Venus dura 243 días terrestres, más incluso que su año, que dura 225. Además, como el planeta gira al revés que la Tierra, allí el Sol sale por el oeste y se pone por el este.
+> Venus tarda 243 días terrestres en girar sobre sí mismo, más incluso que en dar la vuelta al Sol, que le lleva 225. Además, como el planeta gira al revés que la Tierra, allí el Sol sale por el oeste y se pone por el este.
 
 Fuente: <https://science.nasa.gov/venus/venus-facts/>
 
@@ -253,7 +254,7 @@ Corrección:
 
 **Curiosidad 2**
 
-> Los anillos se extienden hasta 282.000 km del planeta, pero los principales suelen tener solo unos 10 m de grosor. La mayoría de sus partículas van desde diminutos granos de hielo hasta trozos del tamaño de una casa.
+> El sistema de anillos llega hasta 282.000 km del planeta, pero los principales suelen tener solo unos 10 m de grosor. La mayoría de sus partículas van desde diminutos granos de hielo hasta trozos del tamaño de una casa.
 
 Fuente: <https://science.nasa.gov/saturn/facts/>
 
@@ -995,7 +996,7 @@ Corrección:
 
 **Resumen**
 
-> Umbriel es la más oscura de las grandes lunas de Urano: solo refleja el 16 % de la luz que recibe, como las tierras altas de la Luna. Su superficie, antigua y llena de cráteres, se oscureció por un proceso que sigue siendo un misterio.
+> Umbriel es la más oscura de las grandes lunas de Urano: solo refleja una pequeña parte de la luz que recibe, como las tierras altas de la Luna. Su superficie, antigua y llena de cráteres, se oscureció por un proceso que sigue siendo un misterio.
 
 Fuente: <https://science.nasa.gov/uranus/moons/umbriel/>
 
@@ -1171,7 +1172,7 @@ Corrección:
 
 **Curiosidad 1**
 
-> Como Febe, la luna de Saturno, solo refleja el seis por ciento de la luz solar que recibe. Tiene forma irregular y muchos cráteres, pero no muestra signos de modificación geológica.
+> Como Febe, la luna de Saturno, solo refleja una pequeña parte de la luz solar que recibe. Tiene forma irregular y muchos cráteres, pero no muestra signos de modificación geológica.
 
 Fuente: <https://science.nasa.gov/neptune/moons/proteus/>
 
@@ -1351,7 +1352,7 @@ Corrección:
 
 **4. Mare Orientale**
 
-> Mare Orientale, una diana de unos 950 km en el borde oeste de la Luna: sus anillos son las ondas que dejó en la corteza un impacto de hace más de 3000 millones de años.
+> Mare Orientale, en el centro de una diana de unos 950 km en el borde oeste de la Luna: sus anillos son las ondas que dejó en la corteza un impacto de hace más de 3000 millones de años.
 
 Fuente: <https://planetarynames.wr.usgs.gov/Feature/3685> · <https://science.nasa.gov/image-article/apod-2011-march-12-mare-orientale/>
 
@@ -1853,7 +1854,7 @@ Corrección:
 
 **Párrafo 18**
 
-> Los lugares del cielo desde España: Fraga, Lleida, el Observatori Fabra y la Puerta del Sol, y las altitudes del Montsec y de la Puerta del Sol (MDT02), © Instituto Geográfico Nacional; el Roque de los Muchachos y el Teide, del Instituto de Astrofísica de Canarias; Calar Alto, del Observatorio de Calar Alto; el Montsec, del Parc Astronòmic Montsec, y la altitud del Fabra, del Servei Meteorològic de Catalunya.
+> Los lugares del cielo desde España: Fraga, el Observatori Fabra y la Puerta del Sol, y las altitudes del Montsec y de la Puerta del Sol (MDT02), © Instituto Geográfico Nacional; el Roque de los Muchachos y el Teide, del Instituto de Astrofísica de Canarias; Calar Alto, del Observatorio de Calar Alto; el Montsec, del Parc Astronòmic Montsec, y la altitud del Fabra, del Servei Meteorològic de Catalunya.
 
 Corrección:
 
@@ -1879,7 +1880,7 @@ Corrección:
 
 **Párrafo 22**
 
-> Los resúmenes y las curiosidades de los cuerpos son textos propios, traducidos y resumidos de páginas de NASA Science: cada uno, con su página en su ficha.
+> Los resúmenes y las curiosidades de los cuerpos son textos propios, traducidos y resumidos de páginas de la NASA (casi todas, de NASA Science): cada uno, con su página en su ficha.
 
 Corrección:
 
@@ -2599,7 +2600,7 @@ Corrección:
 
 **Proteo**
 
-> Proteo, con la luz del Sol de lado y su color esquemático (no hay un mapa de su superficie): imagen del propio explorador.
+> Proteo, con la luz del Sol de lado y sus cráteres recreados (no hay un mapa de su superficie): imagen del propio explorador.
 
 Corrección:
 
@@ -2635,7 +2636,7 @@ Corrección:
 
 ## 3 ter. La interfaz del explorador
 
-Los textos de los controles del explorador, de las plantillas de `src/app/features/`: lo que se lee y lo que oyen los lectores de pantalla (`aria-label` y `title`). Lo que se compone con datos sale con «…» en el sitio del dato (el nombre del cuerpo, la fecha). Además, la línea de autoría y los rótulos y el anuncio del recorrido de la portada. Textos nuevos de la fase 9c y de Venus «Bajo las nubes» (9b.e), con `reviewed: false`.
+Los textos de los controles del explorador, de las plantillas de `src/app/features/`: lo que se lee y lo que oyen los lectores de pantalla (`aria-label` y `title`). Lo que se compone con datos sale con «…» en el sitio del dato (el nombre del cuerpo, la fecha). Además, la línea de autoría y los rótulos y el anuncio del recorrido de la portada. Los de la fase 9c y los de Venus «Bajo las nubes» (9b.e), revisados con los demás (decisión 5 de Iván, 17-11).
 
 **La línea de autoría**
 
@@ -2647,7 +2648,7 @@ Corrección:
 
 **El recorrido de la portada**
 
-> Recorrido de unos 30 segundos: Saturno, la Tierra y la Luna. Pulsa «Saltar» o cualquier tecla para pararlo.
+> Recorrido de unos 30 segundos: Saturno, la Tierra y la Luna. Pulsa «Saltar el recorrido» o cualquier tecla para pararlo.
 
 Corrección:
 
@@ -2683,7 +2684,7 @@ Corrección:
 
 **El recorrido de la portada**
 
-> Recorrido de unos 25 segundos: Saturno y la Tierra. Pulsa «Saltar» o cualquier tecla para pararlo.
+> Recorrido de unos 25 segundos: Saturno y la Tierra. Pulsa «Saltar el recorrido» o cualquier tecla para pararlo.
 
 Corrección:
 
@@ -3795,7 +3796,7 @@ Corrección:
 
 **Umbriel · Tierra Luna Sol (`/lunas/umbriel`)**
 
-> Umbriel es la más oscura de las grandes lunas de Urano: solo refleja el 16 % de la luz que recibe, como las tierras altas de la Luna.
+> Umbriel es la más oscura de las grandes lunas de Urano: solo refleja una pequeña parte de la luz que recibe, como las tierras altas de la Luna.
 
 Corrección:
 

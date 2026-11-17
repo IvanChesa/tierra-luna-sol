@@ -7,9 +7,11 @@
 //
 // Los presupuestos de §5 del plan, en el móvil de Lighthouse (su emulación y su estrangulamiento
 // simulado, los de serie): las fichas y las demás páginas de contenido, ≥ 95 en rendimiento,
-// accesibilidad y buenas prácticas; el explorador, rendimiento ≥ 90 y lo demás ≥ 95. El SEO no es
-// criterio. La muestra, la de `scripts/measure-pages.mjs` (fase 9) más la portada del explorador; la
-// mediana de 5 cargas por página (la guía de variabilidad de Lighthouse: la de 5 es el doble de estable
+// accesibilidad y buenas prácticas; el explorador, rendimiento ≥ 80 (decisión 1 de Iván en la revisión
+// del bloque F, 17-11: crear el contexto WebGL es una sola tarea que no se trocea) y lo demás ≥ 95. El
+// SEO no es criterio. Y en todas, el CLS ≤ 0,05 de §5, como error y en la peor de las 5 cargas: un
+// desplazamiento que sale en 2 de 5 (el de /creditos en producción, fase 11b) también cuenta. La
+// muestra, la de `scripts/measure-pages.mjs` (fase 9) más la portada del explorador; la mediana de 5 cargas por página (la guía de variabilidad de Lighthouse: la de 5 es el doble de estable
 // que una sola).
 //
 // `LHCI_PAGES` elige el grupo: `contenido`, `explorador` o, sin la variable, todas. El CI los mide por
@@ -22,10 +24,15 @@
 // cuentan son las de `npm run lighthouse` en local, con el equipo libre (ahí, como error), y la
 // definitiva, la de producción (fase 11). La accesibilidad y las buenas prácticas, como error siempre.
 //
-// El rendimiento del explorador va como aviso también en local (fase 10, §10 del informe y PENDIENTES):
-// con su arranque ya troceado, crear el contexto WebGL es una sola tarea que no se puede partir, y en
-// el Chrome recién abierto de cada carga de Lighthouse tarda unos 200 ms (unos 850 ms de bloqueo con la
-// CPU a ×4 de la simulación). Su accesibilidad y sus buenas prácticas, como error.
+// El rendimiento del explorador, con su criterio de ≥ 0,80: como error en local y en producción, y como
+// aviso en el CI, como las demás. Con su arranque ya troceado, crear el contexto WebGL es una sola
+// tarea que no se puede partir, y en el Chrome recién abierto de cada carga de Lighthouse tarda unos
+// 200 ms (unos 850 ms de bloqueo con la CPU a ×4 de la simulación). Su accesibilidad y sus buenas
+// prácticas, como error.
+//
+// Los patrones de URL se comparan con la URL final de cada carga (`finalUrl`), sin la consulta ni el
+// fragmento en el explorador: `/` y `/?…` son el explorador; `/algo` (sin `?` ni `#` justo después de
+// la barra), una página de contenido. Así el explorador no casa con el patrón del contenido.
 //
 // En producción (fase 11), con `LHCI_BASE`: la misma muestra y los mismos presupuestos contra el sitio
 // publicado, sin servidor local, y los informes, igual, solo en el disco.
@@ -56,14 +63,21 @@ const PATHS =
 /** La URL base, como expresión regular (los puntos del dominio, literales). */
 const escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-/** El nivel de la aserción de rendimiento de las páginas de contenido: aviso en el CI, error en local. */
-const CONTENT_PERFORMANCE = process.env.CI ? 'warn' : 'error';
+/** El nivel de la aserción de rendimiento: aviso en el CI, error en local y en producción. */
+const PERFORMANCE_LEVEL = process.env.CI ? 'warn' : 'error';
 
-/** Las notas mínimas (0–1) de cada categoría; la de rendimiento, como error o como aviso. */
-const scores = (performance, level = 'error') => ({
-  'categories:performance': [level, { minScore: performance, aggregationMethod: 'median-run' }],
-  'categories:accessibility': ['error', { minScore: 0.95, aggregationMethod: 'median-run' }],
-  'categories:best-practices': ['error', { minScore: 0.95, aggregationMethod: 'median-run' }],
+/**
+ * Las notas mínimas (0–1) de cada categoría, con la mediana de las 5 cargas; la de rendimiento, como
+ * error o como aviso. El CLS, como error en la peor carga (§5: ≤ 0,05).
+ */
+const scores = (performance) => ({
+  'categories:performance': [
+    PERFORMANCE_LEVEL,
+    { minScore: performance, aggregationMethod: 'median' },
+  ],
+  'categories:accessibility': ['error', { minScore: 0.95, aggregationMethod: 'median' }],
+  'categories:best-practices': ['error', { minScore: 0.95, aggregationMethod: 'median' }],
+  'cumulative-layout-shift': ['error', { maxNumericValue: 0.05, aggregationMethod: 'pessimistic' }],
 });
 
 module.exports = {
@@ -83,10 +97,11 @@ module.exports = {
         // En los ejecutores de Ubuntu del CI, sin el sandbox de Chrome (como Playwright) y, sin GPU,
         // con WebGL por software (SwiftShader, como los e2e) para el explorador: si no, no tendría 3D.
         // Las páginas de contenido no usan WebGL y van sin él: con SwiftShader, la composición pasa a
-        // la CPU del ejecutor y le quita tiempo al hilo principal (fase 10, §4.24 del informe).
+        // la CPU del ejecutor y le quita tiempo al hilo principal (fase 10, §4.24 del informe). Fuera
+        // del CI (en local o contra producción), con el sandbox (fase 11b, F8).
         chromeFlags: [
           '--headless=new',
-          '--no-sandbox',
+          ...(process.env.CI ? ['--no-sandbox'] : []),
           ...(process.env.CI && GROUP !== 'contenido'
             ? ['--use-angle=swiftshader', '--enable-unsafe-swiftshader']
             : []),
@@ -95,11 +110,8 @@ module.exports = {
     },
     assert: {
       assertMatrix: [
-        { matchingUrlPattern: `^${escape(BASE)}/$`, assertions: scores(0.9, 'warn') },
-        {
-          matchingUrlPattern: `^${escape(BASE)}/.+`,
-          assertions: scores(0.95, CONTENT_PERFORMANCE),
-        },
+        { matchingUrlPattern: `^${escape(BASE)}/(?:[?#].*)?$`, assertions: scores(0.8) },
+        { matchingUrlPattern: `^${escape(BASE)}/[^?#]+`, assertions: scores(0.95) },
       ],
     },
     upload: {

@@ -149,7 +149,11 @@ export const createWebGLRenderer: RendererFactory = (canvas, options) => {
       }
       // Por partes, con el hilo libre cada `SLICE_MS` (fase 10, Lighthouse): preparar de una vez los
       // programas de toda la escena era una tarea larga. Se enlazan en paralelo y se esperan todos.
-      const linked: Promise<unknown>[] = [];
+      // Cada promesa, con su rechazo recogido al momento: si una falla mientras se espera la pausa
+      // de otra, no sale un «Uncaught (in promise)»; el primer error se lanza al final (fase 11b,
+      // F11). Los internos de three que se usan aquí los vigila `renderer.spec.ts`.
+      const linked: Promise<void>[] = [];
+      const failures: unknown[] = [];
       const materials = new Set<Material>();
       let deadline = performance.now() + SLICE_MS;
       const slice = async () => {
@@ -158,7 +162,12 @@ export const createWebGLRenderer: RendererFactory = (canvas, options) => {
         deadline = performance.now() + SLICE_MS;
       };
       for (const part of [...scene.children]) {
-        linked.push(renderer.compileAsync(part, camera, scene));
+        linked.push(
+          renderer.compileAsync(part, camera, scene).then(
+            () => undefined,
+            (error: unknown) => void failures.push(error),
+          ),
+        );
         part.traverse((object) => {
           const material = (object as { material?: Material | Material[] }).material;
           for (const m of Array.isArray(material) ? material : material ? [material] : []) {
@@ -168,6 +177,7 @@ export const createWebGLRenderer: RendererFactory = (canvas, options) => {
         await slice();
       }
       await Promise.all(linked);
+      if (failures.length > 0) throw failures[0];
       // Lo que three hace la primera vez que usa un programa (leer sus uniformes y sus atributos y
       // comprobar que compiló), también por partes: si no, iba entero en el primer fotograma.
       for (const material of materials) {

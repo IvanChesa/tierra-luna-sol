@@ -215,9 +215,10 @@ export interface SceneEngineApi {
   setSurfaceMarkers(visible: boolean): void;
   /**
    * Trae por la red, sin subirlas, las texturas de primer plano de unos cuerpos que se van a enfocar
-   * pronto (el recorrido de la primera vez): al llegar, ya están en la caché del navegador.
+   * pronto (el recorrido de la primera vez): al llegar, ya están en la caché del navegador. Al
+   * abortar `signal` (el recorrido se salta o acaba), la descarga que siga en marcha se corta.
    */
-  prefetchCloseUps(ids: readonly BodyId[]): void;
+  prefetchCloseUps(ids: readonly BodyId[], signal?: AbortSignal): void;
   /** El lugar desde el que se ve el cielo (fase 8). */
   setObserver(observer: SkyObserver): void;
   /**

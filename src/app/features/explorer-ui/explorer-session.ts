@@ -36,7 +36,7 @@ import {
   viewerQueryParams,
 } from '../viewer/viewer-params';
 import { describeBody, moonStopNotice, viewName } from './describe';
-import { EclipseArrival, eclipseArrival } from './eclipse-arrival';
+import { EclipseArrival, eclipseArrival, eclipseIgnoredWarning } from './eclipse-arrival';
 import { formatLongDateTime } from '../../core/format';
 import { SHEETS_QUERY, mediaQuery } from '../viewer/media';
 
@@ -147,8 +147,14 @@ export class ExplorerSession {
     this.params = parseViewerParams(win?.location.search ?? '');
     this.capture = this.params.capture;
     this.reducedMotion = win?.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
-    this._warnings.set(this.params.warnings);
-    this._eclipseArrival.set(eclipseArrival(this.params));
+    const arrival = eclipseArrival(this.params);
+    this._eclipseArrival.set(arrival);
+    // Un `?eclipse=` que no es el de su fecha se ignora y se dice (fase 11b, F7).
+    this._warnings.set(
+      this.params.eclipse && !arrival
+        ? [...this.params.warnings, eclipseIgnoredWarning(this.params.eclipse)]
+        : this.params.warnings,
+    );
     // Arranque en movimiento (D31): sin fecha en la URL, «ahora» y reproduciendo a la velocidad de
     // su contexto (D33: 3 días por segundo en la vista general, 1 hora con un cuerpo); con movimiento
     // reducido, en pausa; con fecha (o en captura), en pausa en ella. `ExplorerUi` conecta la vista
@@ -411,8 +417,8 @@ export class ExplorerSession {
   }
 
   /** Las texturas de primer plano de unos cuerpos, por la red y sin subirlas (`prefetchCloseUps`). */
-  prefetchCloseUps(ids: readonly BodyId[]): void {
-    this.engine?.prefetchCloseUps(ids);
+  prefetchCloseUps(ids: readonly BodyId[], signal?: AbortSignal): void {
+    this.engine?.prefetchCloseUps(ids, signal);
   }
 
   /** «Saltar»: termina ya el viaje de cámara. */

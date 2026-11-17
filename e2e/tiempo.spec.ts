@@ -167,7 +167,7 @@ test.describe('Tiempo y URL', () => {
     await expect(line).toHaveAttribute('max', '364');
     await expect(line).toHaveValue('73');
     await expect(page.locator('tls-timeline .year__value')).toHaveText('2031');
-    // Flechas, un día (a la misma hora); RePág, un mes; Inicio y Fin, el año.
+    // Flechas, un día (a la misma hora); Re Pág, un mes; Inicio y Fin, el año.
     await line.focus();
     await page.keyboard.press('ArrowRight');
     await expect(line).toHaveAttribute('aria-valuetext', '16 de marzo de 2031');
@@ -318,7 +318,7 @@ test.describe('Tiempo y URL', () => {
     expect(covered).toEqual([]);
   });
 
-  test('el año, como mando de la barra (crítica de la 9c): ‹ y ›, mantenido por décadas, y con Mayús + RePág', async ({
+  test('el año, como mando de la barra (crítica de la 9c): ‹ y ›, mantenido por décadas, y con Mayús + Re Pág', async ({
     page,
   }) => {
     await openExplorer(page, '/?fecha=2026-06-01T12:00Z');
@@ -339,7 +339,7 @@ test.describe('Tiempo y URL', () => {
       .toBeLessThanOrEqual(1976);
     await page.mouse.up();
     const reached = Number(await year.textContent());
-    // Con el teclado, en la línea de tiempo (una sola parada): Mayús + RePág, un año más.
+    // Con el teclado, en la línea de tiempo (una sola parada): Mayús + Re Pág, un año más.
     await page.getByRole('slider', { name: 'Línea de tiempo' }).focus();
     await page.keyboard.press('Shift+PageUp');
     await expect(year).toHaveText(String(reached + 1));

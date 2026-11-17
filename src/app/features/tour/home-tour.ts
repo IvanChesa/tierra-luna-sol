@@ -23,9 +23,10 @@ export interface TourHost {
   caption(text: string): void;
   /**
    * Trae por la red, sin subirlas, las texturas de primer plano de los cuerpos de las paradas que
-   * vienen (propuesta de la fase 9b): al llegar a ellas, ya están en la caché.
+   * vienen (propuesta de la fase 9b): al llegar a ellas, ya están en la caché. `runTour` pasa una
+   * señal que aborta al saltar el recorrido o al acabar: lo que siga bajando se corta (fase 11b, F9).
    */
-  prefetch(ids: readonly BodyId[]): void;
+  prefetch(ids: readonly BodyId[], signal?: AbortSignal): void;
 }
 
 /** Un paso: cuándo (ms desde el principio) y qué hace. */
@@ -70,7 +71,7 @@ export function homeTourSteps(spain: GuidedView, { moon = true } = {}): TourPlan
       at: 0,
       run: (host) => {
         host.announce(
-          `Recorrido de unos ${seconds} segundos: ${bodies}. Pulsa «Saltar» o cualquier tecla para pararlo.`,
+          `Recorrido de unos ${seconds} segundos: ${bodies}. Pulsa «Saltar el recorrido» o cualquier tecla para pararlo.`,
         );
         // Las texturas grandes de la Tierra (y de la Luna), mientras se ve Saturno.
         host.prefetch(moon ? ['tierra', 'luna'] : ['tierra']);
@@ -139,17 +140,25 @@ export function runTour(
   done: (completed: boolean) => void,
 ): RunningTour {
   const timers: ReturnType<typeof setTimeout>[] = [];
+  // Las descargas anticipadas, con una señal que se aborta al acabar o al pararlo. El anfitrión de
+  // los pasos hereda de `host` (también sus métodos, si es una instancia de una clase) y solo cambia
+  // `prefetch`.
+  const downloads = new AbortController();
+  const stepHost: TourHost = Object.assign(Object.create(host) as TourHost, {
+    prefetch: (ids: readonly BodyId[]) => host.prefetch(ids, downloads.signal),
+  });
   let finished = false;
   const finish = (completed: boolean) => {
     if (finished) return;
     finished = true;
     for (const timer of timers) clearTimeout(timer);
+    downloads.abort();
     done(completed);
   };
   for (const step of plan.steps) {
     timers.push(
       setTimeout(() => {
-        if (!finished) step.run(host);
+        if (!finished) step.run(stepHost);
       }, step.at),
     );
   }

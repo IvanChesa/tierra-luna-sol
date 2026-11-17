@@ -52,7 +52,7 @@ describe('TimelineSlider: la línea de tiempo de la barra', () => {
     expect(text()).toBe('15 de marzo de 2031');
   });
 
-  it('el año, como mando (crítica de la 9c): ‹ y › un año; mantenido, por décadas; Mayús + RePág y AvPág', () => {
+  it('el año, como mando (crítica de la 9c): ‹ y › un año; mantenido, por décadas; Mayús + Re Pág y Av Pág', () => {
     const { root, line, fixture } = render('2031-03-15T13:00Z');
     const year = () => root.querySelector('.year__value')?.textContent;
     const [back, forward] = [...root.querySelectorAll<HTMLElement>('.year__step')];
@@ -75,7 +75,7 @@ describe('TimelineSlider: la línea de tiempo de la barra', () => {
     vi.advanceTimersByTime(2000);
     fixture.detectChanges();
     expect(year()).toBe('2011');
-    // Con el teclado, en la línea: Mayús + RePág, un año más; Mayús + AvPág, uno menos.
+    // Con el teclado, en la línea: Mayús + Re Pág, un año más; Mayús + Av Pág, uno menos.
     const shifted = (key: string) => {
       line.dispatchEvent(
         new KeyboardEvent('keydown', { key, shiftKey: true, bubbles: true, cancelable: true }),

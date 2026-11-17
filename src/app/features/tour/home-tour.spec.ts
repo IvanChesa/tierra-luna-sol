@@ -7,6 +7,7 @@ function fakeHost() {
   const calls: string[] = [];
   const captions: string[] = [];
   const said: string[] = [];
+  const signals: AbortSignal[] = [];
   const host: TourHost = {
     select: (id) => calls.push(`select:${id}`),
     closePanel: () => calls.push('closePanel'),
@@ -18,9 +19,12 @@ function fakeHost() {
       said.push(text);
     },
     caption: (text) => captions.push(text),
-    prefetch: (ids) => calls.push(`prefetch:${ids.join(',')}`),
+    prefetch: (ids, signal) => {
+      calls.push(`prefetch:${ids.join(',')}`);
+      if (signal) signals.push(signal);
+    },
   };
-  return { host, calls, captions, said };
+  return { host, calls, captions, said, signals };
 }
 
 describe('El recorrido de la portada (fase 9c)', () => {
@@ -28,7 +32,7 @@ describe('El recorrido de la portada (fase 9c)', () => {
   afterEach(() => vi.useRealTimers());
 
   it('unos 30 s: Saturno, la Tierra con «España», la Luna y la vista general en marcha', () => {
-    const { host, calls, captions, said } = fakeHost();
+    const { host, calls, captions, said, signals } = fakeHost();
     const done = vi.fn();
     const plan = homeTourSteps(SPAIN);
     expect(plan.totalMs).toBe(HOME_TOUR_MS);
@@ -56,8 +60,11 @@ describe('El recorrido de la portada (fase 9c)', () => {
     ]);
     expect(said[0]).toContain('unos 30 segundos: Saturno, la Tierra y la Luna');
     expect(done).not.toHaveBeenCalled();
+    expect(signals[0]?.aborted).toBe(false);
     vi.advanceTimersByTime(1);
     expect(done).toHaveBeenCalledExactlyOnceWith(true);
+    // Al acabar, lo que siguiera bajando se corta (fase 11b, F9).
+    expect(signals[0]?.aborted).toBe(true);
     expect(HOME_TOUR_MS).toBeGreaterThanOrEqual(25_000);
     expect(HOME_TOUR_MS).toBeLessThanOrEqual(35_000);
   });
@@ -77,11 +84,15 @@ describe('El recorrido de la portada (fase 9c)', () => {
   });
 
   it('pararlo no da más pasos (lo demás, ir a la vista general o quedarse, lo decide la interfaz)', () => {
-    const { host, calls } = fakeHost();
+    const { host, calls, signals } = fakeHost();
     const done = vi.fn();
     const tour = runTour(host, homeTourSteps(SPAIN), done);
     vi.advanceTimersByTime(10_000);
+    // La descarga anticipada, con su señal: al saltar el recorrido, se aborta (fase 11b, F9).
+    expect(signals).toHaveLength(1);
+    expect(signals[0]?.aborted).toBe(false);
     tour.stop();
+    expect(signals[0]?.aborted).toBe(true);
     tour.stop();
     vi.advanceTimersByTime(HOME_TOUR_MS);
     expect(calls).toEqual([

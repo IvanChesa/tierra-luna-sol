@@ -16,11 +16,11 @@ const at = (id: string, from: string, day: DayOf) => {
 };
 
 describe('vistas guiadas: datos', () => {
-  it('cada subtítulo, con sus fuentes (https) y sin revisar', () => {
+  it('cada subtítulo, con sus fuentes (https) y revisado (decisión 5 de Iván, 17-11)', () => {
     for (const v of GUIDED_VIEWS) {
       expect(v.sources.length, v.id).toBeGreaterThan(0);
       for (const source of v.sources) expect(source, v.id).toMatch(/^https:\/\//);
-      expect(v.reviewed, v.id).toBe(false);
+      expect(v.reviewed, v.id).toBe(true);
     }
     // «España»: las fuentes oficiales de sus siete lugares.
     expect(view('espana').sources).toEqual(SKY_PLACES.map((place) => place.source));
