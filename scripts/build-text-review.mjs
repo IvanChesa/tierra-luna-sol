@@ -308,7 +308,6 @@ push(
   'Los textos de los controles del explorador, de las plantillas de \`src/app/features/\`: lo que se lee y lo que oyen los lectores de pantalla (\`aria-label\` y \`title\`). Lo que se compone con datos sale con «…» en el sitio del dato (el nombre del cuerpo, la fecha). Además, la línea de autoría y los rótulos y el anuncio del recorrido de la portada. Los de la fase 9c y los de Venus «Bajo las nubes» (9b.e), revisados con los demás (decisión 5 de Iván, 17-11).',
   '',
 );
-const { AUTHORSHIP } = await import('../src/app/features/viewer/authorship.ts');
 const { homeTourSteps } = await import('../src/app/features/tour/home-tour.ts');
 entry('La línea de autoría', AUTHORSHIP.text, [
   `${AUTHORSHIP.source.path}#${AUTHORSHIP.source.fragment}`,
