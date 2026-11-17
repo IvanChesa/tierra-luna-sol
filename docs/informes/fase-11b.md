@@ -2,7 +2,7 @@
 
 - **Rama:** `fase-11b-cierre` (desde `main` en `166ec37`)
 - **Fecha:** 2026-11-17
-- **Estado:** en curso
+- **Estado:** revisada (aprobada con cambios menores, corregidos) y fusionada en `main`; la v1.0.1, publicándose (§6.1)
 
 ## 0. Plan
 
