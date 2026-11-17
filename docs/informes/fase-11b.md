@@ -18,7 +18,7 @@ Instrucciones de la sesión de revisión (17-11): aplicar `docs/revisiones/bloqu
 
 ## 1. Resumen
 
-(En curso.)
+Se aplica la revisión del bloque F. El CLS de `/creditos` en producción venía del CSS crítico: un `;` de más tras los `@property` hacía que el navegador descartara la regla `.page`, y la página se recolocaba si la hoja entera llegaba tarde. Los `@property` pasan a `index.html` y el build lo comprueba en todas las páginas. Con eso, `/creditos` da CLS 0 en las 5 cargas. Además, los menores (F2–F11), los tres PR de Dependabot, la limpieza de worktrees y ramas, y las decisiones de Iván: el explorador en ≥ 0,80, los textos dudosos con sus propuestas y todos los textos revisados. `PENDIENTES.md` queda solo con lo de Iván. Se publica como **v1.0.1**.
 
 ## 2. Hallazgos de la revisión del bloque F
 
@@ -121,7 +121,26 @@ Instrucciones de la sesión de revisión (17-11): aplicar `docs/revisiones/bloqu
 
 ## 6. Salida de los checks
 
-(Pendiente.)
+```
+npm run check   (17-11, la rama con main y los tres PR de Dependabot, tras npm ci)
+ng lint: All files pass linting. · Prettier: All matched files use Prettier code style!
+Test Files 86 passed (86) · Tests 840 passed (840)   (835 en la v1.0.0; 5 nuevos y los ajustados)
+Cobertura: 98,87 % de sentencias, 94,22 % de ramas, 100 % de funciones y 99,7 % de líneas
+Build: Initial total 319,91 kB (90,21 kB transferidos); main 121,85 kB; styles 15,75 kB; sin avisos de presupuesto
+Pages: 39 rutas como ruta.html, 40 páginas, 386 rutas de recursos absolutas, 4 scripts en línea en la CSP,
+       39 URLs en sitemap.xml, 295 ficheros (el mayor, textures/8k/moon…webp: 3,34 MiB de 25)
+✔ El JS inicial de las 40 páginas (20 ficheros) no lleva three, astronomy-engine, los stores ni los controles del visor.
+✔ Código propio en los chunks iniciales: 13,97 kB de 15,00.
+✔ Enlaces de las 40 páginas: 1243 internos bien (rutas, ficheros y anclas).
+
+npm run e2e   140 passed, 13 skipped (7,7 min): las 12 de la regresión visual, que solo corren en el CI
+              (sus referencias son de Linux), y la de axe a 320 px del proyecto de escritorio (corre en el móvil)
+CI de la rama (62ff28c): lint, tests y build; e2e con la regresión visual; Lighthouse; vista previa: en verde
+```
+
+### 6.1 Producción
+
+(Tras publicar la v1.0.1.)
 
 ## 7. Capturas
 
