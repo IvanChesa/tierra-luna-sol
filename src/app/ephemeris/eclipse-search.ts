@@ -215,6 +215,32 @@ export function nextLunarEclipse(
   return null;
 }
 
+/** El margen entre la fecha de un enlace de «Ver en 3D» (al segundo) y el máximo calculado. */
+const PEAK_TOLERANCE_MS = MINUTE_MS;
+
+/**
+ * Si `time` es el máximo (±1 min) de un eclipse de ese tipo visto desde el lugar: el de Sol, con su
+ * tipo allí; el de Luna, el mismo para todos los que la ven. Para la llegada desde «Ver en 3D» (fase
+ * 11b, F7 de la revisión del bloque F): un enlace con otra fecha no puede hacer decir a la web que hay
+ * un eclipse que no hay.
+ */
+export function isEclipsePeak(
+  kind: 'solar' | 'lunar',
+  type: SolarEclipseType | LunarEclipseType,
+  time: Date,
+  place: GeoObserver,
+): boolean {
+  const from = new Date(time.getTime() - DAY_MS);
+  const until = new Date(time.getTime() + DAY_MS);
+  const found =
+    kind === 'solar' ? nextSolarEclipse(from, until, place) : nextLunarEclipse(from, until, place);
+  return (
+    found !== null &&
+    found.type === type &&
+    Math.abs(found.peak.getTime() - time.getTime()) <= PEAK_TOLERANCE_MS
+  );
+}
+
 /** Todos los eclipses que se ven desde el lugar entre dos fechas, por orden. */
 export function eclipsesBetween(from: Date, until: Date, place: GeoObserver): LocalEclipse[] {
   const list: LocalEclipse[] = [];
