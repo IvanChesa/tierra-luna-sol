@@ -752,7 +752,7 @@ export class World {
    * para el recorrido de la primera vez, que llega a la Tierra y a la Luna a los pocos segundos
    * (propuesta de la fase 9b). Sin VRAM de más: la sube la carga de siempre, al enfocarlo.
    */
-  prefetchCloseUp(id: string): void {
+  prefetchCloseUp(id: string, signal?: AbortSignal): void {
     const visual = this.visuals.find((v) => v.body.id === id);
     const source = this.options.textures;
     if (!visual?.textureId || !source?.prefetch) return;
@@ -764,7 +764,7 @@ export class World {
           : visual.body.kind === 'moon'
             ? this.profile.satelliteTexture
             : this.profile.focusTexture;
-    source.prefetch(visual.textureId, level);
+    source.prefetch(visual.textureId, level, signal);
   }
 
   /**

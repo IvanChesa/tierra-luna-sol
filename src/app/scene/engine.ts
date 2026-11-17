@@ -499,6 +499,11 @@ export class SceneEngine implements SceneEngineApi {
   private constellationsVisible = true;
   /** Las etiquetas que pide la interfaz (la vista limpia las quita), en el espacio y en el cielo. */
   private labelsWanted = true;
+  /**
+   * Los nombres de los lugares de la Tierra que pide la interfaz (en el recorrido, solo ellos), para
+   * volver con ellos al salir del cielo (fase 11b, F6 de la revisión del bloque F).
+   */
+  private placesWanted = true;
   /** Los sombreados del cielo ya están compilados; `skyCompiling`, mientras se compilan. */
   private skyCompiled = false;
   private skyCompiling = false;
@@ -881,9 +886,9 @@ export class SceneEngine implements SceneEngineApi {
     this.invalidate();
   }
 
-  prefetchCloseUps(ids: readonly BodyId[]): void {
+  prefetchCloseUps(ids: readonly BodyId[], signal?: AbortSignal): void {
     if (this.disposed) return;
-    for (const id of ids) this.world.prefetchCloseUp(id);
+    for (const id of ids) this.world.prefetchCloseUp(id, signal);
   }
 
   zoomBy(factor: number): void {
@@ -912,6 +917,7 @@ export class SceneEngine implements SceneEngineApi {
   setLabelsVisible(visible: boolean, places = visible): void {
     if (this.disposed) return;
     this.labelsWanted = visible;
+    this.placesWanted = places;
     const sky = this._view === 'sky';
     this.labels.setVisible(visible && !this.isolated && !sky);
     this.placeLabels.setVisible(places && !this.isolated && !sky);
@@ -969,7 +975,10 @@ export class SceneEngine implements SceneEngineApi {
       },
       // Por la red y sin subir nada: no cuenta como textura en camino.
       ...(source.prefetch
-        ? { prefetch: (id: TextureId, level: TextureLevel) => source.prefetch?.(id, level) }
+        ? {
+            prefetch: (id: TextureId, level: TextureLevel, signal?: AbortSignal) =>
+              source.prefetch?.(id, level, signal),
+          }
         : {}),
     };
   }
@@ -1922,7 +1931,7 @@ export class SceneEngine implements SceneEngineApi {
     this.sky?.setActive(false);
     this.world.setSkyOnly(false);
     this.labels.setVisible(this.labelsWanted && !this.isolated);
-    this.placeLabels.setVisible(this.labelsWanted && !this.isolated);
+    this.placeLabels.setVisible(this.placesWanted && !this.isolated);
     this.exposure = -1;
     this.lastFrameMs = null;
   }

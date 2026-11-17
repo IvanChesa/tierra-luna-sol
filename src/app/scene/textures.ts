@@ -166,8 +166,9 @@ export interface TextureSource {
    * Trae el fichero por la red, sin decodificarlo ni subirlo: la caché del navegador lo guarda (las
    * texturas, con su hash en el nombre, son inmutables un año, `_headers`) y la carga de después lo
    * encuentra allí. Para el recorrido de la primera vez (propuesta de la fase 9b): sin VRAM de más.
+   * Con `signal`, la descarga se corta al abortarlo (al saltar el recorrido; fase 11b, F9).
    */
-  prefetch?(id: TextureId, level: TextureLevel): void;
+  prefetch?(id: TextureId, level: TextureLevel, signal?: AbortSignal): void;
 }
 
 export interface LoadedTexture {
@@ -244,12 +245,16 @@ export class ManifestTextureSource implements TextureSource {
     };
   }
 
-  prefetch(id: TextureId, level: TextureLevel): void {
+  prefetch(id: TextureId, level: TextureLevel, signal?: AbortSignal): void {
     const { files, baseUrl, maxTextureSize } = this.options;
     const file = chooseTextureFile(files[id], level, maxTextureSize);
-    if (!file) return;
-    // Con prioridad baja (no compite con lo que se ve) y leída entera, para que quede en la caché.
-    const init: RequestInit & { priority?: 'low' } = { priority: 'low' };
+    if (!file || signal?.aborted) return;
+    // Con prioridad baja (no compite con lo que se ve) y leída entera, para que quede en la caché. Si
+    // se aborta (el recorrido se ha saltado), se corta: varios MB menos en el móvil (fase 11b, F9).
+    const init: RequestInit & { priority?: 'low' } = {
+      priority: 'low',
+      ...(signal ? { signal } : {}),
+    };
     void fetch(new URL(file.path, baseUrl).href, init)
       .then((response) => (response.ok ? response.arrayBuffer() : null))
       .catch(() => null);

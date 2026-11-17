@@ -417,8 +417,8 @@ export class ExplorerSession {
   }
 
   /** Las texturas de primer plano de unos cuerpos, por la red y sin subirlas (`prefetchCloseUps`). */
-  prefetchCloseUps(ids: readonly BodyId[]): void {
-    this.engine?.prefetchCloseUps(ids);
+  prefetchCloseUps(ids: readonly BodyId[], signal?: AbortSignal): void {
+    this.engine?.prefetchCloseUps(ids, signal);
   }
 
   /** «Saltar»: termina ya el viaje de cámara. */

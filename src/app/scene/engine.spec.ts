@@ -1747,6 +1747,7 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
   it('el recorrido trae por la red las texturas grandes de la Tierra y de la Luna, sin subirlas (propuesta de la 9b)', async () => {
     const fake = realisticTextures();
     const prefetched: string[] = [];
+    const signals: (AbortSignal | undefined)[] = [];
     const textures: EngineDeps['textures'] = (context) => {
       const real = fake.textures(context);
       if (!real) return null;
@@ -1754,7 +1755,10 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
         ...real,
         source: {
           load: (id: TextureId, level: TextureLevel) => real.source.load(id, level),
-          prefetch: (id: TextureId, level: TextureLevel) => prefetched.push(`${id}@${level}`),
+          prefetch: (id: TextureId, level: TextureLevel, signal?: AbortSignal) => {
+            prefetched.push(`${id}@${level}`);
+            signals.push(signal);
+          },
         },
       };
     };
@@ -1762,7 +1766,10 @@ describe('SceneEngine: interfaz de la fase 3 (encuadre, vuelos, teclado, estelas
     settle(h);
     for (let k = 0; k < 5; k++) await flush();
     const loadedBefore = [...fake.requests];
-    h.engine.prefetchCloseUps(['tierra', 'luna']);
+    // Con la señal del recorrido, que llega hasta la descarga (fase 11b, F9).
+    const downloads = new AbortController();
+    h.engine.prefetchCloseUps(['tierra', 'luna'], downloads.signal);
+    expect(signals).toEqual([downloads.signal, downloads.signal]);
     // Las del nivel de su primer plano (en el nivel alto, la 8K de la Tierra y el mapa de la Luna)…
     expect(prefetched).toEqual([
       `earth-day@${QUALITY_PROFILES.high.earthDayTexture}`,
@@ -2779,6 +2786,23 @@ describe('SceneEngine: la vista del cielo (fase 8)', () => {
     const after = placed();
     expect(after.length).toBeGreaterThan(0);
     expect(after.filter(covered)).toEqual([]);
+    h.engine.dispose();
+  });
+
+  it('del cielo a la Tierra en el recorrido: vuelven los nombres de los lugares, sin los demás (F6)', async () => {
+    // El recorrido lanzado desde /cielo: sin los nombres del 3D, con los de los lugares de España.
+    interface PlaceInternals {
+      labels: { visibleLayer: boolean };
+      placeLabels: { visibleLayer: boolean };
+    }
+    const layers = (h: Harness) => h.engine as unknown as PlaceInternals;
+    const h = await createHarness({ view: 'sky', time: NIGHT });
+    settle(h);
+    h.engine.setLabelsVisible(false, true);
+    expect(layers(h).placeLabels.visibleLayer).toBe(false);
+    h.engine.setView('earth');
+    expect(layers(h).labels.visibleLayer).toBe(false);
+    expect(layers(h).placeLabels.visibleLayer).toBe(true);
     h.engine.dispose();
   });
 
