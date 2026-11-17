@@ -57,11 +57,28 @@ Instrucciones de la sesión de revisión (17-11): aplicar `docs/revisiones/bloqu
 - **No se reproduce a voluntad contra producción** (17-11, `lighthouse` 13.6 con el Chromium de Playwright): 6 cargas con la simulación de serie y 5 con `--throttling-method=devtools`, todas con CLS 0. Por eso se buscó la causa en el propio HTML.
 - **La causa, en el CSS crítico de producción** (`curl` de `/creditos`): `@property --more-below{…;};@property --scroll-fade{…;};.page{display:block;width:100%;max-width:72rem;margin:0 auto;padding:…}`. Con la hoja entera bloqueada (Playwright, 412 × 823), el `h1` sale a 0 px del borde y a 56 px de arriba; con ella, a 16 y a 88; y la sección de las texturas, de 269 a 332 px (también es más alta: el texto, más estrecho, ocupa más líneas). Es justo el movimiento que mide Lighthouse.
 - **Con el arreglo** (build local, `serve-dist.mjs`): el CSS crítico de `/creditos` ya no lleva `};`, sí `.page{` y los dos `@property` (en el `<style>` de `index.html`). La maqueta, con la hoja bloqueada y sin bloquear, **idéntica** en `/creditos`, `/sobre-el-proyecto` y `/planetas/marte` (`h1` a 16 px y 88 px; la sección, a 332 px).
-- **Lighthouse contra el build local:** (pendiente: la mediana de 5 y el CLS de cada carga).
+- **Lighthouse contra el build local** (`npm run lighthouse`, 5 cargas por URL; §4.2): **`/creditos`, CLS 0,000 en las 5 cargas**, y 0 en las 5 de cada una de las otras ocho páginas de contenido. En el CI de la rama (`62ff28c`, run 44102459020), con el CLS ya como error en la peor carga, pasan todas las aserciones (solo queda el aviso del rendimiento del explorador, abajo).
 
-### 4.2 Lighthouse (local)
+### 4.2 Lighthouse (local y CI)
 
-(Pendiente.)
+**Local** (`npm run lighthouse` contra el build de la rama, 17-11, la mediana de 5 y el CLS de cada carga). Medido con el PC ocupado: Roblox Studio y Roblox Player abiertos y ocho procesos de Claude de otras sesiones (36 % de CPU antes de empezar). Por eso el rendimiento sale por debajo de lo de siempre; la accesibilidad, las buenas prácticas, el LCP y el CLS no dependen de eso.
+
+| URL | Rendimiento | Accesibilidad | Buenas prácticas | LCP | CLS (mediana) | CLS de cada carga | TBT | Cargas |
+|---|---|---|---|---|---|---|---|---|
+| `/` (explorador) | 0,72 | 1,00 | 1,00 | 2,42 s | 0,006 | 0,006 · 0,006 · 0,000 · 0,000 · 0,006 | 1397 ms | 5 |
+| `/planetas/marte` | 0,97 | 1,00 | 1,00 | 0,66 s | 0,000 | 0,000 · 0,000 · 0,000 · 0,000 · 0,000 | 197 ms | 5 |
+| `/planetas/saturno` | 0,93 | 1,00 | 1,00 | 0,67 s | 0,000 | 0,000 · 0,000 · 0,000 · 0,000 · 0,000 | 308 ms | 5 |
+| `/lunas/titan` | 0,93 | 1,00 | 1,00 | 0,66 s | 0,000 | 0,000 · 0,000 · 0,000 · 0,000 · 0,000 | 303 ms | 5 |
+| `/sol` | 0,97 | 1,00 | 1,00 | 0,65 s | 0,000 | 0,000 · 0,000 · 0,000 · 0,000 · 0,000 | 183 ms | 5 |
+| `/luna` | 0,93 | 1,00 | 1,00 | 0,66 s | 0,000 | 0,000 · 0,000 · 0,000 · 0,000 · 0,000 | 335 ms | 5 |
+| `/planetas` | 0,94 | 1,00 | 1,00 | 0,65 s | 0,000 | 0,000 · 0,000 · 0,000 · 0,000 · 0,000 | 279 ms | 5 |
+| `/lunas` | 0,99 | 1,00 | 1,00 | 0,67 s | 0,000 | 0,000 · 0,000 · 0,000 · 0,000 · 0,000 | 142 ms | 5 |
+| `/sobre-el-proyecto` | 0,95 | 1,00 | 1,00 | 0,67 s | 0,000 | 0,000 · 0,000 · 0,000 · 0,000 · 0,000 | 269 ms | 5 |
+| `/creditos` | 0,94 | 1,00 | 1,00 | 0,68 s | **0,000** | **0,000 · 0,000 · 0,000 · 0,000 · 0,000** | 280 ms | 5 |
+
+- **El rendimiento, el PC y no el código:** justo después, con `lighthouse` suelto (la misma simulación móvil), tres cargas de cada página: el build local de la rama, `/planetas/marte` 1,00 · 1,00 · 1,00 (TBT 30, 26 y 78 ms) y `/creditos` 1,00 · 1,00 · 1,00 (13, 11 y 15 ms); producción (la v1.0.0), 0,99 · 1,00 · 1,00 y 1,00 · 1,00 · 1,00. Las cifras de rendimiento que cuentan son las de producción, tras publicar (§6). Por indicación de Iván (15:50), no se repite la tanda local.
+- **`lhci assert` en local** sale con error por el rendimiento de seis páginas de contenido (0,93–0,94 frente a 0,95), por lo mismo; el CLS y lo demás, en verde.
+- **El CI de la rama** (`62ff28c`, run 44102459020; WebGL por software en el explorador): todas las aserciones en verde, también el CLS ≤ 0,05 en la peor de las 5 cargas de las 10 URL; queda un aviso, el rendimiento del explorador (mediana 0,67 en el ejecutor de GitHub; valores 0,67, 0,68, 0,50, 0,69 y 0,49), que en el CI va como aviso en todas las páginas (fase 10, §4.24).
 
 ### 4.3 F12: Dependabot
 
