@@ -140,12 +140,13 @@ export function runTour(
   done: (completed: boolean) => void,
 ): RunningTour {
   const timers: ReturnType<typeof setTimeout>[] = [];
-  // Las descargas anticipadas, con una señal que se aborta al acabar o al pararlo.
+  // Las descargas anticipadas, con una señal que se aborta al acabar o al pararlo. El anfitrión de
+  // los pasos hereda de `host` (también sus métodos, si es una instancia de una clase) y solo cambia
+  // `prefetch`.
   const downloads = new AbortController();
-  const stepHost: TourHost = {
-    ...host,
-    prefetch: (ids) => host.prefetch(ids, downloads.signal),
-  };
+  const stepHost: TourHost = Object.assign(Object.create(host) as TourHost, {
+    prefetch: (ids: readonly BodyId[]) => host.prefetch(ids, downloads.signal),
+  });
   let finished = false;
   const finish = (completed: boolean) => {
     if (finished) return;

@@ -42,6 +42,9 @@ export function eclipseArrival(params: {
   };
 }
 
-/** El aviso de un `?eclipse=` que no es el de su fecha (y lugar): se ha ignorado. */
+/**
+ * El aviso de un `?eclipse=` que no es el de su fecha y su lugar: qué ha pasado y dónde están los de
+ * verdad (ESTILO §2). Sin fecha, el parámetro ni se lee (`parseViewerParams`).
+ */
 export const eclipseIgnoredWarning = (eclipse: EclipseKind): string =>
-  `El eclipse «${eclipseParam(eclipse)}» no es el de esa fecha y se ha ignorado.`;
+  `El eclipse «${eclipseParam(eclipse)}» no es el de esa fecha y ese lugar, y se ha ignorado. Los que se ven desde España están en «Eclipses».`;

@@ -56,7 +56,7 @@ describe('eclipse-arrival: la llegada desde «Ver en 3D» de un eclipse (crític
       eclipseArrival(parseViewerParams('?fecha=2029-12-20T22:42:40Z&eclipse=luna-total')),
     ).not.toBeNull();
     expect(eclipseIgnoredWarning({ kind: 'solar', type: 'total' })).toBe(
-      'El eclipse «sol-total» no es el de esa fecha y se ha ignorado.',
+      'El eclipse «sol-total» no es el de esa fecha y ese lugar, y se ha ignorado. Los que se ven desde España están en «Eclipses».',
     );
   });
 });

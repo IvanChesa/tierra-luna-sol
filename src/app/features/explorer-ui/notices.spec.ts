@@ -78,7 +78,9 @@ describe('Notices: avisos del explorador', () => {
     const { root } = render('?fecha=2030-01-01T00:00:00Z&eclipse=sol-total');
     expect(root.querySelector('.notice--eclipse')).toBeNull();
     const lines = [...root.querySelectorAll('.notice li')].map((li) => li.textContent?.trim());
-    expect(lines).toEqual(['El eclipse «sol-total» no es el de esa fecha y se ha ignorado.']);
+    expect(lines).toEqual([
+      'El eclipse «sol-total» no es el de esa fecha y ese lugar, y se ha ignorado. Los que se ven desde España están en «Eclipses».',
+    ]);
   });
 
   it('el límite de 2100 se dice en UTC (y en tu hora local si es otra) con lo que puedes hacer', () => {

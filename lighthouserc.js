@@ -10,8 +10,8 @@
 // accesibilidad y buenas prácticas; el explorador, rendimiento ≥ 80 (decisión 1 de Iván en la revisión
 // del bloque F, 17-11: crear el contexto WebGL es una sola tarea que no se trocea) y lo demás ≥ 95. El
 // SEO no es criterio. Y en todas, el CLS ≤ 0,05 de §5, como error y en la peor de las 5 cargas: un
-// desplazamiento que sale en 2 de 5 (el de /creditos en producción, fase 11b) también cuenta. La muestra, la de `scripts/measure-pages.mjs` (fase 9) más la portada del explorador; la
-// mediana de 5 cargas por página (la guía de variabilidad de Lighthouse: la de 5 es el doble de estable
+// desplazamiento que sale en 2 de 5 (el de /creditos en producción, fase 11b) también cuenta. La
+// muestra, la de `scripts/measure-pages.mjs` (fase 9) más la portada del explorador; la mediana de 5 cargas por página (la guía de variabilidad de Lighthouse: la de 5 es el doble de estable
 // que una sola).
 //
 // `LHCI_PAGES` elige el grupo: `contenido`, `explorador` o, sin la variable, todas. El CI los mide por

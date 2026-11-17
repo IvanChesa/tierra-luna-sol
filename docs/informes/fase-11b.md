@@ -30,7 +30,7 @@ Se aplica la revisión del bloque F. El CLS de `/creditos` en producción venía
 | F4 | `ci.yml`: `cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}` | | `b97ecb2` |
 | F5 | El aviso de llegada desde un eclipse, con `mounted()`, un render después de su región `role="status"`, como los de la URL | test en `notices.spec.ts`: el primer render (sin los `afterNextRender`), la región vacía; después, el aviso | `0dc495e` |
 | F6 | `scene/engine.ts`: `placesWanted`, que guarda `setLabelsVisible` y usa `leaveSky` | test en `engine.spec.ts`: del cielo a la Tierra con `setLabelsVisible(false, true)`, los lugares vuelven y los demás nombres no | `6f228d6` |
-| F7 | `isEclipsePeak` (`ephemeris/eclipse-search.ts`): la fecha es el máximo (±1 min) de un eclipse de ese tipo visto desde el lugar. Si no, `eclipseArrival` da `null` y el explorador avisa: «El eclipse «sol-total» no es el de esa fecha y se ha ignorado.» | tests en `eclipse-search.spec.ts`, `eclipse-arrival.spec.ts` y `notices.spec.ts` (`?fecha=2030-01-01T00:00:00Z&eclipse=sol-total`, otro tipo, una hora antes) | `0dc495e` |
+| F7 | `isEclipsePeak` (`ephemeris/eclipse-search.ts`): la fecha es el máximo (±1 min) de un eclipse de ese tipo visto desde el lugar. Si no, `eclipseArrival` da `null` y el explorador avisa: «El eclipse «sol-total» no es el de esa fecha y ese lugar, y se ha ignorado. Los que se ven desde España están en «Eclipses».» | tests en `eclipse-search.spec.ts`, `eclipse-arrival.spec.ts` y `notices.spec.ts` (`?fecha=2030-01-01T00:00:00Z&eclipse=sol-total`, otro tipo, una hora antes) | `0dc495e` |
 | F8 | `--no-sandbox`, solo con `process.env.CI` | | `b97ecb2` |
 | F9 | Un `AbortSignal` de `runTour` a `fetch`: el recorrido aborta su descarga anticipada al acabar o al saltarlo (`TourHost.prefetch` → `prefetchCloseUps` → `prefetchCloseUp` → `TextureSource.prefetch`) | tests en `home-tour.spec.ts` (abortada al parar y al acabar) y `engine.spec.ts` (la señal llega a la descarga) | `6f228d6` |
 | F10 | `prepare-pages.mjs`: con el sitio indexable, fuera de `sitemap.xml` solo puede quedar `404.html`; si no, el build falla | `npm run build`: «39 URLs en sitemap.xml» de 40 páginas | `ece0a9e` |
@@ -77,7 +77,7 @@ Se aplica la revisión del bloque F. El CLS de `/creditos` en producción venía
 | `/creditos` | 0,94 | 1,00 | 1,00 | 0,68 s | **0,000** | **0,000 · 0,000 · 0,000 · 0,000 · 0,000** | 280 ms | 5 |
 
 - **El rendimiento, el PC y no el código:** justo después, con `lighthouse` suelto (la misma simulación móvil), tres cargas de cada página: el build local de la rama, `/planetas/marte` 1,00 · 1,00 · 1,00 (TBT 30, 26 y 78 ms) y `/creditos` 1,00 · 1,00 · 1,00 (13, 11 y 15 ms); producción (la v1.0.0), 0,99 · 1,00 · 1,00 y 1,00 · 1,00 · 1,00. Las cifras de rendimiento que cuentan son las de producción, tras publicar (§6). Por indicación de Iván (15:50), no se repite la tanda local.
-- **`lhci assert` en local** sale con error por el rendimiento de seis páginas de contenido (0,93–0,94 frente a 0,95), por lo mismo; el CLS y lo demás, en verde.
+- **`lhci assert` en local** sale con error por el rendimiento de cinco páginas de contenido (0,93–0,94 frente a 0,95) y del explorador (0,72 frente a 0,80), por lo mismo; el CLS y lo demás, en verde.
 - **El CI de la rama** (`62ff28c`, run 44102459020; WebGL por software en el explorador): todas las aserciones en verde, también el CLS ≤ 0,05 en la peor de las 5 cargas de las 10 URL; queda un aviso, el rendimiento del explorador (mediana 0,67 en el ejecutor de GitHub; valores 0,67, 0,68, 0,50, 0,69 y 0,49), que en el CI va como aviso en todas las páginas (fase 10, §4.24).
 
 ### 4.3 F12: Dependabot
@@ -111,7 +111,7 @@ Se aplica la revisión del bloque F. El CLS de `/creditos` en producción venía
 
 - **`node scripts/build-body-texts.mjs`:** «30 cuerpos y 140 textos verificados» (cada cita, en su página); un aviso, esperado: «venus, resumen: la cifra 460 no aparece en las citas». «Más de 460 °C» es la redacción que eligió Iván: vale para los 467 °C de NASA Science (la cita) y los 464 °C de la tabla (NSSDCA), y la nota de Venus lo explica.
 - **`reviewed: true`:** los 140 de `body-texts.json` (regenerados en `data/body-texts.ts` y `docs/datos/textos-cuerpos.md`, «Revisados: 140 de 140»), las 14 de `tours.ts` y la línea de autoría (`authorship.ts`); los tests que pedían `false` piden ahora `true`.
-- **`docs/revision-textos.md`:** (pendiente: se regenera con el build final).
+- **`docs/revision-textos.md`:** regenerado con el build de la rama (`d3c28c0`): 554 textos y las 88 constelaciones, con los textos nuevos y una línea de estado, «155 de 155 textos con `reviewed` revisados».
 
 ## 5. Desviaciones del plan y motivo
 
@@ -153,3 +153,20 @@ Solo las versiones de Dependabot (F12): Angular 22.2.6/22.2.7, `@lhci/cli` 0.16.
 ## 9. Pendientes
 
 Solo los de Iván, en `docs/PENDIENTES.md` («Lo que queda de Iván»).
+
+---
+
+## Respuesta a la revisión
+
+Revisión del subagente: **APROBADA CON CAMBIOS MENORES** (`docs/revisiones/fase-11b.md`): 0 Bloqueantes, 0 Importantes, 5 Menores y 3 Sugerencias. Su `npm run check`, en verde; los generados, sin cambios al regenerarlos (`build-body-texts.mjs` y `build-text-review.mjs --forzar`). Corregidos todos.
+
+| Hallazgo | Acción |
+|---|---|
+| 1 (Menor) `revision-textos.md` «pendiente» en el informe | §4.5, al día: regenerado en `d3c28c0`, con su línea de estado |
+| 2 (Menor) «seis páginas de contenido» | «cinco páginas de contenido y el explorador» (§4.2) |
+| 3 (Menor) `fase-11.md:118` culpaba al patrón de URL | Una corrección al final de ese punto: el error era el CLS de `/creditos` |
+| 4 (Menor) README: «835 tests» y «una etiqueta `v*`» | 840 tests; «una etiqueta `vX.Y.Z` de un commit de `main`». El CHANGELOG de la 1.0.0 se queda con sus 835, los de entonces |
+| 5 (Menor) El aviso de F7, inexacto con el lugar y sin qué hacer | «El eclipse «sol-total» no es el de esa fecha y ese lugar, y se ha ignorado. Los que se ven desde España están en «Eclipses».», con sus tests. Sin `?fecha=`, `parseViewerParams` ni lee `?eclipse=` (como antes): no sale aviso |
+| 6 (Sugerencia) Comentario de Lleida en `viewer-params.spec.ts` | Al día |
+| 7 (Sugerencia) Una línea de 186 caracteres en `lighthouserc.js` | Partida a 100 |
+| 8 (Sugerencia) `{ ...host }` en `runTour` | `Object.assign(Object.create(host), { prefetch })`: hereda también los métodos de una instancia de clase |

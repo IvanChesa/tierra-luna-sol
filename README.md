@@ -29,7 +29,7 @@ Las capturas son del propio explorador en el modo de captura determinista (`?cap
 - **Three.js 0.186**, directo y sin envoltorios, con shaders GLSL propios: sombreado por tipo de cuerpo, atmósferas, sombras de eclipses y de anillos analíticas y profundidad logarítmica.
 - **astronomy-engine** para el Sol, los planetas, la Luna, las lunas de Júpiter, las orientaciones, las salidas y puestas y los eclipses; las otras dieciséis lunas, con elementos orbitales ajustados a JPL Horizons.
 - **TypeScript estricto** (sin `any`) y **CSS propio** con custom properties, sin bibliotecas de interfaz.
-- **Pruebas:** Vitest (835 tests; cobertura de las efemérides, 98,9 %), Playwright (153 e2e, con la regresión visual), axe en todas las rutas y Lighthouse CI.
+- **Pruebas:** Vitest (840 tests; cobertura de las efemérides, 98,9 %), Playwright (153 e2e, con la regresión visual), axe en todas las rutas y Lighthouse CI.
 - **Despliegue:** Cloudflare Pages desde GitHub Actions, con el build verificado por el CI y sin builds en Cloudflare.
 
 ## Arquitectura
@@ -99,7 +99,7 @@ Sin cookies, sin analítica y sin peticiones a otros dominios: las fuentes, las 
 En Cloudflare Pages, desde GitHub Actions:
 
 - **Vistas previas** (`.github/workflows/ci.yml`): cada push con lint, tests, build y e2e en verde publica el build verificado en `<rama>.tierra-luna-sol.pages.dev`; el de `main`, en `staging.tierra-luna-sol.pages.dev`.
-- **Producción** (`.github/workflows/deploy-production.yml`): una etiqueta `v*` publica en [tierra-luna-sol.ivanchesa.com](https://tierra-luna-sol.ivanchesa.com) el mismo build que verificó el CI para ese commit (con todo el CI en verde, Lighthouse incluido), y `scripts/verify-pages.mjs` comprueba la publicación (rutas, 404, cabeceras, sin cookies ni NEL, el sitemap y el HTML servido idéntico al del build).
+- **Producción** (`.github/workflows/deploy-production.yml`): una etiqueta `vX.Y.Z` de un commit de `main` publica en [tierra-luna-sol.ivanchesa.com](https://tierra-luna-sol.ivanchesa.com) el mismo build que verificó el CI para ese commit (con todo el CI en verde, Lighthouse incluido), y `scripts/verify-pages.mjs` comprueba la publicación (rutas, 404, cabeceras, sin cookies ni NEL, el sitemap y el HTML servido idéntico al del build).
 
 ## Licencia
 
