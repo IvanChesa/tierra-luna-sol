@@ -32,13 +32,13 @@ const DECADE_REPEAT_MS = 350;
  * Línea de tiempo de la barra (fase 3c, tarea 2): el año de la fecha mostrada, de enero a diciembre,
  * con el año a la vista y una marca en «hoy». El año, como mando del mismo control (crítica de la 9c:
  * «1900–2100» con mando en la barra): «‹ 2026 ›», con el ratón o el dedo un año y, mantenido, por
- * décadas; con el teclado, Mayús + RePág y AvPág en la línea (su descripción lo dice). Una sola parada
+ * décadas; con el teclado, Mayús + Re Pág y Av Pág en la línea (su descripción lo dice). Una sola parada
  * del tabulador: no suma controles a la barra (D47).
  *
  * Es un `input type="range"` nativo (ratón, táctil y teclado de serie) con `aria-valuetext` («17 de
  * marzo de 2026»). La pista solo llega a los días que caen entre 1900 y 2100 en la zona elegida.
  *
- * El teclado se lleva aquí (timeline.ts): las flechas, un día; RePág y AvPág, un mes (con Mayús, un
+ * El teclado se lleva aquí (timeline.ts): las flechas, un día; Re Pág y Av Pág, un mes (con Mayús, un
  * año); Inicio y Fin, el año, pasando de año en los extremos. Con el foco del teclado y el tiempo en marcha, lo que se
  * anuncia se queda quieto (el lector no anuncia cada día) y cada tecla parte de la fecha anunciada:
  * → es siempre el día siguiente al que se ha oído. Con el ratón o el dedo, la línea sigue a la fecha.

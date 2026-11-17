@@ -71,7 +71,7 @@ export function homeTourSteps(spain: GuidedView, { moon = true } = {}): TourPlan
       at: 0,
       run: (host) => {
         host.announce(
-          `Recorrido de unos ${seconds} segundos: ${bodies}. Pulsa «Saltar» o cualquier tecla para pararlo.`,
+          `Recorrido de unos ${seconds} segundos: ${bodies}. Pulsa «Saltar el recorrido» o cualquier tecla para pararlo.`,
         );
         // Las texturas grandes de la Tierra (y de la Luna), mientras se ve Saturno.
         host.prefetch(moon ? ['tierra', 'luna'] : ['tierra']);

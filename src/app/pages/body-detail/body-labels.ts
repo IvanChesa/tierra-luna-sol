@@ -30,7 +30,9 @@ export function kindLineOf(body: BodyIndexEntry): KindLine {
 
 /**
  * Las lunas sin mapa de su superficie (fase 7): solo Proteo. Deimos y las cinco grandes de Urano ya
- * tienen el suyo (D43 y D45) y sus imágenes lo enseñan (revisión de los textos, fase 10).
+ * tienen el suyo (D43 y D45) y sus imágenes lo enseñan (revisión de los textos, fase 10). La imagen de
+ * Proteo enseña sus cráteres generados: lo dice (duda 4 de la revisión de los textos; decisión 4 de
+ * Iván, 17-11).
  */
 const SCHEMATIC = new Set<BodyId>(['proteo']);
 
@@ -45,7 +47,7 @@ const PARTLY_RECREATED = new Set<BodyId>(
 
 /** Lo que muestra la imagen de cada cuerpo (ESTILO §6: qué se ve, no «imagen de»), sin género. */
 function seen(id: BodyId): string {
-  if (SCHEMATIC.has(id)) return 'su color esquemático (no hay un mapa de su superficie)';
+  if (SCHEMATIC.has(id)) return 'sus cráteres recreados (no hay un mapa de su superficie)';
   switch (id) {
     case 'tierra':
       return 'sus continentes, sus océanos y sus nubes';

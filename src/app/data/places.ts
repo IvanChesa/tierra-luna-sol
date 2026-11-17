@@ -4,8 +4,8 @@
  *
  * Latitud y longitud geográficas (ETRS89 o WGS84, equivalentes a efectos del proyecto), longitud
  * positiva hacia el este, de fuentes oficiales, cada una con su URL (consultadas el 2026-10-27, salvo
- * Fraga y Lleida, el 2026-10-23):
- * - Instituto Geográfico Nacional: API OGC «Núcleos de población» (Fraga, Lleida) y «Lugar nombrado»
+ * Fraga, el 2026-10-23; Lleida, que no era un lugar del cielo ni se usaba, salió en la fase 11b):
+ * - Instituto Geográfico Nacional: API OGC «Núcleos de población» (Fraga) y «Lugar nombrado»
  *   del Nomenclátor (el Observatori Fabra, edificación; la Puerta del Sol, el punto del barrio de Sol,
  *   en la plaza). Licencia: uso libre compatible con CC BY 4.0, citando «© Instituto Geográfico
  *   Nacional» (https://www.ign.es/web/politica-datos).
@@ -123,17 +123,6 @@ export const PLACES = [
     timeZone: 'Europe/Madrid',
     sky: true,
     source: 'https://api-features.ign.es/collections/nuc/items/200000448?f=json',
-  },
-  {
-    id: 'lleida',
-    name: 'Lleida',
-    province: 'Lleida',
-    latitudeDeg: 41.61470371,
-    longitudeDeg: 0.6267342,
-    altitudeM: 150.114,
-    timeZone: 'Europe/Madrid',
-    sky: false,
-    source: 'https://api-features.ign.es/collections/nuc/items/900014081?f=json',
   },
 ] as const satisfies readonly Place[];
 

@@ -84,7 +84,7 @@ describe('shortcuts: atajos de teclado', () => {
   it('la ayuda documenta todas las órdenes globales', () => {
     const documented = SHORTCUT_HELP.flatMap((group) => group.items.flatMap((item) => item.keys));
     // También las de la línea de tiempo y las fichas (fase 3c).
-    for (const k of ['RePág', 'AvPág', 'Inicio', 'Fin', 'Intro']) expect(documented).toContain(k);
+    for (const k of ['Re Pág', 'Av Pág', 'Inicio', 'Fin', 'Intro']) expect(documented).toContain(k);
     for (const k of ['K', ',', '.', 'R', 'N', 'G', '+', '−', '1', '2', '3', 'V', 'I', 'Esc', '?']) {
       expect(documented).toContain(k);
     }

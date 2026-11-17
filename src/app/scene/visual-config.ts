@@ -368,7 +368,8 @@ export const VISUAL_CONFIG = {
    * delegada por Iván: en gris se confundía con la Luna, S3), como el globo de Magellan de la NASA,
    * PIA00104 («The simulated hues are based on color images recorded by the Soviet Venera 13 and 14
    * spacecraft»: https://science.nasa.gov/photojournal/venus-computer-simulated-global-view-centered-at-180-degrees-east-longitude/).
-   * Las Venera son las únicas fotos hechas bajo las nubes. En PIA00104 el tono cambia con el brillo
+   * Las Venera 13 y 14 hicieron fotos en color bajo las nubes (sin «las únicas»: no tiene fuente en el
+   * proyecto; decisión 4 de Iván, 17-11). En PIA00104 el tono cambia con el brillo
    * (pardo rojizo en lo oscuro, naranja amarillento en lo claro): `ramp`, su cromaticidad lineal (RGB /
    * luminancia Rec. 709) en los percentiles 5, 50 y 95 de la luminancia del disco, y `levels`, esos
    * percentiles de la luminancia lineal de nuestro mosaico (el de 2k; el de 1k y el de 4k, a menos de

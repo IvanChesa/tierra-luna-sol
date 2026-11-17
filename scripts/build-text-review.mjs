@@ -108,6 +108,18 @@ const routes = Object.keys(
     .routes,
 );
 
+// Cuántos textos con `reviewed` están revisados: los de los cuerpos, las vistas guiadas, los recorridos
+// de la Luna y la línea de autoría (decisión 5 de Iván en la revisión del bloque F, 17-11: todos).
+const { AUTHORSHIP } = await import('../src/app/features/viewer/authorship.ts');
+const flagged = [
+  ...bodies.flatMap((body) => [body.summary, ...body.facts, body.mapNote].filter(Boolean)),
+  ...GUIDED_VIEWS,
+  ...MOON_VIEWS,
+  ...MOON_TOUR,
+  AUTHORSHIP,
+];
+const reviewedCount = flagged.filter((item) => item.reviewed === true).length;
+
 push(
   '# Revisión de los textos',
   '',
@@ -119,6 +131,7 @@ push(
   '- Cada texto lleva su fuente. Los de los cuerpos, además, sus citas literales en inglés, en `docs/datos/textos-cuerpos.md`.',
   '- El script no reescribe este fichero si ya tiene alguna corrección escrita: las correcciones se pasan a su origen (`scripts/content/body-texts.json`, `src/app/data/tours.ts` o la plantilla de la página), se regenera lo que corresponda y se marca el texto como revisado (`reviewed: true`).',
   '- Los nombres de las constelaciones (al final) los revisa la sesión de revisión del bloque E (decisión de Iván del 03-11).',
+  `- **Estado:** ${reviewedCount} de ${flagged.length} textos con \`reviewed\` revisados (los de los cuerpos, las vistas guiadas, los recorridos y la línea de autoría). El 17-11, Iván los dio todos por revisados (decisión 5 de la revisión del bloque F), después de la comprobación de los 551 textos de la fase 10 (\`docs/revisiones/textos.md\`) y de sus correcciones.`,
   '',
   '## Índice',
   '',
@@ -292,7 +305,7 @@ push(
   '',
   '## 3 ter. La interfaz del explorador',
   '',
-  'Los textos de los controles del explorador, de las plantillas de \`src/app/features/\`: lo que se lee y lo que oyen los lectores de pantalla (\`aria-label\` y \`title\`). Lo que se compone con datos sale con «…» en el sitio del dato (el nombre del cuerpo, la fecha). Además, la línea de autoría y los rótulos y el anuncio del recorrido de la portada. Textos nuevos de la fase 9c y de Venus «Bajo las nubes» (9b.e), con \`reviewed: false\`.',
+  'Los textos de los controles del explorador, de las plantillas de \`src/app/features/\`: lo que se lee y lo que oyen los lectores de pantalla (\`aria-label\` y \`title\`). Lo que se compone con datos sale con «…» en el sitio del dato (el nombre del cuerpo, la fecha). Además, la línea de autoría y los rótulos y el anuncio del recorrido de la portada. Los de la fase 9c y los de Venus «Bajo las nubes» (9b.e), revisados con los demás (decisión 5 de Iván, 17-11).',
   '',
 );
 const { AUTHORSHIP } = await import('../src/app/features/viewer/authorship.ts');

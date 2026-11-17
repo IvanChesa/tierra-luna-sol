@@ -22,7 +22,7 @@ describe('body-labels: los textos fijos de la ficha (fase 9)', () => {
     expect(kindLineOf(entry('sol'))).toEqual({ text: 'Estrella' });
   });
 
-  it('el texto alternativo dice lo que se ve: superficie, nubes, neblina o color esquemático', () => {
+  it('el texto alternativo dice lo que se ve: superficie, nubes, neblina o cráteres recreados', () => {
     expect(imageAltOf(entry('marte'))).toBe(
       'Marte, con la luz del Sol de lado y su superficie real: imagen del propio explorador.',
     );
@@ -35,7 +35,9 @@ describe('body-labels: los textos fijos de la ficha (fase 9)', () => {
     // Las lunas con mucho recreado lo dicen (revisión de la fase 10, hallazgo 12).
     expect(imageAltOf(entry('miranda'))).toMatch(/su superficie, en parte recreada/);
     expect(imageAltOf(entry('europa'))).toMatch(/su superficie real/);
-    expect(imageAltOf(entry('proteo'))).toMatch(/color esquemático/);
+    expect(imageAltOf(entry('proteo'))).toMatch(
+      /sus cráteres recreados \(no hay un mapa de su superficie\)/,
+    );
     // Ninguno en masculino o femenino («iluminado»): la frase no tiene género.
     for (const body of BODY_INDEX) expect(imageAltOf(body)).not.toMatch(/iluminad/);
   });

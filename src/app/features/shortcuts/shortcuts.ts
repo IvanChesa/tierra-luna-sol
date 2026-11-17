@@ -118,7 +118,7 @@ export const SHORTCUT_HELP: readonly {
         keys: ['←', '→'],
         action: 'Línea de tiempo: un día antes o después. Fichas: la anterior o la siguiente',
       },
-      { keys: ['RePág', 'AvPág'], action: 'Línea de tiempo: un mes después o antes' },
+      { keys: ['Re Pág', 'Av Pág'], action: 'Línea de tiempo: un mes después o antes' },
       {
         keys: ['Inicio', 'Fin'],
         action: 'Línea de tiempo: el principio o el final del año. Fichas: la primera o la última',
