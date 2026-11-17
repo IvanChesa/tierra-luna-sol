@@ -12,6 +12,7 @@ Todo lo demás de este fichero está cerrado: hecho, decidido o cerrado como «n
 - [ ] (Opcional) **El sitemap en Search Console**: `https://tierra-luna-sol.ivanchesa.com/sitemap.xml` (el SEO es secundario).
 - [ ] (Opcional) **En GitHub, el entorno `production` para los secrets de Cloudflare** (Settings → Environments, que los limite al trabajo de despliegue) **y un ruleset para las etiquetas `v*`** (que solo tú puedas crearlas). El workflow ya solo publica etiquetas `vX.Y.Z` de commits de `main` (F3 de la revisión del bloque F).
 - [ ] (Fuera del repo) `AGENTS.md`, tu copia local de `CLAUDE.md` para Codex, sigue con ivanchesa.es y «desarrollador web freelance»: no lo he tocado.
+- [ ] (Opcional, limpieza) **Dos worktrees temporales con cambios**, de sesiones anteriores y fuera del repo: `…/Temp/claude/3a99c5b9508ba407/8ba70b60-…/scratchpad/antes` y `…/Temp/claude/b6eab7891dc7539d/d289b8b8-…/scratchpad/antes-f10` (las rutas enteras, en `git worktree list`). Sus commits ya están en `main`, pero tienen ficheros borrados, así que no se han quitado (fase 11b, F13). Si no los quieres: `git worktree remove --force <ruta>`, o `git worktree prune` si la carpeta ya no existe.
 
 ## Ya hecho
 - [x] Actualizar Node (v24.22.1).

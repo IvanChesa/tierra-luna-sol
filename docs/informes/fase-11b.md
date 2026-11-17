@@ -69,9 +69,11 @@ Instrucciones de la sesión de revisión (17-11): aplicar `docs/revisiones/bloqu
 - **#8** (`@lhci/cli` 0.16.0 → 0.16.1): `main` llevado a su rama (sin conflictos; `npm install --package-lock-only` no cambia el `package-lock.json`), su CI…
 - **#7** (Prettier 3.8.1 → 3.10.1 y `typescript-eslint` 8.72.1 → 8.72.2): `main` llevado a su rama y Prettier pasado (`body-panel.html` y `body-detail-page.html`: el `>` de cierre de un enlace, que Prettier 3.8 dejaba en la línea siguiente; el HTML que sale es el mismo), `ng lint` sin errores; su CI…
 
-### 4.4 F13: los worktrees
+### 4.4 F13: los worktrees y las ramas
 
-(Pendiente.)
+- **Quitados con `git worktree remove`** (los cinco, con `git status` limpio y su commit ya en `origin/main`): `.claude/worktrees/fase-10a-lunas`, `fase-9b-e-venus`, `fase-9b-f-sol-2`, `fase-9b-f-tierra` y `fase-9c-interfaz-bf1527`.
+- **Se quedan, con cambios** (su commit sí está en `main`, pero `git status` no está limpio): los dos temporales, en carpetas de sesiones anteriores, fuera del repo. `…/3a99c5b9508ba407/…/scratchpad/antes` (en `8068f3c`, sin rama: 1016 ficheros borrados) y `…/b6eab7891dc7539d/d289b8b8-…/scratchpad/antes-f10` (en `0eabe29`, sin rama: 11 borrados, los `.gitkeep`). Parecen vaciados a medias por la limpieza de sus carpetas temporales. Para quitarlos: `git worktree remove --force <ruta>` (o, si la carpeta ya no está, `git worktree prune`). Apuntado en `PENDIENTES.md`.
+- **Ramas borradas**, locales (22) y remotas (20), todas fusionadas en `origin/main` (`git branch --merged`): de `fase-0-cimientos` a `fase-11-lanzamiento`, las de la 9b y la 9c, `fase-10a-lunas` y `revision-bloque-c`. Además, la local `fase-10h-regresion`, con un commit que `git cherry` da por ya aplicado en `main` (la regresión visual, `84e94e9`), con `-D`. Quedan `main`, `fase-11b-cierre` y, en el remoto, las dos de Dependabot (hasta su fusión).
 
 ### 4.5 Los textos (decisión 4)
 
