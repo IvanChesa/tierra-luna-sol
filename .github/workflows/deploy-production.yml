@@ -4,14 +4,15 @@ name: Producción
 # servida en el dominio propio, tierra-luna-sol.ivanchesa.com) el build que ya verificó el CI para ese
 # commit (D26): no se vuelve a construir, se baja el artefacto `build` de su ejecución. Con una etiqueta
 # `v*` (`git tag -a v1.0.0 -m … && git push origin v1.0.0`) o a mano (Actions → Producción → Run
-# workflow, eligiendo la etiqueta). El CI tiene que haber pasado entero en ese commit con un push a una
-# rama (el de `main`, normalmente); si aún está en marcha, se espera a que termine. Solo desde una
-# etiqueta `v*` (a mano, también: el formulario trae `main` por defecto y eso no se publica). Su
+# workflow, eligiendo la etiqueta). El CI tiene que haber pasado entero en ese commit con el push a
+# `main`; si aún está en marcha, se espera a que termine. Solo desde una etiqueta de versión `vX.Y.Z`
+# (a mano, también: el formulario trae `main` por defecto y eso no se publica) y sobre un commit que
+# ya está en `main` (fase 11b, F3 de la revisión del bloque F). Su
 # artefacto dura 7 días: para volver a una versión más antigua, «Rollback» en el panel de Pages (relanzar
 # su CI también vuelve a publicar ese build en su vista previa, en `staging` si es de `main`).
 on:
   push:
-    tags: ['v*']
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
   workflow_dispatch:
 
 permissions:
@@ -38,9 +39,24 @@ jobs:
       WRANGLER_VERSION: '4.149.0'
     steps:
       # Acciones fijadas por SHA de commit (la versión va en el comentario), las mismas que en ci.yml.
+      # Con toda la historia, para comprobar que el commit está en `main`.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0
+
+      # Una etiqueta de versión (`vX.Y.Z`, también a mano) sobre un commit de `main`: una etiqueta en
+      # otra rama no llega a producción.
+      - name: Una versión de main
+        run: |
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::«$GITHUB_REF_NAME» no es una etiqueta de versión vX.Y.Z: no se publica"
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$(git rev-parse HEAD)" origin/main; then
+            echo "::error::$GITHUB_REF_NAME ($(git rev-parse HEAD)) no está en main: no se publica"
+            exit 1
+          fi
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -55,7 +71,7 @@ jobs:
           echo "url=$url" >> "$GITHUB_OUTPUT"
 
       # El commit de la etiqueta (con una etiqueta anotada, el commit al que apunta, no la etiqueta) y la
-      # ejecución del CI de ese commit, que tiene que acabar en verde.
+      # ejecución del CI de ese commit en `main`, que tiene que acabar en verde.
       - name: El CI de este commit, en verde
         id: ci
         env:
@@ -65,7 +81,7 @@ jobs:
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
           for attempt in $(seq 1 90); do
             # Un fallo pasajero de la API no corta la espera: se vuelve a mirar a los 30 s.
-            run=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow ci.yml --commit "$sha" --event push \
+            run=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow ci.yml --commit "$sha" --event push --branch main \
               --limit 1 --json databaseId,status,conclusion,headBranch --jq '.[0] // empty') ||
               { echo "::warning::gh run list ha fallado; otra mirada en 30 s"; run=''; }
             if [[ -n "$run" ]]; then
