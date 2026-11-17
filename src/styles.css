@@ -830,14 +830,9 @@ tls-explorer-ui
 /*
  * «Hay más» abajo (la ficha del explorador y el índice de cuerpos: body-panel.css y body-picker.css):
  * una sombra en el borde de abajo de una lista que se desplaza, mientras quede algo por ver. La
- * enciende esta animación, ligada al desplazamiento de cada lista.
+ * enciende esta animación, ligada al desplazamiento de cada lista. Su `@property --more-below`, en
+ * `index.html` (fase 11b: el CSS crítico la rompía).
  */
-@property --more-below {
-  syntax: '<number>';
-  inherits: true;
-  initial-value: 0;
-}
-
 @keyframes more-below {
   0%,
   94% {
@@ -852,14 +847,9 @@ tls-explorer-ui
 /*
  * Pista de desplazamiento (fase 9c, 9c.2 y 9c.7): una fila que se desplaza en horizontal se funde en
  * su borde derecho mientras quede algo por ver. La enciende una animación ligada a su desplazamiento;
- * si la fila cabe (sin desplazamiento), no hay fundido.
+ * si la fila cabe (sin desplazamiento), no hay fundido. Su `@property --scroll-fade`, en `index.html`
+ * (fase 11b: el CSS crítico la rompía).
  */
-@property --scroll-fade {
-  syntax: '<length>';
-  inherits: false;
-  initial-value: 0px;
-}
-
 @keyframes scroll-fade {
   0%,
   92% {

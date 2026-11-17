@@ -44,8 +44,23 @@
         de los créditos): Public Sans, un 2,8 % más ancha que Arial, y su seminegrita, un 2,2 % más
         estrecha que Arial Bold; Newsreader, un 2,1 % más estrecha que Georgia. Donde no hay Arial
         (Android), la del sistema (fase 10: medirlo en el móvil).
+      - Las dos propiedades registradas (`@property`) de styles.css, aquí por lo mismo (fase 11b, F1 de
+        la revisión del bloque F): el CSS crítico las escribía con un `;` de más (`};.page{…}`) y el
+        navegador descartaba la regla de detrás, `.page`. La página se pintaba sin su relleno y, si la
+        hoja entera llegaba después del primer pintado, todo se recolocaba (CLS de 0,32 en /creditos,
+        en producción, en 2 de 5 cargas). `prepare-pages.mjs` comprueba que no vuelva a pasar.
     -->
     <style>
+      @property --more-below {
+        syntax: '<number>';
+        inherits: true;
+        initial-value: 0;
+      }
+      @property --scroll-fade {
+        syntax: '<length>';
+        inherits: false;
+        initial-value: 0px;
+      }
       @font-face {
         font-family: 'Newsreader';
         font-style: normal;

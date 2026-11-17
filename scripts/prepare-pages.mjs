@@ -17,10 +17,13 @@
 //    de los scripts en línea de todas las páginas, que genera Angular: el contrato de eventos, su
 //    arranque y el que activa la hoja de estilos diferida. `security.autoCsp` no admite el
 //    prerenderizado («Cannot set both SSR and auto-CSP»). Si alguna página tuviera un manejador en
-//    línea (`onload="…"`), la CSP lo bloquearía: el script falla.
+//    línea (`onload="…"`), la CSP lo bloquearía: el script falla. Y el CSS en línea, sin `};`: el CSS
+//    crítico escribía así los `@property` y el navegador descartaba la regla de detrás (`.page`), con
+//    un CLS de 0,32 en /creditos si la hoja entera llegaba después del primer pintado (fase 11b, F1).
 // 6. `robots.txt` y, si el sitio es indexable (`SITE_CONFIG.indexable`, fase 11), `sitemap.xml`, con
 //    la URL canónica de cada página que la declara y no lleva `noindex` (todas menos la 404). Salen de
-//    `site.config.ts`, para que el dominio esté en un solo sitio.
+//    `site.config.ts`, para que el dominio esté en un solo sitio. Si alguna página más se quedara
+//    fuera (por ejemplo, si cambia cómo se escribe el canonical), el script falla (fase 11b, F10).
 // 7. Los límites de Pages (plan gratuito): ningún fichero de más de 25 MiB y menos de 20 000 ficheros.
 //
 // Uso: ng build && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/prepare-pages.mjs
@@ -95,6 +98,15 @@ for (const page of pages) {
   }
   const handler = /<[a-z][^>]*\son[a-z]+\s*=/i.exec(html);
   if (handler) throw new Error(`${page} tiene un manejador en línea que la CSP bloquearía`);
+  for (const [, css] of html.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/g)) {
+    const stray = /\}\s*;/.exec(css);
+    if (stray) {
+      const around = css.slice(Math.max(0, stray.index - 60), stray.index + 60);
+      throw new Error(
+        `${page}: CSS en línea con «};», que descarta la regla siguiente: …${around}…`,
+      );
+    }
+  }
 }
 const template = await readFile(HEADERS_SOURCE, 'utf8');
 if (template.split(PLACEHOLDER).length !== 2) {
@@ -104,10 +116,14 @@ await writeFile(join(BROWSER, '_headers'), template.replace(PLACEHOLDER, [...has
 
 // --- 6: robots.txt y sitemap.xml ------------------------------------------------------------------
 const indexed = [];
+const unindexed = [];
 for (const page of pages) {
   const html = await readFile(join(BROWSER, page), 'utf8');
   const canonical = /<link rel="canonical" href="([^"]+)">/.exec(html)?.[1];
-  if (!canonical || /<meta name="robots" content="[^"]*noindex/.test(html)) continue;
+  if (!canonical || /<meta name="robots" content="[^"]*noindex/.test(html)) {
+    unindexed.push(page);
+    continue;
+  }
   if (!canonical.startsWith(`${SITE_CONFIG.baseUrl}/`)) {
     throw new Error(`${page}: su canonical (${canonical}) no está en ${SITE_CONFIG.baseUrl}`);
   }
@@ -121,6 +137,12 @@ const robots = [
 ];
 if (SITE_CONFIG.indexable) {
   if (!indexed.length) throw new Error('Ninguna página indexable para sitemap.xml');
+  // Todas las páginas menos la 404: si otra se queda fuera, no se publica sin avisar.
+  if (unindexed.join() !== '404.html') {
+    throw new Error(
+      `Fuera de sitemap.xml, solo la 404; ahora: ${unindexed.join(', ') || 'ninguna'}`,
+    );
+  }
   const escape = (text) => text.replaceAll('&', '&amp;').replaceAll('<', '&lt;');
   const sitemap = [
     '<?xml version="1.0" encoding="UTF-8"?>',
