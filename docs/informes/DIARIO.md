@@ -708,3 +708,18 @@ El bloque F termina aquí, con la fase 10 fusionada en `main`. La fase 11 (el la
 - **Desviaciones:** el sitemap (D25 decía «sin sitemap trabajado»; lo pidió Iván y se genera solo); el rendimiento del explorador en Lighthouse, ⚠️ (decisión de Iván).
 - **Condiciones de parada:** ninguna. Sin `v1.0.1`: nada del sitio falló.
 - **Para Iván (`PENDIENTES.md`, «Fase 11»):** la ficha del proyecto en ivanchesa.com, la difusión, las pruebas en su móvil y en un iPhone, la decisión del Lighthouse del explorador y la revisión del bloque F.
+
+## Fase 11b (el cierre): 2026-11-17 · `v1.0.1` en producción · **el proyecto, cerrado**
+
+- **Qué:** la revisión del bloque F entera (F1–F13) y las decisiones de Iván del 17-11, en la rama `fase-11b-cierre`, fusionada con `--no-ff` (`8ae1e56`). Se publica como **v1.0.1**.
+  - **F1:** el CLS de 0,32 en `/creditos` venía del CSS crítico. Un `;` de más tras los `@property` hacía que el navegador descartara la regla `.page`. Los `@property` pasan a `index.html` y el build comprueba que el CSS en línea no lleve `};`. `/creditos` da CLS 0 en las 5 cargas.
+  - Además: los menores F2–F11; los PR #6, #8 y #7 de Dependabot; los worktrees y las 43 ramas ya fusionadas, quitados (los dos worktrees temporales con cambios se quedan, apuntados); el explorador en ≥ 0,80 en §5; los textos dudosos con sus propuestas; y todos los textos con `reviewed: true` (155 de 155).
+- **Revisión por subagente:** aprobada con cambios menores (0 Bloqueantes, 0 Importantes, 5 Menores y 3 Sugerencias), todo corregido.
+- **Métricas:** 840 tests; e2e, 140 pasados y 13 saltados en local, y en verde en el CI con la regresión visual; JS inicial, código propio en 13,97 kB de 15.
+- **Producción:** Producción en verde (run 44108676334). `curl` de 18 rutas: todas con su código y sin `Set-Cookie`, NEL, Report-To ni X-Robots-Tag. Lighthouse en el dominio no se ha repetido, por indicación de Iván.
+- **El proyecto queda cerrado.** Lo que queda es de Iván (`PENDIENTES.md`, «Lo que queda de Iván»):
+  - las pruebas en su móvil y en un iPhone, ya en el dominio;
+  - la prueba con un lector de pantalla de verdad;
+  - la difusión y la vista previa del enlace en una app;
+  - opcional: el sitemap en Search Console, el entorno `production` y el ruleset de etiquetas en GitHub, `AGENTS.md` y los dos worktrees temporales.
+

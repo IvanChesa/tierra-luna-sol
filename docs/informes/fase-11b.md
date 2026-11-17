@@ -2,7 +2,7 @@
 
 - **Rama:** `fase-11b-cierre` (desde `main` en `166ec37`)
 - **Fecha:** 2026-11-17
-- **Estado:** revisada (aprobada con cambios menores, corregidos) y fusionada en `main`; la v1.0.1, publicándose (§6.1)
+- **Estado:** terminada: la **v1.0.1**, en producción (17-11). El proyecto queda cerrado; lo que falta es de Iván (`PENDIENTES.md`).
 
 ## 0. Plan
 
@@ -138,9 +138,12 @@ npm run e2e   140 passed, 13 skipped (7,7 min): las 12 de la regresión visual, 
 CI de la rama (62ff28c): lint, tests y build; e2e con la regresión visual; Lighthouse; vista previa: en verde
 ```
 
-### 6.1 Producción
+### 6.1 Producción (la v1.0.1, 17-11)
 
-(Tras publicar la v1.0.1.)
+- **Publicación:** merge `8ae1e56` en `main` y etiqueta `v1.0.1`. El CI de `main` en `8ae1e56`, en verde; **Producción en verde** (run 44108676334), con el paso nuevo «Una versión de main» (F3), la espera al CI de ese commit, el despliegue del build verificado y su comprobación.
+- **`curl -sI` en el dominio** (15:26 UTC): `/`, `/explorar/tierra`, `/explorar/luna`, `/cielo`, `/planetas`, `/planetas/marte`, `/lunas`, `/lunas/titan`, `/sol`, `/luna`, `/eclipses`, `/creditos` y `/sobre-el-proyecto`, 200 `text/html`; `/robots.txt`, 200 `text/plain`; `/sitemap.xml`, 200 `application/xml`, con 39 URL; `/img/og.jpg`, 200 `image/jpeg`; `/no-existe`, **404**; `/explorar`, 301 a `/`; `http://`, 301 a `https://`. En las 18 respuestas, **0 `Set-Cookie`, 0 `NEL`, 0 `Report-To` y 0 `X-Robots-Tag`**; HSTS y la CSP, como antes.
+- **La v1.0.1, servida:** el CSS en línea de `/creditos` ya no lleva `};`, sí `.page{` y los dos `@property` (del `<style>` de `index.html`); los créditos dicen «casi todas, de NASA Science» y ya no nombran Lleida.
+- **Lighthouse en producción:** no se ha repetido; Iván indicó a las 15:50 y otra vez al final que no hacía falta más. Lo que hay: el CLS de `/creditos` en 0 en las 5 cargas del build local, que es el mismo build que se publica (§4.1 y §4.2), y todas las aserciones en verde en el CI de la rama, también el CLS en la peor carga de las 10 URL. Antes de publicar, la v1.0.0 en el dominio, medida en el mismo PC: `/planetas/marte`, 0,99 · 1,00 · 1,00, y `/creditos`, 1,00 · 1,00 · 1,00, con CLS 0. **Queda sin medir** la mediana de 5 de la v1.0.1 en el dominio.
 
 ## 7. Capturas
 
