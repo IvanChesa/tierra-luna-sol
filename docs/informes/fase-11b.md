@@ -66,8 +66,9 @@ Instrucciones de la sesión de revisión (17-11): aplicar `docs/revisiones/bloqu
 ### 4.3 F12: Dependabot
 
 - **#6** (Angular, 11 paquetes: 22.2.4 → 22.2.6 y las herramientas a 22.2.7): con su CI en verde (lint, tests y build; e2e; Lighthouse), fusionado (`a063abc`).
-- **#8** (`@lhci/cli` 0.16.0 → 0.16.1): `main` llevado a su rama (sin conflictos; `npm install --package-lock-only` no cambia el `package-lock.json`), su CI…
-- **#7** (Prettier 3.8.1 → 3.10.1 y `typescript-eslint` 8.72.1 → 8.72.2): `main` llevado a su rama y Prettier pasado (`body-panel.html` y `body-detail-page.html`: el `>` de cierre de un enlace, que Prettier 3.8 dejaba en la línea siguiente; el HTML que sale es el mismo), `ng lint` sin errores; su CI…
+- **#8** (`@lhci/cli` 0.16.0 → 0.16.1): `main` llevado a su rama (sin conflictos; `npm install --package-lock-only` no cambia el `package-lock.json`); con su CI en verde (lint, tests y build; e2e; Lighthouse), fusionado (`816ebda`).
+- **#7** (Prettier 3.8.1 → 3.10.1 y `typescript-eslint` 8.72.1 → 8.72.2): `main` llevado a su rama y Prettier pasado (`6f5ab39`: `body-panel.html` y `body-detail-page.html`, el `>` de cierre de un enlace, que Prettier 3.8 dejaba en la línea siguiente; el HTML que sale es el mismo), `ng lint` sin errores; con su CI en verde, fusionado (`69be979`). Antes, comprobado en local que se junta sin conflictos con `main` ya con el #8 y que el `package-lock.json` resultante es coherente (`npm install --package-lock-only` no lo cambia).
+- Después, `main` en la rama (`git merge origin/main`, sin conflictos) y `npm ci`.
 
 ### 4.4 F13: los worktrees y las ramas
 
